@@ -44,7 +44,7 @@ struct TransparencyPreview: View {
 
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: DS.Space.xxs) {
-            row("New Session", systemImage: "plus")
+            row("New Task", systemImage: "plus")
             row("Pull Requests", systemImage: "arrow.triangle.pull")
             row("Workflows", systemImage: "point.3.connected.trianglepath.dotted")
             Text("Projects")

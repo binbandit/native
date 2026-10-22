@@ -164,8 +164,8 @@ stands for `scripts/dev/drive.sh playtest`.
 # A new task: from Home's agent cards, a project's "+" (last-used agent), ⌘N, or any agent by name
 $D press "New Codex task"
 $D press "New Task in sample"
-$D menu File "New Session"
-$D press "New Session With" --item "Fake Agent"
+$D menu File "New Task"
+$D press "New Task With" --item "Fake Agent"
 
 # Type and send, then wait for the turn to end and read it
 $D set Message "Fix the failing test. Don't build or run the app."
@@ -182,7 +182,7 @@ $D wait "Queued messages" --gone --timeout 300  # the queue drains when the turn
 $D press Allow
 $D press Reject
 
-# Stop a turn (Session ▸ Stop and ⌘. need the app active, see below)
+# Stop a turn (Task ▸ Stop and ⌘. need the app active, see below)
 $D press "Stop Agent"
 
 # Switch tasks
@@ -204,6 +204,9 @@ $D press Xhigh --role menubutton --item High
 $D press "Mode:" && $D press Plan               # Build, Plan, Ask, Debug, Review
 $D press "Autonomy:"
 
+# Extra agent settings are in More at every width, with the selected choice checked
+$D press "More Controls"                        # lists settings such as Claude Code's Agent selector
+
 # Archive, undo, unarchive
 $D key shift+cmd+a && $D press Undo             # archives the open task; its Undo toast lasts about 5 s
 $D press Archived                               # expands the sidebar's Archived section
@@ -224,7 +227,7 @@ scripts/dev/run-isolated.sh playtest --no-build
   mean bringing it forward), and `key` still reaches it: typing and Return, Escape and arrows go to
   the focused element (`focused` shows which), and menu items that don't depend on focus work by
   menu or shortcut (⌘K, ⌘N, ⌘1, ⌃Tab, ⇧⌘A, ⌘,). Two kinds need the active app: shortcuts a view
-  handles itself (⌘Y and ⌘⇧⌫ on approvals, ⌘Return in popovers and sheets), and Session menu items
+  handles itself (⌘Y and ⌘⇧⌫ on approvals, ⌘Return in popovers and sheets), and Task menu items
   that act on the focused task (Stop ⌘., Focus Composer, Choose Model, Mode, Set Goal), which read as
   disabled. Use the on-screen controls instead (Stop Agent, the composer's pills, Allow), and don't
   report these as broken from the driver; list them as "not verifiable by driver" when they matter.

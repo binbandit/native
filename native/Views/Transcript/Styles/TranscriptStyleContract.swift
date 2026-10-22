@@ -59,7 +59,7 @@ struct TranscriptStyleConfiguration {
             return subagent.title ?? "subagent"
         }
         if let id, id == session.parentID {
-            return "the parent session"
+            return "the parent task"
         }
         if let id, let title = sessionTitle(id) {
             return title

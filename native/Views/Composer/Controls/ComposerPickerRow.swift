@@ -105,7 +105,7 @@ struct ComposerPickerRow: View {
             ComposerPickerRow(
                 symbol: "list.bullet.clipboard", title: "Plan",
                 detail: "Researches and writes a plan for your approval before changing anything",
-                note: "Codex can’t plan in this session, so this starts a new one", trailing: .none, isEnabled: true,
+                note: "Codex can’t plan in this task, so this starts a new one", trailing: .none, isEnabled: true,
                 action: {})
         }
         .padding(.vertical, DS.Space.xs)

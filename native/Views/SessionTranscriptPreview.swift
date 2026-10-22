@@ -25,7 +25,7 @@ struct SessionTranscriptPreview: View {
     }
 }
 
-#Preview("Session transcript - Return visits and empty task") {
+#Preview("Task transcript - Return visits and empty task") {
     let app = AppModel.preview(.empty)
     let sessions = SessionTranscriptPreviewFixtures.sessions(in: app)
     return DSPreviewPair {

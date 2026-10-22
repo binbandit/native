@@ -24,7 +24,7 @@ extension SessionLauncher {
                 attach: true))
         guard let agentSessionID = summary.agentSessionID else {
             throw LaunchError.failed(
-                agent: runtime.agent.displayName, underlying: HostTurnFailure(message: "No session"))
+                agent: runtime.agent.displayName, underlying: HostTurnFailure(message: "No task"))
         }
         let session = SessionModel(
             agent: runtime.agent, id: agentSessionID, summary: summary, client: client, services: services,

@@ -140,7 +140,7 @@ enum AgentSessionDefaults {
                 await session.setConfigOption(option, to: value)
             case .unavailable(let choice, let kept)?:
                 session.addNotice(
-                    "\(session.agentName) doesn't offer \(choice.valueName) anymore, so this session uses \(kept ?? "its default").",
+                    "\(session.agentName) doesn't offer \(choice.valueName) anymore, so this task uses \(kept ?? "its default").",
                     isError: false)
                 // Said once: later sessions start on the agent's model until the user picks another.
                 updateLastUsed(for: agent, defaults: defaults) { $0.forget(id) }

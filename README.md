@@ -23,7 +23,7 @@ agent-specific UI baked into the core.
 - **Expeditions.** Big jobs for a crew of agents: a lead proposes a route, you approve it, and agents
   from any provider work through it with review checkpoints, ending in a debrief and a pull request. See
   [docs/expeditions.md](docs/expeditions.md).
-- **Durable host.** Sessions live in a host process that outlasts the window, and the same protocol
+- **Durable host.** Tasks live in a host process that outlasts the window, and the same protocol
   serves remote hosts and the iPad client. See [docs/durability.md](docs/durability.md).
 - **Git and GitHub.** Status, diffs, commits, worktrees, pull requests and checks next to the task.
 - **Terminal.** A real terminal built on Ghostty. See [docs/terminal.md](docs/terminal.md).

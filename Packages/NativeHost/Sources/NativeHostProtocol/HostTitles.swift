@@ -112,9 +112,13 @@ public struct HostSessionTitles: Codable, Hashable, Sendable {
 public struct HostTitleRequest: Codable, Hashable, Sendable {
     public var projectName: String
     public var prompt: String
+    /// Distinguishes the next-turn retry from repeated summaries of the same request. Optional
+    /// so clients can still decode requests from hosts predating retries.
+    public var retry: Int?
 
-    public init(projectName: String, prompt: String) {
+    public init(projectName: String, prompt: String, retry: Int? = nil) {
         self.projectName = projectName
         self.prompt = prompt
+        self.retry = retry
     }
 }

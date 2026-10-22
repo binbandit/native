@@ -43,7 +43,7 @@ nonisolated final class MCPScriptBindings: OrchestrationScriptBindings {
         let names = servers.map { "tools.\($0.name).* (the \($0.name) MCP server's tools)" }
         return OrchestrationScriptSummary(
             description: names.joined(separator: ", ")
-                + ". A call to one that can make changes waits for the user's approval, unless this session runs tool calls without asking; a declined call rejects with the reason.",
+                + ". A call to one that can make changes waits for the user's approval, unless this task runs tool calls without asking; a declined call rejects with the reason.",
             isReadOnly: servers.allSatisfy(\.toolsAreReadOnly))
     }
 

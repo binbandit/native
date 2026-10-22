@@ -29,6 +29,8 @@ struct TurnLinesKey: Hashable {
     let isLatest: Bool
     let isRunning: Bool
     let unfoldsExploration: Bool
+    /// The latest turn's files as git saw them change (`TurnDetectedChanges`), when known.
+    var detectedFiles: [TurnSummary.ChangedFile]?
 }
 
 /// Each turn's lines as last laid out, by turn, and the earlier turns' lines put together, held by

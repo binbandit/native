@@ -338,7 +338,7 @@ extension HostCore {
         guard session.record.origin != .announced else { throw HostError.notAcceptingPrompts }
         try await load(session)
         guard session.phase == .idle, session.turn == nil, session.hiddenCommand == nil else {
-            throw HostError.busy("The session is busy.")
+            throw HostError.busy("The task is busy.")
         }
         guard let peer = agents[session.record.agentID]?.peer, let agentSessionID = session.record.agentSessionID else {
             throw HostError.agentUnavailable(session.agentName)

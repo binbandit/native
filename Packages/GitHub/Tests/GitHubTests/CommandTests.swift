@@ -17,8 +17,8 @@ struct CommandTests {
         #expect(reads.allSatisfy { !$0.isMutating })
     }
 
-    @Test func authStatusAsksForTheActiveAccount() {
-        #expect(GitHubCommand.authStatus().arguments == ["auth", "status", "--active", "--json", "hosts"])
+    @Test func authStatusAsksForEveryAccount() {
+        #expect(GitHubCommand.authStatus().arguments == ["auth", "status", "--json", "hosts"])
         #expect(GitHubCommand.authStatus(host: "ghe.example.com").arguments.last == "--hostname=ghe.example.com")
     }
 

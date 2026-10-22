@@ -170,7 +170,7 @@ struct TranscriptSearchPanel: View {
                 "Indexing your tasks",
                 systemImage: "magnifyingglass",
                 message:
-                    "Native is reading your agents' past sessions so you can search them. Results appear as they're indexed."
+                    "Native is reading your agents' past tasks so you can search them. Results appear as they're indexed."
             ) {}
         } else {
             EmptyStateView(
@@ -201,7 +201,7 @@ struct TranscriptSearchPanel: View {
     private var noResultsAdvice: String {
         var advice = ["Try fewer words, or part of a word: \"rollb\" finds \"rollback\"."]
         if case .indexing(let done, let total) = center.indexing {
-            advice.insert("Still indexing: \(total - done) sessions to go, so more may turn up.", at: 0)
+            advice.insert("Still indexing: \(total - done) tasks to go, so more may turn up.", at: 0)
         }
         return advice.joined(separator: " ")
     }
@@ -212,7 +212,7 @@ struct TranscriptSearchPanel: View {
         let text: String? =
             switch center.indexing {
             case .idle: nil
-            case .indexing(let done, let total): "Indexing past sessions · \(done) of \(total)"
+            case .indexing(let done, let total): "Indexing past tasks · \(done) of \(total)"
             case .paused(let done, let total):
                 "Indexing paused on battery · \(done) of \(total) · continues when your Mac is plugged in"
             }

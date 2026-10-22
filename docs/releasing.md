@@ -10,7 +10,7 @@ in `docs/decisions.md` ("Releases on GitHub", "Sparkle for updates", "Nightly be
 | `Config/*.xcconfig`, `Config/Native-Info.plist` | channels, bundle identifiers, feed URLs and the signing key, in one place |
 | `Packages/HostUpdater` | how a standalone host updates itself: the signed host feed, Ed25519 checks, atomic install with rollback |
 | `scripts/release/` | `release.sh` (archive → notarize → package → appcast → publish), `host.sh` (standalone host and its feed), `check.sh` (compile Release and Nightly), `size-check.sh` (the size budget, `docs/app-size.md`, and that the terminal and script runtime made it in), `sentry.sh` (dSYMs to Sentry), `release-notes.sh`, `ci-signing.sh` |
-| `.github/workflows/` | `check.yml` (every pull request), `nightly.yml` (every night, or a rehearsal on demand), `release.yml` (on a `v*` tag, or a rehearsal on demand), `ios.yml` (iPad and iPhone builds, daily: "iOS checks") |
+| `.github/workflows/` | `check.yml` (every pull request), `nightly.yml` (every night, or a rehearsal on demand), `beta.yml` (every six hours when main changes), `release.yml` (on a `v*` tag, called by Beta, or a rehearsal on demand), `ios.yml` (iPad and iPhone builds, daily: "iOS checks") |
 
 ## Sentry crash symbols
 
@@ -47,6 +47,7 @@ rerun the release. Release and Nightly configurations already generate dSYMs.
 | | Native (stable) | Native (beta) | Native Nightly |
 | --- | --- | --- | --- |
 | What it is | tested releases | the stable app, opted into betas in Settings ▸ Updates | a separate app built from `main` every night |
+| When it ships | a stable version tag is pushed | every six hours if `main` has commits since the last beta, or when a beta tag is pushed | daily at 07:00 UTC if `main` has changed |
 | Build configuration | Release | Release, built with `NATIVE_BETA` | Nightly (`NATIVE_NIGHTLY`) |
 | Bundle identifier | `$(NATIVE_BUNDLE_IDENTIFIER_BASE)` | same | `….nightly` |
 | App name | Native.app | Native.app | Native Nightly.app |
@@ -267,6 +268,37 @@ Sentry → publishes.
   nightly builds, so `release.sh` checks that before building and again before tagging, and asks for
   a run on `main`'s head instead.
 
+### Automatic Mac betas
+
+`beta.yml` checks `origin/main` at 00:17, 06:17, 12:17 and 18:17 UTC. It skips with a log message
+when there are no commits since the latest beta tag, or a Mac release run is active (including
+queued runs). Before the first beta it compares against the latest stable tag. Version tags are
+ordered numerically: `v1.5.0-beta.9` becomes `v1.5.0-beta.10`; after `v1.5.0` ships the next series
+is `v1.6.0-beta.1`. A stable patch below an ongoing beta series keeps that beta series. With only
+`v0.1.0` released, the first automatic beta is `v0.2.0-beta.1`.
+
+The scheduler creates an immutable tag at the selected main commit, then calls `release.yml`
+with that version, tag-based checkout and the previous beta for release notes (the last stable
+for the first beta). A tag created with `GITHUB_TOKEN` does not start another workflow, so the
+explicit reusable call is required. It inherits the same secrets and uses `MACOS_RUNNER` and the
+same release concurrency group as a manually tagged release. Nightly, tagged stable/beta releases
+and Release's direct rehearsal dispatch keep their existing behavior. This scheduler is Mac-only;
+it does not call the TestFlight workflow.
+
+Preview the decision without tagging, building, signing or publishing:
+
+```sh
+git fetch origin main 'refs/tags/v*:refs/tags/v*'
+python3 scripts/release/beta-schedule.py --dry-run
+gh workflow run beta.yml --ref main -f dry_run=true
+```
+
+The workflow also checks active runs during its dry run. Its manual dispatch defaults to dry run;
+`dry_run=false` on `main` enables publication with the same skip checks as the schedule. A dry run
+on a branch uses that branch's planner but still evaluates `origin/main`. If publishing fails after
+tagging, rerun the failed release job in the original Beta run; do not move or recreate the tag.
+The next scheduled check still treats that tag as the baseline.
+
 ### Rehearsing a release
 
 `--rehearse` runs everything `--publish` does short of publishing: its checks (the Sparkle keys, the
@@ -278,7 +310,8 @@ printed instead. On CI:
 - `gh workflow run nightly.yml --ref <branch> -f dry_run=true` rehearses a nightly from that branch
   (the real one always builds `main`).
 - `gh workflow run release.yml --ref <branch> -f version=1.4.0` rehearses a stable release, or a beta
-  with `-f version=1.5.0-beta.1`. Only a pushed tag publishes.
+  with `-f version=1.5.0-beta.1`. This direct dispatch never publishes; automatic betas use a
+  separate reusable workflow call.
 
 Each uploads two workflow artifacts, kept for a week: what it would have published (the update
 archive, deltas, notes, appcast, DMG, standalone host and its feed, celebration packs) and the
@@ -321,6 +354,8 @@ breaking changes, `feat` (New), `fix` (Fixes) and `perf` (Performance), each wit
 docs, tests, refactors and quicksaves stay out, as do fixes and features scoped to how Native is built and shipped (`release`, `ci`, `build`, `deps`). The first release (no earlier tag) opens with a one-line introduction. The notes become the GitHub release body and are
 embedded in the appcast as Markdown, which Settings ▸ Updates renders. They're generated, never
 hand-edited, and there's no CHANGELOG: to change what users read, write a better commit title.
+Automatic beta notes cover the commits since the previous beta even if a stable release was
+tagged in between; `NATIVE_RELEASE_NOTES_FROM` supplies that baseline to the existing generator.
 
 ### What's New
 
@@ -352,9 +387,10 @@ needs it, then checks each app against the size budget (`docs/app-size.md`) and 
 locally before landing anything that touches `#if DEBUG` code or build settings.
 
 `nightly.yml` runs at 07:00 UTC (and on demand), builds `main`, and skips when `main` hasn't moved
-since the last nightly. `release.yml` runs on `v*` tags. Both also rehearse on demand ("Rehearsing a
-release"). All three need Xcode with the macOS 27 SDK; set the `MACOS_RUNNER` and
-`XCODE_DEVELOPER_DIR` repository variables to point them at another runner or Xcode (defaults:
+since the last nightly. `beta.yml` plans a beta every six hours on Linux and calls `release.yml`
+only when needed. `release.yml` also runs on `v*` tags. Nightly and Release still rehearse on demand
+("Rehearsing a release"). The Check, Nightly and Release jobs need Xcode with the macOS 27 SDK; set
+the `MACOS_RUNNER` and `XCODE_DEVELOPER_DIR` repository variables to point them at another runner or Xcode (defaults:
 `macos-26` and Xcode 27.1; the repository uses `xcode-27` and `/Applications/Xcode.app/Contents/Developer`,
 GitHub's preview image with the macOS 27 SDK). `ci-signing.sh` puts the certificate and notary
 credentials in a throwaway keychain and removes it afterwards.
@@ -427,7 +463,15 @@ step runs even when the one before it failed, so one run reports every break:
   runs the same way locally. NativeHost builds only its client; its host runs agents, which iPadOS
   can't.
 - **The iPad typecheck** of the design system and the platform adapters:
-  `scripts/check-ios.sh native/Platform` (the design system always comes along).
+  `scripts/check-ios.sh native/Platform` (the design system always comes along). For other folders,
+  the checker adds app declarations the compiler reports missing, including their cross-folder
+  extensions, and recursively builds imported local package modules. It repeats until no more
+  dependencies can be added, then reports the compiler's remaining diagnostics at original paths
+  and line numbers. Imports guarded by local iOS libraries' `canImport` checks are discovered before
+  those libraries are built, so an empty module cache cannot silently exclude their consumers.
+  Swift still excludes imports in inactive platform branches. Package builds use the
+  shared build queue; `NATIVE_IOS_CHECK_CACHE` can select
+  a private incremental cache.
 
 Our own files build without warnings for iOS too: every log goes through `scripts/check-warnings.sh`.
 It restores the Mac builds' package checkouts, which pin the same versions, and saves no caches of its
@@ -437,12 +481,13 @@ share (ACP, Exec) compile once instead of once per package: about 2.5 minutes fo
 locally, where building each from nothing took 8.
 
 **Not yet on iPad.** The app target is one module whose folders use each other freely (models,
-plugins, commands, settings, views), so the smallest set of folders that includes `native/Models`
-is the whole app, and that still imports macOS-only frameworks: ServiceManagement in `native/Host`
+plugins, commands, settings, views). Checking `native/Models` or a consumer now follows those
+dependencies automatically, but they still import macOS-only frameworks: ServiceManagement in `native/Host`
 (`HostRegistration`, the Background settings and host notices), IOKit in the KeepAwake engine, AppKit in
 `native/Terminal/Settings`, and `NativeApp.swift`, the Mac's entry point. Those move behind
 `native/Platform` adapters with the iPad destination (`docs/architecture.md`, "Getting there"); add
-a folder to the workflow's typecheck once it compiles there.
+a folder to the workflow's typecheck once it compiles there. A dependency's genuine platform error
+still fails its consumer's check; the checker does not stub types or suppress those errors.
 
 ### iPhone TestFlight
 
@@ -474,8 +519,11 @@ so a burst of merges publishes the newest revision. Comparing against the last s
 keeps pending mobile changes even if a Mac-only commit replaces their original run.
 The job archives Release for a real iOS device, exports a signed IPA, checks warnings, and uploads
 through Apple's pinned TestFlight action. Build logs and dSYMs are retained for seven days.
-Signing uses a temporary keychain and removes its credentials and installed profile even after
-failure. It restores any pre-existing keychain search list and provisioning profile.
+Manual signing is scoped to the companion app target through `NATIVE_COMPANION_CODE_SIGN_STYLE`,
+`NATIVE_COMPANION_CODE_SIGN_IDENTITY` and `NATIVE_COMPANION_PROVISIONING_PROFILE`. Passing a profile
+as a global build setting would incorrectly provision Swift package resource bundles. Local Release
+builds keep automatic signing. Signing uses a temporary keychain and removes its credentials and
+installed profile even after failure. It restores any pre-existing keychain search list and provisioning profile.
 
 Rehearse on any branch without uploading:
 

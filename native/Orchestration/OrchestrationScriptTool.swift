@@ -113,7 +113,7 @@ nonisolated enum OrchestrationScriptTool {
                 declared + """
 
 
-                    Also bound for this session: \(summaries.map(\.description).joined(separator: " ")) Find those \
+                    Also bound for this task: \(summaries.map(\.description).joined(separator: " ")) Find those \
                     with tools.\(searchName)({ query }), which resolves with their declarations (query by server name to list \
                     one server's), then call them in a later script.
                     """

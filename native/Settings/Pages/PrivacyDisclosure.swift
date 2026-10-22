@@ -12,7 +12,7 @@ struct PrivacyDisclosure: View {
         "How long Native takes to launch",
         "When Native stops responding, and for how long",
         "Crash reports: the kind of error and where in Native's code, as memory addresses",
-        "Which agents start sessions, and their versions",
+        "Which agents start tasks, and their versions",
         "The app and macOS versions, and a random ID for this installation",
     ]
 

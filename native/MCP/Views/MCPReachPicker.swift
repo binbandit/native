@@ -17,7 +17,7 @@ struct MCPReachPicker: View {
                 get: { mode == .scripted ? .scripted : MCPServerSwitches.Mode.on },
                 set: { library.setMode($0, of: switchKey, in: project) })
         ) {
-            Text("Loaded into Each Session").tag(MCPServerSwitches.Mode.on)
+            Text("Loaded into Each Task").tag(MCPServerSwitches.Mode.on)
             Text(library.scriptsAvailable ? "Through Native's Scripts" : "Through Native's Scripts (Unavailable)")
                 .tag(MCPServerSwitches.Mode.scripted)
         }
@@ -41,9 +41,9 @@ extension MCPLibrary {
             parts.append(
                 asking == 0
                     ? "all \(tools.count) tools are read-only"
-                    : "\(asking) of \(tools.count) tools ask first, unless the session runs tools unasked")
+                    : "\(asking) of \(tools.count) tools ask first, unless the task runs tools unasked")
         } else {
-            parts.append("tools that can make changes ask first, unless the session runs tools unasked")
+            parts.append("tools that can make changes ask first, unless the task runs tools unasked")
         }
         if let allowed = scriptApprovals[switchKey], !allowed.isEmpty {
             parts.append("always allowed: " + allowed.sorted().joined(separator: ", "))

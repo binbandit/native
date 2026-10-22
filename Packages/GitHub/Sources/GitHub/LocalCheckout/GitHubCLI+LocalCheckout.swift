@@ -15,13 +15,16 @@ extension GitHubCommand {
     public static func clone(_ repository: RemoteRepository, to folder: URL) -> GitHubCommand {
         GitHubCommand(
             ["repo", "clone", repository.description, folder.standardizedFileURL.path(percentEncoded: false)],
-            isMutating: true, timeout: .seconds(30 * 60))
+            isMutating: true, timeout: .seconds(30 * 60)
+        )
+        .targetingRepository(repository.description)
     }
 }
 
 extension GitHubCLI {
     public func pullRequestDetails(_ reference: PullRequestReference) async throws(GitHubError) -> PullRequestDetails {
-        try GitHubJSON.decode(PullRequestDetails.self, from: try await forPullRequest(reference).run(.pullRequestDetails(reference)))
+        try GitHubJSON.decode(
+            PullRequestDetails.self, from: try await forPullRequest(reference).run(.pullRequestDetails(reference)))
     }
 
     public func clone(_ repository: RemoteRepository, to folder: URL) async throws(GitHubError) {

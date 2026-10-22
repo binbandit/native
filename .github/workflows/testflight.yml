@@ -154,8 +154,8 @@ jobs:
             -archivePath "$RUNNER_TEMP/TestFlight/NativeCompanion.xcarchive" \
             -derivedDataPath "$RUNNER_TEMP/TestFlight/DerivedData" -disableAutomaticPackageResolution \
             MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
-            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' DEVELOPMENT_TEAM="$NATIVE_TEAM_ID" \
-            PROVISIONING_PROFILE_SPECIFIER="$IOS_PROFILE_UUID" \
+            NATIVE_COMPANION_CODE_SIGN_STYLE=Manual NATIVE_COMPANION_CODE_SIGN_IDENTITY='Apple Distribution' \
+            DEVELOPMENT_TEAM="$NATIVE_TEAM_ID" NATIVE_COMPANION_PROVISIONING_PROFILE="$IOS_PROFILE_UUID" \
             OTHER_CODE_SIGN_FLAGS="--keychain $IOS_SIGNING_KEYCHAIN" \
             > "$RUNNER_TEMP/TestFlight/archive.log" 2>&1 || {
               tail -n 80 "$RUNNER_TEMP/TestFlight/archive.log"

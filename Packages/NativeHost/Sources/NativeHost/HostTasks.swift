@@ -459,8 +459,8 @@ enum HostTaskError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .parentClosed: "The session that started the task is no longer open on the host."
-        case .closed: "That session is no longer open on the host."
+        case .parentClosed: "The task that started the task is no longer open on the host."
+        case .closed: "That task is no longer open on the host."
         case .noTool(let name): "The host has no tool named \(name)."
         }
     }

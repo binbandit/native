@@ -53,7 +53,7 @@ extension AppModel {
             return
         }
         guard let definition = runtimes[agent]?.agent else {
-            actionFailure = ActionFailure("Couldn't Start a Session", startFailure(of: agent))
+            actionFailure = ActionFailure("Couldn't Start a Task", startFailure(of: agent))
             return
         }
         // After a sign-in, the task that waited for it carries on instead of a second one starting.
@@ -137,7 +137,7 @@ extension AppModel {
                     "Sign in, and the task starts with what you've written.", needsSignIn: true)
             } else {
                 fail(
-                    task, "Couldn't start a \(task.agent.displayName) session",
+                    task, "Couldn't start a \(task.agent.displayName) task",
                     error.localizedDescription.withoutTerminalEscapes)
             }
         }

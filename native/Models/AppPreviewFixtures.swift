@@ -33,7 +33,7 @@ enum AppPreviewFixtures {
             id: "0199f3a2-flaky", title: "Fix flaky permission request test", agent: "codex", project: 0,
             minutesAgo: 52, state: .needsPermission),
         SampleTask(
-            id: "0199f3a2-titles", title: "Session titles from the first prompt", agent: "claude-code", project: 0,
+            id: "0199f3a2-titles", title: "Task titles from the first prompt", agent: "claude-code", project: 0,
             minutesAgo: 26 * 60, state: .doneUnread),
         SampleTask(
             id: "0199f3a2-wrap", title: "Diff view word wrapping in narrow windows, without breaking the gutter",

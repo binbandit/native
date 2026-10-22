@@ -53,7 +53,7 @@ extension SessionModel {
         let request = """
             {"sessionId": "\(id.rawValue)", "toolCall": \(call), "options": [
               {"optionId": "approved", "name": "Yes", "kind": "allow_once"},
-              {"optionId": "approved-for-session", "name": "Yes, and don't ask again this session", "kind": "allow_always"},
+              {"optionId": "approved-for-session", "name": "Yes, and don't ask again this task", "kind": "allow_always"},
               {"optionId": "abort", "name": "No, and tell Codex what to do differently", "kind": "reject_once"}]}
             """
         guard let update = Self.previewDecode(ToolCallUpdate.self, call),

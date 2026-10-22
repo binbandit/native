@@ -58,15 +58,16 @@ final class PluginRegistry {
     /// The user's explicit on/off choices; a plugin without one follows `isEnabledByDefault`.
     private var choices: [String: Bool]
 
+    private let defaults: UserDefaults
     private let builtIns: [any NativePlugin]
     private let logger = Logger(subsystem: "Native", category: "Plugins")
     private static let choicesKey = "pluginChoices"
     /// Before plugins had defaults, only turning one off was recorded.
     private static let legacyDisabledKey = "disabledPlugins"
 
-    init(builtIns: [any NativePlugin] = BuiltInPlugins.all) {
+    init(builtIns: [any NativePlugin] = BuiltInPlugins.all, defaults: UserDefaults = .standard) {
         self.builtIns = builtIns
-        let defaults = UserDefaults.standard
+        self.defaults = defaults
         if let stored = defaults.dictionary(forKey: Self.choicesKey) as? [String: Bool] {
             choices = stored
         } else {
@@ -119,7 +120,7 @@ final class PluginRegistry {
     /// Records the user's choice, which then outlasts any change to the plugin's default.
     func setEnabled(_ enabled: Bool, for id: String) {
         choices[id] = enabled
-        UserDefaults.standard.set(choices, forKey: Self.choicesKey)
+        defaults.set(choices, forKey: Self.choicesKey)
         syncExperiments()
     }
 

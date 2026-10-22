@@ -30,6 +30,7 @@ enum AmbientWiring {
         }
         // Workflows, goals and automations announce when they need the user or stop short.
         BuiltInPlugins.automation.center.post = { [weak model] in model?.post($0) }
+        SoundsPlugin.connect(.shared, plugins: model.plugins)
         NotificationSounds.shared.isRetrying = { [weak model] context in
             model?.session(clientID: context.clientID)?.isRetryScheduled == true
         }

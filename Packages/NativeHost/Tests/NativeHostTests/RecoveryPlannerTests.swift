@@ -1,3 +1,4 @@
+import ACP
 import Foundation
 import NativeHostProtocol
 import Testing
@@ -11,6 +12,27 @@ struct RecoveryPlannerTests {
         #expect(
             RecoveryPlanner.decide(prompt: "Fix the build", attempts: 0, replayedUserMessages: ["Hi", "Fix the build"])
                 == .resume)
+    }
+
+    @Test("A recovery cut off again is resumed: its prompt shows as Native's notice but still counts")
+    func recoveryPromptInTheReplay() {
+        let prompt = RecoveryPlanner.interruptionPrompt(cause: .hostStopped)
+        var mirror = SessionMirror()
+        mirror.apply([
+            HostEvent(seq: 1, payload: .reset(loading: true)),
+            HostEvent(
+                seq: 2,
+                payload: .update(
+                    .object([
+                        "sessionUpdate": .string("user_message_chunk"),
+                        "content": .object(["type": .string("text"), "text": .string(prompt)]),
+                    ]))),
+            HostEvent(seq: 3, payload: .loaded),
+        ])
+        #expect(mirror.state.items.allSatisfy { if case .notice = $0 { true } else { false } })
+        #expect(mirror.userMessages == [prompt])
+        #expect(
+            RecoveryPlanner.decide(prompt: prompt, attempts: 1, replayedUserMessages: mirror.userMessages) == .resume)
     }
 
     @Test("A prompt missing from the agent's transcript is sent again")

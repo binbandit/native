@@ -51,7 +51,7 @@ struct ExtensionRow: View {
                 "\(names) \(manifest.agents.count == 1 ? "stops and isn't" : "stop and aren't") offered for new tasks")
         }
         if !manifest.mcpServers.isEmpty {
-            effects.append("new sessions don't get its MCP \(manifest.mcpServers.count == 1 ? "server" : "servers")")
+            effects.append("new tasks don't get its MCP \(manifest.mcpServers.count == 1 ? "server" : "servers")")
         }
         if !manifest.workflows.isEmpty {
             effects.append("its workflows aren't offered")

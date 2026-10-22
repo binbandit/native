@@ -267,7 +267,7 @@ actor SearchStore {
                 SQLiteValue(record.isArchived),
             ])
         guard let row = try sessionRow(record.key) else {
-            throw SearchIndexError(code: 0, message: "The session wasn't saved.")
+            throw SearchIndexError(code: 0, message: "The task wasn't saved.")
         }
         return row
     }

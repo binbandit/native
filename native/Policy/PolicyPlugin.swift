@@ -13,7 +13,7 @@ struct PolicyPlugin: NativePlugin {
     let manifest = PluginManifest(
         id: "native.policy",
         name: "Organization Policy",
-        description: "Applies your organization's managed settings to every session."
+        description: "Applies your organization's managed settings to every task."
     )
 
     func sessionPolicy(for session: SessionContext) -> SessionPolicy {

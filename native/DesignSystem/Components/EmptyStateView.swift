@@ -79,8 +79,8 @@ extension EmptyStateView where Actions == EmptyView {
 
 #Preview("Empty state") {
     DSPreviewPair {
-        EmptyStateView("No Sessions Yet", systemImage: "text.bubble", message: "Start one with ⌘N.") {
-            Button("New Session") {}.buttonStyle(.ds(.primary))
+        EmptyStateView("No Tasks Yet", systemImage: "text.bubble", message: "Start one with ⌘N.") {
+            Button("New Task") {}.buttonStyle(.ds(.primary))
         }
         .frame(width: 320, height: 200)
     }

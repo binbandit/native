@@ -125,7 +125,7 @@ public struct ActivityHeatmap: View {
                         .padding(-Self.ringInset)
                 }
             }
-            .help(describe(day) + (estimated.contains(day) ? " (estimated from the agents’ session lists)" : ""))
+            .help(describe(day) + (estimated.contains(day) ? " (estimated from the agents’ task lists)" : ""))
             .accessibilityElement()
             .accessibilityLabel(describe(day))
             .accessibilityHint(estimated.contains(day) ? "Estimated" : "")

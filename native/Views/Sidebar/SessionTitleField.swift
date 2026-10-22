@@ -36,7 +36,7 @@ struct SessionTitleField: View {
                 .foregroundStyle(.dsTextPrimary)
                 .focused($isFocused)
                 .frame(height: 20)
-                .accessibilityLabel("Session title")
+                .accessibilityLabel("Task title")
         }
         .padding(.vertical, isQuiet ? DS.Space.sm : DS.Space.md)
         .padding(.leading, isQuiet ? TaskRowIndent.flat.leading : TaskRowIndent.grouped.leading)
@@ -77,7 +77,7 @@ struct SessionTitleField: View {
 }
 
 #if DEBUG
-#Preview("Renaming a session") {
+#Preview("Renaming a task") {
     let app = AppModel.preview()
     DSPreviewPair {
         if let summary = SidebarPreviewFixtures.sessions(in: app).first {

@@ -3,16 +3,15 @@
 #
 #   scripts/check-ios.sh native/DesignSystem native/Views/Sidebar
 #
-# Run from anywhere in the repo, with paths from its root. Compiles the given folders together with
-# native/DesignSystem (every feature uses it) against the iOS simulator SDK in Swift 6 mode with the
-# app's settings (MainActor by default, member import visibility). `#Preview` blocks are stripped,
-# since the preview macro isn't available outside Xcode. Swift packages the files import (ACP, Git,
-# …) are built for iOS first from Packages/*/Sources, with their own settings; a package SwiftPM has
-# to build (remote dependencies or resources, like CodeThemes and its tree-sitter grammars) is built
-# with xcodebuild for the simulator into a cache kept between runs. Code that uses other app folders
-# needs those folders listed too. Prints the errors and warnings at their files' real paths, and exits
-# non-zero if there are errors. CI also fails on warnings, by passing the output to
-# scripts/check-warnings.sh (.github/workflows/ios.yml).
+# Run from anywhere in the repo, with paths from its root. Starts with the given folders and
+# native/DesignSystem, then adds app declarations Swift reports missing and their extensions.
+# Imported local package modules are built recursively for the iOS simulator. Packages with
+# resources or remote dependencies use xcodebuild through the shared build queue.
+# Uses Swift 6 and the app's isolation/import settings; #Preview bodies are removed with their
+# line numbers preserved. Dependency errors remain visible: a Mac-only dependency blocks its
+# consumers until it has an iPad adapter. No declarations are stubbed and no errors are hidden.
+# NATIVE_IOS_CHECK_CACHE overrides the incremental package cache location.
+# CI also checks warnings with scripts/check-warnings.sh (.github/workflows/ios.yml).
 set -euo pipefail
 
 if [ $# -eq 0 ]; then
@@ -23,7 +22,7 @@ fi
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 cd "$root"
 work=$(mktemp -d -t native-check-ios)
-packages=${TMPDIR:-/tmp}/native-check-ios-packages
+packages=${NATIVE_IOS_CHECK_CACHE:-${TMPDIR:-/tmp}/native-check-ios-packages}
 lock=""
 trap 'rm -rf "$work"; [ -z "$lock" ] || rmdir "$lock" 2>/dev/null' EXIT
 mkdir -p "$work/sources" "$work/modules"
@@ -34,39 +33,7 @@ target="arm64-apple-ios27.0-simulator"
 flags=(-swift-version 6 -target "$target" -sdk "$sdk" -I "$work/modules")
 mapped=" "
 
-# Copies Swift files into $2 with #Preview blocks removed, at their paths in the repository.
-strip_previews() {
-    python3 - "$1" "$2" <<'PY'
-import os, sys
-src, dest = os.path.relpath(sys.argv[1]), sys.argv[2]
-if src.startswith("..") or not os.path.exists(src):
-    sys.exit(f"{sys.argv[1]}: no such folder or file in the repository")
-paths = [src] if os.path.isfile(src) else [os.path.join(d, f) for d, _, fs in os.walk(src) for f in fs]
-for path in paths:
-    if not path.endswith(".swift"):
-        continue
-    text = open(path).read()
-    out, i = [], 0
-    while (j := text.find("#Preview", i)) >= 0:
-        out.append(text[i:j])
-        k, depth = text.find("{", j), 0
-        while True:
-            depth += {"{": 1, "}": -1}.get(text[k], 0)
-            if depth == 0:
-                break
-            k += 1
-        i = k + 1
-    out.append(text[i:])
-    target = os.path.join(dest, os.path.normpath(path))
-    os.makedirs(os.path.dirname(target), exist_ok=True)
-    open(target, "w").write("".join(out))
-PY
-}
-
-for path in native/DesignSystem "$@"; do
-    # Listing the design system again is harmless: its files land in the same place.
-    strip_previews "$path" "$work/sources"
-done
+python3 scripts/check-ios-sources.py "$work/sources" native/DesignSystem "$@" >"$work/added"
 
 # Builds a package with xcodebuild for the simulator and imports its products, for packages swiftc
 # alone can't build. The cache makes reruns incremental; parallel checks take turns on it.
@@ -76,9 +43,9 @@ build_package() {
     mkdir -p "$packages"
     until mkdir "$derived.lock" 2>/dev/null; do sleep 1; done
     lock="$derived.lock"
-    if ! (cd "$package" && xcodebuild -scheme "$name" -destination "generic/platform=iOS Simulator" \
+    if ! (cd "$package" && "$root/scripts/dev/build-slot.sh" -scheme "$name" -destination "generic/platform=iOS Simulator" \
         -derivedDataPath "$derived" build -quiet) >"$derived.log" 2>&1; then
-        grep -E "error:" "$derived.log" | sort -u | head -20 >&2
+        grep -E "error:" "$derived.log" | sort -u | head -20 >&2 || true
         echo "building $package for iOS failed; full log: $derived.log" >&2
         exit 1
     fi
@@ -102,19 +69,75 @@ swift_files() {
     while IFS= read -r -d '' file; do files+=("$file"); done < <(find "$1" -name "*.swift" -print0)
 }
 
+package_manifest() {
+    local manifest="$work/$(basename "$1").json"
+    if [ ! -e "$manifest" ]; then
+        swift package --package-path "$1" dump-package >"$manifest" || return
+    fi
+    echo "$manifest"
+}
+
+imported_modules() {
+    local module dir manifest candidates availability=()
+    swift_files "$1"
+    [ ${#files[@]} -gt 0 ] || return 0
+    # A fresh module directory must not turn an intended local dependency's canImport guard off.
+    # Bootstrap iOS library targets named by those guards; SDK and Mac-only modules stay real.
+    candidates=$(python3 - ${files[@]+"${files[@]}"} <<'PY'
+import re, sys
+names = set()
+for path in sys.argv[1:]:
+    for line in open(path):
+        if line.lstrip().startswith(("#if ", "#elseif ")):
+            names.update(re.findall(r"\bcanImport\s*\(\s*(\w+)", line))
+print("\n".join(sorted(names)))
+PY
+    )
+    for module in $candidates; do
+        dir=$(ls -d Packages/*/Sources/"$module" 2>/dev/null | head -1 || true)
+        [ -n "$dir" ] || continue
+        manifest=$(package_manifest "${dir%/Sources/*}")
+        if python3 - "$manifest" "$module" <<'PY'
+import json, sys
+package = json.load(open(sys.argv[1]))
+platforms = package["platforms"]
+target = next((t for t in package["targets"] if t["name"] == sys.argv[2]), {})
+available = (not platforms or any(p["platformName"] == "ios" for p in platforms)) and target.get("type") == "regular"
+sys.exit(0 if available else 1)
+PY
+        then
+            availability+=(-module-can-import "$module")
+        fi
+    done
+    # Availability overrides apply only to discovery. The final check uses actual built modules.
+    xcrun --sdk iphonesimulator swiftc -frontend -emit-imported-modules -module-name NativeIOSImports "${flags[@]}" \
+        ${availability[@]+"${availability[@]}"} ${files[@]+"${files[@]}"} | sort -u
+}
+
 # Builds a package module (and the package modules it imports) for iOS, once.
 build_module() {
     local name=$1
     [ -e "$work/modules/$name.swiftmodule" ] || [ -e "$work/modules/$name.package" ] && return
-    local dir
+    local dir dependencies manifest
     dir=$(ls -d Packages/*/Sources/"$name" 2>/dev/null | head -1 || true)
     [ -n "$dir" ] || return 0
     local package=${dir%/Sources/*}
-    if grep -qE "\.package\(url:|resources:" "$package/Package.swift"; then
+    manifest=$(package_manifest "$package")
+    # Test fixtures do not make a library target need a resource bundle. Only build the package
+    # when the imported target needs resources, or SwiftPM must resolve remote dependencies.
+    if python3 - "$manifest" "$name" <<'PY'
+import json, sys
+package = json.load(open(sys.argv[1]))
+target = next(t for t in package["targets"] if t["name"] == sys.argv[2])
+needs_build = target.get("resources") or any("sourceControl" in d for d in package["dependencies"])
+sys.exit(0 if needs_build else 1)
+PY
+    then
         build_package "$package" "$name"
         return
     fi
-    for dependency in $(grep -rhoE "^(@[a-zA-Z_]+ )*import [A-Za-z_]+" "$dir" | awk '{print $NF}' | sort -u || true); do
+    dependencies=$(imported_modules "$dir")
+    for dependency in $dependencies; do
         [ "$dependency" != "$name" ] && build_module "$dependency"
     done
     swift_files "$dir"
@@ -124,20 +147,31 @@ build_module() {
         -emit-module-path "$work/modules/$name.swiftmodule" ${files[@]+"${files[@]}"} >/dev/null
 }
 
-for module in $(grep -rhoE "^(@[a-zA-Z_]+ )*import [A-Za-z_]+" "$work/sources" | awk '{print $NF}' | sort -u || true); do
-    build_module "$module"
+while :; do
+    modules=$(imported_modules "$work/sources")
+    for module in $modules; do
+        build_module "$module"
+    done
+
+    swift_files "$work/sources"
+    status=0
+    # The driver supplies the SDK macro plugin paths. Whole-module mode still checks every file
+    # in one frontend, so all missing declarations can be resolved in one pass.
+    xcrun --sdk iphonesimulator swiftc -typecheck -whole-module-optimization -module-name native -parse-as-library -default-isolation MainActor \
+        -enable-upcoming-feature MemberImportVisibility "${flags[@]}" ${files[@]+"${files[@]}"} \
+        >"$work/diagnostics" 2>&1 || status=$?
+    python3 scripts/check-ios-sources.py "$work/sources" --diagnostics "$work/diagnostics" >"$work/added"
+    [ -s "$work/added" ] || break
+    echo "Including $(wc -l <"$work/added" | tr -d ' ') app dependency files" >&2
 done
 
-swift_files "$work/sources"
-output=$(xcrun --sdk iphonesimulator swiftc -typecheck -parse-as-library -default-isolation MainActor \
-    -enable-upcoming-feature MemberImportVisibility "${flags[@]}" ${files[@]+"${files[@]}"} 2>&1 || true)
-# At their real paths, so scripts/check-warnings.sh can read a log of this the way it reads a build's.
-diagnostics=$(echo "$output" | grep -E "(error|warning):" | sed -e "s|$work/sources/|$root/|" | sort -u || true)
-if [ -n "$diagnostics" ]; then
-    echo "$diagnostics"
-fi
-if echo "$output" | grep -q "error:"; then
+# Keep only diagnostic headers, not the duplicate inline annotations in Swift's source excerpts.
+grep -E '^[^|]*:[0-9]+:[0-9]+: (error|warning):|^<unknown>:0: (error|warning):|^error:' "$work/diagnostics" |
+    sed -e "s|$work/sources/|$root/|" | sort -u || true
+if [ "$status" -ne 0 ]; then
+    # A compiler crash or driver failure may have no normal diagnostic header.
+    if ! grep -q 'error:' "$work/diagnostics"; then cat "$work/diagnostics"; fi
     echo "iOS check failed" >&2
-    exit 1
+    exit "$status"
 fi
-echo "iOS check passed: native/DesignSystem $*"
+echo "iOS check passed: native/DesignSystem $* (including app dependencies)"

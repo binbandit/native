@@ -48,7 +48,7 @@ import Testing
             | Keys | Action | Command |
             | --- | --- | --- |
             | ⌘[ / ⌘] | Back / forward | `go.back` / `go.forward` |
-            | ⌘1 – ⌘3 | Nth session | `session.select1` – `session.select3` |
+            | ⌘1 – ⌘3 | Nth task | `session.select1` – `session.select3` |
             | | Close tab | `terminal.closeTab` |
             | Return | Not a command | |
 

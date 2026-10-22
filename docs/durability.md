@@ -718,6 +718,9 @@ reloads the session from the agent (`session/load`), then `RecoveryPlanner` deci
   marked as its own: "Your previous turn was interrupted because …. Check the current state before
   you continue (for example, re-read files you were changing), then carry on. If it was already
   done, say so briefly." Whatever the agent committed is in its history; nothing is re-run blindly.
+  Agents keep that message in their history like any prompt, so a reload replays it; the transcript
+  shows it as Native's ("This turn was interrupted because …. Native asked the agent to pick up where
+  it left off."), never as the user's, and the turn carries on as it did live (`RecoveryPrompt`).
 - **The prompt isn't there** → it never arrived, so sending it again is safe.
 - **Three recoveries of the same turn already failed** → pause, so a crashing agent can't loop and
   burn quota. The queue pauses too; the user's next message continues.
@@ -765,7 +768,7 @@ above the detail column: tasks that need the user first, each with its status, t
 sidebar's), what happened and when, opening its task on click; four rows, then Show All. Opening a
 task takes it off the card, and the card goes when it's empty or dismissed. Entries that arrive
 while the app is connected are news already and only move the baseline. Recoveries also show inline
-in the transcript, where they happened. With host notifications on (`NativeHostNotifications`), the
+in the transcript, where they happened. With host notifications on (the default; `NativeHostNotifications`), the
 card is folded from the host's notifications instead, so what was seen on another device is left out
 ("Notifications", "Coming back").
 
@@ -815,7 +818,7 @@ a `group`: one per task, and one per provider for limits. Clients show the newes
 answer wins wherever it came from, and a client that follows the session can answer with those
 directly (the notification carries the option ids).
 
-**On the Mac** (`HostNotificationFeed`, one for the app, behind `NativeHostNotifications`). It
+**On the Mac** (`HostNotificationFeed`, one for the app; on unless `NativeHostNotifications` is off). It
 follows this Mac's own host from launch and every paired host through `RemoteHosts`; notifications
 from a paired host say which ("Codex on Mac mini"). Live notifications show as Native's always have
 (the words of `NativeNotification`, Settings › Notifications' choices: needs you, long work and its
@@ -827,6 +830,9 @@ host connects (a click that launched Native) wait for it.
 
 With the switch on, the app's own path stays quiet about sessions a followed host runs, so nothing
 shows twice; sessions that run in the app (no host), workflows, goals and limits notify as before.
+The host advertises `notificationEvents: true` in its handshake before the client suppresses that
+fallback. Older protocol-v2 hosts omit this optional field and keep the app's session notifications
+and journal-based away summary, including hosts from before the notification methods existed.
 
 **Coming back.** The Mac remembers, per host, the newest notification it heard of
 (`NativeHostSeenNotifications`). After connecting it lists what came after: a host's first connection
@@ -840,6 +846,12 @@ any host while Native is in the background, also gets one notification with the 
 Only what's still `active` counts: an approval answered on the phone, or a finished task seen there,
 isn't news on the Mac. On every connection the Mac also takes down what it shows (from this run or
 an earlier one, read back from the notification center) that was cleared while it wasn't listening.
+
+When an existing user first enables host notifications, the app has an activity cursor but no
+notification cursor. That launch keeps the journal's away summary while establishing the new cursor;
+the next launch uses notifications. `HostNotificationHistory` captures which cursors existed at
+launch, so notification catch-up cannot erase the migration summary by saving its cursor first.
+A genuinely new host still only establishes its baseline, since it has no activity cursor either.
 
 What durability doesn't fix: a context window that's full, a provider outage, or side effects a tool
 call made outside the project (a deploy, an email). Those are surfaced, not hidden; the interruption
@@ -866,14 +878,21 @@ not to (`provider: off`).
   `instructions` are the user's title instructions (global, per project, the organization's), which
   the host applies for each task's folder. Only the owner, or a device allowed to manage the host,
   may change it.
-- **When.** As a task's first message starts its turn (not a session adopted from the agent's list,
-  not one with earlier messages), the host commits what the title is written from (project name,
+- **When.** As a task's first usable message starts its turn (not a session adopted from the agent's list),
+  the host commits what the title is written from (project name,
   the message up to 2,000 characters, `progress: generating`) and then writes it. Committed first,
-  so a host that stops mid-title writes it at its next start.
+  so a host that stops mid-title writes it at its next start. Content-only API prompts and attachment
+  names count too. A first message without usable title material leaves the next turn eligible.
+- **Retries.** A failed or unavailable generator gets one retry on the next ordinary turn, using
+  the original request. The host persists `retry_count` and the original `prompt_id`, so restarting
+  cannot reset the budget and automatic delivery resends cannot spend it before a new prompt.
+  Client title requests carry this number too, letting the app distinguish the retry from repeated
+  summaries. Generated and manually renamed titles are never retried. With host titles off, the
+  app uses the same decision rules and retries once during that app run.
 - **No model on the host** (Apple Intelligence off on a Mac mini, a Linux host), or provider
   `client`: the summary's `titles.request` asks clients, and the first one with a titler writes it
   and sends it with `_native/session/set_title {source: generated}`. Meanwhile, and when the model
-  failed, `titles.fallback` names the task from its first message (its first line, cut after eight
+  failed or is still generating, `titles.fallback` names the task from its first message (its first line, cut after eight
   words), shown after the agent's own title, so a task is never nameless while there's anything to
   name it by.
 - **The user's title wins.** A rename, from any client, and its undo (the previous title, or none)
@@ -1040,7 +1059,7 @@ Window › Durable Sessions preview, opt-in per channel. Nothing else in the app
 orchestration MCP server (done: "Native's tools in the host", behind the `NativeHostTasks` default;
 `setup_status` and `run_script` are answered by the app), titles (done: "Titles",
 behind the `NativeHostTitles` default), notifications with
-actions (done: "Notifications", behind the `NativeHostNotifications` default), limit resumes, goals and workflows, keep-awake (done: "Sleep"), the menu bar extra, unread state. The
+actions (done: "Notifications", on by default; `NativeHostNotifications` off goes back), limit resumes, goals and workflows, keep-awake (done: "Sleep"), the menu bar extra, unread state. The
 plugin registry's runtime side follows (the plugin API moves into a package both sides import).
 Engines come to the host as packages, never as app-target files: goals, workflows and automations
 link `Packages/Automation` (Foundation-only, Codable, pure state plus a `due(at:)` planner), and the

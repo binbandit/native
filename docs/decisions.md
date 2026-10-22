@@ -587,3 +587,31 @@ shows the Steer/Queue key hint. This supersedes the hint described in "Steer by 
 People can discover those actions through the send button's tooltip and VoiceOver label. Keep the
 code-block and queued-message editing hints, and the placeholders that explain a pending question,
 approval, stopping or why sending is unavailable.
+
+## 2026-10-21: Regulated deployments enforce policy at the host boundary
+
+Government, financial and defense deployments need an explicit operating envelope: permitted
+features, endpoints, executables, stored data and credentials must be declared and administratively
+controlled. Build this through NativePolicy and the lean-core plugin model, with enforcement on
+the host before recovery or side effects, not only through client settings. An optional restricted
+profile will fail closed on invalid or unavailable managed security policy; this qualifies the
+older rule that invalid policy is always ignored. Ordinary deployments keep their current behavior
+until the profile is complete.
+
+Air-gapped means no off-machine network, including updates; an internal mirror belongs to a separately allowed
+network mode. Native's application-level checks cannot confine arbitrary agent descendants, so
+qualified agents and customer OS/network enforcement are part of the deployment contract. Native
+secrets move to Keychain references, audit decisions become durable and attributable, and retention
+must cover every owned copy. Signing, an SBOM, crypto validation evidence and accessibility evidence
+belong to the release/deployment assessment, not a blanket compliance claim. The source inventory,
+gaps and independent implementation steps are in [Regulated environments](plans/regulated-environments.md).
+
+## 2026-10-21: Mac betas every six hours when main changes
+
+Beta checks main at minute 17 every six hours and skips unchanged commits or an active Mac release.
+It continues the highest beta version numerically; a stable release starts the next minor at beta.1.
+The scheduler tags the selected main commit and calls the existing Release workflow with inherited
+secrets, so signing, notarization, publication and the Mac runner stay in one pipeline. A tag made
+with GITHUB_TOKEN cannot trigger Release on its own. Direct Release dispatch remains a rehearsal;
+Beta's dry run only prints its decision. Automatic notes start at the previous beta, including when
+a stable tag intervenes. Daily Nightly, manual version tags and TestFlight keep their own triggers.

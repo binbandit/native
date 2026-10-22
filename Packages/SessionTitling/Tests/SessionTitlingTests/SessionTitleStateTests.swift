@@ -33,11 +33,11 @@ struct SessionTitleStateTests {
         #expect(state.request == nil && state.progress == nil && !state.wantsTitle)
     }
 
-    @Test("A task waiting for a title is named from its first message, but not while it's generated")
+    @Test("A task waiting for a title is named from its first message, including while it's generated")
     func fallback() {
         var state = SessionTitleState()
         state.begin(request)
-        #expect(state.displayTitle(agentTitle: nil) == nil)
+        #expect(state.displayTitle(agentTitle: nil) == "Fix the flaky login test in CI please")
         state.waitForClient()
         #expect(state.displayTitle(agentTitle: nil) == "Fix the flaky login test in CI please")
         // The agent's own title comes first.
@@ -74,6 +74,55 @@ struct SessionTitleStateTests {
             firstMessage: "", attachmentNames: ["crash.log", "screen.png"], in: URL(filePath: "/tmp/native"))
         #expect(request.prompt == "crash.log, screen.png")
         #expect(request.projectName == "native")
+    }
+
+    @Test("An unusable first message leaves the next one eligible; an attempt is retried only once")
+    func retryDecision() {
+        var state = SessionTitleState()
+        let empty = state.beginIfNeeded(SessionTitleRequest(projectName: "native", prompt: "   "))
+        let first = state.beginIfNeeded(request)
+        let inFlight = state.beginIfNeeded(request)
+        #expect(!empty && first && !inFlight)
+        state.fail()
+        let retry = state.beginIfNeeded(SessionTitleRequest(projectName: "native", prompt: "another message"))
+        #expect(retry)
+        #expect(state.request?.prompt == request.prompt)
+        #expect(state.retryCount == 1)
+        state.fail()
+        let exhausted = state.beginIfNeeded(request)
+        #expect(!exhausted)
+        #expect(state.fallback != nil)
+    }
+
+    @Test("A manual rename blocks a retry and undo restores eligibility")
+    func renamedRetry() {
+        var state = SessionTitleState()
+        state.begin(request)
+        state.waitForClient()
+        state.rename(to: "My title")
+        let renamed = state.beginIfNeeded(request)
+        #expect(!renamed)
+        #expect(state.displayTitle(agentTitle: nil) == "My title")
+        state.rename(to: nil)
+        let undone = state.beginIfNeeded(request)
+        #expect(undone)
+        state.accept(generated: "Login fix")
+        let titled = state.beginIfNeeded(request)
+        #expect(!titled)
+    }
+
+    @Test("Replaying the same logical prompt cannot spend the next-message retry")
+    func replayDoesNotSpendRetry() {
+        var state = SessionTitleState()
+        let id = UUID()
+        state.begin(request, promptID: id)
+        state.fail()
+        let resend = state.beginIfNeeded(request, promptID: id)
+        let appRetry = state.beginIfNeeded(request, allowsRetry: false)
+        #expect(!resend && !appRetry && state.retryCount == 0)
+        // Identical text is still a new message when the user sends it again.
+        let nextMessage = state.beginIfNeeded(request, promptID: UUID())
+        #expect(nextMessage && state.retryCount == 1)
     }
 }
 

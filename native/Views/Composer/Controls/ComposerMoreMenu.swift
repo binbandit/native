@@ -1,8 +1,8 @@
 import ACP
 import SwiftUI
 
-/// The "…" chip that takes the controls the row has no room for: the task's mode and the agent's
-/// other settings, and at the tightest the model and autonomy too, plus the keyboard shortcuts (Help ▸
+/// The "…" chip for extra agent settings at every width, plus controls the row has no room for:
+/// the task's mode, and at the tightest the model and autonomy too, plus keyboard shortcuts (Help ▸
 /// Keyboard Shortcuts). The model picker opens from it then, so ⇧⌘E still has somewhere to show it.
 struct ComposerMoreMenu: View {
     let settings: ComposerSettings

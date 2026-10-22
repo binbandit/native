@@ -75,7 +75,7 @@ extension SetupReport.Agent {
         case .notAllowed:
             parts = ["not allowed by the organization."]
         }
-        if isCaller { parts.append("This session runs on it.") }
+        if isCaller { parts.append("This task runs on it.") }
         return parts.joined(separator: " ")
     }
 
@@ -83,7 +83,7 @@ extension SetupReport.Agent {
         switch signIn {
         case .signedIn: "ready and signed in."
         case .signingIn: "ready, signing in."
-        case .unknown: "ready. Whether it's signed in shows once a session starts on it."
+        case .unknown: "ready. Whether it's signed in shows once a task starts on it."
         case .needsSignIn where offersSignIn:
             "signed out. Sign In… from the ⋯ menu on its row in Settings ▸ Agents"
                 + (signInCommand.map { ", or run `\($0)` in a terminal." } ?? ".")
@@ -98,7 +98,7 @@ extension SetupReport.DurableHost {
     fileprivate var status: String {
         switch state {
         case .off:
-            "off, so paired devices can't connect and nothing keeps running after Native quits. Turn it on in Window ▸ Durable Sessions ▸ Turn On."
+            "off, so paired devices can't connect and nothing keeps running after Native quits. Turn it on in Settings ▸ Background ▸ Keep agents running when Native quits."
         case .starting: "starting."
         case .connected:
             "connected" + (version.map { ", Native \($0)." } ?? ".") + versionNote

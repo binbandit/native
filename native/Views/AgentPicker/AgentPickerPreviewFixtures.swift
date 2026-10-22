@@ -10,7 +10,7 @@ enum AgentPickerPreviewFixtures {
             reason: "It exited while starting (status 1): error: unknown option '--acp'", remedy: .restart),
         option(
             BuiltInPlugins.openCode, .needsSignIn, choice: .signInThenStart,
-            reason: "Sign in to start sessions with OpenCode, or run `opencode auth login` in a terminal."),
+            reason: "Sign in to start tasks with OpenCode, or run `opencode auth login` in a terminal."),
         option(BuiltInPlugins.pi, .starting),
         option(
             BuiltInPlugins.cursor, .notInstalled, choice: nil,
