@@ -146,7 +146,7 @@ private struct SessionTranscriptLineModifier: ViewModifier {
 }
 
 /// The scroll view's bounds in the transcript content's coordinates, and the content's height.
-private nonisolated struct SessionTranscriptViewport: Equatable {
+nonisolated struct SessionTranscriptViewport: Equatable {
     let bounds: CGRect?
     let contentHeight: CGFloat
 }
@@ -154,7 +154,7 @@ private nonisolated struct SessionTranscriptViewport: Equatable {
 /// What one transcript shows: the frames of the lines it has made, and the part of it in view.
 /// Plain references rather than state, so following them as the user scrolls redraws nothing.
 @MainActor
-private final class SessionTranscriptPlaceTracker {
+final class SessionTranscriptPlaceTracker {
     nonisolated static let space = "SessionTranscriptPlace"
 
     var lineFrames: [String: CGRect] = [:]
