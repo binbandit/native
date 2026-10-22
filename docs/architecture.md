@@ -32,6 +32,7 @@
   against reused pids, and remembered children remain owned if their parent exits. A shared agent
   is not terminated while another task is using it: the stopped task remains Stopping with a
   warning until the other tasks finish or are stopped. Its next message reloads the agent.
+  Closing a task retains its pending command cleanup; host shutdown and restart wait for it.
 - **State is a reducer.** `SessionState` folds `session/update`s and the user's actions into a
   transcript (messages, tool calls, subagents, inter-session messages, plan, usage). It's pure and
   tested against captured traffic, and it's shared with the future companion app.

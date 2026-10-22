@@ -108,6 +108,8 @@ public final class HostCore {
     /// The order clients listed the agents in.
     var agentOrder: [String] = []
     var sessions: [HostSessionID: HostSession] = [:]
+    /// Command cleanup outlives closing its task, and must finish before the host exits.
+    var stoppingSessions: [HostSessionID: HostSession] = [:]
     /// Native's tools for agents and the tasks sessions hand each other (`HostTasks.swift`).
     lazy var tasks = HostTasks(core: self)
     var clients: [ClientLink.ID: ClientLink] = [:]
@@ -217,7 +219,7 @@ public final class HostCore {
         restartIfReplacedOnDisk()
         guard let idleExit = configuration.idleExit else { return }
         let isBusy =
-            !clients.isEmpty || hasPairedDevices
+            !clients.isEmpty || hasPairedDevices || !stoppingSessions.isEmpty
             || sessions.values.contains { $0.isWorking || $0.phase == .loading }
         if isBusy {
             lastBusy = .now

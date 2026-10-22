@@ -31,10 +31,11 @@ extension HostCore {
         }
         // A stop can be mid-cleanup when Quit arrives. Its task must outlive the grace period and
         // verify exit before endTurn clears it or the host itself exits.
-        for session in running where session.isStopping {
+        let stopping = Array(stoppingSessions.values)
+        for session in stopping {
             session.stopRequestedAt = .distantPast
         }
-        for session in running {
+        for session in stopping {
             await session.stopTimeout?.value
         }
         for link in agents.values {
@@ -53,13 +54,18 @@ extension HostCore {
     }
 
     func exitIfIdleForRestart() {
-        guard isRestartingWhenIdle, !sessions.values.contains(where: { $0.turn != nil || $0.phase == .recovering })
+        guard isRestartingWhenIdle, !isStoppingAllAgents, stoppingSessions.isEmpty,
+            !sessions.values.contains(where: { $0.turn != nil || $0.phase == .recovering })
         else { return }
         try? store.setMeta(MetaKey.cleanShutdown, "1")
         exitForRestart()
     }
 
     func exitForRestart() {
+        guard stoppingSessions.isEmpty else {
+            isRestartingWhenIdle = true
+            return
+        }
         if let build = pendingActivation, let updater = configuration.updates.selfUpdater {
             do {
                 try updater.activate(build: build)

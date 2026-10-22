@@ -49,6 +49,7 @@ extension HostCore {
             return
         }
         session.stopRequestedAt = .now
+        stoppingSessions[session.id] = session
         link.commandStopOwnsTree = true
         let generation = link.generation
         session.stopTimeout = Task { [weak self] in

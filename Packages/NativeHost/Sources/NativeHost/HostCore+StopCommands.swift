@@ -7,6 +7,10 @@ extension HostCore {
         _ turn: UnfinishedTurn, in session: HostSession, on link: AgentLink, generation: Int,
         processes initial: AgentStopProcesses
     ) async {
+        defer {
+            stoppingSessions[session.id] = nil
+            exitIfIdleForRestart()
+        }
         var processes = initial
         var explainedSharedProcess = false
         var explainedSlowExit = false

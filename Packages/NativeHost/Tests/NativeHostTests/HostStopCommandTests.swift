@@ -5,6 +5,33 @@ import Testing
 
 @Suite("Stop owns command termination", .serialized, .timeLimit(.minutes(1)))
 struct HostStopCommandTests {
+    @Test("Closing a stopped task then exiting still waits for its orphaned command", arguments: [false, true])
+    func closeThenShutdown(restart: Bool) async throws {
+        let harness = try HostHarness()
+        harness.agentEnvironment["FAKE_AGENT_EXIT_ON_CANCEL"] = "1"
+        try harness.start()
+        let recorder = try await harness.connect()
+        let session = try await recorder.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: harness.root.path, attach: true))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "cancel-leaves-command"))
+        let ready = harness.agentStore.appending(path: "command-ready")
+        try await recorder.wait("the shell to start") { _ in FileManager.default.fileExists(atPath: ready.path) }
+        let pid = try #require(
+            Int32(String(contentsOf: harness.agentStore.appending(path: "command.pid"), encoding: .utf8)))
+        defer { if kill(pid, 0) == 0 { kill(-pid, SIGKILL) } }
+        try await recorder.client.cancel(session.id)
+        try await recorder.wait("the adapter to exit") {
+            await $0.agents["fake"]?.state == .stopped
+        }
+        try await recorder.client.closeSession(session.id)
+        try await recorder.client.shutdownHost(stopAgents: !restart, immediately: restart)
+        #expect(try await harness.waitForExit() == (restart ? 75 : 0))
+        #expect(kill(pid, 0) != 0)
+        try await Task.sleep(for: .seconds(6))
+        #expect(!FileManager.default.fileExists(atPath: harness.agentStore.appending(path: "stop-marker.txt").path))
+        await recorder.stop()
+    }
+
     @Test("Closing a task or quitting during Stop cannot discard its command cleanup", arguments: [false, true])
     func closeDuringStop(shutdown: Bool) async throws {
         let harness = try HostHarness()
