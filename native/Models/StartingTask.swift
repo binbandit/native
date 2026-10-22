@@ -27,6 +27,8 @@ final class StartingTask: Identifiable {
         let message: String
         /// The agent wants the user to sign in first; the window's sign-in prompt is showing.
         var needsSignIn = false
+        /// The failed process must restart before this task can be tried again.
+        var needsRestart = false
         /// No worktree can be made (the repository has no commits), but the task can run in the
         /// project folder instead.
         var canUseProjectFolder = false
