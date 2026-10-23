@@ -19,7 +19,9 @@ and reported command or file. Counted progress is available for reported plan st
 and accessibility description identify those steps. Unstructured test output never supplies a
 denominator. A request keeps its own wording, including destructive verbs, and clicking it focuses
 the composer and reveals today's transcript approval, opening the child conversation when its
-request needs attention. The well cannot approve or reject anything. A stop says Stopping until
+request needs attention. Child questions reuse the existing question dock in that inspector, with
+answers and dismissal routed to the child; no unrestricted child composer is mounted. The well
+cannot approve or reject anything. A stop says Stopping until
 the host confirms it ended; a scheduled retry says Reconnecting.
 
 The latest turn's detected or reported file changes supply the landed outcome. Its status settles

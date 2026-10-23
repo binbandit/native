@@ -92,7 +92,7 @@ struct SessionToolsScreen: View {
         .platformMinimumContentWidth(DS.Window.detailMinWidth)
         .inspector(isPresented: isSidePanelDocked) {
             if let id = openSubagent, let subagent = session.state.subagents.first(where: { $0.id == id }) {
-                SubagentInspector(subagent: subagent, child: session.child(id))
+                SubagentInspector(subagent: subagent, child: session.child(id), showsQuestions: usesTaskWell)
                     .frame(minWidth: DS.SessionTools.sidePanelMinWidth)
                     .dsToolbarBand()
                     .inspectorColumnWidth(

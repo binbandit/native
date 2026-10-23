@@ -14,6 +14,13 @@ extension SessionModel {
         questions.first
     }
 
+    /// A child inspector has no composer. Find the session that owns its next form so the
+    /// shared question dock answers that session, including a question from a deeper child.
+    var pendingQuestionSession: SessionModel? {
+        if pendingQuestion != nil { return self }
+        return children.values.lazy.compactMap(\.pendingQuestionSession).first
+    }
+
     /// Holds a question for the user. Only forms can be answered here; anything else is cancelled
     /// so the agent isn't left waiting.
     func requestQuestion(_ request: CreateElicitationRequest, id: RequestID) {
