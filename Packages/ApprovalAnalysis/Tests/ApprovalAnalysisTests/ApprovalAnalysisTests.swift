@@ -37,6 +37,16 @@ import Testing
     }
 
     @Test(arguments: [
+        "git push --force -f origin main",
+        "git push --force-with-lease --force origin main",
+    ])
+    func fixItLeavesNoForceOverride(_ command: String) {
+        let analysis = describe(command)
+        #expect(analysis.risk == .irreversible)
+        #expect(analysis.suggestedCommand == "git push --force-with-lease --force-with-lease origin main")
+    }
+
+    @Test(arguments: [
         "./tools/acp-schema-gen --lang swift --strict --out Packages/ACP/Sources/ACP/Generated schema/v2.json",
         "git push --force origin main && rm -rf ~/Developer/native",
         "git push --force origin main; echo done", "git push --force origin main\nrm -rf /tmp/stuff",

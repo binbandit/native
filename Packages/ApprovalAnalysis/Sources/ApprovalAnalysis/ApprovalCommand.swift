@@ -74,10 +74,10 @@ public struct ApprovalCommand: Equatable, Sendable {
         guard !remote.value.hasPrefix("-"), !branch.value.hasPrefix("-"),
             !branch.value.contains(":"), !branch.value.hasPrefix("+")
         else { return nil }
-        let force = flags.first { $0.value == "--force" || $0.value == "-f" }
+        let force = flags.filter { $0.value == "--force" || $0.value == "-f" }
         let lease = flags.contains { $0.value == "--force-with-lease" }
         // A lease can still replace history. It only checks the expected remote tip.
-        let rewrites = force != nil || lease
+        let rewrites = !force.isEmpty || lease
         var parts = [
             Part(
                 range: tokens[0].range.lowerBound..<tokens[1].range.upperBound,
@@ -103,9 +103,12 @@ public struct ApprovalCommand: Equatable, Sendable {
             parts.append(part(branch, "branch: \(branch.value) · remote commits not inspected"))
         }
         var suggested: String?
-        if let force, !lease {
+        if !force.isEmpty {
             var characters = Array(command)
-            characters.replaceSubrange(force.range, with: Array("--force-with-lease"))
+            // A remaining force flag overrides the lease, even if the command already has one.
+            for flag in force.reversed() {
+                characters.replaceSubrange(flag.range, with: Array("--force-with-lease"))
+            }
             suggested = String(characters)
         }
         return Self(
