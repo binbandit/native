@@ -265,7 +265,7 @@ requests keep today's composer until their own slices land.
 ### Task well
 
 `NativeTaskWell` is an off-by-default Labs gate selecting the task-tools screen with a centered
-activity capsule instead of the facts header and tool buttons. `TaskActivity` in ACP projects
+activity capsule instead of the facts header and tool buttons. `TaskActivityNarration` in ACP projects
 reported tool activity and counted plan steps; `TaskWellWiring` connects the existing tool models.
 Requests only lead to the composer, and turn outcomes reuse detected Changes. The existing
 `StatusIndicator` remains the shared status vocabulary until the sidebar signal replacement lands.

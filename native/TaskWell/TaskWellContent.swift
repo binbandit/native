@@ -7,7 +7,7 @@ struct TaskWellContent: Equatable {
     var agent: String
     var verb: String = ""
     var object: String?
-    var progress: TaskActivity.Progress?
+    var progress: TaskActivityNarration.Progress?
     var outcome: TurnSummary?
     var showsReview = false
 
