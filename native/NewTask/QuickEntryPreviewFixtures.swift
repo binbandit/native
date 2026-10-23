@@ -37,7 +37,7 @@ struct QuickEntryPreviewFixture: View {
     var body: some View {
         DSPreviewPair {
             let model = QuickEntryPreviewFixtures.model(state)
-            QuickEntryPanel(model: model, entry: model.quickEntry)
+            QuickEntryPanel(model: model, entry: model.quickEntry, branch: "main")
                 .frame(width: state == .narrow ? 380 : DS.QuickEntry.width)
                 .padding(DS.Space.xl)
         }

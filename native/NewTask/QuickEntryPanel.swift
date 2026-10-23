@@ -3,6 +3,7 @@ import SwiftUI
 struct QuickEntryPanel: View {
     let model: AppModel
     @Bindable var entry: QuickEntryModel
+    var branch: String?
     @State private var selection: TextSelection?
     @FocusState private var isFocused: Bool
 
@@ -145,7 +146,9 @@ struct QuickEntryPanel: View {
             agent: model.quickEntryRuntime?.agent.displayName ?? "Choose agent",
             model: model.quickEntryModelName,
             device: model.deviceName(entry.device),
+            deviceLook: HostLookStore.shared.look(for: entry.device, named: model.deviceName(entry.device)),
             project: entry.project.flatMap(model.projects.project)?.name ?? "Choose project",
+            branch: branch,
             picker: entry.picker, choose: entry.toggle)
     }
 

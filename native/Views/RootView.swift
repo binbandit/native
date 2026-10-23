@@ -167,7 +167,9 @@ struct RootView: View {
             SettingsScreen(
                 pane: $settings.pane,
                 additionalPanes: AppSettingsPanes.all(
-                    plugins: model.plugins, terminals: terminals, keepAwake: keepAwake, projects: model.projects.all))
+                    plugins: model.plugins, terminals: terminals, keepAwake: keepAwake, projects: model.projects.all)
+            )
+            .modifier(QuickEntryPresentation(model: model, git: git))
         } else {
             splitView
         }
@@ -176,7 +178,11 @@ struct RootView: View {
     private var splitView: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebar
-                .modifier(QuickEntryScrim(entry: model.quickEntry))
+                .modifier(
+                    QuickEntryScrim(
+                        isPresented: model.quickEntry.isEnabled && model.quickEntry.isPresented,
+                        dismiss: model.quickEntry.dismiss)
+                )
                 .dsSidebarColumnTransparency()
                 // The only sidebar toggle is ours, right after the window controls; as a
                 // sidebar toolbar item it stays there when the sidebar is hidden, too. The system's
@@ -250,7 +256,7 @@ struct RootView: View {
             .background(.dsBackground)
             .environment(\.inspectorRoom, inspectorRoom.room(sidebar: $columnVisibility))
             .environment(\.sessionTranscriptMemory, transcriptMemory)
-            .modifier(QuickEntryPresentation(model: model))
+            .modifier(QuickEntryPresentation(model: model, git: git))
         }
         .toolbar(removing: .sidebarToggle)
         .tracksWindowRoom(inspectorRoom.window)

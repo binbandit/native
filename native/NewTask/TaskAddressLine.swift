@@ -5,7 +5,9 @@ struct TaskAddressLine: View {
     let agent: String
     let model: String?
     let device: String
+    var deviceLook = HostLook(symbol: .laptop, tint: .graphite)
     let project: String
+    var branch: String?
     let picker: QuickEntryModel.Picker?
     let choose: (QuickEntryModel.Picker) -> Void
 
@@ -16,7 +18,7 @@ struct TaskAddressLine: View {
             preposition("on")
             address(.device, title: device)
             preposition("from")
-            address(.project, title: project)
+            address(.project, title: project, detail: branch)
         }
         .font(.dsCallout)
         .fixedSize(horizontal: true, vertical: false)
@@ -35,6 +37,9 @@ struct TaskAddressLine: View {
             choose(kind)
         } label: {
             HStack(spacing: DS.Space.sm) {
+                if kind == .device {
+                    HostGlyph(look: deviceLook, size: DS.Size.statusGlyph, isDimmed: true)
+                }
                 Text(title)
                     .foregroundStyle(.dsTextPrimary)
                 if let detail {
