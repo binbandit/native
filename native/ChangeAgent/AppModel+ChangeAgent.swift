@@ -86,6 +86,9 @@ extension AppModel {
             else { throw AgentChangeFailure("Couldn't select that model. Choose another model or try again.") }
         }
         if let reason = changeAgentBlock(for: source) { throw AgentChangeFailure(reason) }
+        guard sessions.session(target.key) === target else {
+            throw AgentChangeFailure("The new agent restarted while the handoff was open. Cancel and try again.")
+        }
         if let reason = target.sendBlockedReason { throw AgentChangeFailure(reason) }
         if !target.hasStarted {
             guard target.phase == .idle, !target.isRestoringHistory, !target.isRunningHiddenCommand,
