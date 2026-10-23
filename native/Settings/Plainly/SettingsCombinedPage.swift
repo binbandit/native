@@ -33,6 +33,8 @@ extension EnvironmentValues {
             .settingsPreviewPage()
     }
     .environment(SettingsPresentation())
+    .environment(DockBadgePreference(defaults: PreviewUserDefaults()))
     .environment(\.settingsPlainly, true)
+    .defaultAppStorage(PreviewUserDefaults())
 }
 #endif

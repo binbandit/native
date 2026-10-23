@@ -175,5 +175,7 @@ struct SettingsScreen: View {
     .environment(SettingsPreviewFixtures.registry())
     .environment(SettingsPresentation())
     .environment(\.experimentStore, SettingsPreviewFixtures.plainly())
+    .environment(DockBadgePreference(defaults: PreviewUserDefaults()))
+    .defaultAppStorage(PreviewUserDefaults())
 }
 #endif

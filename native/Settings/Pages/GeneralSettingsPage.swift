@@ -28,10 +28,11 @@ extension SettingsPane {
 struct GeneralSettingsPage: View {
     @Environment(\.settingsPlainly) private var plainly
     @Environment(SettingsPresentation.self) private var presentation
-    @Bindable private var dockBadge: DockBadgePreference
+    @Environment(DockBadgePreference.self) private var injectedBadge: DockBadgePreference?
+    private let badgePreference: DockBadgePreference
 
     init(dockBadge: DockBadgePreference = .shared) {
-        self.dockBadge = dockBadge
+        self.badgePreference = dockBadge
     }
 
     static var badgeEntry: SettingsSearchEntry {
@@ -44,6 +45,7 @@ struct GeneralSettingsPage: View {
     @AppStorage(FollowUpBehavior.storageKey) private var followUp = FollowUpBehavior.defaultValue
 
     var body: some View {
+        @Bindable var dockBadge = injectedBadge ?? badgePreference
         SettingsPage {
             SettingsHeader(
                 "General", plainly: .init(title: "General", description: "How Native behaves while you work."))
@@ -115,6 +117,7 @@ struct GeneralSettingsPage: View {
             .settingsPreviewPage()
     }
     .environment(SettingsPresentation())
+    .defaultAppStorage(PreviewUserDefaults())
 }
 
 #Preview("General settings - Narrow") {
@@ -123,6 +126,7 @@ struct GeneralSettingsPage: View {
             .settingsPreviewPage(width: 420)
     }
     .environment(SettingsPresentation())
+    .defaultAppStorage(PreviewUserDefaults())
 }
 
 #Preview("Plainly - General") {
