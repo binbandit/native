@@ -12,11 +12,20 @@ import UIKit
 enum PlatformTextSelection {
     static func capture() -> String? {
         #if canImport(AppKit)
-        guard let view = (NSApp.keyWindow ?? NSApp.mainWindow)?.firstResponder as? NSTextView,
+        guard
+            let window = NSApp.keyWindow ?? NSApp.mainWindow
+                ?? NSApp.windows.first(where: { $0.isVisible && $0.canBecomeMain })
+        else { return nil }
+        if let view = window.firstResponder as? NSTextView,
             view.selectedRange().length > 0,
             let range = Range(view.selectedRange(), in: view.string)
-        else { return nil }
-        return String(view.string[range])
+        {
+            return String(view.string[range])
+        }
+        // SwiftUI's selectable prose exposes selection on its local accessibility element,
+        // rather than making an NSTextView the first responder.
+        let focused = window.accessibilityFocusedUIElement as? any NSAccessibilityProtocol
+        return focused?.accessibilitySelectedText().flatMap { $0.isEmpty ? nil : $0 }
         #else
         for scene in UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }) {
             for window in scene.windows where window.isKeyWindow {
