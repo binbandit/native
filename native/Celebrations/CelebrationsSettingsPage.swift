@@ -1,4 +1,5 @@
 import AppAppearance
+import Foundation
 import NativePolicy
 import SwiftUI
 
@@ -205,27 +206,32 @@ struct CelebrationsSettingsPage: View {
         let suffix =
             already.isEmpty
             ? "" : " \(already.formatted(.list(type: .and))) \(already.count == 1 ? "was" : "were") already on."
-        lastChange = CelebrationBulkChange(summary: summary + suffix, before: before, after: center.preferences)
+        let record = CelebrationBulkChange(summary: summary + suffix, before: before, after: center.preferences)
+        lastChange = record
         if let undoManager {
-            Self.registerUndo(on: undoManager, center: center, restoring: before)
+            Self.registerUndo(on: undoManager, center: center, restoring: before, target: record.undoTarget)
             undoManager.setActionName(name)
         }
     }
 
     private func undo(_ change: CelebrationBulkChange) {
-        if let undoManager, undoManager.canUndo { undoManager.undo() } else { center.restore(change.before) }
+        // Search-field edits can sit above this action in the window's undo stack. The link
+        // always restores this bulk change, and removes only its own history entry.
+        center.restore(change.before)
+        undoManager?.removeAllActions(withTarget: change.undoTarget)
         lastChange = nil
         flashed = []
     }
 
     private static func registerUndo(
-        on undoManager: UndoManager, center: CelebrationCenter, restoring earlier: CelebrationPreferences
+        on undoManager: UndoManager, center: CelebrationCenter, restoring earlier: CelebrationPreferences,
+        target: NSObject
     ) {
         let replaced = center.preferences
-        undoManager.registerUndo(withTarget: center) { center in
+        undoManager.registerUndo(withTarget: target) { target in
             MainActor.assumeIsolated {
                 center.restore(earlier)
-                registerUndo(on: undoManager, center: center, restoring: replaced)
+                registerUndo(on: undoManager, center: center, restoring: replaced, target: target)
             }
         }
     }
@@ -267,6 +273,7 @@ struct CelebrationsSettingsPage: View {
 }
 
 private struct CelebrationBulkChange {
+    let undoTarget = NSObject()
     let summary: String
     let before: CelebrationPreferences
     let after: CelebrationPreferences
