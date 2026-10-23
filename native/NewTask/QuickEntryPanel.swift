@@ -1,3 +1,4 @@
+import NativeCommands
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -78,15 +79,21 @@ struct QuickEntryPanel: View {
                 Button {
                     model.expandQuickEntry()
                 } label: {
-                    Image(systemName: "arrow.up.left.and.arrow.down.right")
-                        .font(.dsCallout)
+                    HStack(spacing: DS.Space.sm) {
+                        if !DS.isTouchPlatform, let shortcut = CommandRegistry.shared.shortcut(for: .taskCompose) {
+                            Kbd(shortcut.displayString)
+                        }
+                        Image(systemName: "arrow.up.left.and.arrow.down.right")
+                            .font(.dsCallout)
+                    }
                 }
-                .buttonStyle(.ds(.ghost))
+                .buttonStyle(.plain)
                 .dsHitTarget(DS.Size.controlSM)
-                .help("Expand into New Task (⇧⌘N)")
+                .help(CommandRegistry.shared.help("Expand into New Task", for: .taskCompose))
                 .accessibilityLabel("Expand into New Task")
             }
-            .padding(DS.Space.lg)
+            .padding(.top, DS.Space.md)
+            .padding(.trailing, DS.QuickEntry.expandTrailing)
         }
     }
 
@@ -94,6 +101,7 @@ struct QuickEntryPanel: View {
         VStack(alignment: .leading, spacing: DS.Space.sm) {
             HStack(spacing: DS.Space.sm) {
                 Image(systemName: "text.quote")
+                    .accessibilityHidden(true)
                 Text("From \(context.source)")
                     .lineLimit(1)
                 Spacer(minLength: DS.Space.md)

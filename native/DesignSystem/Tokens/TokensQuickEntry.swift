@@ -5,6 +5,7 @@ extension DS {
     nonisolated enum QuickEntry {
         static let width: CGFloat = 760
         static let toolbarGap: CGFloat = 12
+        static let expandTrailing: CGFloat = 14
         #if os(iOS)
         static let textInsets = EdgeInsets(top: 18, leading: 20, bottom: 14, trailing: 112)
         #else
