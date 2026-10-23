@@ -106,4 +106,27 @@ struct HostIdleUnloadTests {
         #expect(await resets(session.id, in: recorder) == 1)
         await recorder.stop()
     }
+
+    @Test("Changing an idle unsaved session's model keeps its host identity and sends the reviewed handoff once")
+    func unsavedModelChangeKeepsHandoff() async throws {
+        let harness = try HostHarness()
+        let recorder = try await connect(harness)
+        let session = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
+        let handoff = "Reviewed handoff: keep the existing branch and check export headings."
+        try await recorder.wait("the prepared session to unload", timeout: .seconds(15)) {
+            await $0.agents["fake"]?.state == .stopped
+        }
+
+        try await recorder.client.setConfigOption(
+            SetConfigOptionParams(sessionID: session.id, configID: "model", value: "beta"))
+        let reloaded = try #require(await recorder.summaries[session.id])
+        #expect(reloaded.id == session.id)
+        #expect(reloaded.agentSessionID != session.agentSessionID)
+        #expect(harness.received.contains("config\tmodel=beta"))
+
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: handoff))
+        try await recorder.wait("the handoff turn") { await $0.turnsEnded(session.id) == ["end_turn"] }
+        #expect(await userMessages(session.id, in: recorder) == [handoff])
+        await recorder.stop()
+    }
 }

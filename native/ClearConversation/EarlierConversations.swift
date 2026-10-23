@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import TaskList
 
 /// Conversations `/clear` set aside: a task cleared starts a fresh agent session, which takes the
 /// earlier one's place in the sidebar while the earlier one stays openable from it.
@@ -46,6 +47,15 @@ final class EarlierConversations {
 
     func record(_ later: SessionKey, after earlierKey: SessionKey) {
         earlier[later] = earlierKey
+    }
+
+    /// A first prompt can reload an unsaved agent session after the handoff has already closed.
+    func replace(_ old: SessionKey, with replacement: SessionKey) {
+        let updated = ConversationLinks.replacing(old, with: replacement, in: earlier, kept: kept)
+        guard updated.links != earlier else { return }
+        earlier = updated.links
+        kept = updated.kept
+        save()
     }
 
     /// The fresh conversation `later` had a message, so its clear is kept across launches.

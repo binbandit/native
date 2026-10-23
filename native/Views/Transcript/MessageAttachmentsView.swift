@@ -1,99 +1,30 @@
 import ACP
-import QuickLook
 import SwiftUI
 
-/// The files and images that went with a user's message, trailing above its text: images as
-/// thumbnails that open in Quick Look, files as chips that show the file in the Finder.
+/// Attached and returned artifacts share the same quiet thumbnails and opening action.
 struct MessageAttachmentsView: View {
     let attachments: [MessageAttachment]
-
-    @State private var previewing: URL?
+    var alignment: HorizontalAlignment = .trailing
 
     var body: some View {
-        let images = attachments.filter(\.isImage)
-        let files = attachments.filter { !$0.isImage }
-        VStack(alignment: .trailing, spacing: DS.Space.sm) {
-            // Rows wrap, so a message with many files stays inside the column.
-            if !images.isEmpty {
-                FlowLayout(spacing: DS.Space.sm, alignment: .trailing) {
-                    ForEach(images) { image in
-                        imageTile(image)
-                    }
-                }
-            }
-            if !files.isEmpty {
-                FlowLayout(spacing: DS.Space.sm, alignment: .trailing) {
-                    ForEach(files) { file in
-                        fileChip(file)
-                    }
-                }
+        FlowLayout(spacing: DS.Space.sm, alignment: alignment) {
+            ForEach(attachments) { attachment in
+                ArtifactThumbnail(artifact: TranscriptArtifact(attachment))
             }
         }
-        .quickLookPreview($previewing)
-    }
-
-    private func imageTile(_ attachment: MessageAttachment) -> some View {
-        let shape = RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
-        return Button {
-            previewing = attachment.previewURL
-        } label: {
-            if let data = attachment.imageData {
-                AttachmentImage(
-                    data: data, maxSide: TranscriptMetrics.attachmentImageMaxWidth,
-                    fitting: CGSize(
-                        width: TranscriptMetrics.attachmentImageMaxWidth,
-                        height: TranscriptMetrics.attachmentImageHeight)
-                )
-                .clipShape(shape)
-                .overlay { shape.strokeBorder(.dsBorder) }
-                .contentShape(shape)
-            }
-        }
-        .buttonStyle(.plain)
-        .help("Quick Look \(attachment.name)")
-        // A replayed image has no file name of its own, only "Image".
-        .accessibilityLabel(attachment.url == nil ? attachment.name : "Image \(attachment.name)")
-        .accessibilityHint("Opens it in Quick Look")
-    }
-
-    private func fileChip(_ attachment: MessageAttachment) -> some View {
-        let canReveal = PlatformFileBrowser.canReveal && attachment.url?.isFileURL == true
-        return Button {
-            if let url = attachment.url { PlatformFileBrowser.reveal(url) }
-        } label: {
-            Label(attachment.name, systemImage: attachment.isFolder ? "folder" : "doc")
-                .font(.dsBody)
-                .foregroundStyle(.dsTextSecondary)
-                .lineLimit(1)
-                .truncationMode(.middle)
-                .padding(.horizontal, DS.Space.md)
-                .padding(.vertical, DS.Space.xs)
-                .background(.dsFill, in: .rect(cornerRadius: DS.Radius.control, style: .continuous))
-                .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .disabled(!canReveal)
-        .help(attachment.url.map { "Show \($0.path(percentEncoded: false)) in the Finder" } ?? attachment.name)
     }
 }
 
-extension MessageAttachment {
-    /// A mentioned folder (`@folder/`), which the composer sends as a link to the directory.
-    var isFolder: Bool {
-        url?.hasDirectoryPath == true || name.hasSuffix("/")
-    }
-
-    /// A file Quick Look can open: the image's own file while it's still there, else a copy of the
-    /// bytes the message carried.
-    var previewURL: URL? {
-        if let url, url.isFileURL, FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) {
-            return url
-        }
-        guard let imageData else { return nil }
-        let copy = URL.temporaryDirectory.appending(path: "Native Attachments/\(id.uuidString)/\(name).png")
-        try? FileManager.default.createDirectory(
-            at: copy.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try? imageData.write(to: copy)
-        return copy
+#if DEBUG
+#Preview("Message attachments - Images and files") {
+    DSPreviewPair {
+        MessageAttachmentsView(attachments: [
+            MessageAttachment(name: "Diagram.png", url: nil, imageData: ArtifactPreviewFixtures.imageData),
+            MessageAttachment(name: "Notes.txt", url: URL(filePath: "/repo/Notes.txt")),
+        ])
+        .environment(\.openTranscriptArtifact, TranscriptArtifactOpener(session: nil, filesAreLocal: true))
+        .frame(width: 360)
+        .padding(DS.Space.lg)
     }
 }
+#endif

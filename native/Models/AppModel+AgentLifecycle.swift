@@ -213,7 +213,8 @@ extension AppModel {
     }
 
     private func isBusy(_ session: SessionModel) -> Bool {
-        session.key == selection || session.phase == .loading || session.phase == .prompting
+        session.key == selection || changingAgent?.candidate === session
+            || session.phase == .loading || session.phase == .prompting
             || session.hasQueuedPrompts || session.isRetryScheduled || session.wait != nil || !session.draft.isEmpty
     }
 }

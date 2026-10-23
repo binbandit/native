@@ -22,10 +22,16 @@ struct SessionView: View {
     private static let subagentInspectorWidth: CGFloat = 420
 
     var body: some View {
-        if usesSessionTools || usesTaskWell {
-            SessionToolsScreen(session: session, usesTaskWell: usesTaskWell)
-        } else {
-            standardBody
+        Group {
+            if usesSessionTools || usesTaskWell {
+                SessionToolsScreen(session: session, usesTaskWell: usesTaskWell)
+            } else {
+                standardBody
+            }
+        }
+        .toolbar {
+            ToolbarItem { ChangeAgentControl(session: session) }
+                .sharedBackgroundVisibility(.hidden)
         }
     }
 

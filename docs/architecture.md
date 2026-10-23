@@ -46,6 +46,12 @@
   tested against captured traffic, and it's shared with the future companion app.
 - **History lives with the agent.** Sessions are listed with `session/list` and reopened with
   `session/load`, which replays them. Native stores only its own additions (titles, order, goals).
+- **Transcript artifacts retain their bytes.** User attachments, agent images and tool results,
+  including raw MCP content and embedded binary resources, open through the task's artifact viewer
+  model. Images zoom and pan in place; other files use native previews. Host files use the existing
+  file API, embedded bytes work offline, and opening a remote URL never downloads it. Temporary
+  preview copies are private to the viewer and removed when it closes. Copy and Save As keep the
+  original bytes; Finder is offered only for an existing file on this Mac.
 - **Task recency follows activity.** The host's startup snapshot and live summaries supply prompt
   dates even for completed tasks whose transcripts aren't open. Task lists use the latest known
   host, live-session or agent-listing date for both ages and order; opening history doesn't change it.
@@ -266,7 +272,7 @@ with Settings > Labs > Quiet composer, or set `experiment.NativeComposerNext` as
 the app's user defaults before launch.
 The editor keeps its identity as the session starts and finishes work; only its footer changes.
 At rest, plain words open the agent, model, effort, autonomy and task-mode pickers. The agent entry
-opens New Task With, since an existing conversation belongs to its original agent. Other
+opens New Task With, unless the Change Agent experiment is also enabled. Other
 agent settings, attachments, goals and context remain reachable. Running turns and approval
 requests keep today's composer until their own slices land.
 
@@ -275,9 +281,28 @@ requests keep today's composer until their own slices land.
 `NativeTaskWell` is an off-by-default Labs gate selecting the task-tools screen with a centered
 activity capsule instead of the facts header and tool buttons. `TaskActivityNarration` in ACP projects
 reported tool activity and counted plan steps; `TaskWellWiring` connects the existing tool models.
-Requests only lead to the composer, and turn outcomes reuse detected Changes. The existing
-`StatusIndicator` remains the shared status vocabulary until the sidebar signal replacement lands.
+Requests lead to the existing composer or child request surface, and turn outcomes reuse detected
+Changes. The shared `TaskSignal` supplies the status vocabulary and finite attention animation.
 The behavior, tool order and remaining slices are described in `docs/session-tools.md`.
+
+### Changing a task's agent (Labs)
+
+`change-agent` is off by default. Change Agent prepares an unsent ACP conversation on another
+installed plugin agent in the task's existing folder. The user chooses from the new agent's live
+model choices and reviews an editable handoff before the first prompt. `TaskHandoff` in ACP
+assembles bounded visible-message excerpts, the goal, latest plan, reported edits, branch and
+working-tree paths and the latest explicit question locally. It never sends reasoning or calls another model.
+
+The model rejects running turns, retries, queued messages, pending approvals and active goals.
+Cancel closes the unsent replacement. A failed preparation or send keeps the original task.
+After an accepted handoff, the existing conversation chain preserves the original transcript,
+sidebar position and pin, title, branch, worktree and unsent draft. A quiet divider names the new
+agent; Earlier Conversation opens the original transcript read-only. Links survive relaunch.
+
+This first slice is limited to this Mac. Paired-host coordination, a single combined transcript,
+and carrying goal automation and its budgets across agents remain follow-up work. Pause a goal
+before switching; its objective goes in the handoff, but its controller stays in the earlier
+conversation. Disable the gate to hide entry points; existing conversation links stay readable.
 
 ### Transcript styles
 

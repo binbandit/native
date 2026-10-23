@@ -31,6 +31,7 @@ extension ComposerView {
         ComposerNextControlsRow(
             settings: settings,
             agentName: session.agentName,
+            changesAgent: app.offersAgentChange,
             resumedAutonomy: autonomyBeforePlan,
             followUpHint: followUpHint,
             isModelPickerOpen: $isModelPickerOpen,
@@ -38,7 +39,11 @@ extension ComposerView {
             onAttach: attach,
             onSet: set,
             onChooseAgent: {
-                CommandRegistry.shared.perform(.sessionNewWithAgent, in: CommandContext(session: session))
+                if app.offersAgentChange {
+                    app.requestAgentChange(session)
+                } else {
+                    CommandRegistry.shared.perform(.sessionNewWithAgent, in: CommandContext(session: session))
+                }
             },
             mode: TaskModeControl(session: session, modes: taskModes),
             extras: { SessionGoalControl(session: session, isQuiet: true) },

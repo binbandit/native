@@ -1,10 +1,10 @@
 import NativeCommands
 import ProjectActions
 import SwiftUI
+import Terminal
 
 extension View {
-    /// Adds the task's Run menu to the window header: the project's actions, run in this task's
-    /// worktree (`docs/actions.md`).
+    /// Adds the task's Run control, using the project's actions in this task's worktree.
     func projectActions(for session: SessionModel) -> some View {
         modifier(ProjectActionsHeaderModifier(session: session))
     }
@@ -26,85 +26,68 @@ private struct ProjectActionsHeaderModifier: ViewModifier {
     }
 }
 
-/// The header's outlined Run menu. It says what's going on at a glance: the running action's name
-/// beside a loader while one runs, and a red dot after the last run failed.
+/// The named action runs with one click; the separate chevron keeps the project's action menu.
 struct ProjectActionsHeaderButton: View {
     let target: ProjectActionTarget
+    @Environment(AppModel.self) private var model
     @Environment(ProjectActionRunner.self) private var runner
     @Environment(\.scenePhase) private var scenePhase
+    @State private var finishedAction: ProjectAction.ID?
 
     var body: some View {
+        let action = runner.headerAction(in: target)
+        let state = action.flatMap { runner.state(of: $0, in: target) }
         let running = runner.running(in: target)
-        Menu {
-            ProjectActionsMenuContent(target: target)
-                // Menus only show item icons when the content asks for them.
+        let removed = target.session.map { model.removedWorkspaces[$0.key] != nil } ?? false
+        let completion = Completion(folder: target.worktree, action: action?.id, state: state)
+        ProjectActionsRunControl(
+            name: action?.name, state: state, runningNames: running.map(\.name),
+            showsFinished: action != nil && finishedAction == action?.id, isFolderRemoved: removed,
+            projectName: target.project.name,
+            shortcut: CommandRegistry.shared.shortcut(for: .projectActionsRunLast)?.displayString,
+            perform: {
+                guard let action, !removed else { return }
+                if state?.isRunning == true {
+                    runner.stop(action, in: target)
+                } else {
+                    runner.run(action, in: target)
+                }
+            }
+        ) {
+            ProjectActionsMenuContent(target: target, showsRunLast: false)
                 .labelStyle(.titleAndIcon)
-        } label: {
-            label(running: running)
         }
-        .menuStyle(.button)
-        .buttonStyle(.header(isOn: !running.isEmpty))
-        .menuIndicator(.hidden)
-        .fixedSize()
-        .help(help(running: running))
-        .accessibilityLabel("Run")
-        .accessibilityValue(running.isEmpty ? "" : "\(running.map(\.name).formatted()) running")
-        // The repo file and suggestions are read again when the task shows and when Native comes
-        // back to the front, so an edit made elsewhere shows up.
+        .onChange(of: completion) { old, new in
+            if old.folder == new.folder, old.action == new.action, old.state?.isRunning == true,
+                case .finished(.exited(status: 0, _)) = new.state
+            {
+                finishedAction = new.action
+            } else {
+                finishedAction = nil
+            }
+        }
+        .task(id: finishedAction) {
+            guard finishedAction != nil else { return }
+            do {
+                try await Task.sleep(for: DS.RunControl.finishedDuration)
+                finishedAction = nil
+            } catch {
+                // A new run or another task owns the control now.
+            }
+        }
         .task(id: target.project.id) { runner.store.refresh(target.project) }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { runner.store.refresh(target.project) }
         }
     }
 
-    @ViewBuilder private func label(running: [ProjectAction]) -> some View {
-        if let first = running.first {
-            Label {
-                Text(running.count == 1 ? first.name : "\(running.count) running")
-            } icon: {
-                DotGridLoader(pattern: .waiting)
-                    .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
-            }
-        } else {
-            Label {
-                HStack(spacing: DS.Space.xs) {
-                    Text("Run")
-                    if lastRunFailed {
-                        StatusDot(color: .dsDanger)
-                    }
-                }
-            } icon: {
-                Image(systemName: "play.fill")
-            }
-        }
-    }
-
-    private var lastRunFailed: Bool {
-        guard let last = runner.store.lastRunAction(in: target.project) else { return false }
-        return runner.state(of: last, in: target)?.hasFailed == true
-    }
-
-    private func help(running: [ProjectAction]) -> String {
-        if !running.isEmpty {
-            return "\(running.map(\.name).formatted()) running. Open the menu to stop."
-        }
-        let base = "Run one of \(target.project.name)'s actions in this task"
-        guard let last = runner.store.lastRunAction(in: target.project),
-            let shortcut = CommandRegistry.shared.shortcut(for: .projectActionsRunLast)
-        else { return base }
-        return "\(base). \(shortcut.displayString) runs \(last.name) again."
+    private struct Completion: Equatable {
+        let folder: URL
+        let action: ProjectAction.ID?
+        let state: ProjectActionRunState?
     }
 }
 
-#if NATIVE_PREVIEWS_WIP
-#Preview("Run button") {
-    let app = AppModel.preview()
-    let project = app.previewProject() ?? Project(url: URL(filePath: "/Users/preview/Developer/native"))
-    DSPreviewPair {
-        ProjectActionsHeaderButton(target: ProjectActionTarget(project: project, session: nil))
-    }
-    .environment(app)
-    .environment(SettingsPresentation())
-    .environment(ProjectActionsPreviewFixtures.runner(for: project))
-}
+#if DEBUG
+#Preview("Run - Header states") { ProjectActionsRunPreview() }
 #endif
