@@ -104,7 +104,12 @@ struct SettingsScreen: View {
             }
         }
         .onChange(of: presentation.rowReveal, initial: true) { _, request in
-            if let request { reveal = request }
+            reveal = request
+            if request != nil {
+                query = ""
+                focus = nil
+                compactColumn = .detail
+            }
         }
     }
 
