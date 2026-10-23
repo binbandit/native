@@ -123,10 +123,6 @@ struct HomeNextView: View {
                 }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
-                .onChange(of: order) {
-                    current = nil
-                    currentApproval = nil
-                }
             }
         }
         .frame(minHeight: DS.HomeNext.headerHeight)

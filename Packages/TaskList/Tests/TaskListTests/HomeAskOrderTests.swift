@@ -27,6 +27,16 @@ struct HomeAskOrderTests {
         #expect(order(.quickest, asks.filter { $0.id != 2 }, retaining: 2) == [4, 3, 1])
     }
 
+    @Test func changingOrderKeepsTheAskBeingReadAndReordersTheQueue() {
+        #expect(order(.quickest, asks, retaining: 2) == [2, 4, 3, 1])
+        #expect(order(.oldest, asks, retaining: 2) == [2, 1, 3, 4])
+        // A parent or earlier sibling arriving after the menu change must not replace its child.
+        let pending = ["parent", "child-a", "child-z"]
+        let retained = HomeAskOrder.first(pending, retaining: "child-z", id: { $0 })
+        #expect(retained == "child-z")
+        #expect(order(.oldest, asks.filter { $0.id != 2 }, retaining: 2) == [1, 3, 4])
+    }
+
     @Test func unknownDatesAndTiesKeepTheirInputOrder() {
         let entries = [Ask(id: 5, kind: .approval, date: nil), Ask(id: 6, kind: .approval, date: nil)]
         #expect(order(.quickest, entries + asks) == [4, 2, 5, 6, 3, 1])
