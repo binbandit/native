@@ -10,14 +10,27 @@ import GitHub
 private actor SidebarRefreshRunner: CommandRunner {
     var requests = 0
     var fails = false
+    var installed = true
     var blocked: CheckedContinuation<Void, Never>?
     var shouldBlock = false
 
     func setFailure(_ value: Bool) { fails = value }
+    func setInstalled(_ value: Bool) { installed = value }
     func blockNext() { shouldBlock = true }
     func release() { blocked?.resume(); blocked = nil }
 
     func run(_ command: Command) async throws -> CommandResult {
+        if !installed { throw CommandError.notFound("gh") }
+        if command.arguments.first == "auth" {
+            let state = fails ? "error" : "success"
+            let output =
+                "{\"hosts\":{\"github.com\":[{\"state\":\"\(state)\",\"active\":true,\"host\":\"github.com\",\"login\":\"fixture\",\"tokenSource\":\"keyring\"}]}}"
+            return CommandResult(exitCode: fails ? 1 : 0, standardOutput: Data(output.utf8), standardError: Data())
+        }
+        if command.arguments.first == "api" {
+            return CommandResult(
+                exitCode: 0, standardOutput: Data("{\"login\":\"fixture\"}".utf8), standardError: Data())
+        }
         requests += 1
         if shouldBlock {
             shouldBlock = false
@@ -200,6 +213,8 @@ private struct SidebarTrioRegression {
         let retry = await model.loadPullRequest(for: branch, maxAge: 0)
         expect(retry == nil, "Explicit retry checks again after sign-in failure")
         expect(model.branchPullRequest(for: branch)?.failure == nil, "Successful retry clears stale error")
+        expect(model.currentLogin == "fixture", "Successful retry restores global GitHub availability")
+        expect(model.accounts.error == nil, "Successful retry clears the account error consumed by the UI")
         await runner.blockNext()
         let older = Task { await model.loadPullRequest(for: branch, maxAge: 0) }
         while await runner.blocked == nil { await Task.yield() }
@@ -215,5 +230,21 @@ private struct SidebarTrioRegression {
         _ = await older.value
         await fresh.value
         expect(await runner.requests > before, "Explicit refresh reads again after older lookup")
+
+        let missingRunner = SidebarRefreshRunner()
+        await missingRunner.setInstalled(false)
+        var rereadEnvironment = false
+        let missing = GitHubModel(
+            environment: { refresh in
+                rereadEnvironment = rereadEnvironment || refresh; return [:]
+            },
+            runner: missingRunner, defaults: PreviewUserDefaults())
+        await missing.refresh()
+        expect(missing.availability == .notInstalled, "Missing gh is reported globally")
+        await missingRunner.setInstalled(true)
+        expect(await missing.loadPullRequest(for: branch, maxAge: 0) == nil, "Retry finds a newly installed gh")
+        expect(rereadEnvironment, "Installation recovery rereads the environment")
+        expect(missing.currentLogin == "fixture", "Installation recovery restores global availability")
+        expect(missing.accounts.error == nil, "Installation recovery clears the account error")
     }
 }

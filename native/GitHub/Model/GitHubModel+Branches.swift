@@ -18,15 +18,24 @@ extension GitHubModel {
         if maxAge > 0, let cached = branchPullRequests[branch], Date.now.timeIntervalSince(cached.fetchedAt) < maxAge {
             return cached.failure
         }
-        while let pending = branchLookupsInFlight[branch] {
-            let failure = await pending.value
-            if maxAge > 0 { return failure }
-            if Task.isCancelled { return .cancelled }
+        var checkedAccounts = false
+        while true {
+            if let pending = branchLookupsInFlight[branch] {
+                let failure = await pending.value
+                if maxAge > 0 { return failure }
+                if Task.isCancelled { return .cancelled }
+                continue
+            }
+            if maxAge == 0, !checkedAccounts, availability == .notInstalled || availability == .notAuthenticated {
+                // Wait for older lookups before recovery; they can still report an expired login.
+                checkedAccounts = true
+                await checkAccounts()
+                continue
+            }
+            break
         }
-        if maxAge > 0 {
-            if availability == .notInstalled { return .notInstalled }
-            if availability == .notAuthenticated { return .notAuthenticated("") }
-        }
+        if availability == .notInstalled { return recordBranchFailure(.notInstalled, for: branch) }
+        if availability == .notAuthenticated { return recordBranchFailure(.notAuthenticated(""), for: branch) }
         let revision = accountRevision
         let lookup = Task {
             let failure = await fetchPullRequest(for: branch, revision: revision, reportsMissing: maxAge == 0)
@@ -62,12 +71,16 @@ extension GitHubModel {
                 return nil
             }
             if case .notAuthenticated = error { reportAuthenticationFailure() }
-            var cached = branchPullRequests[branch] ?? BranchPullRequest(pullRequest: nil, fetchedAt: .now)
-            cached.fetchedAt = .now
-            cached.failure = error
-            branchPullRequests[branch] = cached
-            return error
+            return recordBranchFailure(error, for: branch)
         }
+    }
+
+    private func recordBranchFailure(_ error: GitHubError, for branch: BranchReference) -> GitHubError {
+        var cached = branchPullRequests[branch] ?? BranchPullRequest(pullRequest: nil, fetchedAt: .now)
+        cached.fetchedAt = .now
+        cached.failure = error
+        branchPullRequests[branch] = cached
+        return error
     }
 
     /// What the last lookup found for a branch, with how fresh it is.
