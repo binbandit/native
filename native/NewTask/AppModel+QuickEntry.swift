@@ -83,8 +83,8 @@ extension AppModel {
         }
         if quickEntry.device == .thisMac {
             checkFolder(of: project)
-            if let missing = missingFolder(of: project.id) {
-                quickEntry.failure = missing.recovery
+            if missingFolder(of: project.id) != nil {
+                quickEntry.failure = "The project folder is unavailable. Choose another project or restore the folder."
                 return
             }
         }
