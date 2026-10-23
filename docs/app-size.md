@@ -16,7 +16,7 @@ noticed while there's still room to choose what to cut; lower them as the cuts i
 | Download, update archive | 47 MB | 42.7 MB |
 | Download, disk image | 48 MB | about 43.3 MB |
 | Installed app | 118 MB | 107.5 MB |
-| App binary (`Contents/MacOS/Native`) | 58 MB | 53.2 MB |
+| App binary (`Contents/MacOS/Native`) | 58.5 MB | 53.2 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
 `scripts/release/size-check.sh` holds the same numbers and fails when anything is over. It also
@@ -31,6 +31,12 @@ build them, and such an app looks 12 to 40 MB smaller than what ships.
   dry runs included, and stops before publishing when they're over.
 
 Raise a budget only with the reason written here, in the same change.
+
+2026-10-23: the reviewed Change Agent flow adds about 0.1 MB to the app binary, taking Release
+from main's 57.9 MB to just over 58 MB. Its local handoff generation, review controls and task
+continuity add no dependencies or assets. The binary budget is now 58.5 MB to accommodate that
+feature with a small margin. The installed app (114.6 MB) and update archive (45.7 MB) remain
+within their unchanged budgets.
 
 ## Measuring
 

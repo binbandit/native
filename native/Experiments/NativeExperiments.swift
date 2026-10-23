@@ -13,6 +13,7 @@ extension ExperimentCatalog {
         Gate.sessionTools,
         Gate.sidebarNext,
         Gate.composerNext,
+        Gate.changeAgent,
         Gate.homeNext,
     ])
 }
@@ -58,6 +59,14 @@ extension Parameter where Value == TranscriptWidth {
 // MARK: - Gates
 
 extension Gate {
+    static let changeAgent = Gate(
+        id: "change-agent", title: "Change Agent",
+        summary:
+            "Continue a task on this Mac with another agent and an editable handoff. Earlier transcripts stay a click away.",
+        site: "Task > Change Agent", stage: .labs, owner: "tasks",
+        reviewBy: ReviewDate(year: 2026, month: 12, day: 15), default: false
+    )
+
     static let homeNext = Gate(
         id: "NativeHomeNext",
         title: "Next",

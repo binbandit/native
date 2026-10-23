@@ -266,9 +266,28 @@ with Settings > Labs > Quiet composer, or set `experiment.NativeComposerNext` as
 the app's user defaults before launch.
 The editor keeps its identity as the session starts and finishes work; only its footer changes.
 At rest, plain words open the agent, model, effort, autonomy and task-mode pickers. The agent entry
-opens New Task With, since an existing conversation belongs to its original agent. Other
+opens New Task With, unless the Change Agent experiment is also enabled. Other
 agent settings, attachments, goals and context remain reachable. Running turns and approval
 requests keep today's composer until their own slices land.
+
+### Changing a task's agent (Labs)
+
+`change-agent` is off by default. Change Agent prepares an unsent ACP conversation on another
+installed plugin agent in the task's existing folder. The user chooses from the new agent's live
+model choices and reviews an editable handoff before the first prompt. `TaskHandoff` in ACP
+assembles bounded visible-message excerpts, the goal, latest plan, reported edits, branch and
+working-tree paths and the latest explicit question locally. It never sends reasoning or calls another model.
+
+The model rejects running turns, retries, queued messages, pending approvals and active goals.
+Cancel closes the unsent replacement. A failed preparation or send keeps the original task.
+After an accepted handoff, the existing conversation chain preserves the original transcript,
+sidebar position and pin, title, branch, worktree and unsent draft. A quiet divider names the new
+agent; Earlier Conversation opens the original transcript read-only. Links survive relaunch.
+
+This first slice is limited to this Mac. Paired-host coordination, a single combined transcript,
+and carrying goal automation and its budgets across agents remain follow-up work. Pause a goal
+before switching; its objective goes in the handoff, but its controller stays in the earlier
+conversation. Disable the gate to hide entry points; existing conversation links stay readable.
 
 ### Transcript styles
 
