@@ -31,8 +31,17 @@ extension Repository {
             worktree.branch == receipt.branch, worktree.head == receipt.commit,
             let checkout = try await git.repository(at: worktree.path)
         else { return false }
+        // Status can hide edits to assume-unchanged or skip-worktree entries. Such a checkout
+        // cannot prove it is untouched, even when ordinary worktree removal would accept it.
+        let entries = try await checkout.run(["ls-files", "-v", "-z"], readOnly: true)
+        guard
+            !entries.text.split(separator: "\0").contains(where: {
+                $0.first.map { $0 == "S" || $0.isLowercase } ?? false
+            })
+        else { return false }
         let status = try await checkout.run(
-            ["status", "--porcelain=v1", "--untracked-files=all", "--ignored"], readOnly: true)
+            ["status", "--porcelain=v1", "--untracked-files=all", "--ignored", "--ignore-submodules=none"],
+            readOnly: true)
         guard status.stdout.isEmpty else { return false }
         try await removeWorktree(at: worktree.path, checkpoint: false)
         _ = try? await run(["config", "--local", "--unset-all", Self.unusedWorktreeKey(receipt.path)])

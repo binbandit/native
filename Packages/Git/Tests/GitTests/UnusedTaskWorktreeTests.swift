@@ -33,7 +33,9 @@ struct UnusedTaskWorktreeTests {
         #expect(try test.read("README.md").contains("Hello"))
     }
 
-    @Test(arguments: ["tracked", "staged", "untracked", "ignored", "commit", "branch", "locked"])
+    @Test(arguments: [
+        "tracked", "staged", "untracked", "ignored", "commit", "branch", "locked", "assume-unchanged", "skip-worktree",
+    ])
     func preservesChangedCheckout(change: String) async throws {
         let test = try await TestRepository.make()
         defer { test.remove() }
@@ -42,6 +44,9 @@ struct UnusedTaskWorktreeTests {
         let worktree = try await repository.addWorktree(at: folder, newBranch: "task")
         let receipt = try #require(UnusedTaskWorktree(worktree: worktree))
         switch change {
+        case "assume-unchanged", "skip-worktree":
+            try await test.git("update-index", "--\(change)", "README.md", in: folder)
+            try Data("Keep hidden edits\n".utf8).write(to: folder.appending(path: "README.md"))
         case "tracked", "staged", "commit":
             try Data("Keep this edit\n".utf8).write(to: folder.appending(path: "README.md"))
             if change != "tracked" { try await test.git("add", "README.md", in: folder) }
