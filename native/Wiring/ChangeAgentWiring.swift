@@ -1,5 +1,6 @@
 import ACP
 import Git
+import NativeAutomation
 
 /// Features contribute context through model callbacks; the handoff itself needs no model call.
 enum ChangeAgentWiring {
