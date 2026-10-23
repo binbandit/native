@@ -20,14 +20,16 @@ extension SettingsPane {
             order: order,
             keywords: ["project", "repository", project.folderName],
             searchEntries: {
-                [
+                let entries = [
                     SettingsSearchEntry(id: rows.name, title: "Name", keywords: ["rename", project.name]),
                     SettingsSearchEntry(id: rows.folder, title: "Folder", keywords: ["finder", "path", "reveal"]),
                     SettingsSearchEntry(
                         id: rows.icon, title: "Icon", keywords: ["favicon", "svg", "emoji", "symbol", "image"]),
                     SettingsSearchEntry(id: rows.agent, title: "Agent for new tasks", keywords: ["default agent"]),
                     SettingsSearchEntry(id: rows.model, title: "Model for new tasks", keywords: ["default model"]),
-                    SettingsSearchEntry(id: rows.workspace, title: "New tasks get", keywords: ["worktree", "branch"]),
+                    SettingsSearchEntry(
+                        id: rows.workspace, title: "New tasks get", keywords: ["worktree", "branch"],
+                        plainly: .workspace),
                     SettingsSearchEntry(id: rows.prefix, title: "Branch prefix", keywords: ["github", "username"]),
                     ProjectActionsSettingsSection.searchEntry(project.id),
                     SettingsSearchEntry(id: rows.mcp, title: "MCP servers", keywords: ["mcp", "tools"]),
@@ -36,6 +38,13 @@ extension SettingsPane {
                     SettingsSearchEntry(
                         id: rows.remove, title: "Delete from Native", keywords: ["remove", "forget"]),
                 ]
+                guard SettingsPageMap.isEnabled else { return entries }
+                return entries.filter { ![rows.agent, rows.model, rows.workspace].contains($0.id) }
+                    + [
+                        SettingsSearchEntry(
+                            id: rows.agent, title: "New tasks in \(project.name)",
+                            keywords: ["agent", "model", "worktree", "defaults"])
+                    ]
             },
             content: { ProjectSettingsPage(projectID: project.id) }
         )

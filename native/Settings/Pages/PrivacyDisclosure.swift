@@ -6,6 +6,7 @@ import SwiftUI
 struct PrivacyDisclosure: View {
     /// When the lists apply, which depends on the build and the organization's policy.
     let scope: String
+    var collectionTitle = "Sent"
 
     static let sent = [
         "Which features you use",
@@ -38,7 +39,7 @@ struct PrivacyDisclosure: View {
     }
 
     @ViewBuilder private var lists: some View {
-        PrivacyList(title: "Sent", items: Self.sent)
+        PrivacyList(title: collectionTitle, items: Self.sent)
         PrivacyList(title: "Never sent", items: Self.neverSent)
     }
 }

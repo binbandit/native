@@ -11,16 +11,19 @@ struct KeepAwakeSettingsPage: View {
     /// Wide enough for "While Agents Work".
     static let selectWidth: CGFloat = 170
 
+    @Environment(\.settingsPlainly) private var plainly
     let controller: KeepAwakeController
 
     var body: some View {
         @Bindable var controller = controller
         SettingsPage {
-            SettingsHeader("Keep Awake", description: Text("Stop your Mac from sleeping so long agent runs finish."))
+            SettingsHeader(
+                "Keep Awake", description: Text("Stop your Mac from sleeping so long agent runs finish."),
+                plainly: .init(title: "Sleep", description: "Closing the lid still sleeps your Mac."))
             SettingsRowGroup {
                 SettingsRow(
                     id: Self.modeRow,
-                    "Keep Mac awake",
+                    "Keep Mac awake", plainly: .awake,
                     description: Text(
                         controller.isHostBacked
                             ? "Prevents idle sleep, while Native is closed too. Closing the lid still puts your Mac to sleep."
@@ -30,13 +33,19 @@ struct KeepAwakeSettingsPage: View {
                     SettingsSelect(
                         label: "Keep Mac awake",
                         selection: $controller.mode,
-                        options: KeepAwakeMode.choices.map { .init(value: $0, title: $0.title) },
+                        options: KeepAwakeMode.choices.map {
+                            .init(
+                                value: $0,
+                                title: plainly
+                                    ? ($0 == .on ? "Always" : $0 == .whileAgentsWork ? "While agents work" : $0.title)
+                                    : $0.title)
+                        },
                         width: Self.selectWidth
                     )
                 }
                 SettingsRow(
                     id: Self.timerRow,
-                    "Stay awake for a while",
+                    "Stay awake for a while", plainly: .awakeTimer,
                     description: Text("Keeps your Mac awake for a set time whatever the mode, then goes back to it."),
                     detail: controller.awakeUntil.map {
                         Text("Awake until \(DSFormat.timeAndCountdown($0, now: .now)).")
@@ -46,14 +55,14 @@ struct KeepAwakeSettingsPage: View {
                 }
                 SettingsRow(
                     id: Self.displayRow,
-                    "Keep display on",
+                    "Keep display on", plainly: .awakeDisplay,
                     description: Text("Also stop the display from dimming and sleeping while your Mac is kept awake.")
                 ) {
                     SettingsSwitch("Keep display on", isOn: $controller.keepsDisplayOn)
                 }
                 SettingsRow(
                     id: Self.batteryRow,
-                    "On battery",
+                    "On battery", plainly: .battery,
                     description: Text("What to do when your Mac isn't plugged in.")
                 ) {
                     SettingsSelect(

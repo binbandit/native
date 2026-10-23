@@ -21,13 +21,13 @@ extension SettingsPane {
                 [
                     SettingsSearchEntry(
                         id: TranscriptSearchSettingsPage.historyRow, title: "Include agents' past tasks",
-                        keywords: ["history", "backfill"]),
+                        keywords: ["history", "backfill"], plainly: .history),
                     SettingsSearchEntry(
                         id: TranscriptSearchSettingsPage.excludedRow, title: "Excluded projects",
                         keywords: ["privacy", "exclude", "ignore"]),
                     SettingsSearchEntry(
                         id: TranscriptSearchSettingsPage.indexRow, title: "Clear search index",
-                        keywords: ["delete", "reset", "privacy"]),
+                        keywords: ["delete", "reset", "privacy"], plainly: .init(title: "Search index")),
                 ]
             },
             content: { TranscriptSearchSettingsPage(center: center) }
@@ -53,11 +53,11 @@ struct TranscriptSearchSettingsPage: View {
                 description: Text(
                     CommandRegistry.shared.help("Find any task by what was said in it", for: .searchShow)
                         + ". The index lives on this Mac and is never sent anywhere."
-                ))
+                ), plainly: .init(title: "Search", description: "Which tasks Native can find for you."))
             SettingsRowGroup {
                 SettingsRow(
                     id: Self.historyRow,
-                    "Include agents' past tasks",
+                    "Include agents' past tasks", plainly: .history,
                     description: Text(
                         "Also index the tasks your agents keep in their own history, including ones started outside Native. Read only; nothing there changes."
                     ),

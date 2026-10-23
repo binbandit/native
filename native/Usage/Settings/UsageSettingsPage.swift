@@ -25,7 +25,10 @@ struct UsageSettingsPage: View {
                 "Usage",
                 description: Text(
                     "Your year with agents, and where each agent’s account stands against its usage limits, read from the agent itself."
-                ))
+                ),
+                plainly: .init(
+                    title: "Usage",
+                    description: "Your activity with agents and how much of each account's limit is left."))
             UsageActivityCard(activity: activity, opener: opener)
             if accounts.isEmpty {
                 EmptyStateView(

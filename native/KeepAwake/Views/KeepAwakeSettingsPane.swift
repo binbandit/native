@@ -20,15 +20,16 @@ extension SettingsPane {
                         id: KeepAwakeSettingsPage.modeRow,
                         title: "Keep Mac awake",
                         description: "Prevents idle sleep while agents work, or always.",
-                        keywords: ["caffeinate", "sleep", "agents"]
-                    ),
+                        keywords: ["caffeinate", "sleep", "agents"], plainly: .awake),
                     SettingsSearchEntry(
                         id: KeepAwakeSettingsPage.timerRow, title: "Stay awake for a while",
-                        keywords: ["timer", "hours"]),
+                        keywords: ["timer", "hours"], plainly: .awakeTimer),
                     SettingsSearchEntry(
-                        id: KeepAwakeSettingsPage.displayRow, title: "Keep display on", keywords: ["screen", "dim"]),
+                        id: KeepAwakeSettingsPage.displayRow, title: "Keep display on", keywords: ["screen", "dim"],
+                        plainly: .awakeDisplay),
                     SettingsSearchEntry(
-                        id: KeepAwakeSettingsPage.batteryRow, title: "On battery", keywords: ["power", "plugged in"]),
+                        id: KeepAwakeSettingsPage.batteryRow, title: "On battery", keywords: ["power", "plugged in"],
+                        plainly: .battery),
                 ]
             },
             content: { KeepAwakeSettingsPage(controller: controller) }

@@ -49,7 +49,9 @@ struct PairedDevicesSettingsPage: View {
                 title: "Paired Devices",
                 description: Text(
                     "Follow tasks and answer agents from your iPhone. Devices reach this Mac's background host over an end-to-end encrypted connection, and only after you pair them here."
-                )
+                ),
+                plainly: .init(
+                    title: "Your iPhone", description: "Connect your iPhone to follow tasks while you're away.")
             ) {
                 if hostIsOn {
                     Button("Pair iPhone…") { model.beginPairing() }
