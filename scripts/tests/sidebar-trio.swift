@@ -120,6 +120,12 @@ private struct SidebarTrioRegression {
         await model.retry(problem)
         expect(model.problems.list(for: first.id).isEmpty, "Successful Retry clears the failure")
         expect(model.currentProject?.id == first.id, "Refresh preserves selection")
+        model.refreshProjectState = { [weak model] project, _ in
+            model?.projects.remove(project.id)
+            return ["Failure after removal"]
+        }
+        await model.refreshProject(first.id)
+        expect(model.problems.list(for: first.id).isEmpty, "Removed projects do not retain late failures")
     }
 
     static func wiredRefresh() async {
@@ -187,6 +193,9 @@ private struct SidebarTrioRegression {
         expect(failure != nil, "Explicit lookup bypasses fresh cache and returns failure")
         expect(model.branchPullRequest(for: branch)?.failure != nil, "Failure is kept with branch state")
         expect(model.pullRequest(for: branch) == old, "Failed refresh preserves the last known pull request")
+        let uncached = BranchReference(directory: branch.directory, branch: "uncached")
+        expect(await model.loadPullRequest(for: uncached, maxAge: 0) != nil, "First lookup failures are reported")
+        expect(model.branchPullRequest(for: uncached)?.failure != nil, "First lookup failures are recorded")
         await runner.setFailure(false)
         let retry = await model.loadPullRequest(for: branch, maxAge: 0)
         expect(retry == nil, "Explicit retry checks again after sign-in failure")

@@ -11,6 +11,8 @@ struct ProjectRefreshIndicator: View {
     }
 }
 
+#if DEBUG
 #Preview("Project refresh") {
     DSPreviewPair { ProjectRefreshIndicator() }
 }
+#endif
