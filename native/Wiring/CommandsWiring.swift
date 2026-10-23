@@ -31,6 +31,7 @@ enum CommandsWiring {
         registry.register(
             [.palette(palette, stepsAsideWhen: { NativeCommand.terminalHasFocus(terminals, in: $0) })])
         registry.register(NativeCommand.newTasks(model: model))
+        registry.register(NativeCommand.quickEntry(model: model))
         registry.register([.projectSettings(model: model, settings: settings)])
         registry.register([.pullRequestTasks(features.pullRequestTasks)])
         registry.register([.gitCleanUpMerged(features.gitCleanup, model: model)])

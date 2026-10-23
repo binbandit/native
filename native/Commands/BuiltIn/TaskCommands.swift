@@ -27,7 +27,11 @@ extension NativeCommand {
     static func newTasks(model: AppModel) -> [NativeCommand] {
         [
             NativeCommand(.sessionNew, title: "New Task", category: .tasks, systemImage: "square.and.pencil") { _ in
-                Task { await model.newSession() }
+                if model.quickEntry.isEnabled {
+                    model.showQuickEntry(selection: PlatformTextSelection.capture())
+                } else {
+                    Task { await model.newSession() }
+                }
             },
 
             NativeCommand(

@@ -158,6 +158,13 @@ The move is mechanical and happens in small PRs once the current feature work la
 
 ## Experiments
 
+New Task's `NativeComposeTask` gate adds Quick Entry over the selected task. Its draft and
+removable selection context live in `native/NewTask/QuickEntryModel`; writing and dismissing
+the panel create no session or workspace. Start hands the message to the existing `StartingTask`
+pipeline. A background start leaves selection alone, and its confirmation follows the starting
+task to its finished session. During the first slice, Expand hands the same draft to today's
+full New Task view. Compose's page and the shared well's pre-start presentation follow later.
+
 ### Home Next
 
 `NativeHomeNext` (Settings > Labs > Next) defaults to off. `HomeDetail` switches to
