@@ -9,6 +9,19 @@ import UniformTypeIdentifiers
 #endif
 
 struct TranscriptArtifactTests {
+    @Test func aSingleReadImageKeepsItsFileOriginWithoutGuessingBetweenFiles() {
+        var call = ToolCallState(id: "read-image")
+        call.kind = .read
+        call.content = [.content(.image(data: "AQID", mimeType: "image/png"))]
+        call.locations = [ToolCallLocation(path: "/repo/diagram.png")]
+        #expect(call.artifacts.first?.url == URL(filePath: "/repo/diagram.png"))
+        #expect(call.artifacts.first?.name == "diagram.png")
+        call.locations.append(ToolCallLocation(path: "/repo/other.png"))
+        #expect(call.artifacts.first?.url == nil)
+        call.locations = [ToolCallLocation(path: "/repo/notes.txt")]
+        #expect(call.artifacts.first?.url == nil)
+    }
+
     #if canImport(ImageIO)
     @Test func jpegImagesHaveAThumbnailHeader() throws {
         let context = try #require(
