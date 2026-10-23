@@ -20,10 +20,13 @@ extension DS {
         public static let titleMinWidth: CGFloat = 40
         public static let panelWidth: CGFloat = 500
         public static let panelHeaderHeight: CGFloat = 42
+        public static let panelHeaderLeading: CGFloat = 15
+        public static let panelHeaderTrailing: CGFloat = 14
         public static let devMaxHeight: CGFloat = 320
         public static let rowHeight: CGFloat = 34
         public static let rowIconWidth: CGFloat = 22
         public static let rowTitleWidth: CGFloat = 104
+        public static let rowTrailing: CGFloat = 10
         public static let lightHeight: CGFloat = 1
         public static let lightWidthShare: CGFloat = 0.24
         public static let lightDuration: Double = 1
@@ -32,5 +35,7 @@ extension DS {
         public static let body = DSTypography.font(size: 12, weight: .book)
         public static let object = DSTypography.font(size: 11.5, weight: .book, design: .mono)
         public static let row = DSTypography.font(size: 12.5, weight: .book)
+        public static let rowDetail = DSTypography.font(size: 12.5)
+        public static let shortcut = DSTypography.font(size: 10.5, design: .mono)
     }
 }

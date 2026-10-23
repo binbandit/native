@@ -44,15 +44,17 @@ struct TaskWellToolsPanel<Dev: View>: View {
                                     .foregroundStyle(.dsTextPrimary)
                                     .frame(width: DS.TaskWell.rowTitleWidth, alignment: .leading)
                                 Text(detail(tool))
+                                    .font(DS.TaskWell.rowDetail)
                                     .foregroundStyle(.dsTextSecondary)
                                     .lineLimit(1).truncationMode(.middle)
                                 Spacer(minLength: DS.Space.sm)
                                 Text(CommandRegistry.shared.shortcut(for: tool.command)?.displayString ?? "")
-                                    .font(.dsMonoMicro)
+                                    .font(DS.TaskWell.shortcut)
                                     .foregroundStyle(.dsTextQuaternary)
                             }
                             .font(DS.TaskWell.row)
-                            .padding(.horizontal, DS.Space.sm)
+                            .padding(.leading, DS.Space.md)
+                            .padding(.trailing, DS.TaskWell.rowTrailing)
                             .frame(minHeight: DS.TaskWell.rowHeight)
                             .contentShape(.rect)
                         }
@@ -88,7 +90,8 @@ struct TaskWellToolsPanel<Dev: View>: View {
             Text("esc").font(.dsMonoMicro).foregroundStyle(.dsTextTertiary)
         }
         .font(DS.TaskWell.body)
-        .padding(.horizontal, DS.Space.xl)
+        .padding(.leading, DS.TaskWell.panelHeaderLeading)
+        .padding(.trailing, DS.TaskWell.panelHeaderTrailing)
         .frame(height: DS.TaskWell.panelHeaderHeight)
     }
 }

@@ -60,9 +60,11 @@ struct TaskWellLabel: View {
         HStack(spacing: DS.TaskWell.textGap) {
             if includesAgent {
                 Text(content.agent)
+                    .font(.dsBody)
                     .foregroundStyle(.dsTextTertiary)
             }
             Text(content.verb)
+                .font(content.isWaiting ? DS.TaskWell.body : .dsBody)
                 .foregroundStyle(content.isWaiting ? .dsTextPrimary : .dsTextSecondary)
                 .fixedSize()
             if let object = content.object {
@@ -89,7 +91,7 @@ struct TaskWellLabel: View {
                     .accessibilityHidden(true)
                 }
                 Text("\(progress.completed) of \(progress.total)")
-                    .font(.dsMonoCaption)
+                    .font(DS.TaskWell.object)
                     .foregroundStyle(.dsTextSecondary)
                     .help("Plan steps completed")
             }
