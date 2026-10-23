@@ -24,10 +24,11 @@
   login-shell environment. `ACPConnection` (an actor) speaks JSON-RPC and delivers events in wire
   order: when a request returns, every update sent before its response has been applied.
   A host agent that exits during initialization stays failed, with its diagnostic output and a
-  Restart action. Only intentionally stopped or previously initialized agents return to idle;
-  a failed launch must never be presented as ready to start a task. A task requested during an
-  agent restart stays in Starting until the whole restart finishes. If it fails, Restart and Retry
-  restarts the agent and continues the same task, keeping its draft and prepared workspace.
+  Restart action. Diagnostic snapshots drain pending stderr without waiting for its callback or
+  for a process holding the pipe open to exit. Only intentionally stopped or previously initialized
+  agents return to idle; a failed launch must never be presented as ready to start a task. A task
+  requested during an agent restart stays in Starting until the whole restart finishes. If it fails,
+  Restart and Retry restarts the agent and continues the same task, keeping its draft and prepared workspace.
   When every installed, enabled agent has failed, `AppModel.agentStartupFailure` supplies Home
   and New Task with the same named recovery state (`NativeSetup.AgentStartupFailure`). New Task
   opens the agent picker for Restart or Agents Settings instead of preparing a task that cannot start.
