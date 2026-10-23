@@ -85,6 +85,13 @@ extension AppModel {
         }
         if let reason = changeAgentBlock(for: source) { throw AgentChangeFailure(reason) }
         if let reason = target.sendBlockedReason { throw AgentChangeFailure(reason) }
+        if !target.hasStarted {
+            guard target.phase == .idle, !target.isRestoringHistory, !target.isRunningHiddenCommand,
+                target.turnHold == nil
+            else {
+                throw AgentChangeFailure("The new agent is still getting ready. Wait a moment, then try again.")
+            }
+        }
         // Publish before sending so a quit or dropped reply can never hide work that reached
         // the new agent. Cancel removes an unused candidate; an accepted one stays recoverable.
         titles.rename(target.titleKey, to: source.displayTitle)
