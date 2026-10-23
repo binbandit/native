@@ -1,3 +1,4 @@
+import AppAppearance
 import Foundation
 
 /// What the status bar's own items need from the app, so they depend on this rather than on the
@@ -22,6 +23,7 @@ struct TaskActivity: Identifiable, Hashable {
     let status: TaskStatus
     /// When its current turn started (the user's last prompt), for how long it's been working.
     let since: Date?
+    var workingAnimation: WorkingAnimation? = nil
 
     var needsAttention: Bool {
         status.needsAttention

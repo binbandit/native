@@ -59,6 +59,10 @@ struct SessionRow<Accessory: View>: View {
     }
 
     var body: some View {
+        row.environment(\.dsWorkingAnimation, session?.workingAnimation)
+    }
+
+    @ViewBuilder private var row: some View {
         if model.renaming == summary.id {
             SessionTitleField(summary: summary, status: TaskStatus(session))
         } else {
