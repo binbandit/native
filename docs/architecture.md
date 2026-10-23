@@ -171,12 +171,14 @@ exact `SessionModel` and tool-call request displayed, including subagent request
 a receipt and advances when the model acknowledges an answer. Questions embed the composer's
 `AgentQuestionSection`, with the same digit keys, multiple-question paging and free text. Plan
 permissions embed `ComposerPlanSection` in its numbered review presentation (first five steps,
-then Show more), with Approve Plan and Revise from the shared permission buttons. Agents without
-structured plan entries keep the existing tool-call presentation of their proposal.
+then Show more), using only the current turn's checklist. The exact permission proposal always
+stays visible in the shared `ToolCallView`, with Approve Plan and Revise from its permission buttons.
+Session-wide progress from earlier turns cannot replace the proposal being approved.
 
 Failures use `ErrorState` in its reading layout: what happened, recorded recovery from the current
-turn, error output, Retry and Open Task. `TurnFailureContext` in ACP keeps earlier turns' errors
-and recovery out of this explanation. Retry asks the existing session to check completed work and
+turn, error output, Retry and Open Task. `TurnFailureContext` in ACP includes live host recovery
+notices and replayed recovery markers, keeping earlier turns' errors and recovery out of this
+explanation. Retry asks the existing session to check completed work and
 continue, preserving the draft; a disconnected in-process agent instead opens its task to reconnect.
 Home retains the exact question or permission on screen, including subagent asks. An answer that
 cannot reach the host stays on screen with its error and no success receipt. Finished today includes tasks
@@ -187,7 +189,8 @@ For isolated Debug checks, enable the gate with Settings > Labs > Next or
 `defaults write dev.binbandit.native.dev.<name> experiment.NativeHomeNext -bool YES`, then launch
 with `-nativeHomeNextFixture busy` for inert preview models. Other fixture values are `quiet`,
 `first`, `empty`, `loading`, `recovery`, `narrow`, `question`, `questionText`, `questions`,
-`plan`, `planText`, `failure`, and `questionFailure` (a read-only sink exercises answer delivery failure).
+`plan`, `planText`, `planRetained`, `failure`, `failurePaused`, and `questionFailure` (a read-only sink
+exercises answer delivery failure).
 The fixture is absent from Release and Nightly and never opens an agent or writes project data.
 
 New UIs, designs and behaviors ship as opt-in experiments first (see "Experiments behind flags" in

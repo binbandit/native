@@ -8,23 +8,20 @@ struct HomeNextPlanView: View {
     @State private var isExpanded = false
 
     var body: some View {
+        let entries = session.state.currentTurnPlan
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             Text(
-                session.plan.isEmpty
-                    ? "\(session.agentName) has a plan" : "\(session.agentName) has a plan: \(session.plan.count) steps"
+                entries.isEmpty
+                    ? "\(session.agentName) has a plan" : "\(session.agentName) has a plan: \(entries.count) steps"
             )
             .font(.dsCalloutMedium).foregroundStyle(.dsTextPrimary)
-            if !session.plan.isEmpty {
+            if !entries.isEmpty {
                 ComposerPlanSection(
-                    plan: PlanProgress(entries: session.plan), isWorking: false,
+                    plan: PlanProgress(entries: entries), isWorking: false,
                     isExpanded: $isExpanded, presentation: .review)
-            } else {
-                // Some agents put the entire proposal in the permission payload, without plan updates.
-                ToolCallView(call: call, onChoose: choose)
             }
-            if !session.plan.isEmpty, let permission = call.permission {
-                ToolPermissionButtons(options: permission.options, onChoose: choose, presentation: .planReview)
-            }
+            // Progress updates are not bound to permission requests. The exact proposal must stay visible.
+            ToolCallView(call: call, permissionPresentation: .planReview, onChoose: choose)
         }
     }
 }
@@ -32,5 +29,6 @@ struct HomeNextPlanView: View {
 #if DEBUG
 #Preview("Next plan - First five steps") { HomeNextPreviewFixtures.page(.plan) }
 #Preview("Next plan - Permission without steps") { HomeNextPreviewFixtures.page(.planText) }
+#Preview("Next plan - Previous turn's checklist") { HomeNextPreviewFixtures.page(.planRetained) }
 #Preview("Next plan - Narrow") { HomeNextPreviewFixtures.page(.plan, narrow: true) }
 #endif

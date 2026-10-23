@@ -15,7 +15,7 @@ struct HomeNextFailureView: View {
             suggestion: session.canRetryHomeNext
                 ? "Retry asks it to check what completed and continue."
                 : "Open the task to reconnect its agent and continue.",
-            details: failure.details,
+            details: failure.details == failure.recovery ? nil : failure.details,
             primary: session.canRetryHomeNext
                 ? .init("Retry", shortcut: KeyboardShortcut("r", modifiers: .command), perform: retry) : nil,
             secondary: .init("Open Task", shortcut: KeyboardShortcut(.return, modifiers: .command), perform: openTask),
@@ -26,4 +26,5 @@ struct HomeNextFailureView: View {
 #if DEBUG
 #Preview("Next failure - Retry") { HomeNextPreviewFixtures.page(.failure) }
 #Preview("Next failure - Disconnected") { HomeNextPreviewFixtures.page(.recovery) }
+#Preview("Next failure - Host paused after recovery") { HomeNextPreviewFixtures.page(.failurePaused) }
 #endif

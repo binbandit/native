@@ -16,6 +16,6 @@ public struct TurnFailureContext: Equatable, Sendable {
             return nil
         }
         details = notices.last(where: \.isError)?.text
-        recovery = notices.last { $0.sentToAgent != nil || $0.retry?.progress == .wentThrough }?.text
+        recovery = notices.last { $0.isRecovery || $0.sentToAgent != nil || $0.retry?.progress == .wentThrough }?.text
     }
 }

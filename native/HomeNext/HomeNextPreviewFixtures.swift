@@ -1,12 +1,13 @@
 #if DEBUG
 import ACP
+import NativeHostProtocol
 import SwiftUI
 
 /// Inert models for the canvas and isolated UI checks. No processes or filesystem writes.
 enum HomeNextPreviewFixtures {
     enum State: String {
         case busy, quiet, first, empty, loading, recovery, narrow
-        case question, questionText, questions, questionFailure, plan, planText, failure
+        case question, questionText, questions, questionFailure, plan, planText, planRetained, failure, failurePaused
     }
 
     static var requested: State? {
@@ -38,8 +39,8 @@ enum HomeNextPreviewFixtures {
             let titleIndex: Int
             switch fixtureKind(state, index: index) {
             case .question, .questionText, .questions, .questionFailure: titleIndex = 1
-            case .plan, .planText: titleIndex = 2
-            case .failure: titleIndex = 3
+            case .plan, .planText, .planRetained: titleIndex = 2
+            case .failure, .failurePaused: titleIndex = 3
             default: titleIndex = index
             }
             let title =
@@ -48,7 +49,8 @@ enum HomeNextPreviewFixtures {
                 : titles[titleIndex]
             let kind = fixtureKind(state, index: index)
             let agent =
-                [State.question, .questionText, .questions, .questionFailure, .plan, .planText].contains(kind)
+                [State.question, .questionText, .questions, .questionFailure, .plan, .planText, .planRetained].contains(
+                    kind)
                 ? "claude-code" : "codex"
             let id = "home-next-\(index)"
             let date = Date.now.addingTimeInterval(-Double(52 - index * 8) * 60)
@@ -70,14 +72,26 @@ enum HomeNextPreviewFixtures {
                 switch kind {
                 case .question, .questionText, .questions, .questionFailure:
                     question(session, kind: kind)
-                case .plan, .planText:
-                    plan(session, includesSteps: kind == .plan, date: date)
+                case .plan, .planText, .planRetained:
+                    plan(session, includesSteps: kind != .planText, date: date, retainsOlderPlan: kind == .planRetained)
                 case .failure:
                     session.state.endTurn(.error)
                     session.state.apply(
                         .userMessageChunk(ContentChunk(content: .text(RecoveryPrompt(reason: .agentStopped).text))))
                     session.state.appendNotice("Codex exited (signal 9) while the build was linking.", isError: true)
                     session.state.endTurn(.error)
+                    session.phase = .idle
+                    session.lastStopReason = .error
+                case .failurePaused:
+                    var mirror = SessionMirror()
+                    mirror.state = session.state
+                    mirror.apply(
+                        HostEvent(
+                            seq: 1,
+                            payload: .recovered(
+                                RecoveryNote(
+                                    cause: .agentStopped, action: .paused, agentName: "Codex", interruptedAt: date))))
+                    session.state = mirror.state
                     session.phase = .idle
                     session.lastStopReason = .error
                 case .quiet:
@@ -112,8 +126,8 @@ enum HomeNextPreviewFixtures {
         let start: Int
         switch state {
         case .question, .questionText, .questions, .questionFailure: start = 1
-        case .plan, .planText: start = 2
-        case .failure: start = 3
+        case .plan, .planText, .planRetained: start = 2
+        case .failure, .failurePaused: start = 3
         default: start = 0
         }
         if index == 0 && start > 0 { return state }
@@ -141,7 +155,9 @@ enum HomeNextPreviewFixtures {
         session.requestQuestion(request, id: kind == .questionFailure ? .string("unavailable") : .int(2))
     }
 
-    private static func plan(_ session: SessionModel, includesSteps: Bool, date: Date) {
+    private static func plan(
+        _ session: SessionModel, includesSteps: Bool, date: Date, retainsOlderPlan: Bool = false
+    ) {
         if includesSteps {
             let steps = [
                 "Create Packages/DesignSystem with one library target, and move Tokens, Fonts and Brand into it.",
@@ -160,10 +176,18 @@ enum HomeNextPreviewFixtures {
             }
             session.state.apply(.plan(entries))
         }
+        if retainsOlderPlan {
+            session.state.endTurn(.endTurn)
+            session.state.appendUserMessage("Review a different proposal")
+        }
+        let proposal =
+            retainsOlderPlan
+            ? "Keep DesignSystem in the app and only rename its token groups."
+            : "Move the shared views into Packages/DesignSystem, then build both clients."
         let json = """
             {"sessionId":"\(session.id.rawValue)","toolCall":{
             "toolCallId":"plan-\(session.id.rawValue)","title":"Move DesignSystem into a package","kind":"switch_mode",
-            "status":"pending","rawInput":{"plan":"Move the shared views into Packages/DesignSystem, then build both clients."}},
+            "status":"pending","rawInput":{"plan":"\(proposal)"}},
             "options":[{"optionId":"revise","name":"Revise","kind":"reject_once"},
             {"optionId":"approve","name":"Approve Plan","kind":"allow_once"}]}
             """
