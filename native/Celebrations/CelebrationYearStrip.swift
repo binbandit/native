@@ -53,10 +53,17 @@ struct CelebrationYearStrip: View {
                             Button {
                                 revealMonth(month)
                             } label: {
-                                Text(month.start(in: .current), format: .dateTime.month(.abbreviated))
-                                    .font(CelebrationMetrics.yearLabelFont).foregroundStyle(.dsTextTertiary)
+                                HStack(spacing: CelebrationMetrics.yearNumberGap) {
+                                    Text(month.start(in: .current), format: .dateTime.month(.abbreviated))
+                                        .font(CelebrationMetrics.yearLabelFont).foregroundStyle(.dsTextTertiary)
+                                    if month.month == 1 {
+                                        Text(String(month.year % 100))
+                                            .font(CelebrationMetrics.yearNumberFont).foregroundStyle(.dsTextQuaternary)
+                                    }
+                                }
                             }
                             .buttonStyle(.plain)
+                            .accessibilityLabel(CelebrationDates.month(month, includeYear: true))
                             .offset(x: x, y: CelebrationMetrics.yearBaseline + CelebrationMetrics.yearLabelOffset)
                         }
                     }
