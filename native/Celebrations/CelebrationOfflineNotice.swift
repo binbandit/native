@@ -11,7 +11,7 @@ struct CelebrationOfflineNotice: View {
             Group {
                 if let organizationName {
                     Text(
-                        "\(Text(organizationName).font(SettingsTextStyle.bodyMedium.font)) installed Native without internet access, so celebration icons can't download. Home still dresses up on the days you choose."
+                        "\(Text(organizationName).font(SettingsTextStyle.bodyMedium.font).foregroundStyle(.dsTextPrimary)) installed Native without internet access, so celebration icons can't download. Home still dresses up on the days you choose."
                     )
                 } else {
                     Text("This install can't download celebration icons. Home still dresses up on the days you choose.")
