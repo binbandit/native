@@ -21,7 +21,9 @@ extension AppModel {
         if source.phase == .prompting || source.isRetryScheduled || source.isRunningHiddenCommand {
             return "Finish or stop the running turn before changing agents."
         }
-        guard source.phase == .idle, !source.isRestoringHistory else { return "Wait for the task to finish loading." }
+        guard source.phase == .idle || source.phase == .disconnected, !source.isRestoringHistory else {
+            return "Wait for the task to finish loading."
+        }
         guard !source.hasQueuedPrompts else { return "Send or remove queued messages before changing agents." }
         guard !source.needsApproval else { return "Answer the task's pending requests before changing agents." }
         guard !source.children.values.contains(where: { $0.phase == .prompting }) else {
