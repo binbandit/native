@@ -181,7 +181,7 @@ continue, preserving the draft; a disconnected in-process agent instead opens it
 Home retains the exact question or permission on screen, including subagent asks. An answer that
 cannot reach the host stays on screen with its error and no success receipt. Finished today includes tasks
 with a known successful turn completion today, five at a time; unknown history is not called done.
-On Home, the All in view sidebar folds its asks to their title.
+The sidebar still needs to fold its asks to their title on Home.
 
 For isolated Debug checks, enable the gate with Settings > Labs > Next or
 `defaults write dev.binbandit.native.dev.<name> experiment.NativeHomeNext -bool YES`, then launch
