@@ -8,7 +8,9 @@ extension HostCore {
     /// Starts a session on an agent. An id the host already has returns that session, so a client
     /// retrying after a dropped connection never starts two. With `follower`, that client follows
     /// the session's events from the first.
-    func newSession(_ params: NewSessionParams, follower: ClientLink? = nil) async throws -> HostSessionSummary {
+    func newSession(
+        _ params: NewSessionParams, follower: ClientLink? = nil, coordinator: NewCoordinatorParams? = nil
+    ) async throws -> HostSessionSummary {
         if let id = params.sessionID, let existing = sessions[id] {
             follower.map { follow(existing, by: $0) }
             return existing.summary
@@ -31,19 +33,45 @@ extension HostCore {
             follower.map { follow(existing, by: $0) }
             return existing.summary
         }
+        let initialOptions: JSONValue?
+        if coordinator != nil {
+            initialOptions = try await coordinatorReadOnly(response, on: peer)
+        } else {
+            initialOptions = response.configOptions
+        }
         let record = StoredSession(
             id: sessionID, agentID: params.agentID, agentSessionID: response.sessionId,
             cwd: params.cwd, parentID: params.parentID, origin: params.origin, mcpServers: params.mcpServers,
             meta: params.meta,
-            configChoices: response.configOptions.map { Self.configValues(Self.configOptions($0)) } ?? [:])
-        try store.insertSession(record)
+            configChoices: initialOptions.map { Self.configValues(Self.configOptions($0)) } ?? [:])
+        try store.transaction {
+            if let coordinator {
+                let identity = HostTaskIdentity(agentID: params.agentID, agentSessionID: response.sessionId)
+                try validateAssignments(coordinator.assignments, coordinator: identity)
+                let assignment = HostCoordinator(
+                    task: identity, projectPath: params.cwd, assignments: coordinator.assignments,
+                    hostSessionID: sessionID)
+                var updated = coordinators
+                updated.append(assignment)
+                try store.setMeta(
+                    Self.coordinatorsKey, String(decoding: try JSONEncoder().encode(updated), as: UTF8.self))
+            }
+            try store.insertSession(record)
+        }
+        if let coordinator {
+            coordinators.append(
+                HostCoordinator(
+                    task: HostTaskIdentity(agentID: params.agentID, agentSessionID: response.sessionId),
+                    projectPath: params.cwd, assignments: coordinator.assignments, hostSessionID: sessionID))
+            for client in clients.values { client.notify(HostProtocol.Method.coordinatorsChanged, coordinators) }
+        }
         let session = HostSession(
             record: record, agentName: link.spec.name, phase: .idle, needsLoad: false, mcpServers: params.mcpServers)
         session.supportsSteering = link.supportsSteering
         sessions[record.id] = session
         follower.map { follow(session, by: $0) }
         append(.reset(loading: false), to: session)
-        if let options = response.configOptions {
+        if let options = initialOptions {
             append(.update(SessionMirror.configOptionsUpdate(options)), to: session)
         }
         route(session, on: link)

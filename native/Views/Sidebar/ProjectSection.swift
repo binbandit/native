@@ -60,6 +60,7 @@ struct ProjectSection<TaskAccessory: View>: View {
                     select(summary.id)
                 }
                 .equatable()
+                .padding(.leading, model.isCoordinatorChild(summary.id, among: sessions) ? DS.Space.xl : 0)
                 .sidebarDraggable(row, title: model.title(for: summary), state: drag)
                 .sidebarDropTarget(row, state: drag, isActive: drag.dragged.isSession, onDrop: model.applySidebarDrop)
             }
@@ -302,5 +303,19 @@ extension ProjectProblem {
         }
     }
     .sidebarPreviewEnvironment(app)
+}
+#Preview("Project section - Coordinator assignments") {
+    let app = CoordinatorTaskPreviewFixtures.app()
+    DSPreviewPair {
+        if let project = app.previewProject(0) {
+            ProjectSection(
+                project: project,
+                sessions: app.sessions(in: project.id).sorted { $0.id.id.rawValue < $1.id.id.rawValue },
+                order: [:], position: (0, 1), isFiltered: false, isExpanded: .constant(true),
+                drag: SidebarDragState(), taskAccessory: { _ in EmptyView() }, select: { _ in }
+            )
+            .frame(width: DS.Size.sidebarWidth)
+        }
+    }.sidebarPreviewEnvironment(app)
 }
 #endif

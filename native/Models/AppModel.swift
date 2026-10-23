@@ -2,6 +2,7 @@ import ACP
 import AppAppearance
 import Experiments
 import Foundation
+import NativeHostProtocol
 import Observation
 import Undo
 import os
@@ -62,6 +63,9 @@ final class AppModel {
     /// The draft and presentation for the opt-in New Task entry point.
     let quickEntry = QuickEntryModel()
     var changingAgent: ChangeAgentModel?
+    var coordinatorEditor: CoordinatorTaskEditor?
+    var coordinators: [HostCoordinator] = []
+    @ObservationIgnored var followedCoordinatorClients: Set<ObjectIdentifier> = []
     @ObservationIgnored var agentChangeGoalBlock: @MainActor (SessionModel) -> String? = { _ in nil }
     @ObservationIgnored var changeAgentHandoff: @MainActor (SessionModel) async -> String = { source in
         TaskHandoff.draft(title: source.displayTitle, state: source.state)

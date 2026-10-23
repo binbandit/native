@@ -21,6 +21,10 @@ extension AppModel {
     /// opens from the new one.
     @discardableResult
     func clearConversation(of old: SessionModel) async throws -> SessionModel {
+        guard coordinator(for: old.key) == nil else {
+            throw CoordinatorTaskFailure(
+                "Create a new coordinator to start a fresh conversation, then reassign its tasks.")
+        }
         guard old.hasStarted, old.acceptsPrompts else { throw ClearConversationError.nothingToClear }
         guard old.phase == .idle, !old.isRunningHiddenCommand else {
             throw ClearConversationError.working(agent: old.agentName)

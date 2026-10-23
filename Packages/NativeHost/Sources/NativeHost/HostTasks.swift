@@ -214,6 +214,21 @@ final class HostTasks {
     /// The agent never saved a session and the host carried it on in a fresh one: tasks it is, or
     /// started, follow it there.
     func agentSessionReplaced(agent: String, old: SessionID, new: SessionID) {
+        let oldIdentity = HostTaskIdentity(agentID: agent, agentSessionID: old)
+        let newIdentity = HostTaskIdentity(agentID: agent, agentSessionID: new)
+        if core.coordinators.contains(where: { $0.task == oldIdentity || $0.assignments.contains(oldIdentity) }) {
+            let updated = core.coordinators.map { record in
+                HostCoordinator(
+                    task: record.task == oldIdentity ? newIdentity : record.task,
+                    projectPath: record.projectPath,
+                    assignments: record.assignments.map { $0 == oldIdentity ? newIdentity : $0 },
+                    hostSessionID: record.hostSessionID)
+            }
+            // A failed write must not leave a reidentified coordinator with unrestricted tools.
+            core.coordinators = updated
+            try? core.persistCoordinators(updated)
+        }
+
         let old = TaskSessionRef(agent: agent, id: old.rawValue)
         let new = TaskSessionRef(agent: agent, id: new.rawValue)
         for var task in records where task.session == old || task.parent == old {
@@ -275,7 +290,7 @@ final class HostTasks {
         }
     }
 
-    private func ref(of session: HostSession) -> TaskSessionRef? {
+    func ref(of session: HostSession) -> TaskSessionRef? {
         session.record.agentSessionID.map { TaskSessionRef(agent: session.record.agentID, id: $0.rawValue) }
     }
 
@@ -428,8 +443,18 @@ extension HostTasks: TaskRuntime {
         guard let sender = session(holding: message.sender), let recipient = session(holding: message.recipient),
             let senderID = sender.record.agentSessionID, let recipientID = recipient.record.agentSessionID
         else { throw HostTaskError.closed }
-        core.append(.update(TaskTranscript.message(message.text, from: senderID, to: recipientID)), to: sender)
-        core.append(.update(TaskTranscript.message(message.text, from: senderID, to: recipientID)), to: recipient)
+        try await core.load(recipient)
+        if let identity = HostTaskIdentity(sender),
+            let record = core.coordinators.first(where: { $0.task == identity || $0.hostSessionID == sender.id })
+        {
+            guard let target = HostTaskIdentity(recipient), record.assignments.contains(target) else {
+                throw CoordinatorFailure("That task is no longer assigned to this coordinator.")
+            }
+        }
+        let transcriptText =
+            core.coordinators.contains { $0.task == HostTaskIdentity(sender) } ? message.prompt : message.text
+        core.append(.update(TaskTranscript.message(transcriptText, from: senderID, to: recipientID)), to: sender)
+        core.append(.update(TaskTranscript.message(transcriptText, from: senderID, to: recipientID)), to: recipient)
         let delivery = try await core.prompt(
             PromptParams(
                 sessionID: recipient.id, requestID: UUID(), text: message.prompt, behavior: .steer, echo: false,
