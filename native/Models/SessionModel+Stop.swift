@@ -1,12 +1,10 @@
 import ACP
 import Foundation
 
-// Stopping a turn. Native asks the agent to cancel (`session/cancel`) and the agent ends the turn
-// as stopped. An agent that never confirms would leave the user with no way out, so pressing Stop
-// again, or the agent staying silent for `stopGracePeriod`, ends the turn on Native's side.
+// The host ends the processes it can track. The in-app fallback cannot prove that a cancel reply ended the
+// agent's shell commands, so it keeps the turn stopping and explains that limit.
 extension SessionModel {
-    /// How long the agent gets to confirm a stop before Native stops waiting for it.
-    static let stopGracePeriod: Duration = .seconds(10)
+    static let stopGracePeriod: Duration = .seconds(2)
 
     /// Cancels the current turn. For a subagent, that stops only its work, never its parent's turn.
     func cancel() async {
@@ -21,9 +19,9 @@ extension SessionModel {
             return
         }
         if isStopping {
-            // A second press, not a double click, means the user is done waiting for the agent.
+            // A repeated press explains why Native cannot yet confirm the stop.
             if let first = stopRequestedAt, Date.now.timeIntervalSince(first) > 1 {
-                abandonTurn()
+                explainUnconfirmedStop()
             }
             return
         }
@@ -34,7 +32,7 @@ extension SessionModel {
             stopTimeout = Task { [weak self] in
                 try? await Task.sleep(for: Self.stopGracePeriod)
                 guard !Task.isCancelled, let self, turnGeneration == generation else { return }
-                abandonTurn()
+                explainUnconfirmedStop()
             }
         }
         // ACP requires answering open permission requests as cancelled when a turn is cancelled.
@@ -50,18 +48,19 @@ extension SessionModel {
         try? await connection?.notify(CancelNotification(sessionId: id))
     }
 
-    /// Ends the turn being stopped without the agent's word. Its late answer, if one comes, is
-    /// ignored: `turnDidEnd` moves `turnGeneration` past it.
-    func abandonTurn() {
+    /// An acknowledgement alone is not evidence that commands ended. Keep the running state so
+    /// the sidebar and status bar cannot claim that all work stopped.
+    func explainUnconfirmedStop() {
         guard phase == .prompting else { return }
-        state.endTurn(.cancelled)
-        state.appendNotice(
-            "\(agentName) didn't confirm it stopped, so Native stopped waiting. It may still be finishing its last step.",
-            isError: false)
-        lastStopReason = .cancelled
-        services.post(.turnEnded(context, .cancelled))
-        phase = .idle
-        turnDidEnd()
+        let message =
+            "Commands may still be running. Native cannot verify this stop in this session. Check the running command before continuing."
+        guard
+            !state.items.contains(where: {
+                if case .notice(let notice) = $0 { return notice.text == message }
+                return false
+            })
+        else { return }
+        state.appendNotice(message, isError: true)
     }
 
     /// Clears the stop once the turn is over, whoever ended it.

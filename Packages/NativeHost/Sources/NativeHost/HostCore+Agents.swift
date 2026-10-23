@@ -50,6 +50,10 @@ extension HostCore {
             try? link.peer?.respond(to: id, with: RequestPermissionResponse.cancelled)
             return
         }
+        guard !session.isStopping else {
+            try? link.peer?.respond(to: id, with: RequestPermissionResponse.cancelled)
+            return
+        }
         let toolCallID = request.toolCall.toolCallId
         session.pendingPermissions[toolCallID] = id
         append(.permissionRequested(toolCallID: toolCallID, request: raw), to: session)
@@ -65,6 +69,10 @@ extension HostCore {
             request.mode == .form, request.requestedSchema != nil,
             let sessionID = link.routes[request.sessionId], let session = sessions[sessionID]
         else {
+            try? link.peer?.respond(to: id, with: CreateElicitationResponse.cancel)
+            return
+        }
+        guard !session.isStopping else {
             try? link.peer?.respond(to: id, with: CreateElicitationResponse.cancel)
             return
         }

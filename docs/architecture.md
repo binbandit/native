@@ -31,6 +31,16 @@
   When every installed, enabled agent has failed, `AppModel.agentStartupFailure` supplies Home
   and New Task with the same named recovery state (`NativeSetup.AgentStartupFailure`). New Task
   opens the agent picker for Restart or Agents Settings instead of preparing a task that cannot start.
+- **Stop ends attributable processes.** ACP's cancel acknowledgement alone cannot prove a shell stopped.
+  The host records the agent's descendants before sending cancel, gives it a short grace period,
+  then freezes and terminates the known tree. Process start times guard
+  against reused pids, and remembered children remain owned if their parent exits. A shared agent
+  is not terminated while another task is using it: the stopped task remains Stopping with a
+  warning until the other tasks finish or are stopped. Its next message reloads the agent.
+  Snapshots cannot account for a process that forks and exits between observations. Without an ACP
+  command-lifetime guarantee, the result is a failed turn warning that background commands may
+  remain, never a promise of Stopped. Closing a task retains its pending cleanup. Immediate host
+  restart finishes cleanup without waiting for siblings and leaves their turns for recovery.
 - **State is a reducer.** `SessionState` folds `session/update`s and the user's actions into a
   transcript (messages, tool calls, subagents, inter-session messages, plan, usage). It's pure and
   tested against captured traffic, and it's shared with the future companion app.
