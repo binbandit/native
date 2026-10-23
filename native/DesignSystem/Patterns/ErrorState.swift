@@ -173,7 +173,7 @@ public struct ErrorState: View {
         .background(.dsSurfaceSunken, in: .rect(cornerRadius: DS.Radius.control, style: .continuous))
         .overlay(alignment: .topTrailing) {
             IconButton("Copy Error Output", systemImage: "doc.on.doc") {
-                DSPasteboard.copy(details)
+                DSPasteboard.copy(self.details ?? details)
             }
             .padding(DS.Space.xs)
         }

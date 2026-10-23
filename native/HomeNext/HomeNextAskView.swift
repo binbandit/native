@@ -12,7 +12,7 @@ struct HomeNextAskView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: DS.Space.md) {
-                StatusIndicator(status: task.status, size: DS.Size.navIcon)
+                TaskSignal(status: task.status, placement: .well, attentionSince: task.date)
                 Text(
                     "\(task.request?.session.agentName ?? task.agent) \(task.status == .failed ? "stopped" : "is waiting on you")"
                 )

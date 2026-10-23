@@ -163,7 +163,7 @@ The move is mechanical and happens in small PRs once the current feature work la
 `native/HomeNext/`: one centered reading column with a task title, the existing shared
 `ToolCallView` approval, Up next, and a quiet working-status line. The composer owns the
 annotated approval replacement; Home must embed that component when it lands, never copy it.
-The sidebar owns the shared status signal; Home currently uses `StatusIndicator`.
+The sidebar owns the shared `TaskSignal`; Home uses it for the current ask and Up next rows.
 
 `HomeAskOrder` in `Packages/TaskList` puts approvals before questions, plans, and failures,
 oldest within each kind. The ask being read stays put when another arrives. Answering uses the
@@ -181,7 +181,7 @@ continue, preserving the draft; a disconnected in-process agent instead opens it
 Home retains the exact question or permission on screen, including subagent asks. An answer that
 cannot reach the host stays on screen with its error and no success receipt. Finished today includes tasks
 with a known successful turn completion today, five at a time; unknown history is not called done.
-On Home, the sidebar's asks should fold to their title when the new sidebar lands.
+On Home, the All in view sidebar folds its asks to their title.
 
 For isolated Debug checks, enable the gate with Settings > Labs > Next or
 `defaults write dev.binbandit.native.dev.<name> experiment.NativeHomeNext -bool YES`, then launch
