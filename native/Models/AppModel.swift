@@ -59,6 +59,8 @@ final class AppModel {
     var isAddingProject = false
     /// Whether the agent picker for a new session is showing.
     var isChoosingAgent = false
+    /// The draft and presentation for the opt-in New Task entry point.
+    let quickEntry = QuickEntryModel()
     var changingAgent: ChangeAgentModel?
     @ObservationIgnored var agentChangeGoalBlock: @MainActor (SessionModel) -> String? = { _ in nil }
     @ObservationIgnored var changeAgentHandoff: @MainActor (SessionModel) async -> String = { source in
