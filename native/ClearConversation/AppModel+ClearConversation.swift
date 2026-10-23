@@ -21,7 +21,7 @@ extension AppModel {
     /// opens from the new one.
     @discardableResult
     func clearConversation(of old: SessionModel) async throws -> SessionModel {
-        guard old.hasStarted else { throw ClearConversationError.nothingToClear }
+        guard old.hasStarted, old.acceptsPrompts else { throw ClearConversationError.nothingToClear }
         guard old.phase == .idle, !old.isRunningHiddenCommand else {
             throw ClearConversationError.working(agent: old.agentName)
         }

@@ -332,6 +332,13 @@ Escape closes a picker.
 
 ## Choosing an agent
 
+With Change Agent enabled in Settings > Labs, Task > Change Agent and the command palette
+(`session.changeAgent`) prepare a handoff to another installed agent. The task's agent control
+and sidebar menu offer the same action. Review and edit the handoff, choose the agent and model,
+then use Change Agent and Send. Cancel keeps the current task. A running turn must finish first.
+This first slice supports tasks on this Mac; earlier transcripts stay under Earlier Conversation.
+There is no default shortcut.
+
 New Task With… (⌥⌘N) opens the agent picker in a sheet: every agent Native runs, each with
 its state (ready, starting, needs sign-in, not installed, stopped) and, when it can't start a
 task, why and what to do, with the fix (Check Again, Restart) beside it. It opens with the

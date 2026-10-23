@@ -54,7 +54,7 @@ extension SessionModel {
     func send() async {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         let attachments = self.attachments
-        guard origin == .user, phase == .idle, !isRunningHiddenCommand, turnHold == nil,
+        guard origin == .user, acceptsPrompts, phase == .idle, !isRunningHiddenCommand, turnHold == nil,
             !text.isEmpty || !attachments.isEmpty
         else {
             return
@@ -113,6 +113,7 @@ extension SessionModel {
     ) async throws -> FollowUpDelivery {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty || !attachments.isEmpty else { throw SendError.emptyMessage }
+        guard !isChangingAgent else { throw SendError.busy }
         guard acceptsPrompts else {
             throw isEarlierConversation ? SendError.earlierConversation : .notAcceptingPrompts
         }

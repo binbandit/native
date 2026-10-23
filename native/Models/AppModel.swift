@@ -1,5 +1,6 @@
 import ACP
 import AppAppearance
+import Experiments
 import Foundation
 import Observation
 import Undo
@@ -11,6 +12,7 @@ import os
 /// views: starting sessions, selection and its history, and the app-level prompts.
 @Observable
 final class AppModel {
+    let experiments: ExperimentStore
     let plugins: PluginRegistry
     let titles: SessionTitles
     let workingSpinners: WorkingSpinnerPreferences
@@ -56,6 +58,11 @@ final class AppModel {
     var isAddingProject = false
     /// Whether the agent picker for a new session is showing.
     var isChoosingAgent = false
+    var changingAgent: ChangeAgentModel?
+    @ObservationIgnored var agentChangeGoalBlock: (SessionModel) -> String? = { _ in nil }
+    @ObservationIgnored var changeAgentHandoff: (SessionModel) async -> String = { source in
+        TaskHandoff.draft(title: source.displayTitle, state: source.state)
+    }
     /// Whether Add Agent (agents that aren't installed, and how to install them) is showing.
     var isAddingAgent = false
     /// Which agents are installed. Ones that aren't are offered in Add Agent and never started.
@@ -170,10 +177,12 @@ final class AppModel {
     /// (AppModel+Preview.swift), so they never read or change the user's.
     init(
         plugins: PluginRegistry = PluginRegistry(), titles: SessionTitles = SessionTitles(),
-        defaults: UserDefaults = .standard, catalogURL: URL? = SessionCatalog.defaultURL
+        defaults: UserDefaults = .standard, catalogURL: URL? = SessionCatalog.defaultURL,
+        experiments: ExperimentStore = .shared
     ) {
         // Writing to an agent that just exited must surface as an error, not kill the app.
         signal(SIGPIPE, SIG_IGN)
+        self.experiments = experiments
         self.plugins = plugins
         self.titles = titles
         self.defaults = defaults

@@ -119,6 +119,9 @@ struct SessionRow<Accessory: View>: View {
     }
 
     @ViewBuilder private var menu: some View {
+        if model.offersAgentChange, let session {
+            Button("Change Agent…") { model.requestAgentChange(session) }
+        }
         Button("Rename…", action: rename)
         Button(isUnread ? "Mark as Read" : "Mark as Unread", action: toggleUnread)
         Button(isPinned ? "Unpin" : "Pin", action: togglePinned)

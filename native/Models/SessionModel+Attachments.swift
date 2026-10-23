@@ -34,6 +34,7 @@ extension SessionModel {
     /// Why a message can't go out now, or nil when it can. A session that's loading or busy isn't
     /// blocked: what's sent then waits in the queue.
     var sendBlock: SessionSendBlock? {
+        if isChangingAgent { return .changingAgent }
         if !acceptsPrompts { return isEarlierConversation ? .earlierConversation : .notAcceptingPrompts }
         // A host session whose agent couldn't run takes a message as its cue to try again.
         if phase == .disconnected, host == nil { return .disconnected(agentName: agentName) }
