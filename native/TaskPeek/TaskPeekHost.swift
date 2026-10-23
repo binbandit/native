@@ -2,8 +2,8 @@ import SwiftUI
 
 /// A single presenter lets any surface open Peek. Visible sidebar rows contribute their anchor;
 /// Home, Settings and filtered or collapsed lists fall back to the window's top edge.
-struct TaskPeekAnchors: PreferenceKey {
-    static let defaultValue: [SessionKey: Anchor<CGRect>] = [:]
+nonisolated struct TaskPeekAnchors: PreferenceKey {
+    static var defaultValue: [SessionKey: Anchor<CGRect>] { [:] }
     static func reduce(value: inout [SessionKey: Anchor<CGRect>], nextValue: () -> [SessionKey: Anchor<CGRect>]) {
         value.merge(nextValue(), uniquingKeysWith: { first, _ in first })
     }
