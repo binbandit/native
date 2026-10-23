@@ -51,7 +51,7 @@ struct QuickEntryPicker: View {
                     .buttonStyle(.plain)
                     .disabled(!runtime.isAvailable)
                     .dsHitTarget(DS.Size.controlSM)
-                    if runtime.status.canRetry {
+                    if entry.device == .thisMac, runtime.status.canRetry {
                         Button("Retry") { Task { await model.restart(runtime.agent.id) } }
                             .buttonStyle(.ds(.secondary))
                     }

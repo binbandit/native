@@ -48,7 +48,10 @@ extension AppModel {
 
     func reconcileQuickEntryAgent() {
         if !quickEntryRuntimes.contains(where: { $0.agent.id == quickEntry.agent }) {
-            quickEntry.agent = quickEntryRuntimes.first(where: \.isAvailable)?.agent.id
+            let preferred = defaultAgent(in: quickEntry.project.flatMap(projects.project))?.id
+            quickEntry.agent =
+                quickEntryRuntimes.first(where: { $0.agent.id == preferred && $0.isAvailable })?.agent.id
+                ?? quickEntryRuntimes.first(where: \.isAvailable)?.agent.id
         }
     }
 
