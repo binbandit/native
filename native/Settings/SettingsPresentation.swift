@@ -20,9 +20,36 @@ final class SettingsPresentation {
     var pane: SettingsPane.ID? {
         didSet {
             if let projectScope, projectScope.pane != pane { self.projectScope = nil }
+            if pane != oldValue { detailBack = nil }
             if oldValue == nil, pane != nil {
                 Telemetry.record(.featureUsed(.settings))
             }
+        }
+    }
+
+    /// A page can push a local detail without replacing Settings or losing its scroll position.
+    @ObservationIgnored private var detailBack: (() -> Void)?
+    @ObservationIgnored private var listOffset: Double = 0
+    @ObservationIgnored var pageOffset: Double = 0
+    @ObservationIgnored var scrollPage: ((Double) -> Void)?
+
+    func showDetail(_ id: String?, back: (() -> Void)? = nil) {
+        if id != nil {
+            if detailBack == nil { listOffset = pageOffset }
+            detailBack = back
+            scrollPage?(0)
+        } else if detailBack != nil {
+            detailBack = nil
+            scrollPage?(listOffset)
+        }
+    }
+
+    func goBack() {
+        if let back = detailBack {
+            showDetail(nil)
+            back()
+        } else {
+            close()
         }
     }
 
@@ -47,6 +74,7 @@ final class SettingsPresentation {
     }
 
     func close() {
+        detailBack = nil
         pane = nil
         projectScope = nil
     }

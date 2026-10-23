@@ -25,7 +25,7 @@ struct CelebrationCountryMenu: View {
                 ForEach(countries, id: \.self) { item($0) }
             }
         } label: {
-            Label("Turn On a Country's Holidays", systemImage: "globe")
+            Text("Turn On a Country's Holidays")
         }
         .menuStyle(.button)
         .buttonStyle(.ds(.ghost, size: .medium))

@@ -421,7 +421,7 @@ in Git, for example). No shortcuts change.
 | ↑ / ↓ | Move through the search results |
 | Return | Open the highlighted result |
 | Escape | Clear the search; with it empty, close Settings |
-| ⌘[ | Close Settings, back to where you were (Go menu) |
+| ⌘[ | Return from a celebration detail page first; otherwise close Settings (Go menu) |
 | ↑ / ↓ in the page list | Move to the previous / next page |
 
 ## Search
@@ -510,3 +510,7 @@ them. Composer keys in `native/Views/Composer*`; permission keys in
 | Keys | Action | Command |
 | --- | --- | --- |
 | ⌥⇧⌘H | Restore the usual icon and Home while a celebration shows (skips it until it next occurs), or bring a skipped one back (View menu) | `celebration.restore` |
+
+In Celebrations, Tab focuses a row, Space toggles it, and Return opens its detail page.
+Escape or ⌘[ in a celebration detail page returns to the list at its previous scroll position
+before closing Settings. The bulk-change confirmation also supports ⌘Z and Redo.

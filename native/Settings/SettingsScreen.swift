@@ -14,6 +14,9 @@ struct SettingsScreen: View {
     @Binding var pane: SettingsPane.ID?
     var additionalPanes: [SettingsPane] = []
 
+    @Environment(SettingsPresentation.self) private var presentation
+    @State private var scrollPosition = ScrollPosition()
+
     @Environment(PluginRegistry.self) private var registry
     @Environment(\.experimentStore) private var experiments
     private var plainly: Bool { SettingsPageMap.isEnabled(in: experiments ?? .shared) }
@@ -108,10 +111,26 @@ struct SettingsScreen: View {
         ScrollViewReader { proxy in
             ScrollView {
                 selectedPane?.makeContent()
+                    .environment(\.settingsScrollTo) { id, anchor in proxy.scrollTo(id, anchor: anchor) }
                     .padding(.horizontal, SettingsMetrics.pageInset)
                     .padding(.top, plainly ? DS.Settings.pageTopInset : SettingsMetrics.pageTopInset)
                     .padding(.bottom, SettingsMetrics.pageBottomInset)
             }
+            .scrollPosition($scrollPosition)
+            .onScrollGeometryChange(for: Double.self) { geometry in
+                Double(geometry.contentOffset.y + geometry.contentInsets.top)
+            } action: { _, offset in
+                presentation.pageOffset = offset
+            }
+            .onAppear {
+                presentation.scrollPage = { offset in
+                    Task { @MainActor in
+                        await Task.yield()
+                        scrollPosition.scrollTo(y: offset)
+                    }
+                }
+            }
+            .onDisappear { presentation.scrollPage = nil }
             .onScrollGeometryChange(for: Bool.self) { geometry in
                 geometry.contentOffset.y + geometry.contentInsets.top > 0
             } action: { _, isScrolled in
@@ -153,7 +172,7 @@ struct SettingsScreen: View {
     }
 
     private func close() {
-        pane = nil
+        presentation.goBack()
     }
 }
 

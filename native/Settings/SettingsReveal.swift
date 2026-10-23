@@ -8,6 +8,8 @@ struct SettingsReveal: Equatable {
 
 extension EnvironmentValues {
     /// The row that should flash, once the page has scrolled to it.
+    @Entry var settingsScrollTo: (SettingsRowID, UnitPoint) -> Void = { _, _ in }
+
     @Entry var settingsFlash: SettingsReveal?
 }
 
