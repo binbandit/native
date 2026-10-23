@@ -7,6 +7,15 @@ import Testing
 /// `session/load` on codex-acp 2.2.2 after Native sent an image block and an embedded text file;
 /// only the image's base64 is shortened.
 struct MessageAttachmentReplayTests {
+    @Test func referenceAttachmentsKeepTheirKnownSizesWithoutReadingTheFiles() {
+        let attachments = [0, 8192].map { size in
+            PromptAttachment(url: URL(filePath: "/missing/\(size).pdf"), content: .reference, byteCount: size)
+        }
+        let shown = MessageAttachment.shown(attachments, capabilities: PromptCapabilities())
+        #expect(shown.map(\.byteCount) == [0, 8192])
+        #expect(shown.allSatisfy { $0.embeddedData == nil && $0.imageData == nil })
+    }
+
     static let codexReplay = [
         #"{"sessionId":"01a14deb","update":{"sessionUpdate":"user_message_chunk","messageId":"01a14deb-a995","content":{"type":"text","text":"What does this image show? Answer in one short sentence."}}}"#,
         #"{"sessionId":"01a14deb","update":{"sessionUpdate":"user_message_chunk","messageId":"01a14deb-a995","content":{"type":"text","text":"[@image](data:image/png;base64,AQID)"}}}"#,
