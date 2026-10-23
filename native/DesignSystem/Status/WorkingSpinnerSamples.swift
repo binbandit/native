@@ -2,19 +2,26 @@ import AppAppearance
 import SwiftUI
 
 /// Same-size, neutral samples shared by Appearance and the Gallery.
-struct WorkingSpinnerSamples: View {
-    var body: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 76))], spacing: DS.Space.lg) {
+public struct WorkingSpinnerSamples: View {
+    public init() {}
+
+    public var body: some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: DS.Space.lg) {
             ForEach(WorkingAnimation.allCases, id: \.self) { animation in
-                VStack(spacing: DS.Space.sm) {
-                    DotGridLoader(pattern: .working(animation))
-                        .frame(width: DS.Size.statusGlyph * 2, height: DS.Size.statusGlyph * 2)
-                    Text(animation.title)
-                        .font(.dsCaption)
-                }
+                sample(animation.title, pattern: .working(animation))
             }
+            sample("Reduce Motion", pattern: .typing)
+                .environment(\.accessibilityReduceMotion, true)
         }
         .foregroundStyle(.dsTextSecondary)
+    }
+
+    private func sample(_ title: String, pattern: DotGridLoader.Pattern) -> some View {
+        VStack(spacing: DS.Space.sm) {
+            DotGridLoader(pattern: pattern)
+                .frame(width: DS.Size.statusGlyph * 2, height: DS.Size.statusGlyph * 2)
+            Text(title).font(.dsCaption)
+        }
     }
 }
 

@@ -3,7 +3,7 @@ import SwiftUI
 
 extension EnvironmentValues {
     /// Set at a task boundary so its sidebar and transcript share the model's saved choice.
-    @Entry var dsWorkingAnimation: WorkingAnimation? = nil
+    @Entry public var dsWorkingAnimation: WorkingAnimation? = nil
 }
 
 extension DotGridLoader.Pattern {
