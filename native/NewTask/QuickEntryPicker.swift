@@ -10,7 +10,7 @@ struct QuickEntryPicker: View {
             switch entry.picker {
             case .device:
                 HostDevicePicker(
-                    options: entry.project.map(model.deviceOptions(for:)) ?? [],
+                    options: deviceOptions,
                     projectName: entry.project.flatMap(model.projects.project)?.name ?? "the project",
                     selection: Binding(get: { entry.device }, set: model.chooseQuickEntryDevice),
                     onAddHost: openAddHost.map { action in { action() } }, width: nil
@@ -25,6 +25,13 @@ struct QuickEntryPicker: View {
         }
         .frame(maxHeight: DS.QuickEntry.pickerMaxHeight)
         .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var deviceOptions: [SessionDeviceOption] {
+        #if DEBUG
+        if let options = entry.previewDeviceOptions { return options }
+        #endif
+        return entry.project.map(model.deviceOptions(for:)) ?? []
     }
 
     private var agents: some View {

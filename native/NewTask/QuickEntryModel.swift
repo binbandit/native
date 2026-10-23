@@ -28,6 +28,9 @@ final class QuickEntryModel {
     var picker: Picker?
     var failure: String?
     var lastStartedTask: StartingTask?
+    #if DEBUG
+    var previewDeviceOptions: [SessionDeviceOption]?
+    #endif
 
     var message: String {
         guard let context else { return draft }

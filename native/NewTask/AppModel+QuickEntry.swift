@@ -17,6 +17,9 @@ extension AppModel {
         }
         reconcileQuickEntryAgent()
         quickEntry.isPresented = true
+        #if DEBUG
+        QuickEntryPreviewFixtures.applyLaunchState(to: self)
+        #endif
     }
 
     var quickEntryRuntimes: [AgentRuntime] {
