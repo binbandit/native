@@ -105,7 +105,8 @@ struct SessionRow<Accessory: View>: View {
                 SidebarSessionAttention(session: $0, task: summary.id, oldest: model.oldestTaskAsk?.id)
             }
             AllInViewTaskRow(
-                title: title, status: TaskStatus(session), isSelected: isSelected, isUnread: isUnread,
+                title: title, status: TaskStatus(session), isSelected: isSelected,
+                isPeeking: model.taskPeek.request?.task == summary.id, isUnread: isUnread,
                 ask: attention?.sentence ?? recoverySentence, attentionSince: attention?.since,
                 answersShortcut: attention?.answersShortcut == true,
                 unavailable: unavailableSentence,

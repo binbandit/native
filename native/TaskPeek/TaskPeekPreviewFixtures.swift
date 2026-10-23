@@ -5,7 +5,7 @@ import SwiftUI
 @MainActor
 enum TaskPeekPreviewFixtures {
     enum State: String, CaseIterable {
-        case routine, destructive, question, failure, plan, finished, resolved, long
+        case routine, destructive, question, failure, plan, finished, resolved, long, loading, missing
 
         var taskID: String {
             switch self {
@@ -15,6 +15,8 @@ enum TaskPeekPreviewFixtures {
             case .failure: "pier-1"
             case .plan: "plan"
             case .finished: "native-2"
+            case .loading: "native-0"
+            case .missing: "missing"
             }
         }
     }
@@ -28,6 +30,7 @@ enum TaskPeekPreviewFixtures {
                     "swift test --filter PermissionRequestTests.testPermissionResponsePreservesTheOriginalRequestWhenAnotherTaskAsksForApproval",
                 at: .now.addingTimeInterval(-720))
         }
+        if state == .loading { app.session(key)?.phase = .loading }
         let request = TaskPeekPresentation.Request(task: key, ask: app.taskAsks(for: key).first)
         if let session = app.session(key), state == .resolved {
             for call in session.permissionRequests { session.state.resolvePermission(toolCallID: call.id) }

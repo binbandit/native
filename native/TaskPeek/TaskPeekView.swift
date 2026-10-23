@@ -96,7 +96,9 @@ struct TaskPeekView: View {
                 }
             }
         } else if let session {
-            if session.taskStatus == .failed {
+            if session.phase == .loading {
+                ProgressView("Opening the task…").font(.dsBody)
+            } else if session.taskStatus == .failed {
                 TaskPeekFailureView(session: session) {
                     Task { await model.recoverPeekedTask(request.task) }
                 }
@@ -167,5 +169,7 @@ struct TaskPeekView: View {
 #Preview("Peek - Plan") { TaskPeekPreviewFixtures.view(.plan) }
 #Preview("Peek - Finished") { TaskPeekPreviewFixtures.view(.finished) }
 #Preview("Peek - Resolved") { TaskPeekPreviewFixtures.view(.resolved) }
+#Preview("Peek - Loading") { TaskPeekPreviewFixtures.view(.loading) }
+#Preview("Peek - Missing task") { TaskPeekPreviewFixtures.view(.missing) }
 #Preview("Peek - Long command, narrow") { TaskPeekPreviewFixtures.view(.long, width: 360) }
 #endif

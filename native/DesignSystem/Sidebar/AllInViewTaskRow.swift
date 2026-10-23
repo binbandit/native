@@ -6,6 +6,7 @@ public struct AllInViewTaskRow: View {
     let title: String
     let status: TaskStatus
     var isSelected = false
+    var isPeeking = false
     var isUnread = false
     var ask: String?
     var attentionSince: Date?
@@ -81,7 +82,12 @@ public struct AllInViewTaskRow: View {
         .buttonStyle(SidebarRowButtonStyle())
         .background {
             RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
-                .fill(isSelected ? .dsSelected : isHovered ? .dsHover : .clear)
+                .fill(isSelected || isPeeking ? .dsSelected : isHovered ? .dsHover : .clear)
+                .overlay {
+                    if isPeeking {
+                        RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous).strokeBorder(.dsBorder)
+                    }
+                }
         }
         .overlay(alignment: .topLeading) {
             if let peek {
@@ -113,7 +119,7 @@ public struct AllInViewTaskRow: View {
     }
 
     private var emphasizesTitle: Bool {
-        isSelected || isUnread || status.needsAttention || status == .failed
+        isSelected || isPeeking || isUnread || status.needsAttention || status == .failed
     }
 }
 
