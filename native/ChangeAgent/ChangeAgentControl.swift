@@ -9,7 +9,7 @@ struct ChangeAgentControl: View {
     var body: some View {
         if app.offersAgentChange {
             Button(session.agentName) { isOpen = true }
-                .buttonStyle(.header)
+                .buttonStyle(.header())
                 .accessibilityLabel("Agent: \(session.agentName)")
                 .popover(isPresented: $isOpen) {
                     VStack(alignment: .leading, spacing: DS.Space.lg) {
