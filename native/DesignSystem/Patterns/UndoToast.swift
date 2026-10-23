@@ -51,10 +51,10 @@ public struct UndoToast: View {
         .dsShadow(.modal)
         .overlay(alignment: .topLeading) { closeButton.offset(x: -7, y: -7) }
         // Include the corner close in hover tracking so reaching for it never restarts dismissal.
-        .padding([.top, .leading], 7)
+        .padding([.top, .leading], cornerHitOutset)
         .contentShape(.rect)
         .onHover { isHovered = $0 }
-        .padding([.top, .leading], -7)
+        .padding([.top, .leading], -cornerHitOutset)
         .onChange(of: isHeld) { _, held in onHoldChanged(held) }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(message)
@@ -71,6 +71,10 @@ public struct UndoToast: View {
     }
 
     private var isHeld: Bool { isHovered || focus != nil }
+
+    private var cornerHitOutset: CGFloat {
+        7 + max(0, (DS.Size.minimumHitTarget - 18) / 2)
+    }
 
     private var showsClose: Bool {
         #if DEBUG
