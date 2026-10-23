@@ -231,8 +231,21 @@ They're chosen not to collide with text editing in the composer.
 | Keys | Action |
 | --- | --- |
 | ⌘Y | Allow once (approve the workflow step) |
-| ⌥⌘Y | Allow always (when offered) |
+| ⌥⌘Y | Allow always (when offered, never for an irreversible action) |
 | ⌘⇧⌫ | Reject |
+| ⌘⇧Y | Ask the agent to use the suggested command (Fine print fix-it, when offered) |
+
+With Fine print enabled, irreversible commands require a 0.6-second hold. Hold ⌘Y when the local
+Allow once shortcut is available; All in view reserves ⌘Y for the oldest task ask. Releasing
+before the hold fills sends nothing. Pointer and touch use the same hold; VoiceOver and Switch Control
+use Allow followed by Confirm Allow within five seconds. The button acknowledges Allowed for
+0.4 seconds before the request folds away. Reduce Motion keeps the ring but removes the fill sweep.
+⌘L focuses Tell the agent what to do instead while an approval is shown; Return sends the instruction.
+The fix-it and every permission option are also in the keyboard tab order.
+Only the oldest request owns these keys; changing tasks or losing the window cancels a hold.
+When an agent offers several choices of one permission kind, each stays visible under its own name;
+only the first owns that kind's shortcut. The iPad hold route is installed at the window root so
+focus can remain in the sidebar, toolbar or transcript.
 
 On an expedition's route review, ⌘Return approves too, and ⌘L focuses the message field for the
 expedition's lead (the composer key, on a page without a composer).
@@ -388,11 +401,6 @@ Extra agent settings, such as Claude Code's Agent selector, always live in the c
 Controls ("…") menu. Each setting lists its choices with the current value checked; use the arrow
 keys and Return to choose from the menu. Model, effort, autonomy and mode keep their dedicated
 controls, moving into More only as the row runs out of room.
-
-With the Quiet composer experiment enabled, each setting is a plain-word button under the draft.
-The same keys below still apply. The agent name opens New Task With (⌥⌘N), or Change Agent
-when that experiment is also enabled. Tab reaches the buttons, Space opens their pickers, and
-Escape closes a picker.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
