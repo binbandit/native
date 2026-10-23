@@ -123,8 +123,9 @@ private struct UndoToastSlot: View {
             if let current = item {
                 UndoToastPresentation(item: current, duration: duration) { clear(current.id) }
                     .id(current.id)
-                    .padding(DS.Space.xxl)
-                    .padding(.bottom, bottomInset > 0 ? bottomInset + DS.Space.lg : 0)
+                    .padding([.top, .horizontal], DS.Space.xxl)
+                    // The measured bar already includes the composer's bottom margin.
+                    .padding(.bottom, max(DS.Space.xxl, bottomInset + DS.Space.lg))
                     .transition(
                         reduceMotion
                             ? .opacity
