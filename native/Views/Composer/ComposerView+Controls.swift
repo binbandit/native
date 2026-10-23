@@ -27,5 +27,4 @@ extension ComposerView {
         .disabled(!canEdit)
     }
 
-
 }

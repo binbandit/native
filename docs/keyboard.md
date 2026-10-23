@@ -362,7 +362,6 @@ Controls ("…") menu. Each setting lists its choices with the current value che
 keys and Return to choose from the menu. Model, effort, autonomy and mode keep their dedicated
 controls, moving into More only as the row runs out of room.
 
-
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
 | ⌘⇧M | Next permission mode | Task | `session.nextPermissionMode` |
