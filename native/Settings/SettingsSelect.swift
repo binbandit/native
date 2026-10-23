@@ -67,7 +67,7 @@ struct SettingsSelect<Value: Hashable>: View {
         .menuStyle(.button)
         .buttonStyle(SettingsSelectButtonStyle())
         .menuIndicator(.hidden)
-        .fixedSize(horizontal: !plainly, vertical: true)
+        .fixedSize(horizontal: !plainly || fieldStyle, vertical: true)
         .settingsFocusShape(shape)
         .trackHover($isHovered)
         .accessibilityLabel(rowTitle ?? label)
