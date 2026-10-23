@@ -5,18 +5,16 @@ struct SessionApprovalView: View {
     let session: SessionModel
     let call: ToolCallState
     @Environment(AppModel.self) private var app
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         AnnotatedApprovalView(
             call: call, agentName: session.agentName,
             workingDirectory: session.cwd.path,
-            homeDirectory: approvalHome, isAvailable: isAvailable,
+            homeDirectory: approvalHome, isAvailable: isAvailable, forceReducedMotion: forceReducedMotion,
             focusRequested: session.wantsComposerFocus, didFocus: { session.wantsComposerFocus = false },
             onChoose: { option in Task { await session.chooseApproval(option, for: call) } },
             onInstruct: instruct
         )
-        .environment(\.accessibilityReduceMotion, effectiveReduceMotion)
         .id(call)
     }
 
@@ -27,11 +25,11 @@ struct SessionApprovalView: View {
         return session.phase == .prompting
     }
 
-    private var effectiveReduceMotion: Bool {
+    private var forceReducedMotion: Bool {
         #if DEBUG
         if ApprovalPreviewOverride.current == .reducedMotion { return true }
         #endif
-        return reduceMotion
+        return false
     }
 
     private func instruct(_ text: String) async throws {

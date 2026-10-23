@@ -10,6 +10,7 @@ struct AnnotatedApprovalView: View {
     let workingDirectory: String
     var homeDirectory: String? = nil
     var isAvailable = true
+    var forceReducedMotion = false
     var focusRequested = false
     var didFocus: () -> Void = {}
     let onChoose: (PermissionOption) -> Void
@@ -209,7 +210,8 @@ struct AnnotatedApprovalView: View {
         if let allow = options.first(where: { $0.kind == .allowOnce }) {
             if analysis?.risk == .irreversible {
                 ApprovalHoldButton(
-                    shortcutsEnabled: shortcutsEnabled, keyboardHeld: keyboardHeld, didCommit: { committed = true }
+                    shortcutsEnabled: shortcutsEnabled, keyboardHeld: keyboardHeld,
+                    forceReducedMotion: forceReducedMotion, didCommit: { committed = true }
                 ) { onChoose(allow) }
             } else {
                 Button {
