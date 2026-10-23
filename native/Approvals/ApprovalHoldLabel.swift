@@ -6,6 +6,9 @@ struct ApprovalHoldLabel: View {
     var confirming = false
     var shortcutsEnabled = true
     var actionName: String? = nil
+    var primary = true
+
+    private var ink: Color { primary ? .dsTextOnAccent : .dsTextPrimary }
 
     var body: some View {
         HStack(spacing: DS.Space.md) {
@@ -14,9 +17,9 @@ struct ApprovalHoldLabel: View {
             } else {
                 ZStack {
                     Circle().stroke(
-                        .dsTextOnAccent.opacity(DS.Approval.ringTrackOpacity), lineWidth: DS.Approval.ringStroke)
+                        ink.opacity(DS.Approval.ringTrackOpacity), lineWidth: DS.Approval.ringStroke)
                     Circle().trim(from: 0, to: progress)
-                        .stroke(.dsTextOnAccent, lineWidth: DS.Approval.ringStroke)
+                        .stroke(ink, lineWidth: DS.Approval.ringStroke)
                         .rotationEffect(.degrees(-90))
                 }
                 .frame(width: DS.Approval.ringSize, height: DS.Approval.ringSize)

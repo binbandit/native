@@ -5,6 +5,7 @@ struct ApprovalHoldButton: View {
     let shortcutsEnabled: Bool
     var keyboardHeld = false
     var actionName: String? = nil
+    var primary = true
     var forceReducedMotion = false
     var didCommit: () -> Void = {}
     let allow: () -> Void
@@ -30,11 +31,11 @@ struct ApprovalHoldButton: View {
         } label: {
             ApprovalHoldLabel(
                 progress: progress, allowed: allowed, confirming: confirming,
-                shortcutsEnabled: shortcutsEnabled, actionName: actionName)
+                shortcutsEnabled: shortcutsEnabled, actionName: actionName, primary: primary)
         }
         .buttonStyle(
             ApprovalActionStyle(
-                primary: true, acknowledgesCompletion: allowed,
+                primary: primary, acknowledgesCompletion: allowed,
                 sweepProgress: reduceMotion || forceReducedMotion || allowed ? nil : progress,
                 pressing: pressed)
         )

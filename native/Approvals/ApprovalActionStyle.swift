@@ -23,8 +23,10 @@ struct ApprovalActionStyle: ButtonStyle {
                     .overlay(alignment: .leading) {
                         if let sweepProgress {
                             GeometryReader { geometry in
-                                Rectangle().fill(.dsTextOnAccent.opacity(DS.Approval.sweepOpacity))
-                                    .frame(width: geometry.size.width * sweepProgress)
+                                Rectangle().fill(
+                                    (primary ? Color.dsTextOnAccent : .dsTextPrimary).opacity(DS.Approval.sweepOpacity)
+                                )
+                                .frame(width: geometry.size.width * sweepProgress)
                             }
                             .clipShape(.rect(cornerRadius: DS.Radius.control))
                             .allowsHitTesting(false)

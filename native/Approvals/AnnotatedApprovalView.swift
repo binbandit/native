@@ -223,7 +223,8 @@ struct AnnotatedApprovalView: View {
             if analysis?.risk == .irreversible {
                 ApprovalHoldButton(
                     shortcutsEnabled: shortcutsEnabled && ownsShortcut, keyboardHeld: ownsShortcut && keyboardHeld,
-                    actionName: title == "Allow" ? nil : title, forceReducedMotion: forceReducedMotion,
+                    actionName: title == "Allow" ? nil : title, primary: ownsShortcut,
+                    forceReducedMotion: forceReducedMotion,
                     didCommit: { committed = true }
                 ) { onChoose(allow) }
             } else {
@@ -232,7 +233,7 @@ struct AnnotatedApprovalView: View {
                 } label: {
                     actionLabel(title, keys: ownsShortcut ? "⌘Y" : "")
                 }
-                .buttonStyle(ApprovalActionStyle(primary: true))
+                .buttonStyle(ApprovalActionStyle(primary: ownsShortcut))
                 .keyboardShortcut(shortcutsEnabled && ownsShortcut ? KeyboardShortcut("y", modifiers: .command) : nil)
             }
         }
