@@ -16,7 +16,7 @@ noticed while there's still room to choose what to cut; lower them as the cuts i
 | Download, update archive | 47 MB | 42.7 MB |
 | Download, disk image | 48 MB | about 43.3 MB |
 | Installed app | 118 MB | 107.5 MB |
-| App binary (`Contents/MacOS/Native`) | 58.5 MB | 53.2 MB |
+| App binary (`Contents/MacOS/Native`) | 59 MB | 53.2 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
 `scripts/release/size-check.sh` holds the same numbers and fails when anything is over. It also
@@ -44,6 +44,13 @@ canvas, native document preview adapters and preservation of image/file content 
 tool messages, with no bundled assets or dependencies. It uses the same 58.5 MB binary allowance.
 At `d242798c`, the measured download was 45.8 MB and installed app was 114.8 MB, within their
 unchanged limits.
+
+2026-10-23: Fine print's annotated approval, command analysis and deliberate-confirmation controls
+bring the integrated Nightly binary to 58.7 MB at `c19a6495` (PR #97, Check Nightly job
+120414607392). The old quiet-settings-line implementation is removed; this slice adds no bundled
+assets or third-party dependencies. The binary allowance is 59 MB for this shared component and
+its platform key routing. The measured update archive (46.1 MB) and installed app (115.5 MB) remain
+within their unchanged limits. These are integrated build measurements, not an isolated size delta.
 
 ## Measuring
 
