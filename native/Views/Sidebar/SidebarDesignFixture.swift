@@ -104,6 +104,10 @@ private struct SidebarDesignFixture: View {
             for: agent, in: project.id)
         guard let session = SessionModel.preview(in: app, agent: "codex", id: id, cwd: project.path, title: title)
         else { return }
+        if status.needsAttention {
+            session.state.appendUserMessage(title, at: .now.addingTimeInterval(-age - 60))
+            session.phase = .prompting
+        }
         switch status {
         case .working: session.previewRunningTurn(title)
         case .needsPermission:
