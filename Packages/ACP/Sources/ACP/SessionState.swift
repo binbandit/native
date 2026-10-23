@@ -9,6 +9,8 @@ public struct SessionState: Sendable {
     public private(set) var items: [TranscriptItem] = []
     /// The agent's latest plan; each `plan` update replaces the previous one.
     public private(set) var plan: [PlanEntry] = []
+    /// A retained plan isn't progress for a new turn until the agent reports it there.
+    var planTurnStart: Int?
     public var configOptions: [ConfigOption] = []
     public private(set) var availableCommands: [AvailableCommand] = []
     public private(set) var usage: Usage?
@@ -70,7 +72,9 @@ public struct SessionState: Sendable {
         case .agentMessageChunk(let chunk): appendChunk(chunk, role: .agent, at: date)
         case .agentThoughtChunk(let chunk): appendChunk(chunk, role: .thought, at: date)
         case .toolCall(let update), .toolCallUpdate(let update): upsertToolCall(update, at: date)
-        case .plan(let entries): plan = entries
+        case .plan(let entries):
+            plan = entries
+            planTurnStart = openTurn
         case .availableCommands(let commands): availableCommands = commands
         case .configOptions(let options): configOptions = options
         case .currentMode(let mode):

@@ -65,6 +65,7 @@ extension SessionState {
         guard let openTurn else { return TaskActivityNarration(verb: "Working") }
         // The reducer already indexes open calls. Streaming a long reply must not rescan the turn.
         let latest = openCallIndices.filter { $0 >= openTurn }.max()
-        return TaskActivityNarration(items: latest.map { [items[$0]] } ?? [], plan: plan)
+        return TaskActivityNarration(
+            items: latest.map { [items[$0]] } ?? [], plan: planTurnStart == openTurn ? plan : [])
     }
 }

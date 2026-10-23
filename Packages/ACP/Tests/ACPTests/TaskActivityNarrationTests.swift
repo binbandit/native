@@ -4,6 +4,20 @@ import Testing
 @testable import ACP
 
 struct TaskActivityNarrationTests {
+    @Test func aNewTurnDoesNotReuseEarlierProgress() throws {
+        var state = SessionState()
+        state.appendUserMessage("Follow this plan")
+        let plan = try JSONDecoder().decode(
+            [PlanEntry].self,
+            from: Data("[{\"content\":\"Verify\",\"priority\":\"high\",\"status\":\"in_progress\"}]".utf8))
+        state.apply(.plan(plan))
+        #expect(state.taskActivity.progress == .init(completed: 0, total: 1))
+        state.endTurn(.endTurn)
+        state.appendUserMessage("A different task")
+        #expect(state.taskActivity.progress == nil)
+        #expect(state.plan == plan)
+    }
+
     @Test func aNewTurnDoesNotNarrateEarlierTools() throws {
         var state = SessionState()
         state.appendUserMessage("Read the file")
