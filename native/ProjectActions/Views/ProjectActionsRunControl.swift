@@ -17,6 +17,7 @@ struct ProjectActionsRunControl<MenuContent: View>: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isRunHovered = false
     @State private var isChevronHovered = false
+    @State private var isMenuOpen = false
     @FocusState private var isPrimaryFocused: Bool
 
     var body: some View {
@@ -85,53 +86,53 @@ struct ProjectActionsRunControl<MenuContent: View>: View {
     }
 
     private var chevron: some View {
-        Menu(content: menuContent) {
+        let open = isMenuOpen || interaction == .menuOpen
+        let hovered = isChevronHovered || interaction == .hoverChevron
+        return PlatformProjectActionsMenuTrigger(
+            projectName: projectName, isHovered: $isChevronHovered, isOpen: $isMenuOpen, content: menuContent
+        )
+        .frame(width: DS.Size.rowLeading + 2 * DS.Space.sm + DS.RunControl.borderWidth)
+        .background(open ? .dsPressed : hovered ? .dsHover : .clear)
+        .overlay {
             Image(systemName: "chevron.down")
                 .font(.dsCaption)
                 .imageScale(.small)
                 .padding(.trailing, DS.RunControl.borderWidth)
-                .frame(width: DS.Size.rowLeading + 2 * DS.Space.sm + DS.RunControl.borderWidth)
-                .frame(maxHeight: .infinity)
-                .contentShape(.rect)
+                .foregroundStyle(open || hovered ? .dsTextPrimary : .dsTextSecondary)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
         }
-        .menuStyle(.button)
-        .menuIndicator(.hidden)
-        .buttonStyle(
-            ProjectActionsSegmentStyle(
-                isHovered: isChevronHovered || interaction == .hoverChevron,
-                isPressed: interaction == .menuOpen)
-        )
         .trackHover($isChevronHovered)
         .help("Actions for \(projectName)")
-        .accessibilityLabel("Project Actions")
-        .accessibilityValue(projectName)
         .dsHitTarget(DS.Size.controlXS)
         .dsFocusShape(trailingShape)
     }
 
     private var emptyMenu: some View {
-        Menu(content: menuContent) {
-            HStack(spacing: DS.Space.sm) {
-                Image(systemName: "play")
-                    .font(DS.RunControl.playFont)
-                    .offset(x: DS.RunControl.playOffset)
-                    .frame(width: DS.Size.navIcon, height: DS.Size.navIcon)
-                Text("Run").font(.dsBody).tracking(DS.Tracking.tight)
-                Image(systemName: "chevron.down").font(.dsCaption).imageScale(.small)
-            }
-            .padding(.horizontal, DS.Space.sm + DS.RunControl.borderWidth)
-            .frame(maxHeight: .infinity)
-            .contentShape(.rect)
+        HStack(spacing: DS.Space.sm) {
+            Image(systemName: "play")
+                .font(DS.RunControl.playFont)
+                .offset(x: DS.RunControl.playOffset)
+                .frame(width: DS.Size.navIcon, height: DS.Size.navIcon)
+            Text("Run").font(.dsBody).tracking(DS.Tracking.tight)
+            Image(systemName: "chevron.down").font(.dsCaption).imageScale(.small)
         }
-        .menuStyle(.button)
-        .menuIndicator(.hidden)
-        .buttonStyle(ProjectActionsSegmentStyle(isHovered: runHovered, hasSurface: true))
+        .padding(.horizontal, DS.Space.sm + DS.RunControl.borderWidth)
+        .frame(maxHeight: .infinity)
+        .foregroundStyle(isMenuOpen || runHovered ? .dsTextPrimary : .dsTextSecondary)
+        .background(isMenuOpen ? .dsPressed : runHovered ? .dsHover : .clear)
+        .background(.dsSurface)
+        .accessibilityHidden(true)
+        .overlay {
+            PlatformProjectActionsMenuTrigger(
+                projectName: projectName, isSingle: true, isHovered: $isRunHovered, isOpen: $isMenuOpen,
+                content: menuContent
+            )
+            .dsHitTarget(DS.Size.controlXS)
+            .dsFocusShape(RoundedRectangle(cornerRadius: DS.Radius.control))
+        }
         .trackHover($isRunHovered)
         .help("Actions for \(projectName)")
-        .accessibilityLabel("Project Actions")
-        .accessibilityValue(projectName)
-        .dsHitTarget(DS.Size.controlXS)
-        .dsFocusShape(RoundedRectangle(cornerRadius: DS.Radius.control))
     }
 
     @ViewBuilder private var glyph: some View {

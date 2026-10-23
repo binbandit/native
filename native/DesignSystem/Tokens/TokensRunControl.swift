@@ -10,5 +10,7 @@ extension DS {
         static let playOffset: CGFloat = 0.5
         static let finishedDuration = Duration.milliseconds(1_600)
         static let borderWidth: CGFloat = 1
+        /// The 4pt gap plus the system menu's 5pt top inset, matching Open In.
+        static let menuOffset: CGFloat = DS.Space.xs + 5
     }
 }
