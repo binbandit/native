@@ -1,5 +1,9 @@
 import Foundation
 
+#if canImport(ImageIO)
+import ImageIO
+#endif
+
 #if canImport(UniformTypeIdentifiers)
 import UniformTypeIdentifiers
 #endif
@@ -58,8 +62,16 @@ public struct TranscriptArtifact: Hashable, Sendable {
         #endif
     }
 
-    /// Formats whose headers can be checked cheaply before asking the thumbnail decoder to draw.
-    public var hasImageHeader: Bool { data.flatMap(ImageHeader.init) != nil }
+    /// Check the platform's supported headers without decoding full-sized pixels on the UI thread.
+    public var hasImageHeader: Bool {
+        guard let data else { return false }
+        #if canImport(ImageIO)
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return false }
+        return CGImageSourceGetCount(source) > 0
+        #else
+        return ImageHeader(data) != nil
+        #endif
+    }
 
     /// Agent-provided names may contain paths. Temporary previews and exports use one filename only.
     public var filename: String {
@@ -67,13 +79,22 @@ public struct TranscriptArtifact: Hashable, Sendable {
         let clean = leaf.unicodeScalars.filter { !CharacterSet.controlCharacters.contains($0) }
         var result = String(String.UnicodeScalarView(clean))
         if result.isEmpty || result == "." || result == ".." { result = "Artifact" }
-        #if canImport(UniformTypeIdentifiers)
         let detected = data.flatMap(ImageHeader.init)?.mimeType ?? mimeType
+        #if canImport(UniformTypeIdentifiers)
         if let detected, let type = UTType(mimeType: detected), let suffix = type.preferredFilenameExtension {
             let current = UTType(filenameExtension: (result as NSString).pathExtension)
             if current != type { result += "." + suffix }
         } else if data != nil, (result as NSString).pathExtension.isEmpty, !isImage {
             result += ".txt"
+        }
+        #else
+        if (result as NSString).pathExtension.isEmpty {
+            let suffix = [
+                "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp",
+                "image/heic": "heic", "image/tiff": "tiff", "image/svg+xml": "svg",
+                "application/pdf": "pdf", "text/plain": "txt", "text/html": "html",
+            ][detected ?? ""]
+            if let suffix { result += "." + suffix } else if data != nil, !isImage { result += ".txt" }
         }
         #endif
         return String(result.prefix(180))

@@ -3,7 +3,29 @@ import Testing
 
 @testable import ACP
 
+#if canImport(ImageIO)
+import ImageIO
+import UniformTypeIdentifiers
+#endif
+
 struct TranscriptArtifactTests {
+    #if canImport(ImageIO)
+    @Test func jpegImagesHaveAThumbnailHeader() throws {
+        let context = try #require(
+            CGContext(
+                data: nil, width: 30, height: 20, bitsPerComponent: 8, bytesPerRow: 0,
+                space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue))
+        let image = try #require(context.makeImage())
+        let bytes = NSMutableData()
+        let destination = try #require(
+            CGImageDestinationCreateWithData(bytes, UTType.jpeg.identifier as CFString, 1, nil))
+        CGImageDestinationAddImage(destination, image, nil)
+        #expect(CGImageDestinationFinalize(destination))
+        let artifact = TranscriptArtifact(name: "Photo", data: bytes as Data, mimeType: "image/jpeg")
+        #expect(artifact.hasImageHeader)
+    }
+    #endif
+
     @Test func extractsRawMCPImagesBesideTextWithoutRepeatingTypedContent() throws {
         var call = ToolCallState(id: "read-image")
         call.content = [.content(.image(data: "AQID", mimeType: "image/png"))]
