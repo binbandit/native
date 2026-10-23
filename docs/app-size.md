@@ -52,6 +52,16 @@ assets or third-party dependencies. The binary allowance is 59 MB for this share
 its platform key routing. The measured update archive (46.1 MB) and installed app (115.5 MB) remain
 within their unchanged limits. These are integrated build measurements, not an isolated size delta.
 
+Home Next's inline questions, plan review and failure recovery add about 0.1 MB of compiled UI
+and model code. Nightly measured 58.4 MB on base `638e0771` and just over 58.5 MB on `2b6cfdb9`
+with this slice. The download stays at 46.0 MB and the installed app rises from 115.1 MB to 115.3 MB, within their
+unchanged budgets. The slice reuses the composer and error components and adds no dependencies
+or bundled assets. `NativeHomeNext` remains off by default; remove the old Home presentation
+when Next is complete, then remeasure its temporary duplication.
+
+Measurements: [base Nightly](https://github.com/binbandit/native/actions/runs/39949712258/job/120400913612)
+and [Home Next Nightly](https://github.com/binbandit/native/actions/runs/39952262729/job/120409343802).
+
 2026-10-24: the integrated worktree-creation commands and Plainly Settings build at `dde394e1`
 measures 58.6 MB for the Nightly binary, 46.1 MB downloaded and 115.4 MB installed. Earlier
 feature measurements used separate branches; their combined code now exceeds the 58.5 MB

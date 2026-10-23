@@ -171,20 +171,34 @@ full New Task view. Compose's page and the shared well's pre-start presentation 
 `native/HomeNext/`: one centered reading column with a task title, the existing shared
 `ToolCallView` approval, Up next, and a quiet working-status line. The composer owns the
 annotated approval replacement; Home must embed that component when it lands, never copy it.
-The sidebar owns the shared status signal; Home currently uses `StatusIndicator`.
+The sidebar owns the shared `TaskSignal`; Home uses it for the current ask and Up next rows.
 
 `HomeAskOrder` in `Packages/TaskList` puts approvals before questions, plans, and failures,
 oldest within each kind. The ask being read stays put when another arrives. Answering uses the
 exact `SessionModel` and tool-call request displayed, including subagent requests. Home records
-a receipt and advances when the model removes the permission. Questions, plans and failures
-open their task until the next slice adds their inline answers. Finished today includes tasks
+a receipt and advances when the model acknowledges an answer. Questions embed the composer's
+`AgentQuestionSection`, with the same digit keys, multiple-question paging and free text. Plan
+permissions embed `ComposerPlanSection` in its numbered review presentation (first five steps,
+then Show more), using only the current turn's checklist. The exact permission proposal always
+stays visible in the shared `ToolCallView`, with Approve Plan and Revise from its permission buttons.
+Session-wide progress from earlier turns cannot replace the proposal being approved.
+
+Failures use `ErrorState` in its reading layout: what happened, recorded recovery from the current
+turn, error output, Retry and Open Task. `TurnFailureContext` in ACP includes live host recovery
+notices and replayed recovery markers, keeping earlier turns' errors and recovery out of this
+explanation. Retry asks the existing session to check completed work and
+continue, preserving the draft; a disconnected in-process agent instead opens its task to reconnect.
+Home retains the exact question or permission on screen, including subagent asks. An answer that
+cannot reach the host stays on screen with its error and no success receipt. Finished today includes tasks
 with a known successful turn completion today, five at a time; unknown history is not called done.
-On Home, the sidebar's asks should fold to their title when the new sidebar lands.
+The sidebar still needs to fold its asks to their title on Home.
 
 For isolated Debug checks, enable the gate with Settings > Labs > Next or
 `defaults write dev.binbandit.native.dev.<name> experiment.NativeHomeNext -bool YES`, then launch
 with `-nativeHomeNextFixture busy` for inert preview models. Other fixture values are `quiet`,
-`first`, `empty`, `loading`, `recovery`, and `narrow`.
+`first`, `empty`, `loading`, `recovery`, `narrow`, `question`, `questionText`, `questions`,
+`plan`, `planText`, `planRetained`, `failure`, `failurePaused`, and `questionFailure` (a read-only sink
+exercises answer delivery failure).
 The fixture is absent from Release and Nightly and never opens an agent or writes project data.
 
 New UIs, designs and behaviors ship as opt-in experiments first (see "Experiments behind flags" in

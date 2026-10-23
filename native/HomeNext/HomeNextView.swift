@@ -2,7 +2,7 @@ import ACP
 import SwiftUI
 import TaskList
 
-/// One decision at page size. The approval itself belongs to the shared transcript component.
+/// One decision at page size, using the same answer controls as the task.
 struct HomeNextView: View {
     let agents: [HomeAgent<AgentDefinition.ID>]
     var isLoading = false
@@ -12,14 +12,13 @@ struct HomeNextView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var order = HomeAskOrder.quickest
     @State private var current: SessionKey?
-    @State private var currentApproval: HomeNextApprovalID?
+    @State private var currentRequest: HomeNextRequest.ID?
     @State private var visibleCount = DS.HomeNext.pageSize
     @State private var receipt: HomeNextReceipt?
-    @State private var isAnswering = false
     @State private var safeAreaTop: CGFloat = 0
 
     var body: some View {
-        let tasks = model.homeNextTasks(retaining: currentApproval)
+        let tasks = model.homeNextTasks(retaining: currentRequest)
         let asks = order.sorted(tasks.filter(\.needsYou), retaining: current, id: \.id, kind: \.kind, date: \.date)
         let finished = tasks.filter {
             $0.finishedAt.map { Calendar.current.isDateInToday($0) } == true
@@ -36,8 +35,11 @@ struct HomeNextView: View {
                     }
                     Group {
                         if let task = asks.first {
-                            ask(task)
-                                .id(task.approval?.id ?? task.id.id.rawValue)
+                            HomeNextAskView(task: task, onReceipt: { receipt = $0 }) {
+                                model.openHomeNextTask(task.id)
+                            }
+                            .id(task.requestID)
+                            .id(task.id)
                         } else {
                             quiet(finished: finished.count, working: tasks.filter { $0.status.isActive }.count)
                         }
@@ -98,8 +100,9 @@ struct HomeNextView: View {
             safeAreaTop = $0
         }
         .onChange(of: asks.first?.id, initial: true) { _, id in current = id }
-        .onChange(of: asks.first?.approvalID, initial: true) { _, id in currentApproval = id }
-        .animation(reduceMotion ? nil : .dsDisclosure, value: asks.map { $0.approval?.id ?? $0.id.id.rawValue })
+        .onChange(of: asks.first?.requestID, initial: true) { _, id in currentRequest = id }
+        .animation(reduceMotion ? nil : .dsDisclosure, value: asks.map(\.id))
+        .animation(reduceMotion ? nil : .dsDisclosure, value: asks.map(\.requestID))
         .animation(reduceMotion ? nil : .dsDisclosure, value: visibleCount)
         .animation(reduceMotion ? nil : .dsDisclosure, value: receipt?.date)
     }
@@ -127,51 +130,6 @@ struct HomeNextView: View {
         }
         .frame(minHeight: DS.HomeNext.headerHeight)
         .accessibilityAddTraits(.isHeader)
-    }
-
-    private func ask(_ task: HomeNextTask) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: DS.Space.md) {
-                StatusIndicator(status: task.status, size: DS.Size.navIcon)
-                Text("\(task.agent) \(task.status == .failed ? "stopped" : "is waiting on you")")
-                if let date = task.date {
-                    Text("·")
-                    DSMinuteTimeline { now in Text(DSFormat.compactAge(date, now: now)) }
-                }
-                Spacer(minLength: DS.Space.md)
-                if let host = task.host {
-                    Label(host, systemImage: "desktopcomputer")
-                        .foregroundStyle(.dsTextTertiary)
-                }
-            }
-            .font(.dsBody).foregroundStyle(.dsTextSecondary)
-            title(task.title).padding(.top, DS.HomeNext.titleTop)
-            if let call = task.approval {
-                ToolCallView(call: call) { option in answer(option, task: task, call: call) }
-                    .disabled(isAnswering)
-            } else {
-                Text(task.ask).font(DS.HomeNext.ledeFont).foregroundStyle(.dsTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Button("Open Task") { model.openHomeNextTask(task.id) }
-                .buttonStyle(.ds(.ghost))
-                .keyboardShortcut(.return, modifiers: .command)
-                .padding(.top, DS.Space.lg)
-        }
-    }
-
-    private func answer(_ option: PermissionOption, task: HomeNextTask, call: ToolCallState) {
-        guard !isAnswering, let session = task.approvalSession,
-            session.permissionRequests.contains(where: { $0.id == call.id && $0.permission == call.permission })
-        else { return }
-        isAnswering = true
-        Task {
-            await session.choose(option, forToolCall: call.id)
-            receipt = HomeNextReceipt(
-                task: task.id, title: task.title, command: call.shellCommand ?? call.title,
-                rejected: option.isRejection, date: .now)
-            isAnswering = false
-        }
     }
 
     private func quiet(finished: Int, working: Int) -> some View {

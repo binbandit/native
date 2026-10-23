@@ -8,6 +8,7 @@ import SwiftUI
 /// the agent waits for approval the details stay open above the permission buttons.
 struct ToolCallView: View, Equatable {
     let call: ToolCallState
+    var permissionPresentation: ToolPermissionButtons.Presentation = .standard
     let onChoose: (PermissionOption) -> Void
 
     @Environment(TranscriptDisclosures.self) private var disclosures: TranscriptDisclosures?
@@ -18,7 +19,7 @@ struct ToolCallView: View, Equatable {
 
     /// Rows only change with their call; `onChoose` always answers the same session.
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.call == rhs.call
+        lhs.call == rhs.call && lhs.permissionPresentation == rhs.permissionPresentation
     }
 
     var body: some View {
@@ -75,9 +76,11 @@ struct ToolCallView: View, Equatable {
                 .transition(RevealTransition())
             }
             if let permission = call.permission, !inComposer {
-                ToolPermissionButtons(options: permission.options, onChoose: onChoose)
-                    .padding(.top, DS.Space.sm)
-                    .transition(.opacity)
+                ToolPermissionButtons(
+                    options: permission.options, onChoose: onChoose, presentation: permissionPresentation
+                )
+                .padding(.top, DS.Space.sm)
+                .transition(.opacity)
             }
         }
         .animation(.smooth, value: phase)
