@@ -54,6 +54,7 @@ private struct TaskActivityRow: View {
         Button(action: action) {
             HStack(spacing: DS.Space.md) {
                 StatusIndicator(status: task.status)
+                    .environment(\.dsWorkingAnimation, task.workingAnimation)
                 VStack(alignment: .leading, spacing: DS.Space.xxs) {
                     DSInlineCodeText(task.title)
                         .font(.dsBody)

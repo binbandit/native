@@ -14,7 +14,8 @@ extension AppModel: StatusBarSource {
                 agentName: session.agentName,
                 projectName: projects.project(summary.project)?.name,
                 status: status,
-                since: session.lastActivity
+                since: session.lastActivity,
+                workingAnimation: session.workingAnimation
             )
         }
         // Waiting on the user first: those are the ones to act on.
