@@ -15,7 +15,7 @@ private struct TaskPeekHost: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .environment(\.globalTaskAskShortcut, model.offersTaskPeek && model.oldestTaskAsk != nil)
+            .environment(\.legacyAskShortcutEnabled, model.legacyAskShortcutEnabled(in: .shared))
             .overlayPreferenceValue(TaskPeekAnchors.self) { anchors in
                 GeometryReader { geometry in
                     let anchor = model.taskPeek.request.flatMap { anchors[$0.task] }.map { geometry[$0] }
@@ -65,6 +65,6 @@ extension View {
 }
 
 extension EnvironmentValues {
-    @Entry var globalTaskAskShortcut = false
+    @Entry var legacyAskShortcutEnabled = true
     @Entry var oldestTaskAskID: TaskPeekAsk.ID?
 }

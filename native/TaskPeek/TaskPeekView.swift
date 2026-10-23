@@ -102,7 +102,7 @@ struct TaskPeekView: View {
             notice("This host is offline", detail: "The task and its ask are kept. Reconnect the host to answer.")
         } else if let ask {
             if ask.isCurrent, model.session(ask.session.key) === ask.session {
-                answer(ask).disabled(model.taskPeek.isAnswering)
+                answer(ask).id(ask.id).disabled(model.taskPeek.isAnswering)
             } else {
                 notice("This ask changed or was resolved", detail: "Open the task to see what happened next.")
                 if !model.taskAsks(for: request.task).isEmpty {
@@ -127,7 +127,8 @@ struct TaskPeekView: View {
             notice("Couldn't open the task", detail: runtime.status.guidance ?? runtime.status.label)
             Button("Try Again") {
                 Task {
-                    await model.restart(request.task.agent); await model.loadSession(request.task)
+                    await model.restart(request.task.agent, preservingDrafts: true)
+                    await model.loadSession(request.task)
                 }
             }
             .buttonStyle(.ds(.primary))

@@ -68,7 +68,9 @@ struct AgentQuestionSection: View {
         .onAppear {
             if takesFocus { focus = .card }
         }
-        .onChange(of: index) { highlighted = 0 }
+        .onChange(of: index) {
+            highlighted = answersHighlightedOption ? answers.initialHighlight(in: question) : 0
+        }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Question \(index + 1) of \(questionnaire.questions.count)")
     }
@@ -216,11 +218,7 @@ struct AgentQuestionSection: View {
     }
 
     private func submit() {
-        if answersHighlightedOption, !question.allowsMultiple, answers.typedAnswer(for: question).isEmpty,
-            question.options.indices.contains(highlighted)
-        {
-            answers.pick(question.options[highlighted], in: question)
-        }
+        if answersHighlightedOption { answers.answerHighlightedOption(highlighted, in: question) }
         advance()
     }
 

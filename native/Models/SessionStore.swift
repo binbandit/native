@@ -11,6 +11,8 @@ import TaskList
 @Observable
 final class SessionStore {
     private var sessions: [SessionKey: SessionModel] = [:]
+    /// A failed restart may not reopen a task immediately. Keep its composer until it does.
+    @ObservationIgnored private var restartDrafts: [SessionKey: (text: String, attachments: [PromptAttachment])] = [:]
     /// Host activity outlives the model used to view a task's transcript.
     let activityDates = TaskActivityDates<SessionKey>()
     /// Updates for sessions whose model doesn't exist yet. An agent can send these before it answers
@@ -66,6 +68,10 @@ final class SessionStore {
 
     /// Adds a session and delivers whatever arrived for it before it existed.
     func register(_ session: SessionModel) {
+        if let draft = restartDrafts.removeValue(forKey: session.key) {
+            session.draft = draft.text
+            session.attachments = draft.attachments
+        }
         if let summary = session.hostSummary { recordActivity(summary) }
         sessions[session.key] = session
         for update in buffered.removeValue(forKey: session.key) ?? [] {
@@ -80,6 +86,7 @@ final class SessionStore {
 
     /// Drops a session and its subagents, for when Native closes it.
     func remove(_ session: SessionModel) {
+        restartDrafts[session.key] = nil
         for child in session.children.values {
             remove(child)
         }
@@ -94,6 +101,15 @@ final class SessionStore {
     func replace(_ old: SessionModel, with new: SessionModel) {
         sessions[old.key] = nil
         register(new)
+    }
+
+    /// Retains composers across a restart, including tasks reopened after a failed retry.
+    func preserveDrafts(of agent: AgentDefinition.ID) {
+        for session in sessions.values where session.key.agent == agent {
+            if !session.draft.isEmpty || !session.attachments.isEmpty {
+                restartDrafts[session.key] = (session.draft, session.attachments)
+            }
+        }
     }
 
     /// Drops an agent's sessions, for when its process is replaced or goes away for good.

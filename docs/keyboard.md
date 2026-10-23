@@ -222,7 +222,7 @@ A click on a row's signal, a force click, or Peek in its context menu opens the 
 Questions keep their digit, arrow and Return controls. An answer closes Peek. Hidden or filtered
 rows use a window anchor. The experiment defaults to off; the shortcuts below keep today's
 behavior while it is off. Workflow and expedition approvals retain their local shortcut when no
-task ask owns ⌘Y.
+task ask owns ⌘Y and the user has not reassigned it to another command.
 
 The oldest pending request in the visible task answers these: a tool's permission request, a
 workflow step waiting for approval, or an expedition's route (or route change) waiting for review.

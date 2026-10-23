@@ -89,7 +89,7 @@ extension AppModel {
         defer { taskPeek.isRecovering = false }
         let presentation = taskPeek.request?.id
         if session.phase == .disconnected, session.host == nil {
-            await restart(key.agent)
+            await restart(key.agent, preservingDrafts: true)
             await loadSession(key)
         } else {
             do {

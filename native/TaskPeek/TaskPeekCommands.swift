@@ -20,3 +20,12 @@ extension NativeCommand {
         ]
     }
 }
+
+extension AppModel {
+    func legacyAskShortcutEnabled(in registry: CommandRegistry) -> Bool {
+        guard let shortcut = DefaultShortcuts.all[.taskAnswerOldestAsk],
+            registry.bindings.commands(boundTo: shortcut) == [.taskAnswerOldestAsk]
+        else { return false }
+        return !offersTaskPeek || oldestTaskAsk == nil
+    }
+}

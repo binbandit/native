@@ -294,7 +294,8 @@ final class AppModel {
         }
     }
 
-    func restart(_ agent: AgentDefinition.ID) async {
+    func restart(_ agent: AgentDefinition.ID, preservingDrafts: Bool = false) async {
+        if preservingDrafts { sessions.preserveDrafts(of: agent) }
         if let restart = agentRestarts[agent] { return await restart.value }
         let restart = Task {
             if runsAgentsInHost {

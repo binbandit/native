@@ -6,7 +6,7 @@ import SwiftUI
 /// the route beside the crew and the logbook (stacked when the window is narrow). Selecting a row
 /// opens its session in the inspector.
 struct ExpeditionOverview: View {
-    @Environment(\.globalTaskAskShortcut) private var globalShortcut
+    @Environment(\.legacyAskShortcutEnabled) private var legacyShortcut
     let expedition: Expedition
     @Binding var selected: CrewSlot?
     let send: (ExpeditionEvent) -> Void
@@ -49,7 +49,7 @@ struct ExpeditionOverview: View {
         .background {
             if expedition.pendingRouteChange != nil {
                 Button("Accept Route Change") { send(.approveRouteChange) }.keyboardShortcut(
-                    globalShortcut ? nil : KeyboardShortcut("y", modifiers: .command)
+                    legacyShortcut ? KeyboardShortcut("y", modifiers: .command) : nil
                 )
                 .hidden()
                 Button("Keep Route") { send(.keepRoute) }.keyboardShortcut(.delete, modifiers: [.command, .shift])

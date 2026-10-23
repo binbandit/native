@@ -11,7 +11,7 @@ struct WorkflowApprovalCard: View {
     let onSkip: () -> Void
     let onReject: () -> Void
 
-    @Environment(\.globalTaskAskShortcut) private var globalShortcut
+    @Environment(\.legacyAskShortcutEnabled) private var legacyShortcut
     @State private var isEditing = false
     @State private var draft = ""
 
@@ -83,7 +83,7 @@ struct WorkflowApprovalCard: View {
             onApprove(isEditing ? draft : nil)
         }
         .buttonStyle(.ds(.primary))
-        .keyboardShortcut(answersShortcuts && !globalShortcut ? KeyboardShortcut("y", modifiers: .command) : nil)
+        .keyboardShortcut(answersShortcuts && legacyShortcut ? KeyboardShortcut("y", modifiers: .command) : nil)
         Button(isEditing ? "Discard Edits" : "Edit Prompt") {
             if !isEditing {
                 draft = step.prompt ?? ""
@@ -101,7 +101,7 @@ struct WorkflowApprovalCard: View {
     }
 
     @ViewBuilder private var shortcutHint: some View {
-        if answersShortcuts && !globalShortcut {
+        if answersShortcuts && legacyShortcut {
             Text("⌘Y Approve  ·  ⌘⇧⌫ Reject")
                 .font(.dsCaption)
                 .foregroundStyle(.dsTextTertiary)
