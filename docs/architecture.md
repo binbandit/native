@@ -383,6 +383,15 @@ Scroll positions remain per window in `SessionTranscriptMemory`.
 
 ### Task worktree preparation
 
+Before the first message, Change Workspace replaces the empty agent conversation in the chosen
+folder, retaining its draft, attachments, title, order and settings. The model blocks sends while
+the replacement is prepared. Once a message is submitted, including a queued message, the task
+keeps its workspace. Existing branches reuse their checkout when present; otherwise Native makes
+a worktree. Only worktrees created for tasks in this app run are candidates for automatic cleanup,
+and only while their original branch, commit and clean working tree remain unchanged. Ignored
+files, running setup commands, other tasks and user-owned worktrees prevent automatic removal.
+
+
 Git chooses an immutable task base with `Repository.taskWorktreeBase`, fetching the configured
 remote unless `policy.git.worktreeFetch` disables it. Failure falls back to the local commit;
 `GitStore` carries that explanation into the task's setup notice. Before-commands run through
