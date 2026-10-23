@@ -6,5 +6,8 @@ extension DS {
         public static let numberWidth: CGFloat = 14
         public static let horizontalInset: CGFloat = 14
         public static let verticalInset: CGFloat = 10
+        public static let rowHeight: CGFloat = 22
+        public static let lineSpacing: CGFloat = 4
+        public static let entryFont = Font.ds(12.5)
     }
 }

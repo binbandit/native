@@ -20,7 +20,7 @@ struct ComposerPlanSection: View {
     }
 
     private var review: some View {
-        VStack(alignment: .leading, spacing: DS.Space.xxs) {
+        VStack(alignment: .leading, spacing: 0) {
             ForEach(
                 Array(plan.entries.prefix(isExpanded ? plan.entries.count : DS.PlanReview.visibleSteps).enumerated()),
                 id: \.offset
@@ -88,11 +88,13 @@ struct ComposerPlanSection: View {
                     .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + DS.Space.xs }
             }
             Text(entry.content)
-                .font(.dsBody)
+                .font(number == nil ? .dsBody : DS.PlanReview.entryFont)
+                .lineSpacing(number == nil ? 0 : DS.PlanReview.lineSpacing)
                 .fixedSize(horizontal: false, vertical: presentation == .review)
                 .foregroundStyle(entry.status == .completed ? .dsTextTertiary : .dsTextPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .frame(minHeight: number == nil ? nil : DS.PlanReview.rowHeight, alignment: .top)
     }
 }
 
