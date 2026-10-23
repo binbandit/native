@@ -1,8 +1,11 @@
 /// When Native runs a task script. A small, fixed set: each has a file a repository can commit, a
 /// default timeout, and an id scripts see as `NATIVE_EVENT`.
 public enum TaskScriptEvent: String, CaseIterable, Hashable, Sendable, Identifiable {
-    /// A task's worktree was just made: install dependencies, start services. The task's agent takes
-    /// no message until it's done or the user skips it.
+    /// Runs in the project checkout before the base is fetched and the worktree is created.
+    case beforeWorktree = "before-worktree"
+    /// Runs in the new worktree without holding the first message.
+    case afterWorktree = "after-worktree"
+    /// Existing setup scripts hold messages until they finish or the user skips them.
     case setup
     /// A task started, in its worktree or in the project's folder.
     case taskStarted = "task-started"
@@ -21,7 +24,7 @@ public enum TaskScriptEvent: String, CaseIterable, Hashable, Sendable, Identifia
 
     /// How long the script may run unless the user chose otherwise.
     public var defaultTimeout: Duration {
-        self == .setup ? .seconds(10 * 60) : .seconds(60)
+        (self == .setup || self == .beforeWorktree || self == .afterWorktree) ? .seconds(10 * 60) : .seconds(60)
     }
 
     /// Whether the task waits for it: setup holds the agent's turns until it's done or skipped.

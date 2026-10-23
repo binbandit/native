@@ -12,4 +12,6 @@ struct GitTaskWorktree: Hashable, Sendable {
     var copiedFiles: [String] = []
     /// Why copying them failed, if it did.
     var copyFailure: String?
+    /// A quiet explanation when the new task uses a local base.
+    var baseNotice: String?
 }

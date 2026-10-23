@@ -25,6 +25,9 @@ extension GitStore {
     /// it up the way a new task's is (env files, setup scripts), since teardown ran when it went.
     func restoreArchivedTaskWorktree(_ archived: ArchivedWorktree, of project: URL) async throws -> URL {
         let repository = try await requireRepository(at: project)
+        let main = try await repository.worktrees().first(where: \.isMain)?.path ?? repository.root
+        try await beforeCreatingTaskWorktree?(
+            GitTaskWorktree(folder: archived.path, projectRoot: main, branch: archived.branch))
         let worktree = try await repository.restoreArchivedWorktree(archived)
         return try await setUp(worktree, of: repository, branch: archived.branch).folder
     }
