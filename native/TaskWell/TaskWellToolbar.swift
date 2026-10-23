@@ -63,7 +63,10 @@ struct TaskWellToolbar<Dev: View>: View {
 
     private var content: TaskWellContent {
         var content = TaskWellContent(status: session.taskStatus, agent: session.agentName)
-        if let wait = session.wait {
+        if session.isStopping {
+            content.status = .working
+            content.verb = "Stopping"
+        } else if let wait = session.wait {
             content.verb = "Waiting on you"
             // Preserve the ask verbatim. Tool kind is not enough to tell push from overwrite.
             content.object =

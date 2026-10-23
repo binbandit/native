@@ -6,6 +6,8 @@ enum TaskWellPreviewFixtures {
         [
             TaskWellContent(status: .idle, agent: "Codex"),
             TaskWellContent(status: .starting, agent: "Codex", verb: "Starting"),
+            TaskWellContent(status: .working, agent: "Codex", verb: "Stopping"),
+            TaskWellContent(status: .working, agent: "Codex", verb: "Reconnecting"),
             TaskWellContent(
                 status: .working, agent: "Claude Code", verb: "Running", object: "swift test",
                 progress: .init(completed: 9, total: 12)),
