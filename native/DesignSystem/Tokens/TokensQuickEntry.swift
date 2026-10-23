@@ -5,7 +5,7 @@ extension DS {
     nonisolated enum QuickEntry {
         static let width: CGFloat = 760
         static let toolbarGap: CGFloat = 12
-        static let textInsets = EdgeInsets(top: 18, leading: 20, bottom: 14, trailing: 64)
+        static let textInsets = EdgeInsets(top: 18, leading: 20, bottom: 14, trailing: DS.isTouchPlatform ? 112 : 64)
         static let editorFont = Font.ds(15)
         static let editorLineSpacing: CGFloat = 5
         static let barHeight: CGFloat = 50

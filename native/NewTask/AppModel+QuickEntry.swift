@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import NativePolicy
 
 extension AppModel {
     func showQuickEntry(selection text: String? = nil) {

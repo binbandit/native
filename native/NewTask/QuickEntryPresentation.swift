@@ -1,8 +1,10 @@
+import Git
 import SwiftUI
 
 struct QuickEntryPresentation: ViewModifier {
     let model: AppModel
     var git: GitStore?
+    @State private var panelHeight = DS.QuickEntry.width
 
     func body(content: Content) -> some View {
         content
@@ -13,13 +15,21 @@ struct QuickEntryPresentation: ViewModifier {
             )
             .overlay(alignment: .top) {
                 if model.quickEntry.isEnabled, model.quickEntry.isPresented {
-                    ScrollView {
-                        QuickEntryPanel(model: model, entry: model.quickEntry, branch: sourceBranch)
-                            .padding(.horizontal, DS.Space.lg)
-                            .padding(.top, DS.QuickEntry.toolbarGap)
-                            .padding(.bottom, DS.Space.xxl)
+                    GeometryReader { geometry in
+                        ScrollView {
+                            QuickEntryPanel(model: model, entry: model.quickEntry, branch: sourceBranch)
+                                .padding(.horizontal, DS.Space.lg)
+                                .padding(.top, DS.QuickEntry.toolbarGap)
+                                .padding(.bottom, DS.Space.xxl)
+                                .onGeometryChange(for: CGFloat.self) {
+                                    $0.size.height
+                                } action: {
+                                    panelHeight = $0
+                                }
+                        }
+                        .scrollBounceBehavior(.basedOnSize)
+                        .frame(height: min(panelHeight, geometry.size.height))
                     }
-                    .scrollBounceBehavior(.basedOnSize)
                     .onChange(of: model.projects.all.map(\.id)) {
                         if model.quickEntry.project == nil, let project = model.currentProject {
                             model.chooseQuickEntryProject(project.id)

@@ -57,15 +57,28 @@ struct QuickEntryPanel: View {
             return .handled
         }
         .overlay(alignment: .topTrailing) {
-            Button {
-                model.expandQuickEntry()
-            } label: {
-                Image(systemName: "arrow.up.left.and.arrow.down.right")
-                    .font(.dsCallout)
+            HStack(spacing: DS.Space.xs) {
+                if DS.isTouchPlatform {
+                    Button {
+                        entry.dismiss()
+                    } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .buttonStyle(.ds(.ghost))
+                    .dsHitTarget(DS.Size.controlSM)
+                    .accessibilityLabel("Close Quick Entry")
+                }
+                Button {
+                    model.expandQuickEntry()
+                } label: {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                        .font(.dsCallout)
+                }
+                .buttonStyle(.ds(.ghost))
+                .dsHitTarget(DS.Size.controlSM)
+                .help("Expand into New Task (⇧⌘N)")
+                .accessibilityLabel("Expand into New Task")
             }
-            .buttonStyle(.ds(.ghost))
-            .help("Expand into New Task (⇧⌘N)")
-            .accessibilityLabel("Expand into New Task")
             .padding(DS.Space.lg)
         }
     }
