@@ -159,7 +159,7 @@ public struct SessionState: Sendable {
         guard let index = toolCallIndices[request.toolCall.toolCallId], case .toolCall(var call) = items[index] else {
             return
         }
-        call.permission = PendingPermission(requestID: id, options: request.options)
+        call.permission = PendingPermission(requestID: id, options: request.options, requestedAt: date)
         replaceItem(at: index, with: .toolCall(call))
     }
 
@@ -491,4 +491,6 @@ public struct ToolCallState: Hashable, Sendable {
 public struct PendingPermission: Hashable, Sendable {
     public var requestID: RequestID
     public var options: [PermissionOption]
+    /// The request arrival, retained when a host replays its event log.
+    public var requestedAt: Date
 }

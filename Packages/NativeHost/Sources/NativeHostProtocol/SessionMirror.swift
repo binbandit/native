@@ -10,6 +10,7 @@ public struct SessionMirror: Sendable {
         /// What `_native/session/respond_question` answers it by.
         public let id: String
         public let request: CreateElicitationRequest
+        public let requestedAt: Date
     }
 
     /// The transcript. Clients may add to it (their own notices and approval cards); the next
@@ -70,7 +71,7 @@ public struct SessionMirror: Sendable {
         case (.permissionResolved(let toolCallID, _), _):
             state.resolvePermission(toolCallID: toolCallID)
         case (.questionAsked(let questionID, _), .question(let request)):
-            questions.append(Question(id: questionID, request: request))
+            questions.append(Question(id: questionID, request: request, requestedAt: event.at))
         case (.questionResolved(let questionID), _):
             questions.removeAll { $0.id == questionID }
         case (.turnEnded(let stopReason), _):

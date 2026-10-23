@@ -13,7 +13,7 @@ struct SessionRow<Accessory: View>: View {
     @Environment(\.sidebarSelection) private var picking
     @Environment(\.sidebarTaskInsights) private var insights
     @AppStorage("sidebar.showAgentIcons") private var showAgentIcons = true
-    @Environment(\.sidebarQuietProjects) private var isQuiet
+    @Environment(\.sidebarAllInView) private var isAllInView
     let summary: SessionSummary
     /// Grouped under a project header, or flush in the Pinned section.
     var indent: TaskRowIndent = .grouped
@@ -67,47 +67,74 @@ struct SessionRow<Accessory: View>: View {
         if model.renaming == summary.id {
             SessionTitleField(summary: summary, status: TaskStatus(session))
         } else {
-            TaskRow(
-                title: title,
-                status: TaskStatus(session),
-                isSelected: isSelected,
-                isUnread: isUnread,
-                date: model.lastActivity(for: summary),
-                badge: badge,
-                indent: isQuiet ? .flat : indent,
-                style: isQuiet ? .quiet : .standard,
-                leading: AgentIcon(agent: summary.agent).opacity(showAgentIcons ? 1 : 0),
-                accessory: accessory,
-                action: select,
-                onArchive: archiveAction
-            )
-            .help(tooltip)
-            // Double-clicking renames, like a file in the Finder.
-            .simultaneousGesture(TapGesture(count: 2).onEnded(rename))
-            .contextMenu { contextMenu }
-            .sidebarSwipeActions(
-                leading: [readAction, pinAction],
-                trailing: [
-                    SidebarSwipeAction("Archive", systemImage: "archivebox", tint: .dsInfo, action: archive),
-                    SidebarSwipeAction("Delete", systemImage: "trash", tint: .dsDanger, action: requestDeletion),
-                ]
-            )
-            .accessibilityLabel(accessibilityLabel)
-            .accessibilityHint("\(summary.agent.displayName) task. Return renames it.")
-            .accessibilityActions {
-                Button("Rename", action: rename)
-                Button(isUnread ? "Mark as Read" : "Mark as Unread", action: toggleUnread)
-                Button(isPinned ? "Unpin" : "Pin", action: togglePinned)
-                Button("Archive", action: archive)
-                Button("Move Up") { model.move(target, .up) }
-                Button("Move Down") { model.move(target, .down) }
-                if let pullRequest = insights.pullRequestMenu(summary) {
-                    ForEach(pullRequest.items) { item in
-                        Button(item.spokenTitle, action: item.perform)
+            taskRow
+                .help(tooltip)
+                // Double-clicking renames, like a file in the Finder.
+                .simultaneousGesture(TapGesture(count: 2).onEnded(rename))
+                .contextMenu { contextMenu }
+                .sidebarSwipeActions(
+                    leading: [readAction, pinAction],
+                    trailing: [
+                        SidebarSwipeAction("Archive", systemImage: "archivebox", tint: .dsInfo, action: archive),
+                        SidebarSwipeAction("Delete", systemImage: "trash", tint: .dsDanger, action: requestDeletion),
+                    ]
+                )
+                .accessibilityLabel(accessibilityLabel)
+                .accessibilityHint("\(summary.agent.displayName) task. Return renames it.")
+                .accessibilityActions {
+                    Button("Rename", action: rename)
+                    Button(isUnread ? "Mark as Read" : "Mark as Unread", action: toggleUnread)
+                    Button(isPinned ? "Unpin" : "Pin", action: togglePinned)
+                    Button("Archive", action: archive)
+                    Button("Move Up") { model.move(target, .up) }
+                    Button("Move Down") { model.move(target, .down) }
+                    if let pullRequest = insights.pullRequestMenu(summary) {
+                        ForEach(pullRequest.items) { item in
+                            Button(item.spokenTitle, action: item.perform)
+                        }
                     }
                 }
-            }
         }
+    }
+
+    @ViewBuilder private var taskRow: some View {
+        if isAllInView {
+            let attention = session.flatMap {
+                SidebarSessionAttention(session: $0, isVisibleTask: model.selection == summary.id)
+            }
+            AllInViewTaskRow(
+                title: title, status: TaskStatus(session), isSelected: isSelected, isUnread: isUnread,
+                ask: attention?.sentence ?? recoverySentence, attentionSince: attention?.since,
+                answersShortcut: attention?.answersShortcut == true,
+                unavailable: unavailableSentence,
+                hostName: remoteHost?.name, action: select)
+        } else {
+            TaskRow(
+                title: title, status: TaskStatus(session), isSelected: isSelected, isUnread: isUnread,
+                date: model.lastActivity(for: summary), badge: badge, indent: indent,
+                leading: AgentIcon(agent: summary.agent).opacity(showAgentIcons ? 1 : 0), accessory: accessory,
+                action: select, onArchive: archiveAction)
+        }
+    }
+
+    private var remoteHost: RemoteHost? {
+        guard case .remote(let id) = model.device(of: summary.id) else { return nil }
+        return model.hosts.host(id)
+    }
+
+    private var unavailableSentence: String? {
+        guard let host = remoteHost, !host.isOnline else { return nil }
+        if let lastConnected = host.lastConnected {
+            return
+                "\(host.name) is offline. Last connected \(lastConnected.formatted(date: .omitted, time: .shortened))."
+        }
+        return "\(host.name) is offline. Reconnect to continue."
+    }
+
+    private var recoverySentence: String? {
+        if let removed = model.removedWorkspaces[summary.id] { return "Its worktree was removed. \(removed.detail)" }
+        if TaskStatus(session) == .failed { return "The task stopped unexpectedly. Open it to retry or switch models." }
+        return nil
     }
 
     /// A row picked with others acts on all of them; otherwise on itself.
@@ -120,6 +147,9 @@ struct SessionRow<Accessory: View>: View {
     }
 
     @ViewBuilder private var menu: some View {
+        if model.offersAgentChange, let session {
+            Button("Change Agent…") { model.requestAgentChange(session) }
+        }
         Button("Rename…", action: rename)
         Button(isUnread ? "Mark as Read" : "Mark as Unread", action: toggleUnread)
         Button(isPinned ? "Unpin" : "Pin", action: togglePinned)

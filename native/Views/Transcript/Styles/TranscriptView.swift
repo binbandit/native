@@ -140,15 +140,22 @@ struct TranscriptView: View {
 
     /// The rows in a centered column, as wide as the width setting allows with a margin each side.
     private func column(_ transcript: TranscriptStyleConfiguration, in containerWidth: CGFloat) -> some View {
-        AnyView(style.makeBody(transcript))
-            .environment(disclosures)
-            .frame(maxWidth: maxColumnWidth(in: containerWidth))
-            .padding(.top, DS.Space.xl)
-            .padding(.bottom, DS.Space.lg)
-            .frame(maxWidth: .infinity)
-            // Coming back to this session shows the same place, or the latest (new rows included)
-            // when that's where the user left it.
-            .sessionTranscriptPlace(for: transcript.session)
+        VStack(spacing: 0) {
+            if let earlier = model.earlierConversations.conversation(before: session.key),
+                earlier.agent != session.agent.id
+            {
+                ChangeAgentDivider(agentName: session.agentName)
+            }
+            AnyView(style.makeBody(transcript))
+        }
+        .environment(disclosures)
+        .frame(maxWidth: maxColumnWidth(in: containerWidth))
+        .padding(.top, DS.Space.xl)
+        .padding(.bottom, DS.Space.lg)
+        .frame(maxWidth: .infinity)
+        // Coming back to this session shows the same place, or the latest (new rows included)
+        // when that's where the user left it.
+        .sessionTranscriptPlace(for: transcript.session)
     }
 
     /// Invariant: the rows' height must never depend on whether the vertical scroller is showing.

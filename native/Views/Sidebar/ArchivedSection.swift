@@ -107,7 +107,7 @@ private struct ArchivedProjectRow: View {
 /// menus.
 private struct ArchivedTaskRow: View {
     @AppStorage("sidebar.showAgentIcons") private var showAgentIcons = true
-    @Environment(\.sidebarQuietProjects) private var isQuiet
+    @Environment(\.sidebarAllInView) private var isAllInView
     @Environment(AppModel.self) private var model
     @Environment(\.undoManager) private var undoManager
     let summary: SessionSummary
@@ -117,17 +117,23 @@ private struct ArchivedTaskRow: View {
 
     var body: some View {
         let title = model.title(for: summary)
-        TaskRow(
-            title: title,
-            status: .idle,
-            isSelected: model.selection == summary.id,
-            date: model.lastActivity(for: summary),
-            indent: .grouped,
-            style: isQuiet ? .quiet : .standard,
-            leading: AgentIcon(agent: summary.agent).opacity(showAgentIcons ? 1 : 0),
-            accessory: IconButton("Unarchive “\(title)”", systemImage: "arrow.uturn.backward", action: unarchive),
-            action: select
-        )
+        Group {
+            if isAllInView {
+                AllInViewTaskRow(title: title, status: .idle, isSelected: model.selection == summary.id, action: select)
+            } else {
+                TaskRow(
+                    title: title,
+                    status: .idle,
+                    isSelected: model.selection == summary.id,
+                    date: model.lastActivity(for: summary),
+                    indent: .grouped,
+                    leading: AgentIcon(agent: summary.agent).opacity(showAgentIcons ? 1 : 0),
+                    accessory: IconButton(
+                        "Unarchive “\(title)”", systemImage: "arrow.uturn.backward", action: unarchive),
+                    action: select
+                )
+            }
+        }
         .help("\(summary.agent.displayName) · \(title) · archived")
         .contextMenu {
             Button("Unarchive", action: unarchive)
@@ -163,6 +169,17 @@ private struct ArchivedTaskRow: View {
     let defaults = SidebarPreviewFixtures.defaults(showsArchived: true)
     DSPreviewPair {
         ArchivedSection(select: { _ in })
+            .defaultAppStorage(defaults)
+            .frame(width: DS.Size.sidebarWidth)
+    }
+    .sidebarPreviewEnvironment(app)
+}
+#Preview("All in view - Archived by project") {
+    let app = SidebarPreviewFixtures.archivedApp()
+    let defaults = SidebarPreviewFixtures.defaults(showAgentIcons: false, showsArchived: true)
+    DSPreviewPair {
+        ArchivedSection(select: { _ in })
+            .environment(\.sidebarAllInView, true)
             .defaultAppStorage(defaults)
             .frame(width: DS.Size.sidebarWidth)
     }

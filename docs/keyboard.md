@@ -205,6 +205,10 @@ files; a file moved or deleted before sending is marked on its chip and holds th
 
 ## Permission requests
 
+With the All in view sidebar experiment, the ⌘Y keycap marks that visible task's oldest tool
+approval, provided it offers Allow once. Questions and requests in other tasks have no keycap.
+Global routing through Peek is a later slice.
+
 The oldest pending request in the visible task answers these: a tool's permission request, a
 workflow step waiting for approval, or an expedition's route (or route change) waiting for review.
 They're chosen not to collide with text editing in the composer.
@@ -333,8 +337,8 @@ keys and Return to choose from the menu. Model, effort, autonomy and mode keep t
 controls, moving into More only as the row runs out of room.
 
 With the Quiet composer experiment enabled, each setting is a plain-word button under the draft.
-The same keys below still apply. The agent name opens New Task With (⌥⌘N); it does not move the
-current conversation to another agent. Tab reaches the buttons, Space opens their pickers, and
+The same keys below still apply. The agent name opens New Task With (⌥⌘N), or Change Agent
+when that experiment is also enabled. Tab reaches the buttons, Space opens their pickers, and
 Escape closes a picker.
 
 | Keys | Action | Menu | Command |
@@ -348,6 +352,13 @@ Escape closes a picker.
 | ⌥⌘R | Run a workflow | Task | `workflow.run` |
 
 ## Choosing an agent
+
+With Change Agent enabled in Settings > Labs, Task > Change Agent and the command palette
+(`session.changeAgent`) prepare a handoff to another installed agent. The task's agent control
+and sidebar menu offer the same action. Review and edit the handoff, choose the agent and model,
+then use Change Agent and Send. Cancel keeps the current task. A running turn must finish first.
+This first slice supports tasks on this Mac; earlier transcripts stay under Earlier Conversation.
+There is no default shortcut.
 
 New Task With… (⌥⌘N) opens the agent picker in a sheet: every agent Native runs, each with
 its state (ready, starting, needs sign-in, not installed, stopped) and, when it can't start a
@@ -430,12 +441,12 @@ bindings (`docs/terminal.md`); otherwise they're these:
 ## Project actions
 
 A project's actions (Test, Install, Dev…) run in the visible task's worktree, from the header's Run
-menu, the Run menu in the menu bar, the palette and the project's menu (`docs/actions.md`).
+button, the Run menu in the menu bar, the palette and the project's menu (`docs/actions.md`).
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
-| ⇧⌘R | Run the project's last action again, in the visible task | Run | `projectActions.runLast` |
-| | Stop the visible task's running actions (⌃C; again to end them) | Run | `projectActions.stop` |
+| ⇧⌘R | Run the header's named action in the visible task (last run, or the first available action) | Run | `projectActions.runLast` |
+| ⇧⌘. | Stop the visible task's running actions (⌃C; again to end them) | Run | `projectActions.stop` |
 | | Edit the project's actions (its settings page) | Run | `projectActions.edit` |
 
 Every action is also a command of its own, "Run: Test" (`projectActions.run.test`, named after the

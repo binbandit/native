@@ -2,13 +2,14 @@ import SwiftUI
 
 extension EnvironmentValues {
     /// A presentation choice passed by the sidebar's single experiment site.
-    @Entry var sidebarQuietProjects = false
+    @Entry var sidebarAllInView = false
 }
 
-/// Direction B's project header. The existing section owns actions and persistence; this view
+/// All in view's project header. The existing section owns actions and persistence; this view
 /// gives the name room and reveals its controls on hover, keyboard focus or touch.
-struct SidebarNextProjectGroup<MenuContent: View, Content: View>: View {
+struct AllInViewProjectGroup<MenuContent: View, Content: View>: View {
     let name: String
+    var isFirst = false
     @Binding var isExpanded: Bool
     let taskCount: Int
     var isRefreshing = false
@@ -35,8 +36,9 @@ struct SidebarNextProjectGroup<MenuContent: View, Content: View>: View {
                 } label: {
                     HStack(spacing: DS.Space.sm) {
                         Text(name)
-                            .font(.dsMono)
-                            .foregroundStyle(.dsTextTertiary)
+                            .font(DS.Sidebar.projectFont)
+                            .tracking(DS.Sidebar.headerTracking)
+                            .foregroundStyle(.dsTextSecondary)
                             .lineLimit(1)
                         if isRefreshing {
                             ProjectRefreshIndicator()
@@ -61,8 +63,8 @@ struct SidebarNextProjectGroup<MenuContent: View, Content: View>: View {
                             .foregroundStyle(.dsTextTertiary)
                             .opacity(showsControls || !isExpanded ? 1 : 0)
                     }
-                    .padding(.leading, DS.Space.sm)
-                    .frame(minHeight: DS.Size.rowMinHeight)
+                    .padding(.leading, DS.Sidebar.headerLeading)
+                    .frame(minHeight: max(DS.Sidebar.headerHeight, DS.Size.minimumHitTarget))
                     .contentShape(.rect)
                 }
                 .buttonStyle(SidebarRowButtonStyle())
@@ -96,7 +98,8 @@ struct SidebarNextProjectGroup<MenuContent: View, Content: View>: View {
                         .opacity(showsControls ? 1 : 0)
                 }
             }
-            .padding(.trailing, DS.Space.sm)
+            .padding(.trailing, DS.Sidebar.trailing)
+            .padding(.bottom, DS.Space.xxs)
             .contentShape(.rect)
             .trackHover($isHovered)
             .contextMenu(menuItems: menu)
@@ -106,15 +109,15 @@ struct SidebarNextProjectGroup<MenuContent: View, Content: View>: View {
                     .transition(.opacity)
             }
         }
-        .padding(.top, DS.Space.md)
+        .padding(.top, isFirst ? DS.Space.md : DS.Sidebar.headerTop)
     }
 }
 
 #if DEBUG
-#Preview("Quiet project headers - Expanded, collapsed and filtered") {
+#Preview("All in view project headers - Expanded, collapsed and filtered") {
     DSPreviewPair {
         VStack(spacing: DS.Space.md) {
-            SidebarNextProjectGroup(
+            AllInViewProjectGroup(
                 name: "native", isExpanded: .constant(true), taskCount: 6, isRefreshing: true,
                 activity: ProjectActivity(), note: nil, onNewTask: {}
             ) {
@@ -122,7 +125,7 @@ struct SidebarNextProjectGroup<MenuContent: View, Content: View>: View {
             } content: {
                 Text("Tasks")
             }
-            SidebarNextProjectGroup(
+            AllInViewProjectGroup(
                 name: "a-project-with-a-long-folder-name", isExpanded: .constant(false), taskCount: 12,
                 activity: ProjectActivity(needsYou: 1, working: 2), note: nil, onNewTask: {}
             ) {
@@ -130,7 +133,7 @@ struct SidebarNextProjectGroup<MenuContent: View, Content: View>: View {
             } content: {
                 EmptyView()
             }
-            SidebarNextProjectGroup(
+            AllInViewProjectGroup(
                 name: "sample", isExpanded: .constant(false), taskCount: 0,
                 activity: ProjectActivity(), note: "No matching tasks", onNewTask: {}
             ) {

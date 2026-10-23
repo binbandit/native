@@ -238,22 +238,33 @@ Adding a **variant**:
 5. To promote it, make it the point's default and delete the variant; to drop it, delete its folder
    and declaration.
 
-### Quiet projects sidebar
+### All in view sidebar
 
-The `NativeSidebarNext` gate (Settings ▸ Labs ▸ Quiet projects) defaults to off. Its single
-read in `SidebarView` selects the quiet project presentation: monospace project headers and task
-marks only for activity, attention and unread results. The existing section, menus, selection,
-ordering, pins, archive and shortcuts are shared with today's sidebar.
+The `NativeSidebarNext` gate (Settings ▸ Labs ▸ All in view) defaults to off. Slice 1 replaces
+Quiet projects: project names keep the folder's spelling in Geist 600, and task rows show titles
+at rest. `TaskSignal` owns the status language on the loader's 240-unit grid, with neutral working,
+paused and limited states, amber requests, a red failure and an accent unread dot. Its optional
+working view accepts animation variants without duplicating the other states or Reduce Motion.
+Existing surfaces keep `StatusIndicator` until their gated redesign adopts `TaskSignal`.
 
-Each project shows its live, unread, failed, paused and limited tasks plus its three most recent
-resting tasks, in the user's order. An open or renamed task stays visible. “n more” unfolds the
-rest; filters and bulk selection expose their full scope. `TaskListFold` in `Packages/TaskList`
-chooses the resting tasks without depending on the UI. Enable it before an isolated launch with
+Requests show a two-line sentence and a mono waiting clock, using the request's arrival timestamp
+from ACP or the host event log. The grid breathes for its first 60 seconds and for four seconds
+when the scene becomes active, then holds still. Reduce Motion is always still. The keycap marks
+the visible task's oldest permission request, matching the existing shortcut routing. Questions
+and asks in other tasks do not claim a shortcut that would answer something else.
+
+Selection, menus, ordering, pins, archive and keyboard navigation remain shared with today's
+sidebar. All tasks stay visible in this slice; the rejected three-recent-task fold is removed.
+Peek with the composer's shared approval, global ask routing, fold by day, the collapsed toolbar
+signal and optional row facts are later slices. Enable before an isolated launch with
 `defaults write dev.binbandit.native.dev.<name> experiment.NativeSidebarNext -bool YES`.
 
 The sidebar's filter and sort controls also offer "Show agent icons", on by default. This only
 hides agent artwork; working, attention and unread indicators stay visible. Archived tasks appear
 under their project names in project order in both sidebar presentations.
+All in view already omits agent artwork; the preference never hides its status signals, including
+while renaming a task. The isolated Debug fixture `-nativeSidebarFixture trio` includes grouped
+archives and a simulated Refresh failure followed by a successful Retry.
 
 A project's Refresh action (its menu, File menu and command palette) re-reads all of its task
 checkouts, including pinned and filtered-out tasks, once per checkout. Pull-request lookups bypass
@@ -269,9 +280,28 @@ with Settings > Labs > Quiet composer, or set `experiment.NativeComposerNext` as
 the app's user defaults before launch.
 The editor keeps its identity as the session starts and finishes work; only its footer changes.
 At rest, plain words open the agent, model, effort, autonomy and task-mode pickers. The agent entry
-opens New Task With, since an existing conversation belongs to its original agent. Other
+opens New Task With, unless the Change Agent experiment is also enabled. Other
 agent settings, attachments, goals and context remain reachable. Running turns and approval
 requests keep today's composer until their own slices land.
+
+### Changing a task's agent (Labs)
+
+`change-agent` is off by default. Change Agent prepares an unsent ACP conversation on another
+installed plugin agent in the task's existing folder. The user chooses from the new agent's live
+model choices and reviews an editable handoff before the first prompt. `TaskHandoff` in ACP
+assembles bounded visible-message excerpts, the goal, latest plan, reported edits, branch and
+working-tree paths and the latest explicit question locally. It never sends reasoning or calls another model.
+
+The model rejects running turns, retries, queued messages, pending approvals and active goals.
+Cancel closes the unsent replacement. A failed preparation or send keeps the original task.
+After an accepted handoff, the existing conversation chain preserves the original transcript,
+sidebar position and pin, title, branch, worktree and unsent draft. A quiet divider names the new
+agent; Earlier Conversation opens the original transcript read-only. Links survive relaunch.
+
+This first slice is limited to this Mac. Paired-host coordination, a single combined transcript,
+and carrying goal automation and its budgets across agents remain follow-up work. Pause a goal
+before switching; its objective goes in the handoff, but its controller stays in the earlier
+conversation. Disable the gate to hide entry points; existing conversation links stay readable.
 
 ### Transcript styles
 

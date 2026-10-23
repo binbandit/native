@@ -95,6 +95,11 @@ final class ProjectActionStore {
         lastRun[Self.key(for: project.url)].flatMap { action($0, in: project) }
     }
 
+    func hasRepositoryFile(in project: Project) -> Bool {
+        guard let scan = scans[Self.key(for: project.url)] else { return false }
+        return scan.repository != .none
+    }
+
     /// Reads the project's repo file and looks for suggestions again, off the main thread. A read
     /// already under way is shared.
     func refresh(_ project: Project) {

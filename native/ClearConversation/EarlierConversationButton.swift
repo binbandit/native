@@ -21,7 +21,8 @@ struct EarlierConversationButton: View {
             .buttonStyle(.header())
             .accessibilityLabel("Earlier Conversation")
             .help(
-                CommandRegistry.shared.help("Open the conversation before /clear", for: .sessionOpenEarlierConversation)
+                CommandRegistry.shared.help(
+                    "Open the earlier conversation in this task", for: .sessionOpenEarlierConversation)
             )
         }
     }
