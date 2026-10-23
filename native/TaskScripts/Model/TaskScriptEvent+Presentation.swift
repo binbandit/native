@@ -6,6 +6,8 @@ import TaskScripts
 extension TaskScriptEvent {
     var plainlyCopy: SettingsPlainlyCopy {
         switch self {
+        case .beforeWorktree, .afterWorktree:
+            .init(title: title, description: summary)
         case .setup:
             .init(
                 title: "After the worktree is made", description: "Install dependencies here. The agent waits for it.")
