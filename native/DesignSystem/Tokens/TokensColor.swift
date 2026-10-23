@@ -69,6 +69,8 @@ nonisolated extension ShapeStyle where Self == Color {
     public static var dsBorderStrong: Color { DSPalette.borderStrong }
     /// Outline of keyboard hints and unlit level bars.
     public static var dsBorderInner: Color { DSPalette.borderInner }
+    /// The native keyboard focus ring, independent of the app-icon accent palette.
+    public static var dsKeyboardFocusIndicator: Color { Color(DSPlatformColor.dsKeyboardFocusIndicator) }
     /// The track of a switch that's off: at least 3:1 against the background and the surface in
     /// every appearance and tone (WCAG's contrast for controls), so an off switch still reads as one.
     public static var dsSwitchOff: Color { DSPalette.switchOff }
