@@ -8,7 +8,7 @@ import Testing
 /// only the image's base64 is shortened.
 struct MessageAttachmentReplayTests {
     @Test func referenceAttachmentsKeepTheirKnownSizesWithoutReadingTheFiles() {
-        let attachments = [0, 8192].map { size in
+        let attachments = [0, 8192].map { (size: Int) in
             PromptAttachment(url: URL(filePath: "/missing/\(size).pdf"), content: .reference, byteCount: size)
         }
         let shown = MessageAttachment.shown(attachments, capabilities: PromptCapabilities())
