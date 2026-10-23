@@ -152,4 +152,36 @@ struct NewTasksSettingsPage: View {
     .environment(\.settingsPlainly, true)
     .defaultAppStorage(PreviewUserDefaults())
 }
+
+#Preview("New Tasks - No agents") {
+    DSPreviewPair {
+        NewTasksSettingsPage(
+            registry: PluginRegistry(builtIns: [], defaults: PreviewUserDefaults()), modes: nil,
+            modeLibrary: ModeLibrary(defaults: PreviewUserDefaults())
+        ).settingsPreviewPage(width: 420)
+    }
+    .environment(AppModel.preview())
+    .environment(SettingsPresentation())
+    .environment(GitSettings(defaults: PreviewUserDefaults()))
+    .environment(\.settingsPlainly, true)
+    .defaultAppStorage(PreviewUserDefaults())
+}
+
+#Preview("New Tasks - One project") {
+    let app = AppModel.preview()
+    let presentation = SettingsPresentation()
+    if let project = app.previewProject() {
+        let _ = presentation.open(.newTasks, scopedTo: project.url)
+        DSPreviewPair {
+            NewTasksSettingsPage(
+                registry: app.plugins, modes: nil, modeLibrary: ModeLibrary(defaults: PreviewUserDefaults())
+            ).settingsPreviewPage()
+        }
+        .environment(app)
+        .environment(presentation)
+        .environment(GitSettings(defaults: PreviewUserDefaults()))
+        .environment(\.settingsPlainly, true)
+        .defaultAppStorage(PreviewUserDefaults())
+    }
+}
 #endif
