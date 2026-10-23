@@ -112,6 +112,14 @@ private struct TaskWorkspaceRegression {
         try check(
             !SessionFolder.isSame(inNewTree.cwd.path(), folder.path()), "explicit worktree overrides branch default")
         try check(try await repository.status().branch.name == "main", "new worktree leaves project branch unchanged")
+        app.workspaceChangeBlock = { _ in "Close the task's terminal tabs first." }
+        do {
+            _ = try await app.changeWorkspace(of: inNewTree, to: .project); throw Failure("busy folder moved")
+        } catch is TaskWorkspaceSelectionError {}
+        try check(
+            inNewTree.canChangeWorkspace && inNewTree.draft == "Keep the draft",
+            "active folder work blocks replacement without losing the draft")
+        app.workspaceChangeBlock = { _ in nil }
 
         // A failed replacement must leave the old task and its draft intact and remove the unused candidate.
         let countBeforeFailure = try await repository.worktrees().count

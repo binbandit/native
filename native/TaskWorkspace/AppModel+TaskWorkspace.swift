@@ -101,6 +101,7 @@ extension AppModel {
     }
 
     private func validateWorkspaceChange(_ source: SessionModel) throws {
+        if let reason = workspaceChangeBlock(source) { throw TaskWorkspaceSelectionError(reason) }
         guard sessions.session(source.key) === source, !source.hasStarted, !source.hasSubmittedPrompt,
             !source.hasQueuedPrompts, source.phase == .idle, !isArchived(source.key),
             !pendingDeletionKeys.contains(source.key), !deletedSessions.contains(source.key)

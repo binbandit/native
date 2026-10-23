@@ -33,6 +33,8 @@ final class AppModel {
     /// Makes and removes the folders tasks run in (worktrees). Set by the app from the Git feature;
     /// without it tasks run in the project folder.
     weak var taskWorkspaces: (any TaskWorkspaceProvider)?
+    /// Features with work tied to the old folder can ask the user to finish it before moving.
+    @ObservationIgnored var workspaceChangeBlock: (SessionModel) -> String? = { _ in nil }
     /// The latest action offered on the window's undo toast (`offeredUndo`), which ⌘Z can take
     /// back too.
     var lastUndoable: UndoableAction?
