@@ -18,6 +18,12 @@ enum CelebrationDates {
     static func shortText(_ range: CivilDayRange, in timeZone: TimeZone = .current) -> String {
         let first = noon(range.first, in: timeZone)
         guard range.first != range.last else { return first.formatted(.dateTime.day().month(.abbreviated)) }
+        // DateIntervalFormatStyle adds years across New Year even when the format omits them.
+        if range.first.year != range.last.year {
+            let last = noon(range.last, in: timeZone)
+            return
+                "\(first.formatted(.dateTime.day().month(.abbreviated))) – \(last.formatted(.dateTime.day().month(.abbreviated)))"
+        }
         return (first..<noon(range.last, in: timeZone)).formatted(.interval.day().month(.abbreviated))
     }
 

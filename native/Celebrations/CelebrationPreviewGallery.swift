@@ -17,7 +17,7 @@ struct CelebrationPreviewGallery: View {
     var body: some View {
         Group {
             switch state {
-            case .off, .menu, .page, .offline, .empty:
+            case .off, .menu, .page, .pending, .offline, .empty:
                 CelebrationsSettingsPage(organizationName: state == .offline ? "Northwind Federal IT" : nil)
             case .showing, .homeOnly, .skipped, .waiting, .failed:
                 CelebrationStatusCard()
@@ -30,7 +30,7 @@ struct CelebrationPreviewGallery: View {
                     row("bandi-chhor-divas")
                     row("australia-day", flash: true)
                     row("diwali", query: "Deepavali")
-                    ForEach(center.celebrations.filter { !$0.canBeChosen(on: center.today) }.prefix(2)) { event in
+                    ForEach(center.celebrations.filter { !$0.canBeChosen(on: center.today) }) { event in
                         CelebrationRow(event: event)
                     }
                 }
@@ -70,6 +70,9 @@ struct CelebrationPreviewGallery: View {
 }
 #Preview("Celebrations - Feature off") {
     DSPreviewPair { CelebrationPreviewGallery(.off).settingsPreviewPage() }.environment(SettingsPresentation())
+}
+#Preview("Celebrations - Artwork and dates pending") {
+    DSPreviewPair { CelebrationPreviewGallery(.pending).settingsPreviewPage() }.environment(SettingsPresentation())
 }
 #Preview("Celebrations - Bulk menu trigger") {
     DSPreviewPair { CelebrationPreviewGallery(.menu).settingsPreviewPage() }.environment(SettingsPresentation())
