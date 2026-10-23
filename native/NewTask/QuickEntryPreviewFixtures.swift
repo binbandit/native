@@ -1,4 +1,5 @@
 #if DEBUG
+import Foundation
 import NativeHostProtocol
 import SwiftUI
 
@@ -27,6 +28,11 @@ enum QuickEntryPreviewFixtures {
     }
 
     private static func configure(_ entry: QuickEntryModel, for state: State) {
+        entry.draft = ""
+        entry.context = nil
+        entry.picker = nil
+        entry.failure = nil
+        entry.previewDeviceOptions = nil
         if state == .firstLaunch {
             entry.project = nil
             entry.agent = nil
