@@ -95,7 +95,7 @@ private struct SettingsRegression {
                 matches.count == 1 && matches.first?.title == title && matches.first?.paneID == page,
                 "\(title) has one search result at its new home")
         }
-        row(GeneralSettingsPage.followUpRow, title: "Return while an agent works", page: .general)
+        row(GeneralSettingsPage.followUpRow, title: "Return", page: .general)
         row(NotificationSettingsPage.dockBadgeRow, title: "Badge", page: .general)
         row(NotificationSettingsPage.thresholdRow, title: "After turns longer than", page: .notifications)
         row(GitSettingsPage.workspaceRow, title: "Work in", page: .newTasks)

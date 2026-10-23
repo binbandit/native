@@ -3,6 +3,7 @@ import SwiftUI
 /// Settings search: the design system's `SearchField` with the ⌘F hint, and results in a popup
 /// under it. ↑ and ↓ move through results, Return opens one, Escape clears the search.
 struct SettingsSearchField: View {
+    @Environment(\.settingsPlainly) private var plainly
     @Binding var query: String
     let results: [SettingsSearchIndex.Result]
     @Binding var highlighted: Int
@@ -13,7 +14,8 @@ struct SettingsSearchField: View {
 
     var body: some View {
         SearchField(
-            "Search settings", text: $query, font: SettingsTextStyle.body.font, focus: focus, equals: .search
+            plainly ? "Search" : "Search settings", text: $query,
+            font: plainly ? DS.Settings.body : SettingsTextStyle.body.font, focus: focus, equals: .search
         ) {
             if query.isEmpty {
                 SearchShortcutHint(parts: ["⌘", "F"])

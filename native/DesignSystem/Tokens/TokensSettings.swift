@@ -7,7 +7,7 @@ extension DS {
         static let pageTopInset = Space.xl
         static let rowHeight: CGFloat = 44
         static let rowInset = Space.xl
-        static let rowVerticalInset = Space.lg
+        static let rowVerticalInset: CGFloat = 9
         static let navRowHeight: CGFloat = 30
         static let navGap: CGFloat = 10
         static let navGroupGap = Space.xl

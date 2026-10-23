@@ -6,7 +6,7 @@ struct SettingsPlainlyCopy {
     var description: String?
     var preservesDescription = false
 
-    static let followUp = Self(title: "Return while an agent works")
+    static let followUp = Self(title: "Return")
     static let badge = Self(title: "Badge")
     static let workspace = Self(title: "Work in")
     static let renameBranch = Self(

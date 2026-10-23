@@ -58,6 +58,7 @@ struct NewTasksSettingsPage: View {
             }
             if let projectID, let project = model.projects.project(projectID) {
                 ProjectNewTasksSection(project: project, defaultsOnly: true)
+                    .id(project.id)
             } else {
                 if let agent {
                     SettingsGroup(title: "Agent") {

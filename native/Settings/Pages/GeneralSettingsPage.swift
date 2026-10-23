@@ -55,27 +55,29 @@ struct GeneralSettingsPage: View {
                 ) {
                     followUpControl
                 }
-                SettingsGroup(title: "Dock") {
-                    SettingsRow(id: NotificationSettingsPage.dockBadgeRow, "Badge") {
-                        SettingsSelect(
-                            label: "Badge", selection: $dockBadge.mode,
-                            options: DockBadgePreference.Mode.allCases.map {
-                                .init(value: $0, title: $0 == .needsYouOrUnread ? "Need you or unread" : $0.title)
-                            }, width: DS.Settings.wideControl)
+                VStack(alignment: .leading, spacing: DS.Space.md) {
+                    SettingsGroup(title: "Dock") {
+                        SettingsRow(id: NotificationSettingsPage.dockBadgeRow, "Badge") {
+                            SettingsSelect(
+                                label: "Badge", selection: $dockBadge.mode,
+                                options: DockBadgePreference.Mode.allCases.map {
+                                    .init(value: $0, title: $0 == .needsYouOrUnread ? "Need you or unread" : $0.title)
+                                }, width: DS.Settings.wideControl, isDefault: dockBadge.mode == .needsYou)
+                        }
                     }
-                }
-                HStack(spacing: DS.Space.xs) {
-                    Text("What a new task starts with is in")
-                    Button {
-                        presentation.open(.newTasks)
-                    } label: {
-                        Text("New Tasks").underline()
+                    HStack(spacing: DS.Space.xs) {
+                        Text("What a new task starts with is in")
+                        Button {
+                            presentation.open(.newTasks)
+                        } label: {
+                            Text("New Tasks").underline()
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
+                    .font(DS.Settings.caption)
+                    .foregroundStyle(.dsTextSecondary)
+                    .padding(.horizontal, DS.Settings.rowInset)
                 }
-                .font(DS.Settings.caption)
-                .foregroundStyle(.dsTextSecondary)
-                .padding(.horizontal, DS.Settings.rowInset)
             } else {
                 SettingsRowGroup { followUpControl }
             }
@@ -99,7 +101,8 @@ struct GeneralSettingsPage: View {
                         value: $0,
                         title: plainly
                             ? ($0 == .steer ? "Steer: add to the turn" : "Queue: send when it's done") : $0.title)
-                }, width: plainly ? DS.Settings.wideControl : SettingsMetrics.selectWidth)
+                }, width: plainly ? DS.Settings.wideControl : SettingsMetrics.selectWidth,
+                isDefault: followUp == FollowUpBehavior.defaultValue)
         }
     }
 
