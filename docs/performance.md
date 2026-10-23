@@ -255,7 +255,10 @@ fan-out. Larger repositories can take longer with one worker; the already-visibl
 and editable composer cover that wait.
 
 The isolated app's `New Task in native` and `New Task in js-monorepo` actions also reproduced the
-16-worker fan-out before the fix. A separate app CPU load existed before the click and in a
+16-worker fan-out before the fix. One app run each before and after measured peak Git CPU of
+208% / 64% for Native and 598% / 94% for JavaScript. The fixed checkout ran at nice 10 with no
+per-core workers. Both tasks reached their composer with clean, complete worktrees; `.env` was
+copied and `node_modules` was absent. A separate app CPU load existed before the click and in a
 branch-only control with no worktree: sampling showed menu updates and initial history indexing.
 That independent load is not included in the Git numbers above.
 
