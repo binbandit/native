@@ -90,7 +90,7 @@ struct HomeNextView: View {
         #if os(macOS)
         .toolbar(removing: .title)
         #endif
-        .dropDestination(for: URL.self) { urls, _ in model.dropHomeNextFolders(urls) }
+        .dropDestination(for: URL.self) { urls, _ -> Bool in model.dropHomeNextFolders(urls) }
         .onGeometryChange(for: CGFloat.self) {
             $0.safeAreaInsets.top
         } action: {
