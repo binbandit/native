@@ -32,12 +32,18 @@ build them, and such an app looks 12 to 40 MB smaller than what ships.
 
 Raise a budget only with the reason written here, in the same change.
 
-On 2026-10-23, the task artifact viewer raised the Nightly app binary from 57.9 MB on
-`7e98b62a` to 58.0 MB on `d242798c` (CI reports one decimal place), narrowly exceeding the
-58 MB limit. This adds the shared image canvas, native document preview adapters and preservation
-of image/file content from agent and tool messages, with no bundled assets or dependencies.
-The binary allowance is now 58.5 MB to accommodate that feature. The measured download is
-45.8 MB and installed app is 114.8 MB; their existing limits remain unchanged.
+2026-10-23: the reviewed Change Agent flow adds about 0.1 MB to the app binary, taking Release
+from main's 57.9 MB to just over 58 MB. Its local handoff generation, review controls and task
+continuity add no dependencies or assets. The binary budget is now 58.5 MB to accommodate that
+feature with a small margin. The installed app (114.6 MB) and update archive (45.7 MB) remain
+within their unchanged budgets.
+
+On the same day, the task artifact viewer raised the Nightly app binary from 57.9 MB on
+`7e98b62a` to 58.0 MB on `d242798c` (CI reports one decimal place). This adds the shared image
+canvas, native document preview adapters and preservation of image/file content from agent and
+tool messages, with no bundled assets or dependencies. It uses the same 58.5 MB binary allowance.
+At `d242798c`, the measured download was 45.8 MB and installed app was 114.8 MB, within their
+unchanged limits.
 
 ## Measuring
 

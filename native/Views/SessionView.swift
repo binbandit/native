@@ -21,10 +21,16 @@ struct SessionView: View {
     private static let subagentInspectorWidth: CGFloat = 420
 
     var body: some View {
-        if usesSessionTools {
-            SessionToolsScreen(session: session)
-        } else {
-            standardBody
+        Group {
+            if usesSessionTools {
+                SessionToolsScreen(session: session)
+            } else {
+                standardBody
+            }
+        }
+        .toolbar {
+            ToolbarItem { ChangeAgentControl(session: session) }
+                .sharedBackgroundVisibility(.hidden)
         }
     }
 

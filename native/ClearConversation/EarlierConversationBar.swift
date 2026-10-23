@@ -15,7 +15,7 @@ struct EarlierConversationBar: View {
                     .font(.dsBody)
                     .foregroundStyle(.dsTextTertiary)
                     .accessibilityHidden(true)
-                Text("The conversation before /clear, kept to read")
+                Text("An earlier conversation in this task, kept to read")
                     .font(.dsBody)
                     .foregroundStyle(.dsTextSecondary)
                     .frame(maxWidth: .infinity, alignment: .leading)

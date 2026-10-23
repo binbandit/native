@@ -60,6 +60,7 @@ final class SessionModel {
     let supportsSteering: Bool
     /// What the agent takes in a prompt besides text: images, embedded files.
     let promptCapabilities: PromptCapabilities
+    var isChangingAgent = false
     var draft = ""
     /// Files and images going out with the draft (SessionModel+Attachments.swift).
     var attachments: [PromptAttachment] = []
@@ -346,7 +347,7 @@ final class SessionModel {
     /// agent's own subagents only take work from their parent, and a conversation `/clear` set aside
     /// is kept to read.
     var acceptsPrompts: Bool {
-        origin != .announced && !isEarlierConversation
+        origin != .announced && !isEarlierConversation && !isChangingAgent
     }
 
     /// What the session's turns wait for outside it, such as "the worktree's setup script". Messages
