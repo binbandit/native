@@ -25,17 +25,12 @@ struct AgentStopProcessesTests {
         var tree = AgentStopProcesses(root: parent.processIdentifier)
         defer { Self.end(&tree) }
         try Data().write(to: folder.appending(path: "fork"))
-        let deadline = ContinuousClock.now + .seconds(5)
-        while !FileManager.default.fileExists(atPath: folder.appending(path: "child.pid").path),
-            ContinuousClock.now < deadline
-        {
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        let child = try childPID(in: folder)
+        let child = try await childPID(in: folder)
         var childCleanup = AgentStopProcesses(root: child)
         defer { Self.end(&childCleanup) }
         // Foundation can still report a zombie parent as running on Linux. The child's kernel
         // parent identifies reparenting without waiting for the child's inherited resources.
+        let deadline = ContinuousClock.now + .seconds(5)
         while Self.parent(of: child) == parent.processIdentifier, ContinuousClock.now < deadline {
             try await Task.sleep(for: .milliseconds(10))
         }
@@ -86,17 +81,12 @@ struct AgentStopProcessesTests {
         try parent.run()
         var tree = AgentStopProcesses(root: parent.processIdentifier)
         defer { Self.end(&tree) }
-        let deadline = ContinuousClock.now + .seconds(5)
-        while !FileManager.default.fileExists(atPath: folder.appending(path: "child.pid").path),
-            ContinuousClock.now < deadline
-        {
-            try await Task.sleep(for: .milliseconds(10))
-        }
-        let child = try childPID(in: folder)
+        let child = try await childPID(in: folder)
         tree.refresh()
         // A shell's wait and inherited TERM mask differ across hosts. Force the parent exit so
         // this fixture tests ownership after reparenting, independently of shell signal handling.
         kill(parent.processIdentifier, SIGKILL)
+        let deadline = ContinuousClock.now + .seconds(5)
         while Self.parent(of: child) == parent.processIdentifier, ContinuousClock.now < deadline {
             try await Task.sleep(for: .milliseconds(10))
         }
@@ -113,11 +103,17 @@ struct AgentStopProcessesTests {
         #expect(!FileManager.default.fileExists(atPath: folder.appending(path: "marker").path))
     }
 
-    private func childPID(in folder: URL) throws -> pid_t {
-        try #require(
-            Int32(
-                String(contentsOf: folder.appending(path: "child.pid"), encoding: .utf8).trimmingCharacters(
-                    in: .whitespacesAndNewlines)))
+    private func childPID(in folder: URL) async throws -> pid_t {
+        let deadline = ContinuousClock.now + .seconds(5)
+        var child: pid_t?
+        // Opening the redirection creates the file before the shell writes its PID.
+        repeat {
+            child = (try? String(contentsOf: folder.appending(path: "child.pid"), encoding: .utf8))
+                .flatMap { pid_t($0.trimmingCharacters(in: .whitespacesAndNewlines)) }
+            if child != nil { break }
+            try await Task.sleep(for: .milliseconds(10))
+        } while ContinuousClock.now < deadline
+        return try #require(child)
     }
 
     private static func end(_ tree: inout AgentStopProcesses) {

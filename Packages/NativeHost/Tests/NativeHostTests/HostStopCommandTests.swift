@@ -32,11 +32,23 @@ struct HostStopCommandTests {
             try await second.client.shutdownHost(stopAgents: true)
             _ = try await harness.waitForExit()
         }
-        #expect(exit == 75)
-        #expect(await first.turnsEnded(initial.id) == ["error"])
-        #expect(await second.turnsEnded(later.id) == ["error"])
+        try #require(exit == 75)
         await first.stop()
         await second.stop()
+        // Restart can close the socket before its final notification reaches a client. Verify the
+        // durable result, including the later Stop, through replay from the replacement host.
+        try harness.start()
+        let reconnected = try await harness.connect()
+        try await reconnected.client.syncAgents([harness.agentSpec, otherAgent])
+        let initialResult = try await reconnected.client.attach(initial.id)
+        let laterResult = try await reconnected.client.attach(later.id)
+        #expect(initialResult.lastStopReason == "error")
+        #expect(laterResult.lastStopReason == "error")
+        #expect(initialResult.phase == .idle)
+        #expect(laterResult.phase == .idle)
+        #expect(await reconnected.recoveries(initial.id).isEmpty)
+        #expect(await reconnected.recoveries(later.id).isEmpty)
+        await reconnected.stop()
     }
 
     @Test("Immediate restart finishes Stop without waiting for a shared sibling and recovers that sibling")
