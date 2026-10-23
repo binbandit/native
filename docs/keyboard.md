@@ -80,6 +80,9 @@ the queue. Clicking a message, or ↑ in an empty composer, opens it in the edit
 | ⌥⌘↑ / ⌥⌘↓ | Move it up / down the queue (Task ▸ Move Queued Message Up / Down) |
 | Escape | Close it without saving |
 
+If the message starts or is removed while you edit it, queued-edit hints and shortcuts clear
+immediately. Your draft stays in the composer as a new message, including any unsaved edits.
+
 ## Agent questions
 
 When an agent asks structured questions (Claude Code's AskUserQuestion, ACP form elicitation), they
@@ -336,6 +339,10 @@ its state (ready, starting, needs sign-in, not installed, stopped) and, when it 
 task, why and what to do, with the fix (Check Again, Restart) beside it. It opens with the
 keyboard in its filter and the default agent (the one ⌘N starts) highlighted. Add Agent… at the
 end lists the agents Native knows but can't find. Close dismisses the picker with pointer or touch.
+
+When every installed agent has failed to start, New Task (⌘N) opens this recovery picker too.
+It names the failed agents and offers Restart beside each one, plus Agents Settings. Home shows
+the same failure with Restart on its agent cards and a link to Settings > Agents.
 
 | Keys (picker open) | Action |
 | --- | --- |

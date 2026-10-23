@@ -46,6 +46,11 @@ extension AppModel {
         if agent ?? defaultAgent(in: project)?.id == nil {
             await agentsChecked()
         }
+        if agent == nil, agentStartupFailure != nil {
+            focusProject(project.id)
+            isChoosingAgent = true
+            return
+        }
         let isAgentPicked = agent != nil
         guard let agent = agent ?? defaultAgent(in: project)?.id else {
             // No agent is installed; Add Agent says how to get one.

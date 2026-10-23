@@ -184,14 +184,18 @@ private struct ProjectEmptyRow: View {
     @State private var isHovered = false
 
     var body: some View {
-        if model.canCreateSession(in: project.id) {
+        if model.canCreateSession(in: project.id) || model.agentStartupFailure != nil {
             Button {
                 Task { await model.newSession(in: project.id) }
             } label: {
-                Label(isQuiet ? "Start the first task" : "Start a task", systemImage: "plus")
-                    .labelStyle(EmptyRowLabelStyle())
-                    .foregroundStyle(isHovered ? .dsTextSecondary : .dsTextTertiary)
-                    .contentShape(.rect)
+                Label(
+                    model.agentStartupFailure != nil
+                        ? "Restart an agent to start a task" : isQuiet ? "Start the first task" : "Start a task",
+                    systemImage: "plus"
+                )
+                .labelStyle(EmptyRowLabelStyle())
+                .foregroundStyle(isHovered ? .dsTextSecondary : .dsTextTertiary)
+                .contentShape(.rect)
             }
             .buttonStyle(SidebarRowButtonStyle())
             .trackHover($isHovered)

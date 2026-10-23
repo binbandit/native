@@ -6,6 +6,7 @@ import SwiftUI
 /// feature to the app model.
 struct HomeDetail: View {
     @Environment(AppModel.self) private var model
+    @Environment(SettingsPresentation.self) private var settings
 
     var body: some View {
         let agents = model.agents.map(homeAgent)
@@ -16,6 +17,8 @@ struct HomeDetail: View {
                 project: Binding(get: { model.currentProject?.id ?? current.id }, set: { model.focusProject($0) }),
                 recentTasks: model.sessionList.sorted { lastActive($0) > lastActive($1) }.map(homeTask),
                 waitingTasks: waitingTasks,
+                startupFailure: model.agentStartupFailure,
+                onManageAgents: { settings.open(.agents) },
                 onNewTask: { agent, project in Task { await model.newSession(in: project, with: agent) } },
                 onAddProject: { model.isAddingProject = true },
                 onSelectTask: { model.selection = $0 }

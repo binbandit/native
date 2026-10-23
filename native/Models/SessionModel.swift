@@ -141,9 +141,20 @@ final class SessionModel {
     /// How the latest turn ended: the agent's stop reason, or `.error` when the prompt request
     /// threw. Nil until a turn has ended.
     var lastStopReason: StopReason?
-    var queue = PromptQueue()
+    var queue = PromptQueue() {
+        didSet { reconcileQueuedEdit() }
+    }
     /// The queued message open in the composer for editing, which ⌥⌘↑ / ⌥⌘↓ move.
-    var editingQueuedPrompt: QueuedPrompt.ID?
+    var editingQueuedPrompt: QueuedPrompt.ID? {
+        get { queuedEdit.id }
+        set { queuedEdit.id = newValue }
+    }
+    private var queuedEdit = PromptQueueEdit()
+
+    private func reconcileQueuedEdit() {
+        guard queuedEdit.id != nil else { return }
+        queuedEdit.reconcile(with: queuedPrompts)
+    }
     /// Stop was pressed and the agent hasn't ended the turn yet (SessionModel+Stop.swift).
     var isStopping = false
     @ObservationIgnored var stopRequestedAt: Date?
@@ -174,11 +185,16 @@ final class SessionModel {
     /// What the host last said about the session (its queue, whether it's stopping, retrying or
     /// running a hidden command), for a host session (SessionModel+Host.swift).
     var hostSummary: HostSessionSummary? {
-        didSet { refreshRestoringHistory() }
+        didSet {
+            refreshRestoringHistory()
+            reconcileQueuedEdit()
+        }
     }
     /// Messages held here until the session can take them: while it loads and its settings are
     /// set back, and while a workspace hold lasts (SessionModel+Host.swift).
-    var heldPrompts: [HeldPrompt] = []
+    var heldPrompts: [HeldPrompt] = [] {
+        didSet { reconcileQueuedEdit() }
+    }
     /// Set while host events that happened before this model followed the session are applied, so
     /// they rebuild the transcript without telling plugins about them again.
     @ObservationIgnored var isReplaying = false {

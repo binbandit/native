@@ -28,6 +28,9 @@
   a failed launch must never be presented as ready to start a task. A task requested during an
   agent restart stays in Starting until the whole restart finishes. If it fails, Restart and Retry
   restarts the agent and continues the same task, keeping its draft and prepared workspace.
+  When every installed, enabled agent has failed, `AppModel.agentStartupFailure` supplies Home
+  and New Task with the same named recovery state (`NativeSetup.AgentStartupFailure`). New Task
+  opens the agent picker for Restart or Agents Settings instead of preparing a task that cannot start.
 - **Stop ends attributable processes.** ACP's cancel acknowledgement alone cannot prove a shell stopped.
   The host records the agent's descendants before sending cancel, gives it a short grace period,
   then freezes and terminates the known tree. Process start times guard
