@@ -72,7 +72,13 @@ extension AppModel {
 
     /// Tries a task that failed to start again, keeping its draft and the workspace already made.
     func retry(_ task: StartingTask) async {
-        guard task.failure != nil else { return }
+        guard let failure = task.failure else { return }
+        if failure.needsRestart {
+            task.failure = nil
+            task.isAgentReady = false
+            await restart(task.agent.id)
+            guard !task.isDiscarded else { return }
+        }
         await start(task)
     }
 
@@ -117,6 +123,9 @@ extension AppModel {
         guard !task.isDiscarded else { return removeWorkspace(of: task) }
         guard let ready else {
             fail(task, "Couldn't start \(task.agent.displayName)", startFailure(of: agent))
+            if case .failed = runtimes[agent]?.status {
+                task.failure?.needsRestart = true
+            }
             return
         }
         do {

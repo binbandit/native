@@ -25,7 +25,9 @@
   order: when a request returns, every update sent before its response has been applied.
   A host agent that exits during initialization stays failed, with its diagnostic output and a
   Restart action. Only intentionally stopped or previously initialized agents return to idle;
-  a failed launch must never be presented as ready to start a task.
+  a failed launch must never be presented as ready to start a task. A task requested during an
+  agent restart stays in Starting until the whole restart finishes. If it fails, Restart and Retry
+  restarts the agent and continues the same task, keeping its draft and prepared workspace.
 - **Stop ends attributable processes.** ACP's cancel acknowledgement alone cannot prove a shell stopped.
   The host records the agent's descendants before sending cancel, gives it a short grace period,
   then freezes and terminates the known tree. Process start times guard

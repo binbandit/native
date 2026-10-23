@@ -73,6 +73,9 @@ final class AppModel {
     /// Tasks the user asked for whose session doesn't exist yet, newest first
     /// (AppModel+StartingTasks.swift).
     var startingTasks: [StartingTask] = []
+    /// The whole restart, including host synchronization or environment refresh. Task starts join
+    /// it before inspecting the runtime, which may still describe the old process meanwhile.
+    @ObservationIgnored var agentRestarts: [AgentDefinition.ID: Task<Void, Never>] = [:]
     /// Each project's latest workspace preparation, so new tasks' git work runs one at a time per
     /// project. Internal only for AppModel+StartingTasks.swift.
     @ObservationIgnored var workspacePreparations: [Project.ID: Task<Void, Never>] = [:]
@@ -277,10 +280,19 @@ final class AppModel {
     }
 
     func restart(_ agent: AgentDefinition.ID) async {
-        guard !runsAgentsInHost else { return await restartOnHost(agent) }
-        sessions.removeAll(of: agent)
-        guard let runtime = runtimes.replace(agent) else { return }
-        await start(runtime, environment: await launchEnvironment(refresh: true))
+        if let restart = agentRestarts[agent] { return await restart.value }
+        let restart = Task {
+            if runsAgentsInHost {
+                await restartOnHost(agent)
+            } else {
+                sessions.removeAll(of: agent)
+                guard let runtime = runtimes.replace(agent) else { return }
+                await start(runtime, environment: await launchEnvironment(refresh: true))
+            }
+        }
+        agentRestarts[agent] = restart
+        await restart.value
+        agentRestarts[agent] = nil
         // The selected session's model went with the old process; replay it from the new one.
         if let selection, selection.agent == agent {
             await loadSession(selection)

@@ -142,11 +142,12 @@ extension AppModel {
         do {
             runtime.apply(try await host.restartAgent(agent.rawValue))
         } catch {
+            runtime.apply(
+                HostAgent(
+                    id: agent.rawValue, name: runtime.agent.displayName, state: .failed,
+                    problem: error.localizedDescription))
             Self.logger.error(
                 "Couldn't restart \(agent.rawValue, privacy: .public): \(error.localizedDescription, privacy: .public)")
-        }
-        if let selection, selection.agent == agent {
-            await loadSession(selection)
         }
     }
 

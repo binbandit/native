@@ -27,11 +27,16 @@ struct StartingTaskView: View {
                         failure.title,
                         recovery: failure.needsSignIn
                             ? nil : "What you've written is kept, and so is anything already set up for the task.",
-                        suggestion: failure.needsSignIn ? failure.message : "Retry, or discard the task.",
+                        suggestion: failure.needsSignIn
+                            ? failure.message
+                            : failure.needsRestart
+                                ? "Restart the agent to try this task again." : "Retry, or discard the task.",
                         details: failure.needsSignIn ? nil : failure.message,
                         primary: failure.needsSignIn
                             ? ErrorState.Action("Sign In") { model.signInPrompt = task.agent.id }
-                            : ErrorState.Action("Retry") { Task { await model.retry(task) } },
+                            : ErrorState.Action(failure.needsRestart ? "Restart and Retry" : "Retry") {
+                                Task { await model.retry(task) }
+                            },
                         secondary: ErrorState.Action("Discard") { model.discard(task) },
                         layout: .pane
                     )
@@ -51,6 +56,20 @@ struct StartingTaskView: View {
         .navigationSubtitle(model.projects.project(task.project)?.url.abbreviatedPath ?? "")
     }
 }
+
+#if DEBUG
+#Preview("Starting task - Waiting for restart") {
+    DSPreviewPair {
+        StartingTaskPreviewFixture(failed: false)
+    }
+}
+
+#Preview("Starting task - Restart failed") {
+    DSPreviewPair {
+        StartingTaskPreviewFixture(failed: true)
+    }
+}
+#endif
 
 /// The steps a starting task goes through, the one it's on animated, with the time it's taken.
 private struct StartingTaskProgress: View {

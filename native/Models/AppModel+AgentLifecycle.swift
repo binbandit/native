@@ -46,6 +46,7 @@ extension AppModel {
     func ensureRunning(_ agent: AgentDefinition.ID) async -> AgentRuntime? {
         // Runtimes for saved sessions exist from launch, but none may start before then.
         await agentsChecked()
+        await agentRestarts[agent]?.value
         guard let runtime = runtimes[agent] else { return nil }
         if runtime.status == .idle {
             let environment = await launchEnvironment()
