@@ -29,6 +29,7 @@ extension SettingsPane {
 struct NewTasksSettingsPage: View {
     let registry: PluginRegistry
     let modes: SettingsPane?
+    var modeLibrary = ModeLibrary.shared
 
     @Environment(AppModel.self) private var model
     @Environment(SettingsPresentation.self) private var presentation
@@ -62,7 +63,7 @@ struct NewTasksSettingsPage: View {
                     SettingsGroup(title: "Agent") {
                         AgentDefaultsRow(agentName: agent.agent.name, agentID: agent.definition.id)
                             .id(agent.definition.id)
-                        NewTasksModeRow()
+                        NewTasksModeRow(library: modeLibrary)
                     }
                 } else {
                     EmptyStateView(
@@ -92,13 +93,16 @@ struct NewTasksSettingsPage: View {
         }
         .onAppear { takeScope() }
         .onChange(of: presentation.projectScope) { takeScope() }
-        .onChange(of: flash) { _, flash in
+        .task(id: flash) {
             guard let row = flash?.rowID else { return }
+            if row == GitSettingsPage.workspaceRow || row == .modesDefault { projectID = nil }
             if let match = agents.first(where: { row.rawValue.hasPrefix("agent.\($0.agent.id).") }) {
                 projectID = nil
                 agentID = match.definition.id
             }
-            if row.rawValue.hasPrefix("modes.") || row == SettingsPageMap.sectionID(.modes) {
+            if (row.rawValue.hasPrefix("modes.") && row != .modesDefault)
+                || row == SettingsPageMap.sectionID(.modes)
+            {
                 showsModes = true
             }
         }
@@ -137,11 +141,14 @@ struct NewTasksSettingsPage: View {
 #Preview("New Tasks - Defaults and empty models") {
     let app = AppModel.preview()
     DSPreviewPair {
-        NewTasksSettingsPage(registry: app.plugins, modes: nil).settingsPreviewPage()
+        NewTasksSettingsPage(
+            registry: app.plugins, modes: nil, modeLibrary: ModeLibrary(defaults: PreviewUserDefaults())
+        ).settingsPreviewPage()
     }
     .environment(app)
     .environment(SettingsPresentation())
     .environment(GitSettings(defaults: PreviewUserDefaults()))
     .environment(\.settingsPlainly, true)
+    .defaultAppStorage(PreviewUserDefaults())
 }
 #endif

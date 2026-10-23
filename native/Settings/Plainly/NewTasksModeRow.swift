@@ -2,7 +2,7 @@ import Modes
 import SwiftUI
 
 struct NewTasksModeRow: View {
-    private let library = ModeLibrary.shared
+    var library = ModeLibrary.shared
 
     var body: some View {
         SettingsRow(id: .modesDefault, "Mode") {
@@ -17,7 +17,10 @@ struct NewTasksModeRow: View {
 
 #if DEBUG
 #Preview("New Tasks - Mode") {
-    DSPreviewPair { SettingsRowGroup { NewTasksModeRow() }.settingsPreviewPage() }
-        .environment(\.settingsPlainly, true)
+    DSPreviewPair {
+        SettingsRowGroup { NewTasksModeRow(library: ModeLibrary(defaults: PreviewUserDefaults())) }
+            .settingsPreviewPage()
+    }
+    .environment(\.settingsPlainly, true)
 }
 #endif

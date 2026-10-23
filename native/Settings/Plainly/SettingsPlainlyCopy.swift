@@ -4,6 +4,7 @@ import Foundation
 struct SettingsPlainlyCopy {
     let title: String
     var description: String?
+    var preservesDescription = false
 
     static let followUp = Self(title: "Return while an agent works")
     static let badge = Self(title: "Badge")
@@ -25,7 +26,7 @@ struct SettingsPlainlyCopy {
     static let limits = Self(title: "Usage limits", description: "Before and when a limit is reached.")
     static let keepRunning = Self(
         title: "Keep agents running after you quit", description: "Turn this off to stop agents when Native quits.")
-    static let backgroundHelper = Self(title: "Background helper")
+    static let backgroundHelper = Self(title: "Background helper", preservesDescription: true)
     static let awake = Self(title: "Keep Mac awake", description: "Closing the lid still sleeps your Mac.")
     static let awakeTimer = Self(title: "Stay awake for")
     static let awakeDisplay = Self(title: "Keep the display on too")

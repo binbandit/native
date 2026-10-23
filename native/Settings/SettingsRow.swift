@@ -69,7 +69,9 @@ struct SettingsRow<Accessory: View, Control: View>: View {
                     minHeight: usesPlainly
                         ? DS.Settings.rowHeight - DS.Settings.rowVerticalInset * 2 : SettingsMetrics.rowTitleHeight,
                     alignment: .leading)
-                if let description = usesPlainly && plainly != nil ? plainly?.description.map(Text.init) : description {
+                if let description = usesPlainly && plainly != nil && plainly?.preservesDescription != true
+                    ? plainly?.description.map(Text.init) : description
+                {
                     description
                         .settingsText(.body)
                         .foregroundStyle(.dsTextSecondary)

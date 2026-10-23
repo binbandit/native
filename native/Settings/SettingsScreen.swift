@@ -119,10 +119,11 @@ struct SettingsScreen: View {
             }
             .task(id: reveal) {
                 guard let reveal else { return }
-                // Let a newly selected page lay out before scrolling into it.
+                // A destination can change scope or open a disclosure before its target lays out.
+                if plainly { flash = reveal }
                 try? await Task.sleep(for: .milliseconds(50))
                 proxy.scrollTo(reveal.rowID, anchor: .center)
-                flash = reveal
+                if !plainly { flash = reveal }
             }
         }
         // A page's undo toasts show over the visible pane, not at the bottom of a long page; and leave

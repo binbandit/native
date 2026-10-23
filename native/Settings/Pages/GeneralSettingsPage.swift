@@ -28,7 +28,11 @@ extension SettingsPane {
 struct GeneralSettingsPage: View {
     @Environment(\.settingsPlainly) private var plainly
     @Environment(SettingsPresentation.self) private var presentation
-    @Bindable private var dockBadge = DockBadgePreference.shared
+    @Bindable private var dockBadge: DockBadgePreference
+
+    init(dockBadge: DockBadgePreference = .shared) {
+        self.dockBadge = dockBadge
+    }
 
     static var badgeEntry: SettingsSearchEntry {
         SettingsSearchEntry(
@@ -60,11 +64,18 @@ struct GeneralSettingsPage: View {
                             }, width: DS.Settings.wideControl)
                     }
                 }
-                Button("What a new task starts with is in New Tasks.") { presentation.open(.newTasks) }
-                    .font(DS.Settings.caption)
-                    .foregroundStyle(.dsTextSecondary)
+                HStack(spacing: DS.Space.xs) {
+                    Text("What a new task starts with is in")
+                    Button {
+                        presentation.open(.newTasks)
+                    } label: {
+                        Text("New Tasks").underline()
+                    }
                     .buttonStyle(.plain)
-                    .padding(.horizontal, DS.Settings.rowInset)
+                }
+                .font(DS.Settings.caption)
+                .foregroundStyle(.dsTextSecondary)
+                .padding(.horizontal, DS.Settings.rowInset)
             } else {
                 SettingsRowGroup { followUpControl }
             }
@@ -110,8 +121,11 @@ struct GeneralSettingsPage: View {
 }
 
 #Preview("Plainly - General") {
-    DSPreviewPair { GeneralSettingsPage().settingsPreviewPage() }
-        .environment(SettingsPresentation())
-        .environment(\.settingsPlainly, true)
+    DSPreviewPair {
+        GeneralSettingsPage(dockBadge: DockBadgePreference(defaults: PreviewUserDefaults())).settingsPreviewPage()
+    }
+    .environment(SettingsPresentation())
+    .environment(\.settingsPlainly, true)
+    .defaultAppStorage(PreviewUserDefaults())
 }
 #endif
