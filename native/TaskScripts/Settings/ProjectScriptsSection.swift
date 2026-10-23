@@ -117,3 +117,13 @@ struct ProjectScriptsSection: View {
     .environment(TaskScriptsPreviewFixtures.settings())
 }
 #endif
+
+#if DEBUG
+#Preview("Project scripts - Worktree commands") {
+    DSPreviewPair {
+        ProjectScriptsSection(projectRoot: TaskScriptWorktreePreviewFixtures.project)
+            .settingsPreviewPage()
+    }
+    .environment(TaskScriptWorktreePreviewFixtures.settings())
+}
+#endif

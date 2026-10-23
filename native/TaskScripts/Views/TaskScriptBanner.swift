@@ -123,12 +123,26 @@ enum TaskScriptFailureText {
             parts.append("Your messages wait until setup works or you skip it.")
         case .teardown:
             parts.append("The worktree was removed anyway.")
+        case .beforeWorktree:
+            parts.append("The worktree was not created. Fix the script, then retry the task.")
+        case .afterWorktree:
+            parts.append("The task can continue. Fix the command, then retry.")
         case .taskStarted, .turnFinished, .taskDeleted:
             parts.append("Nothing else was affected. Fix the script, then retry.")
         }
         return parts.joined(separator: " ")
     }
 }
+
+#if DEBUG
+#Preview("Worktree commands - Failure with Retry") {
+    DSPreviewPair {
+        TaskScriptFailureStrip(run: TaskScriptWorktreePreviewFixtures.failedAfterCommand, edit: { _ in })
+            .frame(width: 640)
+    }
+    .environment(TaskScriptWorktreePreviewFixtures.center())
+}
+#endif
 
 #if NATIVE_PREVIEWS_WIP
 #Preview("Script banner strips") {

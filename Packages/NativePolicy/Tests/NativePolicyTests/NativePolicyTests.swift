@@ -191,6 +191,14 @@ import Testing
         #expect(await updates.next()?.scriptsEnabled == false)
     }
 
+    @Test func worktreeFetchDefaultsAndManagedOverride() {
+        #expect(load().worktreeFetchEnabled)
+        #expect(!load(user: [.worktreeFetch: false]).worktreeFetchEnabled)
+        let policy = load(managed: [.worktreeFetch: false], user: [.worktreeFetch: true])
+        #expect(!policy.worktreeFetchEnabled)
+        #expect(policy.isManaged(.worktreeFetch))
+    }
+
     @Test func shortcutBindings() {
         #expect(load().shortcutBindings == nil)
         let managed = load(managed: [.shortcutBindings: ["session.archive": "opt+cmd+a", "palette.show": "", "bad": 3]])
