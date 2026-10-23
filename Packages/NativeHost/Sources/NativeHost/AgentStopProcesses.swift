@@ -8,6 +8,8 @@ import Glibc
 
 /// Processes observed beneath a process Native launched. Start times keep a recycled pid out of
 /// the stop, and retaining children before sending cancel keeps ownership after reparenting.
+/// A child can fork and exit entirely between snapshots. This tracks known processes, never proof
+/// that no detached descendant exists; the caller must report that limit instead of Stopped.
 struct AgentStopProcesses: Sendable {
     private struct ProcessIdentity: Sendable {
         var pid: pid_t

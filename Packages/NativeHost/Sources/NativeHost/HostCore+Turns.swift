@@ -228,7 +228,7 @@ extension HostCore {
     /// What follows a turn's end: the message the user sent while stopping goes first (even though
     /// stopping pauses the queue), otherwise the queue, unless it's paused.
     func continueAfterTurn(_ session: HostSession) {
-        guard !isStoppingAllAgents else { return }
+        guard !isStoppingAllAgents, !isRestartingImmediately else { return }
         if let id = session.sendAfterStop {
             session.sendAfterStop = nil
             if let index = session.queue.firstIndex(where: { $0.prompt.id == id }) {

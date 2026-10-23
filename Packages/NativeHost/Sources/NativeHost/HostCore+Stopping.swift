@@ -3,7 +3,7 @@ import Foundation
 import NativeHostProtocol
 
 // Stopping a turn, and sending again a prompt that failed for a passing reason. ACP cancellation
-// can return while shell commands still run, so only verified process exit ends a stopped turn.
+// can return while shell commands still run, so the host ends known processes and explains its limits.
 extension HostCore {
     static let stopGracePeriod: TimeInterval = 2
 
@@ -45,7 +45,7 @@ extension HostCore {
         }
         guard let link, let processes = link.processesForStop() else {
             // No launched generation remains to cancel while the agent is being restarted.
-            finish(turn, in: session, stopReason: "cancelled")
+            finishUnverifiedStop(turn, in: session)
             return
         }
         session.stopRequestedAt = .now

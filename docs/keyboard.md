@@ -39,13 +39,16 @@ needed in the placeholder. Code-block and queued-message editing hints remain vi
 controls row has room.
 
 **Stop** asks the agent to end the turn and answers its open permission requests as rejected. The
-host gives the agent two seconds to cancel, then ends its owned process tree, including shell
-commands in separate process groups. The task stays Stopping until those processes have exited,
-even if the agent already acknowledged cancellation. Pressing Stop again ends the grace period.
+host gives the agent two seconds to cancel, then ends the processes it can attribute to that agent,
+including shell commands in separate process groups. The task stays Stopping until those known
+processes have exited. Pressing Stop again ends the grace period.
 An agent process can serve several tasks: Native waits for its other tasks to finish or be stopped
 before ending that shared process, and explains that commands may still be running meanwhile.
-If Native cannot verify command termination, including in-app mode with background running off,
-it says so and does not label the turn Stopped.
+ACP does not report command lifetimes or guarantee that a command cannot detach between process
+snapshots. Native therefore reports an unverified Stop as a failed turn with a clear warning that
+background commands may still be running, rather than labelling it Stopped. Queued messages remain
+paused unless the user explicitly chose Send Now. In-app mode, which cannot track the host's processes,
+keeps the turn Stopping and explains its limit.
 
 ### Code
 

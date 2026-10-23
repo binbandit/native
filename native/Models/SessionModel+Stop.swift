@@ -1,7 +1,7 @@
 import ACP
 import Foundation
 
-// The host verifies command exit. The in-app fallback cannot prove that a cancel reply ended the
+// The host ends the processes it can track. The in-app fallback cannot prove that a cancel reply ended the
 // agent's shell commands, so it keeps the turn stopping and explains that limit.
 extension SessionModel {
     static let stopGracePeriod: Duration = .seconds(2)

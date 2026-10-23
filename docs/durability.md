@@ -59,9 +59,11 @@ process group of every process an agent starts (npm puts its children in groups 
 ends them all when the agent stops, crashes, or its launcher exits while the adapter holds on
 (`AgentProcessGroups`: SIGTERM, then SIGKILL after 2 s). A task's Stop instead captures owned
 process identities before `session/cancel`, allows two seconds for cancellation, then freezes and
-kills the remaining tree. Stopped is published only after verified exit; a shared agent waits with
-a warning until its other tasks finish or stop. Cleanup survives closing the task, and Quit Native
-and Stop Agents waits for it before the host exits. (The opposite failures are as bad: daemons from old versions piling up, or an
+kills the known tree. ACP does not guarantee containment: descendants can detach between snapshots.
+Known process exit is checked, then Stop ends with an explicit unverified warning instead of Stopped.
+A shared agent waits with a warning until its other tasks finish or stop. Cleanup survives closing
+the task. Quit Native and Stop Agents waits for it; immediate restart finishes it without cancelling
+sibling turns, which the new host recovers. (The opposite failures are as bad: daemons from old versions piling up, or an
 app that reads "daemon unreachable" as "gone" and starts a second copy of a running conversation.
 The lock and the single launchd label make both impossible.)
 

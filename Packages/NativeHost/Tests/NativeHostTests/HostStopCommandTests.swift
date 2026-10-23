@@ -5,6 +5,38 @@ import Testing
 
 @Suite("Stop owns command termination", .serialized, .timeLimit(.minutes(1)))
 struct HostStopCommandTests {
+    @Test("Immediate restart finishes Stop without waiting for a shared sibling and recovers that sibling")
+    func restartWithWorkingSibling() async throws {
+        let harness = try HostHarness()
+        try harness.start()
+        let first = try await harness.connect()
+        let stopped = try await first.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: harness.root.path, attach: true))
+        let sibling = try await first.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: harness.root.path, attach: true))
+        _ = try await first.client.prompt(PromptParams(sessionID: stopped.id, text: "slow 100"))
+        _ = try await first.client.prompt(PromptParams(sessionID: sibling.id, text: "stubborn 100"))
+        try await first.wait("the sibling to start") { await $0.agentText(sibling.id).contains("tick 1") }
+        try await first.client.cancel(stopped.id)
+        try await first.client.shutdownHost(stopAgents: false, immediately: true)
+        let exit = try await harness.waitForExit(timeout: .seconds(5))
+        if exit == nil {
+            try await first.client.shutdownHost(stopAgents: true)
+            _ = try await harness.waitForExit()
+        }
+        try #require(exit == 75)
+        await first.stop()
+        try harness.start()
+        let second = try await harness.connect()
+        try await second.client.attach(stopped.id)
+        try await second.client.attach(sibling.id)
+        try await second.wait("the sibling recovery") { await !$0.recoveries(sibling.id).isEmpty }
+        #expect(await second.summaries[stopped.id]?.lastStopReason == "error")
+        #expect(await second.recoveries(stopped.id).isEmpty)
+        #expect(await second.recoveries(sibling.id).first?.cause == .hostUpdated)
+        await second.stop()
+    }
+
     @Test("Closing a stopped task then exiting still waits for its orphaned command", arguments: [false, true])
     func closeThenShutdown(restart: Bool) async throws {
         let harness = try HostHarness()
@@ -86,7 +118,7 @@ struct HostStopCommandTests {
         try await recorder.wait("both stops") {
             let firstEnded = await $0.turnsEnded(first.id)
             let secondEnded = await $0.turnsEnded(second.id)
-            return firstEnded == ["cancelled"] && secondEnded == ["cancelled"]
+            return firstEnded == ["error"] && secondEnded == ["error"]
         }
         #expect(await recorder.recoveries(first.id).isEmpty)
         #expect(await recorder.recoveries(second.id).isEmpty)
@@ -94,7 +126,7 @@ struct HostStopCommandTests {
     }
 
     @Test(
-        "A cancel acknowledgement or agent exit cannot leave a shell writing files after Stopped",
+        "Stop ends the observed shell and warns that detached commands cannot be verified",
         arguments: [false, true])
     func cancelledCommand(agentExits: Bool) async throws {
         let unrelated = Process()
@@ -115,12 +147,14 @@ struct HostStopCommandTests {
             Int32(String(contentsOf: harness.agentStore.appending(path: "command.pid"), encoding: .utf8)))
         defer { if kill(pid, 0) == 0 { kill(-pid, SIGKILL) } }
         try await recorder.client.cancel(session.id)
-        try await recorder.wait("Stopped") { await $0.turnsEnded(session.id) == ["cancelled"] }
+        try await recorder.wait("the stop result") { await $0.turnsEnded(session.id) == ["error"] }
+        #expect(await recorder.notices(session.id).contains { $0.contains("could not verify Stop") })
         #expect(kill(pid, 0) != 0)
         #expect(unrelated.isRunning)
         try await Task.sleep(for: .seconds(6))
         #expect(!FileManager.default.fileExists(atPath: harness.agentStore.appending(path: "stop-marker.txt").path))
         #expect(await recorder.summaries[session.id]?.phase == .idle)
+        #expect(await recorder.summaries[session.id]?.isQueuePaused == true)
         #expect(await recorder.recoveries(session.id).isEmpty)
         await recorder.stop()
     }

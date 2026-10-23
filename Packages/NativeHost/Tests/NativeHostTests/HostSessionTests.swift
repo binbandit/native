@@ -188,8 +188,11 @@ struct HostSessionTests {
         try await recorder.wait("the stop to show") { await $0.summaries[session]?.isStopping == true }
         try await Task.sleep(for: .milliseconds(1_100))
         try await recorder.client.cancel(session)
-        try await recorder.wait("the turn to end") { await $0.turnsEnded(session) == ["cancelled"] }
-        #expect(await recorder.notices(session).contains("Native ended Fake Agent and its running commands."))
+        try await recorder.wait("the turn to end") { await $0.turnsEnded(session) == ["error"] }
+        #expect(
+            await recorder.notices(session).contains(
+                "Native ended the processes it could track. Background commands may still be running because this agent does not report their lifetimes. Native could not verify Stop. Check the commands before continuing."
+            ))
         #expect(await recorder.summaries[session]?.isStopping == false)
         await recorder.stop()
     }
@@ -204,7 +207,7 @@ struct HostSessionTests {
         #expect(try await recorder.client.prompt(next) == .queued)
         try await recorder.wait("the turn to get going") { await $0.agentText(session).contains("tick 1") }
         try await recorder.client.sendQueuedNow(QueueItemParams(sessionID: session, itemID: next.requestID))
-        try await recorder.wait("both turns") { await $0.turnsEnded(session) == ["cancelled", "end_turn"] }
+        try await recorder.wait("both turns") { await $0.turnsEnded(session) == ["error", "end_turn"] }
         #expect(harness.received == ["prompt\tslow 20", "prompt\tnext"])
         await recorder.stop()
     }

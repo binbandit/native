@@ -20,7 +20,8 @@ extension HostCore {
             let graceElapsed =
                 session.stopRequestedAt.map { Date.now.timeIntervalSince($0) >= Self.stopGracePeriod } ?? true
             let sharesProcess =
-                terminatingSince == nil && !isStoppingAllAgents && link.generation == generation
+                terminatingSince == nil && !isStoppingAllAgents && !isRestartingImmediately
+                && link.generation == generation
                 && (link.isSigningIn
                     || sessions.values.contains {
                         $0.record.agentID == session.record.agentID && $0 !== session && !$0.isStopping
@@ -47,11 +48,7 @@ extension HostCore {
                     }
                     // Closing a task must not cancel its cleanup or resurrect its sidebar entry.
                     guard sessions[session.id] === session else { return }
-                    session.stopRequestedAt = nil
-                    append(
-                        .notice(text: "Native ended \(session.agentName) and its running commands.", isError: false),
-                        to: session)
-                    finish(turn, in: session, stopReason: "cancelled")
+                    finishUnverifiedStop(turn, in: session)
                     return
                 }
                 if let terminatingSince, Date.now.timeIntervalSince(terminatingSince) >= 2, !explainedSlowExit {
@@ -65,5 +62,21 @@ extension HostCore {
             }
             try? await Task.sleep(for: .milliseconds(50))
         }
+    }
+
+    /// ACP exposes no command lifetime or containment guarantee. An intermediate process can
+    /// fork and disappear between snapshots, even while the root lives. End known work, pause
+    /// queued follow-ups, and explain the remaining uncertainty instead of promising Stopped.
+    func finishUnverifiedStop(_ turn: UnfinishedTurn, in session: HostSession) {
+        guard session.turn?.requestID == turn.requestID else { return }
+        endTurn(in: session, stopReason: "error", pauseQueue: true)
+        append(
+            .notice(
+                text:
+                    "Native ended the processes it could track. Background commands may still be running because this agent does not report their lifetimes. Native could not verify Stop. Check the commands before continuing.",
+                isError: true), to: session)
+        append(.turnEnded(stopReason: "error"), to: session)
+        publish(session)
+        continueAfterTurn(session)
     }
 }

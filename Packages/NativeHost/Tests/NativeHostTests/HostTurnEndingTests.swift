@@ -67,7 +67,7 @@ struct HostTurnEndingTests {
         await recorder.stop()
     }
 
-    @Test("A stubborn agent cannot send more output after Native verifies its stop")
+    @Test("A stubborn agent cannot send more output after Native ends its known processes")
     func lateOutputAfterStop() async throws {
         let harness = try HostHarness()
         let (recorder, session) = try await started(harness)
@@ -77,7 +77,7 @@ struct HostTurnEndingTests {
         try await recorder.wait("the stop to show") { await $0.summaries[session]?.isStopping == true }
         try await Task.sleep(for: .milliseconds(1_100))
         try await recorder.client.cancel(session)
-        try await recorder.wait("the turn to end") { await $0.turnsEnded(session) == ["cancelled"] }
+        try await recorder.wait("the turn to end") { await $0.turnsEnded(session) == ["error"] }
         let stoppedText = await recorder.agentText(session)
         try await Task.sleep(for: .seconds(3))
 

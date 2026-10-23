@@ -61,7 +61,7 @@ final class AgentLink {
     private var process: Process?
     private var processGroups = AgentProcessGroups()
     private var commandProcesses: AgentStopProcesses?
-    /// A verified Stop retains this generation's tree even if the adapter exits during cancel.
+    /// A Stop retains this generation's tree even if the adapter exits during cancel.
     var commandStopOwnsTree = false
     private var stderr = StderrTail()
     private var starting: Task<Void, any Error>?
@@ -223,7 +223,7 @@ final class AgentLink {
         process = nil
     }
 
-    /// The verified stop owns this tree from here. Exit callbacks must not schedule additional
+    /// The stop cleanup owns this tree from here. Exit callbacks must not schedule additional
     /// group signals, which could arrive after cleanup and reach a reused group id.
     func beginCommandStop() {
         isStopping = true

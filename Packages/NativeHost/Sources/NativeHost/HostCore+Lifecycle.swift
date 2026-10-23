@@ -9,6 +9,8 @@ extension HostCore {
             await stopAgentsAndExit()
         } else if immediately {
             // Turns stay committed; the new binary resumes them as interrupted by the update.
+            isRestartingImmediately = true
+            await finishCommandStops()
             exitForRestart()
         } else {
             isRestartingWhenIdle = true
@@ -31,13 +33,7 @@ extension HostCore {
         }
         // A stop can be mid-cleanup when Quit arrives. Its task must outlive the grace period and
         // verify exit before endTurn clears it or the host itself exits.
-        let stopping = Array(stoppingSessions.values)
-        for session in stopping {
-            session.stopRequestedAt = .distantPast
-        }
-        for session in stopping {
-            await session.stopTimeout?.value
-        }
+        await finishCommandStops()
         for link in agents.values {
             link.endNow()
         }
@@ -53,8 +49,14 @@ extension HostCore {
         configuration.exit(ExitStatus.stopped)
     }
 
+    private func finishCommandStops() async {
+        let stopping = Array(stoppingSessions.values)
+        for session in stopping { session.stopRequestedAt = .distantPast }
+        for session in stopping { await session.stopTimeout?.value }
+    }
+
     func exitIfIdleForRestart() {
-        guard isRestartingWhenIdle, !isStoppingAllAgents, stoppingSessions.isEmpty,
+        guard isRestartingWhenIdle, !isStoppingAllAgents, !isRestartingImmediately, stoppingSessions.isEmpty,
             !sessions.values.contains(where: { $0.turn != nil || $0.phase == .recovering })
         else { return }
         try? store.setMeta(MetaKey.cleanShutdown, "1")
@@ -73,6 +75,7 @@ extension HostCore {
                 // Stay on this build and say why; the install can be asked for again.
                 pendingActivation = nil
                 isRestartingWhenIdle = false
+                isRestartingImmediately = false
                 updateFailed(error)
                 return
             }
