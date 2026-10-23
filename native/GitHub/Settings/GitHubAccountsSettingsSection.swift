@@ -74,6 +74,7 @@ struct GitHubAccountsSettingsSection: View {
     private var emptyTitle: String {
         if isChecking { return "Checking GitHub…" }
         if accounts.error == .notInstalled { return "GitHub CLI isn't installed" }
+        if case .notAuthenticated = accounts.error { return "Not signed in to GitHub" }
         if accounts.error != nil { return "GitHub isn't available" }
         return "Not signed in to GitHub"
     }
