@@ -104,7 +104,7 @@ struct ComposerView: View {
 
     var body: some View {
         let settings = ComposerSettings(session.configOptions)
-        let suggestions = suggestions
+        let suggestions = composerNext && !session.permissionRequests.isEmpty ? nil : suggestions
         Group {
             if composerNext, let call = session.permissionRequests.first {
                 ComposerSurface(isFloating: true) {

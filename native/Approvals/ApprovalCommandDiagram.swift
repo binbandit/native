@@ -8,7 +8,10 @@ struct ApprovalCommandDiagram: View {
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
-            diagram.fixedSize(horizontal: true, vertical: true)
+            // Tabs and wide glyphs do not have the font's ordinary monospace advance.
+            if analysis.command.unicodeScalars.allSatisfy({ (32...126).contains($0.value) }) {
+                diagram.fixedSize(horizontal: true, vertical: true)
+            }
             compact
         }
         .foregroundStyle(.dsTextPrimary)
