@@ -50,6 +50,26 @@ struct TerminalActivityTests {
         #expect(tabs.activity.runningCount == 0)
     }
 
+    @Test(arguments: [Int32(0), Int32(1)])
+    func aBusySampleAfterCompletionStartsTheNextCommandWithoutAnIdleSample(status: Int32) {
+        var tabs = TerminalTabList()
+        let tab = tabs.add()
+        tabs.setCommandRunning(true, of: tab.id)
+        tabs.finishCommand(status: status, in: tab.id)
+        #expect(tabs.activity.runningCount == 0)
+        #expect(tabs.activity.failedCount == (status == 0 ? 0 : 1))
+
+        // The prompt and next command's start can both arrive between activity samples.
+        tabs.setCommandRunning(true, of: tab.id)
+        #expect(tabs.activity.runningCount == 1)
+        #expect(tabs.activity.failedCount == 0)
+        #expect(tabs.tabs.first?.lastCommandExitStatus == nil)
+        tabs.finishCommand(status: 0, in: tab.id)
+        tabs.setCommandRunning(false, of: tab.id)
+        #expect(tabs.activity.runningCount == 0)
+        #expect(tabs.activity.failedCount == 0)
+    }
+
     @Test func restartingClearsFailureAndClosingIgnoresLateEvents() {
         var tabs = TerminalTabList()
         let tab = tabs.add()

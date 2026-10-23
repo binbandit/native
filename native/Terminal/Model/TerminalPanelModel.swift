@@ -280,6 +280,11 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
     }
 
     func surface(_ id: UUID, didChangeCommandRunning isRunning: Bool) {
+        // A command can finish and another start between samples. Compare with the model's
+        // completion state, so a missed idle prompt cannot suppress the next running command.
+        guard let tab = tabs.tabs.first(where: { $0.id == id }),
+            tab.status == .running, tab.isCommandRunning != isRunning
+        else { return }
         tabs.setCommandRunning(isRunning, of: id)
     }
 

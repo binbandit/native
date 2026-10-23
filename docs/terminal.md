@@ -61,7 +61,8 @@ Why libghostty, and the pin, are in `docs/decisions.md`.
 - **Tabs** are named by their shell's title (the folder, or the running command), numbered when two
   show the same title, and fall back to "Terminal", "Terminal 2", ... once their shell exits.
 - **Activity** lives in `TerminalTabList`, summarized across tabs by `TerminalActivitySummary`.
-  The engine reports busy-state changes independently of the panel's visibility, and keeps the
+  The engine samples busy state independently of the panel's visibility; the model publishes
+  changes against its current state, including command completions between samples. It keeps the
   last command's exit code until the next command starts, the shell restarts or the tab closes.
   An idle shell stays open without a working signal. Shell commands use libghostty's shell
   integration to distinguish the prompt from foreground work and report exit codes; shells with

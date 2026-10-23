@@ -18,7 +18,6 @@ final class GhosttySurfaceView: NSView, TerminalSurface {
     private(set) var isFocused = false
     /// Focus asked for before the view was in a window.
     private var wantsFocus = false
-    private var reportedCommandRunning: Bool?
     /// One cell's size in points, for placing the input method's candidate window.
     var cellSize = CGSize(width: 8, height: 16)
     private var cursorStyle: NSCursor = .iBeam
@@ -98,8 +97,6 @@ final class GhosttySurfaceView: NSView, TerminalSurface {
     func reportCommandActivity() {
         guard let surface else { return }
         let running = !ghostty_surface_process_exited(surface) && ghostty_surface_needs_confirm_quit(surface)
-        guard running != reportedCommandRunning else { return }
-        reportedCommandRunning = running
         events?.surface(id, didChangeCommandRunning: running)
     }
 
