@@ -12,11 +12,6 @@ public enum TaskRowIndent: Sendable {
     }
 }
 
-/// Quiet projects keep the same controls while removing resting glyphs and tightening row spacing.
-public enum TaskRowStyle: Sendable {
-    case standard, quiet
-}
-
 /// A generic type can't hold static stored properties, so the row's own metrics live here.
 private enum TaskRowMetrics {
     /// The archive button's side, and the narrowest the age's slot gets so the button covers it.
@@ -55,7 +50,6 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
     let diff: (added: Int, removed: Int)?
     let badge: TaskBadge?
     let indent: TaskRowIndent
-    let style: TaskRowStyle
     let leading: Leading
     let accessory: Accessory
     let action: () -> Void
@@ -79,7 +73,6 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
         diff: (added: Int, removed: Int)? = nil,
         badge: TaskBadge? = nil,
         indent: TaskRowIndent = .grouped,
-        style: TaskRowStyle = .standard,
         leading: Leading,
         accessory: Accessory,
         action: @escaping () -> Void,
@@ -94,7 +87,6 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
         self.diff = diff
         self.badge = badge
         self.indent = indent
-        self.style = style
         self.leading = leading
         self.accessory = accessory
         self.action = action
@@ -106,7 +98,7 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
             HStack(alignment: .top, spacing: DS.Space.sm) {
                 Group {
                     if showsLeading {
-                        restingMark
+                        leading
                             .font(.system(size: 11, weight: .regular))
                             .foregroundStyle(.dsTextTertiary)
                             .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
@@ -140,10 +132,10 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
                     }
                 }
             }
-            .padding(.vertical, style == .quiet ? DS.Space.sm : DS.Space.md)
+            .padding(.vertical, DS.Space.md)
             .padding(.leading, indent.leading)
             .padding(.trailing, DS.Space.sm)
-            .frame(minHeight: style == .quiet ? max(DS.Size.controlMD, DS.Size.minimumHitTarget) : DS.Size.rowMinHeight)
+            .frame(minHeight: DS.Size.rowMinHeight)
             .contentShape(.rect)
         }
         .buttonStyle(SidebarRowButtonStyle())
@@ -166,7 +158,7 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
                     .frame(width: TaskRowMetrics.archiveSide, height: TaskRowMetrics.archiveSide)
                     .contentShape(.rect)
                     .dsHitTarget(TaskRowMetrics.archiveSide)
-                    .padding(.top, style == .quiet ? DS.Space.sm : DS.Space.md)
+                    .padding(.top, DS.Space.md)
                     .padding(.trailing, DS.Space.sm)
                     .help("Archive Task")
             }
@@ -201,13 +193,6 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
 
             accessory
 
-            if style == .quiet, let label = quietStatusLabel {
-                Text(label)
-                    .font(.dsCaptionMedium)
-                    .foregroundStyle(status.tint)
-                    .lineLimit(1)
-            }
-
             age
                 .frame(minWidth: onArchive == nil ? nil : TaskRowMetrics.archiveSide, alignment: .trailing)
                 .opacity(isArchiveShown ? 0 : 1)
@@ -217,7 +202,7 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
     @ViewBuilder private var age: some View {
         if let diff, diff.added > 0 || diff.removed > 0 {
             DiffStatLabel(added: diff.added, removed: diff.removed)
-        } else if let date, style != .quiet || quietStatusLabel == nil {
+        } else if let date {
             CompactAgeText(date: date)
         }
     }
@@ -231,28 +216,8 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
     /// The type glyph stands in for the status at rest: idle, finished, or stopped by the user, who
     /// needs no reminder of what they did themselves.
     private var showsLeading: Bool {
-        (style == .quiet || Leading.self != EmptyView.self)
+        Leading.self != EmptyView.self
             && (status == .idle || status == .done || status == .cancelled)
-    }
-
-    @ViewBuilder private var restingMark: some View {
-        if style == .quiet {
-            if isUnread { StatusDot() } else { Color.clear }
-        } else {
-            leading
-        }
-    }
-
-    private var quietStatusLabel: String? {
-        switch status {
-        case .needsInput: "Answer"
-        case .needsPermission: "Approve"
-        case .needsPlanReview: "Review"
-        case .failed: "Failed"
-        case .paused: "Paused"
-        case .limited: "Limited"
-        default: nil
-        }
     }
 
     private var accessibilityValue: String {
@@ -260,6 +225,7 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
     }
 }
 
+#if DEBUG
 #Preview("Task rows") {
     DSPreviewPair {
         VStack(spacing: DS.Space.xs) {
@@ -276,22 +242,6 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
             )
         }
         .frame(width: 260)
-    }
-}
-
-#if DEBUG
-#Preview("Quiet task rows - Every status and long titles") {
-    DSPreviewPair {
-        VStack(spacing: 0) {
-            ForEach(TaskStatus.allCases, id: \.self) { status in
-                TaskRow(
-                    title: status == .idle
-                        ? "A long task title that should truncate without moving its controls" : status.label,
-                    status: status, isUnread: status == .done, date: .now, indent: .flat, style: .quiet,
-                    leading: EmptyView(), accessory: EmptyView(), action: {}, onArchive: {})
-            }
-        }
-        .frame(width: DS.Window.sidebarMinWidth)
     }
 }
 #endif

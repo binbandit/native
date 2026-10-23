@@ -144,7 +144,7 @@ extension SessionModel {
     func mirrorHostQuestions() {
         let open = mirror.questions.filter { !answeredQuestions.contains($0.id) }
         guard open.map(\.id) != questions.map(\.hostID) else { return }
-        questions = open.map { PendingQuestion(id: .string($0.id), request: $0.request) }
+        questions = open.map { PendingQuestion(id: .string($0.id), request: $0.request, requestedAt: $0.requestedAt) }
     }
 
     /// The latest turn's prompt and what it produced, for plugins hearing that it failed.

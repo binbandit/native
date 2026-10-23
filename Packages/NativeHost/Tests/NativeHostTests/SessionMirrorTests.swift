@@ -59,10 +59,27 @@ struct SessionMirrorTests {
             ]),
         ])
         var mirror = SessionMirror()
-        mirror.apply(HostEvent(seq: 1, payload: .permissionRequested(toolCallID: "call-1", request: request)))
+        let requestedAt = Date(timeIntervalSince1970: 1_000)
+        mirror.apply(
+            HostEvent(seq: 1, at: requestedAt, payload: .permissionRequested(toolCallID: "call-1", request: request)))
+        #expect(mirror.state.pendingPermissions.first?.permission.requestedAt == requestedAt)
         #expect(mirror.state.pendingPermissions.map(\.toolCallID) == ["call-1"])
         mirror.apply(HostEvent(seq: 2, payload: .permissionResolved(toolCallID: "call-1", optionID: "allow")))
         #expect(mirror.state.pendingPermissions.isEmpty)
+    }
+
+    @Test("Question clocks use the host event time when a client attaches later")
+    func questionArrival() {
+        let requestedAt = Date(timeIntervalSince1970: 1_000)
+        let request = JSONValue.object([
+            "sessionId": .string("s"), "mode": .string("form"),
+            "message": .string("Which template?"),
+            "requestedSchema": .object(["type": .string("object"), "properties": .object([:])]),
+        ])
+        var mirror = SessionMirror()
+        mirror.apply(
+            HostEvent(seq: 1, at: requestedAt, payload: .questionAsked(questionID: "question", request: request)))
+        #expect(mirror.questions.first?.requestedAt == requestedAt)
     }
 
     @Test("A recovery shows as a notice saying what Native did")

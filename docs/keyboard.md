@@ -205,6 +205,10 @@ files; a file moved or deleted before sending is marked on its chip and holds th
 
 ## Permission requests
 
+With the All in view sidebar experiment, the ⌘Y keycap marks that visible task's oldest tool
+approval, provided it offers Allow once. Questions and requests in other tasks have no keycap.
+Global routing through Peek is a later slice.
+
 The oldest pending request in the visible task answers these: a tool's permission request, a
 workflow step waiting for approval, or an expedition's route (or route change) waiting for review.
 They're chosen not to collide with text editing in the composer.

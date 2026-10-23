@@ -10,8 +10,7 @@ import TaskList
 /// tasks are doing.
 struct ProjectSection<TaskAccessory: View>: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.sidebarQuietProjects) private var isQuiet
-    @Environment(\.sidebarSelection) private var picking
+    @Environment(\.sidebarAllInView) private var isAllInView
     @Environment(\.undoManager) private var undoManager
     @Environment(\.projectIconStore) private var injectedIconStore
     let project: Project
@@ -22,7 +21,6 @@ struct ProjectSection<TaskAccessory: View>: View {
     /// The project's place among the projects, and how many there are.
     let position: (index: Int, count: Int)
     let isFiltered: Bool
-    var allowsFolding = true
     /// The filters leave none of its tasks.
     var hasNoMatches = false
     let isExpanded: Binding<Bool>
@@ -31,7 +29,6 @@ struct ProjectSection<TaskAccessory: View>: View {
     /// A session row was clicked.
     let select: (SessionKey) -> Void
 
-    @State private var showsAll = false
     @State private var isPickingIcon = false
     @State private var isConfirmingDelete = false
 
@@ -43,7 +40,6 @@ struct ProjectSection<TaskAccessory: View>: View {
         let item = SidebarDragState.Item.project(project.id)
         let problems = model.problems.list(for: project.id)
         let starting = model.startingTasks(in: project.id)
-        let visible = visibleSessions
         projectGroup(starting: starting.count) {
             // Work Native did on its own for the project that failed, above the list it may have left stale.
             if !isFiltered {
@@ -54,7 +50,7 @@ struct ProjectSection<TaskAccessory: View>: View {
             ForEach(starting) { task in
                 StartingTaskRow(task: task)
             }
-            ForEach(visible) { summary in
+            ForEach(sessions) { summary in
                 let row = SidebarDragState.Item.session(summary.id, in: project.id)
                 let index = order[summary.id] ?? 0
                 SessionRow(
@@ -66,14 +62,6 @@ struct ProjectSection<TaskAccessory: View>: View {
                 .equatable()
                 .sidebarDraggable(row, title: model.title(for: summary), state: drag)
                 .sidebarDropTarget(row, state: drag, isActive: drag.dragged.isSession, onDrop: model.applySidebarDrop)
-            }
-            if isQuiet, allowsFolding, !isFiltered, picking?.isActive != true,
-                sessions.count > visible.count || showsAll
-            {
-                SidebarNextDisclosureRow(
-                    title: showsAll ? "Show less" : "\(sessions.count - visible.count) more",
-                    isExpanded: showsAll
-                ) { withAnimation(.dsDisclosure) { showsAll.toggle() } }
             }
             // A project whose folder is gone or whose listing failed isn't known to be empty; its
             // problem row says why.
@@ -110,29 +98,6 @@ struct ProjectSection<TaskAccessory: View>: View {
         }
     }
 
-    /// Filters and bulk selection expose their full scope. A keyboard or search selection must
-    /// remain visible even when it points into the folded tail.
-    private var visibleSessions: [SessionSummary] {
-        guard isQuiet, allowsFolding, !showsAll, !isFiltered, picking?.isActive != true else { return sessions }
-        var keeping = Set<SessionKey>()
-        var dates: [SessionKey: Date] = [:]
-        for summary in sessions {
-            let session = model.session(summary.id)
-            let status = TaskStatus(session)
-            if status.isActive || status.needsAttention || status == .failed || status == .paused || status == .limited
-                || model.isUnread(summary.id)
-                || model.removedWorkspaces[summary.id] != nil
-            {
-                keeping.insert(summary.id)
-            }
-            dates[summary.id] = session?.lastActivity ?? summary.info.updatedDate
-        }
-        let visible = TaskListFold.visibleIDs(
-            ordered: sessions.map(\.id), keeping: keeping, dates: dates,
-            revealing: Set([model.selection, model.renaming].compactMap { $0 }))
-        return sessions.filter { visible.contains($0.id) }
-    }
-
     @ViewBuilder private func projectGroup<Content: View>(
         starting: Int, @ViewBuilder content: @escaping () -> Content
     ) -> some View {
@@ -140,9 +105,10 @@ struct ProjectSection<TaskAccessory: View>: View {
             model.missingFolder(of: project.id) == nil
             ? { Task { await model.newSession(in: project.id) } } : nil
         let activity = isExpanded.wrappedValue ? ProjectActivity() : activity(starting: starting)
-        if isQuiet {
-            SidebarNextProjectGroup(
-                name: project.name, isExpanded: isExpanded, taskCount: sessions.count, activity: activity,
+        if isAllInView {
+            AllInViewProjectGroup(
+                name: project.name, isFirst: position.index == 0, isExpanded: isExpanded, taskCount: sessions.count,
+                activity: activity,
                 note: hasNoMatches ? "No matching tasks" : nil, onNewTask: onNewTask,
                 menu: { projectMenu }, content: content)
         } else {
@@ -177,7 +143,7 @@ struct ProjectSection<TaskAccessory: View>: View {
 /// What an expanded project with no sessions shows: the one action that fills it, or why it can't
 /// happen yet.
 private struct ProjectEmptyRow: View {
-    @Environment(\.sidebarQuietProjects) private var isQuiet
+    @Environment(\.sidebarAllInView) private var isAllInView
     @Environment(AppModel.self) private var model
     let project: Project
 
@@ -190,7 +156,7 @@ private struct ProjectEmptyRow: View {
             } label: {
                 Label(
                     model.agentStartupFailure != nil
-                        ? "Restart an agent to start a task" : isQuiet ? "Start the first task" : "Start a task",
+                        ? "Restart an agent to start a task" : isAllInView ? "Start the first task" : "Start a task",
                     systemImage: "plus"
                 )
                 .labelStyle(EmptyRowLabelStyle())
@@ -220,12 +186,17 @@ private struct ProjectEmptyRow: View {
 /// A project whose sessions haven't been listed yet: the loader and what's happening, so a project
 /// just added doesn't look empty while its agents list it.
 private struct FindingSessionsRow: View {
+    @Environment(\.sidebarAllInView) private var isAllInView
     var body: some View {
         Label {
             Text("Finding tasks…")
         } icon: {
-            DotGridLoader(pattern: .settingUp)
-                .frame(width: DS.Size.rowLeading * 0.75, height: DS.Size.rowLeading * 0.75)
+            if isAllInView {
+                TaskSignal(status: .starting)
+            } else {
+                DotGridLoader(pattern: .settingUp)
+                    .frame(width: DS.Size.rowLeading * 0.75, height: DS.Size.rowLeading * 0.75)
+            }
         }
         .labelStyle(EmptyRowLabelStyle())
         .foregroundStyle(.dsTextTertiary)
@@ -235,21 +206,21 @@ private struct FindingSessionsRow: View {
 
 /// Lines the empty row's glyph up with the status glyphs of task rows.
 private struct EmptyRowLabelStyle: LabelStyle {
-    @Environment(\.sidebarQuietProjects) private var isQuiet
+    @Environment(\.sidebarAllInView) private var isAllInView
 
     func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: DS.Space.sm) {
+        HStack(spacing: isAllInView ? DS.Space.md : DS.Space.sm) {
             configuration.icon
                 .font(.dsCaption)
                 .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
             configuration.title
-                .font(.dsCalloutBook)
+                .font(isAllInView ? .dsBody : .dsCalloutBook)
             Spacer(minLength: 0)
         }
-        .padding(.vertical, DS.Space.md)
-        .padding(.leading, isQuiet ? TaskRowIndent.flat.leading : TaskRowIndent.grouped.leading)
+        .padding(.vertical, isAllInView ? DS.Sidebar.rowVertical : DS.Space.md)
+        .padding(.leading, isAllInView ? DS.Sidebar.leading : TaskRowIndent.grouped.leading)
         .padding(.trailing, DS.Space.sm)
-        .frame(minHeight: DS.Size.rowMinHeight)
+        .frame(minHeight: isAllInView ? max(DS.Sidebar.rowHeight, DS.Size.minimumHitTarget) : DS.Size.rowMinHeight)
     }
 }
 

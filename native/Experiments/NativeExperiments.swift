@@ -83,8 +83,8 @@ extension Gate {
 
     static let sidebarNext = Gate(
         id: "NativeSidebarNext",
-        title: "Quiet projects",
-        summary: "A calmer sidebar with monospace project names, marks for active tasks and folded older tasks.",
+        title: "All in view",
+        summary: "Titles at rest, shared grid signals and readable asks with waiting clocks.",
         site: "Sidebar ▸ projects and tasks",
         stage: .labs,
         owner: "sidebar",

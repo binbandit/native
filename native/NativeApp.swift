@@ -129,6 +129,7 @@ struct NativeApp: App {
     var body: some Scene {
         Window("Native", id: "main") {
             RootView()
+                .sidebarDesignFixture()
                 .commandPalette(palette)
                 .onAppear {
                     LaunchMetrics.markOnScreen(.firstFrame)
