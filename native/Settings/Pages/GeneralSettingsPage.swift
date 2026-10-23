@@ -88,7 +88,9 @@ struct GeneralSettingsPage: View {
             description: Text("Queue messages to send after the agent finishes, or steer the agent mid-turn."),
             detail: plainly
                 ? nil
-                : Text("Use ⌘↵ to \(followUp.opposite.title.lowercased()). Agents that can't steer queue instead.")
+                : Text(
+                    "Use \(Image(systemName: "command"))\(Image(systemName: "arrow.turn.down.left")) to \(followUp.opposite.title.lowercased()). Agents that can't steer queue instead."
+                )
         ) {
             SettingsSelect(
                 label: "Follow-up behavior", selection: $followUp,

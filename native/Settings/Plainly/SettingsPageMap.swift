@@ -125,7 +125,7 @@ enum SettingsPageMap {
         if pane.id == .general { entries.append(GeneralSettingsPage.badgeEntry) }
         if pane.id == .extensions {
             let agentRows = Set(
-                registry.plugins.filter { !$0.plugin.manifest.agents.isEmpty }
+                registry.plugins.filter { $0.source == .builtIn && !$0.plugin.manifest.agents.isEmpty }
                     .map { ExtensionsSettingsPage.rowID($0.id) })
             entries.removeAll { agentRows.contains($0.id) }
         }

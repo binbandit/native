@@ -51,12 +51,21 @@ struct SettingsNavigation<Search: View>: View {
         VStack(alignment: .leading, spacing: plainly ? DS.Settings.navGroupGap : SettingsMetrics.navGroupSpacing) {
             ForEach(groups, id: \.group) { entry in
                 VStack(alignment: .leading, spacing: 0) {
-                    if !plainly || entry.group != .personal {
+                    if plainly {
+                        if entry.group != .personal {
+                            Text(entry.group.title)
+                                .font(DS.Settings.navGroup)
+                                .foregroundStyle(.dsTextTertiary)
+                                .padding(.horizontal, DS.Settings.navInset)
+                                .padding(.bottom, DS.Space.sm)
+                                .accessibilityAddTraits(.isHeader)
+                        }
+                    } else {
                         Text(entry.group.title)
-                            .font(plainly ? DS.Settings.navGroup : SettingsTextStyle.caption.font)
-                            .foregroundStyle(plainly ? Color.dsTextTertiary : .dsTextSecondary)
-                            .padding(.horizontal, DS.Settings.navInset)
-                            .padding(.bottom, DS.Space.sm)
+                            .settingsText(.caption)
+                            .foregroundStyle(.dsTextSecondary)
+                            .padding(.horizontal, DS.Space.md)
+                            .padding(.vertical, DS.Space.sm)
                             .accessibilityAddTraits(.isHeader)
                     }
                     VStack(spacing: plainly ? DS.Settings.navRowGap : SettingsMetrics.navItemSpacing) {
