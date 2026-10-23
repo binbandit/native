@@ -196,6 +196,16 @@ private struct MarkdownNode: Identifiable {
     /// Gives code spans a faint backdrop so they read as code, not just a font change.
     private static func styled(_ run: AttributedSubstring) -> AttributedString {
         var text = AttributedString(run)
+        // Foundation keeps Markdown images as alt text, not links. Local image references should
+        // still open the task's viewer, including images whose author omitted the alt text.
+        if let url = text.imageURL, url.isFileURL || url.scheme == nil {
+            text.imageURL = nil
+            text.link = url
+            if String(text.characters) == "\u{FFFC}" {
+                let attributes = text.runs.first?.attributes ?? AttributeContainer()
+                text = AttributedString("Image", attributes: attributes)
+            }
+        }
         if text.inlinePresentationIntent?.contains(.code) == true {
             text.backgroundColor = .dsFill
         }
@@ -354,5 +364,16 @@ private extension MarkdownNode {
             .padding(20)
     }
     .frame(width: 640, height: 720)
+}
+#endif
+
+#if DEBUG
+#Preview("Markdown - Local image references") {
+    DSPreviewPair {
+        MarkdownView("![Diagram](file:///repo/diagram.png)\n\n![](file:///repo/detail.png)")
+            .environment(\.openURL, OpenURLAction { _ in .handled })
+            .padding(DS.Space.lg)
+            .frame(width: 400)
+    }
 }
 #endif
