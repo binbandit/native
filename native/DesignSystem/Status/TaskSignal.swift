@@ -81,8 +81,8 @@ public struct TaskSignal<Working: View>: View {
             // CA pauses under an occluded window. The wall-clock deadline still ends the breath.
             expiredDeadline = deadline
         }
-        .onChange(of: scenePhase) { old, new in
-            if old != .active, new == .active { activatedAt = .now }
+        .onChange(of: scenePhase, initial: true) { _, new in
+            if new == .active { activatedAt = .now }
         }
     }
 
