@@ -216,8 +216,9 @@ composer taking typing in the new task.
   the sidebar and selects it at once (`AppModel+StartingTasks.swift`): its composer takes the first
   message, which goes out when the session exists, and the worktree and the agent start at the same
   time. A failure stays on the task with Retry and Discard instead of an alert.
-- **Git checked a new worktree out one file at a time.** `git worktree add` now runs with a checkout
-  worker per core (`Repository.parallelCheckout`), which halves it on this repository. Sparse and
+- **Git checked a new worktree out one file at a time.** This change used a checkout
+  worker per core, which halved it on this repository. The CPU cost led to the bounded checkout
+  policy below. Sparse and
   `--no-checkout` worktrees were ruled out: the agent has to see the whole project from its first
   turn. Cloning the main checkout's files (APFS clones) was measured too and lost: populating took
   9 s and refreshing the index another 18 s.
@@ -225,6 +226,38 @@ composer taking typing in the new task.
   (`git ls-files --ignored`, 0.35 s here), the status scan of the new worktree (0.4-0.8 s) and the
   file list for `@` mentions (only when one is typed) all run in git's own processes or off the
   main actor; `sample` shows the main thread idle throughout.
+
+### Worktree creation CPU
+
+2026-10-23, a 16-core Mac, Git 2.56.0, Debug. Before: `bb908dba`, which passed
+`checkout.workers=0` to every worktree creation. After: one checkout worker and `nice -n 10`,
+applied through the host's command runner to new, detached, existing-branch and restored worktrees.
+The command overrides all-core user settings without changing the repository's saved config.
+
+Three runs per fixture through `Repository.addWorktree` followed by `copyIgnoredFiles`:
+a local Native clone with 6,277 tracked files, and a generated JavaScript monorepo with 100 packages,
+30,102 tracked files and 60,000 ignored files under `node_modules`. LFS smudging was skipped;
+no setup scripts or downloads ran. `ps` sampled the Git process tree at a 50 ms target interval;
+100% means one logical CPU. `/usr/bin/time -l` measured cumulative child CPU. These are medians
+on a shared Mac, not a hard CPU cap or a latency guarantee.
+
+| Measurement | Native before / after | JavaScript before / after |
+| --- | --- | --- |
+| Peak sampled Git CPU | 380% / 79% | 650% / 99% |
+| Git processes at peak concurrency | 18 / 2 | 18 / 2 |
+| User + system CPU time | 2.87 s / 0.65 s | 10.67 s / 1.80 s |
+| Checkout wall time | 0.64 s / 0.65 s | 1.81 s / 1.81 s |
+| Checkout process nice value | 0 / 10 | 0 / 10 |
+
+Ignored dependency trees stayed out of the checkout; the JavaScript fixture's `.env` was copied.
+The two remaining Git processes are `worktree add` and its checkout child, with no per-core worker
+fan-out. Larger repositories can take longer with one worker; the already-visible starting task
+and editable composer cover that wait.
+
+The isolated app's `New Task in native` and `New Task in js-monorepo` actions also reproduced the
+16-worker fan-out before the fix. A separate app CPU load existed before the click and in a
+branch-only control with no worktree: sampling showed menu updates and initial history indexing.
+That independent load is not included in the Git numbers above.
 
 ### Streaming
 

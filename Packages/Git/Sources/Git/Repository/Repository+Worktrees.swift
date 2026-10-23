@@ -12,10 +12,7 @@ extension Repository {
     public func addWorktree(
         at path: URL, newBranch branch: String, startPoint: String = "HEAD"
     ) async throws(GitError) -> Worktree {
-        try await run(
-            Self.parallelCheckout + [
-                "worktree", "add", "-b", branch, "--", path.path(percentEncoded: false), startPoint,
-            ])
+        try await runWorktreeAdd(["-b", branch, "--", path.path(percentEncoded: false), startPoint])
         return try await requireListedWorktree(at: path)
     }
 
@@ -50,10 +47,7 @@ extension Repository {
             }
             do {
                 if detached {
-                    try await run(
-                        Self.parallelCheckout + [
-                            "worktree", "add", "--detach", "--", path.path(percentEncoded: false), startPoint,
-                        ])
+                    try await runWorktreeAdd(["--detach", "--", path.path(percentEncoded: false), startPoint])
                     return try await requireListedWorktree(at: path)
                 }
                 return try await addWorktree(at: path, newBranch: branch, startPoint: startPoint)
@@ -80,8 +74,7 @@ extension Repository {
                 path: attempt == 1 ? slug : "\(slug)-\(attempt)", directoryHint: .isDirectory)
             guard !existing.contains(Self.spelling(of: path)) else { continue }
             do {
-                try await run(
-                    Self.parallelCheckout + ["worktree", "add", "--", path.path(percentEncoded: false), branch])
+                try await runWorktreeAdd(["--", path.path(percentEncoded: false), branch])
                 return try await requireListedWorktree(at: path)
             } catch .failed(_, _, let stderr) where stderr.contains("already exists") {
                 // A folder left at that path by something else; try the next name.
@@ -135,7 +128,7 @@ extension Repository {
     public func restoreWorktree(
         at path: URL, branch: String, from checkpoint: Checkpoint?
     ) async throws(GitError) -> Worktree {
-        try await run(Self.parallelCheckout + ["worktree", "add", "--", path.path(percentEncoded: false), branch])
+        try await runWorktreeAdd(["--", path.path(percentEncoded: false), branch])
         let worktree = try await requireListedWorktree(at: path)
         if let checkpoint, let repository = try await git.repository(at: worktree.path) {
             try await repository.restore(checkpoint)
@@ -145,10 +138,12 @@ extension Repository {
 
     // MARK: - Helpers
 
-    /// Checks a new worktree out with a worker per core instead of one file at a time: on a large
-    /// repository (96,000 files) that halves `worktree add`, from about 21 s to 10 s. Git falls back
-    /// to one at a time where it has to (files with smudge filters, small checkouts).
-    static let parallelCheckout = ["-c", "checkout.workers=0"]
+    /// Leave CPU for the app and existing tasks instead of checking out on every core. Override
+    /// all-core user settings for this command only; nice and its children run on the host too.
+    private func runWorktreeAdd(_ arguments: [String]) async throws(GitError) {
+        try await git.run(
+            ["-c", "checkout.workers=1", "worktree", "add"] + arguments, in: root, lowPriority: true)
+    }
 
     /// Local and remote branch names; remote ones count so a first push never lands on someone
     /// else's branch.
