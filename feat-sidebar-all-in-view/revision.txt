@@ -1,0 +1,2 @@
+Screenshots: 0ce7e5d67913f6847a98ac70587c4ef67671a89e
+1440x900 isolated Debug fixture; motion images include window shadows.
