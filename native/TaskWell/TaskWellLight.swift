@@ -3,10 +3,11 @@ import SwiftUI
 /// A single outward pass at a turn boundary. No repeating timer or mid-turn light.
 struct TaskWellLight: View {
     let trigger: Int
+    var isEnabled = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        if !reduceMotion {
+        if isEnabled && !reduceMotion {
             Color.clear
                 .frame(height: DS.TaskWell.lightHeight)
                 .keyframeAnimator(initialValue: CGFloat.zero, trigger: trigger) { _, progress in
@@ -38,8 +39,8 @@ struct TaskWellLight: View {
 }
 
 #if DEBUG
-#Preview("Well - Reduced motion light") {
-    DSPreviewPair { TaskWellLight(trigger: 0).environment(\.accessibilityReduceMotion, true) }
+#Preview("Well - No light") {
+    DSPreviewPair { TaskWellLight(trigger: 0, isEnabled: false) }
 }
 
 #Preview("Well - One light pass") {
