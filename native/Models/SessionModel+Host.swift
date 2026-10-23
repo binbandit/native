@@ -306,10 +306,13 @@ extension SessionModel {
     func moveQueuedOnHost(_ id: QueuedPrompt.ID, before target: QueuedPrompt.ID?) {
         guard id != target else { return }
         if let index = heldPrompts.firstIndex(where: { $0.id == id }) {
-            let item = heldPrompts.remove(at: index)
+            // Publish the reorder together so the edit never sees its message temporarily absent.
+            var reordered = heldPrompts
+            let item = reordered.remove(at: index)
             let destination =
-                target.flatMap { target in heldPrompts.firstIndex { $0.id == target } } ?? heldPrompts.endIndex
-            heldPrompts.insert(item, at: destination)
+                target.flatMap { target in reordered.firstIndex { $0.id == target } } ?? reordered.endIndex
+            reordered.insert(item, at: destination)
+            heldPrompts = reordered
             return
         }
         guard let host else { return }
