@@ -43,7 +43,7 @@ struct AnnotatedApprovalView: View {
                 VStack(alignment: .leading, spacing: DS.Space.xl) {
                     VStack(alignment: .leading, spacing: DS.Space.xxs) {
                         Text("\(agentName) wants to \(analysis?.action ?? call.title)")
-                            .font(.dsHeadline).foregroundStyle(.dsTextPrimary)
+                            .font(DS.Approval.titleFont).foregroundStyle(.dsTextPrimary)
                         Text(analysis?.reason ?? "The agent asked for permission.")
                             .font(.dsBody).foregroundStyle(.dsTextTertiary)
                     }
@@ -51,7 +51,7 @@ struct AnnotatedApprovalView: View {
                         VStack(spacing: 0) {
                             ApprovalCommandDiagram(analysis: analysis)
                             if let replacement = analysis.suggestedCommand, rejection != nil {
-                                Rectangle().fill(.dsSeparator).frame(height: DS.Approval.rule)
+                                Rectangle().fill(DS.Approval.separator(colorScheme)).frame(height: DS.Approval.rule)
                                 fixIt(replacement)
                             }
                         }
@@ -77,7 +77,7 @@ struct AnnotatedApprovalView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             if rejection != nil {
-                Rectangle().fill(.dsSeparator).frame(height: DS.Approval.rule)
+                Rectangle().fill(DS.Approval.separator(colorScheme)).frame(height: DS.Approval.rule)
                 HStack(alignment: .bottom, spacing: DS.Space.md) {
                     TextField("Tell \(agentName) what to do instead", text: $instruction, axis: .vertical)
                         .font(.dsCallout).foregroundStyle(.dsTextPrimary).textFieldStyle(.plain).lineLimit(1...4)
@@ -92,6 +92,7 @@ struct AnnotatedApprovalView: View {
                 }
                 .padding(.horizontal, DS.Approval.inset)
                 .padding(.vertical, DS.Space.lg)
+                .frame(minHeight: DS.Approval.instructionHeight)
             }
         }
         .onChange(of: focusRequested, initial: true) { _, requested in
@@ -107,21 +108,35 @@ struct AnnotatedApprovalView: View {
 
     private func fixIt(_ replacement: String) -> some View {
         ViewThatFits(in: .horizontal) {
-            HStack(spacing: DS.Space.md) { fixItContents(replacement) }
-            VStack(alignment: .leading, spacing: DS.Space.md) { fixItContents(replacement) }
+            HStack(spacing: DS.Approval.fixItGap) {
+                fixItExplanation
+                Spacer(minLength: DS.Space.md)
+                fixItButton(replacement)
+            }
+            VStack(alignment: .leading, spacing: DS.Space.md) {
+                fixItExplanation
+                fixItButton(replacement).frame(maxWidth: .infinity, alignment: .trailing)
+            }
         }
-        .padding(DS.Space.md)
-        .padding(.leading, DS.Space.sm)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, DS.Space.md)
+        .padding(.leading, DS.Approval.commandInset)
+        .padding(.trailing, DS.Space.md)
     }
 
-    @ViewBuilder private func fixItContents(_ replacement: String) -> some View {
-        Text("Fix-it").font(.dsCaption).foregroundStyle(.dsTextTertiary)
-        Text("--force-with-lease refuses if the remote tip has changed.")
-            .font(.dsBody).foregroundStyle(.dsTextSecondary)
+    private var fixItExplanation: some View {
+        HStack(spacing: DS.Approval.fixItGap) {
+            Text("Fix-it").font(.dsCaption).foregroundStyle(.dsTextTertiary)
+            Text("\(Text("--force-with-lease").font(DS.Approval.fixItFont)) refuses if the remote tip has changed.")
+                .font(.dsBody).foregroundStyle(.dsTextSecondary)
+        }
+    }
+
+    private func fixItButton(_ replacement: String) -> some View {
         Button("Ask \(agentName) to Use It") {
             sendInstruction("Don't run that. Run this instead:\n\(replacement)")
         }
-        .buttonStyle(ApprovalActionStyle())
+        .buttonStyle(ApprovalActionStyle(small: true))
         .accessibilityLabel("Ask \(agentName) to Use --force-with-lease")
         .keyboardShortcut(shortcutsEnabled ? KeyboardShortcut("y", modifiers: [.command, .shift]) : nil)
         .help("Declines this request and sends the suggested command as an instruction.")

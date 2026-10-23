@@ -12,17 +12,43 @@ extension DS {
         static let annotationGap: CGFloat = 12
         static let buttonHeight: CGFloat = 26
         static let buttonInset: CGFloat = 11
+        static let smallButtonHeight: CGFloat = 22
+        static let smallButtonInset: CGFloat = 9
+        static let fixItGap: CGFloat = 10
         static let ringSize: CGFloat = 12
         static let ringStroke: CGFloat = 1.5
         static let rule: CGFloat = 1
         static let maximumHeight: CGFloat = 470
+        static let instructionHeight: CGFloat = 52
         static let commandFont = DSTypography.font(size: 13, design: .mono)
+        static let titleFont = DSTypography.font(size: 14, weight: .medium)
+        static let fixItFont = DSTypography.font(size: 11.5, design: .mono)
+        static let smallButtonFont = DSTypography.font(size: 11.5, weight: .medium)
         static let monoAdvance: CGFloat = 7.8
         static let ringTrackOpacity: Double = 0.3
         static let sweepOpacity: Double = 0.14
         static let hintOpacity: Double = 0.55
         static let pressedOpacity: Double = 0.8
         static let cancelAnimation = Animation.linear(duration: 0.15)
+        static let surfaceTintOpacity: Double = 0.78
+        static let shadowRadius: CGFloat = 16
+        static let shadowOffset: CGFloat = 8
+
+        static func surface(_ scheme: ColorScheme) -> Color {
+            scheme == .dark ? Color(red: 29 / 255, green: 29 / 255, blue: 33 / 255) : .white
+        }
+
+        static func edge(_ scheme: ColorScheme) -> Color {
+            scheme == .dark ? Color.white.opacity(0.085) : Color.black.opacity(0.1)
+        }
+
+        static func separator(_ scheme: ColorScheme) -> Color {
+            (scheme == .dark ? Color.white : .black).opacity(0.065)
+        }
+
+        static func shadow(_ scheme: ColorScheme) -> Color {
+            Color.black.opacity(scheme == .dark ? 0.3 : 0.08)
+        }
 
         static func well(_ scheme: ColorScheme) -> Color {
             Color.black.opacity(scheme == .dark ? 0.28 : 0.035)

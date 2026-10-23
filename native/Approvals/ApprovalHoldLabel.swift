@@ -5,7 +5,6 @@ struct ApprovalHoldLabel: View {
     var allowed = false
     var confirming = false
     var shortcutsEnabled = true
-    var reduceMotion = false
 
     var body: some View {
         HStack(spacing: DS.Space.md) {
@@ -26,15 +25,6 @@ struct ApprovalHoldLabel: View {
                 Text("⌘Y").font(.dsMonoMicro).opacity(DS.Approval.hintOpacity)
             }
         }
-        .overlay(alignment: .leading) {
-            if !reduceMotion {
-                GeometryReader { geometry in
-                    Rectangle().fill(.dsTextOnAccent.opacity(DS.Approval.sweepOpacity))
-                        .frame(width: geometry.size.width * progress)
-                }
-                .allowsHitTesting(false)
-            }
-        }
     }
 }
 
@@ -50,10 +40,12 @@ struct ApprovalHoldLabel: View {
             } label: {
                 ApprovalHoldLabel(progress: 0.5)
             }
+            .buttonStyle(ApprovalActionStyle(primary: true, sweepProgress: 0.5))
             Button {
             } label: {
                 ApprovalHoldLabel(progress: 0.15)
             }
+            .buttonStyle(ApprovalActionStyle(primary: true, sweepProgress: 0.15))
             Button {
             } label: {
                 ApprovalHoldLabel(progress: 1, allowed: true)
@@ -64,7 +56,7 @@ struct ApprovalHoldLabel: View {
             }
             Button {
             } label: {
-                ApprovalHoldLabel(progress: 0.5, reduceMotion: true)
+                ApprovalHoldLabel(progress: 0.5)
             }
         }
         .buttonStyle(ApprovalActionStyle(primary: true))

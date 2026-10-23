@@ -148,6 +148,13 @@ first use (a few seconds) and needs the instance running. `drive.sh <name> help`
 | `processes` | The instance's app and host with every process under them (agents, their tools): the only ones you may kill |
 | `seed`, `screen`, `pid` | The workspace, whether the screen is locked, the instance's pid |
 
+Fine print has Debug-only state overrides for an existing fixture approval. Relaunch the isolated
+instance with `-nativeApprovalPreview instruction-failure`, `reconnecting`, or `reduced-motion`
+to check retained instructions, unavailable controls, or the ring without its sweep. They apply
+only to the experimental approval view and never change system accessibility settings. Omit the
+argument to return to the normal path. An accessibility `press` on Hold to Allow exercises its
+two-step confirmation; `key cmd+y --hold 0.3` exercises early release.
+
 `<text>` matches an accessibility identifier first, then a title or label exactly, then ignoring
 case, then as part of any label, value or help text. Few elements in Native have identifiers of their
 own (an icon-only button's is its symbol name, like `#gearshape`), so labels are what you'll use.

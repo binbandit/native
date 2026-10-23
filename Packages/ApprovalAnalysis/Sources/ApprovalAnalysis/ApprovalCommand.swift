@@ -81,7 +81,7 @@ public struct ApprovalCommand: Equatable, Sendable {
         var parts = [
             Part(
                 range: tokens[0].range.lowerBound..<tokens[1].range.upperBound,
-                explanation: "git: send your commits", destructive: false)
+                explanation: "send your commits", destructive: false)
         ]
         parts += flags.map {
             part(
@@ -116,7 +116,7 @@ public struct ApprovalCommand: Equatable, Sendable {
             action: "\(rewrites ? "overwrite" : "push") \(branch.value) on \(remote.value)",
             reason: "It reaches a remote outside the worktree.",
             consequence: rewrites
-                ? "Can't be undone from here. Replaced commits may only remain in other clones or reflogs."
+                ? "Can't be undone from here. Recovery may need other clones or reflogs."
                 : "Publishes commits to the remote. Native can't undo this push from here.",
             parts: parts, suggestedCommand: suggested)
     }

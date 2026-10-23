@@ -28,9 +28,12 @@ struct ApprovalHoldButton: View {
         } label: {
             ApprovalHoldLabel(
                 progress: progress, allowed: allowed, confirming: confirming,
-                shortcutsEnabled: shortcutsEnabled, reduceMotion: reduceMotion)
+                shortcutsEnabled: shortcutsEnabled)
         }
-        .buttonStyle(ApprovalActionStyle(primary: true, pressing: pressed))
+        .buttonStyle(
+            ApprovalActionStyle(
+                primary: true, sweepProgress: reduceMotion || allowed ? nil : progress, pressing: pressed)
+        )
         .accessibilityLabel(allowed ? "Allowed" : confirming ? "Confirm Allow" : "Allow, can't be undone")
         .accessibilityHint("Activate twice within five seconds to allow.")
         .accessibilityAction { activateConfirmation() }

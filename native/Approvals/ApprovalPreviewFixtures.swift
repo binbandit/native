@@ -34,7 +34,7 @@ enum ApprovalPreviewFixtures {
     @ViewBuilder static func card(command: String, failure: String? = nil, isAvailable: Bool = true) -> some View {
         let app = AppModel.preview(.empty)
         if let session = session(in: app, command: command), let call = session.permissionRequests.first {
-            ComposerSurface {
+            ApprovalSurface {
                 AnnotatedApprovalView(
                     call: call, agentName: "Codex", workingDirectory: folder, homeDirectory: home,
                     isAvailable: isAvailable,

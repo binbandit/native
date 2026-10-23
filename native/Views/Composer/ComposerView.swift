@@ -107,7 +107,7 @@ struct ComposerView: View {
         let suggestions = composerNext && !session.permissionRequests.isEmpty ? nil : suggestions
         Group {
             if composerNext, let call = session.permissionRequests.first {
-                ComposerSurface(isFloating: true) {
+                ApprovalSurface {
                     SessionApprovalView(session: session, call: call)
                 }
             } else {
