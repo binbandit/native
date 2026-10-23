@@ -1,3 +1,4 @@
+import Dispatch
 import Foundation
 import Synchronization
 
@@ -34,7 +35,11 @@ final class StderrTail: Sendable {
 
     deinit {
         input?.readabilityHandler = nil
-        try? input?.close()
+        if let input {
+            // The callback can release the last tail reference. Corelibs FileHandle.close()
+            // synchronizes with that callback's queue, so it must run on another queue.
+            DispatchQueue.global(qos: .utility).async { try? input.close() }
+        }
     }
 
     var text: String {

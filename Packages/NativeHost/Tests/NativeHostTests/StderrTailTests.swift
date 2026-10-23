@@ -5,6 +5,28 @@ import Testing
 
 @Suite(.timeLimit(.minutes(1)))
 struct StderrTailTests {
+    #if os(Linux)
+    // Corelibs permits the gated FileHandle subclass; Darwin's FileHandle is a class cluster.
+    @Test("Releasing the owner during a stderr callback closes the reader off that callback")
+    func releaseDuringCallback() throws {
+        let pipe = Pipe()
+        let descriptor = fcntl(pipe.fileHandleForReading.fileDescriptor, F_DUPFD_CLOEXEC, 0)
+        try #require(descriptor >= 0)
+        let input = StderrTailTestHandle(fileDescriptor: descriptor, closeOnDealloc: true)
+        var tail: StderrTail? = try StderrTail(reading: input)
+        try #require(tail != nil)
+        input.armed.withLock { $0 = true }
+        defer { input.proceed.signal() }
+        try pipe.fileHandleForWriting.write(contentsOf: Data("diagnostic".utf8))
+        try #require(input.entered.wait(timeout: .now() + 5) == .success)
+
+        tail = nil
+        input.proceed.signal()
+        try #require(input.closed.wait(timeout: .now() + 5) == .success)
+        #expect(!input.closedInsideCallback.withLock { $0 })
+    }
+    #endif
+
     @Test("A diagnostic is available before the stderr callback runs", arguments: [false, true])
     func pendingDiagnostic(writerClosed: Bool) throws {
         let pipe = Pipe()
