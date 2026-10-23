@@ -117,7 +117,7 @@ struct HostsSettingsContent: View {
                 title: "Hosts",
                 description: Text(
                     "Run tasks on another machine, like a Mac mini at home: start them here, close your laptop, and they keep working there. Each host runs Native's background host and keeps its own checkout of your projects."
-                )
+                ), plainly: .init(title: "Other Macs", description: "Choose the Macs that run your tasks.")
             ) {
                 if hosts.contains(where: { !$0.isThisMac }) {
                     addHostButton(size: .large)

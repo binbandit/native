@@ -413,6 +413,11 @@ that can't take the task stay listed, dimmed, with the reason.
 
 ## Settings
 
+With Plainly settings enabled in Labs, the same navigation keys use the new page map. The command
+palette lists its page names too. New Tasks contains the existing defaults and an Edit Modes
+disclosure; Tab and Space reach these controls. Old page links open their new section (Scripts
+in Git, for example). No shortcuts change.
+
 | Keys | Action |
 | --- | --- |
 | ⇧⌘H in Hosts | Add Host: enter an SSH destination or paste a pairing link |

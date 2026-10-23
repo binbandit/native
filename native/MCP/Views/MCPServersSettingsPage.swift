@@ -82,7 +82,10 @@ struct MCPServersSettingsPage: View {
                 title: "MCP Servers",
                 description: Text(
                     "Servers give agents tools. Set one up here once and every agent gets it in every task. Agents also load servers from their own configuration, listed below; Native doesn't hand them a second copy."
-                )
+                ),
+                plainly: .init(
+                    title: "MCP Servers",
+                    description: "Tools for your agents. Set a server up here and every agent gets it.")
             ) {
                 Button("Check All", systemImage: "stethoscope") { Task { await library.probeAll() } }
                     .buttonStyle(.ds(.secondary, size: .medium))
@@ -119,7 +122,8 @@ struct MCPServersSettingsPage: View {
         }
         .task { if library.lastRead == nil { await library.readConfigurations() } }
         // A project's settings link here to show its switches.
-        .onAppear { if let project = presentation.takeProjectScope() { projectPath = ProjectPath.key(project) } }
+        .onAppear { takeScope() }
+        .onChange(of: presentation.projectScope) { takeScope() }
         .sheet(item: $editing) { target in
             MCPServerEditor(library: library, target: target)
         }
@@ -130,11 +134,16 @@ struct MCPServersSettingsPage: View {
 
     // MARK: - Native's servers
 
+    private func takeScope() {
+        if let project = presentation.takeProjectScope(for: .mcpServers) { projectPath = ProjectPath.key(project) }
+    }
+
     private func managedSection(_ library: MCPLibrary) -> some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             SettingsSubheading(
                 "Set up in Native",
-                note: "Handed to the agents and projects you choose, in every task they start or reopen.")
+                note: "Handed to the agents and projects you choose, in every task they start or reopen.",
+                plainly: .init(title: "Shared with every agent", description: "Choose agents and projects per server."))
             if library.servers.isEmpty {
                 MCPEmptyRow(
                     title: "No servers yet",
@@ -168,7 +177,10 @@ struct MCPServersSettingsPage: View {
                 SettingsSubheading(
                     "Loaded by your agents",
                     note:
-                        "From each agent's own configuration. Changes go through the agent's CLI, never by editing its files."
+                        "From each agent's own configuration. Changes go through the agent's CLI, never by editing its files.",
+                    plainly: .init(
+                        title: "Loaded by agents themselves",
+                        description: "From each agent's own config. Native changes them only through the agent's CLI.")
                 )
                 Spacer(minLength: DS.Space.xl)
                 SettingsSelect(label: "Project", selection: $projectPath, options: projectOptions(library), width: 180)

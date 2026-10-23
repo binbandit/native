@@ -18,7 +18,7 @@ struct SoundsFolderRow: View {
     var body: some View {
         SettingsRow(
             id: SoundsSettingsPage.folderRow,
-            "Sounds folder",
+            "Sounds folder", plainly: .soundsFolder,
             description: Text("Pick from your own audio files for each sound. Native plays them where they are."),
             detail: detail
         ) {

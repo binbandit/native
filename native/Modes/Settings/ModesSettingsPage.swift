@@ -40,6 +40,7 @@ extension SettingsPane {
 /// share in their repositories, with any file that couldn't be used and why.
 struct ModesSettingsPage: View {
     let projects: [Project]
+    @Environment(\.settingsPlainly) private var plainly
 
     @Environment(\.undoManager) private var undoManager
     @State private var editing: ModeEditor.Subject?
@@ -52,19 +53,22 @@ struct ModesSettingsPage: View {
                 title: "Modes",
                 description: Text(
                     "A mode is a way of working for a task: instructions Native gives the agent with your next message, and settings it applies as you pick it, such as keeping the agent read-only. Pick one from the Mode pill in the composer\(nextModeKey)."
-                )
+                ),
+                plainly: .init(title: "Modes", description: "Ways of working you pick per task, like Plan or Review.")
             ) {
                 Button("New Mode…") { editing = .new }
                     .buttonStyle(.settings)
             }
-            SettingsRowGroup {
-                SettingsRow(
-                    id: .modesDefault, "New tasks start in",
-                    description: Text("Each task keeps its own mode after that, through restarts.")
-                ) {
-                    SettingsSelect(
-                        label: "New tasks start in", selection: defaultMode,
-                        options: (Mode.builtIn + library.custom).map { .init(value: $0.id, title: $0.name) })
+            if !plainly {
+                SettingsRowGroup {
+                    SettingsRow(
+                        id: .modesDefault, "New tasks start in",
+                        description: Text("Each task keeps its own mode after that, through restarts.")
+                    ) {
+                        SettingsSelect(
+                            label: "New tasks start in", selection: defaultMode,
+                            options: (Mode.builtIn + library.custom).map { .init(value: $0.id, title: $0.name) })
+                    }
                 }
             }
             SettingsSubheading("Native's modes", note: "Built in. Duplicate one to make it your own.")

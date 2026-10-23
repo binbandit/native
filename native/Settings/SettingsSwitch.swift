@@ -3,6 +3,7 @@ import SwiftUI
 /// A switch: a 40x20 track filled with the foreground when on, and a thumb that slides
 /// across in 150ms. The label is for accessibility; the row shows the title.
 struct SettingsSwitch: View {
+    @Environment(\.settingsRowTitle) private var rowTitle
     let label: String
     @Binding var isOn: Bool
 
@@ -12,7 +13,7 @@ struct SettingsSwitch: View {
     }
 
     var body: some View {
-        Toggle(label, isOn: $isOn)
+        Toggle(rowTitle ?? label, isOn: $isOn)
             .toggleStyle(SettingsSwitchStyle())
     }
 }
