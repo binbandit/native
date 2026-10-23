@@ -11,7 +11,15 @@ public enum TaskHandoff {
             guard case .message(let message) = item, message.role != .thought else { return nil }
             return message
         }
-        let goal = nonempty(objective) ?? messages.first(where: { $0.role == .user })?.text ?? title
+        let firstPrompt = messages.first(where: { $0.role == .user })?.text
+        let inheritedGoal = firstPrompt.flatMap { text -> String? in
+            guard text.hasPrefix("Continue this task in the current working tree."),
+                let start = text.range(of: "\nGoal\n"),
+                let end = text.range(of: "\n\nRecent progress\n", range: start.upperBound..<text.endIndex)
+            else { return nil }
+            return String(text[start.upperBound..<end.lowerBound])
+        }
+        let goal = nonempty(objective) ?? nonempty(inheritedGoal) ?? firstPrompt ?? title
         let recent = messages.suffix(4).map {
             "\($0.role == .user ? "User" : "Agent"): \(excerpt($0.text, limit: 1_200))"
         }.joined(separator: "\n\n")

@@ -35,6 +35,19 @@ import Testing
         #expect(draft.count < 8_000)
     }
 
+    @Test func changingAgentsAgainKeepsTheOriginalGoal() {
+        var state = SessionState()
+        state.appendUserMessage("Export matches the spec")
+        for _ in 0..<5 {
+            let draft = TaskHandoff.draft(title: "Export", state: state)
+            #expect(draft.contains("Goal\nExport matches the spec\n"))
+            state = SessionState()
+            state.appendUserMessage(draft)
+            state.apply(.agentMessageChunk(ContentChunk(content: .text("Checked another file."))))
+            state.endTurn(.endTurn)
+        }
+    }
+
     @Test func includesCompletedEditsEvenWhenGitIsClean() {
         var state = SessionState()
         state.appendUserMessage("Fix the export")
