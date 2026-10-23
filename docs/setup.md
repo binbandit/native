@@ -200,8 +200,8 @@ server off for new tasks, and its ⋯ menu sets how agents reach it (Agents Reac
   context) costs nothing until it's used. Needs a build with the script runtime, and the
   organization can turn scripts off.
 
-Sign-in is shared across tasks using the same agent, server name and endpoint. Native reads Claude Code's
-shared OAuth credential store and Codex's own credential status. "Signed in" means the agent has a
+Sign-in is shared across tasks using the same agent, server name, endpoint and credential configuration.
+Native reads Claude Code's shared OAuth credential store and Codex's own credential status. "Signed in" means the agent has a
 usable sign-in; a tool count means Native also connected and listed the tools. Native's separate
 check does not borrow an agent's OAuth token. A check without that token cannot establish that the
 agent is signed out. If the shared store is unavailable, the status says "Sign-in not checked".

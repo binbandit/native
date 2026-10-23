@@ -18,7 +18,9 @@ struct MCPAuthenticationTests {
 
     @Test func codexSignOutAndSignInReplacePreviousState() throws {
         let signedIn = try CodexListing.decode(Fixture.data("codex-mcp-signed-in.json"))
-        let signedOut = try CodexListing.decode(Fixture.data("codex-mcp-list.json"))
+        let signedOutCapture = String(decoding: Fixture.data("codex-mcp-signed-in.json"), as: UTF8.self)
+            .replacingOccurrences(of: "\"o_auth\"", with: "\"not_logged_in\"")
+        let signedOut = try CodexListing.decode(Data(signedOutCapture.utf8))
         var configuration = AgentMCPConfiguration(format: .codex).merging(signedIn)
         configuration = configuration.merging(signedOut)
         #expect(configuration.servers.first { $0.name == "docs" }?.authentication == .signedOut)
@@ -41,6 +43,25 @@ struct MCPAuthenticationTests {
         #expect(
             AgentMCPConfiguration(format: .codex, servers: [matching]).withAuthentication(from: full)
                 .servers.first?.authentication == .signedIn)
+    }
+
+    @Test func sameEndpointWithDifferentCredentialVariablesDoesNotBorrowSignIn() throws {
+        let listing = try CodexListing.decode(Fixture.data("codex-mcp-signed-in.json"))
+        let full = AgentMCPConfiguration(format: .codex).merging(listing)
+        var other = try #require(full.servers.first)
+        other.scope = .project(.app)
+        for resolution in [
+            ValueResolution.codex(passThrough: [], bearerTokenVariable: "PROJECT_TOKEN", headerVariables: [:]),
+            .codex(passThrough: [], bearerTokenVariable: nil, headerVariables: ["X-Workspace": "PROJECT_WORKSPACE"]),
+        ] {
+            other.resolution = resolution
+            let project = AgentMCPConfiguration(format: .codex, servers: [other])
+            #expect(project.merging(listing).servers.first?.authentication == .unknown)
+            other.authentication = .unknown
+            #expect(
+                AgentMCPConfiguration(format: .codex, servers: [other]).withAuthentication(from: full)
+                    .servers.first?.authentication == .unknown)
+        }
     }
 
     @Test func unknownOwnerDoesNotBecomeSignedOutFromAnAnonymous401() {

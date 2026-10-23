@@ -114,6 +114,7 @@ public struct CodexListing: Hashable, Sendable {
         /// Preserved wire value, including values from newer CLI versions.
         public var authStatus: String?
         public var transport: MCPTransport
+        public var resolution: ValueResolution
 
         public var needsSignIn: Bool { authStatus == "not_logged_in" }
 
@@ -151,7 +152,11 @@ public struct CodexListing: Hashable, Sendable {
                 }
                 return Server(
                     name: entry.name, isEnabled: entry.enabled ?? true, authStatus: entry.authStatus,
-                    transport: transport)
+                    transport: transport,
+                    resolution: .codex(
+                        passThrough: entry.transport.envVars ?? [],
+                        bearerTokenVariable: entry.transport.bearerTokenEnvVar,
+                        headerVariables: entry.transport.envHttpHeaders ?? [:]))
             })
     }
 
@@ -163,6 +168,9 @@ public struct CodexListing: Hashable, Sendable {
             var cwd: String?
             var url: String?
             var httpHeaders: [String: String]?
+            var envVars: [String]?
+            var bearerTokenEnvVar: String?
+            var envHttpHeaders: [String: String]?
         }
 
         var name: String
@@ -190,7 +198,7 @@ extension AgentMCPConfiguration {
                     format: .codex,
                     scope: .plugin(Self.pluginName(of: server) ?? "Codex"),
                     source: Self.pluginRoot(of: server) ?? merged.files.first?.url ?? URL(filePath: "/"),
-                    status: server.isEnabled ? .enabled : .disabled
+                    status: server.isEnabled ? .enabled : .disabled, resolution: server.resolution
                 ))
         }
         for index in merged.servers.indices {
@@ -199,7 +207,9 @@ extension AgentMCPConfiguration {
             // belongs to that endpoint, not to whichever same-named server the CLI listed.
             merged.servers[index].authentication =
                 listed[entry.name].flatMap {
-                    $0.transport == entry.server.transport ? $0.authentication : nil
+                    $0.transport == entry.server.transport
+                        && $0.resolution.codexCredentialSource == entry.resolution.codexCredentialSource
+                        ? $0.authentication : nil
                 } ?? .unknown
         }
         return merged
@@ -213,6 +223,7 @@ extension AgentMCPConfiguration {
             let entry = result.servers[index]
             if let match = configuration.servers.first(where: {
                 $0.name == entry.name && $0.server.transport == entry.server.transport
+                    && $0.resolution.codexCredentialSource == entry.resolution.codexCredentialSource
             }) {
                 result.servers[index].authentication = match.authentication
             }
@@ -233,5 +244,17 @@ extension AgentMCPConfiguration {
             return nil
         }
         return URL(filePath: directory, directoryHint: .isDirectory).standardizedFileURL
+    }
+}
+
+private extension ValueResolution {
+    /// Remote credentials depend on the header variables, not a local process's pass-through environment.
+    var codexCredentialSource: ValueResolution {
+        switch self {
+        case .none: .codex(passThrough: [], bearerTokenVariable: nil, headerVariables: [:])
+        case .codex(_, let bearer, let headers):
+            .codex(passThrough: [], bearerTokenVariable: bearer, headerVariables: headers)
+        default: self
+        }
     }
 }
