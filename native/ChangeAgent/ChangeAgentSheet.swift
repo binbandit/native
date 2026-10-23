@@ -47,6 +47,7 @@ struct ChangeAgentSheet: View {
 
                 if change.isLoadingContext {
                     LoadingStateView("Preparing handoff…")
+                        .frame(height: DS.AgentChange.editorHeight)
                 } else {
                     Text("Review the first message")
                         .font(.dsCaptionMedium)
@@ -77,6 +78,7 @@ struct ChangeAgentSheet: View {
             }
             if change.isWorking {
                 LoadingStateView(change.candidate == nil ? "Starting agent…" : "Sending handoff…")
+                    .frame(height: DS.AgentChange.progressHeight)
             }
             HStack(spacing: DS.Space.md) {
                 Spacer(minLength: 0)
