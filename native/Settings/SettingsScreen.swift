@@ -103,12 +103,14 @@ struct SettingsScreen: View {
                 query = ""
             }
         }
-        .onChange(of: presentation.rowReveal, initial: true) { _, request in
-            reveal = request
-            if request != nil {
+        .onChange(of: presentation.rowReveal, initial: true) { previous, request in
+            if let request {
+                reveal = request
                 query = ""
                 focus = nil
                 compactColumn = .detail
+            } else if reveal == previous {
+                reveal = nil
             }
         }
     }
