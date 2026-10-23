@@ -225,6 +225,7 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
     }
 }
 
+#if DEBUG
 #Preview("Task rows") {
     DSPreviewPair {
         VStack(spacing: DS.Space.xs) {
@@ -243,3 +244,4 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
         .frame(width: 260)
     }
 }
+#endif

@@ -72,6 +72,7 @@ extension KeyEquivalent {
     }
 }
 
+#if DEBUG
 #Preview("Keyboard hints") {
     DSPreviewPair {
         HStack(spacing: DS.Space.md) {
@@ -82,3 +83,4 @@ extension KeyEquivalent {
         }
     }
 }
+#endif

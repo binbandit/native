@@ -102,6 +102,7 @@ public struct DSInlineCodeText: View {
     }
 }
 
+#if DEBUG
 #Preview("Inline code") {
     DSPreviewPair {
         VStack(alignment: .leading, spacing: DS.Space.sm) {
@@ -115,3 +116,4 @@ public struct DSInlineCodeText: View {
         .font(.dsCalloutBook)
     }
 }
+#endif
