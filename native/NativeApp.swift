@@ -100,6 +100,7 @@ struct NativeApp: App {
         _celebrations = State(initialValue: celebrations)
         let terminals = TerminalStore()
         _terminals = State(initialValue: terminals)
+        TaskScriptsTerminalWiring.connect(taskScripts, model: model, terminals: terminals)
         // Repo actions share the repo scripts' per-project switch and policy.
         let projectActions = ProjectActionsWiring.runner(
             model: model, terminals: terminals, settings: settings, trust: .scripts(taskScripts.settings),

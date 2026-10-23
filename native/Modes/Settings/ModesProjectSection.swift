@@ -7,6 +7,8 @@ import SwiftUI
 ///     ModesProjectSection(project: project)
 struct ModesProjectSection: View {
     let project: Project
+    @Environment(\.settingsPlainly) private var plainly
+    @Environment(SettingsPresentation.self) private var presentation
 
     @State private var editing: ModeEditor.Subject?
     private let library = ModeLibrary.shared
@@ -24,7 +26,9 @@ struct ModesProjectSection: View {
                     SettingsRow(
                         "Share a mode with your team",
                         description: Text(
-                            "Save one as \(ModeFile.folder)/<name>.md and commit it: settings at the top, instructions below. Copy one of yours as a file from Settings ▸ Modes."
+                            plainly
+                                ? "Save a mode in \(ModeFile.folder) and commit it. Everyone who opens the project gets it."
+                                : "Save one as \(ModeFile.folder)/<name>.md and commit it: settings at the top, instructions below. Copy one of yours as a file from Settings ▸ Modes."
                         )
                     ) {
                         Button("Reload") { library.refresh(projectAt: project.url) }
@@ -32,6 +36,10 @@ struct ModesProjectSection: View {
                 }
             } else {
                 ProjectModesList(root: project.url) { editing = .copy($0) }
+            }
+            if plainly {
+                Button("Edit Modes…") { presentation.open(.modes) }
+                    .buttonStyle(.settings)
             }
         }
         .task(id: project.id) { library.refresh(projectAt: project.url) }

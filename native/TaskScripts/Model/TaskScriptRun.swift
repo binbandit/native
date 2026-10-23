@@ -37,6 +37,7 @@ final class TaskScriptRun: Identifiable {
     var copiedFiles: [String] = []
     /// Why copying the env files failed, for setup.
     var copyFailure: String?
+    var baseNotice: String?
     /// The user put its result away.
     var isDismissed = false
     /// A test from Settings rather than one of a task's own runs.

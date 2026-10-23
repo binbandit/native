@@ -5,6 +5,8 @@ import Terminal
 extension CommandID {
     static let terminalToggle: Self = "terminal.toggle"
     static let terminalNewTab: Self = "terminal.newTab"
+    static let terminalRetryJob: Self = "terminal.retryJob"
+    static let terminalStopJob: Self = "terminal.stopJob"
     static let terminalCloseTab: Self = "terminal.closeTab"
 }
 
@@ -33,6 +35,20 @@ extension NativeCommand {
             .available { $0.session != nil && store.availability == .available },
 
             NativeCommand(
+                .terminalRetryJob, title: "Retry Terminal Command", category: .terminal, systemImage: "arrow.clockwise"
+            ) {
+                guard let panel = panel($0), let id = panel.tabs.selectedID else { return }
+                panel.rerunJob(in: id)
+            }
+            .available { panel($0)?.tabs.selected?.job?.isRunning == false },
+
+            NativeCommand(.terminalStopJob, title: "Stop Terminal Command", category: .terminal, systemImage: "stop") {
+                guard let panel = panel($0), let id = panel.tabs.selectedID else { return }
+                panel.stopJob(in: id)
+            }
+            .available { panel($0)?.tabs.selected?.job?.isRunning == true },
+
+            NativeCommand(
                 .terminalCloseTab, title: "Close Terminal Tab", category: .terminal, systemImage: "xmark.rectangle"
             ) {
                 guard let panel = panel($0), let id = panel.tabs.selectedID else { return }
@@ -59,6 +75,8 @@ struct TerminalCommands: Commands {
             CommandMenuItem(.terminalToggle, in: menu)
             CommandMenuItem(.terminalNewTab, in: menu)
             CommandMenuItem(.terminalCloseTab, in: menu)
+            CommandMenuItem(.terminalRetryJob, in: menu)
+            CommandMenuItem(.terminalStopJob, in: menu)
         }
     }
 }

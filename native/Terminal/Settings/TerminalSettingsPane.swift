@@ -27,7 +27,8 @@ extension SettingsPane {
                     SettingsSearchEntry(
                         id: TerminalSettingsPage.cursorRow, title: "Cursor", keywords: ["blink", "caret"]),
                     SettingsSearchEntry(
-                        id: TerminalSettingsPage.colorsRow, title: "Terminal colors", keywords: ["theme", "palette"]),
+                        id: TerminalSettingsPage.colorsRow, title: "Terminal colors", keywords: ["theme", "palette"],
+                        plainly: .init(title: "Colors")),
                     SettingsSearchEntry(
                         id: TerminalSettingsPage.fontRow, title: "Font", keywords: ["typeface", "monospace", "family"]),
                     SettingsSearchEntry(id: TerminalSettingsPage.sizeRow, title: "Font size", keywords: ["text size"]),
@@ -35,8 +36,7 @@ extension SettingsPane {
                         id: TerminalSettingsPage.scrollbackRow,
                         title: "Scrollback",
                         description: "How many lines each terminal keeps.",
-                        keywords: ["history", "lines", "buffer"]
-                    ),
+                        keywords: ["history", "lines", "buffer"], plainly: .scrollback),
                 ]
             },
             content: { TerminalSettingsPage(store: store) }

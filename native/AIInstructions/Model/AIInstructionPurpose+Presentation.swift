@@ -2,6 +2,18 @@ import AIInstructions
 
 /// How Settings names each purpose and what it shows as an example.
 extension AIInstructionPurpose {
+    var plainlyCopy: SettingsPlainlyCopy {
+        switch self {
+        case .title: .taskTitles
+        case .branchName: .branchNames
+        case .commitMessage: .commitMessages
+        case .commitGrouping: .commitGrouping
+        case .pullRequest: .prDrafts
+        case .reviewRequest: .askLines
+        case .pullRequestQuestions: .askPR
+        }
+    }
+
     var title: String {
         switch self {
         case .title: "Task titles"

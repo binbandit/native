@@ -16,7 +16,7 @@ struct TerminalShellRow: View {
     var body: some View {
         SettingsRow(
             id: TerminalSettingsPage.shellRow,
-            "Shell",
+            "Shell", plainly: .shell,
             description: Text("Runs as a login shell, so your profile loads. Applies to new tabs."),
             detail: note
         ) {

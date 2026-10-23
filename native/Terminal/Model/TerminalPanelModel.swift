@@ -11,6 +11,7 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
     let workingDirectory: URL
     var isVisible = false
     private(set) var tabs = TerminalTabList()
+    private(set) var logs: [UUID: TerminalLog] = [:]
     /// The tab the user asked to close while a program runs in it, awaiting confirmation.
     var confirmingClose: UUID?
     /// The tab whose terminal has keyboard focus.
@@ -106,8 +107,27 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
         return id
     }
 
+    /// Attaches output from an existing command, leaving keyboard focus in the composer.
+    func attach(_ log: TerminalLog) {
+        let id = tabs.add(job: log.job).id
+        logs[id] = log
+        isVisible = true
+        log.changed = { [weak self, weak log] in
+            guard let self, let log else { return }
+            let wasRunning = tabs.tabs.first { $0.id == id }?.job?.isRunning == true
+            tabs.setJob(log.job, of: id)
+            tabs.setStatus(log.job.isRunning ? .running : .exited, of: id)
+            if wasRunning && !log.job.isRunning { jobFinished(log.job) }
+        }
+        log.changed()
+    }
+
     /// Runs a tab's job again, in the same tab.
     func rerunJob(in id: UUID) {
+        if let log = logs[id] {
+            if !log.job.isRunning { log.retry() }
+            return
+        }
         if let request = jobRequests[id] {
             run(request)
         }
@@ -121,6 +141,7 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
     /// Stops a tab's running job: first by interrupting it (⌃C), so it can clean up; asked again
     /// while it's stopping, by ending its terminal.
     func stopJob(in id: UUID) {
+        if let log = logs[id] { return log.stop() }
         guard let job = tabs.tabs.first(where: { $0.id == id })?.job, job.isRunning else { return }
         if job.isStopping {
             surfaces.removeValue(forKey: id)?.close()
@@ -142,7 +163,7 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
 
     /// Closes a tab, first asking when a program is still running in it.
     func requestClose(_ id: UUID) {
-        if surfaces[id]?.needsConfirmClose == true {
+        if surfaces[id]?.needsConfirmClose == true || logs[id]?.job.isRunning == true {
             confirmingClose = id
         } else {
             close(id)
@@ -151,6 +172,10 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
 
     func close(_ id: UUID) {
         let hadFocus = focusedTab == id
+        if let log = logs.removeValue(forKey: id) {
+            log.changed = {}
+            if log.job.isRunning { log.stop() }
+        }
         if confirmingClose == id {
             confirmingClose = nil
         }
@@ -176,7 +201,7 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
     ///   fallback when the chosen one is missing.
     func restart(_ id: UUID, in directory: URL? = nil, shell: String? = nil) {
         // A job tab runs its job again rather than a shell.
-        if jobRequests[id] != nil, directory == nil, shell == nil {
+        if logs[id] != nil || (jobRequests[id] != nil && directory == nil && shell == nil) {
             return rerunJob(in: id)
         }
         jobRequests[id] = nil
@@ -192,10 +217,7 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
 
     /// Ends every shell, for when the task goes away.
     func closeAll() {
-        for id in tabs.tabs.map(\.id) {
-            surfaces.removeValue(forKey: id)?.close()
-            tabs.close(id)
-        }
+        for id in tabs.tabs.map(\.id) { close(id) }
         jobRequests = [:]
         isVisible = false
     }

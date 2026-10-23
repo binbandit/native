@@ -4,20 +4,6 @@ import Observation
 import Synchronization
 import TaskScripts
 
-/// What Native knows about the task a script runs for, beyond its folder.
-struct TaskScriptTask: Hashable, Sendable {
-    var id: String?
-    var title: String?
-    /// The agent's id.
-    var agent: String?
-}
-
-/// The project a folder belongs to, and the branch checked out there.
-struct TaskScriptFolder: Hashable, Sendable {
-    var projectRoot: URL
-    var branch: String?
-}
-
 /// Runs task scripts as tasks' worktrees are made and removed, tasks start and are deleted, and
 /// turns finish, and keeps each task's log of them (docs/scripts.md). A new worktree's setup holds
 /// its task: messages queue until setup succeeds or the user skips it.
@@ -28,7 +14,7 @@ struct TaskScriptFolder: Hashable, Sendable {
 final class TaskScriptCenter {
     /// What a task's messages wait for while its setup runs.
     static let setupHold = "the worktree's setup script"
-    /// How many runs each folder's log keeps.
+    /// The history limit; active runs stay owned until they finish even when the log fills up.
     static let logLimit = 20
 
     let settings: TaskScriptSettings
@@ -37,6 +23,8 @@ final class TaskScriptCenter {
 
     /// The login shell's environment, which every script starts from.
     @ObservationIgnored var environment: () async -> [String: String] = { [:] }
+    /// Publishes progress to another presentation, such as the task terminal.
+    @ObservationIgnored var runUpdated: (TaskScriptRun) -> Void = { _ in }
     /// Runs the scripts on the machine the projects are on.
     @ObservationIgnored var runner: any CommandRunner
     /// Holds a folder's turns while its setup runs, or lifts the hold with nil.
@@ -95,10 +83,11 @@ final class TaskScriptCenter {
     /// done, or asks first when the repository's script isn't allowed yet.
     func worktreeCreated(
         folder: URL, projectRoot: URL, branch: String?, baseBranch: String?, copiedFiles: [String],
-        copyFailure: String?
+        copyFailure: String?, baseNotice: String? = nil
     ) {
         let plan = settings.plan(for: .setup, project: projectRoot)
-        guard !plan.isEmpty || copyFailure != nil else { return }
+        startAfterWorktree(folder: folder, projectRoot: projectRoot, branch: branch, baseBranch: baseBranch)
+        guard !plan.isEmpty || copyFailure != nil || baseNotice != nil else { return }
         let context = TaskScriptContext(
             event: .setup, projectPath: projectRoot.folderPath, worktreePath: folder.folderPath, branch: branch,
             baseBranch: baseBranch)
@@ -107,9 +96,10 @@ final class TaskScriptCenter {
             state: plan.awaitingApproval == nil ? .running : .awaitingApproval)
         run.copiedFiles = copiedFiles
         run.copyFailure = copyFailure
+        run.baseNotice = baseNotice
         record(run)
         guard !plan.isEmpty else {
-            // Nothing to run; the run only says the env files couldn't be copied.
+            // No script to wait for; keep the workspace notice visible.
             finish(run, as: .succeeded)
             return
         }
@@ -121,6 +111,7 @@ final class TaskScriptCenter {
 
     func taskStarted(in folder: URL, task: TaskScriptTask) {
         remember(task, in: folder)
+        for run in runs(in: folder) { runUpdated(run) }
         runEvent(.taskStarted, in: folder, task: task)
     }
 
@@ -132,10 +123,13 @@ final class TaskScriptCenter {
     /// A task's worktree is about to be removed: stops what still runs there and runs its teardown
     /// scripts, returning once they're done. A failure is kept in the log and never thrown.
     func teardown(folder: URL, projectRoot: URL, branch: String?) async {
+        let afterCommands = runs(in: folder).filter { $0.event == .afterWorktree && $0.isRunning }.compactMap(\.work)
         for run in runs(in: folder) where run.isRunning || run.state == .awaitingApproval {
             // Setup that's still going is skipped rather than failed, so it doesn't hold the folder.
             if run.event == .setup { skip(run) } else { run.work?.cancel() }
         }
+        // Dependency installers must stop writing before git removes their worktree.
+        for work in afterCommands { await work.value }
         holdTurns(folder, nil)
         let plan = settings.plan(for: .teardown, project: projectRoot)
         guard !plan.scripts.isEmpty else { return }
@@ -175,12 +169,22 @@ final class TaskScriptCenter {
         run.work?.cancel()
         run.plan = settings.plan(for: run.event, project: run.projectRoot)
         run.output = TaskScriptOutput()
+        run.reports = []
+        if run.event == .afterWorktree, run.plan.awaitingApproval != nil {
+            run.output.appendLine(
+                "Repository commands are not allowed. Enable them in Project Settings before retrying.")
+        }
         run.isDismissed = false
         if run.event == .setup, run.plan.awaitingApproval != nil {
             run.state = .awaitingApproval
         } else if run.plan.scripts.isEmpty {
             // The script was removed meanwhile, so there's nothing left to wait for.
-            finish(run, as: .succeeded)
+            if run.event == .afterWorktree {
+                run.output.appendLine("No after-commands are enabled for this project.")
+                finish(run, as: .skipped)
+            } else {
+                finish(run, as: run.plan.awaitingApproval == nil ? .succeeded : .skipped)
+            }
         } else {
             start(run)
         }
@@ -248,39 +252,6 @@ final class TaskScriptCenter {
         return run
     }
 
-    private func runTest(_ run: TaskScriptRun, in target: TestTarget) async {
-        var scratch: URL?
-        switch target {
-        case .scratchWorktree(let project):
-            guard let makeScratchWorktree else { return fail(run, "Scratch worktrees aren't available here.") }
-            run.output.appendLine("Making a scratch worktree of \(project.lastPathComponent)…")
-            do {
-                let worktree = try await makeScratchWorktree(project)
-                scratch = worktree.folder
-                run.folder = worktree.folder
-                run.projectRoot = project
-                run.context.projectPath = project.folderPath
-                run.context.worktreePath = worktree.folder.folderPath
-                run.context.baseBranch = worktree.baseBranch
-            } catch {
-                return fail(run, "Couldn't make a scratch worktree: \(error.localizedDescription)")
-            }
-        case .task(let folder):
-            if let info = await lookUpFolder(folder) {
-                run.projectRoot = info.projectRoot
-                run.context = context(
-                    run.event, folder: folder, projectRoot: info.projectRoot, branch: info.branch,
-                    task: lookUpTask(folder))
-            }
-        }
-        await execute(run)
-        if let scratch, let removeScratchWorktree {
-            // In a task of its own, so stopping the test doesn't also stop the clean-up.
-            await Task { await removeScratchWorktree(scratch) }.value
-            run.output.appendLine("Removed the scratch worktree.")
-        }
-    }
-
     // MARK: - Running
 
     private func runEvent(_ event: TaskScriptEvent, in folder: URL, task: TaskScriptTask) {
@@ -312,9 +283,10 @@ final class TaskScriptCenter {
         }
     }
 
-    private func start(_ run: TaskScriptRun) {
+    func start(_ run: TaskScriptRun) {
         run.state = .running
         run.attempt += 1
+        runUpdated(run)
         run.work = Task { [weak self] in
             await self?.execute(run)
         }
@@ -322,7 +294,7 @@ final class TaskScriptCenter {
 
     /// Runs the run's plan, streaming its output into it, then records how it went and, for setup,
     /// holds or releases its task.
-    private func execute(_ run: TaskScriptRun) async {
+    func execute(_ run: TaskScriptRun) async {
         let attempt = run.attempt
         run.state = .running
         run.startedAt = .now
@@ -334,16 +306,21 @@ final class TaskScriptCenter {
         let runner = TaskScriptRunner(runner: runner, environment: await environment())
         let pending = TaskScriptPendingOutput()
         let labelsScripts = run.plan.scripts.count > 1
+        let printsCommands = run.event == .afterWorktree
         let flusher = Task { [weak run] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(100))
-                if let chunk = pending.take() { run?.output.append(chunk) }
+                if let chunk = pending.take(), let run {
+                    run.output.append(chunk)
+                    self.runUpdated(run)
+                }
             }
         }
         let reports = await runner.run(
             run.plan, context: run.context,
             onStart: { script in
                 if labelsScripts { pending.append(Data("› \(script.name)\n".utf8)) }
+                if printsCommands { pending.append(Data("$ \(script.text)\n".utf8)) }
                 Task { @MainActor in run.current = script }
             },
             onOutput: { pending.append($0) })
@@ -354,23 +331,28 @@ final class TaskScriptCenter {
         run.current = nil
         run.reports = reports
         if let failed = reports.first(where: { !$0.result.succeeded }) {
-            finish(run, as: .failed(failed))
+            if run.event == .afterWorktree, failed.result.outcome == .cancelled {
+                finish(run, as: .skipped)
+            } else {
+                finish(run, as: .failed(failed))
+            }
         } else {
             finish(run, as: .succeeded)
         }
     }
 
-    private func finish(_ run: TaskScriptRun, as state: TaskScriptRun.State) {
+    func finish(_ run: TaskScriptRun, as state: TaskScriptRun.State) {
         run.state = state
         run.current = nil
         run.finishedAt = .now
+        runUpdated(run)
         if run.event.holdsTask, !run.isTest {
             holdTurns(run.folder, run.releasesTask ? nil : Self.setupHold)
         }
     }
 
     /// Ends a run that couldn't get as far as its scripts.
-    private func fail(_ run: TaskScriptRun, _ reason: String) {
+    func fail(_ run: TaskScriptRun, _ reason: String) {
         guard let script = run.plan.scripts.first ?? run.plan.awaitingApproval else { return }
         run.output.appendLine(reason)
         finish(
@@ -379,12 +361,15 @@ final class TaskScriptCenter {
                 TaskScriptReport(script: script, result: .init(outcome: .couldNotStart(reason), duration: .zero))))
     }
 
-    private func record(_ run: TaskScriptRun) {
+    func record(_ run: TaskScriptRun) {
         let key = run.folder.standardizedFileURL
         var log = runs[key] ?? []
         log.append(run)
-        if log.count > Self.logLimit {
-            log.removeFirst(log.count - Self.logLimit)
+        var excess = max(0, log.count - Self.logLimit)
+        log.removeAll { run in
+            guard excess > 0, !run.isRunning, run.state != .awaitingApproval else { return false }
+            excess -= 1
+            return true
         }
         runs[key] = log
     }
@@ -396,7 +381,7 @@ final class TaskScriptCenter {
             id: task.id ?? known?.id, title: task.title ?? known?.title, agent: task.agent ?? known?.agent)
     }
 
-    private func context(
+    func context(
         _ event: TaskScriptEvent, folder: URL, projectRoot: URL, branch: String?, task: TaskScriptTask?
     ) -> TaskScriptContext {
         TaskScriptContext(

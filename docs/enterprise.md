@@ -99,3 +99,12 @@ never sends that text anywhere itself.
 - Shared hosts for teams: Linux run boxes with per-user isolation and SSO or SSH-certificate sign-in.
 - An admin view summarizing the policy in effect and why each managed item is set.
 - A commercial license and support option alongside FSL for organizations that want one.
+
+### Worktree base fetching
+
+`policy.git.worktreeFetch` is a Boolean, allowed by default. Set it to `false` to prevent
+Native from fetching a remote before it creates a task worktree. Worktrees then start from
+the local commit and say so on the task. This key does not change user-authored script commands;
+`policy.taskScripts.userScripts` and `policy.taskScripts.repositoryScripts` govern those.
+The fetch uses only the repository-configured remote URL, has a 15-second deadline and falls
+back to the local commit when offline.

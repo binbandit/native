@@ -20,10 +20,12 @@ extension GitStore {
             // A worktree branches from a commit; `git init` alone leaves nothing to branch from.
             guard try await repository.hasCommits() else { throw TaskWorkspaceError.noCommits }
             let folder = taskLocation(of: repository).appending(path: code, directoryHint: .isDirectory)
-            let base = try? await repository.currentBranchName()
+            let main = try await repository.worktrees().first(where: \.isMain)?.path ?? repository.root
+            try await beforeCreatingTaskWorktree?(GitTaskWorktree(folder: folder, projectRoot: main, branch: branch))
+            let base = try await repository.taskWorktreeBase(fetchRemote: allowsWorktreeFetch())
             let worktree: Worktree
             do {
-                worktree = try await repository.addWorktree(at: folder, newBranch: branch)
+                worktree = try await repository.addWorktree(at: folder, newBranch: branch, startPoint: base.commit)
             } catch {
                 // A checkout that fails (no room, no permission) can leave the new branch behind. It
                 // was free a moment ago, so it's this task's, and a retry makes another.
@@ -31,7 +33,8 @@ extension GitStore {
                 throw error
             }
             try await repository.markProvisional(branch)
-            return try await setUp(worktree, of: repository, branch: branch, baseBranch: base)
+            return try await setUp(
+                worktree, of: repository, branch: branch, baseBranch: base.branch, baseNotice: base.localNotice)
         }
     }
 
@@ -39,6 +42,9 @@ extension GitStore {
     /// for it), named after it and set up like any new task's. The branch keeps its name.
     func prepareTaskCheckout(in project: URL, existingBranch branch: String) async throws -> GitTaskCheckout {
         let repository = try await requireRepository(at: project)
+        let main = try await repository.worktrees().first(where: \.isMain)?.path ?? repository.root
+        try await beforeCreatingTaskWorktree?(
+            GitTaskWorktree(folder: repository.root, projectRoot: main, branch: branch))
         let worktree = try await repository.createWorktree(
             checkingOut: branch, folderName: branch, in: worktreesBase(of: repository))
         return try await setUp(worktree, of: repository, branch: branch)
@@ -49,11 +55,12 @@ extension GitStore {
     /// setup scripts. Internal only for GitStore+ArchivedWorktrees.swift, which sets up a worktree
     /// it brings back the same way.
     func setUp(
-        _ worktree: Worktree, of repository: Repository, branch: String, baseBranch: String? = nil
+        _ worktree: Worktree, of repository: Repository, branch: String, baseBranch: String? = nil,
+        baseNotice: String? = nil
     ) async throws -> GitTaskCheckout {
         let main = try await repository.worktrees().first(where: \.isMain)?.path ?? repository.root
         var created = GitTaskWorktree(
-            folder: worktree.path, projectRoot: main, branch: branch, baseBranch: baseBranch)
+            folder: worktree.path, projectRoot: main, branch: branch, baseBranch: baseBranch, baseNotice: baseNotice)
         do {
             created.copiedFiles = try await requireRepository(at: main).copyIgnoredFiles(
                 matching: settings.envFilePatterns, to: worktree.path)
