@@ -18,7 +18,8 @@ extension SettingsPane {
                     let manifest = loaded.plugin.manifest
                     return SettingsSearchEntry(
                         id: ExtensionsSettingsPage.rowID(manifest.id), title: manifest.name,
-                        description: manifest.description ?? "", keywords: [manifest.id])
+                        description: manifest.description ?? "", keywords: [manifest.id],
+                        plainly: loaded.source == .builtIn ? SettingsFeatureCopy.content(for: manifest.id) : nil)
                 }
             },
             content: { ExtensionsSettingsPage(registry: registry) }
@@ -59,12 +60,14 @@ struct ExtensionsSettingsPage: View {
                     title: "Features",
                     description: "Native starts small. Turn on what you use; a feature that's off is gone, not hidden.")
             ) {
-                Button("Reload", systemImage: "arrow.clockwise") { registry.reload() }
+                Button(plainly ? "Reload Plugins" : "Reload", systemImage: "arrow.clockwise") { registry.reload() }
                     .buttonStyle(.ds(.secondary, size: .medium))
                     .help("Read the plugins folder again")
                 #if os(macOS)
-                Button("Open Plugins Folder", systemImage: "folder", action: openFolder)
-                    .buttonStyle(.ds(.secondary, size: .medium))
+                Button(
+                    plainly ? "Show Plugins Folder" : "Open Plugins Folder", systemImage: "folder", action: openFolder
+                )
+                .buttonStyle(.ds(.secondary, size: .medium))
                 #endif
             }
             SettingsRowGroup {
@@ -74,7 +77,8 @@ struct ExtensionsSettingsPage: View {
             }
             VStack(alignment: .leading, spacing: DS.Space.lg) {
                 SettingsSubheading(
-                    "Your plugins", note: "Plugins in ~/.native/plugins, each a folder with a plugin.json.")
+                    "Your plugins", note: "Plugins in ~/.native/plugins, each a folder with a plugin.json.",
+                    plainly: .init(title: "Plugins you added", description: "From ~/.native/plugins."))
                 if installed.isEmpty {
                     installedEmptyState
                 } else {
@@ -88,7 +92,9 @@ struct ExtensionsSettingsPage: View {
             }
             if !registry.failures.isEmpty {
                 VStack(alignment: .leading, spacing: DS.Space.lg) {
-                    SettingsSubheading("Couldn't load", note: "Fix the file, then Reload.")
+                    SettingsSubheading(
+                        "Couldn't load", note: "Fix the file, then Reload.",
+                        plainly: .init(title: "Couldn't load", description: "Fix its plugin.json, then try again."))
                     ForEach(registry.failures) { failure in
                         NoticeBanner(
                             tone: .danger,
@@ -96,7 +102,7 @@ struct ExtensionsSettingsPage: View {
                             detail: failure.message,
                             footnote: ExtensionRow.displayPath(failure.url)
                         ) {
-                            Button("Reload") { registry.reload() }
+                            Button(plainly ? "Try Again" : "Reload") { registry.reload() }
                                 .buttonStyle(.ds(.secondary))
                         }
                     }
@@ -108,7 +114,9 @@ struct ExtensionsSettingsPage: View {
     private var installedEmptyState: some View {
         SettingsNote("No plugins yet", systemImage: "shippingbox") {
             Text(
-                "Add a folder with a plugin.json to ~/.native/plugins, then Reload. A plugin can add agents that speak ACP, MCP servers for every task, and workflows."
+                plainly
+                    ? "A plugin adds agents, MCP servers, workflows or themes. Put its folder in ~/.native/plugins."
+                    : "Add a folder with a plugin.json to ~/.native/plugins, then Reload. A plugin can add agents that speak ACP, MCP servers for every task, and workflows."
             )
         }
     }

@@ -14,6 +14,7 @@ struct ExtensionRow: View {
         SettingsRow(
             id: ExtensionsSettingsPage.rowID(manifest.id),
             title: Text(manifest.name),
+            plainly: loaded.source == .builtIn ? SettingsFeatureCopy.content(for: manifest.id) : nil,
             description: manifest.description.map(Text.init),
             detail: plainly && loaded.source == .builtIn ? nil : Text(detailLines.joined(separator: "\n"))
         ) {

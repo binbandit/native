@@ -58,19 +58,21 @@ struct SettingsSubheading: View {
     @Environment(\.settingsPlainly) private var plainly
     let title: String
     var note: String?
+    var copy: SettingsPlainlyCopy?
 
-    init(_ title: String, note: String? = nil) {
+    init(_ title: String, note: String? = nil, plainly: SettingsPlainlyCopy? = nil) {
         self.title = title
         self.note = note
+        self.copy = plainly
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.xxs) {
-            Text(title)
+            Text(plainly ? copy?.title ?? title : title)
                 .settingsText(.heading)
                 .foregroundStyle(.dsTextPrimary)
                 .accessibilityAddTraits(.isHeader)
-            if let note {
+            if let note = plainly && copy != nil ? copy?.description : note {
                 Text(note)
                     .settingsText(.body)
                     .foregroundStyle(.dsTextSecondary)

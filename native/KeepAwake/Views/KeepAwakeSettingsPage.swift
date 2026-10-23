@@ -11,6 +11,7 @@ struct KeepAwakeSettingsPage: View {
     /// Wide enough for "While Agents Work".
     static let selectWidth: CGFloat = 170
 
+    @Environment(\.settingsPlainly) private var plainly
     let controller: KeepAwakeController
 
     var body: some View {
@@ -32,7 +33,13 @@ struct KeepAwakeSettingsPage: View {
                     SettingsSelect(
                         label: "Keep Mac awake",
                         selection: $controller.mode,
-                        options: KeepAwakeMode.choices.map { .init(value: $0, title: $0.title) },
+                        options: KeepAwakeMode.choices.map {
+                            .init(
+                                value: $0,
+                                title: plainly
+                                    ? ($0 == .on ? "Always" : $0 == .whileAgentsWork ? "While agents work" : $0.title)
+                                    : $0.title)
+                        },
                         width: Self.selectWidth
                     )
                 }

@@ -137,7 +137,8 @@ struct MCPServersSettingsPage: View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             SettingsSubheading(
                 "Set up in Native",
-                note: "Handed to the agents and projects you choose, in every task they start or reopen.")
+                note: "Handed to the agents and projects you choose, in every task they start or reopen.",
+                plainly: .init(title: "Shared with every agent", description: "Choose agents and projects per server."))
             if library.servers.isEmpty {
                 MCPEmptyRow(
                     title: "No servers yet",
@@ -171,7 +172,10 @@ struct MCPServersSettingsPage: View {
                 SettingsSubheading(
                     "Loaded by your agents",
                     note:
-                        "From each agent's own configuration. Changes go through the agent's CLI, never by editing its files."
+                        "From each agent's own configuration. Changes go through the agent's CLI, never by editing its files.",
+                    plainly: .init(
+                        title: "Loaded by agents themselves",
+                        description: "From each agent's own config. Native changes them only through the agent's CLI.")
                 )
                 Spacer(minLength: DS.Space.xl)
                 SettingsSelect(label: "Project", selection: $projectPath, options: projectOptions(library), width: 180)
