@@ -20,7 +20,7 @@ File ▸ Close (⌘W) acts on the frontmost Native window or panel, including im
 A sheet closes before its parent window. Closing the last window leaves Native running; it never
 quits the app or closes the main window behind another window. Settings and the task's terminal
 panel live in the main window, so ⌘W there closes that window. Use Close Terminal Tab to end a
-terminal tab instead. Window ▸ Native brings the main window back; ⌘Q quits the app.
+terminal tab instead. ⌘, brings the main window back with Settings; ⌘Q quits the app.
 
 ## Sending
 

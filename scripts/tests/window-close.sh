@@ -40,6 +40,8 @@ if "${drive[@]}" pid >/dev/null 2>&1; then fail "Quit $instance before testing";
 trap '"${run[@]}" --quit >/dev/null' EXIT
 "${run[@]}" --no-build -- -appearance.mode "$appearance"
 pid=$("${drive[@]}" pid)
+# A previous check may have left the saved main window closed.
+"${drive[@]}" menu Native 'Settings…'
 await_tree '#main' yes
 
 # An AppKit auxiliary window must close without touching the SwiftUI main window.
@@ -59,16 +61,24 @@ for action in keyboard menu; do
 done
 
 # Settings occupies the main window. Closing it must keep the same app alive.
-"${drive[@]}" menu Native 'Settings…'
+if [[ $(tree) != *'AXWindow:StandardWindow "Settings"'* ]]; then
+    "${drive[@]}" menu Native 'Settings…'
+fi
+await_tree 'AXWindow:StandardWindow "Settings"' yes
 "${drive[@]}" key cmd+w
 await_tree '#main' no
 alive
-"${drive[@]}" menu Window Native
+"${drive[@]}" menu Native 'Settings…'
+await_tree '#main' yes
+"${drive[@]}" key opt+cmd+w
+await_tree '#main' no
+alive
+"${drive[@]}" menu Native 'Settings…'
 await_tree '#main' yes
 "${drive[@]}" key cmd+q
 for _ in $(seq 1 30); do
     if ! "${drive[@]}" pid >/dev/null 2>&1; then
-        echo "PASS: About, sheet dismissal/reopening, Settings, last window, reopening and Quit ($appearance)"
+        echo "PASS: About, sheet dismissal/reopening, Settings, last window, Close All, reopening and Quit ($appearance)"
         exit 0
     fi
     sleep 0.1
