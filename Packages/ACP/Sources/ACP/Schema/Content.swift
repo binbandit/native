@@ -6,6 +6,7 @@ public enum ContentBlock: Hashable, Sendable {
     case image(data: String, mimeType: String)
     case resourceLink(uri: String, name: String)
     case resource(uri: String, text: String?)
+    case resourceBlob(uri: String, mimeType: String?, blob: String)
     /// A block type this client doesn't understand yet, such as audio.
     case unsupported(type: String)
 
@@ -26,6 +27,8 @@ extension ContentBlock: Codable {
     private struct EmbeddedResource: Codable {
         let uri: String
         let text: String?
+        var mimeType: String?
+        var blob: String?
     }
 
     public init(from decoder: any Decoder) throws {
@@ -46,7 +49,11 @@ extension ContentBlock: Codable {
             )
         case "resource":
             let resource = try container.decode(EmbeddedResource.self, forKey: .resource)
-            self = .resource(uri: resource.uri, text: resource.text)
+            if let blob = resource.blob {
+                self = .resourceBlob(uri: resource.uri, mimeType: resource.mimeType, blob: blob)
+            } else {
+                self = .resource(uri: resource.uri, text: resource.text)
+            }
         default:
             self = .unsupported(type: type)
         }
@@ -69,6 +76,10 @@ extension ContentBlock: Codable {
         case .resource(let uri, let text):
             try container.encode("resource", forKey: .type)
             try container.encode(EmbeddedResource(uri: uri, text: text), forKey: .resource)
+        case .resourceBlob(let uri, let mimeType, let blob):
+            try container.encode("resource", forKey: .type)
+            try container.encode(
+                EmbeddedResource(uri: uri, text: nil, mimeType: mimeType, blob: blob), forKey: .resource)
         case .unsupported(let type):
             throw EncodingError.invalidValue(
                 type,

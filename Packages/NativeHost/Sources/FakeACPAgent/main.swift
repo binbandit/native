@@ -582,7 +582,7 @@ actor FakeAgent {
             switch block {
             case .text(let text): text
             case .resourceLink(_, let name): "[link \(name)]"
-            case .resource(let uri, _): "[resource \(uri)]"
+            case .resource(let uri, _), .resourceBlob(let uri, _, _): "[resource \(uri)]"
             case .image: "[image]"
             case .unsupported(let type): "[\(type)]"
             }

@@ -71,6 +71,8 @@ struct StandardTranscriptLineView: View {
             MarkdownSectionView(source: source, isFirst: isFirst)
                 .equatable()
                 .frame(maxWidth: .infinity, alignment: .leading)
+        case .artifacts(let attachments, _):
+            MessageAttachmentsView(attachments: attachments, alignment: .leading)
         case .activityRun(let run):
             ToolRunView(run: run, session: transcript.session)
                 .equatable()
@@ -113,3 +115,17 @@ struct StandardTranscriptLineView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Standard transcript - Artifacts") {
+    DSPreviewPair {
+        MessageAttachmentsView(
+            attachments: [
+                MessageAttachment(name: "Diagram.png", url: nil, imageData: ArtifactPreviewFixtures.imageData)
+            ], alignment: .leading
+        )
+        .environment(\.openTranscriptArtifact, { _ in })
+        .frame(width: 480)
+    }
+}
+#endif

@@ -9,11 +9,21 @@ public struct MessageAttachment: Identifiable, Hashable, Sendable {
     public var url: URL?
     /// The image itself, for an image.
     public var imageData: Data?
+    public var embeddedData: Data?
+    public var mimeType: String?
+    /// Originally attached by the user; a local task can preview it on the client.
+    public var isLocalFile: Bool
 
-    public init(name: String, url: URL?, imageData: Data? = nil) {
+    public init(
+        name: String, url: URL?, imageData: Data? = nil, embeddedData: Data? = nil, mimeType: String? = nil,
+        isLocalFile: Bool = false
+    ) {
         self.name = name
         self.url = url
         self.imageData = imageData
+        self.embeddedData = embeddedData
+        self.mimeType = mimeType
+        self.isLocalFile = isLocalFile
     }
 
     public var isImage: Bool {
@@ -31,7 +41,11 @@ public struct MessageAttachment: Identifiable, Hashable, Sendable {
                 case (.image(let data, _), .image): data
                 default: nil
                 }
-            return MessageAttachment(name: attachment.name, url: attachment.url, imageData: image)
+            let embedded: Data? = if case .text(let text) = attachment.content { Data(text.utf8) } else { nil }
+            let mimeType: String? = if case .image(_, let mime) = attachment.content { mime } else { nil }
+            return MessageAttachment(
+                name: attachment.name, url: attachment.url, imageData: image, embeddedData: embedded,
+                mimeType: mimeType, isLocalFile: true)
         }
     }
 
@@ -39,13 +53,20 @@ public struct MessageAttachment: Identifiable, Hashable, Sendable {
     /// agents fold attachments into (`init(replayedText:)`).
     init?(_ block: ContentBlock) {
         switch block {
-        case .image(let base64, _):
-            self.init(name: "Image", url: nil, imageData: Data(base64Encoded: base64))
+        case .image(let base64, let mimeType):
+            self.init(name: "Image", url: nil, imageData: Data(base64Encoded: base64), mimeType: mimeType)
         case .resourceLink(let uri, let name):
             self.init(name: name, url: URL(string: uri))
-        case .resource(let uri, _):
+        case .resource(let uri, let text):
             let url = URL(string: uri)
-            self.init(name: url?.lastPathComponent ?? uri, url: url)
+            self.init(name: url?.lastPathComponent ?? uri, url: url, embeddedData: text.map { Data($0.utf8) })
+        case .resourceBlob(let uri, let mimeType, let blob):
+            let url = URL(string: uri)
+            let data = Data(base64Encoded: blob)
+            let isImage = mimeType?.hasPrefix("image/") == true
+            self.init(
+                name: url?.lastPathComponent ?? "Artifact", url: url, imageData: isImage ? data : nil,
+                embeddedData: isImage ? nil : data, mimeType: mimeType)
         case .text(let text):
             self.init(replayedText: text)
         case .unsupported:

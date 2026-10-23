@@ -71,6 +71,7 @@ struct TranscriptView: View {
                     scrollView(transcript)
                 }
             }
+            .modifier(ArtifactPresentation(session: session, filesAreLocal: !model.device(of: session.key).isRemote))
             .transaction(value: session.isRestoringHistory) { $0.animation = nil }
             .onChange(of: session.isRestoringHistory) { _, isRestoring in
                 guard isRestoring else { return }

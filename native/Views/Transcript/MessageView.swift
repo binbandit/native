@@ -56,8 +56,13 @@ struct MessageView: View, Equatable {
                 }
             }
         case .agent:
-            MarkdownView(message.text)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            VStack(alignment: .leading, spacing: DS.Space.sm) {
+                if !message.text.isEmpty { MarkdownView(message.text) }
+                if !message.attachments.isEmpty {
+                    MessageAttachmentsView(attachments: message.attachments, alignment: .leading)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         case .thought:
             ThoughtView(
                 id: message.id.uuidString,
