@@ -26,18 +26,33 @@ struct CelebrationsSettingsPage: View {
     }
 
     static func rowID(_ id: CelebrationID) -> SettingsRowID { SettingsRowID("celebration.\(id.rawValue)") }
+    private static let detailID = SettingsRowID("celebration.detail")
     private var isSearching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if let detail, let event = center.celebrations.first(where: { $0.id == detail }) {
                 CelebrationDetailPage(event: event) { settings.goBack() }
+                    .id(Self.detailID)
+                    .task(id: event.id) {
+                        // The feature can be below Appearance in a combined Settings page.
+                        try? await Task.sleep(for: .milliseconds(50))
+                        guard !Task.isCancelled else { return }
+                        scrollTo?(Self.detailID, .top)
+                    }
             } else {
                 list
             }
         }
         .environment(\.settingsFlash, reveal ?? settingsFlash)
-        .onChange(of: settingsFlash) { reveal = nil }
+        .onChange(of: settingsFlash) { _, flash in
+            reveal = nil
+            guard let flash,
+                let event = center.celebrations.first(where: { Self.rowID($0.id) == flash.rowID })
+            else { return }
+            query = ""
+            if !event.canBeChosen(on: center.today) { showsLater = true }
+        }
         .onChange(of: center.preferences) { _, preferences in
             if lastChange?.after != preferences { lastChange = nil }
         }

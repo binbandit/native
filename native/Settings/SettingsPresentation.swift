@@ -20,7 +20,7 @@ final class SettingsPresentation {
     var pane: SettingsPane.ID? {
         didSet {
             if let projectScope, projectScope.pane != pane { self.projectScope = nil }
-            if pane != oldValue { detailBack = nil }
+            if pane != oldValue { dismissDetail() }
             if oldValue == nil, pane != nil {
                 Telemetry.record(.featureUsed(.settings))
             }
@@ -37,11 +37,17 @@ final class SettingsPresentation {
         if id != nil {
             if detailBack == nil { listOffset = pageOffset }
             detailBack = back
-            scrollPage?(0)
         } else if detailBack != nil {
             detailBack = nil
             scrollPage?(listOffset)
         }
+    }
+
+    /// A search result owns its destination; returning to the old list offset would override it.
+    func dismissDetail() {
+        let back = detailBack
+        detailBack = nil
+        back?()
     }
 
     func goBack() {

@@ -55,12 +55,21 @@ struct CelebrationPreviewGallery: View {
             }
         case .overlaps:
             CelebrationOverlaps(overlaps: center.overlaps(within: 365))
-        case .detail, .style:
-            if let event = center.celebrations.first(where: {
-                $0.id
-                    == (state == .style
-                        ? CelebrationID("native.australia-day") : FirstPartyCelebrations.halloweenID)
-            }) {
+        case .unavailableSelections:
+            VStack(spacing: DS.Space.lg) {
+                row("songkran", center: center)
+                row("eid-al-fitr", center: center)
+                row("vesak", center: center)
+                row("eid-al-adha", center: center)
+            }
+        case .detail, .style, .unavailableDetail:
+            let id: CelebrationID =
+                switch state {
+                case .style: CelebrationID("native.australia-day")
+                case .unavailableDetail: CelebrationID("native.songkran")
+                default: FirstPartyCelebrations.halloweenID
+                }
+            if let event = center.celebrations.first(where: { $0.id == id }) {
                 CelebrationDetailPage(event: event)
             }
         case .confirmation:
@@ -100,5 +109,13 @@ struct CelebrationPreviewGallery: View {
 }
 #Preview("Celebrations - No matches") {
     DSPreviewPair { CelebrationPreviewGallery(.noMatches).settingsPreviewPage() }.environment(SettingsPresentation())
+}
+#Preview("Celebrations - Unavailable selections on and off") {
+    DSPreviewPair { CelebrationPreviewGallery(.unavailableSelections).settingsPreviewPage() }
+        .environment(SettingsPresentation())
+}
+#Preview("Celebrations - Unavailable selection details") {
+    DSPreviewPair { CelebrationPreviewGallery(.unavailableDetail).settingsPreviewPage() }
+        .environment(SettingsPresentation())
 }
 #endif

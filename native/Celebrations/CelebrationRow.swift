@@ -16,6 +16,7 @@ struct CelebrationRow: View {
     private var selection: CelebrationPreferences.Selection { center.preferences.selection(for: event.id) }
     private var occurrence: CelebrationOccurrence? { center.nextOccurrence(of: event) }
     private var ready: Bool { event.canBeChosen(on: center.today) }
+    private var canToggle: Bool { ready || selection.isEnabled }
     private var showing: Bool { center.resolution.active?.eventID == event.id }
     private var title: String { event.contribution.title.resolved() }
     private var alias: String? {
@@ -44,7 +45,7 @@ struct CelebrationRow: View {
                 isOn: Binding(
                     get: { selection.isEnabled }, set: { center.setAutomatic($0, for: event.id) })
             )
-            .disabled(!ready)
+            .disabled(!canToggle)
             .dsHitTarget(SettingsMetrics.switchSize.height)
             Image(systemName: "chevron.right")
                 .font(.system(size: CelebrationMetrics.chevron, weight: .medium))
@@ -71,7 +72,7 @@ struct CelebrationRow: View {
         .accessibilityAddTraits(.isButton)
         .accessibilityAction { open() }
         .accessibilityActions {
-            if ready { Button("Toggle celebration", action: toggle) }
+            if canToggle { Button("Toggle celebration", action: toggle) }
             Button("Open celebration", action: open)
         }
         .settingsRevealTarget(CelebrationsSettingsPage.rowID(event.id))
@@ -84,7 +85,7 @@ struct CelebrationRow: View {
     }
 
     private func toggle() {
-        guard ready else { return }
+        guard canToggle else { return }
         center.setAutomatic(!selection.isEnabled, for: event.id)
     }
 

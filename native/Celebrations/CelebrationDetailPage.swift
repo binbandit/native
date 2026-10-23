@@ -30,7 +30,7 @@ struct CelebrationDetailPage: View {
                         isOn: Binding(
                             get: { selection.isEnabled }, set: { center.setAutomatic($0, for: event.id) })
                     )
-                    .disabled(!event.canBeChosen(on: center.today))
+                    .disabled(!event.canBeChosen(on: center.today) && !selection.isEnabled)
                 }
             }
             facts

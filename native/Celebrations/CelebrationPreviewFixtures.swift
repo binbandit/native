@@ -5,7 +5,8 @@ import SwiftUI
 /// Inert catalogue fixtures: no timers, downloads or persisted choices.
 enum CelebrationPreviewFixtures {
     enum State: String, CaseIterable {
-        case off, menu, style, page, pending, search, noMatches, showing, homeOnly, skipped, waiting, failed, empty,
+        case off, menu, style, page, pending, unavailableSelections, unavailableDetail, search, noMatches, showing,
+            homeOnly, skipped, waiting, failed, empty,
             yearHover, rows,
             overlaps,
             detail, offline,
@@ -52,6 +53,11 @@ enum CelebrationPreviewFixtures {
             center.setHome(false, for: FirstPartyCelebrations.diaDeMuertosID)
         }
         if state == .rows || state == .style { center.setAutomatic(true, for: CelebrationID("native.australia-day")) }
+        if state == .unavailableSelections || state == .unavailableDetail {
+            // Stored opt-ins can outlive their artwork provider or calendar coverage.
+            center.setAutomatic(true, for: CelebrationID("native.songkran"))
+            center.setAutomatic(true, for: CelebrationID("native.eid-al-fitr"))
+        }
         if state == .skipped { center.restoreBase() }
         return center
     }
@@ -68,7 +74,8 @@ enum CelebrationPreviewFixtures {
 
     private static func contributions(_ state: State) -> [CelebrationContribution] {
         FirstPartyCelebrations.celebrations.map { original in
-            guard state == .rows || state == .pending else { return original }
+            guard state == .rows || state == .pending || state == .unavailableSelections || state == .unavailableDetail
+            else { return original }
             var event = original
             switch event.id.rawValue {
             case "native.songkran", "native.vesak":

@@ -140,11 +140,12 @@ struct SettingsScreen: View {
             }
             .task(id: reveal) {
                 guard let reveal else { return }
+                presentation.dismissDetail()
                 // A destination can change scope or open a disclosure before its target lays out.
-                if plainly { flash = reveal }
+                flash = reveal
                 try? await Task.sleep(for: .milliseconds(50))
+                guard !Task.isCancelled else { return }
                 proxy.scrollTo(reveal.rowID, anchor: .center)
-                if !plainly { flash = reveal }
             }
         }
         // A page's undo toasts show over the visible pane, not at the bottom of a long page; and leave
