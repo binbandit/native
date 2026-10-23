@@ -28,7 +28,7 @@ struct TaskWellToolbar<Dev: View>: View {
         .buttonStyle(.plain)
         .dsHitTarget(DS.TaskWell.height)
         .help(help)
-        .popover(isPresented: $tools.showsWell, arrowEdge: .bottom) {
+        .dsPopover(isPresented: $tools.showsWell, arrowEdge: .bottom) {
             TaskWellToolsPanel(content: content, location: location, tools: tools, detail: detail, dev: dev)
         }
         .onChange(of: session.phase) { previous, phase in
