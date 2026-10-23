@@ -5,7 +5,7 @@ import SwiftUI
 struct CelebrationStatusCard: View {
     var reveal: (CelebrationID) -> Void = { _ in }
     var revealMonth: (CivilDate) -> Void = { _ in }
-    var chooseRegion: () -> Void = {}
+    var chooseCountry: (String) -> Void = { _ in }
 
     @Environment(CelebrationCenter.self) private var center
     @Environment(\.releaseChannel) private var channel
@@ -31,7 +31,7 @@ struct CelebrationStatusCard: View {
             }
             .padding(.horizontal, DS.Space.xl)
             SeparatorLine()
-            CelebrationYearStrip(reveal: reveal, revealMonth: revealMonth, chooseRegion: chooseRegion)
+            CelebrationYearStrip(reveal: reveal, revealMonth: revealMonth, chooseCountry: chooseCountry)
         }
         .padding(.vertical, DS.Space.xl)
         .background(.dsSurface, in: .rect(cornerRadius: DS.Radius.panel))
