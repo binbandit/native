@@ -13,6 +13,7 @@ extension ExperimentCatalog {
         Gate.sessionTools,
         Gate.sidebarNext,
         Gate.composerNext,
+        Gate.homeNext,
     ])
 }
 
@@ -57,6 +58,17 @@ extension Parameter where Value == TranscriptWidth {
 // MARK: - Gates
 
 extension Gate {
+    static let homeNext = Gate(
+        id: "NativeHomeNext",
+        title: "Next",
+        summary: "Answer asks one at a time on Home, with the quickest decisions first.",
+        site: "Home > Next",
+        stage: .labs,
+        owner: "home",
+        reviewBy: ReviewDate(year: 2026, month: 12, day: 15),
+        default: false
+    )
+
     static let sidebarNext = Gate(
         id: "NativeSidebarNext",
         title: "All in view",

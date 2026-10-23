@@ -111,6 +111,7 @@ extension HostCore {
     /// it doesn't (after the host or the agent restarted), or resuming it quietly if the host
     /// unloaded it while idle. Concurrent callers share one load.
     func load(_ session: HostSession) async throws {
+        try await agents[session.record.agentID]?.waitForCommandStop()
         if let loading = session.loading {
             return try await loading.value
         }
@@ -403,7 +404,7 @@ extension HostCore {
     /// Drops a session (and the subagents under it) from the host and tells clients.
     func forget(_ session: HostSession) {
         session.retryTask?.cancel()
-        session.stopTimeout?.cancel()
+        if !session.isStopping { session.stopTimeout?.cancel() }
         try? store.deleteSession(session.id)
         sessions[session.id] = nil
         tasks.sessionClosed(session)
