@@ -101,7 +101,9 @@ final class CelebrationCenter {
         onIconChange?(icon)
         // Packs for celebrations coming up this week, if a choice made earlier hasn't fetched them.
         for pack in CelebrationAssets.packsDue(catalog.celebrations, preferences: preferences, on: today) {
-            assets.fetch(pack)
+            // Publishing a failure rebuilds the catalogue too. Only an explicit Retry should
+            // repeat it, otherwise an offline launch loops between downloading and failed.
+            assets.fetch(pack, retryFailed: false)
         }
     }
 
