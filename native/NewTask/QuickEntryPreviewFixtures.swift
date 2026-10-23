@@ -49,6 +49,7 @@ enum QuickEntryPreviewFixtures {
             entry.failure = "The project folder is unavailable. Choose another project or restore the folder."
         case .offline:
             entry.device = .remote(RemoteHostID())
+            entry.agent = nil
         case .devices:
             entry.picker = .device
             entry.previewDeviceOptions = [
