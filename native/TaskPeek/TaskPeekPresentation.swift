@@ -11,4 +11,5 @@ final class TaskPeekPresentation {
 
     var request: Request?
     var isAnswering = false
+    var isRecovering = false
 }

@@ -107,7 +107,7 @@ struct TaskPeekView: View {
             if session.phase == .loading {
                 LoadingStateView("Opening the task…")
             } else if session.taskStatus == .failed {
-                TaskPeekFailureView(session: session) {
+                TaskPeekFailureView(session: session, isRecovering: model.taskPeek.isRecovering) {
                     Task { await model.recoverPeekedTask(request.task) }
                 }
             } else {
@@ -174,6 +174,7 @@ struct TaskPeekView: View {
 #Preview("Peek - Destructive approval") { TaskPeekPreviewFixtures.view(.destructive) }
 #Preview("Peek - Question") { TaskPeekPreviewFixtures.view(.question) }
 #Preview("Peek - Failure") { TaskPeekPreviewFixtures.view(.failure) }
+#Preview("Peek - Recovering") { TaskPeekPreviewFixtures.view(.recovering) }
 #Preview("Peek - Plan") { TaskPeekPreviewFixtures.view(.plan) }
 #Preview("Peek - Finished") { TaskPeekPreviewFixtures.view(.finished) }
 #Preview("Peek - Resolved") { TaskPeekPreviewFixtures.view(.resolved) }

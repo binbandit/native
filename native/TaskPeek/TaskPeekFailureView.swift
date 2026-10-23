@@ -3,6 +3,7 @@ import SwiftUI
 
 struct TaskPeekFailureView: View {
     let session: SessionModel
+    var isRecovering = false
     let recover: () -> Void
 
     private var needsRestart: Bool { session.phase == .disconnected && session.host == nil }
@@ -20,12 +21,18 @@ struct TaskPeekFailureView: View {
             .font(.dsBody).foregroundStyle(.dsTextTertiary)
             HStack {
                 Spacer()
-                Button(needsRestart ? "Restart Agent" : "Continue Task") {
+                Button(buttonTitle) {
                     recover()
                 }
                 .buttonStyle(.ds(.primary))
+                .disabled(isRecovering)
             }
         }
+    }
+
+    private var buttonTitle: String {
+        if isRecovering { return needsRestart ? "Restarting…" : "Continuing…" }
+        return needsRestart ? "Restart Agent" : "Continue Task"
     }
 
     private var detail: String {
