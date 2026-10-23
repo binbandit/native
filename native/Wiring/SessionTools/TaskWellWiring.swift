@@ -1,4 +1,5 @@
 import ACP
+import AppAppearance
 import NativeCommands
 import ProjectActions
 import SessionTools
@@ -25,6 +26,7 @@ struct TaskWellWiring: View {
                 ProjectActionsMenuContent(target: target)
             }
         }
+        .environment(\.dsWorkingAnimation, session.workingAnimation)
         .onAppear {
             tools.hasWell = true
             tools.wellToolAvailable = available
