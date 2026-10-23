@@ -6,6 +6,14 @@ import TaskScripts
 extension TaskScriptEvent {
     var plainlyCopy: SettingsPlainlyCopy {
         switch self {
+        case .beforeWorktree:
+            .init(
+                title: "Before creating a worktree",
+                description: "Runs in the project folder. A failure leaves the task ready to retry.")
+        case .afterWorktree:
+            .init(
+                title: "After creating a worktree",
+                description: "Runs in the new worktree in the background. Your first message does not wait.")
         case .setup:
             .init(
                 title: "After the worktree is made", description: "Install dependencies here. The agent waits for it.")
