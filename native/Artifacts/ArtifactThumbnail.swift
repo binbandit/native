@@ -8,9 +8,9 @@ struct ArtifactThumbnail: View {
 
     var body: some View {
         Button {
-            openArtifact?(artifact)
+            openArtifact?.open(artifact)
         } label: {
-            if artifact.isImage, let data = artifact.data, ImageHeader(data) != nil {
+            if artifact.isImage, let data = artifact.data, artifact.hasImageHeader {
                 AttachmentImage(
                     data: data, maxSide: DS.Artifact.thumbnailWidth,
                     fitting: CGSize(width: DS.Artifact.thumbnailWidth, height: DS.Artifact.thumbnailHeight)
@@ -39,13 +39,13 @@ struct ArtifactThumbnail: View {
         .accessibilityLabel("Open \(artifact.name)")
         .accessibilityHint("Opens the artifact viewer")
         .contextMenu {
-            Button("Open", systemImage: "eye") { openArtifact?(artifact) }
+            Button("Open", systemImage: "eye") { openArtifact?.open(artifact) }
         }
     }
 }
 
 extension EnvironmentValues {
-    @Entry var openTranscriptArtifact: ((TranscriptArtifact) -> Void)?
+    @Entry var openTranscriptArtifact: TranscriptArtifactOpener?
 }
 
 #if DEBUG
@@ -57,7 +57,7 @@ extension EnvironmentValues {
             ArtifactThumbnail(artifact: TranscriptArtifact(name: "Report.pdf", url: URL(filePath: "/report.pdf")))
             ArtifactThumbnail(artifact: TranscriptArtifact(name: "Image", mimeType: "image/png"))
         }
-        .environment(\.openTranscriptArtifact, { _ in })
+        .environment(\.openTranscriptArtifact, TranscriptArtifactOpener(session: nil, filesAreLocal: true))
         .padding(DS.Space.lg)
     }
 }

@@ -278,7 +278,7 @@ private extension String {
             }()
             if let call {
                 ToolCallBody(call: call, presentation: ToolPresentation(call), phase: .completed)
-                    .environment(\.openTranscriptArtifact, { _ in })
+                    .environment(\.openTranscriptArtifact, TranscriptArtifactOpener(session: nil, filesAreLocal: true))
                     .frame(width: 440)
             }
         }

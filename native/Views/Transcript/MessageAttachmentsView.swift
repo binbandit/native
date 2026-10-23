@@ -28,7 +28,7 @@ extension MessageAttachment {
             MessageAttachment(name: "Diagram.png", url: nil, imageData: ArtifactPreviewFixtures.imageData),
             MessageAttachment(name: "Notes.txt", url: URL(filePath: "/repo/Notes.txt")),
         ])
-        .environment(\.openTranscriptArtifact, { _ in })
+        .environment(\.openTranscriptArtifact, TranscriptArtifactOpener(session: nil, filesAreLocal: true))
         .frame(width: 360)
         .padding(DS.Space.lg)
     }

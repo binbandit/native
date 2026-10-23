@@ -7,7 +7,9 @@ struct ArtifactPresentation: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .environment(\.openTranscriptArtifact) { session.openArtifact($0, filesAreLocal: filesAreLocal) }
+            .environment(
+                \.openTranscriptArtifact, TranscriptArtifactOpener(session: session, filesAreLocal: filesAreLocal)
+            )
             .environment(
                 \.openURL,
                 OpenURLAction { url in

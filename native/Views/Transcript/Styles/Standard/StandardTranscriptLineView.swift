@@ -124,7 +124,7 @@ struct StandardTranscriptLineView: View {
                 MessageAttachment(name: "Diagram.png", url: nil, imageData: ArtifactPreviewFixtures.imageData)
             ], alignment: .leading
         )
-        .environment(\.openTranscriptArtifact, { _ in })
+        .environment(\.openTranscriptArtifact, TranscriptArtifactOpener(session: nil, filesAreLocal: true))
         .frame(width: 480)
     }
 }

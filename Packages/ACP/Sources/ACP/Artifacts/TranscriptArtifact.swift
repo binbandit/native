@@ -48,7 +48,7 @@ public struct TranscriptArtifact: Hashable, Sendable {
 
     public var isImage: Bool {
         if mimeType?.hasPrefix("image/") == true { return true }
-        if let data, ImageHeader(data) != nil { return true }
+        if hasImageHeader { return true }
         #if canImport(UniformTypeIdentifiers)
         return UTType(filenameExtension: url?.pathExtension ?? (name as NSString).pathExtension)?.conforms(to: .image)
             == true
@@ -57,6 +57,9 @@ public struct TranscriptArtifact: Hashable, Sendable {
             url?.pathExtension.lowercased() ?? (name as NSString).pathExtension.lowercased())
         #endif
     }
+
+    /// Formats whose headers can be checked cheaply before asking the thumbnail decoder to draw.
+    public var hasImageHeader: Bool { data.flatMap(ImageHeader.init) != nil }
 
     /// Agent-provided names may contain paths. Temporary previews and exports use one filename only.
     public var filename: String {
