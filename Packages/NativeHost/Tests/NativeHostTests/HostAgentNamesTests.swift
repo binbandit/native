@@ -89,8 +89,12 @@ struct HostAgentNamesTests {
         _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "queued", behavior: .queue))
         try await recorder.client.cancel(session.id)
         try Data().write(to: gate)
-        try await recorder.wait("the stopped turn") { await $0.turnsEnded(session.id).count == 1 }
-        #expect(await recorder.turnsEnded(session.id) == ["cancelled"])
+        try await recorder.wait("the stopped turn and paused queue") {
+            let ended = await $0.turnsEnded(session.id).count == 1
+            let paused = await $0.summaries[session.id]?.isQueuePaused == true
+            return ended && paused
+        }
+        #expect(await recorder.turnsEnded(session.id) == ["error"])
         #expect(harness.received == ["rename\tDo not send this"])
         #expect(await recorder.summaries[session.id]?.isQueuePaused == true)
         // Sending again releases the paused queue without reviving the cancelled prompt.
@@ -123,8 +127,8 @@ struct HostAgentNamesTests {
         await recorder.stop()
     }
 
-    @Test("A naming reply after the host abandons a stopped turn cannot revive it")
-    func abandonedDuringNaming() async throws {
+    @Test("Stopping during naming ends the process without sending the cancelled prompt")
+    func stoppedDuringNaming() async throws {
         let harness = try HostHarness()
         let gate = harness.root.appending(path: "release-rename")
         harness.agentEnvironment["FAKE_AGENT_RENAME_GATE"] = gate.path(percentEncoded: false)
@@ -136,12 +140,11 @@ struct HostAgentNamesTests {
         try await recorder.client.cancel(session.id)
         try await Task.sleep(for: .milliseconds(1_100))
         try await recorder.client.cancel(session.id)
-        #expect(await recorder.turnsEnded(session.id) == ["cancelled"])
+        try await recorder.wait("the stop result") { await $0.turnsEnded(session.id) == ["error"] }
         try Data().write(to: gate)
-        try await recorder.wait("the late rename reply") { await $0.mirror(session.id).state.title == "Old task" }
         try await send("next", to: session.id, in: recorder)
         #expect(harness.received.filter { $0.hasPrefix("prompt\t") } == ["prompt\tnext"])
-        #expect(await recorder.turnsEnded(session.id) == ["cancelled", "end_turn"])
+        #expect(await recorder.turnsEnded(session.id) == ["error", "end_turn"])
         await recorder.stop()
     }
 }

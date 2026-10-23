@@ -513,6 +513,7 @@ final class SessionModel {
     /// Native is bringing the agent back on its own.
     func markDisconnected(isRestarting: Bool = false) {
         guard phase != .disconnected else { return }
+        if isStopping { explainUnconfirmedStop() }
         let wasWorking = phase == .prompting
         phase = .disconnected
         // Whatever the subagents were doing is unknown now, and no one is left to answer.

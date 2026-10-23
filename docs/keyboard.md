@@ -29,8 +29,8 @@ terminal tab instead. ⌘, brings the main window back with Settings; ⌘Q quits
 | Return | Send | The preferred follow-up behavior (Settings: Steer, the default, or Queue) | |
 | ⌘Return | Send | The other follow-up behavior | |
 | Shift-Return, Option-Return | New line | New line | |
-| Escape | Close the slash-command list if open | Stop the turn (with the slash-command list closed); again, stop waiting for the agent | |
-| ⌘. | | Stop the turn; again, stop waiting for the agent | `session.stop` |
+| Escape | Close the slash-command list if open | Stop the turn (with the slash-command list closed); again, end the cancel grace period | |
+| ⌘. | | Stop the turn; again, end the cancel grace period | `session.stop` |
 | ↑ in an empty composer | Edit the last queued message, if any; else recall the last prompt | Edit the last queued message | |
 
 **Steer** adds the message to the running turn (`_session/steering`); agents that don't support
@@ -44,9 +44,17 @@ steering. Pending questions, approvals, stopping and unavailable tasks still exp
 needed in the placeholder. Code-block and queued-message editing hints remain visible when the
 controls row has room.
 
-**Stop** asks the agent to end the turn, answers its open permission requests as rejected, and the
-transcript marks the turn Stopped. If the agent hasn't ended it after 10 seconds, or Stop is pressed
-again, Native stops waiting and says so.
+**Stop** asks the agent to end the turn and answers its open permission requests as rejected. The
+host gives the agent two seconds to cancel, then ends the processes it can attribute to that agent,
+including shell commands in separate process groups. The task stays Stopping until those known
+processes have exited. Pressing Stop again ends the grace period.
+An agent process can serve several tasks: Native waits for its other tasks to finish or be stopped
+before ending that shared process, and explains that commands may still be running meanwhile.
+ACP cancellation does not guarantee that every command has exited or that commands cannot detach
+between process snapshots. Native therefore reports an unverified Stop as a failed turn with a clear warning that
+background commands may still be running, rather than labelling it Stopped. Queued messages remain
+paused unless the user explicitly chose Send Now. In-app mode, which cannot track the host's processes,
+keeps the turn Stopping and explains its limit.
 
 ### Code
 
@@ -259,6 +267,14 @@ to the user's choice.
 | ⌃⌘A | Keep Mac awake: cycle Off → While agents work → On (View ▸ Keep Mac Awake) | View | `keepAwake.nextMode` |
 | | Show or hide the status bar along the window's bottom edge (on by default) | View | `statusBar.toggle` |
 
+## Home Next (Labs)
+
+With Next enabled in Settings > Labs, Home shows one ask at a time. The visible approval owns
+the usual permission keys: Cmd-Y allows once, Option-Cmd-Y always allows when offered, and
+Shift-Cmd-Delete rejects. Tab and Space reach Up next, Open Task, the ordering menu, and Show
+more. Cmd-Return opens the current ask's task; Shift-Cmd-Down shows the next five rows.
+Cmd-N starts a task and Cmd-O opens a folder, including before the first project exists.
+
 ## Task tools (Labs)
 
 With Task Tools enabled in Settings ▸ Labs (off by default), the Changes fact under the title
@@ -280,7 +296,7 @@ being hit by accident, since it ends work in progress.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
-| ⌃⌥⌘Q | Quit Native and stop its agents: running turns end as stopped by you, and the background host exits until Native opens again | Native | `app.quitAndStopAgents` |
+| ⌃⌥⌘Q | Quit Native and stop its agents: ends known commands, reports unverified stops, and exits the background host until Native opens again | Native | `app.quitAndStopAgents` |
 
 ## Picking tasks in the sidebar
 

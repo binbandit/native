@@ -140,7 +140,7 @@ final class SessionStore {
     func disconnect(_ agent: AgentDefinition.ID, isRestarting: Bool) -> [SessionKey] {
         var interrupted: [SessionKey] = []
         for (key, session) in sessions where key.agent == agent {
-            if session.phase == .prompting, session.origin == .user {
+            if session.phase == .prompting, session.origin == .user, !session.isStopping {
                 interrupted.append(key)
             }
             session.markDisconnected(isRestarting: isRestarting)

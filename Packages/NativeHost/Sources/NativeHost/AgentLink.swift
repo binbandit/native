@@ -60,6 +60,9 @@ final class AgentLink {
 
     private var process: Process?
     private var processGroups = AgentProcessGroups()
+    private var commandProcesses: AgentStopProcesses?
+    /// A Stop retains this generation's tree even if the adapter exits during cancel.
+    var commandStopOwnsTree = false
     private var stderr = StderrTail()
     private var starting: Task<Void, any Error>?
 
@@ -105,6 +108,7 @@ final class AgentLink {
         clientInfo: Implementation,
         onEvent: @escaping @Sendable (Int, JSONRPCPeer.Event) async -> Void
     ) async throws {
+        try await waitForCommandStop()
         if status == .ready { return }
         if let starting {
             return try await starting.value
@@ -125,6 +129,8 @@ final class AgentLink {
             }
             let (process, channel, stderr) = try AgentLaunch.spawn(command, onExit: onExit)
             self.process = process
+            commandProcesses = AgentStopProcesses(root: process.processIdentifier)
+            commandStopOwnsTree = false
             self.stderr = stderr
             processGroups = AgentProcessGroups()
             processGroups.note(treeOf: process.processIdentifier)
@@ -144,6 +150,7 @@ final class AgentLink {
             launchedSpec = spec
             // By now a launcher has started the agent proper, in whatever group it chose.
             processGroups.note(treeOf: process.processIdentifier)
+            commandProcesses?.refresh()
         }
         starting = task
         defer { starting = nil }
@@ -210,9 +217,37 @@ final class AgentLink {
     /// For a host about to exit: ends every process the agent started before returning.
     func endNow() {
         isStopping = true
+        if let process, process.isRunning { processGroups.note(treeOf: process.processIdentifier) }
         peer?.close()
         processGroups.endNow()
         process = nil
+    }
+
+    /// The stop cleanup owns this tree from here. Exit callbacks must not schedule additional
+    /// group signals, which could arrive after cleanup and reach a reused group id.
+    func beginCommandStop() {
+        isStopping = true
+        process = nil
+        processGroups = AgentProcessGroups()
+    }
+
+    /// Keep the launch identity: a pid read for the first time at Stop might already be reused.
+    func processesForStop() -> AgentStopProcesses? {
+        commandProcesses?.refresh()
+        return commandProcesses
+    }
+
+    /// New work waits for the frozen generation to exit, then loads on its replacement.
+    func waitForCommandStop() async throws {
+        while isStopping && commandStopOwnsTree {
+            try await Task.sleep(for: .milliseconds(25))
+        }
+    }
+
+    func commandsDidStop() {
+        beginCommandStop()
+        commandProcesses = nil
+        peer?.close()
     }
 
     func buffer(_ update: AgentUpdate, for session: SessionID) {
@@ -223,11 +258,16 @@ final class AgentLink {
     /// The launched process exited. If it was a launcher whose agent lives on holding the pipes,
     /// the agent is ended too, so the session recovers instead of talking to an orphan.
     private func launcherExited(generation: Int) {
-        guard generation == self.generation, !isStopping else { return }
+        guard generation == self.generation, !isStopping, !commandStopOwnsTree else { return }
         processGroups.end()
     }
 
     private func terminateProcess() {
+        if commandStopOwnsTree {
+            processGroups = AgentProcessGroups()
+            process = nil
+            return
+        }
         if let pid = process?.processIdentifier, process?.isRunning == true {
             processGroups.note(treeOf: pid)
         }

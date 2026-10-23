@@ -132,7 +132,7 @@ extension SessionModel {
         case .idle where !isRunningHiddenCommand && turnHold == nil:
             startTurn(text, attachments: attachments, echo: echo)
             return .prompted
-        case .prompting where behavior == .steer && supportsSteering:
+        case .prompting where behavior == .steer && supportsSteering && !isStopping:
             return await steer(text, attachments: attachments, echo: echo)
         case .idle, .prompting:
             queue.append(text, attachments: attachments, isEchoed: echo)
@@ -298,7 +298,7 @@ extension SessionModel {
     }
 
     /// Waits for the turn's answer and records how it ended. `generation` is the turn's
-    /// `turnGeneration`: if Native stopped waiting for it (`abandonTurn`), the answer changes nothing.
+    /// `turnGeneration`: an answer for an older turn changes nothing.
     private func finishTurn(
         _ text: String, attachments: [PromptAttachment], preamble: PromptPreamble?, itemsStart start: Int,
         generation: Int
@@ -308,11 +308,13 @@ extension SessionModel {
             guard let connection else { throw SendError.disconnected }
             let response = try await connection.send(PromptRequest(sessionId: id, prompt: prompt))
             guard generation == turnGeneration else { return }
+            guard !isStopping else { return }
             state.endTurn(response.stopReason)
             lastStopReason = response.stopReason
             services.post(.turnEnded(context, response.stopReason))
         } catch {
             guard generation == turnGeneration else { return }
+            guard !isStopping else { return }
             let items = Array(state.items[min(start, state.items.count)...])
             let madeProgress = items.contains { item in
                 switch item {

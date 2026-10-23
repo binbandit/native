@@ -67,7 +67,7 @@ struct HostTurnEndingTests {
         await recorder.stop()
     }
 
-    @Test("What a stubborn agent sends after Native stopped waiting is a turn of its own")
+    @Test("A stubborn agent cannot send more output after Native ends its known processes")
     func lateOutputAfterStop() async throws {
         let harness = try HostHarness()
         let (recorder, session) = try await started(harness)
@@ -77,12 +77,13 @@ struct HostTurnEndingTests {
         try await recorder.wait("the stop to show") { await $0.summaries[session]?.isStopping == true }
         try await Task.sleep(for: .milliseconds(1_100))
         try await recorder.client.cancel(session)
-        try await recorder.wait("the turn to end") { await $0.turnsEnded(session) == ["cancelled"] }
-        try await recorder.wait("more ticks") { await $0.mirror(session).state.turns.count == 2 }
+        try await recorder.wait("the turn to end") { await $0.turnsEnded(session) == ["error"] }
+        let stoppedText = await recorder.agentText(session)
+        try await Task.sleep(for: .seconds(3))
 
         let mirror = await recorder.mirror(session)
-        #expect(mirror.state.turns.map(\.isLateOutput) == [false, true])
-        #expect(notices(mirror).last?.text == "The agent kept going after the stop.")
+        #expect(mirror.state.turns.map(\.isLateOutput) == [false])
+        #expect(await recorder.agentText(session) == stoppedText)
         await recorder.stop()
     }
 }
