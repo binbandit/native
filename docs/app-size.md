@@ -16,7 +16,7 @@ noticed while there's still room to choose what to cut; lower them as the cuts i
 | Download, update archive | 47 MB | 42.7 MB |
 | Download, disk image | 48 MB | about 43.3 MB |
 | Installed app | 118 MB | 107.5 MB |
-| App binary (`Contents/MacOS/Native`) | 59 MB | 53.2 MB |
+| App binary (`Contents/MacOS/Native`) | 59.5 MB | 53.2 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
 `scripts/release/size-check.sh` holds the same numbers and fails when anything is over. It also
@@ -51,6 +51,13 @@ feature measurements used separate branches; their combined code now exceeds the
 binary allowance. Creation hooks, captured terminal logs and their retry controls add no assets
 or dependencies. The binary budget is now 59 MB for this measured integration, with a small
 margin. The download, installed, disk-image and script-runtime budgets stay unchanged.
+
+The task well integrated with current main at `a050243f` measures 59.026 MB for both Release
+and Nightly binaries, about 0.026 MB above that allowance. The default-off toolbar, tool list
+and child-question handoff compile alongside the existing task screen, with no added assets
+or dependencies; their fixtures remain Debug-only. The binary budget is now 59.5 MB for this
+integration. Nightly downloads at 46.3 MB and installs at 115.8 MB, within the unchanged limits.
+Remeasure when the well replaces the legacy task presentation.
 
 ## Measuring
 
