@@ -13,7 +13,7 @@ struct ArtifactViewer: View {
                     LoadingStateView("Opening artifact…")
                 } else if let error = model.error {
                     EmptyStateView("Couldn't preview this artifact", systemImage: "doc", message: error) {
-                        Button("Try Again", action: model.retry)
+                        if model.canRetry { Button("Try Again", action: model.retry) }
                     }
                 } else if let image = model.image {
                     ArtifactImageCanvas(image: image, model: model)

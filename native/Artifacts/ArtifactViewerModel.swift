@@ -37,6 +37,7 @@ final class ArtifactViewerModel {
     }
 
     var isPresented: Bool { artifact != nil }
+    var canRetry: Bool { artifact?.data == nil && artifact?.url?.isFileURL == true }
     var contentType: UTType {
         if let data, let source = CGImageSourceCreateWithData(data as CFData, nil),
             let identifier = CGImageSourceGetType(source) as String?

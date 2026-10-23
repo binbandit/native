@@ -58,12 +58,14 @@ private struct ArtifactViewerRegression {
         }
         await loaded(model)
         expect(model.error != nil && model.isPresented, "Unreadable file leaves a closable error")
+        expect(model.canRetry, "A file read can be retried after its file or host recovers")
         model.close()
         model.open(
             TranscriptArtifact(name: "bad.png", data: Data([1, 2, 3]), mimeType: "image/png"), localFiles: false
         ) { _ in Data() }
         await loaded(model)
         expect(model.error != nil && model.data != nil, "Corrupt image offers recovery while retaining export bytes")
+        expect(!model.canRetry, "Fixed embedded bytes do not offer an ineffective retry")
         model.close()
 
         model.open(TranscriptArtifact(name: "slow.txt", url: original), localFiles: false) { _ in
