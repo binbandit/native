@@ -288,7 +288,7 @@ being hit by accident, since it ends work in progress.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
-| ⌃⌥⌘Q | Quit Native and stop its agents: running turns end as stopped by you, and the background host exits until Native opens again | Native | `app.quitAndStopAgents` |
+| ⌃⌥⌘Q | Quit Native and stop its agents: ends known commands, reports unverified stops, and exits the background host until Native opens again | Native | `app.quitAndStopAgents` |
 
 ## Picking tasks in the sidebar
 
