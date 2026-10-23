@@ -44,6 +44,7 @@ private struct TaskPeekHost: ViewModifier {
                                 }
                             )
                             .frame(width: min(DS.Peek.width, geometry.size.width - DS.Peek.windowInset * 2))
+                            .id(request.id)
                             .environment(model)
                             .presentationBackground(Color.dsOverlay)
                             .presentationCompactAdaptation(.popover)

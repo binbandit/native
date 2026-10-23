@@ -8,6 +8,7 @@ struct TaskPeekView: View {
     var maxBodyHeight = DS.Peek.maxBodyHeight
     @Environment(AppModel.self) private var model
     var openTask: ((SessionKey) -> Void)?
+    @FocusState private var isFocused: Bool
 
     private var session: SessionModel? { request.ask?.session ?? model.session(request.task) }
     private var ask: TaskPeekAsk? {
@@ -28,6 +29,13 @@ struct TaskPeekView: View {
         .background(.dsOverlay)
         .environment(\.permissionShortcutsEnabled, false)
         .accessibilityIdentifier("task-peek")
+        .focusable()
+        .focused($isFocused)
+        .focusEffectDisabled()
+        .onAppear {
+            if case .question = ask?.content { return }
+            isFocused = true
+        }
         .onKeyPress(.escape) {
             model.closeTaskPeek()
             return .handled
