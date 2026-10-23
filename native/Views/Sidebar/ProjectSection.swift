@@ -103,6 +103,7 @@ struct ProjectSection<TaskAccessory: View>: View {
         .accessibilityLabel(project.name)
         .accessibilityActions {
             Button("New Task") { Task { await model.newSession(in: project.id) } }
+            Button("Refresh") { Task { await model.refreshProject(project.id) } }
             Button("Move Up") { model.move(.project(project.id), .up) }
             Button("Move Down") { model.move(.project(project.id), .down) }
             Button("Archive") { model.archiveProject(project.id, undoManager: undoManager) }
@@ -142,13 +143,16 @@ struct ProjectSection<TaskAccessory: View>: View {
         let activity = isExpanded.wrappedValue ? ProjectActivity() : activity(starting: starting)
         if isQuiet {
             SidebarNextProjectGroup(
-                name: project.name, isExpanded: isExpanded, taskCount: sessions.count, activity: activity,
+                name: project.name, isExpanded: isExpanded, taskCount: sessions.count,
+                isRefreshing: model.refreshingProjects.contains(project.id), activity: activity,
                 note: hasNoMatches ? "No matching tasks" : nil, onNewTask: onNewTask,
                 menu: { projectMenu }, content: content)
         } else {
             ProjectGroup(
                 name: project.name, icon: iconStore.icon(for: project), isExpanded: isExpanded,
-                taskCount: sessions.count, activity: activity, note: hasNoMatches ? "No matching tasks" : nil,
+                taskCount: sessions.count, activity: activity,
+                isRefreshing: model.refreshingProjects.contains(project.id),
+                note: hasNoMatches ? "No matching tasks" : nil,
                 onNewTask: onNewTask, menu: { projectMenu }, content: content)
         }
     }
@@ -290,7 +294,7 @@ extension ProjectProblem {
     fileprivate var leavesListUnknown: Bool {
         switch work {
         case .folder, .listing: true
-        case .agentCopyDeletion, .workspaceDeletion, .workspaceArchive, .workspaceRestore: false
+        case .refresh, .agentCopyDeletion, .workspaceDeletion, .workspaceArchive, .workspaceRestore: false
         }
     }
 }

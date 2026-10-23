@@ -219,6 +219,17 @@ rest; filters and bulk selection expose their full scope. `TaskListFold` in `Pac
 chooses the resting tasks without depending on the UI. Enable it before an isolated launch with
 `defaults write dev.binbandit.native.dev.<name> experiment.NativeSidebarNext -bool YES`.
 
+The sidebar's filter and sort controls also offer "Show agent icons", on by default. This only
+hides agent artwork; working, attention and unread indicators stay visible. Archived tasks appear
+under their project names in project order in both sidebar presentations.
+
+A project's Refresh action (its menu, File menu and command palette) re-reads all of its task
+checkouts, including pinned and filtered-out tasks, once per checkout. Pull-request lookups bypass
+the normal cache and wait for fresh results. Removed archived worktrees stay put away. A neutral
+loader marks the project while work runs; failures retain the last known state and offer Retry
+with recovery guidance. Remote git runs on the task's host; unavailable remote pull-request reads
+are reported rather than running against a local folder with the same path.
+
 ### Quiet composer
 
 `NativeComposerNext` is an off-by-default Labs gate at the composer's resting controls. Enable it

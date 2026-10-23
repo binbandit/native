@@ -5,6 +5,7 @@ import SwiftUI
 /// empty title goes back to the automatic one.
 struct SessionTitleField: View {
     @Environment(AppModel.self) private var model
+    @AppStorage("sidebar.showAgentIcons") private var showAgentIcons = true
     @Environment(\.sidebarQuietProjects) private var isQuiet
     @Environment(\.undoManager) private var undoManager
     let summary: SessionSummary
@@ -16,14 +17,11 @@ struct SessionTitleField: View {
     var body: some View {
         // Mirrors `TaskRow`'s layout so the title doesn't jump when editing starts.
         HStack(alignment: .top, spacing: DS.Space.sm) {
-            if !isQuiet {
-                AgentIcon(agent: summary.agent)
-                    .foregroundStyle(.dsTextTertiary)
-                    .padding(.top, DS.Space.xxs)
-            }
             Group {
-                if isQuiet, status == .idle || status == .done || status == .cancelled {
-                    Color.clear.frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
+                if status == .idle || status == .done || status == .cancelled {
+                    AgentIcon(agent: summary.agent)
+                        .opacity(!isQuiet && showAgentIcons ? 1 : 0)
+                        .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
                 } else {
                     StatusIndicator(status: status)
                 }

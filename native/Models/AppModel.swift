@@ -69,6 +69,9 @@ final class AppModel {
     var actionFailure: ActionFailure?
     /// Background work that failed for a project, shown with the project until it's fixed.
     let problems = ProjectProblems()
+    /// Refreshed through the app's Git/GitHub wiring, so views never run repository work.
+    @ObservationIgnored var refreshProjectState: (@MainActor (Project, [SessionSummary]) async -> [String])?
+    var refreshingProjects: Set<Project.ID> = []
     /// Listed tasks that couldn't be opened before they had a model, shown in their place (a load
     /// that fails later says so in the task's transcript).
     var openFailures: [SessionKey: SessionOpenFailure] = [:]

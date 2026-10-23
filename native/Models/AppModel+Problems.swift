@@ -19,6 +19,9 @@ extension AppModel {
         }
         do {
             switch problem.work {
+            case .refresh:
+                await refreshProject(project.id)
+                return
             case .folder:
                 // Looking again, then listing what's there; both report how they went.
                 checkFolder(of: project)

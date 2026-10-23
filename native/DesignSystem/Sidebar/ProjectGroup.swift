@@ -7,6 +7,7 @@ public struct ProjectGroup<MenuContent: View, Content: View>: View {
     let icon: ProjectIcon
     @Binding var isExpanded: Bool
     let taskCount: Int?
+    let isRefreshing: Bool
     let activity: ProjectActivity
     let note: String?
     let onNewTask: (() -> Void)?
@@ -19,6 +20,7 @@ public struct ProjectGroup<MenuContent: View, Content: View>: View {
         isExpanded: Binding<Bool>,
         taskCount: Int? = nil,
         activity: ProjectActivity = ProjectActivity(),
+        isRefreshing: Bool = false,
         note: String? = nil,
         onNewTask: (() -> Void)? = nil,
         @ViewBuilder menu: () -> MenuContent,
@@ -29,6 +31,7 @@ public struct ProjectGroup<MenuContent: View, Content: View>: View {
         self._isExpanded = isExpanded
         self.taskCount = taskCount
         self.activity = activity
+        self.isRefreshing = isRefreshing
         self.note = note
         self.onNewTask = onNewTask
         self.menu = menu()
@@ -43,6 +46,7 @@ public struct ProjectGroup<MenuContent: View, Content: View>: View {
                 isExpanded: isExpanded,
                 taskCount: taskCount,
                 activity: activity,
+                isRefreshing: isRefreshing,
                 note: note,
                 onToggle: { withAnimation(.dsDisclosure) { isExpanded.toggle() } },
                 onNewTask: onNewTask

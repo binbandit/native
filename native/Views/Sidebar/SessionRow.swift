@@ -12,6 +12,7 @@ struct SessionRow<Accessory: View>: View {
     @Environment(\.undoManager) private var undoManager
     @Environment(\.sidebarSelection) private var picking
     @Environment(\.sidebarTaskInsights) private var insights
+    @AppStorage("sidebar.showAgentIcons") private var showAgentIcons = true
     @Environment(\.sidebarQuietProjects) private var isQuiet
     let summary: SessionSummary
     /// Grouped under a project header, or flush in the Pinned section.
@@ -75,7 +76,7 @@ struct SessionRow<Accessory: View>: View {
                 badge: badge,
                 indent: isQuiet ? .flat : indent,
                 style: isQuiet ? .quiet : .standard,
-                leading: AgentIcon(agent: summary.agent),
+                leading: AgentIcon(agent: summary.agent).opacity(showAgentIcons ? 1 : 0),
                 accessory: accessory,
                 action: select,
                 onArchive: archiveAction
@@ -276,6 +277,21 @@ struct SessionContextUsage: View {
                 SessionRow(summary: summary, canMoveUp: true, canMoveDown: true, accessory: EmptyView()) {}
             }
         }
+        .frame(width: DS.Size.sidebarWidth - DS.Space.lg)
+    }
+    .sidebarPreviewEnvironment(app)
+}
+#Preview("Task rows - Agent icons hidden") {
+    let app = AppModel.preview()
+    let defaults = PreviewUserDefaults()
+    defaults.set(false, forKey: "sidebar.showAgentIcons")
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xxs) {
+            ForEach(SidebarPreviewFixtures.sessions(in: app)) { summary in
+                SessionRow(summary: summary, canMoveUp: true, canMoveDown: true, accessory: EmptyView()) {}
+            }
+        }
+        .defaultAppStorage(defaults)
         .frame(width: DS.Size.sidebarWidth - DS.Space.lg)
     }
     .sidebarPreviewEnvironment(app)
