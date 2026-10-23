@@ -30,6 +30,7 @@ struct QuickEntryPanel: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Quick Entry")
         .onAppear { isFocused = true }
+        .onDisappear(perform: model.restoreQuickEntryFocus)
         .onChange(of: entry.picker) { _, picker in
             if picker == nil { isFocused = true }
         }

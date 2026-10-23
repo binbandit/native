@@ -116,4 +116,13 @@ extension AppModel {
         guard startingTask(destination) != nil || catalog.contains(destination) else { return }
         selection = destination
     }
+
+    func restoreQuickEntryFocus() {
+        guard let selection else { return }
+        if let task = startingTask(selection) {
+            task.wantsComposerFocus = true
+        } else {
+            session(selection)?.wantsComposerFocus = true
+        }
+    }
 }

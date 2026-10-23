@@ -28,7 +28,7 @@ struct QuickEntryPresentation: ViewModifier {
                                 }
                         }
                         .scrollBounceBehavior(.basedOnSize)
-                        .frame(height: min(panelHeight, geometry.size.height))
+                        .frame(width: geometry.size.width, height: min(panelHeight, geometry.size.height))
                     }
                     .onChange(of: model.projects.all.map(\.id)) {
                         if model.quickEntry.project == nil, let project = model.currentProject {
