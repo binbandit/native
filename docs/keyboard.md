@@ -277,12 +277,26 @@ Cmd-N starts a task and Cmd-O opens a folder, including before the first project
 
 ## Task tools (Labs)
 
+With The well enabled (`NativeTaskWell`, off by default), Cmd-I opens the centered task well.
+Its tools appear in this fixed key order. Missing tools leave no row; their keys stay reserved.
+Clicking a waiting well focuses the composer, where the full request can be answered.
+
+| Keys | Action | Menu | Command |
+| --- | --- | --- | --- |
+| ⌘I | Open or close the task well | View | `taskWell.toggle` |
+| ⌥⌘1 | Changes | View ▸ Tools | `sessionTools.changes` |
+| ⌥⌘2 | Terminal | View ▸ Tools | `taskWell.terminal` |
+| ⌥⌘3 | Dev (project actions) | View ▸ Tools | `taskWell.dev` |
+| ⌥⌘4 | Subagents | View ▸ Tools | `taskWell.subagents` |
+| ⌥⌘5 | Pull request | View ▸ Tools | `taskWell.pullRequest` |
+| Escape | Close the well and return focus to the task | | |
+
 With Task Tools enabled in Settings ▸ Labs (off by default), the Changes fact under the title
 opens the changes panel. It docks beside a wide conversation and overlays a narrow one.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
-| ⌥⌘1 | Show or hide Changes | View ▸ Tools | `sessionTools.changes` |
+| ⌥⌘1 | Show or hide Changes (same command as above) | View ▸ Tools | |
 | ⇧⌘D | Show or hide Changes, as on the standard task screen | View | |
 | Escape | Close the Changes overlay before composer Stop, suggestions or attachment actions; while focus is in the docked panel, close that panel | | |
 

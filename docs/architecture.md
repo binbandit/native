@@ -262,6 +262,15 @@ opens New Task With, since an existing conversation belongs to its original agen
 agent settings, attachments, goals and context remain reachable. Running turns and approval
 requests keep today's composer until their own slices land.
 
+### Task well
+
+`NativeTaskWell` is an off-by-default Labs gate selecting the task-tools screen with a centered
+activity capsule instead of the facts header and tool buttons. `TaskActivity` in ACP projects
+reported tool activity and counted plan steps; `TaskWellWiring` connects the existing tool models.
+Requests only lead to the composer, and turn outcomes reuse detected Changes. The existing
+`StatusIndicator` remains the shared status vocabulary until the sidebar signal replacement lands.
+The behavior, tool order and remaining slices are described in `docs/session-tools.md`.
+
 ### Transcript styles
 
 `TranscriptView` keeps scrolling and the loading and empty states; the rows come from the

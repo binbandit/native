@@ -11,6 +11,7 @@ extension ExperimentCatalog {
         Parameter<TranscriptWidth>.transcriptWidth,
         Gate.unfoldExploration,
         Gate.sessionTools,
+        Gate.taskWell,
         Gate.sidebarNext,
         Gate.composerNext,
         Gate.homeNext,
@@ -65,6 +66,17 @@ extension Gate {
         site: "Home > Next",
         stage: .labs,
         owner: "home",
+        reviewBy: ReviewDate(year: 2026, month: 12, day: 15),
+        default: false
+    )
+
+    static let taskWell = Gate(
+        id: "NativeTaskWell",
+        title: "The well",
+        summary: "One quiet place for task activity, requests, outcomes and tools in the toolbar.",
+        site: "Task ▸ toolbar and tools",
+        stage: .labs,
+        owner: "tasks",
         reviewBy: ReviewDate(year: 2026, month: 12, day: 15),
         default: false
     )

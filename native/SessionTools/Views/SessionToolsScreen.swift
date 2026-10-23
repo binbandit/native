@@ -9,12 +9,14 @@ import SwiftUI
 /// until it replaces `SessionView`'s own screen.
 struct SessionToolsScreen: View {
     let session: SessionModel
+    var usesTaskWell = false
     @State private var tools = SessionToolsScreenModel()
     @State private var openSubagent: SessionID?
     /// Files dropped on the transcript, for the composer to attach.
     @State private var drops = ComposerDropInbox()
     /// The room the conversation and the side panel share.
     @State private var width: CGFloat = 0
+    @State private var wellLightTrigger = 0
     @Environment(GitStore.self) private var git
     @Environment(\.inspectorRoom) private var inspectorRoom
     @Experiment(.transcriptWidth) private var columnWidth: TranscriptWidth
@@ -38,7 +40,7 @@ struct SessionToolsScreen: View {
                 inspectorRoom.open(DS.SessionTools.sidePanelIdealWidth, show)
             }
         }
-        .environment(\.turnChangesActions, turnChanges)
+        .environment(\.turnChangesActions, recordActions(turnChanges))
         .environment(\.isPrimaryTranscript, true)
         .dsToolbarBand()
         .safeAreaBar(edge: .bottom, spacing: 0) { composer }
@@ -46,7 +48,11 @@ struct SessionToolsScreen: View {
             TaskScriptBanner(folder: session.cwd)
         }
         .composerDropTarget(drops, isEnabled: !session.isEarlierConversation)
+        .terminalPanel(for: session, showsToolbarButton: false, isEnabled: usesTaskWell)
         .overlay(alignment: .top) { shade }
+        .overlay(alignment: .top) {
+            if usesTaskWell { TaskWellLight(trigger: wellLightTrigger) }
+        }
         .focusedSceneValue(\.activeSession, session)
         .focusedSceneValue(\.sessionTools, tools)
         .focusedSceneValue(\.gitChangesInspector, toggling(.changes))
@@ -56,15 +62,27 @@ struct SessionToolsScreen: View {
             ToolbarItem(placement: .navigation) {
                 SessionToolsTitle(
                     title: session.displayTitle, location: location,
-                    facts: layout.facts.compactMap { id in
-                        registry.tool(id).flatMap { tool in tool.fact(context(tool)).map { (tool, $0) } }
-                    },
+                    facts: usesTaskWell
+                        ? []
+                        : layout.facts.compactMap { id in
+                            registry.tool(id).flatMap { tool in tool.fact(context(tool)).map { (tool, $0) } }
+                        },
                     isOpen: { tools.isOpen($0.id) },
                     action: { tool in
                         if tool.pane == nil { tool.perform(context(tool)) } else { tools.toggle(tool.id) }
-                    })
+                    }
+                )
+                .frame(maxWidth: usesTaskWell ? wellTitleWidth : nil, alignment: .leading)
             }
             .sharedBackgroundVisibility(.hidden)
+            if usesTaskWell {
+                ToolbarItem(placement: .principal) {
+                    TaskWellWiring(
+                        session: session, tools: tools, location: location, turnChanges: turnChanges,
+                        openSubagents: toggleWellSubagents)
+                }
+                .sharedBackgroundVisibility(.hidden)
+            }
             ToolbarItem {
                 EarlierConversationButton(session: session)
             }
@@ -91,6 +109,11 @@ struct SessionToolsScreen: View {
         }
         .onChange(of: tools.openByPlace[.side]) { _, id in
             if id != nil { openSubagent = nil }
+        }
+        .onChange(of: session.phase) { previous, current in
+            if current == .prompting || (previous == .prompting && current == .idle) {
+                wellLightTrigger += 1
+            }
         }
         .onChange(of: tools.openTools) { previous, current in
             for id in previous.subtracting(current) {
@@ -137,6 +160,26 @@ struct SessionToolsScreen: View {
                 ComposerView(session: session)
                     .environment(\.composerOverlayDismissal, overlayDismissal)
             }
+        }
+    }
+
+    private var wellTitleWidth: CGFloat {
+        min(DS.TaskWell.titleMaxWidth, max(DS.TaskWell.titleMinWidth, (width - DS.TaskWell.width) / 2 - DS.Space.xl))
+    }
+
+    private func recordActions(_ actions: TurnChangesActions?) -> TurnChangesActions? {
+        guard usesTaskWell, var actions else { return actions }
+        actions.isRecordOnly = true
+        actions.commitForm = nil
+        return actions
+    }
+
+    private func toggleWellSubagents() {
+        if openSubagent != nil {
+            openSubagent = nil
+        } else if let first = session.state.subagents.first {
+            tools.close(.side)
+            inspectorRoom.open(DS.SessionTools.sidePanelIdealWidth) { openSubagent = first.id }
         }
     }
 
