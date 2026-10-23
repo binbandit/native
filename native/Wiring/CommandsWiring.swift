@@ -48,6 +48,7 @@ enum CommandsWiring {
             }
         ])
         registry.register(NativeCommand.sidebarSelection(model: model))
+        registry.register(NativeCommand.taskPeek(model: model))
         registry.register(NativeCommand.navigation(model: model, settings: settings))
         registry.register([.searchShow])
         #if os(macOS)

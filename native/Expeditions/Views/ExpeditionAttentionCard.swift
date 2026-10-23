@@ -13,6 +13,7 @@ struct ExpeditionAttentionCard: View {
     let onOpen: (CrewSlot) -> Void
 
     @Environment(ExpeditionCenter.self) private var center
+    @Environment(\.legacyAskShortcutEnabled) private var legacyShortcut
     @State private var reply = ""
 
     var body: some View {
@@ -96,7 +97,7 @@ struct ExpeditionAttentionCard: View {
         case .routeChange:
             Button("Accept Changes") { send(.approveRouteChange) }
                 .buttonStyle(.ds(.primary))
-                .help("Apply the lead's revision (⌘Y)")
+                .help(legacyShortcut ? "Apply the lead's revision (⌘Y)" : "Apply the lead's revision")
             Button("Keep the Route") { send(.keepRoute) }
                 .buttonStyle(.ds(.secondary))
         case .baseFailed:
