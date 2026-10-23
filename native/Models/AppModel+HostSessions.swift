@@ -62,6 +62,7 @@ extension AppModel {
         if selection == old.key {
             selection = session.key
         }
+        followAgentChangeReplacement(old, with: session)
     }
 
     /// One of the host's events, in the order the host sent them. Nothing here may wait on the host

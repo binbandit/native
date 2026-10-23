@@ -1,6 +1,8 @@
 import ACP
 import Experiments
 import Foundation
+import NativeHostClient
+import NativeHostProtocol
 
 extension AppModel {
     /// The experiment is resolved here so menus and model actions use the same gate.
@@ -52,8 +54,13 @@ extension AppModel {
             let runtime = await ensureRunning(agent)
         else { throw AgentChangeFailure(startFailure(of: agent)) }
         if let reason = changeAgentBlock(for: source) { throw AgentChangeFailure(reason) }
-        let candidate = try await launcher.start(
+        let started = try await launcher.start(
             on: runtime, cwd: source.cwd, project: catalog.lookup(source.key)?.project)
+        let candidate = try currentAgentChangeTarget(started)
+        if candidate !== started {
+            deletedSessions.insert(started.key)
+            unsentSessions.forget(started.key)
+        }
         // Some agents list even empty conversations. Keep the unsent candidate out of the sidebar,
         // including after quitting during review; an accepted handoff removes this tombstone.
         deletedSessions.insert(candidate.key)
@@ -65,9 +72,10 @@ extension AppModel {
     /// No worktree is created: the replacement runs at the exact folder the task already owns.
     /// The earlier conversation remains openable through Native's existing conversation chain.
     func finishAgentChange(
-        _ source: SessionModel, to target: SessionModel, handoff: String, modelValue: String
+        _ source: SessionModel, to prepared: SessionModel, handoff: String, modelValue: String
     ) async throws {
         if let reason = changeAgentBlock(for: source) { throw AgentChangeFailure(reason) }
+        var target = try currentAgentChangeTarget(prepared)
         guard !source.isChangingAgent, target.agent.id != source.agent.id, target.cwd == source.cwd,
             let project = catalog.lookup(source.key)?.project,
             !handoff.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -81,14 +89,13 @@ extension AppModel {
                 throw AgentChangeFailure("That model is no longer offered. Choose another model.")
             }
             await target.setConfigOption(option, to: modelValue)
+            target = try currentAgentChangeTarget(target)
             guard case .select(let current, _) = target.configOptions.first(where: { $0.id == option.id })?.kind,
                 current == modelValue
             else { throw AgentChangeFailure("Couldn't select that model. Choose another model or try again.") }
         }
         if let reason = changeAgentBlock(for: source) { throw AgentChangeFailure(reason) }
-        guard sessions.session(target.key) === target else {
-            throw AgentChangeFailure("The new agent restarted while the handoff was open. Cancel and try again.")
-        }
+        target = try currentAgentChangeTarget(target)
         if let reason = target.sendBlockedReason { throw AgentChangeFailure(reason) }
         if !target.hasStarted {
             guard target.phase == .idle, !target.isRestoringHistory, !target.isRunningHiddenCommand,
@@ -116,8 +123,10 @@ extension AppModel {
             do {
                 _ = try await target.submit(handoff, .queue)
             } catch {
+                target = try currentAgentChangeTarget(target)
                 guard target.hasStarted else { throw AgentChangeFailure.unconfirmedHandoff }
             }
+            target = try currentAgentChangeTarget(target)
         }
         earlierConversations.record(target.key, after: source.key)
         earlierConversations.keep(target.key)
@@ -129,6 +138,40 @@ extension AppModel {
         history.replace(source.key, with: target.key)
         selection = target.key
         target.wantsComposerFocus = true
+    }
+
+    /// An unsaved ACP conversation may get a new key when the host reloads it after idle unloading.
+    /// Its stable host task owns the review; only that exact host, agent and folder may replace it.
+    func followAgentChangeReplacement(_ old: SessionModel, with replacement: SessionModel) {
+        guard sameAgentChangeHostTask(old, replacement),
+            changingAgent?.replaceCandidate(old, with: replacement) == true
+        else { return }
+        let wasHidden = deletedSessions.contains(old.key)
+        deletedSessions.insert(old.key)
+        if wasHidden {
+            deletedSessions.insert(replacement.key)
+            catalog.remove(replacement.key)
+        }
+        if unsentSessions.contains(old.key) {
+            unsentSessions.forget(old.key)
+            unsentSessions.started(replacement.key)
+        }
+    }
+
+    private func currentAgentChangeTarget(_ target: SessionModel) throws -> SessionModel {
+        if sessions.session(target.key) === target { return target }
+        if let host = target.host, let replacement = sessions.session(host: host.id),
+            sameAgentChangeHostTask(target, replacement)
+        {
+            return replacement
+        }
+        throw AgentChangeFailure("The new agent is no longer available for this handoff. Cancel and try again.")
+    }
+
+    private func sameAgentChangeHostTask(_ old: SessionModel, _ replacement: SessionModel) -> Bool {
+        guard let oldHost = old.host, let newHost = replacement.host else { return false }
+        return oldHost.id == newHost.id && oldHost.client === newHost.client
+            && old.agent.id == replacement.agent.id && old.cwd == replacement.cwd
     }
 
     func discardAgentChange(_ candidate: SessionModel) {

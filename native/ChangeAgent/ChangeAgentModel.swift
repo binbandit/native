@@ -34,6 +34,13 @@ final class ChangeAgentModel {
 
     var blockedReason: String? { app?.changeAgentBlock(for: source) }
 
+    /// The draft and model selection belong to the review, independent of the agent's transient id.
+    func replaceCandidate(_ old: SessionModel, with replacement: SessionModel) -> Bool {
+        guard candidate === old else { return false }
+        candidate = replacement
+        return true
+    }
+
     func loadContext() async {
         guard isLoadingContext, let app else { return }
         reviewedItems = source.state.items
