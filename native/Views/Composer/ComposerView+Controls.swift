@@ -27,34 +27,5 @@ extension ComposerView {
         .disabled(!canEdit)
     }
 
-    func nextControls(_ settings: ComposerSettings) -> some View {
-        ComposerNextControlsRow(
-            settings: settings,
-            agentName: session.agentName,
-            changesAgent: app.offersAgentChange,
-            resumedAutonomy: autonomyBeforePlan,
-            followUpHint: followUpHint,
-            isModelPickerOpen: $isModelPickerOpen,
-            isPickingFiles: $isPickingFiles,
-            onAttach: attach,
-            onSet: set,
-            onChooseAgent: {
-                if app.offersAgentChange {
-                    app.requestAgentChange(session)
-                } else {
-                    CommandRegistry.shared.perform(.sessionNewWithAgent, in: CommandContext(session: session))
-                }
-            },
-            mode: TaskModeControl(session: session, modes: taskModes),
-            extras: { SessionGoalControl(session: session, isQuiet: true) },
-            context: {
-                HStack(spacing: DS.Space.xxs) {
-                    MCPComposerChip(session: session, showsCount: true)
-                    ContextIndicator(session: session, style: .ring)
-                }
-            }
-        )
-        .fileDialogDefaultDirectory(session.cwd)
-        .disabled(!canEdit)
-    }
+
 }

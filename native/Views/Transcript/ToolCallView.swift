@@ -13,6 +13,8 @@ struct ToolCallView: View, Equatable {
     @Environment(TranscriptDisclosures.self) private var disclosures: TranscriptDisclosures?
     /// For rows shown outside a transcript, which has no `TranscriptDisclosures`.
     @State private var isOpenHere = false
+    @Experiment(.composerNext) private var finePrint
+    @Environment(\.isPrimaryTranscript) private var isPrimaryTranscript
 
     /// Rows only change with their call; `onChoose` always answers the same session.
     static func == (lhs: Self, rhs: Self) -> Bool {
@@ -47,7 +49,8 @@ struct ToolCallView: View, Equatable {
         let presentation = ToolPresentation(call)
         let phase = ToolPhase(call)
         let hasDetails = detailsAvailable(for: presentation)
-        let showsDetails = hasDetails && (isOpen || phase == .awaitingApproval)
+        let inComposer = finePrint && isPrimaryTranscript && call.permission != nil
+        let showsDetails = !inComposer && hasDetails && (isOpen || phase == .awaitingApproval)
         VStack(alignment: .leading, spacing: DS.Space.xxs) {
             ToolRow(
                 presentation: presentation,
@@ -71,7 +74,7 @@ struct ToolCallView: View, Equatable {
                 }
                 .transition(RevealTransition())
             }
-            if let permission = call.permission {
+            if let permission = call.permission, !inComposer {
                 ToolPermissionButtons(options: permission.options, onChoose: onChoose)
                     .padding(.top, DS.Space.sm)
                     .transition(.opacity)

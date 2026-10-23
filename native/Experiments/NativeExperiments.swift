@@ -91,9 +91,9 @@ extension Gate {
 
     static let composerNext = Gate(
         id: "NativeComposerNext",
-        title: "Quiet composer",
-        summary: "Show the resting composer's settings as a line of words, each opening its picker.",
-        site: "Composer ▸ resting settings",
+        title: "Fine print",
+        summary: "Explain approval commands and hold to allow irreversible actions.",
+        site: "Composer ▸ approvals",
         stage: .labs,
         owner: "composer",
         reviewBy: ReviewDate(year: 2026, month: 12, day: 15),

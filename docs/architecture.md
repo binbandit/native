@@ -265,16 +265,29 @@ Peek with the composer's shared approval, global ask routing, fold by day, the c
 signal and optional row facts are later slices. Enable before an isolated launch with
 `defaults write dev.binbandit.native.dev.<name> experiment.NativeSidebarNext -bool YES`.
 
-### Quiet composer
+### Fine print approvals
 
-`NativeComposerNext` is an off-by-default Labs gate at the composer's resting controls. Enable it
-with Settings > Labs > Quiet composer, or set `experiment.NativeComposerNext` as a boolean in
-the app's user defaults before launch.
-The editor keeps its identity as the session starts and finishes work; only its footer changes.
-At rest, plain words open the agent, model, effort, autonomy and task-mode pickers. The agent entry
-opens New Task With, unless the Change Agent experiment is also enabled. Other
-agent settings, attachments, goals and context remain reachable. Running turns and approval
-requests keep today's composer until their own slices land.
+`NativeComposerNext` is an off-by-default Labs gate at the composer's approval state. Enable it
+with Settings > Labs > Fine print, or set `experiment.NativeComposerNext` as a boolean in the
+isolated app's defaults. The rejected quiet-settings-line experiment has been removed.
+
+`AnnotatedApprovalView` in `native/Approvals` is the shared approval for the composer and future
+Peek and Home hosts. `SessionApprovalView` connects it to model actions. Only the oldest request
+owns shortcuts; the primary transcript leaves its response controls to the composer while enabled.
+The ordinary composer and approvals are unchanged with the gate off.
+
+`Packages/ApprovalAnalysis` describes literal rm and git push commands without running them or
+reading files or the network. It preserves the exact command and source ranges, distinguishes
+regenerable DerivedData paths from destructive deletion and remote history rewrites, and makes no
+claims for unsupported commands or shell syntax. Reach is lexical, relative to the command's cwd
+and the task's worktree; contents, symlinks and remote commits are explicitly uninspected. Host-side
+measurements and additional command families are later slices, subject to managed network policy.
+
+Irreversible requests use the tested `ApprovalHold` state machine: 0.6 seconds, early release
+cancels, 0.4 seconds of acknowledgement, five-second accessibility confirmation, and no Always
+Allow. Platform key monitoring and haptics live in `native/Platform`. An alternative instruction is
+queued through `SessionModel.instructInstead` before declining the original request. ACP never
+receives an edited tool call, and the ordinary draft is kept.
 
 ### Changing a task's agent (Labs)
 
