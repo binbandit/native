@@ -311,6 +311,15 @@ opens New Task With, unless the Change Agent experiment is also enabled. Other
 agent settings, attachments, goals and context remain reachable. Running turns and approval
 requests keep today's composer until their own slices land.
 
+### Task well
+
+`NativeTaskWell` is an off-by-default Labs gate selecting the task-tools screen with a centered
+activity capsule instead of the facts header and tool buttons. `TaskActivityNarration` in ACP projects
+reported tool activity and counted plan steps; `TaskWellWiring` connects the existing tool models.
+Requests lead to the existing composer or child request surface, and turn outcomes reuse detected
+Changes. The shared `TaskSignal` supplies the status vocabulary and finite attention animation.
+The behavior, tool order and remaining slices are described in `docs/session-tools.md`.
+
 ### Changing a task's agent (Labs)
 
 `change-agent` is off by default. Change Agent prepares an unsent ACP conversation on another

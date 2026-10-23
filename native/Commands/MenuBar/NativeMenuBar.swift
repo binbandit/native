@@ -83,8 +83,16 @@ private struct ViewCommands: Commands {
             CommandMenuItem(.viewToggleSubagentInspector, in: menu)
             CommandMenuItem(.viewToggleChanges, in: menu)
             if menu.context.sessionTools != nil {
+                if menu.context.sessionTools?.hasWell == true {
+                    CommandMenuItem(.taskWellToggle, in: menu)
+                }
                 Menu("Tools") {
                     CommandMenuItem(.sessionToolChanges, in: menu)
+                    if menu.context.sessionTools?.hasWell == true {
+                        ForEach(TaskWellTool.allCases.filter { $0 != .changes }) { tool in
+                            CommandMenuItem(tool.command, in: menu)
+                        }
+                    }
                 }
             }
             CommandMenuItem(.viewMCPServers, in: menu)
