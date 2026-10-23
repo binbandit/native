@@ -3,7 +3,7 @@ import SwiftUI
 
 enum QuickEntryPreviewFixtures {
     enum State {
-        case empty, selection, firstLaunch, failure, narrow, devices, agents, projects
+        case empty, selection, firstLaunch, failure, offline, narrow, devices, agents, projects
     }
 
     static func model(_ state: State) -> AppModel {
@@ -22,6 +22,8 @@ enum QuickEntryPreviewFixtures {
         switch state {
         case .failure:
             entry.failure = "The project folder is unavailable. Choose another project or restore the folder."
+        case .offline:
+            entry.device = .remote(RemoteHostID())
         case .devices: entry.picker = .device
         case .agents: entry.picker = .agent
         case .projects: entry.picker = .project

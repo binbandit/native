@@ -195,6 +195,9 @@ struct QuickEntryPanel: View {
 #Preview("Quick Entry - Missing folder") {
     QuickEntryPreviewFixture(state: .failure)
 }
+#Preview("Quick Entry - Unavailable device") {
+    QuickEntryPreviewFixture(state: .offline)
+}
 #Preview("Quick Entry - Narrow and long text") {
     QuickEntryPreviewFixture(state: .narrow)
 }

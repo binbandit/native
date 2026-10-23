@@ -35,7 +35,7 @@ struct QuickEntryStartedToast: View {
 }
 
 #if DEBUG
-#Preview("Quick Entry - Started and failed") {
+#Preview("Quick Entry - Starting, started and failed") {
     DSPreviewPair {
         let model = AppModel.preview()
         if let project = model.previewProject(), let agent = model.agents.first?.agent {
@@ -43,6 +43,10 @@ struct QuickEntryStartedToast: View {
                 project: project.id, agent: agent, isAgentPicked: true, workspaceLabel: "Creating a worktree")
             VStack(spacing: DS.Space.lg) {
                 QuickEntryStartedToast(task: task, project: "native", open: {}, dismiss: {})
+                let completed = StartingTask(
+                    project: project.id, agent: agent, isAgentPicked: true, workspaceLabel: "Creating a worktree")
+                let _ = completed.openedSession = completed.id
+                QuickEntryStartedToast(task: completed, project: "native", open: {}, dismiss: {})
                 let failed = StartingTask(
                     project: project.id, agent: agent, isAgentPicked: true, workspaceLabel: "Creating a worktree")
                 let _ =
