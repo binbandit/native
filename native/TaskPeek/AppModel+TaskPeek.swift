@@ -65,7 +65,7 @@ extension AppModel {
     /// Recovery uses the same host/agent lifecycle as the task screen and leaves the current task alone.
     func recoverPeekedTask(_ key: SessionKey) async {
         guard taskIsReachable(key), let session = session(key), session.taskStatus == .failed else { return }
-        if session.phase == .disconnected {
+        if session.phase == .disconnected, session.host == nil {
             await restart(key.agent)
             await loadSession(key)
         } else {
