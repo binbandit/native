@@ -1,4 +1,5 @@
 #if DEBUG
+import NativeHostProtocol
 import SwiftUI
 
 enum QuickEntryPreviewFixtures {
