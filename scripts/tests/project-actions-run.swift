@@ -1,6 +1,8 @@
+import AppKit
 import Exec
 import Foundation
 import ProjectActions
+import SwiftUI
 
 @testable import Native
 
@@ -38,6 +40,10 @@ private struct ProjectActionsRunChecks {
         require(runner.headerAction(in: target)?.id == test.id, "First own action is the initial fallback")
         runner.runLast(in: target)
         require(runner.state(of: test, in: target)?.isRunning == true, "Run Last uses the initial fallback")
+        let headerMenu = menu(runner, target: target, showsRunLast: false)
+        let projectMenu = menu(runner, target: target, showsRunLast: true)
+        require(!headerMenu.items.contains { $0.title.hasPrefix("Run Last:") }, "Header menu omits Run Last")
+        require(projectMenu.items.contains { $0.title == "Run Last: Test" }, "Project menu retains Run Last")
         runner.run(lint, in: target)
         require(runner.headerAction(in: target)?.id == lint.id, "Newest running action names the primary half")
         require(runner.running(in: target).count == 2, "Both actions remain running")
@@ -75,7 +81,19 @@ private struct ProjectActionsRunChecks {
         require(store.hasRepositoryFile(in: project), "Policy explanation can still identify an existing repo file")
         store.add(test, to: project)
         require(runner.headerAction(in: target)?.id == test.id, "Own actions remain available under policy")
+        let managedMenu = menu(runner, target: target, showsRunLast: false)
+        require(
+            managedMenu.items.contains { $0.title == "Off by your organization" && !$0.isEnabled },
+            "Managed repo actions show a disabled explanation")
+        require(
+            managedMenu.items.contains { $0.title == "Test" && $0.isEnabled }, "Managed menu keeps own actions enabled")
         print("PASS: first action, newest run, stopping, failure, repo approval and policy fallback")
+    }
+
+    static func menu(_ runner: ProjectActionRunner, target: ProjectActionTarget, showsRunLast: Bool) -> NSMenu {
+        NSHostingMenu(
+            rootView: ProjectActionsMenuContent(target: target, showsRunLast: showsRunLast)
+                .environment(runner).environment(SettingsPresentation()))
     }
 
     static func require(_ condition: Bool, _ message: String) {

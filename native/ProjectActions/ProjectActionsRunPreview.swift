@@ -22,9 +22,13 @@ struct ProjectActionsRunPreview: View {
                     Button("Stop Test", systemImage: "stop.fill") {}
                     Divider()
                 }
-                Button("Test", systemImage: "checkmark.seal") {}
-                Button("Build", systemImage: "hammer") {}
-                Button("Lint", systemImage: "list.bullet") {}
+                if name != nil {
+                    Button("Test", systemImage: "checkmark.seal") {}
+                    Button("Build", systemImage: "hammer") {}
+                    Button("Lint", systemImage: "list.bullet") {}
+                } else {
+                    Text("No actions for native yet")
+                }
                 Divider()
                 Button(name == nil ? "Add Action…" : "Edit Actions…", systemImage: "slider.horizontal.3") {}
             }
