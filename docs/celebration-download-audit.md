@@ -78,6 +78,8 @@ The files below all failed for that same reason. Links pin the audited release i
   tests fail; against the fix, they pass. No release credentials are used.
 - Download model tests cover managed disable with zero requests, disabling in flight, cached
   artwork under disabled policy, offline fallback, and suppression of automatic retry loops.
+- Regenerating the full catalogue with a throwaway signer produced 44 packs containing 352 PNGs;
+  every generated pack matched its index hash and size.
 - Visual check pending on the main Mac: enable a celebration, test successful, offline and
   policy-disabled downloads in light and dark. elara has no Accessibility or Screen Recording
   permission. Use the isolated Debug override recipe in `celebrations-artwork.md` so repository
