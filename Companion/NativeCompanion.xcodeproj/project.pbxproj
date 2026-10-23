@@ -23,6 +23,7 @@
 		C0C000000000000000000088 /* ToolCategory+Glyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C000000000000000000078 /* ToolCategory+Glyph.swift */; };
 		C0C000000000000000000089 /* TranscriptCodeBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C000000000000000000079 /* TranscriptCodeBlock.swift */; };
 		C0C0000000000000000000AA /* AppAppearance in Frameworks */ = {isa = PBXBuildFile; productRef = C0C0000000000000000000A9 /* AppAppearance */; };
+		C0C0000000000000000000B8 /* Undo in Frameworks */ = {isa = PBXBuildFile; productRef = C0C0000000000000000000B7 /* Undo */; };
 		C0C0000000000000000000AC /* CelebrationDates.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C0000000000000000000AB /* CelebrationDates.swift */; };
 		C0C0000000000000000000B0 /* AppIcon-arcade.icon in Resources */ = {isa = PBXBuildFile; fileRef = C0C0000000000000000000A0 /* AppIcon-arcade.icon */; };
 		C0C0000000000000000000B1 /* AppIcon-cobalt.icon in Resources */ = {isa = PBXBuildFile; fileRef = C0C0000000000000000000A1 /* AppIcon-cobalt.icon */; };
@@ -118,6 +119,7 @@
 				C0C000000000000000000059 /* CodeThemes in Frameworks */,
 				C0C00000000000000000005D /* NativePolicy in Frameworks */,
 				C0C0000000000000000000AA /* AppAppearance in Frameworks */,
+				C0C0000000000000000000B8 /* Undo in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -211,6 +213,7 @@
 				C0C00000000000000000005C /* CodeThemes */,
 				C0C00000000000000000005F /* NativePolicy */,
 				C0C0000000000000000000A9 /* AppAppearance */,
+				C0C0000000000000000000B7 /* Undo */,
 			);
 			productName = NativeCompanion;
 			productReference = C0C000000000000000000004 /* NativeCompanion.app */;
@@ -272,6 +275,7 @@
 				C0C00000000000000000005B /* XCLocalSwiftPackageReference "../Packages/CodeThemes" */,
 				C0C00000000000000000005E /* XCLocalSwiftPackageReference "../Packages/NativePolicy" */,
 				C0C0000000000000000000A8 /* XCLocalSwiftPackageReference "../Packages/AppAppearance" */,
+				C0C0000000000000000000B6 /* XCLocalSwiftPackageReference "../Packages/Undo" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C0C000000000000000000003 /* Products */;
@@ -569,6 +573,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Packages/AppAppearance;
 		};
+		C0C0000000000000000000B6 /* XCLocalSwiftPackageReference "../Packages/Undo" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../Packages/Undo;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -601,6 +609,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C0C0000000000000000000A8 /* XCLocalSwiftPackageReference "../Packages/AppAppearance" */;
 			productName = AppAppearance;
+		};
+		C0C0000000000000000000B7 /* Undo */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C0C0000000000000000000B6 /* XCLocalSwiftPackageReference "../Packages/Undo" */;
+			productName = Undo;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
