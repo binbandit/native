@@ -391,6 +391,8 @@ a worktree. Creation receipts in the repository's local config identify task wor
 be cleaned up, including after a draft is reopened. Cleanup requires that their original branch,
 commit and clean working tree remain unchanged. Ignored
 files, running setup commands, other tasks and user-owned worktrees prevent automatic removal.
+Open terminal tabs and project actions must finish or close before the task moves, so their work
+stays reachable in the original task.
 
 Git chooses an immutable task base with `Repository.taskWorktreeBase`, fetching the configured
 remote unless `policy.git.worktreeFetch` disables it. Failure falls back to the local commit;
