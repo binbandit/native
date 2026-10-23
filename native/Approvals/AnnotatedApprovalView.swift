@@ -64,6 +64,9 @@ struct AnnotatedApprovalView: View {
                             .font(.dsBody).foregroundStyle(.dsTextSecondary)
                     }
                     footer
+                    if sending {
+                        Text("Sending your instruction...").font(.dsBody).foregroundStyle(.dsTextTertiary)
+                    }
                     if let failure {
                         Text(failure).font(.dsBody).foregroundStyle(.dsDanger)
                     }
@@ -227,7 +230,7 @@ struct AnnotatedApprovalView: View {
 }
 
 #if DEBUG
-#Preview("Approval - force, cache, unknown, narrow") {
+#Preview("Approval - force, cache, unknown, narrow, failed, reconnecting") {
     DSPreviewPair {
         ScrollView {
             VStack(spacing: DS.Space.xl) {
@@ -239,6 +242,8 @@ struct AnnotatedApprovalView: View {
                     command: ApprovalPreviewFixtures.commands[0],
                     failure: "Couldn't send your instruction. Your words are kept. Try again."
                 ).frame(width: 760)
+                ApprovalPreviewFixtures.card(command: ApprovalPreviewFixtures.commands[0], isAvailable: false)
+                    .frame(width: 760)
             }.padding(DS.Space.xl)
         }.frame(height: 900)
     }
