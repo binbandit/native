@@ -191,14 +191,16 @@ struct AnnotatedApprovalView: View {
     }
 
     @ViewBuilder private var buttons: some View {
-        if let rejection {
+        ForEach(options.filter(\.isRejection)) { option in
+            let ownsShortcut = option.kind == .rejectOnce && isFirst(option)
             Button {
-                onChoose(rejection)
+                onChoose(option)
             } label: {
-                actionLabel("Don't Allow", keys: "⌘⇧⌫")
+                actionLabel(optionTitle(option, ordinary: "Don't Allow"), keys: ownsShortcut ? "⌘⇧⌫" : "")
             }
             .buttonStyle(ApprovalActionStyle())
-            .keyboardShortcut(shortcutsEnabled ? KeyboardShortcut(.delete, modifiers: [.command, .shift]) : nil)
+            .keyboardShortcut(
+                shortcutsEnabled && ownsShortcut ? KeyboardShortcut(.delete, modifiers: [.command, .shift]) : nil)
         }
         if analysis?.risk != .irreversible {
             ForEach(options.filter { $0.kind == .allowAlways }) { option in
@@ -206,7 +208,7 @@ struct AnnotatedApprovalView: View {
                     onChoose(option)
                 } label: {
                     actionLabel(
-                        options.filter { $0.kind == .allowAlways }.count == 1 ? "Always Allow" : option.name,
+                        optionTitle(option, ordinary: "Always Allow"),
                         keys: options.first { $0.kind == .allowAlways }?.id == option.id ? "⌥⌘Y" : "")
                 }
                 .buttonStyle(ApprovalActionStyle())
@@ -215,22 +217,37 @@ struct AnnotatedApprovalView: View {
                         ? KeyboardShortcut("y", modifiers: [.command, .option]) : nil)
             }
         }
-        if let allow = options.first(where: { $0.kind == .allowOnce }) {
+        ForEach(options.filter { $0.kind == .allowOnce }) { allow in
+            let ownsShortcut = isFirst(allow)
+            let title = optionTitle(allow, ordinary: "Allow")
             if analysis?.risk == .irreversible {
                 ApprovalHoldButton(
-                    shortcutsEnabled: shortcutsEnabled, keyboardHeld: keyboardHeld,
-                    forceReducedMotion: forceReducedMotion, didCommit: { committed = true }
+                    shortcutsEnabled: shortcutsEnabled && ownsShortcut, keyboardHeld: ownsShortcut && keyboardHeld,
+                    actionName: title == "Allow" ? nil : title, forceReducedMotion: forceReducedMotion,
+                    didCommit: { committed = true }
                 ) { onChoose(allow) }
             } else {
                 Button {
                     onChoose(allow)
                 } label: {
-                    actionLabel("Allow", keys: "⌘Y")
+                    actionLabel(title, keys: ownsShortcut ? "⌘Y" : "")
                 }
                 .buttonStyle(ApprovalActionStyle(primary: true))
-                .keyboardShortcut(shortcutsEnabled ? KeyboardShortcut("y", modifiers: .command) : nil)
+                .keyboardShortcut(shortcutsEnabled && ownsShortcut ? KeyboardShortcut("y", modifiers: .command) : nil)
             }
         }
+    }
+
+    private func isFirst(_ option: PermissionOption) -> Bool {
+        options.first { $0.kind == option.kind }?.id == option.id
+    }
+
+    private func optionTitle(_ option: PermissionOption, ordinary: String) -> String {
+        // A kind is a lifetime, not a decision: strict review, decline and cancel can share it.
+        if option.kind == .rejectAlways || options.filter({ $0.kind == option.kind }).count > 1 {
+            return option.name
+        }
+        return ordinary
     }
 
     private func actionLabel(_ title: String, keys: String) -> some View {
@@ -263,6 +280,12 @@ struct AnnotatedApprovalView: View {
                     ApprovalPreviewFixtures.card(command: command).frame(width: 760)
                 }
                 ApprovalPreviewFixtures.card(command: ApprovalPreviewFixtures.commands[0]).frame(width: 360)
+                ApprovalPreviewFixtures.card(
+                    command: ApprovalPreviewFixtures.commands[0], options: ApprovalPreviewFixtures.distinctOptions
+                ).frame(width: 760)
+                ApprovalPreviewFixtures.card(
+                    command: ApprovalPreviewFixtures.commands[2], options: ApprovalPreviewFixtures.distinctOptions
+                ).frame(width: 760)
                 ApprovalPreviewFixtures.card(
                     command: ApprovalPreviewFixtures.commands[0],
                     failure: "Couldn't send your instruction. Your words are kept. Try again."

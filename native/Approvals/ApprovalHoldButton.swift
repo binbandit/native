@@ -4,6 +4,7 @@ import SwiftUI
 struct ApprovalHoldButton: View {
     let shortcutsEnabled: Bool
     var keyboardHeld = false
+    var actionName: String? = nil
     var forceReducedMotion = false
     var didCommit: () -> Void = {}
     let allow: () -> Void
@@ -29,7 +30,7 @@ struct ApprovalHoldButton: View {
         } label: {
             ApprovalHoldLabel(
                 progress: progress, allowed: allowed, confirming: confirming,
-                shortcutsEnabled: shortcutsEnabled)
+                shortcutsEnabled: shortcutsEnabled, actionName: actionName)
         }
         .buttonStyle(
             ApprovalActionStyle(
@@ -37,7 +38,11 @@ struct ApprovalHoldButton: View {
                 sweepProgress: reduceMotion || forceReducedMotion || allowed ? nil : progress,
                 pressing: pressed)
         )
-        .accessibilityLabel(allowed ? "Allowed" : confirming ? "Confirm Allow" : "Allow, can't be undone")
+        .accessibilityLabel(
+            allowed
+                ? "Allowed"
+                : confirming ? "Confirm \(actionName ?? "Allow")" : "\(actionName ?? "Allow"), can't be undone"
+        )
         .accessibilityHint("Activate twice within five seconds to allow.")
         .accessibilityAction { activateConfirmation() }
         .onChange(of: keyboardHeld) { _, down in

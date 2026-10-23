@@ -13,6 +13,15 @@ enum ApprovalPreviewFixtures {
         "rm -rf ~/Library/Developer/Xcode/DerivedData/native-bfhqjzxkdyowmrtglcaevpsnui",
         "./tools/acp-schema-gen --lang swift --strict --out Packages/ACP/Sources/ACP/Generated schema/v2.json",
     ]
+    // Several decisions can share the same ACP lifetime. Keep every one visible and distinct.
+    static let distinctOptions: [PermissionOption] = [
+        .init(optionId: "grant", name: "Grant for this turn", kind: .allowOnce),
+        .init(optionId: "strict", name: "Grant with strict auto review", kind: .allowOnce),
+        .init(optionId: "session", name: "Allow for this session", kind: .allowAlways),
+        .init(optionId: "decline", name: "Decline", kind: .rejectOnce),
+        .init(optionId: "cancel", name: "Cancel this turn", kind: .rejectOnce),
+        .init(optionId: "block", name: "Block this host", kind: .rejectAlways),
+    ]
     static let force = analyze(commands[0])
     static let routine = analyze(commands[1])
     static let unknown = analyze(commands[2])
@@ -32,17 +41,25 @@ enum ApprovalPreviewFixtures {
     }
 
     @ViewBuilder static func card(
-        command: String, failure: String? = nil, isAvailable: Bool = true, sending: Bool = false
+        command: String, failure: String? = nil, isAvailable: Bool = true, sending: Bool = false,
+        options: [PermissionOption]? = nil
     ) -> some View {
         let app = AppModel.preview(.empty)
         if let session = session(in: app, command: command), let call = session.permissionRequests.first {
+            let describedCall = replacingOptions(in: call, with: options)
             ApprovalSurface {
                 AnnotatedApprovalView(
-                    call: call, agentName: "Codex", workingDirectory: folder, homeDirectory: home,
+                    call: describedCall, agentName: "Codex", workingDirectory: folder, homeDirectory: home,
                     isAvailable: isAvailable,
                     onChoose: { _ in }, onInstruct: { _ in }, sending: sending, failure: failure)
             }
         }
+    }
+
+    private static func replacingOptions(in call: ToolCallState, with options: [PermissionOption]?) -> ToolCallState {
+        var call = call
+        if let options { call.permission?.options = options }
+        return call
     }
 
     @ViewBuilder static func composer(command: String = commands[0]) -> some View {

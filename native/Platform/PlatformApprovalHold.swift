@@ -29,15 +29,7 @@ extension View {
         #if canImport(AppKit)
         background(ApprovalHoldKeyMonitor(enabled: enabled, changed: changed))
         #else
-        onKeyPress(phases: [.down, .repeat, .up]) { press in
-            guard enabled else { return .ignored }
-            guard press.key == "y", press.modifiers == .command else {
-                changed(false)
-                return .ignored
-            }
-            changed(press.phase != .up)
-            return .handled
-        }
+        modifier(ApprovalHoldKeyRegistration(enabled: enabled, changed: changed))
         #endif
     }
 }

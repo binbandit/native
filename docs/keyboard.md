@@ -227,6 +227,9 @@ use Allow followed by Confirm Allow within five seconds. The button acknowledges
 ⌘L focuses Tell the agent what to do instead while an approval is shown; Return sends the instruction.
 The fix-it and every permission option are also in the keyboard tab order.
 Only the oldest request owns these keys; changing tasks or losing the window cancels a hold.
+When an agent offers several choices of one permission kind, each stays visible under its own name;
+only the first owns that kind's shortcut. The iPad hold route is installed at the window root so
+focus can remain in the sidebar, toolbar or transcript.
 
 On an expedition's route review, ⌘Return approves too, and ⌘L focuses the message field for the
 expedition's lead (the composer key, on a page without a composer).

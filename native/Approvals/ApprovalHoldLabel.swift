@@ -5,6 +5,7 @@ struct ApprovalHoldLabel: View {
     var allowed = false
     var confirming = false
     var shortcutsEnabled = true
+    var actionName: String? = nil
 
     var body: some View {
         HStack(spacing: DS.Space.md) {
@@ -20,7 +21,9 @@ struct ApprovalHoldLabel: View {
                 }
                 .frame(width: DS.Approval.ringSize, height: DS.Approval.ringSize)
             }
-            Text(allowed ? "Allowed" : confirming ? "Confirm Allow" : "Hold to Allow")
+            Text(
+                allowed
+                    ? "Allowed" : confirming ? "Confirm \(actionName ?? "Allow")" : "Hold to \(actionName ?? "Allow")")
             if shortcutsEnabled, !allowed {
                 Text("⌘Y").font(.dsMonoMicro).opacity(DS.Approval.hintOpacity)
             }
