@@ -64,6 +64,8 @@ final class SessionModel {
     var draft = ""
     /// Files and images going out with the draft (SessionModel+Attachments.swift).
     var attachments: [PromptAttachment] = []
+    /// The transient image and file viewer shared by this task's transcript styles.
+    let artifactViewer = ArtifactViewerModel()
     /// Subagent sessions this one started, by their session id.
     private(set) var children: [SessionID: SessionModel] = [:]
 

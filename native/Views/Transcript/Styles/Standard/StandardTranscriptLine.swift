@@ -13,6 +13,7 @@ struct StandardTranscriptLine: Identifiable {
         /// `itemIndex`. A long reply is a line per section, so the lazy stack lays out and draws only
         /// the sections on screen, and while it streams only the last one changes.
         case replySection(String, isFirst: Bool, itemIndex: Int)
+        case artifacts([MessageAttachment], itemIndex: Int)
         /// More tool calls in a row than fit on screen, as one condensed list (`ToolRunView`).
         case activityRun(TranscriptActivityRun)
         /// An earlier turn's tool work as one line ("Explored 6 files, edited 3 files").
@@ -35,7 +36,7 @@ struct StandardTranscriptLine: Identifiable {
         switch kind {
         case .row(let row, _, _): row.isToolActivity
         case .fold, .activityRun: true
-        case .replySection, .footer, .changes, .usageLimit: false
+        case .replySection, .artifacts, .footer, .changes, .usageLimit: false
         }
     }
 
@@ -166,18 +167,26 @@ struct StandardTranscriptLine: Identifiable {
             let thinking = state.thinkingInterval(at: itemIndex).map { ThinkingClock(start: $0.start, end: $0.end) }
             return [Self(id: row.id, kind: .row(row, itemIndex: itemIndex, thinking: thinking))]
         }
-        return ReplySections.sections(of: message).enumerated().map { index, section in
+        var lines = ReplySections.sections(of: message).enumerated().map { index, section in
             Self(
                 id: index == 0 ? row.id : "\(row.id)-\(index)",
                 kind: .replySection(section, isFirst: index == 0, itemIndex: itemIndex))
         }
+        if !message.attachments.isEmpty {
+            if message.text.isEmpty { lines = [] }
+            lines.append(
+                Self(
+                    id: lines.isEmpty ? row.id : "\(row.id)-artifacts",
+                    kind: .artifacts(message.attachments, itemIndex: itemIndex)))
+        }
+        return lines
     }
 
     private static func spacing(between previous: Self, and next: Self) -> CGFloat {
         switch next.kind {
         // A reply's later sections space themselves, as in the reply as a whole.
         case .replySection(_, isFirst: false, _): 0
-        case .footer, .changes: DS.Space.md
+        case .footer, .changes, .artifacts: DS.Space.md
         case .row, .replySection, .fold, .activityRun, .usageLimit:
             previous.isDense && next.isDense ? DS.Space.xxs : DS.Space.xl
         }

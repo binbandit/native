@@ -38,6 +38,13 @@ continuity add no dependencies or assets. The binary budget is now 58.5 MB to ac
 feature with a small margin. The installed app (114.6 MB) and update archive (45.7 MB) remain
 within their unchanged budgets.
 
+On the same day, the task artifact viewer raised the Nightly app binary from 57.9 MB on
+`7e98b62a` to 58.0 MB on `d242798c` (CI reports one decimal place). This adds the shared image
+canvas, native document preview adapters and preservation of image/file content from agent and
+tool messages, with no bundled assets or dependencies. It uses the same 58.5 MB binary allowance.
+At `d242798c`, the measured download was 45.8 MB and installed app was 114.8 MB, within their
+unchanged limits.
+
 ## Measuring
 
 ```sh

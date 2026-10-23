@@ -46,6 +46,12 @@
   tested against captured traffic, and it's shared with the future companion app.
 - **History lives with the agent.** Sessions are listed with `session/list` and reopened with
   `session/load`, which replays them. Native stores only its own additions (titles, order, goals).
+- **Transcript artifacts retain their bytes.** User attachments, agent images and tool results,
+  including raw MCP content and embedded binary resources, open through the task's artifact viewer
+  model. Images zoom and pan in place; other files use native previews. Host files use the existing
+  file API, embedded bytes work offline, and opening a remote URL never downloads it. Temporary
+  preview copies are private to the viewer and removed when it closes. Copy and Save As keep the
+  original bytes; Finder is offered only for an existing file on this Mac.
 - **Task recency follows activity.** The host's startup snapshot and live summaries supply prompt
   dates even for completed tasks whose transcripts aren't open. Task lists use the latest known
   host, live-session or agent-listing date for both ages and order; opening history doesn't change it.
