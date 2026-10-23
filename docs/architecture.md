@@ -235,8 +235,8 @@ requests keep today's composer until their own slices land.
 `change-agent` is off by default. Change Agent prepares an unsent ACP conversation on another
 installed plugin agent in the task's existing folder. The user chooses from the new agent's live
 model choices and reviews an editable handoff before the first prompt. `TaskHandoff` in ACP
-assembles bounded visible-message excerpts, the goal, latest plan, reported edits, current Git
-paths and the latest explicit question locally. It never sends reasoning or calls another model.
+assembles bounded visible-message excerpts, the goal, latest plan, reported edits, branch and
+working-tree paths and the latest explicit question locally. It never sends reasoning or calls another model.
 
 The model rejects running turns, retries, queued messages, pending approvals and active goals.
 Cancel closes the unsent replacement. A failed preparation or send keeps the original task.

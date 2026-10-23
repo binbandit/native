@@ -49,7 +49,7 @@ public enum TaskHandoff {
             \(recent.isEmpty ? "No conversation recorded yet." : recent)
             \(plan.isEmpty ? "" : "\nLatest plan\n" + plan)
 
-            Files changed so far (reported edits and current working tree)
+            Files changed so far (reported edits, branch and working tree)
             \(files)
 
             Open question or next step
