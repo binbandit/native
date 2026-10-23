@@ -5,23 +5,33 @@ import SwiftUI
 /// detail column.
 struct StartingTaskRow: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.sidebarQuietProjects) private var isQuiet
+    @Environment(\.sidebarAllInView) private var isAllInView
     let task: StartingTask
 
     var body: some View {
-        TaskRow(
-            title: title,
-            status: task.failure == nil ? .starting : .failed,
-            isSelected: model.selection == task.id,
-            badge: nil,
-            indent: isQuiet ? .flat : .grouped,
-            leading: AgentIcon(agent: task.agent),
-            accessory: Text(task.failure == nil ? "Starting…" : "Couldn't start")
-                .font(.dsCaption)
-                .foregroundStyle(task.failure == nil ? .dsTextTertiary : .dsDanger)
-                .lineLimit(1),
-            action: { model.selection = task.id }
-        )
+        Group {
+            if isAllInView {
+                AllInViewTaskRow(
+                    title: title, status: task.failure == nil ? .starting : .failed,
+                    isSelected: model.selection == task.id,
+                    ask: task.failure.map { "\($0.title). \($0.message)" },
+                    action: { model.selection = task.id })
+            } else {
+                TaskRow(
+                    title: title,
+                    status: task.failure == nil ? .starting : .failed,
+                    isSelected: model.selection == task.id,
+                    badge: nil,
+                    indent: .grouped,
+                    leading: AgentIcon(agent: task.agent),
+                    accessory: Text(task.failure == nil ? "Starting…" : "Couldn't start")
+                        .font(.dsCaption)
+                        .foregroundStyle(task.failure == nil ? .dsTextTertiary : .dsDanger)
+                        .lineLimit(1),
+                    action: { model.selection = task.id }
+                )
+            }
+        }
         .help(tooltip)
         .contextMenu {
             if task.failure?.canUseProjectFolder == true {
