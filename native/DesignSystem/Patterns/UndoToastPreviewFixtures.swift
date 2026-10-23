@@ -42,7 +42,7 @@ struct UndoToastPreviewGallery: View {
                         state.toast
                         Spacer(minLength: 0)
                     }
-                    .frame(width: 356, height: 80, alignment: .topLeading)
+                    .frame(width: 356, height: 112, alignment: .topLeading)
                 }
             }
         }
