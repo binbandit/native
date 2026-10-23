@@ -45,6 +45,13 @@ tool messages, with no bundled assets or dependencies. It uses the same 58.5 MB 
 At `d242798c`, the measured download was 45.8 MB and installed app was 114.8 MB, within their
 unchanged limits.
 
+2026-10-24: the integrated worktree-creation commands and Plainly Settings build at `dde394e1`
+measures 58.6 MB for the Nightly binary, 46.1 MB downloaded and 115.4 MB installed. Earlier
+feature measurements used separate branches; their combined code now exceeds the 58.5 MB
+binary allowance. Creation hooks, captured terminal logs and their retry controls add no assets
+or dependencies. The binary budget is now 59 MB for this measured integration, with a small
+margin. The download, installed, disk-image and script-runtime budgets stay unchanged.
+
 Quick Entry adds the opt-in panel, context capture, address pickers and background-start
 confirmation, reusing the existing editor and task pipeline without assets or dependencies.
 With main through `638e0771`, its Nightly binary at `00eef888` measured 58.61 MB, about 0.6 MB

@@ -205,9 +205,24 @@ files; a file moved or deleted before sending is marked on its chip and holds th
 
 ## Permission requests
 
-With the All in view sidebar experiment, the ⌘Y keycap marks that visible task's oldest tool
-approval, provided it offers Allow once. Questions and requests in other tasks have no keycap.
-Global routing through Peek is a later slice.
+With the All in view sidebar experiment, ⌘Y targets the oldest connected task ask across all
+projects, including child tasks. Its row carries the keycap. Routine approvals offering Allow once
+are answered in place; questions, plans and commands with irreversible or unknown effects open
+Peek for review. The full request is always shown there. The current task and its draft stay put.
+
+| Keys | Action | Menu | Command |
+| --- | --- | --- | --- |
+| ⌘Y | Answer oldest task ask, or open its Peek | Task | `task.answerOldestAsk` |
+| | Peek at the selected task (Space with the sidebar list focused) | Task / row context menu | `task.peek` |
+| Escape in Peek | Close Peek | | |
+| Return in Peek (except a question) | Open Task | | |
+| ⌘R in a failure Peek | Retry the failed task | | |
+
+A click on a row's signal, a force click, or Peek in its context menu opens the same 600pt popover.
+Questions keep their digit, arrow and Return controls. An answer closes Peek. Hidden or filtered
+rows use a window anchor. The experiment defaults to off; the shortcuts below keep today's
+behavior while it is off. Workflow and expedition approvals retain their local shortcut when no
+task ask owns ⌘Y and the user has not reassigned it to another command.
 
 The oldest pending request in the visible task answers these: a tool's permission request, a
 workflow step waiting for approval, or an expedition's route (or route change) waiting for review.
@@ -467,6 +482,8 @@ Each task has a terminal panel under the composer, opening in the task's folder 
 | ⌃` | Show the task's terminal and focus it; with the terminal focused, hide it and return to the composer | View | `terminal.toggle` |
 | ⌃⇧` | New terminal tab | View | `terminal.newTab` |
 | | Close the terminal tab (asks first when a program is running in it) | View | `terminal.closeTab` |
+| | Retry the selected terminal command, including worktree commands | View | `terminal.retryJob` |
+| | Stop the selected terminal command | View | `terminal.stopJob` |
 
 While a terminal has focus, Native's menu shortcuts come first, then the terminal's own bindings,
 then the shell. With "Use my Ghostty settings" on, the bindings are the user's Ghostty key

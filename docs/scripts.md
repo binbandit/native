@@ -10,19 +10,41 @@ the repository itself, so a team shares them.
 
 | Event | `NATIVE_EVENT` | Repository file | Runs | Time limit |
 | --- | --- | --- | --- | --- |
+| Before creating a worktree | `before-worktree` | `.native/before-worktree.sh` | In the project checkout, before fetching the base branch and creating the task worktree. A failure leaves the starting task with Retry. | 10 minutes |
+| After creating a worktree | `after-worktree` | `.native/after-worktree.sh` | In the new worktree, in the background after env files are copied. The first message does not wait. Output, status, Stop and Retry are in the task terminal. | 10 minutes |
 | Setup | `setup` | `.native/setup.sh` | When Native makes a task's worktree, or brings one back when the task is unarchived, after copying its env files. The task waits for it (below). | 10 minutes |
 | Task started | `task-started` | `.native/task-started.sh` | When a task starts, in its worktree or the project's folder | 1 minute |
 | Turn finished | `turn-finished` | `.native/turn-finished.sh` | Each time the agent finishes a turn. A new turn's script stops the last one's if it's still running | 1 minute |
 | Teardown | `teardown` | `.native/teardown.sh` | Before Native removes a task's worktree: archiving, deleting, deleting the project, cleaning up merged tasks | 1 minute |
 | Task deleted | `task-deleted` | `.native/task-deleted.sh` | Once a task is deleted for good, after the undo window. Its worktree is gone by then, so it runs in the project's folder | 1 minute |
 
-Setup and teardown go with worktrees, so a task that runs on a branch in the project's own folder
+Before/after creation, Setup and teardown go with worktrees, so a task that runs on a branch in the project's own folder
 gets neither. Subagents don't trigger task-started or turn-finished; their task does. The time limits
 are per event and can be changed in Settings ▸ Scripts (30 seconds to an hour); they cover all of an
 event's scripts together.
 
 The events are a fixed, typed set (`TaskScriptEvent` in `Packages/TaskScripts`). A new one needs a
 case there, its row in this table, and a call from wherever it happens.
+
+## Worktree bases
+
+New task worktrees fetch the current base branch from its configured upstream remote, or the
+same branch from `origin` (or the only remote) when it has no upstream. Native pins the fetched
+commit without moving the local branch or changing uncommitted files. The remote URL comes from
+the repository's Git configuration. Explicit pull request checkouts and restored archived tasks
+keep their requested branch.
+
+A failed or unavailable fetch falls back to the local commit and adds a quiet note on the task.
+The automatic fetch has a 15-second deadline and never asks for credentials. Organizations can
+turn it off with `policy.git.worktreeFetch = false`; the same preference can be set by the user.
+This controls Native's automatic fetch, not commands the user writes such as `git pull`.
+
+Before-commands run first in the project checkout, so `git pull` can finish before Native chooses
+the base. They must succeed before the worktree is created. An untrusted repository before-command
+asks the user to allow repository scripts in Project Settings, then retry the starting task.
+After-commands run independently of the existing Setup event, which still holds messages when
+configured. For a nonblocking dependency install, put it in **After creating a worktree**.
+Both creation hooks also run when an archived task's worktree is restored, preserving its branch.
 
 ## Where scripts come from
 
@@ -53,7 +75,7 @@ events run without the repository's script and say so once in the log.
   so aliases and functions from `.zshrc` aren't there.
 - **Environment.** The one your login shell gives (`PATH`, API keys), the same agents get, plus the
   variables below.
-- **Folder.** The task's folder: its worktree, or the project's folder. Use `$NATIVE_WORKTREE_PATH`
+- **Folder.** Before creating a worktree runs in the project checkout. Other events use the task's folder: its worktree, or the project's folder. Use `$NATIVE_WORKTREE_PATH`
   rather than the script's own location, which for a committed file is a temporary copy.
 - **Background work.** A script is done when it exits. A server it starts in the background
   (`npm run dev &`) keeps running, with its output dropped; stop it in teardown.
@@ -67,13 +89,13 @@ Every variable is set for every event, empty when Native doesn't know it.
 
 | Variable | What it holds |
 | --- | --- |
-| `NATIVE_EVENT` | `setup`, `task-started`, `turn-finished`, `teardown` or `task-deleted` |
+| `NATIVE_EVENT` | `before-worktree`, `after-worktree`, `setup`, `task-started`, `turn-finished`, `teardown` or `task-deleted` |
 | `NATIVE_PROJECT_PATH` | The project's main checkout |
 | `NATIVE_WORKTREE_PATH` | The task's folder, where the script runs |
 | `NATIVE_BRANCH` | The task's branch |
 | `NATIVE_BASE_BRANCH` | The branch the worktree was made from (setup) |
-| `NATIVE_TASK_ID` | The agent's id for the task; empty during setup, which runs before the task exists |
-| `NATIVE_TASK_TITLE` | The task's title; empty during setup |
+| `NATIVE_TASK_ID` | The agent's id for the task; empty during worktree commands and setup, which run before the task exists |
+| `NATIVE_TASK_TITLE` | The task's title; empty during worktree commands and setup |
 | `NATIVE_AGENT` | The agent's id, such as `codex` or `claude-code` |
 
 Setup scripts also get `NATIVE_WORKSPACE_PATH` and `NATIVE_ROOT_PATH`, the worktree and the main
@@ -81,6 +103,7 @@ checkout, the names they had before there were other events.
 
 ## What you see
 
+- **After creating a worktree** streams capped output into a job tab in the task terminal, using the same status language as Project Actions. It also works in builds without the interactive terminal engine. Failures remain above the conversation with Retry. Retrying rechecks script policy and repository trust. View > Retry Terminal Command and Stop Terminal Command provide keyboard access.
 - **Setup** shows above the task's conversation while it runs, with its output, Stop and Skip
   Setup. Messages you send meanwhile queue, and the agent gets them once setup succeeds or you skip
   it. A failure says which script failed and how (exit code, time limit), shows its last lines, and
@@ -108,10 +131,11 @@ first time this version ran; the old value stays, so an older Native still finds
 
 ## Organizations
 
-Two policy keys (docs/enterprise.md):
+Policy keys (docs/enterprise.md):
 
 | Key | Effect |
 | --- | --- |
+| `policy.git.worktreeFetch` | `false`: skip the automatic base fetch and create worktrees from local commits |
 | `policy.taskScripts.userScripts` | `false`: scripts written in Native (global and per project) don't run, and their settings are locked |
 | `policy.taskScripts.repositoryScripts` | `false`: `.native/*.sh` files are ignored, and "Run scripts from the repo" is locked off |
 

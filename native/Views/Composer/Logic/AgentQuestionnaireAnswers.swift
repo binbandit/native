@@ -10,6 +10,16 @@ struct AgentQuestionnaireAnswers: Equatable {
         picks[question.key, default: []].contains(option.value)
     }
 
+    func initialHighlight(in question: AgentQuestionnaire.Question) -> Int {
+        question.options.firstIndex { isPicked($0, in: question) } ?? 0
+    }
+
+    mutating func answerHighlightedOption(_ index: Int, in question: AgentQuestionnaire.Question) {
+        guard !question.allowsMultiple, typedAnswer(for: question).isEmpty, question.options.indices.contains(index)
+        else { return }
+        pick(question.options[index], in: question)
+    }
+
     /// Picks an option; a multi-select toggles it, a single select replaces the pick.
     mutating func pick(_ option: AgentQuestionnaire.Option, in question: AgentQuestionnaire.Question) {
         var current = picks[question.key, default: []]

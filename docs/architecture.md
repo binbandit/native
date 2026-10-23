@@ -263,13 +263,20 @@ Existing surfaces keep `StatusIndicator` until their gated redesign adopts `Task
 Requests show a two-line sentence and a mono waiting clock, using the request's arrival timestamp
 from ACP or the host event log. The grid breathes for its first 60 seconds and for four seconds
 when the scene becomes active, then holds still. Reduce Motion is always still. The keycap marks
-the visible task's oldest permission request, matching the existing shortcut routing. Questions
-and asks in other tasks do not claim a shortcut that would answer something else.
+the oldest reachable ask across projects and child tasks, using the same request identity as ⌘Y.
+
+Slice 2 adds `TaskPeek`: Space in the sidebar, the signal button, force click and the context menu
+all open one 600pt popover without changing selection. A visible row supplies its anchor; hidden
+rows and Settings use the window anchor. The model routes captured requests to their owning
+session and checks identity again before answering. Questions, plans and commands with unknown
+or irreversible effects open Peek from ⌘Y; a small ACP vocabulary permits routine approvals.
+Peek reuses `ToolCallView` and `AgentQuestionSection`. The composer's annotated approval has not
+landed yet and replaces the former when available. Recovered failures use their live signal;
+unrecovered failures expose the real notice and the model's recovery action.
 
 Selection, menus, ordering, pins, archive and keyboard navigation remain shared with today's
 sidebar. All tasks stay visible in this slice; the rejected three-recent-task fold is removed.
-Peek with the composer's shared approval, global ask routing, fold by day, the collapsed toolbar
-signal and optional row facts are later slices. Enable before an isolated launch with
+Fold by day, the collapsed toolbar signal and optional row facts are later slices. Enable before an isolated launch with
 `defaults write dev.binbandit.native.dev.<name> experiment.NativeSidebarNext -bool YES`.
 
 ### Plainly Settings
@@ -336,6 +343,16 @@ receive it through the transcript environment, so switching sessions, recreating
 opening a subagent does not discard disclosure choices. Tool rows, exploration groups and long runs
 start closed; pending approvals override the visible state without changing the saved choice.
 Scroll positions remain per window in `SessionTranscriptMemory`.
+
+### Task worktree preparation
+
+Git chooses an immutable task base with `Repository.taskWorktreeBase`, fetching the configured
+remote unless `policy.git.worktreeFetch` disables it. Failure falls back to the local commit;
+`GitStore` carries that explanation into the task's setup notice. Before-commands run through
+`TaskScriptCenter` before the fetch and checkout. After-commands start after env files are copied
+and never hold a task's turns. The same script runner retains policy, timeout and cancellation;
+`TaskScriptsTerminalWiring` exposes its capped output through `TerminalLog` tabs alongside
+Project Actions' interactive terminal jobs. See `docs/scripts.md`.
 
 ## Persistence
 

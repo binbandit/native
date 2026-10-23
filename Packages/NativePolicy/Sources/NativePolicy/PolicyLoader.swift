@@ -31,6 +31,7 @@ public enum PolicyLoader {
             resolver.resolve(
                 .forbiddenPermissionModes, expecting: "an array of permission mode ids", PolicyParse.stringSet) ?? []
         policy.scriptsEnabled = resolver.resolve(.scriptsEnabled, expecting: "a Boolean", PolicyParse.bool) ?? true
+        policy.worktreeFetchEnabled = resolver.resolve(.worktreeFetch, expecting: "a Boolean", PolicyParse.bool) ?? true
         policy.taskScripts.userScriptsEnabled =
             resolver.resolve(.taskScriptsUser, expecting: "a Boolean", PolicyParse.bool) ?? true
         policy.taskScripts.repositoryScriptsEnabled =

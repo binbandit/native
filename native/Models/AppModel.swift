@@ -23,6 +23,7 @@ final class AppModel {
     let catalog: SessionCatalog
     let ordering: SessionOrdering
     let sessions: SessionStore
+    let taskPeek = TaskPeekPresentation()
     let unread: UnreadSessions
     /// New sessions that haven't had a message yet, so an empty one doesn't outlive the run.
     let unsentSessions: UnsentSessions
@@ -295,7 +296,8 @@ final class AppModel {
         }
     }
 
-    func restart(_ agent: AgentDefinition.ID) async {
+    func restart(_ agent: AgentDefinition.ID, preservingDrafts: Bool = false) async {
+        if preservingDrafts { sessions.preserveDrafts(of: agent) }
         if let restart = agentRestarts[agent] { return await restart.value }
         let restart = Task {
             if runsAgentsInHost {

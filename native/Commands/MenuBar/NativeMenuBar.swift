@@ -144,6 +144,11 @@ private struct SessionCommands: Commands {
 
     var body: some Commands {
         CommandMenu("Task") {
+            if model.offersTaskPeek {
+                CommandMenuItem(.taskPeek, in: menu)
+                CommandMenuItem(.taskAnswerOldestAsk, in: menu)
+                Divider()
+            }
             CommandMenuItem(.composerFocus, in: menu)
             CommandMenuItem(.sessionStop, in: menu)
             CommandMenuItem(.sessionClearConversation, in: menu)
