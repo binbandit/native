@@ -91,8 +91,8 @@ struct SessionToolsScreen: View {
         // Measured on its own beside the side panel: never at no width (docs/performance.md).
         .platformMinimumContentWidth(DS.Window.detailMinWidth)
         .inspector(isPresented: isSidePanelDocked) {
-            if let id = openSubagent, let subagent = session.state.subagents.first(where: { $0.id == id }) {
-                SubagentInspector(subagent: subagent, child: session.child(id), showsQuestions: usesTaskWell)
+            if let id = openSubagent, let target = session.taskWellSubagent(id) {
+                SubagentInspector(subagent: target.subagent, child: target.child, showsQuestions: usesTaskWell)
                     .frame(minWidth: DS.SessionTools.sidePanelMinWidth)
                     .dsToolbarBand()
                     .inspectorColumnWidth(
