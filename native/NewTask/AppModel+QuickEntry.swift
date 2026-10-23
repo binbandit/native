@@ -61,6 +61,13 @@ extension AppModel {
             quickEntry.picker = .project
             return
         }
+        guard let option = deviceOptions(for: project.id).first(where: { $0.device == quickEntry.device }),
+            option.canStart
+        else {
+            quickEntry.failure = "\(deviceName(quickEntry.device)) can't take a task right now. Choose another device."
+            quickEntry.picker = .device
+            return
+        }
         guard let runtime = quickEntryRuntime else {
             quickEntry.failure = "Choose an available agent on this device."
             quickEntry.picker = .agent
@@ -69,13 +76,6 @@ extension AppModel {
         guard PolicyCenter.shared.policy.agents.allows(runtime.agent.id.rawValue) else {
             quickEntry.failure = "Your organization doesn't allow this agent. Choose another agent."
             quickEntry.picker = .agent
-            return
-        }
-        guard let option = deviceOptions(for: project.id).first(where: { $0.device == quickEntry.device }),
-            option.canStart
-        else {
-            quickEntry.failure = "\(deviceName(quickEntry.device)) can't take a task right now. Choose another device."
-            quickEntry.picker = .device
             return
         }
         if quickEntry.device == .thisMac {
