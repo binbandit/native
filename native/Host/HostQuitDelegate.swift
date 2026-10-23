@@ -7,6 +7,11 @@ import AppKit
 final class HostQuitDelegate: NSObject, NSApplicationDelegate {
     weak var host: DurableHost?
 
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        // A single SwiftUI Window otherwise quits on close. Closing UI must never stop tasks.
+        false
+    }
+
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard let client = host?.hostToStopOnQuit else { return .terminateNow }
         // AppKit holds the quit in a modal run loop until the reply. The work runs off the main

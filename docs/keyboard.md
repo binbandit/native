@@ -12,9 +12,15 @@ Rows without an id are keys a view answers itself; they can't be changed.
 
 Standard macOS behavior comes for free and must not be broken: Tab / Shift-Tab move focus through
 controls (with Full Keyboard Access on), arrow keys move within lists and menus, Space activates the
-focused control, Escape dismisses popovers and sheets, ⌘W closes the window, ⌘Q quits, ⌘, opens
+focused control, Escape dismisses popovers and sheets, ⌘W closes the frontmost window or sheet, ⌘Q quits, ⌘, opens
 Settings in the main window (and closes it again). In every sheet and dialog, Return activates the default (highlighted) button and Escape
 cancels, so those keys don't get rows of their own.
+
+File ▸ Close (⌘W) acts on the frontmost Native window or panel, including image previews and About.
+A sheet closes before its parent window. Closing the last window leaves Native running; it never
+quits the app or closes the main window behind another window. Settings and the task's terminal
+panel live in the main window, so ⌘W there closes that window. Use Close Terminal Tab to end a
+terminal tab instead. ⌘, brings the main window back with Settings; ⌘Q quits the app.
 
 ## Sending
 

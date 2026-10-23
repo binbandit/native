@@ -22,6 +22,7 @@ struct NativeMenuBar: Commands {
         let menu = CommandMenuContext(registry: registry, context: windowContext)
         WindowUndoCommands(history: model.undoHistory)
         #if os(macOS)
+        PlatformWindowCloseCommands()
         UpdateCommands(menu: menu)
         HostQuitCommands(host: host, menu: menu)
         #endif

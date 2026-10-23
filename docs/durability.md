@@ -95,11 +95,12 @@ stops it with its agents (`shutdown {stopAgents: true}`) and unregisters it, so 
 turned off keeps running and no conversation runs twice. Debug builds take `-nativeHostRefused YES`
 to act as if Allow in the Background were off, to try the fallback.
 
-**Quit.**
+**Closing windows and quitting.**
 
 | Action | What happens |
 | --- | --- |
-| ⌘Q, closing the window | The app quits. The host and its agents keep working. (With an attached host or agents in the app, they stop with it, as before.) |
+| ⌘W, closing a window | The chosen window or sheet closes. Native stays running, even when the last window closes. Tasks keep working with a background host, an attached host, or agents in the app. |
+| ⌘Q | The app quits. The host and its agents keep working. (With an attached host or agents in the app, they stop with it, as before.) |
 | Native › Quit Native and Stop Agents (⌃⌥⌘Q, `app.quitAndStopAgents`; listed while agents would outlive the app) | The app holds the quit (`HostQuitDelegate`, at most 3 s) while it asks the host to stop (`_native/host/shutdown {stopAgents: true}`): the host ends running turns as stopped by the user, stops agents, writes a clean-shutdown mark and exits 0, and launchd leaves it down. The next launch starts it again. |
 | ⌘Q after turning "Keep agents running" off | Same as Quit Native and Stop Agents: the setting now says agents stop when Native quits. |
 | Menu bar extra › Stop All Agents | Same as above, without opening the app. |
