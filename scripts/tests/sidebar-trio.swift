@@ -123,7 +123,8 @@ private struct SidebarTrioRegression {
     }
 
     static func wiredRefresh() async {
-        let folder = FileManager.default.temporaryDirectory.appending(path: "sidebar-trio-\(UUID().uuidString)")
+        let folder = FileManager.default.temporaryDirectory.appending(
+            path: "sidebar-trio-\(UUID().uuidString)", directoryHint: .isDirectory)
         do { try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true) } catch {
             expect(false, "Fixture folder exists"); return
         }
