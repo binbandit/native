@@ -24,6 +24,8 @@ struct NativeCommand: Identifiable {
     /// Whether the palette offers it. Commands that only make sense from the menu bar (going to the
     /// Nth session, say) set this to false; they still have a shortcut.
     var showsInPalette = true
+    /// Experiments keep their shortcut settings hidden until their gate is enabled.
+    var showsInSettings: @MainActor () -> Bool = { true }
     /// Whether it can run now. The menu disables it, the palette leaves it out, and its shortcut
     /// goes to whatever else wants the key.
     var isAvailable: @MainActor (CommandContext) -> Bool = { _ in true }
@@ -70,6 +72,12 @@ struct NativeCommand: Identifiable {
     func hiddenFromPalette() -> Self {
         var command = self
         command.showsInPalette = false
+        return command
+    }
+
+    func shownInSettings(_ predicate: @escaping @MainActor () -> Bool) -> Self {
+        var command = self
+        command.showsInSettings = predicate
         return command
     }
 

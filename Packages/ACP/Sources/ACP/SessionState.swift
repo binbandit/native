@@ -14,7 +14,8 @@ public struct SessionState: Sendable {
         guard let planTurnStart, planTurnStart == turnStarts.last else { return [] }
         return plan
     }
-    private var planTurnStart: Int?
+    /// A retained plan isn't progress for a new turn until the agent reports it there.
+    var planTurnStart: Int?
     public var configOptions: [ConfigOption] = []
     public private(set) var availableCommands: [AvailableCommand] = []
     public private(set) var usage: Usage?
@@ -78,7 +79,7 @@ public struct SessionState: Sendable {
         case .toolCall(let update), .toolCallUpdate(let update): upsertToolCall(update, at: date)
         case .plan(let entries):
             plan = entries
-            planTurnStart = turnStarts.last
+            planTurnStart = openTurn
         case .availableCommands(let commands): availableCommands = commands
         case .configOptions(let options): configOptions = options
         case .currentMode(let mode):

@@ -205,9 +205,24 @@ files; a file moved or deleted before sending is marked on its chip and holds th
 
 ## Permission requests
 
-With the All in view sidebar experiment, the ⌘Y keycap marks that visible task's oldest tool
-approval, provided it offers Allow once. Questions and requests in other tasks have no keycap.
-Global routing through Peek is a later slice.
+With the All in view sidebar experiment, ⌘Y targets the oldest connected task ask across all
+projects, including child tasks. Its row carries the keycap. Routine approvals offering Allow once
+are answered in place; questions, plans and commands with irreversible or unknown effects open
+Peek for review. The full request is always shown there. The current task and its draft stay put.
+
+| Keys | Action | Menu | Command |
+| --- | --- | --- | --- |
+| ⌘Y | Answer oldest task ask, or open its Peek | Task | `task.answerOldestAsk` |
+| | Peek at the selected task (Space with the sidebar list focused) | Task / row context menu | `task.peek` |
+| Escape in Peek | Close Peek | | |
+| Return in Peek (except a question) | Open Task | | |
+| ⌘R in a failure Peek | Retry the failed task | | |
+
+A click on a row's signal, a force click, or Peek in its context menu opens the same 600pt popover.
+Questions keep their digit, arrow and Return controls. An answer closes Peek. Hidden or filtered
+rows use a window anchor. The experiment defaults to off; the shortcuts below keep today's
+behavior while it is off. Workflow and expedition approvals retain their local shortcut when no
+task ask owns ⌘Y and the user has not reassigned it to another command.
 
 The oldest pending request in the visible task answers these: a tool's permission request, a
 workflow step waiting for approval, or an expedition's route (or route change) waiting for review.
@@ -260,7 +275,9 @@ Other file types use the platform's Quick Look preview, with its native navigati
 | --- | --- | --- | --- |
 | ⌘K | Command palette: run any command, or jump to a task, project or Settings page | View | `palette.show` |
 | ⌘/ | Keyboard shortcuts (also the "?" at the status bar's trailing end) | Help | `help.keyboardShortcuts` |
-| ⌘N | New task with the last-used agent | File | `session.new` |
+| ⌘N | New task with the last-used agent; with Compose Task on, open Quick Entry over the current task | File | `session.new` |
+| ⇧⌘N | With Compose Task on, expand Quick Entry into New Task, keeping the draft and context | File | `task.compose` |
+| ⌥⌘O | With Quick Entry open, choose the device the task runs on | File | `task.chooseDevice` |
 | ⌥⌘N | New task with… (agent picker) | File | `session.newWithAgent` |
 | ⌥⌘E | New expedition (`docs/expeditions.md`) | File | `expedition.new` |
 | ⌘O | Open folder | File | `project.open` |
@@ -304,12 +321,26 @@ Option-Cmd-O to show its error output. Cmd-Return opens the task for every ask k
 
 ## Task tools (Labs)
 
+With The well enabled (`NativeTaskWell`, off by default), Cmd-I opens the centered task well.
+Its tools appear in this fixed key order. Missing tools leave no row; their keys stay reserved.
+Clicking a waiting well focuses the composer, where the full request can be answered.
+
+| Keys | Action | Menu | Command |
+| --- | --- | --- | --- |
+| ⌘I | Open or close the task well | View | `taskWell.toggle` |
+| ⌥⌘1 | Changes | View ▸ Tools | `sessionTools.changes` |
+| ⌥⌘2 | Terminal | View ▸ Tools | `taskWell.terminal` |
+| ⌥⌘3 | Dev (project actions) | View ▸ Tools | `taskWell.dev` |
+| ⌥⌘4 | Subagents | View ▸ Tools | `taskWell.subagents` |
+| ⌥⌘5 | Pull request | View ▸ Tools | `taskWell.pullRequest` |
+| Escape | Close the well and return focus to the task | | |
+
 With Task Tools enabled in Settings ▸ Labs (off by default), the Changes fact under the title
 opens the changes panel. It docks beside a wide conversation and overlays a narrow one.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
-| ⌥⌘1 | Show or hide Changes | View ▸ Tools | `sessionTools.changes` |
+| ⌥⌘1 | Show or hide Changes (same command as above) | View ▸ Tools | |
 | ⇧⌘D | Show or hide Changes, as on the standard task screen | View | |
 | Escape | Close the Changes overlay before composer Stop, suggestions or attachment actions; while focus is in the docked panel, close that panel | | |
 
@@ -398,6 +429,26 @@ the same failure with Restart on its agent cards and a link to Settings > Agents
 | ↑ / ↓, ⌃N / ⌃P | Move between the agents that can start a task (and Add Agent…) |
 | Return | Start the task with the highlighted agent; one that needs sign-in signs in first, then starts it |
 | Escape | Clear the filter; with it empty, close the picker |
+
+## Quick Entry (Compose Task experiment)
+
+With `NativeComposeTask` on (off by default), ⌘N opens Quick Entry 12pt below the toolbar.
+The current text selection in Native is included as removable context. The address reads
+"to [agent and model] on [device] from [project]", in that order.
+
+| Keys (Quick Entry open) | Action |
+| --- | --- |
+| Return | Start the task and stay on the current task |
+| ⌘Return | Start the task and open it |
+| Shift-Return, Option-Return | Insert a new line |
+| ⇧⌘N | Expand into New Task, keeping the draft and context |
+| ⌥⌘O | Open the device picker |
+| Escape | Close the picker first, then Quick Entry; keep the draft for next time |
+
+During slice 1, expanding uses today's full New Task view. The Compose page replaces it in
+slice 2. After a background start, the confirmation's Open button opens that task. Quick Entry
+captures only a selection inside Native; global shortcuts and capture from other apps are not
+part of this experiment.
 
 ## Choosing a device
 

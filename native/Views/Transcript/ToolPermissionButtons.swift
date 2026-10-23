@@ -11,6 +11,7 @@ struct ToolPermissionButtons: View {
     let onChoose: (PermissionOption) -> Void
     var presentation: Presentation = .standard
 
+    @Environment(\.legacyAskShortcutEnabled) private var legacyShortcut
     @Environment(\.permissionShortcutsEnabled) private var shortcutsEnabled
 
     var body: some View {
@@ -64,7 +65,9 @@ struct ToolPermissionButtons: View {
     @ViewBuilder private var shortcutHint: some View {
         if shortcutsEnabled && presentation == .standard {
             let hints = options.filter(isFirstOfItsKind).compactMap { option in
-                Self.symbols(for: option.kind).map { "\($0) \(option.name)" }
+                (option.kind == .allowOnce && !legacyShortcut ? nil : Self.symbols(for: option.kind)).map {
+                    "\($0) \(option.name)"
+                }
             }
             Text(hints.joined(separator: "  ·  "))
                 .font(.dsCaption)
@@ -81,7 +84,7 @@ struct ToolPermissionButtons: View {
 
     private func shortcut(for option: PermissionOption) -> KeyboardShortcut? {
         switch option.kind {
-        case .allowOnce: KeyboardShortcut("y", modifiers: .command)
+        case .allowOnce: legacyShortcut ? KeyboardShortcut("y", modifiers: .command) : nil
         case .allowAlways: KeyboardShortcut("y", modifiers: [.command, .option])
         case .rejectOnce: KeyboardShortcut(.delete, modifiers: [.command, .shift])
         case .rejectAlways: nil
