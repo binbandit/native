@@ -7,6 +7,7 @@ import SwiftUI
 /// its own Add and Run.
 struct ProjectActionsMenuContent: View {
     let target: ProjectActionTarget
+    var showsRunLast = true
     @Environment(ProjectActionRunner.self) private var runner
     @Environment(SettingsPresentation.self) private var settings
 
@@ -29,13 +30,18 @@ struct ProjectActionsMenuContent: View {
                 }
             }
         }
-        if let last = store.lastRunAction(in: project) {
+        if showsRunLast, let last = store.lastRunAction(in: project) {
             Button("Run Last: \(last.name)", systemImage: "arrow.clockwise") { runner.run(last, in: target) }
         }
         Section {
             ForEach(list.yours) { item($0) }
         }
-        if !list.fromRepository.isEmpty {
+        if !showsRunLast, list.isRepositoryOff, store.hasRepositoryFile(in: project) {
+            Section("From the repo") {
+                Button("Off by your organization", systemImage: "lock") {}
+                    .disabled(true)
+            }
+        } else if !list.fromRepository.isEmpty {
             Section("From the repo") {
                 ForEach(list.fromRepository) { item($0) }
             }
