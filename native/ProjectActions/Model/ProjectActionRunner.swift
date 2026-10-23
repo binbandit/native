@@ -67,9 +67,21 @@ final class ProjectActionRunner {
 
     /// Runs the project's last action again.
     func runLast(in target: ProjectActionTarget) {
-        if let action = store.lastRunAction(in: target.project) {
+        if let action = headerAction(in: target) {
             run(action, in: target)
         }
+    }
+
+    /// The header names the newest running action, otherwise the last run or first available one.
+    func headerAction(in target: ProjectActionTarget) -> ProjectAction? {
+        let newest = running(in: target).max { lhs, rhs in
+            guard case .running(let left, _) = state(of: lhs, in: target),
+                case .running(let right, _) = state(of: rhs, in: target)
+            else { return false }
+            return left < right
+        }
+        let list = store.list(for: target.project)
+        return newest ?? store.lastRunAction(in: target.project) ?? list.yours.first ?? list.fromRepository.first
     }
 
     /// Stops the action: a terminal run is interrupted (then ended, if asked again), a background

@@ -205,6 +205,10 @@ files; a file moved or deleted before sending is marked on its chip and holds th
 
 ## Permission requests
 
+With the All in view sidebar experiment, the ⌘Y keycap marks that visible task's oldest tool
+approval, provided it offers Allow once. Questions and requests in other tasks have no keycap.
+Global routing through Peek is a later slice.
+
 The oldest pending request in the visible task answers these: a tool's permission request, a
 workflow step waiting for approval, or an expedition's route (or route change) waiting for review.
 They're chosen not to collide with text editing in the composer.
@@ -447,12 +451,12 @@ bindings (`docs/terminal.md`); otherwise they're these:
 ## Project actions
 
 A project's actions (Test, Install, Dev…) run in the visible task's worktree, from the header's Run
-menu, the Run menu in the menu bar, the palette and the project's menu (`docs/actions.md`).
+button, the Run menu in the menu bar, the palette and the project's menu (`docs/actions.md`).
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
-| ⇧⌘R | Run the project's last action again, in the visible task | Run | `projectActions.runLast` |
-| | Stop the visible task's running actions (⌃C; again to end them) | Run | `projectActions.stop` |
+| ⇧⌘R | Run the header's named action in the visible task (last run, or the first available action) | Run | `projectActions.runLast` |
+| ⇧⌘. | Stop the visible task's running actions (⌃C; again to end them) | Run | `projectActions.stop` |
 | | Edit the project's actions (its settings page) | Run | `projectActions.edit` |
 
 Every action is also a command of its own, "Run: Test" (`projectActions.run.test`, named after the

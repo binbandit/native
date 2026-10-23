@@ -33,11 +33,11 @@ extension NativeCommand {
                 runner.runLast(in: target)
             }
             .menuTitle { context in
-                target(context).flatMap { runner.store.lastRunAction(in: $0.project) }.map { "Run Last: \($0.name)" }
+                target(context).flatMap { runner.headerAction(in: $0) }.map { "Run Last: \($0.name)" }
                     ?? "Run Last Action"
             }
             .available { context in
-                target(context).map { runner.store.lastRunAction(in: $0.project) != nil } ?? false
+                target(context).map { runner.headerAction(in: $0) != nil } ?? false
             },
 
             NativeCommand(
