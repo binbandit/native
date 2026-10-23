@@ -24,11 +24,12 @@ struct TaskWellToolbar<Dev: View>: View {
             }
         } label: {
             TaskWellLabel(content: content)
+                .opacity(tools.showsWell ? 0 : 1)
         }
         .buttonStyle(.plain)
         .dsHitTarget(DS.TaskWell.height)
         .help(help)
-        .dsPopover(isPresented: $tools.showsWell, arrowEdge: .bottom) {
+        .dsPopover(isPresented: $tools.showsWell, attachmentAnchor: .point(.top)) {
             TaskWellToolsPanel(content: content, location: location, tools: tools, detail: detail, dev: dev)
         }
         .onChange(of: session.phase) { previous, phase in
