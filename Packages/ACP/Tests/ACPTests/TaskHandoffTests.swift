@@ -35,6 +35,21 @@ import Testing
         #expect(draft.count < 8_000)
     }
 
+    @Test func includesCompletedEditsEvenWhenGitIsClean() {
+        var state = SessionState()
+        state.appendUserMessage("Fix the export")
+        var edit = ToolCallUpdate(toolCallId: "edit", kind: .edit, status: .completed)
+        edit.content = [.diff(FileDiff(path: "Export.swift", oldText: "old", newText: "new"))]
+        state.apply(.toolCall(edit))
+        var rejected = ToolCallUpdate(toolCallId: "rejected", kind: .edit, status: .failed)
+        rejected.content = [.diff(FileDiff(path: "Untouched.swift", oldText: "old", newText: "new"))]
+        state.apply(.toolCall(rejected))
+        state.endTurn(.endTurn)
+        let draft = TaskHandoff.draft(title: "Export", state: state)
+        #expect(draft.contains("- Export.swift"))
+        #expect(!draft.contains("Untouched.swift"))
+    }
+
     @Test func emptyStateAndUnavailableGitAreExplicit() {
         let draft = TaskHandoff.draft(
             title: "Investigate exports", state: SessionState(), fileStatus: "Git unavailable.")
