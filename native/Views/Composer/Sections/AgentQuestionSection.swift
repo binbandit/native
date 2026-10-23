@@ -57,7 +57,7 @@ struct AgentQuestionSection: View {
                     RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
                         .strokeBorder(.dsBorder)
                 }
-                .onSubmit(advance)
+                .onSubmit(submit)
             footer
         }
         .padding(DS.Space.md)
