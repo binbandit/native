@@ -63,6 +63,7 @@ extension View {
     /// What sidebar pieces read from the environment, as the app's window provides it.
     func sidebarPreviewEnvironment(_ app: AppModel) -> some View {
         environment(app)
+            .defaultAppStorage(SidebarPreviewFixtures.defaults())
             .environment(SettingsPresentation())
             .environment(CommandRegistry.shared)
             .environment(\.projectIconStore, SidebarPreviewFixtures.iconStore)
