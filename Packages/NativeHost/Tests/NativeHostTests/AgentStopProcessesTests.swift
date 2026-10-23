@@ -94,7 +94,9 @@ struct AgentStopProcessesTests {
         }
         let child = try childPID(in: folder)
         tree.refresh()
-        kill(parent.processIdentifier, SIGTERM)
+        // A shell's wait and inherited TERM mask differ across hosts. Force the parent exit so
+        // this fixture tests ownership after reparenting, independently of shell signal handling.
+        kill(parent.processIdentifier, SIGKILL)
         while Self.parent(of: child) == parent.processIdentifier, ContinuousClock.now < deadline {
             try await Task.sleep(for: .milliseconds(10))
         }
