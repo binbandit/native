@@ -36,8 +36,9 @@ action and pull request actions for the other tools. Subagents and the pull requ
 when present. Dev opens the existing project-actions menu inside the well. No new tool runtime or
 network request is introduced. The old Task Tools gate and standard task screen remain available.
 
-The sidebar owns the shared status signal and the composer owns the annotated approval. Until
-those replacements merge, this slice uses `StatusIndicator` and the existing approval surface.
+The well uses the sidebar's shared `TaskSignal` at its well placement, with the actual request
+arrival driving its finite attention breath. The composer owns the annotated approval; until
+that replacement merges, this slice uses the existing approval surface.
 Later slices cover title identity and managed-policy details, full tool contributions and workbench
 placement, narrow full-width Changes, and diff quoting with the composer.
 

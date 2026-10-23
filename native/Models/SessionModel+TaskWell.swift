@@ -1,6 +1,13 @@
 import ACP
+import Foundation
 
 extension SessionModel {
+    var taskWellAttentionSince: Date? {
+        if let question = pendingQuestion { return question.requestedAt }
+        if let permission = permissionRequests.first?.permission { return permission.requestedAt }
+        return children.values.lazy.compactMap(\.taskWellAttentionSince).first
+    }
+
     func markTaskWellOutcomeReviewed(_ turnID: String?) {
         reviewedTaskWellTurnID = turnID
     }

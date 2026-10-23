@@ -63,6 +63,7 @@ struct TaskWellToolbar<Dev: View>: View {
 
     private var content: TaskWellContent {
         var content = TaskWellContent(status: session.taskStatus, agent: session.agentName)
+        content.attentionSince = session.taskWellAttentionSince
         if session.isStopping {
             content.status = .working
             content.verb = "Stopping"

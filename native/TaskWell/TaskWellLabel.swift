@@ -8,8 +8,12 @@ struct TaskWellLabel: View {
 
     var body: some View {
         HStack(spacing: DS.TaskWell.gap) {
-            StatusIndicator(status: content.status, size: DS.TaskWell.signal)
-                .accessibilityHidden(true)
+            TaskSignal(
+                status: content.status, isUnread: content.status == .done, placement: .well,
+                attentionSince: content.attentionSince
+            )
+            .frame(width: DS.TaskWell.signal, height: DS.TaskWell.signal)
+            .accessibilityHidden(true)
             headline
                 .frame(maxWidth: .infinity, alignment: .leading)
             if content.progress != nil || content.showsReview {

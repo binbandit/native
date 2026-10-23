@@ -1,4 +1,5 @@
 import ACP
+import Foundation
 import SwiftUI
 
 /// Presentation data shared by the toolbar and its open tools panel.
@@ -10,6 +11,7 @@ struct TaskWellContent: Equatable {
     var progress: TaskActivityNarration.Progress?
     var outcome: TurnSummary?
     var showsReview = false
+    var attentionSince: Date?
 
     var isWaiting: Bool { status.needsAttention }
 

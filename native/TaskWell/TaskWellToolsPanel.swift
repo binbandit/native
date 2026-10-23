@@ -76,7 +76,11 @@ struct TaskWellToolsPanel<Dev: View>: View {
 
     private var statusHeader: some View {
         HStack(spacing: DS.TaskWell.gap) {
-            StatusIndicator(status: content.status, size: DS.TaskWell.signal)
+            TaskSignal(
+                status: content.status, isUnread: content.status == .done, placement: .well,
+                attentionSince: content.attentionSince
+            )
+            .frame(width: DS.TaskWell.signal, height: DS.TaskWell.signal)
             if let outcome = content.outcome {
                 Text("Changed \(outcome.changedFiles.count) \(outcome.changedFiles.count == 1 ? "file" : "files")")
                 DiffStatsText(stats: DiffStats(added: outcome.linesAdded, removed: outcome.linesRemoved))
