@@ -52,11 +52,6 @@ final class ArtifactViewerModel {
         self.artifact = artifact
         self.reader = reader
         canRevealFiles = localFiles && PlatformFileBrowser.canReveal
-        if canRevealFiles, let url = artifact.url, url.isFileURL,
-            FileManager.default.fileExists(atPath: url.path(percentEncoded: false))
-        {
-            revealURL = url
-        }
         load()
     }
 
@@ -69,8 +64,12 @@ final class ArtifactViewerModel {
         requestID = request
         isLoading = true
         error = nil
+        let canRevealFiles = canRevealFiles
         loading = Task { [weak self] in
             do {
+                let original = canRevealFiles ? await PlatformArtifactActions.existingFile(artifact.url) : nil
+                guard !Task.isCancelled, self?.requestID == request else { return }
+                self?.revealURL = original
                 let bytes: Data
                 if let embedded = artifact.data {
                     bytes = embedded
@@ -89,11 +88,6 @@ final class ArtifactViewerModel {
                 self.image = prepared.image
                 self.previewFile?.remove()
                 self.previewFile = prepared.file
-                if self.canRevealFiles, let url = artifact.url, url.isFileURL,
-                    FileManager.default.fileExists(atPath: url.path(percentEncoded: false))
-                {
-                    self.revealURL = url
-                }
                 let usesNativePreview =
                     artifact.mimeType == "image/svg+xml" || artifact.filename.lowercased().hasSuffix(".svg")
                 self.error =

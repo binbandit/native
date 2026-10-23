@@ -10,6 +10,13 @@ import UIKit
 
 /// Actions on the client's own artifacts. Host project files are read through RemoteFiles instead.
 enum PlatformArtifactActions {
+    @concurrent static func existingFile(_ url: URL?) async -> URL? {
+        guard let url, url.isFileURL, FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) else {
+            return nil
+        }
+        return url
+    }
+
     @concurrent static func readLocal(_ url: URL) async throws -> Data {
         let values = try url.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey])
         guard values.isRegularFile == true else { throw CocoaError(.fileReadUnsupportedScheme) }
