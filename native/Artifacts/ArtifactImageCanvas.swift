@@ -65,8 +65,13 @@ struct ArtifactImageCanvas: View {
             }
             return .handled
         }
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel("Image preview")
-        .accessibilityHint("Pinch or double-click to zoom. Drag or use arrow keys to pan.")
+        .accessibilityHint(
+            DS.isTouchPlatform
+                ? "Pinch or double-tap to zoom. Drag or use arrow keys to pan."
+                : "Pinch or double-click to zoom. Drag or use arrow keys to pan."
+        )
         .accessibilityAction(named: "Zoom In") { model.zoom(by: 1.25) }
         .accessibilityAction(named: "Zoom Out") { model.zoom(by: 0.8) }
         .accessibilityAction(named: "Fit", model.fit)

@@ -19,6 +19,7 @@ struct ArtifactThumbnail: View {
                 .overlay {
                     RoundedRectangle(cornerRadius: DS.Radius.card).strokeBorder(.dsBorder)
                 }
+                .frame(minWidth: DS.Size.minimumHitTarget, minHeight: DS.Size.minimumHitTarget)
                 .contentShape(.rect)
             } else {
                 Label(artifact.name, systemImage: artifact.isImage ? "photo" : "doc")
