@@ -1,4 +1,0 @@
-Implementation: ef6ca906417be5a7b060c6166ceb91373708501a
-Isolated Debug instance: design-composer
-Fixture ACP agent; no command executed.
-References: approved composer.html, 2026-10-23.
