@@ -30,6 +30,8 @@ final class SessionStore {
     /// as a task Native's tools started (`AppModel.claimHostTask`), given the update that shows it.
     /// Nil leaves it an agent's own subagent.
     @ObservationIgnored var claimSubagent: ((SessionModel, SessionID, JSONValue) -> SessionModel?)?
+    /// A model became available, including an existing task opened after its background work finished.
+    @ObservationIgnored var onRegistered: (SessionModel) -> Void = { _ in }
     @ObservationIgnored let services: SessionServices
 
     init(services: SessionServices) {
@@ -73,6 +75,7 @@ final class SessionStore {
             hostSessions[host.id] = session.key
             deliverBuffered(to: session, in: host)
         }
+        onRegistered(session)
     }
 
     /// Drops a session and its subagents, for when Native closes it.

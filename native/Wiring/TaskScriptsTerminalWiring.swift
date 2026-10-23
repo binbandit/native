@@ -7,6 +7,12 @@ import Terminal
 enum TaskScriptsTerminalWiring {
     static func connect(_ center: TaskScriptCenter, model: AppModel, terminals: TerminalStore) {
         var attempts: [UUID: Int] = [:]
+        // Loading an existing task does not start it again. Replay its captured commands without
+        // running task-started scripts; attempt tracking still respects tabs the user closed.
+        model.sessions.onRegistered = { [weak center] session in
+            guard session.root === session, let center else { return }
+            for run in center.runs(in: session.cwd) { center.runUpdated(run) }
+        }
         center.runUpdated = { [weak center, weak model, weak terminals] run in
             guard run.event == .afterWorktree, let center, let model, let terminals,
                 let session = model.sessions.open(in: run.folder).first(where: { $0.root === $0 })

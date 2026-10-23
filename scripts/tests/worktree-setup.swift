@@ -135,6 +135,15 @@ private struct WorktreeSetupRegression {
         center.retry(run)
         try await Task.sleep(for: .milliseconds(200))
         check(panel.logs.count == 1, "Retry reopens a closed command tab once")
+        for _ in 0...TaskScriptCenter.logLimit {
+            center.record(
+                TaskScriptRun(
+                    event: .turnFinished, folder: checkout.folder, projectRoot: project,
+                    context: TaskScriptContext(
+                        event: .turnFinished, projectPath: project.path(), worktreePath: checkout.folder.path()),
+                    plan: TaskScriptPlan(event: .turnFinished, scripts: [], timeout: .seconds(10)), state: .succeeded))
+        }
+        check(center.runs(in: checkout.folder).contains { $0 === run }, "history retains an active after-command")
         await center.teardown(folder: checkout.folder, projectRoot: project, branch: checkout.branch)
         check(run.state == .skipped, "teardown waits for the after-command to stop before removing its folder")
         settings.setProjectScript("exit 12", for: .beforeWorktree, at: project)
@@ -174,7 +183,29 @@ private struct WorktreeSetupRegression {
             try await repository.archivedWorktrees().contains { $0.branch == archived.branch },
             "a failed before-command preserves the archived worktree record")
         settings.setProjectScript("printf restored > restored-before.txt", for: .beforeWorktree, at: project)
+        settings.setProjectScript("echo restored output", for: .afterWorktree, at: project)
         let restored = try await git.restoreArchivedTaskWorktree(archived, of: project)
+        guard let restoredRun = center.runs(in: restored).last(where: { $0.event == .afterWorktree }) else {
+            throw Failure.missing("restored after-command")
+        }
+        await restoredRun.work?.value
+        settings.setProjectScript("touch should-not-start.txt", for: .taskStarted, at: project)
+        guard let reopened = SessionModel.preview(in: app, agent: "codex", cwd: restored.path()) else {
+            throw Failure.missing("restored task")
+        }
+        let restoredPanel = terminals.panel(for: reopened)
+        check(
+            restoredPanel.logs.values.contains { $0.output.contains("restored output") && !$0.job.isRunning },
+            "opening an existing task backfills its completed after-command")
+        check(
+            !center.runs(in: restored).contains { $0.event == .taskStarted },
+            "backfilling does not rerun task-started scripts")
+        if let restoredTab = restoredPanel.tabs.selected {
+            restoredPanel.close(restoredTab.id)
+            app.sessions.register(reopened)
+            check(restoredPanel.logs.isEmpty, "registering a task again preserves a deliberately closed log tab")
+        }
+        restoredPanel.closeAll()
         check(
             FileManager.default.fileExists(atPath: project.appending(path: "restored-before.txt").path()),
             "restoring an archived worktree runs its before-command")

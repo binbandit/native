@@ -14,7 +14,7 @@ import TaskScripts
 final class TaskScriptCenter {
     /// What a task's messages wait for while its setup runs.
     static let setupHold = "the worktree's setup script"
-    /// How many runs each folder's log keeps.
+    /// The history limit; active runs stay owned until they finish even when the log fills up.
     static let logLimit = 20
 
     let settings: TaskScriptSettings
@@ -365,8 +365,11 @@ final class TaskScriptCenter {
         let key = run.folder.standardizedFileURL
         var log = runs[key] ?? []
         log.append(run)
-        if log.count > Self.logLimit {
-            log.removeFirst(log.count - Self.logLimit)
+        var excess = max(0, log.count - Self.logLimit)
+        log.removeAll { run in
+            guard excess > 0, !run.isRunning, run.state != .awaitingApproval else { return false }
+            excess -= 1
+            return true
         }
         runs[key] = log
     }
