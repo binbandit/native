@@ -4,6 +4,11 @@ Every task has a terminal panel under its composer: tabs of real shells that sta
 folder (its worktree, when it has one), drawn by libghostty, the library inside
 [Ghostty](https://ghostty.org). ⌃` shows and hides it, ⌃⇧` adds a tab (`docs/keyboard.md`), and
 the task's toolbar has a terminal button for pointer and touch.
+The button keeps the number of open tabs visible when the panel is hidden or reduced in height.
+It uses the shared working signal while a foreground command or project-action job runs, and a
+red failed signal with "Failed" when a command fails or a terminal cannot start. All tabs count:
+running work and a failure in separate tabs both remain visible. Clicking shows the terminal;
+the existing keyboard shortcuts are unchanged.
 Why libghostty, and the pin, are in `docs/decisions.md`.
 
 ## How it fits together
@@ -55,6 +60,13 @@ Why libghostty, and the pin, are in `docs/decisions.md`.
   Reduce Transparency forces 1, even over a Ghostty config's `background-opacity`.
 - **Tabs** are named by their shell's title (the folder, or the running command), numbered when two
   show the same title, and fall back to "Terminal", "Terminal 2", ... once their shell exits.
+- **Activity** lives in `TerminalTabList`, summarized across tabs by `TerminalActivitySummary`.
+  The engine reports busy-state changes independently of the panel's visibility, and keeps the
+  last command's exit code until the next command starts, the shell restarts or the tab closes.
+  An idle shell stays open without a working signal. Shell commands use libghostty's shell
+  integration to distinguish the prompt from foreground work and report exit codes; shells with
+  integration disabled cannot reliably distinguish idle from busy or report command failures.
+  Background jobs that have returned control to the prompt are outside this signal.
 - **Jobs.** A tab can run a command instead of a shell (`TerminalStore.run(_:for:)`, used by
   project actions, `docs/actions.md`): it's named after the job, shows a loader, then a green, red
   or gray dot, the elapsed time and Stop while it runs (⌃C, then End Now), and a banner with how it
@@ -89,7 +101,7 @@ it never writes the config, its themes or Ghostty.app.
   that isn't found is a config problem like any other (below).
 - **What Native overrides**, after the user's config (`GhosttyConfiguration.userConfigOverrides`):
   `wait-after-command = true` (Native shows the exited state and keeps the tab),
-  `confirm-close-surface = false` (Native asks before closing a tab with a running program),
+  `confirm-close-surface = true` (enables the busy-state query; Native owns the close prompt),
   `quit-after-last-window-closed = false`, `clipboard-read = deny` (Native has no prompt for
   programs reading the clipboard; they can still copy), and `background-opacity = 1` when Reduce
   Transparency is on. Before the user's config it sets `term = xterm-256color`, which the config

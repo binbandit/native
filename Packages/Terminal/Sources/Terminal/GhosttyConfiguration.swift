@@ -112,7 +112,7 @@ public struct GhosttyConfiguration: Hashable, Sendable {
     /// (OSC 52), so they can copy but never read.
     public static let embeddingOverrides = """
         wait-after-command = true
-        confirm-close-surface = false
+        confirm-close-surface = true
         quit-after-last-window-closed = false
         clipboard-read = deny
         clipboard-write = allow
