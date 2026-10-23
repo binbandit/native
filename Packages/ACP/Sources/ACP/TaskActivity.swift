@@ -62,6 +62,9 @@ extension SessionState {
     /// Only the live turn can narrate work. Replayed tools and earlier unfinished calls do not
     /// become today's activity when a task is opened or a new turn starts.
     public var taskActivity: TaskActivity {
-        TaskActivity(items: items[(openTurn ?? items.endIndex)...], plan: plan)
+        guard let openTurn else { return TaskActivity(verb: "Working") }
+        // The reducer already indexes open calls. Streaming a long reply must not rescan the turn.
+        let latest = openCallIndices.filter { $0 >= openTurn }.max()
+        return TaskActivity(items: latest.map { [items[$0]] } ?? [], plan: plan)
     }
 }

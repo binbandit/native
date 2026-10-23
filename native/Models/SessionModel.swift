@@ -119,6 +119,8 @@ final class SessionModel {
     private(set) var plan: [PlanEntry] = []
     /// Mirrored independently of text chunks, so the toolbar doesn't render for each token.
     private(set) var taskActivity = TaskActivity(verb: "Working")
+    /// Kept with the task when its screen is left and reopened, so an already reviewed outcome rests.
+    var reviewedTaskWellTurnID: String?
     private(set) var availableCommands: [AvailableCommand] = []
     private(set) var usage: Usage?
     /// Tool calls waiting for the user's permission, oldest first.

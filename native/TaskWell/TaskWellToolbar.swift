@@ -8,7 +8,6 @@ struct TaskWellToolbar<Dev: View>: View {
     let turnChanges: TurnChangesActions?
     let detail: (TaskWellTool) -> String
     @ViewBuilder var dev: () -> Dev
-    @State private var reviewedTurn: String?
     @State private var isLanding = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -17,7 +16,7 @@ struct TaskWellToolbar<Dev: View>: View {
             if content.isWaiting {
                 session.focusTaskRequest()
             } else if content.showsReview {
-                reviewedTurn = latestTurn?.id
+                session.markTaskWellOutcomeReviewed(latestTurn?.id)
                 turnChanges?.review()
             } else {
                 tools.toggleWell()
@@ -33,6 +32,9 @@ struct TaskWellToolbar<Dev: View>: View {
         }
         .onChange(of: session.phase) { previous, phase in
             if previous == .prompting, phase == .idle { isLanding = true }
+        }
+        .onChange(of: tools.isOpen(.changes)) { _, isOpen in
+            if isOpen { session.markTaskWellOutcomeReviewed(latestTurn?.id) }
         }
         .task(id: isLanding) {
             guard isLanding else { return }
@@ -77,7 +79,7 @@ struct TaskWellToolbar<Dev: View>: View {
             content.verb = "Stopped"
         } else {
             content.status = isLanding ? .done : .idle
-            if let turn = latestTurn, turn.id != reviewedTurn, let turnChanges {
+            if let turn = latestTurn, turn.id != session.reviewedTaskWellTurnID, let turnChanges {
                 var summary = session.state.summary(of: turn)
                 if let detected = turnChanges.latestTurnChanges, detected.startedAt == turn.startedAt {
                     summary.changedFiles = detected.files
