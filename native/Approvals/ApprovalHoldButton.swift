@@ -4,6 +4,7 @@ import SwiftUI
 struct ApprovalHoldButton: View {
     let shortcutsEnabled: Bool
     var keyboardHeld = false
+    var didCommit: () -> Void = {}
     let allow: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
@@ -41,7 +42,9 @@ struct ApprovalHoldButton: View {
             }
         }
         .onDisappear {
-            pending?.cancel(); hold.cancel()
+            // Crossing the threshold commits the answer. Leaving during its acknowledgement
+            // must not silently turn an already displayed "Allowed" back into a pending ask.
+            if !allowed { pending?.cancel(); hold.cancel() }
         }
         .onChange(of: isEnabled) { _, enabled in if !enabled { cancel() } }
         .onChange(of: scenePhase) { _, phase in if phase != .active { cancel() } }
@@ -81,6 +84,7 @@ struct ApprovalHoldButton: View {
     }
 
     private func acknowledge() {
+        didCommit()
         PlatformApprovalHold.acknowledge()
         pending = Task { @MainActor in
             do { try await Task.sleep(for: .seconds(ApprovalHold.acknowledgementDuration)) } catch { return }

@@ -128,7 +128,7 @@ public struct ApprovalCommand: Equatable, Sendable {
             !flags.contains(where: { $0.value == "--" }) || flags.last?.value == "--"
         else { return nil }
         let paths = tokens.dropFirst(1 + flags.count)
-        guard !paths.isEmpty else { return nil }
+        guard !paths.isEmpty, !paths.contains(where: { $0.value.hasPrefix("-") }) else { return nil }
         var allCaches = true
         var outside = false
         var parts = [part(tokens[0], "delete")]

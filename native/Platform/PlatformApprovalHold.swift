@@ -65,24 +65,11 @@ private struct ApprovalHoldKeyMonitor: NSViewRepresentable {
             guard monitor == nil else { return }
             monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp, .flagsChanged]) {
                 [weak self, weak view] event in
-                MainActor.assumeIsolated {
-                    guard let self, let view, let window = view.window, event.window === window else { return event }
-                    let commandOnly =
-                        event.modifierFlags.intersection([.command, .shift, .option, .control]) == .command
-                    if event.type == .flagsChanged, !commandOnly {
-                        release()
-                        return event
-                    }
-                    if event.type == .keyUp, event.keyCode == heldKeyCode {
-                        release()
-                        return nil
-                    }
-                    guard event.type == .keyDown, commandOnly,
-                        event.charactersIgnoringModifiers?.lowercased() == "y"
-                    else { return event }
-                    if heldKeyCode == nil { heldKeyCode = event.keyCode; changed?(true) }
-                    return nil
+                let consumed = MainActor.assumeIsolated {
+                    guard let self, let view else { return false }
+                    return self.handle(event, in: view)
                 }
+                return consumed ? nil : event
             }
             observer = NotificationCenter.default.addObserver(
                 forName: NSWindow.didResignKeyNotification, object: nil, queue: .main
@@ -91,6 +78,24 @@ private struct ApprovalHoldKeyMonitor: NSViewRepresentable {
                     if let window = note.object as? NSWindow, window === view?.window { self?.release() }
                 }
             }
+        }
+
+        private func handle(_ event: NSEvent, in view: NSView) -> Bool {
+            guard let window = view.window, event.window === window else { return false }
+            let commandOnly = event.modifierFlags.intersection([.command, .shift, .option, .control]) == .command
+            if event.type == .flagsChanged, !commandOnly {
+                release()
+                return false
+            }
+            if event.type == .keyUp, event.keyCode == heldKeyCode {
+                release()
+                return true
+            }
+            guard event.type == .keyDown, commandOnly,
+                event.charactersIgnoringModifiers?.lowercased() == "y"
+            else { return false }
+            if heldKeyCode == nil { heldKeyCode = event.keyCode; changed?(true) }
+            return true
         }
 
         private func release() {

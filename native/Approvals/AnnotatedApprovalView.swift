@@ -17,6 +17,7 @@ struct AnnotatedApprovalView: View {
     @State var instruction = ""
     @State private var sending = false
     @State private var keyboardHeld = false
+    @State private var committed = false
     @State var failure: String?
 
     private var analysis: ApprovalCommand? {
@@ -55,7 +56,7 @@ struct AnnotatedApprovalView: View {
                         ToolCallBody(call: call, presentation: ToolPresentation(call), phase: ToolPhase(call))
                     }
                     if !isAvailable {
-                        Text("The agent is disconnected. Restart the task to answer.")
+                        Text("Waiting for the task to reconnect before you can answer.")
                             .font(.dsBody).foregroundStyle(.dsTextSecondary)
                     }
                     footer
@@ -90,8 +91,10 @@ struct AnnotatedApprovalView: View {
                 .padding(.vertical, DS.Space.lg)
             }
         }
-        .disabled(sending || !isAvailable)
-        .approvalHoldKeys(enabled: shortcutsEnabled && isAvailable && !sending && analysis?.risk == .irreversible) {
+        .disabled(sending || committed || !isAvailable)
+        .approvalHoldKeys(
+            enabled: shortcutsEnabled && isAvailable && !sending && !committed && analysis?.risk == .irreversible
+        ) {
             keyboardHeld = $0
         }
     }
@@ -183,7 +186,9 @@ struct AnnotatedApprovalView: View {
         }
         if let allow = options.first(where: { $0.kind == .allowOnce }) {
             if analysis?.risk == .irreversible {
-                ApprovalHoldButton(shortcutsEnabled: shortcutsEnabled, keyboardHeld: keyboardHeld) { onChoose(allow) }
+                ApprovalHoldButton(
+                    shortcutsEnabled: shortcutsEnabled, keyboardHeld: keyboardHeld, didCommit: { committed = true }
+                ) { onChoose(allow) }
             } else {
                 Button {
                     onChoose(allow)
@@ -205,7 +210,7 @@ struct AnnotatedApprovalView: View {
 
     private func sendInstruction(_ text: String) {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !sending, !text.isEmpty else { return }
+        guard isAvailable, !sending, !committed, !text.isEmpty else { return }
         sending = true
         failure = nil
         Task {

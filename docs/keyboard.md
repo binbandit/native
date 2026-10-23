@@ -360,10 +360,6 @@ Controls ("…") menu. Each setting lists its choices with the current value che
 keys and Return to choose from the menu. Model, effort, autonomy and mode keep their dedicated
 controls, moving into More only as the row runs out of room.
 
-With the Quiet composer experiment enabled, each setting is a plain-word button under the draft.
-The same keys below still apply. The agent name opens New Task With (⌥⌘N), or Change Agent
-when that experiment is also enabled. Tab reaches the buttons, Space opens their pickers, and
-Escape closes a picker.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
