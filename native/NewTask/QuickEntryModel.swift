@@ -17,6 +17,9 @@ final class QuickEntryModel {
 
     var isEnabled: Bool { ExperimentStore.shared.value(of: .composeTask) }
     var isPresented = false
+    var isChoosingFolder = false
+    /// Explicit navigation, so RootView can reveal a task even while Settings is showing.
+    var taskOpenRequests = 0
     var draft = ""
     var context: Context?
     var project: Project.ID?

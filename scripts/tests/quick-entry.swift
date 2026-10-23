@@ -140,15 +140,31 @@ private struct QuickEntryRegression {
         try await host.complete()
         try await wait { await host.prompts.count == 1 }
         try require(app.selection == selectedWhileStarting, "Background completion stole selection")
+        try require(entry.taskOpenRequests == 0, "Background start requested foreground navigation")
         try require(await host.prompts == [message], "The first message lost its selection context")
         app.openQuickEntryTask()
         try require(app.selection == background.openedSession, "Open did not find the completed task")
+        try require(entry.taskOpenRequests == 1, "Open did not request a visible destination")
+
+        app.showQuickEntry()
+        entry.draft = "Keep this while changing folders"
+        let previousSelection = app.selection
+        let secondFolder = folder.appending(path: "second")
+        try FileManager.default.createDirectory(at: secondFolder, withIntermediateDirectories: true)
+        await app.addQuickEntryProject(secondFolder)
+        try require(entry.project != project.id, "The chosen folder did not replace the draft's project")
+        try require(
+            entry.project.flatMap(app.projects.project)?.url == secondFolder, "The draft targets the wrong folder")
+        try require(app.selection == previousSelection, "Choosing a folder navigated away from the underlying task")
+        try require(entry.draft == "Keep this while changing folders", "Choosing a folder lost the draft")
+        app.chooseQuickEntryProject(project.id)
 
         app.showQuickEntry()
         entry.draft = "Start and open"
         app.startQuickEntry(open: true)
         guard let foreground = app.startingTasks.first else { throw CheckFailure("No foreground start") }
         try require(app.selection == foreground.id, "Start and open did not select its placeholder")
+        try require(entry.taskOpenRequests == 2, "Foreground start did not request a visible destination")
         try await wait { await host.pending != nil }
         try await host.complete()
         try await wait { await host.prompts.count == 2 }
@@ -157,6 +173,7 @@ private struct QuickEntryRegression {
         app.showQuickEntry()
         entry.draft = "Expand without sending"
         app.expandQuickEntry()
+        try require(entry.taskOpenRequests == 3, "Expand did not request a visible destination")
         try await wait { await host.pending != nil }
         try await host.complete()
         try await wait { app.startingTasks.isEmpty }

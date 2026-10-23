@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct QuickEntryPanel: View {
     let model: AppModel
@@ -31,6 +32,11 @@ struct QuickEntryPanel: View {
         .accessibilityLabel("Quick Entry")
         .onAppear { isFocused = true }
         .onDisappear(perform: model.restoreQuickEntryFocus)
+        .fileImporter(isPresented: $entry.isChoosingFolder, allowedContentTypes: [.folder]) { result in
+            if case .success(let url) = result {
+                Task { await model.addQuickEntryProject(url) }
+            }
+        }
         .onChange(of: entry.picker) { _, picker in
             if picker == nil { isFocused = true }
         }

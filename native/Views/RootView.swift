@@ -93,6 +93,7 @@ struct RootView: View {
                 expeditions.isPageShown = false
             }
         }
+        .onChange(of: model.quickEntry.taskOpenRequests) { settings.close() }
         .onChange(of: expeditions.isPageShown) { _, shows in
             if shows {
                 model.selection = nil

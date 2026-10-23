@@ -97,7 +97,7 @@ struct QuickEntryPicker: View {
                 .dsHitTarget(DS.Size.controlSM)
             }
             SeparatorLine()
-            Button("Choose a Folder…") { model.isAddingProject = true }
+            Button("Choose a Folder…") { entry.isChoosingFolder = true }
                 .buttonStyle(.ds(.ghost))
         }
         .padding(DS.Space.xs)

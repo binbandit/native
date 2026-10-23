@@ -39,6 +39,12 @@ extension AppModel {
         reconcileQuickEntryAgent()
     }
 
+    func addQuickEntryProject(_ url: URL) async {
+        let project = await addProject(url, focus: false)
+        guard quickEntry.isPresented else { return }
+        chooseQuickEntryProject(project.id)
+    }
+
     func chooseQuickEntryDevice(_ device: SessionDevice) {
         quickEntry.device = device
         quickEntry.failure = nil
@@ -99,7 +105,10 @@ extension AppModel {
         ProjectDevicePreference.remember(task.device, for: project.id)
         quickEntry.lastStartedTask = open ? nil : task
         quickEntry.clearAfterStarting()
-        if open { selection = task.id }
+        if open {
+            selection = task.id
+            quickEntry.taskOpenRequests &+= 1
+        }
         Task { await start(task) }
     }
 
@@ -115,6 +124,7 @@ extension AppModel {
         let destination = task.openedSession ?? task.id
         guard startingTask(destination) != nil || catalog.contains(destination) else { return }
         selection = destination
+        quickEntry.taskOpenRequests &+= 1
     }
 
     func restoreQuickEntryFocus() {
