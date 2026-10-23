@@ -12,18 +12,20 @@ struct StderrTailTests {
         let pipe = Pipe()
         let descriptor = fcntl(pipe.fileHandleForReading.fileDescriptor, F_DUPFD_CLOEXEC, 0)
         try #require(descriptor >= 0)
-        let input = StderrTailTestHandle(fileDescriptor: descriptor, closeOnDealloc: true)
-        var tail: StderrTail? = try StderrTail(reading: input)
+        var input: StderrTailTestHandle? = StderrTailTestHandle(fileDescriptor: descriptor, closeOnDealloc: true)
+        let probe = try #require(input?.probe)
+        var tail: StderrTail? = try StderrTail(reading: #require(input))
         try #require(tail != nil)
-        input.armed.withLock { $0 = true }
-        defer { input.proceed.signal() }
+        probe.armed.withLock { $0 = true }
+        defer { probe.proceed.signal() }
         try pipe.fileHandleForWriting.write(contentsOf: Data("diagnostic".utf8))
-        try #require(input.entered.wait(timeout: .now() + 5) == .success)
+        try #require(probe.entered.wait(timeout: .now() + 5) == .success)
 
+        input = nil
         tail = nil
-        input.proceed.signal()
-        try #require(input.closed.wait(timeout: .now() + 5) == .success)
-        #expect(!input.closedInsideCallback.withLock { $0 })
+        probe.proceed.signal()
+        try #require(probe.released.wait(timeout: .now() + 5) == .success)
+        #expect(probe.closedBeforeRelease.withLock { $0 })
     }
     #endif
 
