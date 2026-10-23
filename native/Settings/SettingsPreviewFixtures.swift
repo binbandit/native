@@ -15,10 +15,11 @@ enum SettingsPreviewFixtures {
     /// The agent extensions and a few of Native's own, without the ones that watch the clock or the
     /// network as soon as they exist.
     static func registry() -> PluginRegistry {
-        PluginRegistry(builtIns: [
-            BuiltInPlugins.claudeCode, BuiltInPlugins.codex, BuiltInPlugins.cursor, BuiltInPlugins.openCode,
-            OnDeviceTitlesPlugin(), SoundsPlugin(), MCPServersPlugin(), SkillsPlugin(), OrchestrationPlugin(),
-        ])
+        PluginRegistry(
+            builtIns: [
+                BuiltInPlugins.claudeCode, BuiltInPlugins.codex, BuiltInPlugins.cursor, BuiltInPlugins.openCode,
+                OnDeviceTitlesPlugin(), SoundsPlugin(), MCPServersPlugin(), SkillsPlugin(), OrchestrationPlugin(),
+            ], defaults: PreviewUserDefaults())
     }
 
     static func folders(readers: [AgentDefinition]) -> [SettingsFolder] {
