@@ -50,9 +50,13 @@ extension HostCore {
     }
 
     private func finishCommandStops() async {
-        let stopping = Array(stoppingSessions.values)
-        for session in stopping { session.stopRequestedAt = .distantPast }
-        for session in stopping { await session.stopTimeout?.value }
+        // Another client can request Stop while cleanup suspends. Drain those requests too before
+        // returning to the immediate exit path, which deliberately preserves other active turns.
+        while !stoppingSessions.isEmpty {
+            let stopping = Array(stoppingSessions.values)
+            for session in stopping { session.stopRequestedAt = .distantPast }
+            for session in stopping { await session.stopTimeout?.value }
+        }
     }
 
     func exitIfIdleForRestart() {

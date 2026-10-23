@@ -5,6 +5,40 @@ import Testing
 
 @Suite("Stop owns command termination", .serialized, .timeLimit(.minutes(1)))
 struct HostStopCommandTests {
+    @Test("Immediate restart includes another client's Stop arriving during cleanup")
+    func restartWithConcurrentStop() async throws {
+        let harness = try HostHarness()
+        try harness.start()
+        let first = try await harness.connect()
+        let second = try await harness.connect()
+        let otherAgent = AgentSpec(
+            id: "other", name: "Other Agent", command: harness.agentSpec.command,
+            env: harness.agentSpec.env)
+        try await first.client.syncAgents([harness.agentSpec, otherAgent])
+        let initial = try await first.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: harness.root.path, attach: true))
+        let later = try await second.client.newSession(
+            NewSessionParams(agentID: "other", cwd: harness.root.path, attach: true))
+        _ = try await first.client.prompt(PromptParams(sessionID: initial.id, text: "stubborn 100"))
+        _ = try await second.client.prompt(PromptParams(sessionID: later.id, text: "stubborn 100"))
+        try await first.wait("the first command") { await $0.agentText(initial.id).contains("tick 1") }
+        try await second.wait("the second command") { await $0.agentText(later.id).contains("tick 1") }
+        try await first.client.cancel(initial.id)
+        // Shutdown replies before awaiting cleanup. The other connection can still submit Stop.
+        try await first.client.shutdownHost(stopAgents: false, immediately: true)
+        try await second.client.cancel(later.id)
+        let exit = try await harness.waitForExit(timeout: .seconds(5))
+        if exit == nil {
+            try await second.client.shutdownHost(stopAgents: true)
+            _ = try await harness.waitForExit()
+        }
+        #expect(exit == 75)
+        #expect(await first.turnsEnded(initial.id) == ["error"])
+        #expect(await second.turnsEnded(later.id) == ["error"])
+        await first.stop()
+        await second.stop()
+    }
+
     @Test("Immediate restart finishes Stop without waiting for a shared sibling and recovers that sibling")
     func restartWithWorkingSibling() async throws {
         let harness = try HostHarness()
