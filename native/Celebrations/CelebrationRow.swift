@@ -19,6 +19,7 @@ struct CelebrationRow: View {
     private var showing: Bool { center.resolution.active?.eventID == event.id }
     private var title: String { event.contribution.title.resolved() }
     private var alias: String? {
+        let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty, !title.localizedStandardContains(query) else { return nil }
         return event.contribution.aliases.first { $0.localizedStandardContains(query) }
     }
