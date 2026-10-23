@@ -105,6 +105,7 @@ private struct RestartRaceRegression {
             try await check(failing: false, discard: false)
             try await check(failing: true, discard: false)
             try await check(failing: true, discard: false, requestFailure: true)
+            try await check(failing: true, discard: false, recoveredExternally: true)
             try await check(failing: false, discard: true)
             print("PASS: task startup waits for restart; failure, retry, draft and discard are preserved")
         } catch {
@@ -113,7 +114,9 @@ private struct RestartRaceRegression {
         }
     }
 
-    static func check(failing: Bool, discard: Bool, requestFailure: Bool = false) async throws {
+    static func check(
+        failing: Bool, discard: Bool, requestFailure: Bool = false, recoveredExternally: Bool = false
+    ) async throws {
         let host = RestartHost()
         let client = NativeHostClient(transport: host, clientInfo: PeerInfo(name: "tests", version: "1", build: "1"))
         await client.start()
@@ -165,10 +168,25 @@ private struct RestartRaceRegression {
             guard task.failure?.message.contains("could not initialize") == true, task.draft == "Keep this draft" else {
                 throw CheckFailure("Restart diagnostic or draft was lost")
             }
-            let retry = Task { await app.retry(task) }
-            try await wait { app.runtime(agent)?.status == .starting }
-            guard task.failure == nil, task.folder == folder else { throw CheckFailure("Retry lost its workspace") }
-            try await host.completeRestart(failing: false)
+            if recoveredExternally {
+                let recovery = Task { await app.restart(agent) }
+                try await wait { app.runtime(agent)?.status == .starting }
+                try await host.completeRestart(failing: false)
+                await recovery.value
+            }
+            var retried = false
+            let retry = Task {
+                await app.retry(task)
+                retried = true
+            }
+            if recoveredExternally {
+                try await wait { retried || app.runtime(agent)?.status == .starting }
+                guard retried else { throw CheckFailure("Retry restarted an agent that was already recovered") }
+            } else {
+                try await wait { app.runtime(agent)?.status == .starting }
+                guard task.failure == nil, task.folder == folder else { throw CheckFailure("Retry lost its workspace") }
+                try await host.completeRestart(failing: false)
+            }
             await retry.value
             try opened(app, draft: "Keep this draft")
             guard await host.restartCount == 2 else { throw CheckFailure("Retry did not restart exactly once") }
