@@ -67,9 +67,6 @@ final class ArtifactViewerModel {
         let canRevealFiles = canRevealFiles
         loading = Task { [weak self] in
             do {
-                let original = canRevealFiles ? await PlatformArtifactActions.existingFile(artifact.url) : nil
-                guard !Task.isCancelled, self?.requestID == request else { return }
-                self?.revealURL = original
                 let bytes: Data
                 if let embedded = artifact.data {
                     bytes = embedded
@@ -107,6 +104,10 @@ final class ArtifactViewerModel {
                 }
                 self.isLoading = false
             }
+            // A disconnected volume must not delay an image whose bytes are already in the task.
+            let original = canRevealFiles ? await PlatformArtifactActions.existingFile(artifact.url) : nil
+            guard !Task.isCancelled, self?.requestID == request else { return }
+            self?.revealURL = original
         }
     }
 
