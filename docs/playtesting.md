@@ -113,6 +113,7 @@ Launch arguments go after `--`: `scripts/dev/run-isolated.sh playtest --no-build
 | `-nativeOpenSession <agent>/<session id>` | Opens that session at launch (`docs/performance.md`) |
 | `-pluginsDirectory <folder>` | Loads plugins from there; `seed` already points it at its plugins |
 | `-nativeHostRefused YES` | Acts as if background running were refused, to see the fallback (`docs/durability.md`) |
+| `-quickEntryFixture selection` | With `NativeComposeTask` on, Cmd-N renders a Quick Entry preview state. Also accepts `empty`, `firstLaunch`, `failure`, `offline`, `narrow`, `devices`, `agents`, `projects`. Debug only; the device fixtures never connect to a paired host. Omit this argument for behavior checks. |
 | `-framePacing YES` | Logs dropped frames once a second (`drive.sh <name> logs --stream`) |
 
 For a long transcript without spending anything, install the long-session fake agent

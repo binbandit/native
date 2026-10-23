@@ -84,7 +84,7 @@ struct AnnotatedApprovalView: View {
                     ComposerEditor(
                         text: $instruction, selection: $instructionSelection,
                         placeholder: "Or tell \(agentName) what to do instead", isFocused: $instructionFocused,
-                        inputLabel: "Tell \(agentName) what to do instead", textInsets: DS.Approval.editorInsets,
+                        inputLabel: "Tell \(agentName) what to do instead", insets: DS.Approval.editorInsets,
                         maximumHeight: DS.Approval.instructionMaximumHeight
                     ) { press in
                         guard press.key == .return, press.modifiers.isEmpty, !PlatformTextInput.isComposing else {

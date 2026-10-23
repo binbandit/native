@@ -102,7 +102,7 @@ extension AppModel {
         removeWorkspace(of: task)
     }
 
-    private func start(_ task: StartingTask) async {
+    func start(_ task: StartingTask) async {
         // A task on a paired host is made there (AppModel+HostsStarting.swift).
         if case .remote(let host) = task.device { return await start(task, on: host) }
         guard let project = projects.project(task.project) else { return remove(task) }
@@ -183,6 +183,7 @@ extension AppModel {
     /// The session takes the task's place: in the sidebar, the selection and history, with the draft.
     /// Internal only for AppModel+HostsStarting.swift, as are `fail` and `remove`.
     func finish(_ task: StartingTask, with session: SessionModel) {
+        task.openedSession = session.key
         session.draft = task.draft
         let wasSelected = selection == task.id
         startingTasks.removeAll { $0 === task }

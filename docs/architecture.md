@@ -24,10 +24,11 @@
   login-shell environment. `ACPConnection` (an actor) speaks JSON-RPC and delivers events in wire
   order: when a request returns, every update sent before its response has been applied.
   A host agent that exits during initialization stays failed, with its diagnostic output and a
-  Restart action. Only intentionally stopped or previously initialized agents return to idle;
-  a failed launch must never be presented as ready to start a task. A task requested during an
-  agent restart stays in Starting until the whole restart finishes. If it fails, Restart and Retry
-  restarts the agent and continues the same task, keeping its draft and prepared workspace.
+  Restart action. Diagnostic snapshots drain pending stderr without waiting for its callback or
+  for a process holding the pipe open to exit. Only intentionally stopped or previously initialized
+  agents return to idle; a failed launch must never be presented as ready to start a task. A task
+  requested during an agent restart stays in Starting until the whole restart finishes. If it fails,
+  Restart and Retry restarts the agent and continues the same task, keeping its draft and prepared workspace.
   When every installed, enabled agent has failed, `AppModel.agentStartupFailure` supplies Home
   and New Task with the same named recovery state (`NativeSetup.AgentStartupFailure`). New Task
   opens the agent picker for Restart or Agents Settings instead of preparing a task that cannot start.
@@ -157,6 +158,13 @@ The move is mechanical and happens in small PRs once the current feature work la
 
 ## Experiments
 
+New Task's `NativeComposeTask` gate adds Quick Entry over the selected task. Its draft and
+removable selection context live in `native/NewTask/QuickEntryModel`; writing and dismissing
+the panel create no session or workspace. Start hands the message to the existing `StartingTask`
+pipeline. A background start leaves selection alone, and its confirmation follows the starting
+task to its finished session. During the first slice, Expand hands the same draft to today's
+full New Task view. Compose's page and the shared well's pre-start presentation follow later.
+
 ### Home Next
 
 `NativeHomeNext` (Settings > Labs > Next) defaults to off. `HomeDetail` switches to
@@ -256,13 +264,20 @@ Existing surfaces keep `StatusIndicator` until their gated redesign adopts `Task
 Requests show a two-line sentence and a mono waiting clock, using the request's arrival timestamp
 from ACP or the host event log. The grid breathes for its first 60 seconds and for four seconds
 when the scene becomes active, then holds still. Reduce Motion is always still. The keycap marks
-the visible task's oldest permission request, matching the existing shortcut routing. Questions
-and asks in other tasks do not claim a shortcut that would answer something else.
+the oldest reachable ask across projects and child tasks, using the same request identity as ⌘Y.
+
+Slice 2 adds `TaskPeek`: Space in the sidebar, the signal button, force click and the context menu
+all open one 600pt popover without changing selection. A visible row supplies its anchor; hidden
+rows and Settings use the window anchor. The model routes captured requests to their owning
+session and checks identity again before answering. Questions, plans and commands with unknown
+or irreversible effects open Peek from ⌘Y; a small ACP vocabulary permits routine approvals.
+Peek reuses `ToolCallView` and `AgentQuestionSection`. The composer's annotated approval has not
+landed yet and replaces the former when available. Recovered failures use their live signal;
+unrecovered failures expose the real notice and the model's recovery action.
 
 Selection, menus, ordering, pins, archive and keyboard navigation remain shared with today's
 sidebar. All tasks stay visible in this slice; the rejected three-recent-task fold is removed.
-Peek with the composer's shared approval, global ask routing, fold by day, the collapsed toolbar
-signal and optional row facts are later slices. Enable before an isolated launch with
+Fold by day, the collapsed toolbar signal and optional row facts are later slices. Enable before an isolated launch with
 `defaults write dev.binbandit.native.dev.<name> experiment.NativeSidebarNext -bool YES`.
 
 ### Plainly Settings
@@ -308,6 +323,15 @@ cancels, 0.4 seconds of acknowledgement, five-second accessibility confirmation,
 Allow. Platform key monitoring and haptics live in `native/Platform`. An alternative instruction is
 queued through `SessionModel.instructInstead` before declining the original request. ACP never
 receives an edited tool call, and the ordinary draft is kept.
+
+### Task well
+
+`NativeTaskWell` is an off-by-default Labs gate selecting the task-tools screen with a centered
+activity capsule instead of the facts header and tool buttons. `TaskActivityNarration` in ACP projects
+reported tool activity and counted plan steps; `TaskWellWiring` connects the existing tool models.
+Requests lead to the existing composer or child request surface, and turn outcomes reuse detected
+Changes. The shared `TaskSignal` supplies the status vocabulary and finite attention animation.
+The behavior, tool order and remaining slices are described in `docs/session-tools.md`.
 
 ### Changing a task's agent (Labs)
 

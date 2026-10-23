@@ -1,4 +1,5 @@
 import ACP
+import Foundation
 import NativeAutomation
 import NativeHostClient
 import NativeHostProtocol
@@ -42,7 +43,7 @@ struct RootView: View {
         @Bindable var model = model
         @Bindable var automation = automation
         // The status bar is part of the layout, under everything, so nothing ends up beneath it.
-        VStack(spacing: 0) {
+        let navigation = VStack(spacing: 0) {
             // Search's panel hangs off the content, out of the long chain below, which the type
             // checker already finds heavy.
             content
@@ -56,6 +57,7 @@ struct RootView: View {
                 .undoToast($undoToast)
             StatusBar(registry: statusBar)
         }
+        .taskPeekHost()
         .approvalHoldKeyRoot()
         .addHostPresentation(hosts: model.hosts)
         // After an update with highlights, once nothing waits on the user.
@@ -94,6 +96,7 @@ struct RootView: View {
                 expeditions.isPageShown = false
             }
         }
+        .onChange(of: model.quickEntry.taskOpenRequests) { settings.close() }
         .onChange(of: expeditions.isPageShown) { _, shows in
             if shows {
                 model.selection = nil
@@ -101,53 +104,58 @@ struct RootView: View {
                 automationPage = nil
             }
         }
-        .changeAgentPresentation()
-        .newExpeditionSheet()
-        .sheet(isPresented: $automation.isWorkflowPickerRequested) {
-            WorkflowPickerSheet(cwd: model.currentProject?.url, onAddProject: { model.isAddingProject = true }) {
-                run in
-                automationPage = .workflows
-                workflowPath = [run]
+        navigation
+            .changeAgentPresentation()
+            .newExpeditionSheet()
+            .sheet(isPresented: $automation.isWorkflowPickerRequested) {
+                WorkflowPickerSheet(cwd: model.currentProject?.url, onAddProject: { model.isAddingProject = true }) {
+                    run in
+                    automationPage = .workflows
+                    workflowPath = [run]
+                }
             }
-        }
-        .task(id: model.selection) {
-            if let key = model.selection {
-                await model.loadSession(key)
+            .task(id: model.selection) {
+                if let key = model.selection {
+                    await model.loadSession(key)
+                }
             }
-        }
-        .sheet(item: $model.terminalSignIn) { request in
-            AgentTerminalSignInSheet(request: request) { await model.finishTerminalSignIn($0) }
-        }
-        .sheet(isPresented: $model.isAddingAgent) {
-            AddAgentSheet(agents: model.agentsToAdd, summaries: model.plugins.descriptions) {
-                await model.checkForAgents()
+            .sheet(item: $model.terminalSignIn) { request in
+                AgentTerminalSignInSheet(request: request) { await model.finishTerminalSignIn($0) }
             }
-        }
-        // Every agent with its state; a system dialog shows only three choices.
-        .agentPicker(isPresented: $model.isChoosingAgent)
-        .fileImporter(isPresented: $model.isAddingProject, allowedContentTypes: [.folder]) { result in
-            if case .success(let url) = result {
-                Task { await model.addProject(url) }
+            .sheet(isPresented: $model.isAddingAgent) {
+                AddAgentSheet(agents: model.agentsToAdd, summaries: model.plugins.descriptions) {
+                    await model.checkForAgents()
+                }
             }
-        }
-        .actionFailureAlert()
-        .alert(
-            "Sign In to \(signInAgent?.agent.displayName ?? "")",
-            isPresented: Binding(get: { model.signInPrompt != nil }, set: { if !$0 { model.signInPrompt = nil } }),
-            presenting: signInAgent
-        ) { runtime in
-            ForEach(runtime.authMethods, id: \.id) { method in
-                Button(method.name) {
-                    Task {
-                        if await model.signIn(to: runtime.agent.id, with: method, thenStartSession: true) {
-                            await model.newSession(with: runtime.agent.id)
+            // Every agent with its state; a system dialog shows only three choices.
+            .agentPicker(isPresented: $model.isChoosingAgent)
+            .fileImporter(
+                isPresented: $model.isAddingProject, allowedContentTypes: [.folder], onCompletion: importProject
+            )
+            .actionFailureAlert()
+            .alert(
+                "Sign In to \(signInAgent?.agent.displayName ?? "")",
+                isPresented: Binding(get: { model.signInPrompt != nil }, set: { if !$0 { model.signInPrompt = nil } }),
+                presenting: signInAgent
+            ) { runtime in
+                ForEach(runtime.authMethods, id: \.id) { method in
+                    Button(method.name) {
+                        Task {
+                            if await model.signIn(to: runtime.agent.id, with: method, thenStartSession: true) {
+                                await model.newSession(with: runtime.agent.id)
+                            }
                         }
                     }
                 }
+                Button("Cancel", role: .cancel) {}
+            } message: { runtime in
+                Text("\(runtime.agent.displayName) needs you to sign in before it can start a task.")
             }
-            Button("Cancel", role: .cancel) {}
-        } message: { runtime in
-            Text("\(runtime.agent.displayName) needs you to sign in before it can start a task.")
+    }
+
+    private func importProject(_ result: Result<URL, any Error>) {
+        if case .success(let url) = result {
+            Task { await model.addProject(url) }
         }
     }
 
@@ -169,7 +177,9 @@ struct RootView: View {
             SettingsScreen(
                 pane: $settings.pane,
                 additionalPanes: AppSettingsPanes.all(
-                    plugins: model.plugins, terminals: terminals, keepAwake: keepAwake, projects: model.projects.all))
+                    plugins: model.plugins, terminals: terminals, keepAwake: keepAwake, projects: model.projects.all)
+            )
+            .modifier(QuickEntryPresentation(model: model, git: git))
         } else {
             splitView
         }
@@ -178,6 +188,11 @@ struct RootView: View {
     private var splitView: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebar
+                .modifier(
+                    QuickEntryScrim(
+                        isPresented: model.quickEntry.isEnabled && model.quickEntry.isPresented,
+                        dismiss: model.quickEntry.dismiss)
+                )
                 .dsSidebarColumnTransparency()
                 // The only sidebar toggle is ours, right after the window controls; as a
                 // sidebar toolbar item it stays there when the sidebar is hidden, too. The system's
@@ -251,6 +266,7 @@ struct RootView: View {
             .background(.dsBackground)
             .environment(\.inspectorRoom, inspectorRoom.room(sidebar: $columnVisibility))
             .environment(\.sessionTranscriptMemory, transcriptMemory)
+            .modifier(QuickEntryPresentation(model: model, git: git))
         }
         .toolbar(removing: .sidebarToggle)
         .tracksWindowRoom(inspectorRoom.window)

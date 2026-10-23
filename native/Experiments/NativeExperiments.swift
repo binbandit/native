@@ -11,8 +11,10 @@ extension ExperimentCatalog {
         Parameter<TranscriptWidth>.transcriptWidth,
         Gate.unfoldExploration,
         Gate.sessionTools,
+        Gate.taskWell,
         Gate.sidebarNext,
         Gate.composerNext,
+        Gate.composeTask,
         Gate.changeAgent,
         Gate.homeNext,
         Gate.settingsPlainly,
@@ -60,6 +62,17 @@ extension Parameter where Value == TranscriptWidth {
 // MARK: - Gates
 
 extension Gate {
+    static let composeTask = Gate(
+        id: "NativeComposeTask",
+        title: "Compose Task",
+        summary: "Start a task from Quick Entry without leaving the task you're reading.",
+        site: "New Task ▸ Quick Entry",
+        stage: .labs,
+        owner: "new-task",
+        reviewBy: ReviewDate(year: 2026, month: 12, day: 15),
+        default: false
+    )
+
     static let changeAgent = Gate(
         id: "change-agent", title: "Change Agent",
         summary:
@@ -79,6 +92,17 @@ extension Gate {
         default: false
     )
 
+    static let taskWell = Gate(
+        id: "NativeTaskWell",
+        title: "The well",
+        summary: "One quiet place for task activity, requests, outcomes and tools in the toolbar.",
+        site: "Task ▸ toolbar and tools",
+        stage: .labs,
+        owner: "tasks",
+        reviewBy: ReviewDate(year: 2026, month: 12, day: 15),
+        default: false
+    )
+
     static let settingsPlainly = Gate(
         id: "NativeSettingsPlainly",
         title: "Plainly settings",
@@ -93,7 +117,7 @@ extension Gate {
     static let sidebarNext = Gate(
         id: "NativeSidebarNext",
         title: "All in view",
-        summary: "Titles at rest, shared grid signals and readable asks with waiting clocks.",
+        summary: "Titles at rest, shared signals, Peek and a global shortcut for the oldest ask.",
         site: "Sidebar ▸ projects and tasks",
         stage: .labs,
         owner: "sidebar",

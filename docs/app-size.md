@@ -16,7 +16,7 @@ noticed while there's still room to choose what to cut; lower them as the cuts i
 | Download, update archive | 47 MB | 42.7 MB |
 | Download, disk image | 48 MB | about 43.3 MB |
 | Installed app | 118 MB | 107.5 MB |
-| App binary (`Contents/MacOS/Native`) | 59 MB | 53.2 MB |
+| App binary (`Contents/MacOS/Native`) | 59.5 MB | 53.2 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
 `scripts/release/size-check.sh` holds the same numbers and fails when anything is over. It also
@@ -58,6 +58,26 @@ feature measurements used separate branches; their combined code now exceeds the
 binary allowance. Creation hooks, captured terminal logs and their retry controls add no assets
 or dependencies. The binary budget is now 59 MB for this measured integration, with a small
 margin. The download, installed, disk-image and script-runtime budgets stay unchanged.
+
+The task well integrated with current main at `a050243f` measures 59.026 MB for both Release
+and Nightly binaries, about 0.026 MB above that allowance. The default-off toolbar, tool list
+and child-question handoff compile alongside the existing task screen, with no added assets
+or dependencies; their fixtures remain Debug-only. The binary budget is now 59.5 MB for this
+integration. Nightly downloads at 46.3 MB and installs at 115.8 MB, within the unchanged limits.
+Remeasure when the well replaces the legacy task presentation.
+
+Quick Entry adds the opt-in panel, context capture, address pickers and background-start
+confirmation, reusing the existing editor and task pipeline without assets or dependencies.
+With main through `638e0771`, its Nightly binary at `00eef888` measured 58.61 MB, about 0.6 MB
+above the artifact-viewer baseline above. That feature measurement used a 59 MB binary allowance;
+the measured 46.3 MB update archive and 115.3 MB installed app remain within unchanged budgets.
+
+2026-10-24: Quick Entry integrated with main through `a9f1ff11` at `bf3c0b49` measures 59.1 MB
+for both Release and Nightly binaries, exceeding the shared 59 MB allowance. This combines the
+opt-in panel with the worktree setup, Settings and task Peek changes already on main. The binary
+budget is now 59.5 MB, with a small margin for this measured integration. The largest update
+archive (46.3 MB) and installed app (115.8 MB) remain within their unchanged budgets; no assets
+or dependencies were added.
 
 ## Measuring
 

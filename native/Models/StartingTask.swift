@@ -53,6 +53,8 @@ final class StartingTask: Identifiable {
     var draft = ""
     /// The user sent the draft; it goes out as soon as the session can take it.
     var isSendRequested = false
+    /// The finished task's destination for a background start's Open action.
+    var openedSession: SessionKey?
     /// Asks the starting composer to take focus; it clears it once it has.
     var wantsComposerFocus = true
     /// The user discarded the task while it was starting.
