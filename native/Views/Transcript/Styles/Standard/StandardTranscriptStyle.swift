@@ -85,7 +85,7 @@ private struct StandardTranscript: View {
         let line = lines.first { line in
             switch line.kind {
             case .row(let row, let start, _): (start..<start + row.itemCount).contains(index)
-            case .replySection(_, _, let start): start == index
+            case .replySection(_, _, let start), .artifacts(_, let start): start == index
             case .activityRun(let run): run.transcriptIndices.contains(index)
             default: false
             }

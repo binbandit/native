@@ -31,6 +31,9 @@ struct MessageAttachmentReplayTests {
         #expect(users.first?.attachments.first?.imageData == Data([1, 2, 3]))
         #expect(users.last?.attachments.map(\.name) == ["notes.txt"])
         #expect(users.last?.attachments.first?.url == URL(filePath: "/tmp/attachments-probe/project/files/notes.txt"))
+        #expect(
+            users.last?.attachments.first?.embeddedData
+                == Data("The quick brown fox jumps over the lazy dog.\nSecond line here.\n".utf8))
     }
 
     /// Captured from `session/load` on claude-agent-acp 0.93.0 after Native sent an image block and an
@@ -55,6 +58,15 @@ struct MessageAttachmentReplayTests {
         #expect(message.text == "In two words: circle color, and first word of notes.txt?")
         #expect(message.attachments.map(\.name) == ["Image", "notes.txt"])
         #expect(message.attachments.first?.imageData == Data([1, 2, 3]))
+        #expect(
+            message.attachments.last?.embeddedData
+                == Data("The quick brown fox jumps over the lazy dog.\nSecond line here.\n".utf8))
+    }
+
+    @Test func replayPreservesWhitespaceInsideTheContextWrapper() {
+        let attachment = MessageAttachment(
+            replayedText: "<context ref=\"file:///repo/notes.txt\">\n\n  indented\n\n</context>")
+        #expect(attachment?.embeddedData == Data("\n  indented\n".utf8))
     }
 
     /// A link's name comes back as the agent wrote it, percent-encoded from the file's URL.
@@ -71,6 +83,7 @@ struct MessageAttachmentReplayTests {
             "[@image](data:text/plain;base64,AQID)",
             "[@x](not a uri)",
             "<context ref=\"file:///a\">unterminated",
+            "[@a](file:///a)\n<context ref=\"file:///b\">different file</context>",
         ] {
             #expect(MessageAttachment(replayedText: text) == nil, "\(text)")
         }
