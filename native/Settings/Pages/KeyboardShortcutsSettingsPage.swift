@@ -16,7 +16,7 @@ extension SettingsPane {
         keywords: ["keys", "hotkeys", "remap", "bindings"],
         searchEntries: {
             let registry = CommandRegistry.shared
-            let commands = registry.commands.map { command in
+            let commands = registry.commands.filter { $0.showsInSettings() }.map { command in
                 SettingsSearchEntry(
                     id: ShortcutSettingsRow.rowID(command.id), title: command.title,
                     description: registry.shortcut(for: command.id)?.displayString ?? "",
@@ -63,7 +63,9 @@ private struct KeyboardShortcutsEditor: View {
     var body: some View {
         let filter = ShortcutFilter(query)
         let categories = CommandCategory.allCases.compactMap { category -> CategoryCommands? in
-            let commands = registry.commands.filter { $0.category == category && filter.matches($0, in: registry) }
+            let commands = registry.commands.filter {
+                $0.showsInSettings() && $0.category == category && filter.matches($0, in: registry)
+            }
             return commands.isEmpty ? nil : CategoryCommands(category: category, commands: commands)
         }
         let fixed = ShortcutReference.groups(followUp: followUp).compactMap { group -> ShortcutReference.Group? in

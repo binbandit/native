@@ -53,6 +53,7 @@ public enum DefaultShortcuts {
         "session.chooseModel": "⇧⌘E",
         "goal.edit": "⌥⌘G",
         "workflow.run": "⌥⌘R",
+        "task.answerOldestAsk": "⌘Y",
         // Sending and attachments
         "session.stop": "⌘.",
         "composer.attachFiles": "⌘U",

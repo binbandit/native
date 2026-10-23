@@ -51,7 +51,6 @@ public enum ReservedShortcuts {
         "⌘Tab": "Switch apps",
         "⌘Space": "Spotlight",
         // Keys Native's own views answer.
-        "⌘Y": "Allow once on a permission request",
         "⌥⌘Y": "Allow always on a permission request",
         "⇧⌘⌫": "Reject a permission request",
         "⌘↩": "Confirm a sheet or commit",

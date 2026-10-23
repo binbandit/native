@@ -56,6 +56,7 @@ struct RootView: View {
                 .undoToast($undoToast)
             StatusBar(registry: statusBar)
         }
+        .taskPeekHost()
         .addHostPresentation(hosts: model.hosts)
         // After an update with highlights, once nothing waits on the user.
         .whatsNewSheet(whatsNew, blocked: model.hasWorkNeedingUser)
