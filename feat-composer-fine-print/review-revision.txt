@@ -1,0 +1,4 @@
+Multi-choice screenshots: 25bb45c0df9dd0526c1668472eb97e4ffd39d173
+Isolated Debug instance: design-composer
+Both appearances verified; exact response IDs for strict grant, cancel, permanent rejection and the secondary irreversible grant.
+Fixture ACP agent; no command executed.
