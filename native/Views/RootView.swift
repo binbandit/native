@@ -176,6 +176,7 @@ struct RootView: View {
     private var splitView: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebar
+                .modifier(QuickEntryScrim(entry: model.quickEntry))
                 .dsSidebarColumnTransparency()
                 // The only sidebar toggle is ours, right after the window controls; as a
                 // sidebar toolbar item it stays there when the sidebar is hidden, too. The system's
@@ -249,6 +250,7 @@ struct RootView: View {
             .background(.dsBackground)
             .environment(\.inspectorRoom, inspectorRoom.room(sidebar: $columnVisibility))
             .environment(\.sessionTranscriptMemory, transcriptMemory)
+            .modifier(QuickEntryPresentation(model: model))
         }
         .toolbar(removing: .sidebarToggle)
         .tracksWindowRoom(inspectorRoom.window)

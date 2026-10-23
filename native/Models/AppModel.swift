@@ -54,6 +54,8 @@ final class AppModel {
     var isAddingProject = false
     /// Whether the agent picker for a new session is showing.
     var isChoosingAgent = false
+    /// The draft and presentation for the opt-in New Task entry point.
+    let quickEntry = QuickEntryModel()
     /// Whether Add Agent (agents that aren't installed, and how to install them) is showing.
     var isAddingAgent = false
     /// Which agents are installed. Ones that aren't are offered in Add Agent and never started.

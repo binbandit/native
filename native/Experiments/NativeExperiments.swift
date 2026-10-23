@@ -13,6 +13,7 @@ extension ExperimentCatalog {
         Gate.sessionTools,
         Gate.sidebarNext,
         Gate.composerNext,
+        Gate.composeTask,
     ])
 }
 
@@ -57,6 +58,17 @@ extension Parameter where Value == TranscriptWidth {
 // MARK: - Gates
 
 extension Gate {
+    static let composeTask = Gate(
+        id: "NativeComposeTask",
+        title: "Compose Task",
+        summary: "Start a task from Quick Entry without leaving the task you're reading.",
+        site: "New Task ▸ Quick Entry",
+        stage: .labs,
+        owner: "new-task",
+        reviewBy: ReviewDate(year: 2026, month: 12, day: 15),
+        default: false
+    )
+
     static let sidebarNext = Gate(
         id: "NativeSidebarNext",
         title: "Quiet projects",

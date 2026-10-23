@@ -230,7 +230,9 @@ to the user's choice.
 | --- | --- | --- | --- |
 | ⌘K | Command palette: run any command, or jump to a task, project or Settings page | View | `palette.show` |
 | ⌘/ | Keyboard shortcuts (also the "?" at the status bar's trailing end) | Help | `help.keyboardShortcuts` |
-| ⌘N | New task with the last-used agent | File | `session.new` |
+| ⌘N | New task with the last-used agent; with Compose Task on, open Quick Entry over the current task | File | `session.new` |
+| ⇧⌘N | With Compose Task on, expand Quick Entry into New Task, keeping the draft and context | File | `task.compose` |
+| ⌥⌘O | With Quick Entry open, choose the device the task runs on | File | `task.chooseDevice` |
 | ⌥⌘N | New task with… (agent picker) | File | `session.newWithAgent` |
 | ⌥⌘E | New expedition (`docs/expeditions.md`) | File | `expedition.new` |
 | ⌘O | Open folder | File | `project.open` |
@@ -348,6 +350,26 @@ the same failure with Restart on its agent cards and a link to Settings > Agents
 | ↑ / ↓, ⌃N / ⌃P | Move between the agents that can start a task (and Add Agent…) |
 | Return | Start the task with the highlighted agent; one that needs sign-in signs in first, then starts it |
 | Escape | Clear the filter; with it empty, close the picker |
+
+## Quick Entry (Compose Task experiment)
+
+With `NativeComposeTask` on (off by default), ⌘N opens Quick Entry 12pt below the toolbar.
+The current text selection in Native is included as removable context. The address reads
+"to [agent and model] on [device] from [project]", in that order.
+
+| Keys (Quick Entry open) | Action |
+| --- | --- |
+| Return | Start the task and stay on the current task |
+| ⌘Return | Start the task and open it |
+| Shift-Return, Option-Return | Insert a new line |
+| ⇧⌘N | Expand into New Task, keeping the draft and context |
+| ⌥⌘O | Open the device picker |
+| Escape | Close the picker first, then Quick Entry; keep the draft for next time |
+
+During slice 1, expanding uses today's full New Task view. The Compose page replaces it in
+slice 2. After a background start, the confirmation's Open button opens that task. Quick Entry
+captures only a selection inside Native; global shortcuts and capture from other apps are not
+part of this experiment.
 
 ## Choosing a device
 

@@ -16,6 +16,8 @@ struct HostDevicePicker: View {
     /// Each device's look, when the caller knows more than its name (its machine name, for the
     /// symbol it has until the user picks one).
     var lookOf: ((SessionDeviceOption) -> HostLook)?
+    /// Nil when embedded across a containing panel, as in Quick Entry.
+    var width: CGFloat? = HostsMetrics.pickerWidth
     let dismiss: () -> Void
 
     @Environment(\.hostLookStore) private var injectedLooks
@@ -56,7 +58,7 @@ struct HostDevicePicker: View {
                 .padding(DS.Space.xs)
             }
         }
-        .frame(width: HostsMetrics.pickerWidth)
+        .frame(width: width)
         .focusable()
         .focused($isFocused)
         .focusEffectDisabled()
