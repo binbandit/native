@@ -1,190 +1,161 @@
-import Observation
 import SwiftUI
 
-/// Something the user just did that can be taken back, shown as a toast with an Undo button.
-/// Prefer this to a confirmation dialog: act at once, offer the undo.
-public struct UndoToastItem: Identifiable, Equatable {
-    public let id = UUID()
-    /// What just happened: "Archived “Sidebar polish”".
-    public let message: String
-    let undo: () -> Void
-
-    public init(_ message: String, undo: @escaping () -> Void) {
-        self.message = message
-        self.undo = undo
-    }
-
-    public static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.id == rhs.id
-    }
-}
-
-extension View {
-    /// Shows `item` as an undo toast at the bottom trailing corner until the user undoes it,
-    /// dismisses it, or `duration` passes. Setting a new item replaces the current one. Put it on
-    /// the content the toast belongs to, above any status bar, so it never covers the window's chrome.
-    /// Inside an `undoToastAnchor()` the toast shows at the anchor instead.
-    public func undoToast(_ item: Binding<UndoToastItem?>, duration: Duration = .seconds(5)) -> some View {
-        modifier(UndoToastPresenter(item: item, duration: duration))
-    }
-
-    /// Shows the undo toasts raised inside this view at its bottom trailing corner, rather than at
-    /// the bottom of whatever raised them. Put it on a pane whose content scrolls, outside the scroll
-    /// view, so a toast shows where the user is looking however long the content is. The newest toast
-    /// raised inside replaces the one showing.
-    public func undoToastAnchor() -> some View {
-        modifier(UndoToastAnchor())
-    }
-}
-
-/// The toast showing at an `undoToastAnchor()`, with what clears the binding that raised it.
-@Observable
-final class UndoToastAnchorSlot {
-    struct Request {
-        let item: UndoToastItem
-        let duration: Duration
-        let clear: () -> Void
-    }
-
-    var request: Request?
-}
-
-nonisolated extension EnvironmentValues {
-    /// The anchor that undo toasts raised here show at, if any.
-    @Entry var undoToastAnchor: UndoToastAnchorSlot?
-}
-
-private struct UndoToastPresenter: ViewModifier {
-    @Binding var item: UndoToastItem?
-    let duration: Duration
-
-    @Environment(\.undoToastAnchor) private var anchor
-
-    func body(content: Content) -> some View {
-        if let anchor {
-            content.onChange(of: item?.id, initial: true) { old, _ in
-                if let item {
-                    let binding = $item
-                    anchor.request = .init(item: item, duration: duration) {
-                        if binding.wrappedValue?.id == item.id { binding.wrappedValue = nil }
-                    }
-                } else if let old, anchor.request?.item.id == old {
-                    // Taken back by whatever raised it.
-                    anchor.request = nil
-                }
-            }
-        } else {
-            content.overlay(alignment: .bottomTrailing) {
-                UndoToastSlot(item: item, duration: duration) { id in
-                    if item?.id == id { item = nil }
-                }
-            }
-        }
-    }
-}
-
-private struct UndoToastAnchor: ViewModifier {
-    @State private var slot = UndoToastAnchorSlot()
-
-    func body(content: Content) -> some View {
-        content
-            .environment(\.undoToastAnchor, slot)
-            .overlay(alignment: .bottomTrailing) {
-                UndoToastSlot(item: slot.request?.item, duration: slot.request?.duration ?? .zero) { id in
-                    guard let request = slot.request, request.item.id == id else { return }
-                    slot.request = nil
-                    request.clear()
-                }
-            }
-    }
-}
-
-/// A toast in its corner: it slides in, and leaves when undone, dismissed or after `duration`.
-/// `clear` gets the id of the toast that's done, so one that has since replaced it stays.
-private struct UndoToastSlot: View {
-    let item: UndoToastItem?
-    let duration: Duration
-    let clear: (UndoToastItem.ID) -> Void
-
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        ZStack {
-            if let current = item {
-                UndoToast(message: current.message) {
-                    current.undo()
-                    clear(current.id)
-                } onDismiss: {
-                    clear(current.id)
-                }
-                .padding(DS.Space.xxl)
-                .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
-                .task(id: current.id) {
-                    // Said rather than focused: the toast leaves on its own, and moving VoiceOver
-                    // into it would pull the user away from what they were doing.
-                    AccessibilityNotification.Announcement(current.message).post()
-                    guard (try? await Task.sleep(for: duration)) != nil else { return }
-                    clear(current.id)
-                }
-            }
-        }
-        .animation(.dsPanel, value: item)
-    }
-}
-
-/// The toast itself: the message, Undo, and a dismiss button, on an overlay surface.
+/// An undo offer whose trailing edge is its primary action.
 public struct UndoToast: View {
     let message: String
+    let undoesWithCommandZ: Bool
     let onUndo: () -> Void
     let onDismiss: () -> Void
+    var onHoldChanged: (Bool) -> Void = { _ in }
 
-    public init(message: String, onUndo: @escaping () -> Void, onDismiss: @escaping () -> Void) {
+    @State private var isHovered = false
+    @State private var undoIsHovered = false
+    @State private var closeIsHovered = false
+    @FocusState private var focus: Control?
+    #if DEBUG
+    var previewState: UndoToastPreviewState = .rest
+    #endif
+
+    private enum Control: Hashable { case undo, dismiss }
+
+    public init(
+        message: String, undoesWithCommandZ: Bool = false,
+        onUndo: @escaping () -> Void, onDismiss: @escaping () -> Void
+    ) {
         self.message = message
+        self.undoesWithCommandZ = undoesWithCommandZ
         self.onUndo = onUndo
         self.onDismiss = onDismiss
     }
 
     public var body: some View {
         let shape = RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
-        // The message is set like Undo's label and shares its baseline, so a one-line message sits
-        // level with the buttons and a longer one wraps beneath them.
-        HStack(alignment: .firstTextBaseline, spacing: DS.Space.lg) {
+        HStack(spacing: 0) {
             Text(message)
                 .font(.dsBody)
                 .tracking(DS.Tracking.tight)
                 .foregroundStyle(.dsTextPrimary)
-                // Room for what was done and what was kept ("…saving uncommitted work as a checkpoint")
-                // without cutting off the part that reassures.
                 .lineLimit(3)
                 .fixedSize(horizontal: false, vertical: true)
-                // A line as tall as the buttons, so the margins stay even however many lines wrap.
-                .padding(.vertical, DS.Space.xs)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            HStack(spacing: DS.Space.xs) {
-                Button("Undo", action: onUndo)
-                    .buttonStyle(.ds(.secondary))
-                IconButton("Dismiss", systemImage: "xmark", action: onDismiss)
-                    // Its glyph has a baseline of its own; Undo's label sets the row's.
-                    .alignmentGuide(.firstTextBaseline) { $0[.bottom] }
-            }
+                .padding(.leading, DS.Space.xl)
+                .padding([.trailing, .vertical], DS.Space.lg)
+            Rectangle().fill(.dsSeparator).frame(width: 1)
+            undoButton
         }
-        .padding(.leading, DS.Space.xl)
-        .padding(.trailing, DS.Space.md)
-        .padding(.vertical, DS.Space.md)
         .frame(width: 356)
+        .frame(minHeight: 40)
+        .fixedSize(horizontal: false, vertical: true)
         .dsOverlayBackground(in: shape)
-        .overlay { shape.strokeBorder(.dsSeparator, lineWidth: 1) }
+        .overlay { shape.strokeBorder(.dsSeparator, lineWidth: 1).allowsHitTesting(false) }
         .dsShadow(.modal)
-        .accessibilityElement(children: .contain)
+        .overlay(alignment: .topLeading) { closeButton.offset(x: -7, y: -7) }
+        // Include the corner close in hover tracking so reaching for it never restarts dismissal.
+        .padding([.top, .leading], 7)
+        .contentShape(.rect)
+        .onHover { isHovered = $0 }
+        .padding([.top, .leading], -7)
+        .onChange(of: isHeld) { _, held in onHoldChanged(held) }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(message)
+        .accessibilityAction(named: "Undo", onUndo)
+        .accessibilityAction(named: "Dismiss", onDismiss)
+        .simultaneousGesture(
+            DragGesture().onEnded { value in
+                if DS.isTouchPlatform, value.translation.height > DS.Space.xxl,
+                    value.translation.height > abs(value.translation.width)
+                {
+                    onDismiss()
+                }
+            }, including: DS.isTouchPlatform ? .all : .none)
+    }
+
+    private var isHeld: Bool { isHovered || focus != nil }
+
+    private var showsClose: Bool {
+        #if DEBUG
+        if previewState.showsClose { return true }
+        #endif
+        return DS.isTouchPlatform || isHeld
+    }
+
+    private var undoButton: some View {
+        Button(action: onUndo) {
+            HStack(spacing: DS.Space.sm) {
+                Text("Undo").font(.dsBodyMedium).tracking(DS.Tracking.tight)
+                if undoesWithCommandZ { Kbd("⌘Z", style: .plain) }
+            }
+            .foregroundStyle(.dsTextPrimary)
+            .padding(.horizontal, 14)
+            .frame(maxHeight: .infinity)
+            .contentShape(undoShape)
+            .dsHitTarget(40)
+        }
+        .buttonStyle(UndoToastEdgeStyle(isHovered: undoIsHovered, preview: previewInteraction))
+        .fixedSize(horizontal: true, vertical: false)
+        .focused($focus, equals: .undo)
+        .trackHover($undoIsHovered)
+        .accessibilityLabel("Undo")
+    }
+
+    private var closeButton: some View {
+        Button(action: onDismiss) {
+            Image(systemName: "xmark")
+                .font(.system(size: 7, weight: .bold))
+                .foregroundStyle(closeIsHovered ? .dsTextPrimary : .dsTextSecondary)
+                .frame(width: 18, height: 18)
+                .background(.dsSurfaceRaised, in: Circle())
+                .overlay { Circle().strokeBorder(.dsBorder, lineWidth: 1) }
+                .dsShadow(.drag)
+                .contentShape(.circle)
+                .dsHitTarget(18)
+        }
+        .buttonStyle(.plain)
+        .dsFocusShape(Circle())
+        .focused($focus, equals: .dismiss)
+        .trackHover($closeIsHovered)
+        .opacity(showsClose ? 1 : 0)
+        .allowsHitTesting(showsClose)
+        .animation(.dsQuick, value: showsClose)
+        .accessibilityLabel("Dismiss")
+        .help("Dismiss")
+    }
+
+    private var previewInteraction: UndoToastEdgeStyle.Interaction {
+        #if DEBUG
+        switch previewState {
+        case .hover: return .hover
+        case .pressed: return .pressed
+        case .focus: return .focus
+        default: break
+        }
+        #endif
+        return .rest
+    }
+
+    private var undoShape: UnevenRoundedRectangle {
+        UnevenRoundedRectangle(bottomTrailingRadius: DS.Radius.card, topTrailingRadius: DS.Radius.card)
     }
 }
 
-#Preview("Undo toast") {
-    DSPreviewPair {
-        UndoToast(message: "Archived “Sidebar polish”", onUndo: {}, onDismiss: {})
-        UndoToast(
-            message:
-                "Archived “Sidebar polish”. Removed its worktree and branch, saving uncommitted work as a checkpoint.",
-            onUndo: {}, onDismiss: {})
+private struct UndoToastEdgeStyle: ButtonStyle {
+    enum Interaction { case rest, hover, pressed, focus }
+    let isHovered: Bool
+    let preview: Interaction
+
+    func makeBody(configuration: Configuration) -> some View {
+        let shape = UnevenRoundedRectangle(
+            bottomTrailingRadius: DS.Radius.card, topTrailingRadius: DS.Radius.card)
+        configuration.label
+            .background(
+                configuration.isPressed || preview == .pressed
+                    ? .dsPressed : isHovered || preview == .hover ? .dsHover : .clear, in: shape
+            )
+            .dsFocusShape(shape)
+            .overlay {
+                if preview == .focus {
+                    shape.strokeBorder(.dsAccent.opacity(0.5), lineWidth: 3)
+                }
+            }
     }
 }

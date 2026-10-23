@@ -30,7 +30,9 @@ private struct SidebarDesignFixture: View {
     }
 
     var body: some View {
-        if scenario == "signals" {
+        if scenario == "undo-toast" {
+            UndoToastPreviewGallery()
+        } else if scenario == "signals" {
             TaskSignalPreview()
         } else {
             RootView()

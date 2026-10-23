@@ -1,17 +1,22 @@
 import SwiftUI
 
-/// A keyboard shortcut hint: Geist Mono 10pt in a 1pt-outlined, 2pt-rounded cap.
+/// A keyboard shortcut hint: Geist Mono 10pt, in a keycap or plain beside an action.
 public struct Kbd: View {
+    public enum Style: Sendable { case keycap, plain }
+
     let keys: String
+    let style: Style
     var compact = false
 
-    public init(_ keys: String, compact: Bool = false) {
+    public init(_ keys: String, compact: Bool = false, style: Style = .keycap) {
         self.keys = keys
+        self.style = style
         self.compact = compact
     }
 
     public init(_ shortcut: KeyboardShortcut) {
         keys = shortcut.displayString
+        style = .keycap
     }
 
     public var body: some View {
@@ -23,16 +28,17 @@ public struct Kbd: View {
                 Text(String(character))
                     .font(
                         Self.symbols.contains(character)
-                            ? .system(size: 10, weight: .medium) : compact ? DS.Sidebar.keycapFont : .dsMonoMicro)
+                            ? .system(size: 10, weight: style == .plain ? .regular : .medium)
+                            : compact && style == .keycap ? DS.Sidebar.keycapFont : .dsMonoMicro)
             }
         }
         .tracking(DS.Tracking.tight)
-        .foregroundStyle(.dsTextSecondary)
-        .padding(.horizontal, compact ? DS.Space.xs : DS.Space.sm)
-        .padding(.vertical, compact ? 0 : DS.Space.xxs)
-        .frame(minHeight: compact ? DS.Sidebar.keycapHeight : 17)
-        .background(.dsSurface, in: shape)
-        .overlay { shape.strokeBorder(.dsBorderInner, lineWidth: 1) }
+        .foregroundStyle(style == .plain ? .dsTextTertiary : .dsTextSecondary)
+        .padding(.horizontal, style == .plain ? 0 : compact ? DS.Space.xs : DS.Space.sm)
+        .padding(.vertical, style == .plain || compact ? 0 : DS.Space.xxs)
+        .frame(minHeight: style == .plain ? nil : compact ? DS.Sidebar.keycapHeight : 17)
+        .background(style == .plain ? .clear : .dsSurface, in: shape)
+        .overlay { if style == .keycap { shape.strokeBorder(.dsBorderInner, lineWidth: 1) } }
         .fixedSize()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Shortcut \(keys)")
@@ -77,6 +83,7 @@ extension KeyEquivalent {
     DSPreviewPair {
         HStack(spacing: DS.Space.md) {
             Kbd("⌘K")
+            Kbd("⌘Z", style: .plain)
             Kbd(KeyboardShortcut("n", modifiers: [.command, .shift]))
             Kbd("Esc")
             Kbd("⇧⇥")

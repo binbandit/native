@@ -54,6 +54,7 @@ struct SessionView: View {
                     ComposerView(session: session)
                 }
             }
+            .undoToastBottomInset(isEnabled: !session.isEarlierConversation)
         }
         // How the task's worktree setup is going, and any of its scripts that failed (TaskScripts).
         .safeAreaBar(edge: .top, spacing: 0) {
