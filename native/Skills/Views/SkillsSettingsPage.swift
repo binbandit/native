@@ -118,7 +118,8 @@ struct SkillsSettingsPage: View {
         }
         .task { if library.lastRead == nil || library.items.isEmpty { await library.read() } }
         // A project's settings link here to show its switches.
-        .onAppear { if let project = presentation.takeProjectScope() { projectPath = SkillPaths.key(project) } }
+        .onAppear { takeScope() }
+        .onChange(of: presentation.projectScope) { takeScope() }
         .sheet(isPresented: $isInstalling) {
             SkillInstallSheet(library: library, project: project) { record, agents in
                 show(.installed(record, agents: agents))
@@ -135,6 +136,10 @@ struct SkillsSettingsPage: View {
         } message: { item in
             Text(SkillsRemoval.message(for: item, home: library.home))
         }
+    }
+
+    private func takeScope() {
+        if let project = presentation.takeProjectScope(for: .skills) { projectPath = SkillPaths.key(project) }
     }
 
     @ViewBuilder

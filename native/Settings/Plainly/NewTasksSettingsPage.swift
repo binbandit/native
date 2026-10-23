@@ -60,19 +60,20 @@ struct NewTasksSettingsPage: View {
                 ProjectNewTasksSection(project: project, defaultsOnly: true)
                     .id(project.id)
             } else {
-                if let agent {
-                    SettingsGroup(title: "Agent") {
-                        AgentDefaultsRow(agentName: agent.agent.name, agentID: agent.definition.id)
-                            .id(agent.definition.id)
-                        NewTasksModeRow(library: modeLibrary)
-                    }
-                } else {
+                if agent == nil {
                     EmptyStateView(
                         "No agents are on", systemImage: "person.2",
                         message: "Turn on an agent to choose what its new tasks start with."
                     ) {
                         Button("Open Agents") { presentation.open(.agents) }
                     }
+                }
+                SettingsGroup(title: agent == nil ? "Defaults" : "Agent") {
+                    if let agent {
+                        AgentDefaultsRow(agentName: agent.agent.name, agentID: agent.definition.id)
+                            .id(agent.definition.id)
+                    }
+                    NewTasksModeRow(library: modeLibrary)
                 }
                 SettingsGroup(
                     title: "Workspace",
@@ -132,7 +133,7 @@ struct NewTasksSettingsPage: View {
     }
 
     private func takeScope() {
-        if let url = presentation.takeProjectScope() {
+        if let url = presentation.takeProjectScope(for: .newTasks) {
             projectID = model.projects.all.first { $0.url == url }?.id
         }
     }

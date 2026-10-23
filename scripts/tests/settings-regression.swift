@@ -1,6 +1,7 @@
 import Experiments
 import Foundation
 import NativeHostProtocol
+import Skills
 
 @testable import Native
 
@@ -30,6 +31,7 @@ private struct SettingsRegression {
         navigation(registry: registry)
         #if !BEFORE
         plainlyNavigation()
+        combinedLibraryScope()
         #endif
         if failures > 0 {
             print("FAILED: \(failures) Settings regressions")
@@ -64,6 +66,44 @@ private struct SettingsRegression {
     }
 
     #if !BEFORE
+    private static func combinedLibraryScope() {
+        let presentation = SettingsPresentation()
+        let project = URL(filePath: "/tmp/native-settings-project")
+        let folder = URL.temporaryDirectory.appending(path: "native-settings-skills-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let library = SkillLibrary(supportFolder: folder)
+        for intended in [SettingsPane.ID.skills, .mcpServers] {
+            for first in [SettingsPane.ID.skills, .mcpServers] {
+                presentation.open(intended, scopedTo: project)
+                let second: SettingsPane.ID = first == .skills ? .mcpServers : .skills
+                let firstScope = presentation.takeProjectScope(for: first)
+                let secondScope = presentation.takeProjectScope(for: second)
+                let target = intended == first ? firstScope : secondScope
+                let sibling = intended == first ? secondScope : firstScope
+                expect(target == project && sibling == nil, "Only the intended library consumes a project scope")
+                expect(presentation.projectScope == nil, "A project scope is consumed once")
+                if intended == .skills {
+                    let key = "fixture-\(first.rawValue)"
+                    library.setMode(.off, for: key, in: target)
+                    let reopened = SkillLibrary(supportFolder: folder)
+                    expect(
+                        reopened.mode(of: key, in: project) == .off, "Skills changes persist for the requested project")
+                    expect(
+                        reopened.mode(of: key, in: nil) == .on, "A project Skills change leaves the global switch on")
+                }
+            }
+        }
+        presentation.open(.newTasks, scopedTo: project)
+        expect(presentation.takeProjectScope(for: .skills) == nil, "Libraries leave New Tasks scope alone")
+        expect(presentation.takeProjectScope(for: .newTasks) == project, "New Tasks receives its project")
+        presentation.open(.skills, scopedTo: project)
+        presentation.open(.skills)
+        expect(presentation.takeProjectScope(for: .skills) == nil, "An unscoped visit cancels a pending scope")
+        presentation.open(.skills, scopedTo: project)
+        presentation.pane = .general
+        expect(presentation.projectScope == nil, "Navigation clears an unconsumed scope")
+    }
+
     private static func plainlyNavigation() {
         let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
         expect(!experiments.value(of: .settingsPlainly), "Plainly defaults off")

@@ -122,7 +122,8 @@ struct MCPServersSettingsPage: View {
         }
         .task { if library.lastRead == nil { await library.readConfigurations() } }
         // A project's settings link here to show its switches.
-        .onAppear { if let project = presentation.takeProjectScope() { projectPath = ProjectPath.key(project) } }
+        .onAppear { takeScope() }
+        .onChange(of: presentation.projectScope) { takeScope() }
         .sheet(item: $editing) { target in
             MCPServerEditor(library: library, target: target)
         }
@@ -132,6 +133,10 @@ struct MCPServersSettingsPage: View {
     }
 
     // MARK: - Native's servers
+
+    private func takeScope() {
+        if let project = presentation.takeProjectScope(for: .mcpServers) { projectPath = ProjectPath.key(project) }
+    }
 
     private func managedSection(_ library: MCPLibrary) -> some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
