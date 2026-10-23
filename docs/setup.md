@@ -205,6 +205,7 @@ Native reads Claude Code's shared OAuth credential store and Codex's own credent
 usable sign-in; a tool count means Native also connected and listed the tools. Native's separate
 check does not borrow an agent's OAuth token. A check without that token cannot establish that the
 agent is signed out. If the shared store is unavailable, the status says "Sign-in not checked".
+Configured bearer authentication stays unconfirmed until a connection check succeeds.
 The shared state is reread after a task turn or sign-in command, when returning to Native, and when
 opening MCP settings or a task's server list after the previous read becomes stale. Read Again
 refreshes it immediately. Different endpoints with the same server name keep separate sign-ins.

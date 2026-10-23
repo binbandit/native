@@ -28,6 +28,26 @@ struct MCPAuthenticationTests {
         #expect(configuration.servers.first { $0.name == "docs" }?.authentication == .signedIn)
     }
 
+    @Test(arguments: [nil, "", "fixture-token"] as [String?])
+    func configuredBearerDoesNotProveSharedSignIn(token: String?) throws {
+        let listing = try CodexListing.decode(Fixture.data("codex-mcp-missing-bearer.json"))
+        let entry = try #require(AgentMCPConfiguration(format: .codex).merging(listing).servers.first)
+        var environment: [String: String] = [:]
+        environment["NATIVE_MCP_FIXTURE_TOKEN"] = token
+        if token == nil {
+            guard case .http(_, let headers) = entry.resolved(environment: environment, project: nil).transport else {
+                Issue.record("Expected HTTP transport")
+                return
+            }
+            #expect(headers["Authorization"] == nil)
+        }
+        // Even before a probe, a configured variable alone cannot establish a usable sign-in.
+        #expect(entry.authentication == .unknown)
+        #expect(MCPServerHealth(report: nil, authentication: entry.authentication) == .unchecked)
+        #expect(
+            MCPServerHealth(report: anonymousChallenge, authentication: entry.authentication) == .authenticationUnknown)
+    }
+
     @Test func sameNameAtAnotherEndpointDoesNotBorrowSignIn() throws {
         let listing = try CodexListing.decode(Fixture.data("codex-mcp-signed-in.json"))
         let url = try #require(URL(string: "https://other.example.com/mcp"))

@@ -6,6 +6,11 @@ was replaced with `https://docs.example.com/mcp`. The wire value is `o_auth`; ol
 remain supported. No real account or token was used. `codex-mcp-list.json` supplies the existing
 signed-out capture.
 
+`codex-mcp-missing-bearer.json` was captured from Codex CLI 0.163.0 with an isolated `CODEX_HOME`
+and file credential storage. Both an unset and an empty `NATIVE_MCP_FIXTURE_TOKEN` produced this
+same `bearer_token` listing. Its loopback endpoint was replaced with the documentation URL.
+That wire value describes the configured authentication method, not a usable token.
+
 `claude-mcp-credentials.json` uses the shared store shape and key algorithm observed in the installed
 Claude Code 2.1.306 artifact (SHA-256 `b5d795b7760032d79954b55a9cd1876dcf3a8dc9608fd6bb9f618593f69fd44b`).
 Its values are synthetic. The key hashes `JSON.stringify({type, url, headers})`, taking the first

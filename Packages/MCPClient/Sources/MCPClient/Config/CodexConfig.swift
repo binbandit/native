@@ -120,8 +120,10 @@ public struct CodexListing: Hashable, Sendable {
 
         public var authentication: MCPAuthenticationStatus {
             switch authStatus {
-            case "o_auth", "oauth", "bearer_token": .signedIn
+            case "o_auth", "oauth": .signedIn
             case "not_logged_in": .signedOut
+            // Codex reports this for a configured variable even when it is unset or empty.
+            case "bearer_token": .unknown
             default: .unknown
             }
         }
