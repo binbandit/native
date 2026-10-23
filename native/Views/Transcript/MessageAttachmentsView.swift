@@ -15,12 +15,6 @@ struct MessageAttachmentsView: View {
     }
 }
 
-extension MessageAttachment {
-    var isFolder: Bool {
-        url?.hasDirectoryPath == true || name.hasSuffix("/")
-    }
-}
-
 #if DEBUG
 #Preview("Message attachments - Images and files") {
     DSPreviewPair {

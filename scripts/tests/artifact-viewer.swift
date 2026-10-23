@@ -37,7 +37,8 @@ private struct ArtifactViewerRegression {
         model.saveAs()
         expect(model.isExporting, "Save As opens the export state")
         let exported = directory.appendingPathComponent("saved.png")
-        try FileWrapper(regularFileWithContents: try require(model.data)).write(to: exported)
+        try FileWrapper(regularFileWithContents: try require(model.data)).write(
+            to: exported, options: .atomic, originalContentsURL: nil)
         model.exported(.success(exported))
         expect(try Data(contentsOf: exported) == bytes, "Saved bytes match the original")
         expect(model.feedback == "Saved", "Export reports success")
