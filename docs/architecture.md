@@ -238,17 +238,25 @@ Adding a **variant**:
 5. To promote it, make it the point's default and delete the variant; to drop it, delete its folder
    and declaration.
 
-### Quiet projects sidebar
+### All in view sidebar
 
-The `NativeSidebarNext` gate (Settings ▸ Labs ▸ Quiet projects) defaults to off. Its single
-read in `SidebarView` selects the quiet project presentation: monospace project headers and task
-marks only for activity, attention and unread results. The existing section, menus, selection,
-ordering, pins, archive and shortcuts are shared with today's sidebar.
+The `NativeSidebarNext` gate (Settings ▸ Labs ▸ All in view) defaults to off. Slice 1 replaces
+Quiet projects: project names keep the folder's spelling in Geist 600, and task rows show titles
+at rest. `TaskSignal` owns the status language on the loader's 240-unit grid, with neutral working,
+paused and limited states, amber requests, a red failure and an accent unread dot. Its optional
+working view accepts animation variants without duplicating the other states or Reduce Motion.
+Existing surfaces keep `StatusIndicator` until their gated redesign adopts `TaskSignal`.
 
-Each project shows its live, unread, failed, paused and limited tasks plus its three most recent
-resting tasks, in the user's order. An open or renamed task stays visible. “n more” unfolds the
-rest; filters and bulk selection expose their full scope. `TaskListFold` in `Packages/TaskList`
-chooses the resting tasks without depending on the UI. Enable it before an isolated launch with
+Requests show a two-line sentence and a mono waiting clock, using the request's arrival timestamp
+from ACP or the host event log. The grid breathes for its first 60 seconds and for four seconds
+when the scene becomes active, then holds still. Reduce Motion is always still. The keycap marks
+the visible task's oldest permission request, matching the existing shortcut routing. Questions
+and asks in other tasks do not claim a shortcut that would answer something else.
+
+Selection, menus, ordering, pins, archive and keyboard navigation remain shared with today's
+sidebar. All tasks stay visible in this slice; the rejected three-recent-task fold is removed.
+Peek with the composer's shared approval, global ask routing, fold by day, the collapsed toolbar
+signal and optional row facts are later slices. Enable before an isolated launch with
 `defaults write dev.binbandit.native.dev.<name> experiment.NativeSidebarNext -bool YES`.
 
 ### Quiet composer

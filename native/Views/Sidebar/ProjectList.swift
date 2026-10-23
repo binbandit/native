@@ -8,7 +8,7 @@ import TaskList
 /// and the rest collapse with a note saying so.
 struct ProjectList<TaskAccessory: View>: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.sidebarQuietProjects) private var isQuiet
+    @Environment(\.sidebarAllInView) private var isAllInView
     let listing: SidebarListing
     let taskAccessory: (SessionSummary) -> TaskAccessory
     @Binding var filter: TaskFilter
@@ -22,20 +22,22 @@ struct ProjectList<TaskAccessory: View>: View {
         @Bindable var selection = selection
         let isNarrowing = filter.isNarrowing
         // Lazy, so only the projects on screen are built (each lazy about its own rows too).
-        LazyVStack(alignment: .leading, spacing: DS.Space.xxs) {
+        LazyVStack(alignment: .leading, spacing: isAllInView ? 0 : DS.Space.xxs) {
             if !listing.pinned.isEmpty {
                 PinnedSection(
                     sessions: listing.pinned, order: Self.positions(listing.allPinned), drag: drag,
                     taskAccessory: taskAccessory, select: select)
             }
-            SectionHeader(isQuiet ? "" : "Projects") {
-                SidebarFilterButton(filter: $filter, isSelecting: $selection.isSelecting)
-                IconButton("Add Project", systemImage: "folder.badge.plus") {
-                    model.isAddingProject = true
+            if !isAllInView {
+                SectionHeader("Projects") {
+                    SidebarFilterButton(filter: $filter, isSelecting: $selection.isSelecting)
+                    IconButton("Add Project", systemImage: "folder.badge.plus") {
+                        model.isAddingProject = true
+                    }
                 }
+                // Lines the buttons up with the projects' "+" buttons.
+                .padding(.trailing, DS.Space.sm)
             }
-            // Lines the buttons up with the projects' "+" buttons.
-            .padding(.trailing, DS.Space.sm)
 
             if filter.isActive {
                 SidebarFilterChips(filter: $filter)
@@ -55,7 +57,6 @@ struct ProjectList<TaskAccessory: View>: View {
                     order: Self.positions(group.all),
                     position: (index, listing.groups.count),
                     isFiltered: isNarrowing,
-                    allowsFolding: !filter.isActive,
                     hasNoMatches: hasNoMatches,
                     isExpanded: Binding(
                         get: { isNarrowing ? !hasNoMatches : !collapsed.contains(project.id) },
@@ -69,6 +70,24 @@ struct ProjectList<TaskAccessory: View>: View {
             // Archived tasks show in their projects while the filter includes them.
             if !isNarrowing, !filter.includesArchived {
                 ArchivedSection(select: select)
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Project tasks")
+        .contextMenu {
+            if isAllInView {
+                Button("Add Project…") { model.isAddingProject = true }
+                Menu("Filter Tasks") {
+                    ForEach(SidebarFilterOption.all(filter: $filter, agents: model.agents.map(\.agent))) { option in
+                        Toggle(option.title, isOn: option.isOn)
+                    }
+                    Picker("Sort By", selection: $filter.sort) {
+                        ForEach(TaskFilter.Sort.allCases, id: \.self) { sort in
+                            Text(sort.title).tag(sort)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                }
             }
         }
         .onChange(of: model.selection) {
