@@ -10,38 +10,49 @@ extension MessageAttachment {
     /// forms above; a prompt that merely quotes one stays text.
     init?(replayedText text: String) {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let ref = Self.contextRef(text) {
-            guard let url = URL(string: ref) else { return nil }
-            self.init(name: url.lastPathComponent, url: url)
+        if let context = Self.context(text) {
+            guard let url = URL(string: context.uri) else { return nil }
+            self.init(name: url.lastPathComponent, url: url, embeddedData: Data(context.text.utf8))
             return
         }
         guard text.hasPrefix("[@"), let close = text.range(of: "](") else { return nil }
         let name = String(text[text.index(text.startIndex, offsetBy: 2)..<close.lowerBound])
         var link = text[close.upperBound...]
+        var embedded: (uri: String, text: String)?
         // Codex sends an embedded file's link and contents as one block.
         if let context = link.range(of: "\n<context ref=\"") {
-            guard Self.contextRef(String(link[link.index(after: context.lowerBound)...])) != nil else { return nil }
+            guard let contents = Self.context(String(link[link.index(after: context.lowerBound)...])) else {
+                return nil
+            }
+            embedded = contents
             link = link[..<context.lowerBound]
         }
         guard link.hasSuffix(")"), !name.isEmpty else { return nil }
         let uri = String(link.dropLast())
         guard !uri.contains(where: \.isWhitespace) else { return nil }
+        guard embedded == nil || embedded?.uri == uri else { return nil }
         if uri.hasPrefix("data:") {
             guard let data = Self.imageData(fromDataURI: uri) else { return nil }
             self.init(name: "Image", url: nil, imageData: data)
             return
         }
         guard let url = URL(string: uri), url.scheme != nil else { return nil }
-        self.init(name: name.removingPercentEncoding ?? name, url: url)
+        self.init(
+            name: name.removingPercentEncoding ?? name, url: url,
+            embeddedData: embedded.map { Data($0.text.utf8) })
     }
 
-    /// The `ref` of a whole `<context ref="uri">…</context>` block.
-    private static func contextRef(_ text: String) -> String? {
+    /// Recover the snapshot, removing only the newlines agents add around the original contents.
+    private static func context(_ text: String) -> (uri: String, text: String)? {
         let open = "<context ref=\""
         guard text.hasPrefix(open), text.hasSuffix("</context>"),
-            let quote = text.dropFirst(open.count).firstIndex(of: "\"")
+            let end = text.range(of: "\">", range: text.index(text.startIndex, offsetBy: open.count)..<text.endIndex)
         else { return nil }
-        return String(text[text.index(text.startIndex, offsetBy: open.count)..<quote])
+        let uri = String(text[text.index(text.startIndex, offsetBy: open.count)..<end.lowerBound])
+        var contents = text[end.upperBound..<text.index(text.endIndex, offsetBy: -"</context>".count)]
+        if contents.hasPrefix("\n") { contents = contents.dropFirst() }
+        if contents.hasSuffix("\n") { contents = contents.dropLast() }
+        return (uri, String(contents))
     }
 
     /// An image's bytes from `data:image/…;base64,…`.

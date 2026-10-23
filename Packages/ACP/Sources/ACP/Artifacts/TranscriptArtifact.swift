@@ -37,10 +37,10 @@ public struct TranscriptArtifact: Hashable, Sendable {
         case .resourceLink(let uri, let name):
             self.init(
                 name: name.isEmpty ? URL(string: uri)?.lastPathComponent ?? "Artifact" : name, url: URL(string: uri))
-        case .resource(let uri, let text):
+        case .resource(let uri, let text, let mimeType):
             self.init(
                 name: URL(string: uri)?.lastPathComponent ?? "Artifact", url: URL(string: uri),
-                data: text.map { Data($0.utf8) })
+                data: text.map { Data($0.utf8) }, mimeType: mimeType)
         case .resourceBlob(let uri, let mimeType, let blob):
             self.init(
                 name: URL(string: uri)?.lastPathComponent ?? "Artifact", url: URL(string: uri),

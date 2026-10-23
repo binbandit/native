@@ -66,6 +66,22 @@ struct TranscriptArtifactTests {
         #expect(TranscriptArtifact(roundTrip) == artifact)
     }
 
+    @Test func textResourceKeepsItsMediaTypeForPreviewAndExport() throws {
+        let block = try JSONDecoder().decode(
+            ContentBlock.self,
+            from: Data(
+                #"{"type":"resource","resource":{"uri":"artifact:///diagram","mimeType":"image/svg+xml","text":"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\" height=\"10\"/>"}}"#
+                    .utf8))
+        let artifact = try #require(TranscriptArtifact(block))
+        #expect(artifact.mimeType == "image/svg+xml")
+        #expect(artifact.filename == "diagram.svg")
+        #expect(artifact.isImage)
+        let roundTrip = try JSONDecoder().decode(ContentBlock.self, from: JSONEncoder().encode(block))
+        #expect(TranscriptArtifact(roundTrip) == artifact)
+        let attachment = try #require(MessageAttachment(roundTrip))
+        #expect(TranscriptArtifact(attachment) == artifact)
+    }
+
     @Test func malformedImageRemainsAnActionableArtifact() {
         let artifact = TranscriptArtifact(.image(data: "not base64", mimeType: "image/png"))
         #expect(artifact?.isImage == true)

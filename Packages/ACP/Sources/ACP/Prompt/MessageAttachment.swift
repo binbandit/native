@@ -57,9 +57,11 @@ public struct MessageAttachment: Identifiable, Hashable, Sendable {
             self.init(name: "Image", url: nil, imageData: Data(base64Encoded: base64), mimeType: mimeType)
         case .resourceLink(let uri, let name):
             self.init(name: name, url: URL(string: uri))
-        case .resource(let uri, let text):
+        case .resource(let uri, let text, let mimeType):
             let url = URL(string: uri)
-            self.init(name: url?.lastPathComponent ?? uri, url: url, embeddedData: text.map { Data($0.utf8) })
+            self.init(
+                name: url?.lastPathComponent ?? uri, url: url, embeddedData: text.map { Data($0.utf8) },
+                mimeType: mimeType)
         case .resourceBlob(let uri, let mimeType, let blob):
             let url = URL(string: uri)
             let data = Data(base64Encoded: blob)

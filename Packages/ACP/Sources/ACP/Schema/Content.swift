@@ -5,7 +5,7 @@ public enum ContentBlock: Hashable, Sendable {
     case text(String)
     case image(data: String, mimeType: String)
     case resourceLink(uri: String, name: String)
-    case resource(uri: String, text: String?)
+    case resource(uri: String, text: String?, mimeType: String? = nil)
     case resourceBlob(uri: String, mimeType: String?, blob: String)
     /// A block type this client doesn't understand yet, such as audio.
     case unsupported(type: String)
@@ -13,7 +13,7 @@ public enum ContentBlock: Hashable, Sendable {
     public var text: String? {
         switch self {
         case .text(let text): text
-        case .resource(_, let text): text
+        case .resource(_, let text, _): text
         default: nil
         }
     }
@@ -52,7 +52,7 @@ extension ContentBlock: Codable {
             if let blob = resource.blob {
                 self = .resourceBlob(uri: resource.uri, mimeType: resource.mimeType, blob: blob)
             } else {
-                self = .resource(uri: resource.uri, text: resource.text)
+                self = .resource(uri: resource.uri, text: resource.text, mimeType: resource.mimeType)
             }
         default:
             self = .unsupported(type: type)
@@ -73,9 +73,9 @@ extension ContentBlock: Codable {
             try container.encode("resource_link", forKey: .type)
             try container.encode(uri, forKey: .uri)
             try container.encode(name, forKey: .name)
-        case .resource(let uri, let text):
+        case .resource(let uri, let text, let mimeType):
             try container.encode("resource", forKey: .type)
-            try container.encode(EmbeddedResource(uri: uri, text: text), forKey: .resource)
+            try container.encode(EmbeddedResource(uri: uri, text: text, mimeType: mimeType), forKey: .resource)
         case .resourceBlob(let uri, let mimeType, let blob):
             try container.encode("resource", forKey: .type)
             try container.encode(

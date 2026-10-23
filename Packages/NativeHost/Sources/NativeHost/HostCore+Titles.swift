@@ -92,7 +92,7 @@ extension HostCore {
             ? content.compactMap { block -> String? in
                 switch block {
                 case .resourceLink(_, let name): name
-                case .resource(let uri, _), .resourceBlob(let uri, _, _): URL(string: uri)?.lastPathComponent
+                case .resource(let uri, _, _), .resourceBlob(let uri, _, _): URL(string: uri)?.lastPathComponent
                 case .image: "Image attachment"
                 default: nil
                 }

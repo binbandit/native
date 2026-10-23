@@ -64,6 +64,17 @@ private struct ArtifactViewerRegression {
         model.close()
         expect(!FileManager.default.fileExists(atPath: preview.path), "Close deletes the private preview file")
 
+        let svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\" height=\"10\"/>"
+        let svgArtifact = try require(
+            TranscriptArtifact(.resource(uri: "artifact:///diagram", text: svg, mimeType: "image/svg+xml")))
+        model.open(svgArtifact, localFiles: false) { _ in throw CocoaError(.fileReadNoSuchFile) }
+        await loaded(model)
+        let svgPreview = try require(model.previewFile?.url)
+        expect(model.error == nil && svgPreview.pathExtension == "svg", "Text-backed SVG uses a native image preview")
+        expect(
+            try String(contentsOf: svgPreview, encoding: .utf8) == svg, "SVG preview preserves its supplied contents")
+        model.close()
+
         model.open(TranscriptArtifact(name: "missing.png", url: original), localFiles: false) { _ in
             throw CocoaError(.fileReadNoSuchFile)
         }

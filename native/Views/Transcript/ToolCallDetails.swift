@@ -207,7 +207,7 @@ private struct ContentBlockView: View {
                         .font(.dsBody)
                         .padding(DS.Space.lg)
                 }
-            } else if case .resource(let uri, _) = block {
+            } else if case .resource(let uri, _, _) = block {
                 placeholder(uri, systemImage: "doc")
             } else {
                 placeholder("Unsupported content", systemImage: "questionmark.square.dashed")

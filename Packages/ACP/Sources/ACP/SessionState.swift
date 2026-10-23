@@ -311,7 +311,7 @@ public struct SessionState: Sendable {
         switch chunk.content {
         case .text(let string): text = string
         case .image: text = "[Image]"
-        case .resourceLink(let uri, _), .resource(let uri, _), .resourceBlob(let uri, _, _): text = uri
+        case .resourceLink(let uri, _), .resource(let uri, _, _), .resourceBlob(let uri, _, _): text = uri
         case .unsupported(let type): text = "[\(type)]"
         }
         // Continue the last message when it has the same role and, if the agent sends ids, the same id.
