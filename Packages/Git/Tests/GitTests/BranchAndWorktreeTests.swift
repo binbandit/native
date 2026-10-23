@@ -113,9 +113,9 @@ struct BranchAndWorktreeTests {
         #expect(try await repository.branches(includingRemote: false).map(\.name) == ["main"])
     }
 
-    /// Enough files for git to check them out in parallel (`Repository.parallelCheckout`), with an
-    /// executable and a symlink among them: the worktree gets every one, unchanged.
-    @Test func checksOutEveryFileOfALargeTreeInParallel() async throws {
+    /// A large tree with an executable and a symlink: limiting checkout workers must still
+    /// populate every file, unchanged.
+    @Test func checksOutEveryFileOfALargeTree() async throws {
         let test = try await TestRepository.make()
         defer { test.remove() }
         for index in 0..<300 {

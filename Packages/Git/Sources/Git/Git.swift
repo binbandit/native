@@ -97,6 +97,7 @@ public struct Git: Sendable {
         _ arguments: [String],
         in directory: URL?,
         readOnly: Bool = false,
+        lowPriority: Bool = false,
         input: Data? = nil,
         environment overrides: [String: String] = [:],
         acceptingStatus accepted: Set<Int32> = [0]
@@ -110,7 +111,8 @@ public struct Git: Sendable {
         }
         environment.merge(overrides) { $1 }
 
-        let output = try await execute(executable, arguments, in: directory, environment: environment, input: input)
+        let output = try await execute(
+            executable, arguments, in: directory, environment: environment, input: input, lowPriority: lowPriority)
         guard accepted.contains(output.status) else {
             // Some failures, like "nothing to commit", only go to stdout.
             let message = output.stderr.isEmpty ? String(output.text.prefix(4096)) : output.stderr
@@ -130,11 +132,12 @@ public struct Git: Sendable {
         _ arguments: [String],
         in directory: URL?,
         environment: [String: String],
-        input: Data?
+        input: Data?,
+        lowPriority: Bool = false
     ) async throws(GitError) -> Output {
         let command = Command(
-            executable,
-            arguments,
+            lowPriority ? "nice" : executable,
+            lowPriority ? ["-n", "10", executable] + arguments : arguments,
             in: directory?.path(percentEncoded: false),
             environment: environment,
             standardInput: input
@@ -144,7 +147,7 @@ public struct Git: Sendable {
         let result: CommandResult
         do {
             result = try await runner.run(command)
-        } catch CommandError.notFound where executable == self.executable {
+        } catch CommandError.notFound(let missing) where missing == self.executable {
             throw .gitNotFound
         } catch let error as CommandError {
             throw .launchFailed(error.localizedDescription)
