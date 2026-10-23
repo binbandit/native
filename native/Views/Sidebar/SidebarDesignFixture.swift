@@ -43,7 +43,12 @@ private struct SidebarDesignFixture: View {
     }
 
     private static func makeApp(_ scenario: String) -> AppModel {
-        let app = AppModel.preview(.empty)
+        let defaults = PreviewUserDefaults()
+        defaults.set(["automation": false, "automations": false, "expeditions": false], forKey: "pluginChoices")
+        let plugins = PluginRegistry(
+            builtIns: [BuiltInPlugins.claudeCode, BuiltInPlugins.codex, BuiltInPlugins.cursor], defaults: defaults)
+        let app = AppModel(plugins: plugins, defaults: defaults, catalogURL: nil)
+        _ = app.runtimes.sync()
         guard scenario != "empty" else { return app }
         let project = app.projects.add(URL(filePath: "/fixture/native"))
         guard scenario != "empty-project" else { return app }
@@ -77,6 +82,11 @@ private struct SidebarDesignFixture: View {
                 status: .needsPlanReview,
                 detail:
                     "Six steps across authentication routes, their tests and the migration guide for existing clients.")
+        }
+        let agent = AgentDefinition.ID(rawValue: "codex")
+        for (project, prefix, count) in [(project, "native", rows.count), (pier, "pier", 3), (kite, "kite", 3)] {
+            app.ordering.restore(
+                (0..<count).map { SessionKey(agent: agent, id: SessionID("\(prefix)-\($0)")) }, in: project.id)
         }
         let selection = SessionKey(
             agent: AgentDefinition.ID(rawValue: "codex"), id: SessionID(scenario == "ask" ? "native-1" : "native-2"))

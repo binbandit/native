@@ -50,7 +50,9 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
                 navigationItems
                 accessories
             }
-            .padding(DS.Space.sm)
+            .padding(.horizontal, DS.Space.sm)
+            .padding(.top, DS.Space.sm)
+            .padding(.bottom, usesSidebarNext ? DS.Space.xxs : DS.Space.sm)
             if !usesSidebarNext {
                 SeparatorLine().padding(.horizontal, DS.Space.lg)
             }
