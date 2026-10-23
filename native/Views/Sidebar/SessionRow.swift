@@ -110,6 +110,7 @@ struct SessionRow<Accessory: View>: View {
                 isPeeking: model.taskPeek.request?.task == summary.id, isUnread: isUnread,
                 ask: attention?.sentence ?? recoverySentence, attentionSince: attention?.since,
                 answersShortcut: attention?.answersShortcut == true,
+                askShortcut: CommandRegistry.shared.keyboardShortcut(for: .taskAnswerOldestAsk),
                 unavailable: unavailableSentence,
                 hostName: remoteHost?.name, peek: { model.peekTask(summary.id) },
                 action: { if model.taskPeek.request?.task != summary.id { select() } })

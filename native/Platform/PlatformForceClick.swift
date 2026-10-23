@@ -34,7 +34,7 @@ private final class TaskPressureView: NSView {
         guard window != nil else { return }
         monitor = NSEvent.addLocalMonitorForEvents(matching: [.pressure, .leftMouseUp]) { [weak self] event in
             MainActor.assumeIsolated {
-                guard let self, event.window === self.window else { return event }
+                guard let self, event.window === self.window else { return }
                 if event.type == .leftMouseUp {
                     self.didFire = false
                 } else if event.stage == 2, !self.didFire,
@@ -43,8 +43,8 @@ private final class TaskPressureView: NSView {
                     self.didFire = true
                     self.perform()
                 }
-                return event
             }
+            return event
         }
     }
 

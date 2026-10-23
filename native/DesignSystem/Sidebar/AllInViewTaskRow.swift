@@ -11,6 +11,7 @@ public struct AllInViewTaskRow: View {
     var ask: String?
     var attentionSince: Date?
     var answersShortcut = false
+    var askShortcut: KeyboardShortcut? = KeyboardShortcut("y", modifiers: .command)
     var unavailable: String?
     var hostName: String?
     var peek: (() -> Void)?
@@ -64,8 +65,8 @@ public struct AllInViewTaskRow: View {
                                 .fixedSize(horizontal: false, vertical: true)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .frame(minHeight: DS.Sidebar.askLineHeight, alignment: .bottomLeading)
-                            if answersShortcut, unavailable == nil {
-                                Kbd("⌘Y", compact: true)
+                            if answersShortcut, unavailable == nil, let askShortcut {
+                                Kbd(askShortcut, compact: true)
                                     .padding(.bottom, DS.Sidebar.keycapBottom)
                             }
                         }
@@ -108,7 +109,7 @@ public struct AllInViewTaskRow: View {
         .accessibilityValue(
             [
                 unavailable ?? status.label, isUnread ? "Unread" : nil, ask,
-                answersShortcut ? "Command Y targets this request" : nil,
+                answersShortcut ? "Oldest ask" : nil,
             ].compactMap(\.self).joined(separator: ", ")
         )
         .accessibilityAddTraits(isSelected ? .isSelected : [])
