@@ -52,9 +52,10 @@ extension AppModel {
             session(ask.session.key) === ask.session, ask.isCurrent,
             case .permission(let call) = ask.content, call.permission?.options.contains(option) == true
         else { return }
+        let presentation = peekPresenting(ask)
         taskPeek.isAnswering = true
         await ask.session.choose(option, forToolCall: call.id)
-        if taskPeek.request?.ask?.id == ask.id { closeTaskPeek() }
+        if let presentation, taskPeek.request?.id == presentation { closeTaskPeek() }
         taskPeek.isAnswering = false
     }
 
@@ -63,10 +64,20 @@ extension AppModel {
             session(ask.session.key) === ask.session, ask.isCurrent,
             case .question = ask.content
         else { return }
+        let presentation = peekPresenting(ask)
         taskPeek.isAnswering = true
         if let content { await ask.session.answerQuestion(content) } else { await ask.session.declineQuestion() }
-        if taskPeek.request?.ask?.id == ask.id { closeTaskPeek() }
+        if let presentation, taskPeek.request?.id == presentation { closeTaskPeek() }
         taskPeek.isAnswering = false
+    }
+
+    private func peekPresenting(_ ask: TaskPeekAsk) -> UUID? {
+        guard let request = taskPeek.request, request.task == ask.task,
+            request.ask == nil || request.ask?.id == ask.id
+        else { return nil }
+        // A Peek opened while loading has no captured ask. Bind its answer to this presentation,
+        // so a later Peek is kept even if the response takes time.
+        return request.id
     }
 
     /// Recovery uses the same host/agent lifecycle as the task screen and leaves the current task alone.

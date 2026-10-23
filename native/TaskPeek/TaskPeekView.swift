@@ -59,7 +59,7 @@ struct TaskPeekView: View {
                 let project = model.projects.project(projectID)
             {
                 Text(project.name).font(DS.Sidebar.projectFont).foregroundStyle(.dsTextSecondary)
-                Text("/").font(.dsBody).foregroundStyle(.dsTextTertiary)
+                Text("/").font(.dsBody).foregroundStyle(.dsTextQuaternary)
             }
             DSInlineCodeText(model.titleOfSession(request.task))
                 .font(DS.Peek.titleFont).foregroundStyle(.dsTextPrimary)
@@ -75,12 +75,18 @@ struct TaskPeekView: View {
             Button {
                 open()
             } label: {
-                HStack(spacing: DS.Space.sm) {
+                HStack(spacing: DS.Peek.openGap) {
                     Text("Open Task").font(DS.Peek.openFont)
                     Kbd("↩", compact: true)
                 }
+                .fixedSize()
+                .padding(.leading, DS.Peek.openLeading)
+                .overlay(alignment: .leading) {
+                    SeparatorLine(axis: .vertical).frame(height: DS.Peek.openDividerHeight)
+                }
             }
-            .buttonStyle(.plain).foregroundStyle(.dsTextSecondary)
+            .buttonStyle(.plain).foregroundStyle(.dsTextTertiary)
+            .padding(.leading, DS.Peek.openMargin)
             .dsHitTarget(DS.Peek.headerHeight)
             .accessibilityIdentifier("peek-open-task")
         }

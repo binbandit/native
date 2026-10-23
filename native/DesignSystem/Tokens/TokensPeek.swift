@@ -8,6 +8,10 @@ extension DS {
         public static let headerLeading: CGFloat = 16
         public static let headerTrailing: CGFloat = 14
         public static let headerGap: CGFloat = 9
+        public static let openGap: CGFloat = 6
+        public static let openLeading: CGFloat = 10
+        public static let openMargin: CGFloat = 2
+        public static let openDividerHeight: CGFloat = 14
         public static let bodyHorizontal: CGFloat = 20
         public static let bodyVertical: CGFloat = 16
         public static let maxBodyHeight: CGFloat = 560

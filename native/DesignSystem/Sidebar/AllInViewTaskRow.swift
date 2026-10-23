@@ -138,6 +138,10 @@ public struct AllInViewTaskRow: View {
                 ask: "Use the repo's PR template, or keep the built-in body?", attentionSince: .now
             ) {}
             AllInViewTaskRow(title: "Wrap diff lines at word boundaries", status: .done, isSelected: true) {}
+            AllInViewTaskRow(
+                title: "Squash the release notes on main", status: .needsPermission, isPeeking: true,
+                ask: "Allow `git push`?", attentionSince: .now.addingTimeInterval(-240), peek: {}
+            ) {}
             AllInViewTaskRow(title: "Task titles from the first prompt", status: .done, isUnread: true) {}
             AllInViewTaskRow(
                 title: "Landing page hero", status: .failed,
