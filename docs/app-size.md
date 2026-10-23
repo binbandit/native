@@ -16,7 +16,7 @@ noticed while there's still room to choose what to cut; lower them as the cuts i
 | Download, update archive | 47 MB | 42.7 MB |
 | Download, disk image | 48 MB | about 43.3 MB |
 | Installed app | 118 MB | 107.5 MB |
-| App binary (`Contents/MacOS/Native`) | 58.5 MB | 53.2 MB |
+| App binary (`Contents/MacOS/Native`) | 59 MB | 53.2 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
 `scripts/release/size-check.sh` holds the same numbers and fails when anything is over. It also
@@ -44,6 +44,12 @@ canvas, native document preview adapters and preservation of image/file content 
 tool messages, with no bundled assets or dependencies. It uses the same 58.5 MB binary allowance.
 At `d242798c`, the measured download was 45.8 MB and installed app was 114.8 MB, within their
 unchanged limits.
+
+Quick Entry adds the opt-in panel, context capture, address pickers and background-start
+confirmation, reusing the existing editor and task pipeline without assets or dependencies.
+With main through `638e0771`, its Nightly binary at `00eef888` measured 58.61 MB, about 0.6 MB
+above the artifact-viewer baseline above. The binary allowance is now 59 MB for that feature;
+the measured 46.3 MB update archive and 115.3 MB installed app remain within unchanged budgets.
 
 ## Measuring
 
