@@ -52,8 +52,7 @@ struct GeneralSettingsPage: View {
             if plainly {
                 SettingsGroup(
                     title: "While an agent works",
-                    footer:
-                        "Steering lets the agent change course between steps. ⌘Return does the other. Agents that can't be steered always queue."
+                    footer: followUpHint
                 ) {
                     followUpControl
                 }
@@ -106,6 +105,15 @@ struct GeneralSettingsPage: View {
                 }, width: plainly ? DS.Settings.wideControl : SettingsMetrics.selectWidth,
                 isDefault: followUp == FollowUpBehavior.defaultValue)
         }
+    }
+
+    private var followUpHint: String {
+        let alternate =
+            followUp == .steer
+            ? "⌘Return queues your message until the turn finishes."
+            : "⌘Return steers the agent between steps."
+        return
+            "Steering lets the agent change course between steps. \(alternate) Agents that can't be steered always queue."
     }
 
 }

@@ -24,23 +24,47 @@ struct SettingsHeader<Actions: View>: View {
     @ViewBuilder var actions: Actions
 
     var body: some View {
-        HStack(alignment: .top, spacing: DS.Space.xl) {
-            VStack(alignment: .leading, spacing: usesPlainly ? DS.Space.xs : DS.Space.md) {
-                Text(sectionTitle ?? (usesPlainly ? plainly?.title ?? title : title))
-                    .settingsText(sectionTitle == nil ? .title : .heading)
-                    .foregroundStyle(.dsTextPrimary)
-                    .accessibilityAddTraits(.isHeader)
-                if let description = usesPlainly && plainly != nil ? plainly?.description.map(Text.init) : description {
-                    description
-                        .settingsText(.body)
-                        .foregroundStyle(.dsTextSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+        if usesPlainly {
+            VStack(alignment: .leading, spacing: DS.Space.xs) {
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .top, spacing: DS.Space.xl) {
+                        heading
+                        Spacer(minLength: 0)
+                        HStack(spacing: DS.Space.md) { actions }
+                    }
+                    VStack(alignment: .leading, spacing: DS.Space.md) {
+                        heading
+                        HStack(spacing: DS.Space.md) { actions }
+                    }
                 }
+                subtitle
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            HStack(spacing: DS.Space.md) {
-                actions
+        } else {
+            HStack(alignment: .top, spacing: DS.Space.xl) {
+                VStack(alignment: .leading, spacing: DS.Space.md) {
+                    heading
+                    subtitle
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: DS.Space.md) { actions }
             }
+        }
+    }
+
+    private var heading: some View {
+        Text(sectionTitle ?? (usesPlainly ? plainly?.title ?? title : title))
+            .settingsText(sectionTitle == nil ? .title : .heading)
+            .foregroundStyle(.dsTextPrimary)
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    @ViewBuilder private var subtitle: some View {
+        if let description = usesPlainly && plainly != nil ? plainly?.description.map(Text.init) : description {
+            description
+                .settingsText(.body)
+                .foregroundStyle(.dsTextSecondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

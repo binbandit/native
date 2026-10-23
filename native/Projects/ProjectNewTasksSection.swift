@@ -26,9 +26,12 @@ struct ProjectNewTasksSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
-            SettingsSubheading(
-                prefixOnly ? "Git" : "New tasks",
-                note: prefixOnly ? nil : "How tasks you start in \(project.name) begin, unless you choose otherwise.")
+            if !defaultsOnly {
+                SettingsSubheading(
+                    prefixOnly ? "Git" : "New tasks",
+                    note: prefixOnly
+                        ? nil : "How tasks you start in \(project.name) begin, unless you choose otherwise.")
+            }
             SettingsRowGroup {
                 if !prefixOnly {
                     SettingsRow(id: rows.agent, "Agent", description: Text(agentDescription)) {

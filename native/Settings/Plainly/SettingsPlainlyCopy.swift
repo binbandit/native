@@ -27,7 +27,7 @@ struct SettingsPlainlyCopy {
     static let keepRunning = Self(
         title: "Keep agents running after you quit", description: "Turn this off to stop agents when Native quits.")
     static let backgroundHelper = Self(title: "Background helper", preservesDescription: true)
-    static let awake = Self(title: "Keep Mac awake", description: "Closing the lid still sleeps your Mac.")
+    static let awake = Self(title: "Keep Mac awake")
     static let awakeTimer = Self(title: "Stay awake for")
     static let awakeDisplay = Self(title: "Keep the display on too")
     static let battery = Self(title: "On battery")

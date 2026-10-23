@@ -23,13 +23,14 @@ private struct SettingsRevealModifier: ViewModifier {
     let rowID: SettingsRowID?
 
     @Environment(\.settingsFlash) private var flash
+    @Environment(\.settingsPlainly) private var plainly
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var ringOpacity = 0.0
 
     func body(content: Content) -> some View {
         content
             .overlay {
-                Rectangle()
+                RoundedRectangle(cornerRadius: plainly ? DS.Radius.card : 0)
                     .strokeBorder(.dsTextSecondary, lineWidth: SettingsMetrics.revealRingWidth)
                     .padding(-SettingsMetrics.revealRingOutset)
                     .opacity(ringOpacity)

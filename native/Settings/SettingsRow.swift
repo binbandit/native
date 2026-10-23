@@ -39,7 +39,9 @@ struct SettingsRow<Accessory: View, Control: View>: View {
             } else if usesPlainly {
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: SettingsMetrics.rowControlSpacing) {
-                        label.frame(minWidth: DS.Settings.rowLabelMinWidth)
+                        label.frame(
+                            minWidth: DS.Settings.rowLabelMinWidth,
+                            idealWidth: DS.Settings.rowLabelMinWidth)
                         trailing
                     }
                     VStack(alignment: .leading, spacing: DS.Space.lg) {

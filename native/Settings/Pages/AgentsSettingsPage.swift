@@ -73,16 +73,6 @@ struct AgentsSettingsPage: View {
                 ForEach(shownEntries) { entry in
                     agentRow(entry)
                         .settingsLocked(isAllowed(entry) ? nil : Self.notAllowed)
-                    if plainly {
-                        DisclosureGroup("How Native runs \(entry.agent.name)") {
-                            Text(entry.commandLine)
-                                .settingsText(.mono)
-                                .textSelection(.enabled)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .font(DS.Settings.caption)
-                        .foregroundStyle(.dsTextSecondary)
-                    }
                     if registry.isEnabled(entry.plugin.id), isAllowed(entry) {
                         if !plainly {
                             AgentDefaultsRow(agentName: entry.agent.name, agentID: entry.definition.id)
@@ -94,6 +84,21 @@ struct AgentsSettingsPage: View {
             if plainly {
                 Button("New Task Defaults…") { presentation.open(.newTasks) }
                     .buttonStyle(.settings)
+                DisclosureGroup("How Native runs agents") {
+                    VStack(alignment: .leading, spacing: DS.Space.lg) {
+                        ForEach(shownEntries) { entry in
+                            VStack(alignment: .leading, spacing: DS.Space.xs) {
+                                Text(entry.agent.name).settingsText(.bodyMedium)
+                                Text(entry.commandLine)
+                                    .settingsText(.mono)
+                                    .textSelection(.enabled)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                }
+                .font(DS.Settings.caption)
+                .foregroundStyle(.dsTextSecondary)
             }
             if plainly {
                 SettingsSubheading(

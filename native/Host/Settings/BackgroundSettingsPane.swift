@@ -47,6 +47,7 @@ struct BackgroundSettingsPage: View {
     static let checkRow = SettingsRowID("background.check")
 
     @Environment(DurableHost.self) private var host: DurableHost?
+    @Environment(\.settingsPlainly) private var plainly
     @Environment(CommandRegistry.self) private var commands
     @AppStorage(HostSessions.defaultsKey) private var keepsRunning = HostSessions.defaultValue
     @State private var isCheckingMac = false
@@ -177,7 +178,7 @@ struct BackgroundSettingsPage: View {
         switch host.placement {
         case .background:
             switch host.workingTasks {
-            case 0: "Nothing is running right now."
+            case 0: plainly ? "No agents running." : "Nothing is running right now."
             case 1: "1 task is working."
             default: "\(host.workingTasks) tasks are working."
             }
