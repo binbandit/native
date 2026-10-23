@@ -22,6 +22,7 @@ enum CelebrationMetrics {
     static let yearIconGap: CGFloat = 2
     static let yearStemGap: CGFloat = 8
     static let yearRing: CGFloat = 1.5
+    static let yearCurrentRingOutset = yearRing * 1.5
     static let yearSpan: CGFloat = 3
     static let yearTick: CGFloat = 5
     static let yearLabelOffset: CGFloat = 9

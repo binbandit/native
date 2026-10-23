@@ -140,7 +140,7 @@ struct CelebrationYearStrip: View {
                 .overlay { shape.stroke(.dsSurface, lineWidth: CelebrationMetrics.yearRing) }
                 .overlay {
                     if current {
-                        shape.inset(by: -CelebrationMetrics.yearSpan)
+                        shape.inset(by: -CelebrationMetrics.yearCurrentRingOutset)
                             .stroke(.dsTextPrimary, lineWidth: CelebrationMetrics.yearRing)
                     }
                 }
