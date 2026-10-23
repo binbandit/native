@@ -216,6 +216,7 @@ Peek for review. The full request is always shown there. The current task and it
 | | Peek at the selected task (Space with the sidebar list focused) | Task / row context menu | `task.peek` |
 | Escape in Peek | Close Peek | | |
 | Return in Peek (except a question) | Open Task | | |
+| ⌘R in a failure Peek | Retry the failed task | | |
 
 A click on a row's signal, a force click, or Peek in its context menu opens the same 600pt popover.
 Questions keep their digit, arrow and Return controls. An answer closes Peek. Hidden or filtered

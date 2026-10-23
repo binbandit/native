@@ -25,6 +25,7 @@ struct TaskPeekFailureView: View {
                     recover()
                 }
                 .buttonStyle(.ds(.primary))
+                .keyboardShortcut("r", modifiers: .command)
                 .disabled(isRecovering)
             }
         }
