@@ -3,9 +3,11 @@ import SwiftUI
 /// A keyboard shortcut hint: Geist Mono 10pt in a 1pt-outlined, 2pt-rounded cap.
 public struct Kbd: View {
     let keys: String
+    var compact = false
 
-    public init(_ keys: String) {
+    public init(_ keys: String, compact: Bool = false) {
         self.keys = keys
+        self.compact = compact
     }
 
     public init(_ shortcut: KeyboardShortcut) {
@@ -13,19 +15,22 @@ public struct Kbd: View {
     }
 
     public var body: some View {
-        let shape = RoundedRectangle(cornerRadius: DS.Radius.small, style: .continuous)
+        let shape = RoundedRectangle(
+            cornerRadius: compact ? DS.Sidebar.keycapRadius : DS.Radius.small, style: .continuous)
         HStack(spacing: 1) {
             // Geist Mono has no modifier glyphs, so those come from the system font.
             ForEach(Array(keys.enumerated()), id: \.offset) { _, character in
                 Text(String(character))
-                    .font(Self.symbols.contains(character) ? .system(size: 10, weight: .medium) : .dsMonoMicro)
+                    .font(
+                        Self.symbols.contains(character)
+                            ? .system(size: 10, weight: .medium) : compact ? DS.Sidebar.keycapFont : .dsMonoMicro)
             }
         }
         .tracking(DS.Tracking.tight)
         .foregroundStyle(.dsTextSecondary)
-        .padding(.horizontal, DS.Space.sm)
-        .padding(.vertical, DS.Space.xxs)
-        .frame(minHeight: 17)
+        .padding(.horizontal, compact ? DS.Space.xs : DS.Space.sm)
+        .padding(.vertical, compact ? 0 : DS.Space.xxs)
+        .frame(minHeight: compact ? DS.Sidebar.keycapHeight : 17)
         .background(.dsSurface, in: shape)
         .overlay { shape.strokeBorder(.dsBorderInner, lineWidth: 1) }
         .fixedSize()

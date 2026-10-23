@@ -45,7 +45,8 @@ extension SessionModel {
     }
 
     /// The agent asks to run a shell command, as Codex's adapter asks.
-    func previewPermissionRequest(command: String = "swift test --filter PermissionRequestTests") {
+    func previewPermissionRequest(command: String = "swift test --filter PermissionRequestTests", at date: Date = .now)
+    {
         let call = """
             {"toolCallId": "call_preview_\(UUID().uuidString.prefix(8))", "title": "\(command)", "kind": "execute",
              "status": "pending", "rawInput": {"command": ["/bin/zsh", "-lc", "\(command)"]}}
@@ -60,7 +61,7 @@ extension SessionModel {
             let permission = Self.previewDecode(RequestPermissionRequest.self, request)
         else { return }
         state.apply(.toolCall(update))
-        state.requestPermission(permission, id: .int(state.items.count))
+        state.requestPermission(permission, id: .int(state.items.count), at: date)
     }
 
     /// How much of the context window the session has used.

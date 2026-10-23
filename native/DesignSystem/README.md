@@ -85,7 +85,8 @@ Mac) to see everything in light and dark side by side.
 | `ActivityHeatmap` | GitHub's contribution graph: 53 weeks of days, month and weekday labels, five accent steps over a neutral empty square; hover, tap or arrow keys pick a day, and every square tells VoiceOver its exact count |
 | `ProjectGroup`, `ProjectRow`, `ProjectAvatar` | Collapsible project groups: avatar, name, task count while collapsed |
 | `TaskRow` (+ `leading`/`accessory` slots), `TaskBadge`, `DiffStatLabel`, `CompactAgeText` | Task rows: one leading visual, then a trailing badge, the accessory and the diff or age; on hover Archive takes the age's place, so controls in the accessory stay reachable |
-| `TaskStatus`, `StatusIndicator`, `DotGridLoader` | Agent states and the animated dot-grid loaders |
+| `TaskStatus`, `StatusIndicator`, `DotGridLoader` | Current task states and the animated dot-grid loaders |
+| `TaskSignal`, `AllInViewTaskRow` | The gated redesign: one grid vocabulary and titles at rest, with two-line asks and waiting clocks |
 | `ContextUsageRing` | A small ring for how much of the context window a session has used |
 | `ComposerSurface`, `ComposerControlsBar`, `.pill` / `.pillChrome`, `PillIcon`, `PillMenu`, `EffortBars`, `ComposerSendButton`, `ComposerStopButton`, `ComposerChip` | The composer: outlined sections with 1pt rules, 28pt pills |
 | `SearchField` | The one search and filter field: a magnifier, a clear button once something's typed, Escape to clear, an optional trailing accessory (a shortcut hint, a record-keys button), no fill of its own |
@@ -143,3 +144,17 @@ scripts/check-ios.sh native/DesignSystem
 ```
 
 Then look at the gallery in both appearances, and at your screen in the running app.
+
+### All in view status language
+
+Use `TaskSignal(status:isUnread:placement:attentionSince:unavailable:limitReset:)` in gated redesign
+surfaces. Placements are `.toolbarCount` (12pt), `.well` (13pt), `.sidebar` (14pt), and `.peek`
+(15pt). At rest only `.well` draws a dot; sidebar rows retain their 16pt leading slot. A finished,
+unread task draws one accent dot. Paused and limited states are tertiary, and only failures still
+requiring the user are red. An offline description overrides the glyph and its VoiceOver words.
+
+Pass the actual request arrival as `attentionSince`, never the row's appearance time. Breathing
+ends after 60 seconds, or four seconds after activation, and Reduce Motion is always still.
+The optional `working:` view builder replaces only the working animation. It receives the same
+size and neutral foreground; the system still supplies the accessible label and the static
+Reduce Motion grid. Keep variants on the 240-unit canvas, with centers at 50, 120 and 190.

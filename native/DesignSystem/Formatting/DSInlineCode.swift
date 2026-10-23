@@ -6,13 +6,16 @@ import SwiftUI
 /// written. Only inline code is styled; other Markdown stays literal, since titles aren't Markdown.
 public enum DSInlineCode {
     /// `text` with its code spans set in `codeFont`, for a `Text`, which keeps truncating it.
-    public static func attributed(_ text: String, codeFont: Font = .dsMono) -> AttributedString {
-        styled(AttributedString(text), codeFont: codeFont)
+    public static func attributed(_ text: String, codeFont: Font = .dsMono, codeColor: Color? = nil) -> AttributedString
+    {
+        styled(AttributedString(text), codeFont: codeFont, codeColor: codeColor)
     }
 
     /// `text` with its code spans set in `codeFont` and their backticks gone, keeping the attributes
     /// it already has, such as the letters a search matched.
-    public static func styled(_ text: AttributedString, codeFont: Font = .dsMono) -> AttributedString {
+    public static func styled(
+        _ text: AttributedString, codeFont: Font = .dsMono, codeColor: Color? = nil
+    ) -> AttributedString {
         let characters = Array(text.characters)
         func slice(_ start: Int, _ end: Int) -> AttributedString {
             let all = text.characters
@@ -38,6 +41,7 @@ public enum DSInlineCode {
             let span = trimmed(index + ticks..<close, in: characters)
             var code = slice(span.lowerBound, span.upperBound)
             code.font = codeFont
+            if let codeColor { code.foregroundColor = codeColor }
             result += code
             index = close + ticks
             copied = index
@@ -85,14 +89,16 @@ public enum DSInlineCode {
 public struct DSInlineCodeText: View {
     let text: String
     let codeFont: Font
+    let codeColor: Color?
 
-    public init(_ text: String, codeFont: Font = .dsMono) {
+    public init(_ text: String, codeFont: Font = .dsMono, codeColor: Color? = nil) {
         self.text = text
         self.codeFont = codeFont
+        self.codeColor = codeColor
     }
 
     public var body: some View {
-        Text(DSInlineCode.attributed(text, codeFont: codeFont))
+        Text(DSInlineCode.attributed(text, codeFont: codeFont, codeColor: codeColor))
     }
 }
 

@@ -51,18 +51,19 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
                 accessories
             }
             .padding(DS.Space.sm)
-            SeparatorLine()
-                .padding(.horizontal, DS.Space.lg)
+            if !usesSidebarNext {
+                SeparatorLine().padding(.horizontal, DS.Space.lg)
+            }
 
             ScrollView {
                 ProjectList(
                     listing: listing, taskAccessory: taskAccessory, filter: filterBinding, selection: selection,
                     select: select
                 )
-                .environment(\.sidebarQuietProjects, usesSidebarNext)
+                .environment(\.sidebarAllInView, usesSidebarNext)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, DS.Space.sm)
-                .padding(.vertical, DS.Space.md)
+                .padding(.horizontal, usesSidebarNext ? DS.Sidebar.inset : DS.Space.sm)
+                .padding(.vertical, usesSidebarNext ? 0 : DS.Space.md)
             }
             .scrollIndicators(.automatic)
             .focusable()
@@ -119,6 +120,7 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
             }
             SidebarFooter()
         }
+        .background(usesSidebarNext ? Color.dsSidebarSolid : Color.clear)
         .animation(.dsQuick, value: selection.isActive)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .environment(\.sidebarSelection, selection)
