@@ -99,6 +99,7 @@ struct HomeNextView: View {
         .onChange(of: asks.first?.id, initial: true) { _, id in current = id }
         .animation(reduceMotion ? nil : .dsDisclosure, value: asks.map { $0.approval?.id ?? $0.id.id.rawValue })
         .animation(reduceMotion ? nil : .dsDisclosure, value: visibleCount)
+        .animation(reduceMotion ? nil : .dsDisclosure, value: receipt?.date)
     }
 
     private func header(count: Int) -> some View {
