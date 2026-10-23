@@ -1,3 +1,4 @@
+import AppAppearance
 import QuartzCore
 import SwiftUI
 
@@ -10,7 +11,14 @@ nonisolated final class TaskSignalLayer: CALayer {
         var showsRest: Bool
         var offline: Bool
         var reduceMotion: Bool
+        var workingAnimation: WorkingAnimation?
         var breathUntil: Date?
+
+        var pattern: DotGridLoader.Pattern? {
+            guard !offline else { return nil }
+            if status == .working, let workingAnimation { return .working(workingAnimation) }
+            return status.loader
+        }
     }
 
     private var signal: State?
@@ -36,11 +44,12 @@ nonisolated final class TaskSignalLayer: CALayer {
 
     func update(
         status: TaskStatus, unread: Bool, showsRest: Bool, offline: Bool, reduceMotion: Bool,
+        workingAnimation: WorkingAnimation?,
         breathUntil: Date?
     ) {
         let next = State(
             status: status, unread: unread, showsRest: showsRest, offline: offline,
-            reduceMotion: reduceMotion, breathUntil: breathUntil)
+            reduceMotion: reduceMotion, workingAnimation: workingAnimation, breathUntil: breathUntil)
         guard next != signal else { return }
         transitionFrom = signal
         signal = next
@@ -74,7 +83,7 @@ nonisolated final class TaskSignalLayer: CALayer {
             } ?? false
         let animates = changedShape && !signal.reduceMotion
         let now = CACurrentMediaTime()
-        let pattern = signal.offline ? nil : signal.status.loader
+        let pattern = signal.pattern
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         for (index, dot) in dots.enumerated() {
@@ -137,7 +146,7 @@ nonisolated final class TaskSignalLayer: CALayer {
         let row = index / 3
         let center = CGPoint(x: DS.Signal.centers[column], y: DS.Signal.centers[row])
         if signal.offline { return (center, DS.Signal.stillRadius, true) }
-        if let pattern = signal.status.loader {
+        if let pattern = signal.pattern {
             let visible = pattern.timing.dots.contains { $0.x == center.x && $0.y == center.y }
             return (center, signal.reduceMotion ? DS.Signal.movingRadius * 0.6 : DS.Signal.movingRadius, visible)
         }

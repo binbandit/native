@@ -31,6 +31,7 @@ public struct TaskSignal<Working: View>: View {
 
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @Environment(\.taskSignalReducedMotion) private var stillSignals
+    @Environment(\.dsWorkingAnimation) private var workingAnimation
     @Environment(\.scenePhase) private var scenePhase
     @State private var activatedAt: Date?
     @State private var expiredDeadline: Date?
@@ -62,6 +63,7 @@ public struct TaskSignal<Working: View>: View {
                     layer.update(
                         status: status, unread: isUnread, showsRest: placement == .well,
                         offline: unavailable != nil, reduceMotion: reduceMotion,
+                        workingAnimation: workingAnimation,
                         breathUntil: expiredDeadline == breathDeadline ? nil : breathDeadline)
                 }
             }

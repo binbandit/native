@@ -7,6 +7,7 @@ struct TaskSignalPreview: View {
     @State private var unread = false
     @State private var since: Date?
     @State private var reduceMotion = false
+    @State private var playful = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.xl) {
@@ -30,6 +31,7 @@ struct TaskSignalPreview: View {
                 Button("Read") { unread = false }
                 Button("Failed") { status = .failed }
                 Toggle("Reduce Motion", isOn: $reduceMotion)
+                Toggle("Playful Working", isOn: $playful)
             }
             Grid(alignment: .leading, horizontalSpacing: DS.Space.xxxl, verticalSpacing: DS.Space.lg) {
                 GridRow {
@@ -59,6 +61,7 @@ struct TaskSignalPreview: View {
             Spacer()
         }
         .environment(\.taskSignalReducedMotion, reduceMotion)
+        .environment(\.dsWorkingAnimation, playful ? .ripple : nil)
         .padding(DS.Space.xxxl)
         .foregroundStyle(.dsTextPrimary)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)

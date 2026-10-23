@@ -43,6 +43,7 @@ private struct BubbleTranscript: View {
             }
             if isTyping {
                 BubbleTypingIndicator()
+                    .environment(\.dsWorkingAnimation, transcript.session.workingAnimation)
                     .padding(.top, rows.isEmpty ? 0 : BubbleMetrics.rowSpacing)
                     .transition(reduceMotion ? .opacity : AnyTransition(RevealTransition()))
             }

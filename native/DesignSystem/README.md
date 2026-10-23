@@ -155,6 +155,15 @@ requiring the user are red. An offline description overrides the glyph and its V
 
 Pass the actual request arrival as `attentionSince`, never the row's appearance time. Breathing
 ends after 60 seconds, or four seconds after activation, and Reduce Motion is always still.
+By default the signal honors the task's saved `dsWorkingAnimation` choice from Playful spinners.
 The optional `working:` view builder replaces only the working animation. It receives the same
 size and neutral foreground; the system still supplies the accessible label and the static
 Reduce Motion grid. Keep variants on the 240-unit canvas, with centers at 50, 120 and 190.
+
+### Playful working spinners
+
+Settings > Appearance > Playful spinners defaults to off. Each task model keeps one saved random
+choice from sweep, ripple, orbit, rain, checkerboard, snake and breathe. Its sidebar, transcript and
+Tasks panel share that choice through `dsWorkingAnimation`; other loading states keep their existing patterns.
+All variants use the same neutral 3x3 grid and 2.4-second Core Animation loop. Reduce Motion shows
+the still grid. The Gallery and Appearance show every variation.

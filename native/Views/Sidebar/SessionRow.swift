@@ -59,10 +59,14 @@ struct SessionRow<Accessory: View>: View {
     }
 
     var body: some View {
+        row.environment(\.dsWorkingAnimation, session?.workingAnimation)
+    }
+
+    @ViewBuilder private var row: some View {
         if model.renaming == summary.id {
             SessionTitleField(summary: summary, status: TaskStatus(session))
         } else {
-            row
+            taskRow
                 .help(tooltip)
                 // Double-clicking renames, like a file in the Finder.
                 .simultaneousGesture(TapGesture(count: 2).onEnded(rename))
@@ -92,7 +96,7 @@ struct SessionRow<Accessory: View>: View {
         }
     }
 
-    @ViewBuilder private var row: some View {
+    @ViewBuilder private var taskRow: some View {
         if isAllInView {
             let attention = session.flatMap {
                 SidebarSessionAttention(session: $0, isVisibleTask: model.selection == summary.id)
