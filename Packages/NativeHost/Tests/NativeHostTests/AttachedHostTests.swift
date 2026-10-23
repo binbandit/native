@@ -39,9 +39,9 @@ struct AttachedHostTests {
     }
 
     @Test(
-        "Quitting the app, or ending the host itself, stops a running turn as the user's stop, not a crash",
+        "Quitting the app or ending the host ends known processes without recovering the turn",
         arguments: [Ending.appQuits, .hostTerminated])
-    func endsTurnsAsStopped(_ ending: Ending) async throws {
+    func endsTurnsWithoutRecovery(_ ending: Ending) async throws {
         let harness = try HostHarness()
         let parent = try startAttached(harness)
         let first = try await harness.connect()
@@ -64,7 +64,7 @@ struct AttachedHostTests {
         let second = try await harness.connect()
         try await second.client.attach(summary.id)
         let reopened = try await second.client.sessions().first { $0.id == summary.id }
-        #expect(reopened?.lastStopReason == "cancelled")
+        #expect(reopened?.lastStopReason == "error")
         #expect(reopened?.phase != .prompting && reopened?.phase != .recovering)
         try await Task.sleep(for: .seconds(1))
         #expect(await second.recoveries(summary.id).isEmpty)

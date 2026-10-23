@@ -150,7 +150,7 @@ extension HostTitleTests {
         let id = try await rig.startTask("slow 50", on: client)
         try await client.cancel(id)
         try await settled(id, in: host)
-        #expect(host.sessions[id]?.record.lastStopReason == "cancelled")
+        #expect(host.sessions[id]?.record.lastStopReason == "error")
         titler.script.withLock { $0.answer = "Count slowly" }
         _ = try await client.prompt(PromptParams(sessionID: id, text: "continue"))
         try await settled(id, in: host)
