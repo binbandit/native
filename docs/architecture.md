@@ -28,6 +28,9 @@
   a failed launch must never be presented as ready to start a task. A task requested during an
   agent restart stays in Starting until the whole restart finishes. If it fails, Restart and Retry
   restarts the agent and continues the same task, keeping its draft and prepared workspace.
+  When every installed, enabled agent has failed, `AppModel.agentStartupFailure` supplies Home
+  and New Task with the same named recovery state (`NativeSetup.AgentStartupFailure`). New Task
+  opens the agent picker for Restart or Agents Settings instead of preparing a task that cannot start.
 - **State is a reducer.** `SessionState` folds `session/update`s and the user's actions into a
   transcript (messages, tool calls, subagents, inter-session messages, plan, usage). It's pure and
   tested against captured traffic, and it's shared with the future companion app.

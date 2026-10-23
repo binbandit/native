@@ -1,3 +1,4 @@
+import NativeSetup
 import SwiftUI
 
 /// Home while there are projects and no task is selected: a card per agent that starts a task, the
@@ -18,6 +19,8 @@ public struct HomeView<AgentID: Hashable, ProjectID: Hashable, TaskID: Hashable>
     let recentTasks: [HomeTask<TaskID>]
     /// Tasks waiting on the user, oldest first. They lead the page while there are any.
     let waitingTasks: [HomeWaitingTask<TaskID>]
+    let startupFailure: AgentStartupFailure?
+    let onManageAgents: () -> Void
     let onNewTask: (AgentID, ProjectID) -> Void
     let onAddProject: () -> Void
     let onSelectTask: (TaskID) -> Void
@@ -30,6 +33,8 @@ public struct HomeView<AgentID: Hashable, ProjectID: Hashable, TaskID: Hashable>
         project: Binding<ProjectID>,
         recentTasks: [HomeTask<TaskID>],
         waitingTasks: [HomeWaitingTask<TaskID>] = [],
+        startupFailure: AgentStartupFailure? = nil,
+        onManageAgents: @escaping () -> Void = {},
         onNewTask: @escaping (AgentID, ProjectID) -> Void,
         onAddProject: @escaping () -> Void,
         onSelectTask: @escaping (TaskID) -> Void
@@ -39,6 +44,8 @@ public struct HomeView<AgentID: Hashable, ProjectID: Hashable, TaskID: Hashable>
         _project = project
         self.recentTasks = recentTasks
         self.waitingTasks = waitingTasks
+        self.startupFailure = startupFailure
+        self.onManageAgents = onManageAgents
         self.onNewTask = onNewTask
         self.onAddProject = onAddProject
         self.onSelectTask = onSelectTask
@@ -63,7 +70,9 @@ public struct HomeView<AgentID: Hashable, ProjectID: Hashable, TaskID: Hashable>
                 HomeNoTasks(
                     projectName: projectName,
                     newTaskShortcut: readyAgents.lazy.compactMap(\.shortcut).first,
-                    isAnyAgentReady: !readyAgents.isEmpty
+                    isAnyAgentReady: !readyAgents.isEmpty,
+                    startupFailure: startupFailure,
+                    onManageAgents: onManageAgents
                 )
                 .padding(.top, HomeLayout.sectionSpacing)
             } else {
