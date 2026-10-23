@@ -32,10 +32,13 @@ struct TaskWellToolbar<Dev: View>: View {
             TaskWellToolsPanel(content: content, location: location, tools: tools, detail: detail, dev: dev)
         }
         .onChange(of: session.phase) { previous, phase in
-            if previous == .prompting, phase == .idle { isLanding = true }
+            if previous == .prompting, phase == .idle {
+                isLanding = true
+                if tools.isOpen(.changes) { session.markTaskWellOutcomeReviewed(latestTurn?.id) }
+            }
         }
         .onChange(of: tools.isOpen(.changes)) { _, isOpen in
-            if isOpen { session.markTaskWellOutcomeReviewed(latestTurn?.id) }
+            if isOpen, session.phase == .idle { session.markTaskWellOutcomeReviewed(latestTurn?.id) }
         }
         .task(id: isLanding) {
             guard isLanding else { return }
