@@ -1,4 +1,5 @@
 import ACP
+import AppAppearance
 import Foundation
 import NativeHostClient
 import NativeHostProtocol
@@ -45,6 +46,12 @@ final class SessionModel {
     /// Native's own identity for the session, assigned before the agent creates it (see
     /// `SessionContext`).
     let clientID: UUID
+    private let chosenWorkingAnimation: WorkingAnimation
+
+    /// Turning the option off restores the original grid without discarding this task's choice.
+    var workingAnimation: WorkingAnimation? {
+        services.workingSpinners.isEnabled ? chosenWorkingAnimation : nil
+    }
     let cwd: URL
     let origin: Origin
     /// The session that started this one; `nil` for sessions the user started.
@@ -219,6 +226,7 @@ final class SessionModel {
     ) {
         self.agent = agent
         self.id = id
+        chosenWorkingAnimation = services.workingSpinners.animation(agentID: agent.id.rawValue, taskID: id.rawValue)
         self.clientID = clientID
         self.cwd = cwd
         self.connection = connection
@@ -244,6 +252,7 @@ final class SessionModel {
     ) {
         self.agent = agent
         self.id = id
+        chosenWorkingAnimation = services.workingSpinners.animation(agentID: agent.id.rawValue, taskID: id.rawValue)
         clientID = summary.id.rawValue
         cwd = URL(filePath: summary.cwd, directoryHint: .isDirectory)
         connection = nil
@@ -272,6 +281,8 @@ final class SessionModel {
         self.host = host.flatMap { summary in parent.host.map { HostSessionLink(client: $0.client, id: summary.id) } }
         hostSummary = host
         services = parent.services
+        chosenWorkingAnimation = parent.services.workingSpinners.animation(
+            agentID: parent.agent.id.rawValue, taskID: id.rawValue)
         supportsSteering = false
         promptCapabilities = PromptCapabilities()
         phase = .idle
