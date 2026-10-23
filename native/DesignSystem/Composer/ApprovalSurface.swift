@@ -11,16 +11,11 @@ struct ApprovalSurface<Content: View>: View {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: DS.Radius.control)
         content
-            .background {
-                if transparency == .solid || reduceTransparency {
-                    shape.fill(DS.Approval.surface(colorScheme))
-                } else {
-                    shape.fill(.ultraThinMaterial)
-                        .overlay {
-                            shape.fill(DS.Approval.surface(colorScheme).opacity(DS.Approval.surfaceTintOpacity))
-                        }
-                }
-            }
+            .modifier(
+                ApprovalBackground(
+                    solid: transparency == .solid || reduceTransparency, shape: shape,
+                    color: DS.Approval.surface(colorScheme))
+            )
             .clipShape(shape)
             .overlay { shape.strokeBorder(DS.Approval.edge(colorScheme), lineWidth: DS.Approval.rule) }
             .shadow(
@@ -28,6 +23,20 @@ struct ApprovalSurface<Content: View>: View {
                 y: DS.Approval.shadowOffset
             )
             .environment(\.dsOnGlass, false)
+    }
+}
+
+private struct ApprovalBackground: ViewModifier {
+    let solid: Bool
+    let shape: RoundedRectangle
+    let color: Color
+
+    func body(content: Content) -> some View {
+        if solid {
+            content.background(color, in: shape)
+        } else {
+            content.glassEffect(.clear.tint(color.opacity(DS.Approval.surfaceTintOpacity)), in: shape)
+        }
     }
 }
 

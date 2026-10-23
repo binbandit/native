@@ -20,6 +20,9 @@ extension DS {
         static let rule: CGFloat = 1
         static let maximumHeight: CGFloat = 470
         static let instructionHeight: CGFloat = 52
+        static let instructionMaximumHeight: CGFloat = 78
+        static let editorInsets = EdgeInsets()
+        static let commandLineSpacing: CGFloat = 4
         static let commandFont = DSTypography.font(size: 13, design: .mono)
         static let titleFont = DSTypography.font(size: 14, weight: .medium)
         static let fixItFont = DSTypography.font(size: 11.5, design: .mono)

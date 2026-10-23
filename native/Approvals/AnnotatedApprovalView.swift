@@ -20,7 +20,8 @@ struct AnnotatedApprovalView: View {
     @Environment(\.permissionShortcutsEnabled) private var shortcutsEnabled
     @FocusState private var instructionFocused: Bool
     @State var instruction = ""
-    @State private var sending = false
+    @State var sending = false
+    @State private var instructionSelection: TextSelection?
     @State private var keyboardHeld = false
     @State private var committed = false
     @State var failure: String?
@@ -80,11 +81,18 @@ struct AnnotatedApprovalView: View {
             if rejection != nil {
                 Rectangle().fill(DS.Approval.separator(colorScheme)).frame(height: DS.Approval.rule)
                 HStack(alignment: .bottom, spacing: DS.Space.md) {
-                    TextField("Tell \(agentName) what to do instead", text: $instruction, axis: .vertical)
-                        .font(.dsCallout).foregroundStyle(.dsTextPrimary).textFieldStyle(.plain).lineLimit(1...4)
-                        .accessibilityLabel("Tell \(agentName) what to do instead")
-                        .focused($instructionFocused)
-                        .onSubmit { sendInstruction(instruction) }
+                    ComposerEditor(
+                        text: $instruction, selection: $instructionSelection,
+                        placeholder: "Or tell \(agentName) what to do instead", isFocused: $instructionFocused,
+                        inputLabel: "Tell \(agentName) what to do instead", textInsets: DS.Approval.editorInsets,
+                        maximumHeight: DS.Approval.instructionMaximumHeight
+                    ) { press in
+                        guard press.key == .return, press.modifiers.isEmpty, !PlatformTextInput.isComposing else {
+                            return .ignored
+                        }
+                        sendInstruction(instruction)
+                        return .handled
+                    }
                     ComposerSendButton(
                         disabledReason: instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                             ? "Enter an instruction first" : nil
@@ -259,6 +267,8 @@ struct AnnotatedApprovalView: View {
                     command: ApprovalPreviewFixtures.commands[0],
                     failure: "Couldn't send your instruction. Your words are kept. Try again."
                 ).frame(width: 760)
+                ApprovalPreviewFixtures.card(command: ApprovalPreviewFixtures.commands[0], sending: true)
+                    .frame(width: 760)
                 ApprovalPreviewFixtures.card(command: ApprovalPreviewFixtures.commands[0], isAvailable: false)
                     .frame(width: 760)
             }.padding(DS.Space.xl)

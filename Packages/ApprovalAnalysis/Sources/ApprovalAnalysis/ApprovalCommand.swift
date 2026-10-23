@@ -25,14 +25,19 @@ public struct ApprovalCommand: Equatable, Sendable {
     public init(
         command: String, workingDirectory: String, worktreeDirectory: String? = nil, homeDirectory: String? = nil
     ) {
+        let directory = URL(filePath: workingDirectory).standardizedFileURL.path
+        let worktree = URL(filePath: worktreeDirectory ?? workingDirectory).standardizedFileURL.path
+        let startsInside = directory == worktree || directory.hasPrefix(worktree + "/")
+        let words = ApprovalCommandWords(command)
+        let executable = words?.tokens.first.map { URL(filePath: $0.value).lastPathComponent }
         let unknown = Self(
-            command: command, risk: .unknown, action: "run this command",
-            reason:
-                "Requested in \(URL(filePath: workingDirectory).lastPathComponent). The agent asked for permission.",
+            command: command, risk: .unknown, action: executable.map { "run \($0)" } ?? "run this command",
+            reason: startsInside
+                ? "Requested from this task's worktree." : "Requested from a folder outside the worktree.",
             consequence:
                 "Native can't describe this command, so it makes no claims about its effects or whether they can be undone.",
             parts: [], suggestedCommand: nil)
-        guard let words = ApprovalCommandWords(command), let program = words.tokens.first else {
+        guard let words, let program = words.tokens.first else {
             self = unknown
             return
         }
@@ -118,7 +123,7 @@ public struct ApprovalCommand: Equatable, Sendable {
             consequence: rewrites
                 ? "Can't be undone from here. Recovery may need other clones or reflogs."
                 : "Publishes commits to the remote. Native can't undo this push from here.",
-            parts: parts, suggestedCommand: suggested)
+            parts: parts.sorted { $0.range.lowerBound < $1.range.lowerBound }, suggestedCommand: suggested)
     }
 
     private static func remove(

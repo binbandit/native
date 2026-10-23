@@ -31,14 +31,16 @@ enum ApprovalPreviewFixtures {
         return session
     }
 
-    @ViewBuilder static func card(command: String, failure: String? = nil, isAvailable: Bool = true) -> some View {
+    @ViewBuilder static func card(
+        command: String, failure: String? = nil, isAvailable: Bool = true, sending: Bool = false
+    ) -> some View {
         let app = AppModel.preview(.empty)
         if let session = session(in: app, command: command), let call = session.permissionRequests.first {
             ApprovalSurface {
                 AnnotatedApprovalView(
                     call: call, agentName: "Codex", workingDirectory: folder, homeDirectory: home,
                     isAvailable: isAvailable,
-                    onChoose: { _ in }, onInstruct: { _ in }, failure: failure)
+                    onChoose: { _ in }, onInstruct: { _ in }, sending: sending, failure: failure)
             }
         }
     }

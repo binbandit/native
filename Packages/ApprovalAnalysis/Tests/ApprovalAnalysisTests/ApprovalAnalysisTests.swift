@@ -20,10 +20,13 @@ import Testing
 
     @Test(arguments: [
         "git push --force origin main", "git push -f origin main", "git push --force-with-lease origin main",
-        "git push origin main --force",
+        "git push origin main --force", "git push origin --force main",
     ])
     func remoteHistoryRequiresHold(_ command: String) {
-        #expect(describe(command).risk == .irreversible)
+        let analysis = describe(command)
+        #expect(analysis.risk == .irreversible)
+        let positions = analysis.parts.map { $0.range.lowerBound }
+        #expect(positions == positions.sorted())
     }
 
     @Test func fixItPreservesExactWhitespace() {
@@ -62,6 +65,17 @@ import Testing
         #expect(analysis.parts.isEmpty)
         #expect(analysis.suggestedCommand == nil)
         #expect(analysis.command == command)
+    }
+
+    @Test func unknownOnlyDescribesTheRequestedStartingFolder() {
+        let nested = ApprovalCommand(
+            command: "./script", workingDirectory: cwd + "/tools", worktreeDirectory: cwd)
+        #expect(nested.action == "run script")
+        #expect(nested.reason == "Requested from this task's worktree.")
+        let outside = ApprovalCommand(command: "./script", workingDirectory: home, worktreeDirectory: cwd)
+        #expect(outside.reason == "Requested from a folder outside the worktree.")
+        #expect(outside.parts.isEmpty)
+        #expect(outside.risk == .unknown)
     }
 
     @Test(arguments: [
