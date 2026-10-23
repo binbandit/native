@@ -1,5 +1,7 @@
+import ACP
 import Exec
 import Foundation
+import Git
 import GitHub
 
 @testable import Native
@@ -28,6 +30,35 @@ private actor SidebarRefreshRunner: CommandRunner {
     }
 }
 
+private actor SidebarGitRunner: CommandRunner {
+    var scans = 0
+    var fails = false
+    var branch = "before"
+    func configure(fails: Bool, branch: String = "after") { self.fails = fails; self.branch = branch }
+
+    func run(_ command: Command) async throws -> CommandResult {
+        let output: String
+        switch command.arguments.first {
+        case "rev-parse":
+            let folder = command.directory ?? "/fixture"
+            output = "\(folder)\n\(folder)/.git\n\(folder)/.git\n"
+        case "status":
+            scans += 1
+            if fails {
+                return CommandResult(exitCode: 1, standardOutput: Data(), standardError: Data("permission denied".utf8))
+            }
+            output = "# branch.oid abc123\0# branch.head \(branch)\0"
+        case "remote": output = "origin\n"
+        default: output = ""
+        }
+        return CommandResult(exitCode: 0, standardOutput: Data(output.utf8), standardError: Data())
+    }
+}
+
+private struct SidebarNoMonitor: RepositoryMonitor {
+    func changes(in repository: Repository) -> AsyncStream<RepositoryChange> { AsyncStream { $0.finish() } }
+}
+
 @main
 @MainActor
 private struct SidebarTrioRegression {
@@ -40,6 +71,7 @@ private struct SidebarTrioRegression {
     static func main() async {
         await modelActions()
         await branchRefreshes()
+        await wiredRefresh()
         let unavailable = GitRepositoryModel(unavailableFolder: URL(filePath: "/fixture/remote"))
         await unavailable.refreshNow()
         expect(unavailable.refreshFailure?.contains("Reconnect") == true, "Unavailable hosts explain recovery")
@@ -88,6 +120,53 @@ private struct SidebarTrioRegression {
         await model.retry(problem)
         expect(model.problems.list(for: first.id).isEmpty, "Successful Retry clears the failure")
         expect(model.currentProject?.id == first.id, "Refresh preserves selection")
+    }
+
+    static func wiredRefresh() async {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "sidebar-trio-\(UUID().uuidString)")
+        do { try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true) } catch {
+            expect(false, "Fixture folder exists"); return
+        }
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let model = AppModel.preview(.empty)
+        let project = model.projects.add(folder)
+        guard let agent = model.agents.first?.agent.id else { expect(false, "Fixture agent exists"); return }
+        for index in 0..<3 {
+            let id = SessionID("task-\(index)")
+            model.catalog.add(
+                SessionInfo(sessionId: id, cwd: folder.path, title: "Task \(index)"),
+                for: agent, in: project.id)
+            let key = SessionKey(agent: agent, id: id)
+            if index == 0 { model.ordering.pin(key) }
+            if index == 1 { model.archivedSessions.set(key, archived: true) }
+        }
+        let runner = SidebarGitRunner()
+        let git = GitStore(environment: { [:] }, turnBaselines: GitTurnBaselines(defaults: PreviewUserDefaults())) {
+            _ in
+            Git(environment: [:], runner: runner, monitor: SidebarNoMonitor())
+        }
+        let ghRunner = SidebarRefreshRunner()
+        let github = GitHubModel(environment: { _ in [:] }, runner: ghRunner, defaults: PreviewUserDefaults())
+        ProjectRefreshWiring.connect(model: model, git: git, gitHub: github)
+        let repository = git.model(for: folder)
+        await repository.refreshNow()
+        let before = await runner.scans
+        await runner.configure(fails: false)
+        await model.refreshProject(project.id)
+        expect(await runner.scans == before + 1, "Shared checkout is scanned once for all tasks")
+        expect(await ghRunner.requests == 1, "Shared branch is fetched once")
+        expect(repository.branch?.name == "after", "Refresh updates live git state")
+        await runner.configure(fails: true)
+        await model.refreshProject(project.id)
+        expect(repository.branch?.name == "after", "Git failure retains last good state")
+        expect(repository.refreshFailure != nil, "Git failure after success is reported")
+        guard let failure = model.problems.list(for: project.id).first else {
+            expect(false, "Git failure reaches project row"); return
+        }
+        await runner.configure(fails: false)
+        await model.retry(failure)
+        expect(model.problems.list(for: project.id).isEmpty, "Retry goes through git and clears the project failure")
+        expect(repository.refreshFailure == nil, "Successful git read clears stale failure")
     }
 
     static func branchRefreshes() async {

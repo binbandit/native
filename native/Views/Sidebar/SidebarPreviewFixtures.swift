@@ -5,6 +5,21 @@ import TaskList
 
 /// Sidebar previews' data: `AppModel.preview()` and what the sidebar's pieces take from it.
 enum SidebarPreviewFixtures {
+    static func archivedApp() -> AppModel {
+        let app = AppModel.preview()
+        if let second = app.previewProject(1), let task = app.allSessions(in: second.id).first {
+            app.archivedSessions.set(task.id, archived: true)
+        }
+        return app
+    }
+
+    static func defaults(showAgentIcons: Bool = true, showsArchived: Bool = false) -> UserDefaults {
+        let defaults = PreviewUserDefaults()
+        defaults.set(showAgentIcons, forKey: "sidebar.showAgentIcons")
+        defaults.set(showsArchived, forKey: "sidebar.showsArchived")
+        return defaults
+    }
+
     /// The populated app, plus a task being set up and a project whose listing failed.
     static func troubledApp() -> AppModel {
         let app = AppModel.preview()

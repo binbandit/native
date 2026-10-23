@@ -159,12 +159,8 @@ private struct ArchivedTaskRow: View {
 
 #if DEBUG
 #Preview("Archived section") {
-    let app = AppModel.preview()
-    if let second = app.previewProject(1), let task = app.allSessions(in: second.id).first {
-        app.archivedSessions.set(task.id, archived: true)
-    }
-    let defaults = PreviewUserDefaults()
-    defaults.set(true, forKey: "sidebar.showsArchived")
+    let app = SidebarPreviewFixtures.archivedApp()
+    let defaults = SidebarPreviewFixtures.defaults(showsArchived: true)
     DSPreviewPair {
         ArchivedSection(select: { _ in })
             .defaultAppStorage(defaults)

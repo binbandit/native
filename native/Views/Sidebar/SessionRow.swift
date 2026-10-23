@@ -283,8 +283,7 @@ struct SessionContextUsage: View {
 }
 #Preview("Task rows - Agent icons hidden") {
     let app = AppModel.preview()
-    let defaults = PreviewUserDefaults()
-    defaults.set(false, forKey: "sidebar.showAgentIcons")
+    let defaults = SidebarPreviewFixtures.defaults(showAgentIcons: false)
     DSPreviewPair {
         VStack(spacing: DS.Space.xxs) {
             ForEach(SidebarPreviewFixtures.sessions(in: app)) { summary in
