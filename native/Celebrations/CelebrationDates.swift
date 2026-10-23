@@ -21,6 +21,17 @@ enum CelebrationDates {
         return (first..<noon(range.last, in: timeZone)).formatted(.interval.day().month(.abbreviated))
     }
 
+    static func accessible(_ range: CivilDayRange) -> String {
+        let first = noon(range.first, in: .current).formatted(.dateTime.month(.wide).day())
+        guard range.first != range.last else { return first }
+        return "\(first) to \(noon(range.last, in: .current).formatted(.dateTime.month(.wide).day()))"
+    }
+
+    static func month(_ day: CivilDate, includeYear: Bool = false) -> String {
+        let date = noon(day, in: .current)
+        return includeYear ? date.formatted(.dateTime.month(.wide).year()) : date.formatted(.dateTime.month(.wide))
+    }
+
     /// Noon keeps a day's date stable whatever the time zone does at midnight.
     private static func noon(_ day: CivilDate, in timeZone: TimeZone) -> Date {
         day.start(in: timeZone).addingTimeInterval(12 * 60 * 60)

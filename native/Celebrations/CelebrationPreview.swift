@@ -56,11 +56,3 @@ struct CelebrationHomePreview: View {
         }
     }
 }
-
-enum CelebrationMetrics {
-    static let previewTile: CGFloat = 56
-    static let surfacePreview: CGFloat = 32
-    static let statusPreview: CGFloat = 72
-    static let decoratedMarkScale: CGFloat = 0.8
-    static let optionsInset = previewTile + DS.Space.xl
-}
