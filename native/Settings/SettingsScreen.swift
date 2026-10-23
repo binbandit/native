@@ -15,6 +15,7 @@ struct SettingsScreen: View {
     var additionalPanes: [SettingsPane] = []
 
     @Environment(PluginRegistry.self) private var registry
+    @Environment(SettingsPresentation.self) private var presentation
     @Environment(\.experimentStore) private var experiments
     private var plainly: Bool { SettingsPageMap.isEnabled(in: experiments ?? .shared) }
     @State private var query = ""
@@ -101,6 +102,9 @@ struct SettingsScreen: View {
             if newValue != .search {
                 query = ""
             }
+        }
+        .onChange(of: presentation.rowReveal, initial: true) { _, request in
+            if let request { reveal = request }
         }
     }
 
