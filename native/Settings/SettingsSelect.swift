@@ -48,7 +48,11 @@ struct SettingsSelect<Value: Hashable>: View {
             }
             .padding(.leading, DS.Space.lg)
             .padding(.trailing, DS.Space.md)
-            .frame(width: width, height: plainly ? DS.Settings.controlHeight : SettingsMetrics.controlHeight)
+            .frame(
+                width: plainly ? nil : width,
+                height: plainly ? DS.Settings.controlHeight : SettingsMetrics.controlHeight
+            )
+            .frame(maxWidth: plainly ? width : nil)
             .background(
                 isHovered && isEnabled ? Color.dsHover : plainly && !fieldStyle ? .clear : .dsBackground, in: shape
             )
@@ -56,13 +60,14 @@ struct SettingsSelect<Value: Hashable>: View {
                 if !plainly || fieldStyle { shape.strokeBorder(.dsBorder, lineWidth: DS.Settings.hairline) }
             }
             .contentShape(shape)
+            .dsHitTarget(plainly ? DS.Settings.controlHeight : SettingsMetrics.controlHeight)
             // Half strength while disabled, the same as the switch and buttons.
             .opacity(isEnabled ? 1 : 0.5)
         }
         .menuStyle(.button)
         .buttonStyle(SettingsSelectButtonStyle())
         .menuIndicator(.hidden)
-        .fixedSize()
+        .fixedSize(horizontal: !plainly, vertical: true)
         .settingsFocusShape(shape)
         .trackHover($isHovered)
         .accessibilityLabel(rowTitle ?? label)

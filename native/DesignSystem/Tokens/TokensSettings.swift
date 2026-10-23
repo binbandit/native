@@ -7,6 +7,7 @@ extension DS {
         static let pageTopInset = Space.xl
         static let rowHeight: CGFloat = 44
         static let rowTitleHeight: CGFloat = 18
+        static let rowLabelMinWidth: CGFloat = 120
         static let rowInset = Space.xl
         static let rowVerticalInset: CGFloat = 9
         static let navRowHeight: CGFloat = 30

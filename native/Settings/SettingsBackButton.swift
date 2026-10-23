@@ -22,6 +22,7 @@ struct SettingsBackButton: View {
             }
         }
         .buttonStyle(.plain)
+        .dsHitTarget(DS.Size.controlSM)
         .trackHover($isHovered)
         .help("Back (Esc)")
     }

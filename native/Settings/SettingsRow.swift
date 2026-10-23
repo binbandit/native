@@ -36,6 +36,17 @@ struct SettingsRow<Accessory: View, Control: View>: View {
                     label
                     trailing
                 }
+            } else if usesPlainly {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: SettingsMetrics.rowControlSpacing) {
+                        label.frame(minWidth: DS.Settings.rowLabelMinWidth)
+                        trailing
+                    }
+                    VStack(alignment: .leading, spacing: DS.Space.lg) {
+                        label
+                        trailing
+                    }
+                }
             } else {
                 HStack(alignment: detail == nil ? .center : .top, spacing: SettingsMetrics.rowControlSpacing) {
                     label
@@ -98,7 +109,7 @@ struct SettingsRow<Accessory: View, Control: View>: View {
             .environment(\.settingsRowTitle, usesPlainly ? plainly?.title : nil)
             .buttonStyle(.settings)
             // Beside the text a control keeps its own width; under it, it may take the row's.
-            .fixedSize(horizontal: !isControlBelow, vertical: true)
+            .fixedSize(horizontal: !isControlBelow && !usesPlainly, vertical: true)
             .disabled(lockReason != nil)
             .help(lockReason ?? "")
     }
@@ -283,5 +294,23 @@ struct SettingsBadge: View {
         }
         .settingsPreviewPage()
     }
+}
+
+#Preview("Plainly - Narrow rows and long values") {
+    DSPreviewPair {
+        SettingsRowGroup {
+            SettingsRow("Model", description: Text("Start one task to see its models.")) {
+                SettingsSelect(
+                    label: "Model", selection: .constant("default"),
+                    options: [.init(value: "default", title: "Last used (A model with a long name)")],
+                    width: DS.Settings.wideControl)
+            }
+            SettingsRow("Keep agents running after you quit") {
+                SettingsSwitch("Keep agents running after you quit", isOn: .constant(true))
+            }
+        }
+        .settingsPreviewPage(width: 320)
+    }
+    .environment(\.settingsPlainly, true)
 }
 #endif
