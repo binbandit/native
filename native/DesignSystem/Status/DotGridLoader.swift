@@ -8,7 +8,7 @@ import SwiftUI
 /// animation (`DotGridPulse`), so a loader costs nothing per frame.
 public struct DotGridLoader: View {
     public enum Pattern: Equatable, Sendable {
-        case typing, waiting, settingUp
+        case typing, waiting, settingUp, still
         case working(WorkingAnimation)
     }
 
@@ -28,7 +28,7 @@ public struct DotGridLoader: View {
 
     public var body: some View {
         Group {
-            if reduceMotion {
+            if reduceMotion || pattern == .still {
                 stillGrid
             } else {
                 DotGridPulse(pattern: effectivePattern)
@@ -90,7 +90,7 @@ extension DotGridLoader.Pattern {
 
     nonisolated var timing: Timing {
         switch self {
-        case .typing: Self.typingTiming
+        case .typing, .still: Self.typingTiming
         case .waiting: Self.waitingTiming
         case .settingUp: Self.settingUpTiming
         case .working(let animation): Self.workingTiming(animation)

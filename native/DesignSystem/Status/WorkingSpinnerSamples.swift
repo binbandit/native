@@ -3,15 +3,18 @@ import SwiftUI
 
 /// Same-size, neutral samples shared by Appearance and the Gallery.
 public struct WorkingSpinnerSamples: View {
-    public init() {}
+    private let isAnimated: Bool
+
+    public init(isAnimated: Bool = true) {
+        self.isAnimated = isAnimated
+    }
 
     public var body: some View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: DS.Space.lg) {
             ForEach(WorkingAnimation.allCases, id: \.self) { animation in
-                sample(animation.title, pattern: .working(animation))
+                sample(animation.title, pattern: isAnimated ? .working(animation) : .still)
             }
-            sample("Reduce Motion", pattern: .typing)
-                .environment(\.accessibilityReduceMotion, true)
+            sample("Reduce Motion", pattern: .still)
         }
         .foregroundStyle(.dsTextSecondary)
     }
@@ -34,8 +37,7 @@ public struct WorkingSpinnerSamples: View {
 
 #Preview("Working spinners - Reduce Motion") {
     DSPreviewPair {
-        WorkingSpinnerSamples().frame(width: 600)
-            .environment(\.accessibilityReduceMotion, true)
+        WorkingSpinnerSamples(isAnimated: false).frame(width: 600)
     }
 }
 #endif

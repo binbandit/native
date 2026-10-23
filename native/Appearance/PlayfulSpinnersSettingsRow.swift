@@ -1,3 +1,4 @@
+import AppAppearance
 import SwiftUI
 
 struct PlayfulSpinnersSettingsRow: View {
@@ -50,13 +51,4 @@ struct PlayfulSpinnersSettingsRow: View {
     .environment(app)
 }
 
-#Preview("Playful spinners - Reduce Motion") {
-    let app = AppModel.preview(.empty)
-    app.workingSpinners.setEnabled(true)
-    return DSPreviewPair {
-        PlayfulSpinnersSettingsRow().settingsPreviewPage()
-            .environment(\.accessibilityReduceMotion, true)
-    }
-    .environment(app)
-}
 #endif
