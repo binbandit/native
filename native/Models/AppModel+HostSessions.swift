@@ -59,6 +59,7 @@ extension AppModel {
         let chosen = titles.configChoices(for: old.titleKey)
         titles.updateConfigChoices(for: session.titleKey) { $0.adopt(chosen) }
         history.replace(old.key, with: session.key)
+        earlierConversations.replace(old.key, with: session.key)
         if selection == old.key {
             selection = session.key
         }
