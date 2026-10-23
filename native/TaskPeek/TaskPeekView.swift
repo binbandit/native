@@ -141,7 +141,7 @@ struct TaskPeekView: View {
                 let questionnaire = AgentQuestionnaire(message: question.request.message, schema: schema)
             {
                 AgentQuestionSection(
-                    questionnaire: questionnaire, takesFocus: true,
+                    questionnaire: questionnaire, takesFocus: true, answersHighlightedOption: true,
                     onSubmit: { content in Task { await model.answerTaskQuestion(ask, content: content) } },
                     onSkipAll: { Task { await model.answerTaskQuestion(ask, content: nil) } })
             } else {
