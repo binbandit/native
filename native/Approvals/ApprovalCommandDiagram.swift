@@ -11,11 +11,11 @@ struct ApprovalCommandDiagram: View {
             diagram.fixedSize(horizontal: true, vertical: true)
             compact
         }
+        .foregroundStyle(.dsTextPrimary)
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, DS.Approval.commandInset)
         .padding(.top, DS.Approval.commandTop)
         .padding(.bottom, DS.Space.md)
-        .background(.dsSurfaceSunken, in: .rect(cornerRadius: DS.Radius.control))
         .accessibilityElement(children: .combine)
     }
 

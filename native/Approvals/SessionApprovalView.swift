@@ -11,6 +11,7 @@ struct SessionApprovalView: View {
             call: call, agentName: session.agentName,
             workingDirectory: session.cwd.path,
             homeDirectory: approvalHome, isAvailable: session.phase == .prompting,
+            focusRequested: session.wantsComposerFocus, didFocus: { session.wantsComposerFocus = false },
             onChoose: { option in Task { await session.chooseApproval(option, for: call) } },
             onInstruct: { text in try await session.instructInstead(text, for: call) }
         )

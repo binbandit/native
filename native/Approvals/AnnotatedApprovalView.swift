@@ -10,10 +10,14 @@ struct AnnotatedApprovalView: View {
     let workingDirectory: String
     var homeDirectory: String? = nil
     var isAvailable = true
+    var focusRequested = false
+    var didFocus: () -> Void = {}
     let onChoose: (PermissionOption) -> Void
     let onInstruct: (String) async throws -> Void
 
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(\.permissionShortcutsEnabled) private var shortcutsEnabled
+    @FocusState private var instructionFocused: Bool
     @State var instruction = ""
     @State private var sending = false
     @State private var keyboardHeld = false
@@ -51,7 +55,7 @@ struct AnnotatedApprovalView: View {
                                 fixIt(replacement)
                             }
                         }
-                        .background(.dsSurfaceSunken, in: .rect(cornerRadius: DS.Radius.control))
+                        .background(DS.Approval.well(colorScheme), in: .rect(cornerRadius: DS.Radius.control))
                     } else {
                         ToolCallBody(call: call, presentation: ToolPresentation(call), phase: ToolPhase(call))
                     }
@@ -73,23 +77,22 @@ struct AnnotatedApprovalView: View {
                 Rectangle().fill(.dsSeparator).frame(height: DS.Approval.rule)
                 HStack(alignment: .bottom, spacing: DS.Space.md) {
                     TextField("Tell \(agentName) what to do instead", text: $instruction, axis: .vertical)
-                        .font(.dsCallout).textFieldStyle(.plain).lineLimit(1...4)
+                        .font(.dsCallout).foregroundStyle(.dsTextPrimary).textFieldStyle(.plain).lineLimit(1...4)
                         .accessibilityLabel("Tell \(agentName) what to do instead")
+                        .focused($instructionFocused)
                         .onSubmit { sendInstruction(instruction) }
-                    Button {
-                        sendInstruction(instruction)
-                    } label: {
-                        Image(systemName: "arrow.up").font(.dsBodyMedium)
-                            .frame(width: DS.Size.composerAction, height: DS.Size.composerAction)
-                    }
-                    .buttonStyle(.plain)
+                    ComposerSendButton(
+                        disabledReason: instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                            ? "Enter an instruction first" : nil
+                    ) { sendInstruction(instruction) }
                     .accessibilityLabel("Ask \(agentName) to do this instead")
-                    .disabled(instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .dsHitTarget(DS.Size.composerAction)
                 }
                 .padding(.horizontal, DS.Approval.inset)
                 .padding(.vertical, DS.Space.lg)
             }
+        }
+        .onChange(of: focusRequested, initial: true) { _, requested in
+            if requested { instructionFocused = true; didFocus() }
         }
         .disabled(sending || committed || !isAvailable)
         .approvalHoldKeys(
@@ -117,6 +120,7 @@ struct AnnotatedApprovalView: View {
         }
         .buttonStyle(ApprovalActionStyle())
         .accessibilityLabel("Ask \(agentName) to Use --force-with-lease")
+        .keyboardShortcut(shortcutsEnabled ? KeyboardShortcut("y", modifiers: [.command, .shift]) : nil)
         .help("Declines this request and sends the suggested command as an instruction.")
     }
 

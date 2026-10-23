@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ApprovalActionStyle: ButtonStyle {
+    @Environment(\.colorScheme) private var colorScheme
     var primary = false
     var pressing: ((Bool) -> Void)?
 
@@ -10,11 +11,14 @@ struct ApprovalActionStyle: ButtonStyle {
             .foregroundStyle(primary ? Color.dsTextOnAccent : .dsTextPrimary)
             .padding(.horizontal, DS.Approval.buttonInset)
             .frame(minHeight: DS.Approval.buttonHeight)
-            .background(primary ? Color.dsAccent : .dsControlFill, in: .rect(cornerRadius: DS.Radius.control))
+            .background(
+                primary ? Color.dsAccent : DS.Approval.buttonFill(colorScheme),
+                in: .rect(cornerRadius: DS.Radius.control)
+            )
             .overlay {
                 if !primary {
                     RoundedRectangle(cornerRadius: DS.Radius.control)
-                        .strokeBorder(.dsBorder, lineWidth: DS.Approval.rule)
+                        .strokeBorder(DS.Approval.buttonBorder(colorScheme), lineWidth: DS.Approval.rule)
                 }
             }
             .opacity(configuration.isPressed ? DS.Approval.pressedOpacity : 1)

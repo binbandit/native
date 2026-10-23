@@ -10,7 +10,6 @@ extension DS {
         static let annotationLine: CGFloat = 22
         static let annotationStem: CGFloat = 7
         static let annotationGap: CGFloat = 12
-        static let underlineOffset: CGFloat = 5
         static let buttonHeight: CGFloat = 26
         static let buttonInset: CGFloat = 11
         static let ringSize: CGFloat = 12
@@ -24,5 +23,17 @@ extension DS {
         static let hintOpacity: Double = 0.55
         static let pressedOpacity: Double = 0.8
         static let cancelAnimation = Animation.linear(duration: 0.15)
+
+        static func well(_ scheme: ColorScheme) -> Color {
+            Color.black.opacity(scheme == .dark ? 0.28 : 0.035)
+        }
+
+        static func buttonFill(_ scheme: ColorScheme) -> Color {
+            scheme == .dark ? Color.white.opacity(0.06) : .white
+        }
+
+        static func buttonBorder(_ scheme: ColorScheme) -> Color {
+            scheme == .dark ? Color.white.opacity(0.1) : Color.black.opacity(0.14)
+        }
     }
 }

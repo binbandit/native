@@ -218,12 +218,14 @@ They're chosen not to collide with text editing in the composer.
 | ⌘Y | Allow once (approve the workflow step) |
 | ⌥⌘Y | Allow always (when offered, never for an irreversible action) |
 | ⌘⇧⌫ | Reject |
+| ⌘⇧Y | Ask the agent to use the suggested command (Fine print fix-it, when offered) |
 
 With Fine print enabled, irreversible commands require holding ⌘Y for 0.6 seconds. Releasing
 before it fills sends nothing. Pointer and touch use the same hold; VoiceOver and Switch Control
 use Allow followed by Confirm Allow within five seconds. The button acknowledges Allowed for
 0.4 seconds before the request folds away. Reduce Motion keeps the ring but removes the fill sweep.
-The fix-it is in the keyboard tab order, as is Tell the agent what to do instead (Return sends it).
+⌘L focuses Tell the agent what to do instead while an approval is shown; Return sends the instruction.
+The fix-it and every permission option are also in the keyboard tab order.
 Only the oldest request owns these keys; changing tasks or losing the window cancels a hold.
 
 On an expedition's route review, ⌘Return approves too, and ⌘L focuses the message field for the
