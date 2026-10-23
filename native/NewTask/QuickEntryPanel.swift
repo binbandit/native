@@ -174,7 +174,7 @@ struct QuickEntryPanel: View {
                 Image(systemName: "return")
             }
         }
-        .buttonStyle(.ds(.primary))
+        .buttonStyle(.ds(.primary, size: .medium))
         .fixedSize()
         .disabled(!entry.hasMessage || model.quickEntryDeviceUnavailable)
         .help("Start and stay here (Return). Start and open with ⌘Return.")
