@@ -205,9 +205,23 @@ files; a file moved or deleted before sending is marked on its chip and holds th
 
 ## Permission requests
 
-With the All in view sidebar experiment, the ⌘Y keycap marks that visible task's oldest tool
-approval, provided it offers Allow once. Questions and requests in other tasks have no keycap.
-Global routing through Peek is a later slice.
+With the All in view sidebar experiment, ⌘Y targets the oldest connected task ask across all
+projects, including child tasks. Its row carries the keycap. Routine approvals offering Allow once
+are answered in place; questions, plans and commands with irreversible or unknown effects open
+Peek for review. The full request is always shown there. The current task and its draft stay put.
+
+| Keys | Action | Menu | Command |
+| --- | --- | --- | --- |
+| ⌘Y | Answer oldest task ask, or open its Peek | Task | `task.answerOldestAsk` |
+| | Peek at the selected task (Space with the sidebar list focused) | Task / row context menu | `task.peek` |
+| Escape in Peek | Close Peek | | |
+| Return in Peek (outside an answer field) | Open Task | | |
+
+A click on a row's signal, a force click, or Peek in its context menu opens the same 600pt popover.
+Questions keep their digit, arrow and Return controls. An answer closes Peek. Hidden or filtered
+rows use a window anchor. The experiment defaults to off; the shortcuts below keep today's
+behavior while it is off. Workflow and expedition approvals retain their local shortcut when no
+task ask owns ⌘Y.
 
 The oldest pending request in the visible task answers these: a tool's permission request, a
 workflow step waiting for approval, or an expedition's route (or route change) waiting for review.

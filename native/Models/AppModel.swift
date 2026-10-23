@@ -23,6 +23,7 @@ final class AppModel {
     let catalog: SessionCatalog
     let ordering: SessionOrdering
     let sessions: SessionStore
+    let taskPeek = TaskPeekPresentation()
     let unread: UnreadSessions
     /// New sessions that haven't had a message yet, so an empty one doesn't outlive the run.
     let unsentSessions: UnsentSessions

@@ -79,6 +79,11 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
                 model.selectSession(offset: 1)
                 return .handled
             }
+            .onKeyPress(.space) {
+                guard usesSidebarNext, model.renaming == nil, let key = model.selection else { return .ignored }
+                model.peekTask(key)
+                return .handled
+            }
             .onKeyPress(.return) {
                 guard model.renaming == nil, let selection = model.selection else { return .ignored }
                 model.renaming = selection

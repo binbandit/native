@@ -6,6 +6,7 @@ import SwiftUI
 /// assumptions, and every leg and assignment, all editable in place. Approving is the one-way door:
 /// from then on the crew works to the route.
 struct RouteReviewView: View {
+    @Environment(\.globalTaskAskShortcut) private var globalShortcut
     let expedition: Expedition
     let route: Route
     let send: (ExpeditionEvent) -> Void
@@ -96,7 +97,9 @@ struct RouteReviewView: View {
         }
         // The route answers the approval keys, like every other approval card.
         .background {
-            Button("Approve Route", action: approve).keyboardShortcut("y", modifiers: .command).hidden().disabled(
+            Button("Approve Route", action: approve).keyboardShortcut(
+                globalShortcut ? nil : KeyboardShortcut("y", modifiers: .command)
+            ).hidden().disabled(
                 isRevising)
             Button("Discard Route") { send(.discard) }.keyboardShortcut(.delete, modifiers: [.command, .shift]).hidden()
         }

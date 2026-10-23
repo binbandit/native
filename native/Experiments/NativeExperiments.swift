@@ -93,7 +93,7 @@ extension Gate {
     static let sidebarNext = Gate(
         id: "NativeSidebarNext",
         title: "All in view",
-        summary: "Titles at rest, shared grid signals and readable asks with waiting clocks.",
+        summary: "Titles at rest, shared signals, Peek and a global shortcut for the oldest ask.",
         site: "Sidebar ▸ projects and tasks",
         stage: .labs,
         owner: "sidebar",

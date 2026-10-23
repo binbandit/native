@@ -12,6 +12,7 @@ public struct AllInViewTaskRow: View {
     var answersShortcut = false
     var unavailable: String?
     var hostName: String?
+    var peek: (() -> Void)?
     let action: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
@@ -23,10 +24,8 @@ public struct AllInViewTaskRow: View {
     public var body: some View {
         Button(action: action) {
             HStack(alignment: .top, spacing: DS.Space.md) {
-                TaskSignal(
-                    status: status, isUnread: isUnread, attentionSince: attentionSince, unavailable: unavailable
-                )
-                .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
+                signal
+                    .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
                 VStack(alignment: .leading, spacing: DS.Sidebar.askGap) {
                     HStack(spacing: DS.Space.md) {
                         DSInlineCodeText(title)
@@ -84,16 +83,33 @@ public struct AllInViewTaskRow: View {
             RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                 .fill(isSelected ? .dsSelected : isHovered ? .dsHover : .clear)
         }
+        .overlay(alignment: .topLeading) {
+            if let peek {
+                Button(action: peek) { Color.clear }
+                    .buttonStyle(.plain)
+                    .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
+                    .contentShape(.rect)
+                    .dsHitTarget(DS.Size.rowLeading)
+                    .padding(.leading, DS.Sidebar.leading)
+                    .padding(.top, DS.Sidebar.rowVertical)
+                    .help("Peek")
+                    .accessibilityLabel("Peek at \(DSInlineCode.plain(title))")
+            }
+        }
         .trackHover($isHovered)
         .animation(reduceMotion ? nil : ask == nil ? .dsSidebarAnswer : .dsSidebarAsk, value: ask)
         .accessibilityLabel(DSInlineCode.plain(title))
         .accessibilityValue(
             [
                 unavailable ?? status.label, isUnread ? "Unread" : nil, ask,
-                answersShortcut ? "Command Y answers this request" : nil,
+                answersShortcut ? "Command Y targets this request" : nil,
             ].compactMap(\.self).joined(separator: ", ")
         )
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private var signal: some View {
+        TaskSignal(status: status, isUnread: isUnread, attentionSince: attentionSince, unavailable: unavailable)
     }
 
     private var emphasizesTitle: Bool {
