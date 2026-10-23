@@ -38,7 +38,9 @@ struct UserMessageAttachmentTile: View {
 
     @ViewBuilder private var tileContent: some View {
         if hasImage, let data = artifact.data {
-            AttachmentImage(data: data, maxSide: DS.Artifact.messageTileWidth)
+            AttachmentImage(
+                data: data, maxSide: DS.Artifact.messageTileWidth,
+                filling: CGSize(width: DS.Artifact.messageTileWidth, height: DS.Artifact.messageTileHeight))
         } else {
             VStack(alignment: .leading, spacing: DS.Space.sm) {
                 Image(systemName: artifact.isImage ? "photo" : artifact.isFolder ? "folder" : "doc")
