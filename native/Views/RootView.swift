@@ -65,10 +65,17 @@ struct RootView: View {
         .onChange(of: undoManager, initial: true) { model.undoHistory.track(undoManager) }
         // Undone by ⌘Z or redone by ⇧⌘Z, it leaves the toast or comes back to it.
         .onChange(of: model.offeredUndo?.id) {
-            undoToast = model.offeredUndo.map { action in UndoToastItem(action.message) { action.undo() } }
+            undoToast = model.offeredUndo.map { action in
+                UndoToastItem(action.message, undoesWithCommandZ: model.undoHistory.willUndo(action)) { action.undo() }
+            }
         }
         .onChange(of: model.offeredUndo?.message) {
-            undoToast = model.offeredUndo.map { action in UndoToastItem(action.message) { action.undo() } }
+            undoToast = model.offeredUndo.map { action in
+                UndoToastItem(action.message, undoesWithCommandZ: model.undoHistory.willUndo(action)) { action.undo() }
+            }
+        }
+        .onChange(of: model.offeredUndo.map { model.undoHistory.willUndo($0) } ?? false) { _, matches in
+            undoToast?.undoesWithCommandZ = matches
         }
         .focusedSceneValue(\.showsPullRequests, $showsPullRequests)
         // The pull requests page and a session take turns in the detail column.

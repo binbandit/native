@@ -68,7 +68,8 @@ public final class UndoableAction: Identifiable {
 
     private static let identity = UndoManager.UserInfoKey("dev.binbandit.native.undoable-action")
 
-    private func isNextUndo(on undoManager: UndoManager) -> Bool {
+    func isNextUndo(on undoManager: UndoManager) -> Bool {
+        guard canUndo, self.undoManager === undoManager else { return false }
         // `undo()` closes the group the run loop opened for the current event, but no deeper one.
         let isClosable =
             undoManager.groupingLevel == 0 || (undoManager.groupsByEvent && undoManager.groupingLevel == 1)

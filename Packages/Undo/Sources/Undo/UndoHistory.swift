@@ -33,6 +33,13 @@ public final class UndoHistory {
         return manager?.redoMenuItemTitle ?? "Redo"
     }
 
+    /// Whether the window's next Undo takes back this offer, rather than a newer edit.
+    public func willUndo(_ action: UndoableAction) -> Bool {
+        _ = revision
+        guard let manager else { return false }
+        return action.isNextUndo(on: manager)
+    }
+
     public func track(_ manager: UndoManager?) {
         guard self.manager !== manager else { return }
         observers.forEach(NotificationCenter.default.removeObserver)
