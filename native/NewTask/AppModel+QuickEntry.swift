@@ -43,9 +43,10 @@ extension AppModel {
     }
 
     func addQuickEntryProject(_ url: URL) async {
-        let project = await addProject(url, focus: false)
-        guard quickEntry.isPresented else { return }
-        chooseQuickEntryProject(project.id)
+        let project = projects.add(url)
+        if quickEntry.isPresented { chooseQuickEntryProject(project.id) }
+        // Listing can take time. The address must change before the user can press Start again.
+        _ = await addProject(url, focus: false)
     }
 
     func chooseQuickEntryDevice(_ device: SessionDevice) {

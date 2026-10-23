@@ -12,7 +12,14 @@ private actor QuickEntryHost: HostTransport {
     var pending: (RequestID, NewSessionParams)?
     var created = 0
     var prompts: [String] = []
-    let agent = HostAgent(id: "fake", name: "Fake Agent", state: .ready)
+    var holdsListing = false
+    var listingRequest: RequestID?
+    let agent = HostAgent(
+        id: "fake", name: "Fake Agent", state: .ready,
+        initialize: .object([
+            "protocolVersion": .number(1),
+            "agentCapabilities": .object(["sessionCapabilities": .object(["list": .object([:])])]),
+        ]))
 
     func connect() async throws -> any ByteStream {
         let (clientEnd, hostEnd) = try UnixSocket.pair()
@@ -48,7 +55,11 @@ private actor QuickEntryHost: HostTransport {
         case HostProtocol.Method.listSessions:
             try peer.respond(to: id, with: [HostSessionSummary]())
         case HostProtocol.Method.listAgentSessions:
-            try peer.respond(to: id, with: JSONValue.object(["sessions": .array([])]))
+            if holdsListing {
+                listingRequest = id
+            } else {
+                try peer.respond(to: id, with: JSONValue.object(["sessions": .array([])]))
+            }
         case HostProtocol.Method.startAgent:
             try peer.respond(to: id, with: agent)
         case HostProtocol.Method.newSession:
@@ -59,6 +70,16 @@ private actor QuickEntryHost: HostTransport {
         default:
             try peer.respond(to: id, error: .methodNotFound(message.method))
         }
+    }
+
+    func holdListing() { holdsListing = true }
+
+    func releaseListing() throws {
+        holdsListing = false
+        if let id = listingRequest {
+            try peer?.respond(to: id, with: JSONValue.object(["sessions": .array([])]))
+        }
+        listingRequest = nil
     }
 
     func complete(failing: Bool = false) throws {
@@ -151,12 +172,16 @@ private struct QuickEntryRegression {
         let previousSelection = app.selection
         let secondFolder = folder.appending(path: "second")
         try FileManager.default.createDirectory(at: secondFolder, withIntermediateDirectories: true)
-        await app.addQuickEntryProject(secondFolder)
+        await host.holdListing()
+        let addingFolder = Task { await app.addQuickEntryProject(secondFolder) }
+        try await wait { await host.listingRequest != nil }
         try require(entry.project != project.id, "The chosen folder did not replace the draft's project")
         try require(
             entry.project.flatMap(app.projects.project)?.url == secondFolder, "The draft targets the wrong folder")
         try require(app.selection == previousSelection, "Choosing a folder navigated away from the underlying task")
         try require(entry.draft == "Keep this while changing folders", "Choosing a folder lost the draft")
+        try await host.releaseListing()
+        await addingFolder.value
         app.chooseQuickEntryProject(project.id)
 
         app.showQuickEntry()
