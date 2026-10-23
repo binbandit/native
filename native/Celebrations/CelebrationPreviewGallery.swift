@@ -19,6 +19,8 @@ struct CelebrationPreviewGallery: View {
             switch state {
             case .off, .menu, .page, .pending, .offline, .empty:
                 CelebrationsSettingsPage(organizationName: state == .offline ? "Northwind Federal IT" : nil)
+            case .search, .noMatches:
+                CelebrationsSettingsPage(initialQuery: state == .search ? "Deepavali" : "nonesuch")
             case .showing, .homeOnly, .skipped, .waiting, .failed:
                 CelebrationStatusCard()
             case .yearHover:
@@ -77,5 +79,11 @@ struct CelebrationPreviewGallery: View {
 }
 #Preview("Celebrations - Bulk menu trigger") {
     DSPreviewPair { CelebrationPreviewGallery(.menu).settingsPreviewPage() }.environment(SettingsPresentation())
+}
+#Preview("Celebrations - Alias search") {
+    DSPreviewPair { CelebrationPreviewGallery(.search).settingsPreviewPage() }.environment(SettingsPresentation())
+}
+#Preview("Celebrations - No matches") {
+    DSPreviewPair { CelebrationPreviewGallery(.noMatches).settingsPreviewPage() }.environment(SettingsPresentation())
 }
 #endif

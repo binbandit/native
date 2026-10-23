@@ -5,7 +5,8 @@ import SwiftUI
 /// Inert catalogue fixtures: no timers, downloads or persisted choices.
 enum CelebrationPreviewFixtures {
     enum State: String, CaseIterable {
-        case off, menu, style, page, pending, showing, homeOnly, skipped, waiting, failed, empty, yearHover, rows,
+        case off, menu, style, page, pending, search, noMatches, showing, homeOnly, skipped, waiting, failed, empty,
+            yearHover, rows,
             overlaps,
             detail, offline,
             confirmation

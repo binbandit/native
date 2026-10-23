@@ -20,6 +20,11 @@ struct CelebrationsSettingsPage: View {
     @State private var lastChange: CelebrationBulkChange?
     @State private var flashed: Set<CelebrationID> = []
 
+    init(organizationName: String? = nil, initialQuery: String = "") {
+        self.organizationName = organizationName
+        _query = State(initialValue: initialQuery)
+    }
+
     static func rowID(_ id: CelebrationID) -> SettingsRowID { SettingsRowID("celebration.\(id.rawValue)") }
     private var isSearching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
 
