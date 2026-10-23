@@ -91,7 +91,7 @@ struct TaskWellLabel: View {
                     .accessibilityHidden(true)
                 }
                 Text("\(progress.completed) of \(progress.total)")
-                    .font(DS.TaskWell.object)
+                    .font(.dsMonoCaption)
                     .foregroundStyle(.dsTextSecondary)
                     .help("Plan steps completed")
             }

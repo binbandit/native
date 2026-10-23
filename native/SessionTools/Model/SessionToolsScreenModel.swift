@@ -54,6 +54,7 @@ final class SessionToolsScreenModel {
         guard let tool = registry.tool(id),
             let place = presentation.request(tool.spec, arrangement: registry.arrangement, hasPane: tool.pane != nil)
         else { return }
+        showsWell = false
         // The side panel appears without sliding in, once there's room: sliding lays the whole
         // window out again every frame.
         let show: @MainActor @Sendable () -> Void = {
@@ -77,6 +78,8 @@ final class SessionToolsScreenModel {
     }
 
     func toggle(_ id: SessionToolID) {
+        // The existing tool shortcuts take the same path as choosing a row in the well.
+        showsWell = false
         if isOpen(id) { close(id) } else { open(id) }
     }
 
