@@ -26,7 +26,7 @@ final class PlatformWindowCloseModel: NSObject {
     }
 
     func closeAll() {
-        for window in NSApp.orderedWindows where window.isVisible && window.canBecomeKey && window.sheetParent == nil {
+        for window in frontWindows where window.sheetParent == nil {
             close(window)
         }
         update()
@@ -46,14 +46,23 @@ final class PlatformWindowCloseModel: NSObject {
     }
 
     private var frontWindow: NSWindow? {
-        // The main window may sit behind an About or Quick Look panel. Never fall back to it
-        // while another visible window is in front, including when an AX command invokes Close.
-        NSApp.keyWindow ?? NSApp.orderedWindows.first(where: { $0.isVisible && $0.canBecomeKey })
+        frontWindows.first
+    }
+
+    private var frontWindows: [NSWindow] {
+        // orderedWindows excludes panels. The Window Server's order includes About and Quick
+        // Look, even when the main window remains key behind them. No other app's windows enter
+        // this list, and menu/tooltip windows cannot become key and have no close button.
+        (NSWindow.windowNumbers(options: []) ?? [])
+            .compactMap { NSApp.window(withWindowNumber: $0.intValue) }
+            .filter { $0.isVisible && ($0.canBecomeKey || $0.isSheet || $0.styleMask.contains(.closable)) }
     }
 
     @objc private func update() {
-        canClose =
-            frontWindow.map { $0.isSheet || $0.attachedSheet != nil || $0.styleMask.contains(.closable) } ?? false
+        // Enabling the menu needs no Window Server query on every event. Resolve order only
+        // when the user actually closes something.
+        let hasWindow = NSApp.windows.contains { $0.isVisible && ($0.isSheet || $0.styleMask.contains(.closable)) }
+        if canClose != hasWindow { canClose = hasWindow }
     }
 }
 #endif
