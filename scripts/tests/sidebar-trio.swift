@@ -101,7 +101,7 @@ private struct SidebarTrioRegression {
         expect(await runner.requests == count, "Background lookup respects cache")
         let old = PullRequestPreviewFixtures.summary(
             "fixture/project", 7, "Task pull request", branch: "feature/task", minutesAgo: 5, author: "fixture")
-        model.branchPullRequests[branch] = BranchPullRequest(pullRequest: old, fetchedAt: .now)
+        model.branchPullRequests[branch] = BranchPullRequest(pullRequest: old, fetchedAt: .distantFuture)
         await runner.setFailure(true)
         let failure = await model.loadPullRequest(for: branch, maxAge: 0)
         expect(failure != nil, "Explicit lookup bypasses fresh cache and returns failure")

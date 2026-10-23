@@ -46,10 +46,8 @@ struct ProjectSection<TaskAccessory: View>: View {
         let visible = visibleSessions
         projectGroup(starting: starting.count) {
             // Work Native did on its own for the project that failed, above the list it may have left stale.
-            if !isFiltered {
-                ForEach(problems) { problem in
-                    ProjectProblemRow(problem: problem)
-                }
+            ForEach(problems.filter { !isFiltered || $0.work == .refresh }) { problem in
+                ProjectProblemRow(problem: problem)
             }
             ForEach(starting) { task in
                 StartingTaskRow(task: task)
@@ -154,6 +152,12 @@ struct ProjectSection<TaskAccessory: View>: View {
                 isRefreshing: model.refreshingProjects.contains(project.id),
                 note: hasNoMatches ? "No matching tasks" : nil,
                 onNewTask: onNewTask, menu: { projectMenu }, content: content)
+        }
+        // A refresh requested from a collapsed or filtered project still needs a visible recovery.
+        if !isExpanded.wrappedValue {
+            ForEach(model.problems.list(for: project.id).filter { $0.work == .refresh }) { problem in
+                ProjectProblemRow(problem: problem)
+            }
         }
     }
 

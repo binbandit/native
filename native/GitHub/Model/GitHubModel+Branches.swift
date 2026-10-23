@@ -15,7 +15,7 @@ extension GitHubModel {
     /// An explicit refresh (`maxAge: 0`) waits for older work, then bypasses the cache.
     @discardableResult
     func loadPullRequest(for branch: BranchReference, maxAge: TimeInterval = branchMaxAge) async -> GitHubError? {
-        if let cached = branchPullRequests[branch], Date.now.timeIntervalSince(cached.fetchedAt) < maxAge {
+        if maxAge > 0, let cached = branchPullRequests[branch], Date.now.timeIntervalSince(cached.fetchedAt) < maxAge {
             return cached.failure
         }
         while let pending = branchLookupsInFlight[branch] {
