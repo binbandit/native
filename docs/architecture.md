@@ -25,7 +25,9 @@
   order: when a request returns, every update sent before its response has been applied.
   A host agent that exits during initialization stays failed, with its diagnostic output and a
   Restart action. Only intentionally stopped or previously initialized agents return to idle;
-  a failed launch must never be presented as ready to start a task.
+  a failed launch must never be presented as ready to start a task. A task requested during an
+  agent restart stays in Starting until the whole restart finishes. If it fails, Restart and Retry
+  restarts the agent and continues the same task, keeping its draft and prepared workspace.
 - **State is a reducer.** `SessionState` folds `session/update`s and the user's actions into a
   transcript (messages, tool calls, subagents, inter-session messages, plan, usage). It's pure and
   tested against captured traffic, and it's shared with the future companion app.
