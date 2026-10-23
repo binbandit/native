@@ -85,9 +85,13 @@ private struct BubbleRowView: View {
                 BubbleLane(side: side, hugsContent: true) {
                     VStack(alignment: .trailing, spacing: DS.Space.sm) {
                         if !message.attachments.isEmpty {
-                            MessageAttachmentsView(
-                                attachments: message.attachments,
-                                alignment: message.role == .user ? .trailing : .leading)
+                            if message.role == .user {
+                                UserMessageAttachmentsView(attachments: message.attachments)
+                                    // Align with the bubble's body, inside the strip reserved for its tail.
+                                    .padding(.trailing, BubbleMetrics.tailWidth)
+                            } else {
+                                MessageAttachmentsView(attachments: message.attachments, alignment: .leading)
+                            }
                         }
                         if !message.text.isEmpty || message.attachments.isEmpty {
                             BubbleMessageView(message: message, side: side, position: position)
@@ -144,6 +148,32 @@ private struct BubbleRowView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("User messages - Attachments, Bubbles") {
+    let app = AppModel.preview(.empty)
+    let session = SessionModel.preview(in: app)
+    return DSPreviewPair {
+        if let session {
+            ScrollView {
+                VStack(spacing: DS.Space.xxl) {
+                    ForEach(UserMessageAttachmentsPreviewFixtures.messages, id: \.id) { message in
+                        BubbleRowView(
+                            row: .message(message, .trailing, .single),
+                            transcript: TranscriptStyleConfiguration(
+                                session: session, unfoldsExploration: false, openSubagent: { _ in },
+                                sessionTitle: { _ in nil }),
+                            limitStops: [:])
+                    }
+                }
+                .padding(DS.Space.lg)
+            }
+            .frame(width: 380, height: 800)
+            .environment(\.openTranscriptArtifact, TranscriptArtifactOpener(session: nil, filesAreLocal: true))
+        }
+    }
+}
+#endif
 
 /// A sent bubble rises from below and settles in from its trailing corner.
 private struct BubbleSendTransition: Transition {

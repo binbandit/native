@@ -52,6 +52,9 @@
   file API, embedded bytes work offline, and opening a remote URL never downloads it. Temporary
   preview copies are private to the viewer and removed when it closes. Copy and Save As keep the
   original bytes; Finder is offered only for an existing file on this Mac.
+  User-message attachments form one trailing-aligned group above the bubble. Mixed image and file
+  tiles share a height; a lone image keeps its aspect ratio. File sizes come from attachment metadata
+  carried through host echoes or embedded bytes, with an unavailable label when history has neither.
 - **Task recency follows activity.** The host's startup snapshot and live summaries supply prompt
   dates even for completed tasks whose transcripts aren't open. Task lists use the latest known
   host, live-session or agent-listing date for both ages and order; opening history doesn't change it.
