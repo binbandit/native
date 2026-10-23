@@ -4,6 +4,7 @@ import SwiftUI
 /// The model a project's new tasks with one agent start on. Its Default is what that agent's new
 /// tasks start on everywhere else: the default from Settings ▸ Agents, or the model picked last.
 struct ProjectModelDefaultRow: View {
+    @Environment(\.settingsPlainly) private var plainly
     let project: Project
     let agent: AgentDefinition
     let rowID: SettingsRowID
@@ -48,6 +49,11 @@ struct ProjectModelDefaultRow: View {
     }
 
     private var description: String {
+        if plainly {
+            return offered.isEmpty
+                ? "Start one task with \(agent.displayName) to see its models."
+                : "Default follows the model for All projects, or the one you picked last."
+        }
         guard !offered.isEmpty else { return "Start a task with \(agent.displayName) once to choose from its models." }
         return
             "For new \(agent.displayName) tasks in \(project.name). Otherwise they start on the model set in Settings ▸ Agents, or the one you picked last."

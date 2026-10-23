@@ -150,6 +150,19 @@ without them comes out 16.2 MB smaller, since not all of their code carries thei
 ICU data is what `Intl` and localized formatting in scripts run on. "The script runtime: V8 or
 JavaScriptCore" below weighs what to do.
 
+## Plainly Settings allowance (2026-10-23)
+
+The binary budget is 58.5 MB for the Plainly Settings page-map slice (PR #92). Its base,
+`7e98b62a`, measured 57.9 MB in both Release and Nightly. The new map, grouped rows and
+New Tasks page brought the binary to about 58.1 MB. The new presentation remains behind
+a default-off switch, with the original Settings presentation still available. The slice
+adds about 0.2 MB of compiled UI and copy.
+
+This allowance covers the measured feature cost without removing settings or raising the
+47 MB download and 118 MB installed budgets. Both remain below their limits at about
+45.8 MB and 114.8 MB. Remove the legacy Settings presentation when Plainly is complete,
+then remeasure before carrying its temporary duplication forward.
+
 ## What changed
 
 | | Before | After |

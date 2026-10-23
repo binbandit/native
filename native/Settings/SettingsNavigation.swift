@@ -10,6 +10,7 @@ struct SettingsNavigation<Search: View>: View {
 
     /// Nav items get a ring only for keyboard focus, not after a click or when Settings opens, where
     /// it would just be noise.
+    @Environment(\.settingsPlainly) private var plainly
     @State private var showsFocusRing = false
     @State private var isFocusingQuietly = false
 
@@ -23,8 +24,9 @@ struct SettingsNavigation<Search: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             search
                 .padding(.leading, DS.Space.xxs)
-                .padding(.top, DS.Space.xs)
-                .padding(.bottom, DS.Space.lg)
+                .padding(.trailing, plainly ? DS.Space.xxs : 0)
+                .padding(.top, plainly ? DS.Space.xxs : DS.Space.xs)
+                .padding(.bottom, plainly ? DS.Settings.searchBottomInset : DS.Space.lg)
                 .zIndex(1)
             ScrollView {
                 list
@@ -32,8 +34,8 @@ struct SettingsNavigation<Search: View>: View {
             }
             .scrollEdgeEffectStyle(.soft, for: .vertical)
         }
-        .padding(.leading, DS.Space.sm)
-        .padding(.trailing, DS.Space.md)
+        .padding(.leading, plainly ? DS.Settings.navInset : DS.Space.sm)
+        .padding(.trailing, plainly ? DS.Settings.navInset : DS.Space.md)
         .frame(maxHeight: .infinity, alignment: .top)
         .onChange(of: focus.wrappedValue) { _, newValue in
             showsFocusRing = newValue == .navigation && !isFocusingQuietly
@@ -47,16 +49,27 @@ struct SettingsNavigation<Search: View>: View {
     }
 
     private var list: some View {
-        VStack(alignment: .leading, spacing: SettingsMetrics.navGroupSpacing) {
+        VStack(alignment: .leading, spacing: plainly ? DS.Settings.navGroupGap : SettingsMetrics.navGroupSpacing) {
             ForEach(groups, id: \.group) { entry in
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(entry.group.title)
-                        .settingsText(.caption)
-                        .foregroundStyle(.dsTextSecondary)
-                        .padding(.horizontal, DS.Space.md)
-                        .padding(.vertical, DS.Space.sm)
-                        .accessibilityAddTraits(.isHeader)
-                    VStack(spacing: SettingsMetrics.navItemSpacing) {
+                    if plainly {
+                        if entry.group != .personal {
+                            Text(entry.group.title)
+                                .font(DS.Settings.navGroup)
+                                .foregroundStyle(.dsTextTertiary)
+                                .padding(.horizontal, DS.Settings.navInset)
+                                .padding(.bottom, DS.Space.sm)
+                                .accessibilityAddTraits(.isHeader)
+                        }
+                    } else {
+                        Text(entry.group.title)
+                            .settingsText(.caption)
+                            .foregroundStyle(.dsTextSecondary)
+                            .padding(.horizontal, DS.Space.md)
+                            .padding(.vertical, DS.Space.sm)
+                            .accessibilityAddTraits(.isHeader)
+                    }
+                    VStack(spacing: plainly ? DS.Settings.navRowGap : SettingsMetrics.navItemSpacing) {
                         ForEach(entry.panes) { pane in
                             NavItem(
                                 pane: pane,
@@ -108,12 +121,13 @@ private struct NavItem: View {
     let showsFocusRing: Bool
     let action: () -> Void
 
+    @Environment(\.settingsPlainly) private var plainly
     @State private var isHovered = false
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
         Button(action: action) {
-            HStack(spacing: DS.Space.lg) {
+            HStack(spacing: plainly ? DS.Settings.navGap : DS.Space.lg) {
                 Group {
                     if let navIcon = pane.navIcon {
                         navIcon()
@@ -130,8 +144,9 @@ private struct NavItem: View {
                     .lineLimit(1)
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, DS.Space.md)
-            .padding(.vertical, DS.Space.sm)
+            .padding(.horizontal, plainly ? DS.Settings.navInset : DS.Space.md)
+            .padding(.vertical, plainly ? DS.Space.xs : DS.Space.sm)
+            .frame(minHeight: plainly ? max(DS.Settings.navRowHeight, DS.Size.minimumHitTarget) : nil)
             .background(isSelected ? Color.dsSelected : isHovered ? .dsHover : .clear, in: shape)
             .overlay {
                 if showsFocusRing {

@@ -100,6 +100,7 @@ struct SkillsSections: View {
 
 /// One of Native's own skills: what it's for and whether agents see it.
 struct SkillNativeRow: View {
+    @Environment(\.settingsPlainly) private var plainly
     let library: SkillLibrary
     let skill: NativeSkillListing
     let project: URL?
@@ -114,7 +115,8 @@ struct SkillNativeRow: View {
             detail: Text(
                 skill.isServed
                     ? "Every agent, through Native's MCP tools · from \(skill.pluginName)"
-                    : "\(skill.pluginName) is off, so agents don't see it. Turn it on in Settings ▸ Extensions.")
+                    : "\(skill.pluginName) is off, so agents don't see it. Turn it on in \(plainly ? "Features" : "Settings ▸ Extensions")."
+            )
         ) {
             Badge("Native")
         } control: {

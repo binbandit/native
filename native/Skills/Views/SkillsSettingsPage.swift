@@ -86,7 +86,11 @@ struct SkillsSettingsPage: View {
                 title: "Skills",
                 description: Text(
                     "Skills teach agents one kind of work. Turn one off and Native leaves it out of every agent's new tasks, without touching its files."
-                )
+                ),
+                plainly: .init(
+                    title: "Skills",
+                    description:
+                        "Know-how your agents load, like a release checklist. Turning one off never touches its files.")
             ) {
                 Button("Install Skill", systemImage: "plus") { isInstalling = true }
                     .buttonStyle(.ds(.primary, size: .medium))
@@ -114,7 +118,8 @@ struct SkillsSettingsPage: View {
         }
         .task { if library.lastRead == nil || library.items.isEmpty { await library.read() } }
         // A project's settings link here to show its switches.
-        .onAppear { if let project = presentation.takeProjectScope() { projectPath = SkillPaths.key(project) } }
+        .onAppear { takeScope() }
+        .onChange(of: presentation.projectScope) { takeScope() }
         .sheet(isPresented: $isInstalling) {
             SkillInstallSheet(library: library, project: project) { record, agents in
                 show(.installed(record, agents: agents))
@@ -131,6 +136,10 @@ struct SkillsSettingsPage: View {
         } message: { item in
             Text(SkillsRemoval.message(for: item, home: library.home))
         }
+    }
+
+    private func takeScope() {
+        if let project = presentation.takeProjectScope(for: .skills) { projectPath = SkillPaths.key(project) }
     }
 
     @ViewBuilder

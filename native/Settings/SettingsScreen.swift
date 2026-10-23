@@ -15,6 +15,8 @@ struct SettingsScreen: View {
     var additionalPanes: [SettingsPane] = []
 
     @Environment(PluginRegistry.self) private var registry
+    @Environment(\.experimentStore) private var experiments
+    private var plainly: Bool { SettingsPageMap.isEnabled(in: experiments ?? .shared) }
     @State private var query = ""
     @State private var highlightedResult = 0
     @State private var reveal: SettingsReveal?
@@ -27,12 +29,16 @@ struct SettingsScreen: View {
     @State private var compactColumn = NavigationSplitViewColumn.sidebar
 
     private var panes: [SettingsPane] {
-        (SettingsPane.builtIn(registry: registry) + additionalPanes)
-            .sorted { ($0.group, $0.order) < ($1.group, $1.order) }
+        SettingsPageMap.panes(
+            SettingsPane.builtIn(registry: registry) + additionalPanes,
+            registry: registry, plainly: plainly)
     }
 
     private var selectedPane: SettingsPane? {
-        panes.first { $0.id == pane } ?? panes.first
+        let destination = plainly ? pane.map(SettingsPageMap.destination) : pane
+        return panes.first { $0.id == destination }
+            ?? (plainly && destination == .toolsSkills ? panes.first { $0.id == .extensions } : nil)
+            ?? panes.first
     }
 
     private var selection: Binding<SettingsPane.ID> {
@@ -78,6 +84,7 @@ struct SettingsScreen: View {
         .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         #endif
         .navigationTitle("Settings")
+        .environment(\.settingsPlainly, plainly)
         .background {
             // Key equivalents, so they work wherever focus is (or isn't).
             Button("Search Settings") { focus = .search }
@@ -102,7 +109,7 @@ struct SettingsScreen: View {
             ScrollView {
                 selectedPane?.makeContent()
                     .padding(.horizontal, SettingsMetrics.pageInset)
-                    .padding(.top, SettingsMetrics.pageTopInset)
+                    .padding(.top, plainly ? DS.Settings.pageTopInset : SettingsMetrics.pageTopInset)
                     .padding(.bottom, SettingsMetrics.pageBottomInset)
             }
             .onScrollGeometryChange(for: Bool.self) { geometry in
@@ -112,10 +119,11 @@ struct SettingsScreen: View {
             }
             .task(id: reveal) {
                 guard let reveal else { return }
-                // Let a newly selected page lay out before scrolling into it.
+                // A destination can change scope or open a disclosure before its target lays out.
+                if plainly { flash = reveal }
                 try? await Task.sleep(for: .milliseconds(50))
                 proxy.scrollTo(reveal.rowID, anchor: .center)
-                flash = reveal
+                if !plainly { flash = reveal }
             }
         }
         // A page's undo toasts show over the visible pane, not at the bottom of a long page; and leave
@@ -129,6 +137,11 @@ struct SettingsScreen: View {
         .dsToolbarBand(showsDivider: isScrolled)
         // Each page starts at the top, with its own scroller.
         .onChange(of: selectedPane?.id) { isScrolled = false }
+        .task(id: pane) {
+            if plainly, let pane, SettingsPageMap.destination(pane) != pane {
+                reveal = SettingsReveal(rowID: SettingsPageMap.sectionID(pane))
+            }
+        }
     }
 
     private func open(_ item: SettingsSearchIndex.Item) {
@@ -151,5 +164,18 @@ struct SettingsScreen: View {
             .frame(width: 1000, height: 640)
     }
     .environment(SettingsPreviewFixtures.registry())
+    .environment(SettingsPresentation())
+}
+
+#Preview("Plainly - Settings frame") {
+    DSPreviewPair {
+        SettingsScreen(pane: .constant(.general))
+            .frame(width: 1000, height: 900)
+    }
+    .environment(SettingsPreviewFixtures.registry())
+    .environment(SettingsPresentation())
+    .environment(\.experimentStore, SettingsPreviewFixtures.plainly())
+    .environment(DockBadgePreference(defaults: PreviewUserDefaults()))
+    .defaultAppStorage(PreviewUserDefaults())
 }
 #endif

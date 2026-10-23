@@ -265,6 +265,26 @@ Peek with the composer's shared approval, global ask routing, fold by day, the c
 signal and optional row facts are later slices. Enable before an isolated launch with
 `defaults write dev.binbandit.native.dev.<name> experiment.NativeSidebarNext -bool YES`.
 
+### Plainly Settings
+
+`NativeSettingsPlainly` (Settings ▸ Labs ▸ Plainly settings) defaults to off. `SettingsPageMap`
+reads the gate and supplies the same ordered destinations to Settings and the command palette.
+The screen passes the presentation through `settingsPlainly`; feature controls retain their
+existing models and storage. The original page IDs remain deep links to sections in the new map.
+
+The first slice groups the five personal pages without a heading, then Tasks (New Tasks, Agents,
+While You're Away, Writing Style), Work (Git, Terminal, Search, Usage), Native (Features, Updates),
+and Projects. Tools & Skills appears when either library is on; Labs remains available unless policy
+forbids it. Usage stays in Settings by product decision. Modes are editable from New Tasks while
+there is no separate Modes feature switch. Sounds joins Notifications, GitHub and Scripts join Git,
+Sleep and paired devices join While You're Away, and enabled Celebrations join Appearance.
+
+New Tasks owns the existing agent model and effort defaults, starting mode and workspace choice.
+A project's agent, model and workspace controls move there with project scope; branch prefix stays
+on its project page. Search follows the moved rows. `SettingsPlainlyCopy` supplies row text,
+accessible control names and search titles together. The inheritance popovers, context accounting,
+feature presets, agent detail pages and the shared overnight receipt belong to later slices.
+
 ### Quiet composer
 
 `NativeComposerNext` is an off-by-default Labs gate at the composer's resting controls. Enable it

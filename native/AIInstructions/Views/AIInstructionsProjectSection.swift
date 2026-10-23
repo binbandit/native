@@ -14,7 +14,8 @@ struct AIInstructionsProjectSection: View {
         SettingsSubheading(
             "AI instructions",
             note:
-                "Added to what Native writes with AI for this project. Each uses your global instructions unless you give it the project's own."
+                "Added to what Native writes with AI for this project. Each uses your global instructions unless you give it the project's own.",
+            plainly: .init(title: "Writing Style", description: "Your rules for what Native writes in this project.")
         )
         SettingsRowGroup {
             ForEach(AIInstructionPurpose.allCases) { purpose in
@@ -28,6 +29,7 @@ struct AIInstructionsProjectSection: View {
 /// One purpose for a project: "Use global" or "Custom", and the project's own instructions while
 /// it has them.
 private struct AIInstructionProjectRow: View {
+    @Environment(\.settingsPlainly) private var plainly
     enum Mode: Hashable {
         case global, custom
     }
@@ -44,7 +46,10 @@ private struct AIInstructionProjectRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
-            SettingsRow(purpose.title, description: Text(description)) {
+            SettingsRow(
+                purpose.title, plainly: .init(title: purpose.plainlyCopy.title, preservesDescription: true),
+                description: Text(description)
+            ) {
                 SettingsSelect(
                     label: purpose.title, selection: mode,
                     options: [.init(value: .global, title: "Use global"), .init(value: .custom, title: "Custom")])
@@ -65,7 +70,9 @@ private struct AIInstructionProjectRow: View {
             return "This project's own, in place of your global instructions."
         }
         let global = store.text(for: purpose).trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !global.isEmpty else { return "No global instructions. \(purpose.summary)" }
+        guard !global.isEmpty else {
+            return plainly ? "Native's default" : "No global instructions. \(purpose.summary)"
+        }
         let firstLine = global.split(whereSeparator: \.isNewline).first.map(String.init) ?? global
         return "Global: \u{201C}\(firstLine)\u{201D}"
     }
