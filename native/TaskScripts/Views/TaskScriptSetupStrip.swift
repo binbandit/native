@@ -36,6 +36,9 @@ struct TaskScriptSetupStrip: View {
         case .awaitingApproval:
             Image(systemName: "questionmark.circle.fill")
                 .foregroundStyle(Color.dsAttention)
+        case .succeeded where run.baseNotice != nil && run.copyFailure == nil:
+            Image(systemName: "info.circle")
+                .foregroundStyle(Color.dsTextSecondary)
         case .succeeded where run.copyFailure != nil:
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(Color.dsWarning)
@@ -94,7 +97,8 @@ struct TaskScriptSetupStrip: View {
         switch run.state {
         case .running: "Setting up the worktree"
         case .awaitingApproval: "This repository has a setup script"
-        case .succeeded where run.plan.scripts.isEmpty: "Couldn't copy the project's env files"
+        case .succeeded where run.plan.scripts.isEmpty && run.copyFailure != nil:
+            "Couldn't copy the project's env files"
         case .succeeded, .skipped:
             (run.duration ?? 0) < 1 ? "Worktree set up" : "Worktree set up in \(DSFormat.duration(run.duration ?? 0))"
         case .failed(let failure): "\(failure.script.name) \(failure.result.outcome.phrase)"
@@ -117,6 +121,7 @@ struct TaskScriptSetupStrip: View {
         case .succeeded, .skipped:
             break
         }
+        if let baseNotice = run.baseNotice { parts.append(baseNotice) }
         if !run.copiedFiles.isEmpty {
             let files = run.copiedFiles.count == 1 ? run.copiedFiles[0] : "\(run.copiedFiles.count) env files"
             parts.append("Copied \(files) from the project.")
@@ -147,5 +152,15 @@ extension String {
         .frame(width: 720)
     }
     .environment(TaskScriptsPreviewFixtures.center())
+}
+#endif
+
+#if DEBUG
+#Preview("Worktree - Local base after failed fetch") {
+    DSPreviewPair {
+        TaskScriptSetupStrip(run: TaskScriptWorktreePreviewFixtures.localBase, edit: { _ in })
+            .frame(width: 560)
+    }
+    .environment(TaskScriptWorktreePreviewFixtures.center())
 }
 #endif

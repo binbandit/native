@@ -52,6 +52,13 @@ assets or third-party dependencies. The binary allowance is 59 MB for this share
 its platform key routing. The measured update archive (46.1 MB) and installed app (115.5 MB) remain
 within their unchanged limits. These are integrated build measurements, not an isolated size delta.
 
+2026-10-24: the integrated worktree-creation commands and Plainly Settings build at `dde394e1`
+measures 58.6 MB for the Nightly binary, 46.1 MB downloaded and 115.4 MB installed. Earlier
+feature measurements used separate branches; their combined code now exceeds the 58.5 MB
+binary allowance. Creation hooks, captured terminal logs and their retry controls add no assets
+or dependencies. The binary budget is now 59 MB for this measured integration, with a small
+margin. The download, installed, disk-image and script-runtime budgets stay unchanged.
+
 ## Measuring
 
 ```sh

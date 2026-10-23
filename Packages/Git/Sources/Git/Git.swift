@@ -99,6 +99,7 @@ public struct Git: Sendable {
         readOnly: Bool = false,
         lowPriority: Bool = false,
         input: Data? = nil,
+        timeout: Duration? = nil,
         environment overrides: [String: String] = [:],
         acceptingStatus accepted: Set<Int32> = [0]
     ) async throws(GitError) -> Output {
@@ -112,7 +113,8 @@ public struct Git: Sendable {
         environment.merge(overrides) { $1 }
 
         let output = try await execute(
-            executable, arguments, in: directory, environment: environment, input: input, lowPriority: lowPriority)
+            executable, arguments, in: directory, environment: environment, input: input, lowPriority: lowPriority,
+            timeout: timeout)
         guard accepted.contains(output.status) else {
             // Some failures, like "nothing to commit", only go to stdout.
             let message = output.stderr.isEmpty ? String(output.text.prefix(4096)) : output.stderr
@@ -133,14 +135,16 @@ public struct Git: Sendable {
         in directory: URL?,
         environment: [String: String],
         input: Data?,
-        lowPriority: Bool = false
+        lowPriority: Bool = false,
+        timeout: Duration? = nil
     ) async throws(GitError) -> Output {
         let command = Command(
             lowPriority ? "nice" : executable,
             lowPriority ? ["-n", "10", executable] + arguments : arguments,
             in: directory?.path(percentEncoded: false),
             environment: environment,
-            standardInput: input
+            standardInput: input,
+            timeout: timeout
         )
         // A cancelled caller never starts a command: there's nothing to stop yet.
         if Task.isCancelled { throw .cancelled }

@@ -343,6 +343,16 @@ opening a subagent does not discard disclosure choices. Tool rows, exploration g
 start closed; pending approvals override the visible state without changing the saved choice.
 Scroll positions remain per window in `SessionTranscriptMemory`.
 
+### Task worktree preparation
+
+Git chooses an immutable task base with `Repository.taskWorktreeBase`, fetching the configured
+remote unless `policy.git.worktreeFetch` disables it. Failure falls back to the local commit;
+`GitStore` carries that explanation into the task's setup notice. Before-commands run through
+`TaskScriptCenter` before the fetch and checkout. After-commands start after env files are copied
+and never hold a task's turns. The same script runner retains policy, timeout and cancellation;
+`TaskScriptsTerminalWiring` exposes its capped output through `TerminalLog` tabs alongside
+Project Actions' interactive terminal jobs. See `docs/scripts.md`.
+
 ## Persistence
 
 | What | Where |

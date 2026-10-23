@@ -17,8 +17,11 @@ struct TerminalPanel: View {
         let height = min(max(preferences.panelHeight, Self.minHeight), maxHeight)
         VStack(spacing: 0) {
             TerminalResizeDivider(height: $preferences.panelHeight, range: Self.minHeight...maxHeight)
-            TerminalTabBar(panel: panel, showsTabs: store.availability == .available)
-                .background(.dsSurfaceSunken.opacity(store.backgroundOpacity))
+            TerminalTabBar(
+                panel: panel, showsTabs: store.availability == .available || !panel.logs.isEmpty,
+                canAddTab: store.availability == .available
+            )
+            .background(.dsSurfaceSunken.opacity(store.backgroundOpacity))
             if case .ghosttyInvalid(_, let diagnostics) = store.configStatus {
                 TerminalConfigNotice(diagnostics: diagnostics, reload: store.reloadGhosttyConfig)
             }
@@ -41,22 +44,27 @@ struct TerminalPanel: View {
     }
 
     @ViewBuilder private var content: some View {
-        switch store.availability {
-        case .available:
-            if let tab = panel.tabs.selected {
-                TerminalTabContent(panel: panel, tab: tab, backgroundOpacity: store.backgroundOpacity)
+        if let id = panel.tabs.selectedID, let log = panel.logs[id] {
+            TerminalLogView(log: log)
+        } else {
+            switch store.availability {
+            case .available:
+                if let tab = panel.tabs.selected {
+                    TerminalTabContent(panel: panel, tab: tab, backgroundOpacity: store.backgroundOpacity)
+                }
+            case .notBuilt:
+                TerminalUnavailableView()
+                    .background(.dsSurfaceSunken.opacity(store.backgroundOpacity))
+            case .failed(let reason):
+                ErrorState(
+                    "The terminal couldn't start",
+                    recovery: reason,
+                    suggestion: "Quit and reopen Native to try again.",
+                    layout: .pane
+                )
             }
-        case .notBuilt:
-            TerminalUnavailableView()
-                .background(.dsSurfaceSunken.opacity(store.backgroundOpacity))
-        case .failed(let reason):
-            ErrorState(
-                "The terminal couldn't start",
-                recovery: reason,
-                suggestion: "Quit and reopen Native to try again.",
-                layout: .pane
-            )
         }
+
     }
 
     /// Behind a translucent terminal, a blur of what's behind the window, as the sidebar has; the
@@ -178,6 +186,19 @@ private struct TerminalUnavailablePanelPreview: View {
                 .frame(width: 720)
         }
         .environment(SettingsPresentation())
+    }
+}
+#endif
+
+#if DEBUG
+#Preview("Terminal panel - Worktree command failed") {
+    let panel = TerminalPanelModel(workingDirectory: URL(filePath: "/work/task"), engine: { nil })
+    panel.attach(TerminalLogPreviewFixtures.failed)
+    let store = TerminalStore(
+        preferences: TerminalPreferences(defaults: PreviewUserDefaults()), makeEngine: { .failure(.notBuilt) })
+    return DSPreviewPair {
+        TerminalPanel(panel: panel, store: store, maxHeight: 260)
+            .frame(width: 640)
     }
 }
 #endif
