@@ -39,6 +39,18 @@ struct TaskWellLight: View {
 
 #if DEBUG
 #Preview("Well - Reduced motion light") {
-    TaskWellLight(trigger: 0).environment(\.accessibilityReduceMotion, true)
+    DSPreviewPair { TaskWellLight(trigger: 0).environment(\.accessibilityReduceMotion, true) }
+}
+
+#Preview("Well - One light pass") {
+    @Previewable @State var trigger = 0
+    DSPreviewPair {
+        VStack {
+            Button("Start or land a turn") { trigger += 1 }
+            TaskWellLight(trigger: trigger)
+        }
+        .frame(width: DS.TaskWell.width)
+        .padding(DS.Space.xl)
+    }
 }
 #endif

@@ -71,3 +71,18 @@ struct TaskWellWiring: View {
         }
     }
 }
+
+#if DEBUG
+// The adapter refreshes project actions. Preview only its inert presentation, without file reads.
+#Preview("Well - Existing tool adapters") {
+    let tools = SessionToolsScreenModel()
+    tools.wellToolAvailable = { $0 != .subagents && $0 != .pullRequest }
+    return DSPreviewPair {
+        TaskWellToolsPanel(content: TaskWellPreviewFixtures.states[0], location: "native · main", tools: tools) {
+            $0 == .changes ? "3 files" : ""
+        } dev: {
+            EmptyView()
+        }
+    }
+}
+#endif
