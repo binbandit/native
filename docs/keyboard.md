@@ -459,6 +459,8 @@ Each task has a terminal panel under the composer, opening in the task's folder 
 | ⌃` | Show the task's terminal and focus it; with the terminal focused, hide it and return to the composer | View | `terminal.toggle` |
 | ⌃⇧` | New terminal tab | View | `terminal.newTab` |
 | | Close the terminal tab (asks first when a program is running in it) | View | `terminal.closeTab` |
+| | Retry the selected terminal command, including worktree commands | View | `terminal.retryJob` |
+| | Stop the selected terminal command | View | `terminal.stopJob` |
 
 While a terminal has focus, Native's menu shortcuts come first, then the terminal's own bindings,
 then the shell. With "Use my Ghostty settings" on, the bindings are the user's Ghostty key
