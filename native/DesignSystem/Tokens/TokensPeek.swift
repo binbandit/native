@@ -11,7 +11,7 @@ extension DS {
         public static let openGap: CGFloat = 6
         public static let openLeading: CGFloat = 10
         public static let openMargin: CGFloat = 2
-        public static let openDividerHeight: CGFloat = 14
+        public static let openDividerHeight = DS.Sidebar.keycapHeight
         public static let bodyHorizontal: CGFloat = 20
         public static let bodyVertical: CGFloat = 16
         public static let maxBodyHeight: CGFloat = 560
