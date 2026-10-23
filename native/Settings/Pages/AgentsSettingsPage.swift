@@ -73,6 +73,16 @@ struct AgentsSettingsPage: View {
                 ForEach(shownEntries) { entry in
                     agentRow(entry)
                         .settingsLocked(isAllowed(entry) ? nil : Self.notAllowed)
+                    if plainly {
+                        DisclosureGroup("How Native runs \(entry.agent.name)") {
+                            Text(entry.commandLine)
+                                .settingsText(.mono)
+                                .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .font(DS.Settings.caption)
+                        .foregroundStyle(.dsTextSecondary)
+                    }
                     if registry.isEnabled(entry.plugin.id), isAllowed(entry) {
                         if !plainly {
                             AgentDefaultsRow(agentName: entry.agent.name, agentID: entry.definition.id)
@@ -85,15 +95,17 @@ struct AgentsSettingsPage: View {
                 Button("New Task Defaults…") { presentation.open(.newTasks) }
                     .buttonStyle(.settings)
             }
-            SettingsHeader(
-                "Add an Agent",
-                description: Text(
-                    "Agents Native knows but can't find on this Mac. Install one in your terminal, then check again. Native never runs these commands."
-                ),
-                plainly: .init(
-                    title: "Not on this Mac",
-                    description:
-                        "Install one in Terminal and Native notices. It shows the command; it never runs it for you."))
+            if plainly {
+                SettingsSubheading(
+                    "Not on this Mac",
+                    note: "Install one in Terminal and Native notices. It shows the command; it never runs it for you.")
+            } else {
+                SettingsHeader(
+                    "Add an Agent",
+                    description: Text(
+                        "Agents Native knows but can't find on this Mac. Install one in your terminal, then check again. Native never runs these commands."
+                    ))
+            }
             AddAgentList(agents: model.agentsToAdd, summaries: registry.descriptions) {
                 await model.checkForAgents()
             }
@@ -128,10 +140,10 @@ struct AgentsSettingsPage: View {
         return SettingsRow(
             id: entry.rowID,
             title: Text(entry.agent.name),
-            description: Text(entry.commandLine).font(SettingsTextStyle.mono.font),
-            detail: detail(for: entry)
+            description: plainly ? Text(status(for: entry)) : Text(entry.commandLine).font(SettingsTextStyle.mono.font),
+            detail: plainly ? siblingNote(for: entry) : detail(for: entry)
         ) {
-            if let runtime, runtime.needsSignIn {
+            if !plainly, let runtime, runtime.needsSignIn {
                 SettingsBadge("Needs sign-in")
             }
         } control: {
@@ -147,6 +159,26 @@ struct AgentsSettingsPage: View {
                     ))
             }
         }
+    }
+
+    private func status(for entry: Entry) -> String {
+        guard isAllowed(entry) else { return Self.notAllowed }
+        guard registry.isEnabled(entry.plugin.id) else { return "Off" }
+        guard let runtime = model.runtime(entry.definition.id) else { return "Ready" }
+        if runtime.needsSignIn { return "Needs you to sign in" }
+        switch runtime.status {
+        case .idle, .ready: return "Ready"
+        case .starting: return "Starting…"
+        case .notInstalled: return "Not installed"
+        case .failed: return "Couldn't start"
+        }
+    }
+
+    private func siblingNote(for entry: Entry) -> Text? {
+        let siblings = entry.plugin.agents.filter { $0.id != entry.agent.id }.map(\.name)
+        guard !siblings.isEmpty else { return nil }
+        return Text(
+            "Turning off \(entry.agent.name) also turns off \(ListFormatter.localizedString(byJoining: siblings)).")
     }
 
     private func detail(for entry: Entry) -> Text {
@@ -180,5 +212,16 @@ struct AgentsSettingsPage: View {
     .environment(app)
     .environment(PolicyCenter.shared)
     .environment(SettingsPresentation())
+}
+
+#Preview("Plainly - Agents and launch details") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        AgentsSettingsPage(registry: app.plugins).settingsPreviewPage()
+    }
+    .environment(app)
+    .environment(PolicyCenter.shared)
+    .environment(SettingsPresentation())
+    .environment(\.settingsPlainly, true)
 }
 #endif
