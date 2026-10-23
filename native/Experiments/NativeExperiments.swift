@@ -14,6 +14,7 @@ extension ExperimentCatalog {
         Gate.sidebarNext,
         Gate.composerNext,
         Gate.composeTask,
+        Gate.changeAgent,
         Gate.homeNext,
     ])
 }
@@ -70,6 +71,14 @@ extension Gate {
         default: false
     )
 
+    static let changeAgent = Gate(
+        id: "change-agent", title: "Change Agent",
+        summary:
+            "Continue a task on this Mac with another agent and an editable handoff. Earlier transcripts stay a click away.",
+        site: "Task > Change Agent", stage: .labs, owner: "tasks",
+        reviewBy: ReviewDate(year: 2026, month: 12, day: 15), default: false
+    )
+
     static let homeNext = Gate(
         id: "NativeHomeNext",
         title: "Next",
@@ -83,8 +92,8 @@ extension Gate {
 
     static let sidebarNext = Gate(
         id: "NativeSidebarNext",
-        title: "Quiet projects",
-        summary: "A calmer sidebar with monospace project names, marks for active tasks and folded older tasks.",
+        title: "All in view",
+        summary: "Titles at rest, shared grid signals and readable asks with waiting clocks.",
         site: "Sidebar ▸ projects and tasks",
         stage: .labs,
         owner: "sidebar",

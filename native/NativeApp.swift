@@ -80,6 +80,7 @@ struct NativeApp: App {
         }
         GitAutomationWiring.connect(git, to: BuiltInPlugins.automation.center.automations)
         GitTurnWiring.connect(git, to: model)
+        ChangeAgentWiring.connect(model: model, git: git, automation: BuiltInPlugins.automation.center)
         let settings = SettingsPresentation()
         _settings = State(initialValue: settings)
         let keepAwake = KeepAwakeController()
@@ -129,6 +130,7 @@ struct NativeApp: App {
     var body: some Scene {
         Window("Native", id: "main") {
             RootView()
+                .sidebarDesignFixture()
                 .commandPalette(palette)
                 .onAppear {
                     LaunchMetrics.markOnScreen(.firstFrame)

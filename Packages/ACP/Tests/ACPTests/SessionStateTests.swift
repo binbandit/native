@@ -102,11 +102,13 @@ struct SessionStateTests {
         var state = folded([try Wire.update(Wire.writeToolCall)])
         let request = try Wire.params(RequestPermissionRequest.self, of: Wire.permissionRequest)
 
-        state.requestPermission(request, id: .int(0))
+        let arrival = Date(timeIntervalSince1970: 1_000)
+        state.requestPermission(request, id: .int(0), at: arrival)
         let waiting = try #require(state.toolCall(Wire.writeToolCallID))
         // The request's newer details replace the placeholder title.
         #expect(waiting.title == "Write /private/tmp/acp-research/sandbox/out.txt")
-        #expect(waiting.permission == PendingPermission(requestID: .int(0), options: request.options))
+        #expect(
+            waiting.permission == PendingPermission(requestID: .int(0), options: request.options, requestedAt: arrival))
         #expect(state.pendingPermissions.map { $0.toolCallID } == [Wire.writeToolCallID])
 
         let resolved = state.resolvePermission(toolCallID: Wire.writeToolCallID)

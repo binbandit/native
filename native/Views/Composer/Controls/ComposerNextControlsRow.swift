@@ -8,6 +8,7 @@ import SwiftUI
 struct ComposerNextControlsRow<Extras: View, Context: View>: View {
     let settings: ComposerSettings
     let agentName: String
+    var changesAgent = false
     let resumedAutonomy: String?
     var followUpHint: FollowUpHint? = nil
     @Binding var isModelPickerOpen: Bool
@@ -29,10 +30,11 @@ struct ComposerNextControlsRow<Extras: View, Context: View>: View {
             HStack(spacing: DS.Space.xs) {
                 Button(agentName, action: onChooseAgent)
                     .buttonStyle(ComposerFactButtonStyle())
-                    .accessibilityLabel("Agent: \(agentName). New task with another agent")
+                    .accessibilityLabel("Agent: \(agentName)")
                     .help(
-                        CommandRegistry.shared.help("New task with another agent", for: .sessionNewWithAgent)
-                            + ". This conversation stays with \(agentName).")
+                        changesAgent
+                            ? "Change this task to another agent"
+                            : CommandRegistry.shared.help("New task with another agent", for: .sessionNewWithAgent))
                 if settings.model != nil || !settings.modelSwitches.isEmpty {
                     separator
                     model

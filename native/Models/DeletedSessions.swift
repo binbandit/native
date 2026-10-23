@@ -24,6 +24,11 @@ final class DeletedSessions {
         keys.insert(key)
     }
 
+    /// Publishes an unsent conversation held aside while an agent handoff was reviewed.
+    func remove(_ key: SessionKey) {
+        keys.remove(key)
+    }
+
     private func save() {
         if let data = try? JSONEncoder().encode(keys) {
             defaults.set(data, forKey: Self.key)

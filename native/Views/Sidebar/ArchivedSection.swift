@@ -98,7 +98,7 @@ private struct ArchivedProjectRow: View {
 /// An archived task: opens to read on click, with Unarchive at its trailing edge and Delete in its
 /// menus.
 private struct ArchivedTaskRow: View {
-    @Environment(\.sidebarQuietProjects) private var isQuiet
+    @Environment(\.sidebarAllInView) private var isAllInView
     @Environment(AppModel.self) private var model
     @Environment(\.undoManager) private var undoManager
     let summary: SessionSummary
@@ -108,17 +108,23 @@ private struct ArchivedTaskRow: View {
 
     var body: some View {
         let title = model.title(for: summary)
-        TaskRow(
-            title: title,
-            status: .idle,
-            isSelected: model.selection == summary.id,
-            date: model.lastActivity(for: summary),
-            indent: .flat,
-            style: isQuiet ? .quiet : .standard,
-            leading: AgentIcon(agent: summary.agent),
-            accessory: IconButton("Unarchive “\(title)”", systemImage: "arrow.uturn.backward", action: unarchive),
-            action: select
-        )
+        Group {
+            if isAllInView {
+                AllInViewTaskRow(title: title, status: .idle, isSelected: model.selection == summary.id, action: select)
+            } else {
+                TaskRow(
+                    title: title,
+                    status: .idle,
+                    isSelected: model.selection == summary.id,
+                    date: model.lastActivity(for: summary),
+                    indent: .flat,
+                    leading: AgentIcon(agent: summary.agent),
+                    accessory: IconButton(
+                        "Unarchive “\(title)”", systemImage: "arrow.uturn.backward", action: unarchive),
+                    action: select
+                )
+            }
+        }
         .help("\(summary.agent.displayName) · \(title) · archived")
         .contextMenu {
             Button("Unarchive", action: unarchive)

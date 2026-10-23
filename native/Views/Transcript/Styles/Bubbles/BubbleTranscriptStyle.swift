@@ -85,7 +85,9 @@ private struct BubbleRowView: View {
                 BubbleLane(side: side, hugsContent: true) {
                     VStack(alignment: .trailing, spacing: DS.Space.sm) {
                         if !message.attachments.isEmpty {
-                            MessageAttachmentsView(attachments: message.attachments)
+                            MessageAttachmentsView(
+                                attachments: message.attachments,
+                                alignment: message.role == .user ? .trailing : .leading)
                         }
                         if !message.text.isEmpty || message.attachments.isEmpty {
                             BubbleMessageView(message: message, side: side, position: position)

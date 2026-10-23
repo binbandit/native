@@ -58,6 +58,7 @@ public enum DefaultShortcuts {
         "terminal.newTab": "⌃⇧`",
         // Project actions
         "projectActions.runLast": "⇧⌘R",
+        "projectActions.stop": "⇧⌘.",
         // Celebrations
         "celebration.restore": "⌥⇧⌘H",
         // Quitting

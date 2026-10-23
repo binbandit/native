@@ -103,6 +103,7 @@ struct RootView: View {
             }
         }
         navigation
+            .changeAgentPresentation()
             .newExpeditionSheet()
             .sheet(isPresented: $automation.isWorkflowPickerRequested) {
                 WorkflowPickerSheet(cwd: model.currentProject?.url, onAddProject: { model.isAddingProject = true }) {

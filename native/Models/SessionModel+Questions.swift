@@ -7,6 +7,7 @@ extension SessionModel {
     struct PendingQuestion: Identifiable {
         let id: RequestID
         let request: CreateElicitationRequest
+        var requestedAt: Date = .now
     }
 
     /// The question to answer now; later ones wait behind it.

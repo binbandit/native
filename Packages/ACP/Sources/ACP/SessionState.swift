@@ -159,7 +159,7 @@ public struct SessionState: Sendable {
         guard let index = toolCallIndices[request.toolCall.toolCallId], case .toolCall(var call) = items[index] else {
             return
         }
-        call.permission = PendingPermission(requestID: id, options: request.options)
+        call.permission = PendingPermission(requestID: id, options: request.options, requestedAt: date)
         replaceItem(at: index, with: .toolCall(call))
     }
 
@@ -276,19 +276,32 @@ public struct SessionState: Sendable {
             appendItem(.message(message))
             return
         }
-        // A replayed prompt's files and images show with it, not as their paths in its text.
-        if role == .user, let attachment = MessageAttachment(chunk.content) {
-            if case .message(var last) = items.last, last.role == .user,
+        // Images and resources retain their bytes for every visible message role. Only user
+        // replay text is interpreted as an attachment; ordinary reply text stays Markdown.
+        let attachment: MessageAttachment? =
+            switch (role, chunk.content) {
+            case (.thought, _), (.agent, .text): nil
+            default: MessageAttachment(chunk.content)
+            }
+        if var attachment {
+            attachment.isLocalFile = role == .user
+            if case .message(var last) = items.last, last.role == role,
                 chunk.messageId == nil || chunk.messageId == last.messageID
             {
-                // Claude Code replays an embedded file as its link, then its contents: one file.
-                if attachment.url == nil || !last.attachments.contains(where: { $0.url == attachment.url }) {
+                if let url = attachment.url, let index = last.attachments.firstIndex(where: { $0.url == url }) {
+                    last.attachments[index].imageData = attachment.imageData ?? last.attachments[index].imageData
+                    last.attachments[index].embeddedData =
+                        attachment.embeddedData ?? last.attachments[index].embeddedData
+                    last.attachments[index].mimeType = attachment.mimeType ?? last.attachments[index].mimeType
+                } else {
                     last.attachments.append(attachment)
                 }
+                last.updatedAt = date ?? last.updatedAt
                 replaceItem(at: items.count - 1, with: .message(last))
             } else {
+                if role != .user { beginLateOutputIfStopped() }
                 var message = TranscriptMessage(
-                    role: .user, text: "", messageID: chunk.messageId, startedAt: date, updatedAt: date)
+                    role: role, text: "", messageID: chunk.messageId, startedAt: date, updatedAt: date)
                 message.attachments = [attachment]
                 appendItem(.message(message))
             }
@@ -298,7 +311,7 @@ public struct SessionState: Sendable {
         switch chunk.content {
         case .text(let string): text = string
         case .image: text = "[Image]"
-        case .resourceLink(let uri, _), .resource(let uri, _): text = uri
+        case .resourceLink(let uri, _), .resource(let uri, _, _), .resourceBlob(let uri, _, _): text = uri
         case .unsupported(let type): text = "[\(type)]"
         }
         // Continue the last message when it has the same role and, if the agent sends ids, the same id.
@@ -491,4 +504,6 @@ public struct ToolCallState: Hashable, Sendable {
 public struct PendingPermission: Hashable, Sendable {
     public var requestID: RequestID
     public var options: [PermissionOption]
+    /// The request arrival, retained when a host replays its event log.
+    public var requestedAt: Date
 }
