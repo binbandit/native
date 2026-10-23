@@ -18,7 +18,7 @@ public struct UndoToastItem: Identifiable, Equatable {
     }
 
     public static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.id == rhs.id
+        lhs.id == rhs.id && lhs.undoesWithCommandZ == rhs.undoesWithCommandZ
     }
 }
 
