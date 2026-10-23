@@ -105,7 +105,7 @@ struct TaskPeekView: View {
             }
         } else if let session {
             if session.phase == .loading {
-                ProgressView("Opening the task…").font(.dsBody)
+                LoadingStateView("Opening the task…")
             } else if session.taskStatus == .failed {
                 TaskPeekFailureView(session: session) {
                     Task { await model.recoverPeekedTask(request.task) }
@@ -126,7 +126,7 @@ struct TaskPeekView: View {
             }
             .buttonStyle(.ds(.primary))
         } else {
-            ProgressView("Opening the task…").font(.dsBody)
+            LoadingStateView("Opening the task…")
         }
     }
 
