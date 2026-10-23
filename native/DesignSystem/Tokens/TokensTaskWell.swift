@@ -18,7 +18,9 @@ extension DS {
         public static let maxTicks = 12
         public static let titleMaxWidth: CGFloat = 220
         public static let titleMinWidth: CGFloat = 40
-        public static let panelWidth: CGFloat = 360
+        public static let panelWidth: CGFloat = 500
+        public static let panelHeaderHeight: CGFloat = 42
+        public static let devMaxHeight: CGFloat = 320
         public static let rowHeight: CGFloat = 34
         public static let rowIconWidth: CGFloat = 22
         public static let rowTitleWidth: CGFloat = 104

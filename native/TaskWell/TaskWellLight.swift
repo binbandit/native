@@ -24,7 +24,7 @@ struct TaskWellLight: View {
                                     x: proxy.size.width / 2 + CGFloat(direction) * progress * proxy.size.width / 2,
                                     y: DS.TaskWell.lightHeight / 2
                                 )
-                                .opacity(progress > 0 && progress < 1 ? 1 - progress : 0)
+                                .opacity(progress > 0 && progress < 1 ? 1 - Double(progress) : 0)
                         }
                     }
                 } keyframes: { _ in

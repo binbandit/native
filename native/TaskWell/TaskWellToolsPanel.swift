@@ -6,21 +6,26 @@ struct TaskWellToolsPanel<Dev: View>: View {
     @Bindable var tools: SessionToolsScreenModel
     let detail: (TaskWellTool) -> String
     @ViewBuilder var dev: () -> Dev
+    @State private var hovered: TaskWellTool?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            statusHeader
+            SeparatorLine()
             VStack(alignment: .leading, spacing: DS.Space.xxs) {
                 Text(content.agent).font(.dsCalloutMedium).foregroundStyle(.dsTextPrimary)
                 Text(location).font(.dsBody).foregroundStyle(.dsTextTertiary)
                     .lineLimit(1).truncationMode(.middle)
             }
-            .padding(DS.Space.lg)
+            .padding(.vertical, DS.Space.lg)
+            .padding(.horizontal, DS.Space.xl)
             SeparatorLine()
             if tools.showsWellDev {
                 VStack(alignment: .leading, spacing: DS.Space.sm) {
                     Button("Back to tools", systemImage: "chevron.left", action: tools.showWellTools)
                         .buttonStyle(.plain)
-                    dev()
+                    ScrollView { dev() }
+                        .frame(maxHeight: DS.TaskWell.devMaxHeight)
                 }
                 .padding(DS.Space.lg)
             } else {
@@ -50,14 +55,39 @@ struct TaskWellToolsPanel<Dev: View>: View {
                             .contentShape(.rect)
                         }
                         .buttonStyle(.plain)
+                        .background(hovered == tool ? .dsHover : .clear, in: .rect(cornerRadius: DS.Radius.card))
+                        .trackHover(Binding(get: { hovered == tool }, set: { hovered = $0 ? tool : nil }))
                         .dsHitTarget(DS.TaskWell.rowHeight)
                     }
                 }
-                .padding(DS.Space.xs)
+                .padding(DS.Space.sm)
             }
         }
         .frame(width: DS.TaskWell.panelWidth)
         .dsPopoverBackground()
+    }
+
+    private var statusHeader: some View {
+        HStack(spacing: DS.TaskWell.gap) {
+            StatusIndicator(status: content.status, size: DS.TaskWell.signal)
+            if let outcome = content.outcome {
+                Text("Changed \(outcome.changedFiles.count) \(outcome.changedFiles.count == 1 ? "file" : "files")")
+                DiffStatsText(stats: DiffStats(added: outcome.linesAdded, removed: outcome.linesRemoved))
+                    .font(DS.TaskWell.object)
+            } else {
+                Text(content.verb.isEmpty ? content.agent : content.verb)
+                    .foregroundStyle(.dsTextSecondary)
+                    .fixedSize()
+                if let object = content.object {
+                    Text(object).font(DS.TaskWell.object).lineLimit(1).truncationMode(.middle)
+                }
+            }
+            Spacer(minLength: DS.Space.sm)
+            Text("esc").font(.dsMonoMicro).foregroundStyle(.dsTextTertiary)
+        }
+        .font(DS.TaskWell.body)
+        .padding(.horizontal, DS.Space.xl)
+        .frame(height: DS.TaskWell.panelHeaderHeight)
     }
 }
 
