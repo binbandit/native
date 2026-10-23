@@ -44,8 +44,8 @@ including shell commands in separate process groups. The task stays Stopping unt
 processes have exited. Pressing Stop again ends the grace period.
 An agent process can serve several tasks: Native waits for its other tasks to finish or be stopped
 before ending that shared process, and explains that commands may still be running meanwhile.
-ACP does not report command lifetimes or guarantee that a command cannot detach between process
-snapshots. Native therefore reports an unverified Stop as a failed turn with a clear warning that
+ACP cancellation does not guarantee that every command has exited or that commands cannot detach
+between process snapshots. Native therefore reports an unverified Stop as a failed turn with a clear warning that
 background commands may still be running, rather than labelling it Stopped. Queued messages remain
 paused unless the user explicitly chose Send Now. In-app mode, which cannot track the host's processes,
 keeps the turn Stopping and explains its limit.

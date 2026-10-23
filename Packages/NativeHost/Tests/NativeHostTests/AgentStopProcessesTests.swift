@@ -43,7 +43,12 @@ struct AgentStopProcessesTests {
         tree.terminate()
         #expect(!tree.hasRemainingProcesses)
         try Data().write(to: folder.appending(path: "write"))
-        try await Task.sleep(for: .milliseconds(200))
+        let writeDeadline = ContinuousClock.now + .seconds(5)
+        while !FileManager.default.fileExists(atPath: folder.appending(path: "marker").path),
+            ContinuousClock.now < writeDeadline
+        {
+            try await Task.sleep(for: .milliseconds(10))
+        }
         #expect(FileManager.default.fileExists(atPath: folder.appending(path: "marker").path))
     }
 

@@ -28,7 +28,7 @@ extension HostCore {
             append(
                 .notice(
                     text:
-                        "Commands may still be running. Stop the parent task to verify that its subagent's commands have ended.",
+                        "Commands may still be running. Stop the parent task to end the processes Native can track.",
                     isError: true),
                 to: session)
             publish(session)

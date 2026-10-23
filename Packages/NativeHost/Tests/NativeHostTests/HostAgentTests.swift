@@ -146,7 +146,7 @@ struct HostAgentTests {
         await recorder.stop()
     }
 
-    @Test("Quit and Stop Agents ends turns as stopped, leaves nothing running, and resumes nothing")
+    @Test("Quit and Stop Agents ends known processes, records an unverified stop, and resumes nothing")
     func quitAndStopAgents() async throws {
         let harness = try HostHarness()
         harness.agentEnvironment = ["FAKE_AGENT_GRANDCHILD": harness.grandchildFile.path(percentEncoded: false)]
@@ -168,7 +168,7 @@ struct HostAgentTests {
         let second = try await harness.connect()
         let summary = try #require(try await second.client.sessions().first)
         #expect(summary.phase == .idle)
-        #expect(summary.lastStopReason == "cancelled")
+        #expect(summary.lastStopReason == "error")
         let activity = try await second.client.activity()
         #expect(activity.contains { $0.kind == .stopped && $0.agentSessionID == session.agentSessionID })
         #expect(!activity.contains { $0.kind == .recovered || $0.kind == .hostStarted })

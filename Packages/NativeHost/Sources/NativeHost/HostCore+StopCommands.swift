@@ -64,7 +64,7 @@ extension HostCore {
         }
     }
 
-    /// ACP exposes no command lifetime or containment guarantee. An intermediate process can
+    /// ACP cancellation gives no command lifetime or containment guarantee. An intermediate process can
     /// fork and disappear between snapshots, even while the root lives. End known work, pause
     /// queued follow-ups, and explain the remaining uncertainty instead of promising Stopped.
     func finishUnverifiedStop(_ turn: UnfinishedTurn, in session: HostSession) {
