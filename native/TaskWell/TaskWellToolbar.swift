@@ -13,8 +13,8 @@ struct TaskWellToolbar<Dev: View>: View {
 
     var body: some View {
         Button {
-            if content.isWaiting {
-                session.focusTaskRequest()
+            if content.isWaiting || content.status == .failed {
+                session.focusTaskAttention()
             } else if content.showsReview {
                 session.markTaskWellOutcomeReviewed(latestTurn?.id)
                 turnChanges?.review()
@@ -49,7 +49,10 @@ struct TaskWellToolbar<Dev: View>: View {
 
     private var help: String {
         let action =
-            content.isWaiting ? "Show the request. " : content.showsReview ? "Review this turn's changes. " : ""
+            content.isWaiting
+            ? "Show the request. "
+            : content.status == .failed
+                ? "Show the failure. " : content.showsReview ? "Review this turn's changes. " : ""
         return action + CommandRegistry.shared.help("Task tools", for: .taskWellToggle)
     }
 
@@ -65,11 +68,13 @@ struct TaskWellToolbar<Dev: View>: View {
         } else if session.needsApproval {
             content.verb = "Waiting on you"
             content.object = "A subagent needs your approval"
+        } else if session.isRetryScheduled {
+            content.verb = "Reconnecting"
         } else if session.phase == .prompting {
             let activity = session.taskActivity
-            content.verb = session.isRetryScheduled ? "Reconnecting" : activity.verb
-            content.object = session.isRetryScheduled ? nil : activity.object
-            content.progress = session.isRetryScheduled ? nil : activity.progress
+            content.verb = activity.verb
+            content.object = activity.object
+            content.progress = activity.progress
         } else if content.status == .starting {
             content.verb = "Starting"
         } else if content.status == .failed {
