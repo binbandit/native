@@ -103,6 +103,8 @@ private struct SettingsRegression {
         row(GitHubSettingsPage.openingRow, title: "Open pull requests", page: .git)
         row(KeepAwakeSettingsPage.modeRow, title: "Keep Mac awake", page: .background)
         row(BackgroundSettingsPage.keepRunningRow, title: "Keep agents running after you quit", page: .background)
+        row(TerminalSettingsPage.colorsRow, title: "Colors", page: .terminal)
+        row(PrivacySettingsPage.idRow, title: "Installation ID", page: .privacy)
         row(
             AgentDefaultsRow.settingRowID(agentID: .init(rawValue: "codex"), setting: .model), title: "Model",
             page: .newTasks)

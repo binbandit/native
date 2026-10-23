@@ -25,7 +25,8 @@ extension SettingsPane {
                     keywords: ["never sent", "prompts", "crash reports"]),
                 SettingsSearchEntry(id: PrivacySettingsPage.logRow, title: "What Native has sent", keywords: ["log"]),
                 SettingsSearchEntry(
-                    id: PrivacySettingsPage.idRow, title: "Reset installation ID", keywords: ["identifier"]),
+                    id: PrivacySettingsPage.idRow, title: "Reset installation ID", keywords: ["identifier"],
+                    plainly: .init(title: "Installation ID")),
             ]
         },
         content: { PrivacySettingsPage() }
