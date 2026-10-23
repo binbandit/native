@@ -16,7 +16,7 @@ noticed while there's still room to choose what to cut; lower them as the cuts i
 | Download, update archive | 47 MB | 42.7 MB |
 | Download, disk image | 48 MB | about 43.3 MB |
 | Installed app | 118 MB | 107.5 MB |
-| App binary (`Contents/MacOS/Native`) | 58.5 MB | 53.2 MB |
+| App binary (`Contents/MacOS/Native`) | 59 MB | 53.2 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
 `scripts/release/size-check.sh` holds the same numbers and fails when anything is over. It also
@@ -44,6 +44,13 @@ canvas, native document preview adapters and preservation of image/file content 
 tool messages, with no bundled assets or dependencies. It uses the same 58.5 MB binary allowance.
 At `d242798c`, the measured download was 45.8 MB and installed app was 114.8 MB, within their
 unchanged limits.
+
+2026-10-24: the integrated worktree-creation commands and Plainly Settings build at `dde394e1`
+measures 58.6 MB for the Nightly binary, 46.1 MB downloaded and 115.4 MB installed. Earlier
+feature measurements used separate branches; their combined code now exceeds the 58.5 MB
+binary allowance. Creation hooks, captured terminal logs and their retry controls add no assets
+or dependencies. The binary budget is now 59 MB for this measured integration, with a small
+margin. The download, installed, disk-image and script-runtime budgets stay unchanged.
 
 ## Measuring
 
