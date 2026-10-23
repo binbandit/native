@@ -51,7 +51,10 @@ private struct SidebarDesignFixture: View {
         _ = app.runtimes.sync()
         guard scenario != "empty" else { return app }
         let project = app.projects.add(URL(filePath: "/fixture/native"))
-        guard scenario != "empty-project" else { return app }
+        guard scenario != "empty-project" else {
+            app.catalog.replace(AgentDefinition.ID(rawValue: "codex"), in: project.id, with: []) { _ in false }
+            return app
+        }
         let rows: [(String, TaskStatus, String?)] = [
             ("Queue follow-ups while a turn runs", .working, nil),
             ("Fix flaky `PermissionRequestTests`", .needsPermission, "swift test --filter PermissionRequestTests"),

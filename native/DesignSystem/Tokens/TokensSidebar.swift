@@ -11,6 +11,7 @@ extension DS {
         public static let titleHeight: CGFloat = 16
         public static let askGap: CGFloat = 3
         public static let askLineSpacing: CGFloat = 2
+        public static let askLineHeight: CGFloat = 17
         public static let headerHeight: CGFloat = 26
         public static let headerLeading: CGFloat = 30
         public static let headerTop: CGFloat = 12
@@ -18,6 +19,7 @@ extension DS {
         public static let headerTracking: CGFloat = -0.06
         public static let keycapHeight: CGFloat = 16
         public static let keycapRadius: CGFloat = 3
+        public static let keycapBottom: CGFloat = 1
         public static let projectFont = Font.ds(12, weight: .semibold)
         public static let keycapFont = Font.ds(10, weight: .medium, design: .mono)
         public static let clockFont = Font.ds(11, weight: .medium, design: .mono)

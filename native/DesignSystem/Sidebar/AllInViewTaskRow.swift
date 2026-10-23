@@ -63,8 +63,10 @@ public struct AllInViewTaskRow: View {
                                 .multilineTextAlignment(.leading)
                                 .fixedSize(horizontal: false, vertical: true)
                                 .frame(maxWidth: .infinity, alignment: .leading)
+                                .frame(minHeight: DS.Sidebar.askLineHeight, alignment: .bottomLeading)
                             if answersShortcut, unavailable == nil {
                                 Kbd("⌘Y", compact: true)
+                                    .padding(.bottom, DS.Sidebar.keycapBottom)
                             }
                         }
                         .transition(.opacity.combined(with: .move(edge: .top)))

@@ -21,7 +21,8 @@ enum AllInViewPreviewFixtures {
 
     static func emptyProject() -> AppModel {
         let app = AppModel.preview(.empty)
-        _ = app.projects.add(URL(filePath: "/Users/preview/Developer/new-project"))
+        let project = app.projects.add(URL(filePath: "/Users/preview/Developer/new-project"))
+        app.catalog.replace(AgentDefinition.ID(rawValue: "codex"), in: project.id, with: []) { _ in false }
         return app
     }
 }
