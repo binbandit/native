@@ -200,6 +200,7 @@ private struct SidebarFilterPanel: View {
                 SeparatorLine()
                 Toggle("Show agent icons", isOn: $showAgentIcons)
                     .font(.dsCallout)
+                    .frame(minHeight: DS.Size.minimumHitTarget)
                 SeparatorLine()
                 HStack {
                     Button(isSelecting ? "Done Selecting" : "Select Tasks") { isSelecting.toggle() }
