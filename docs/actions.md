@@ -8,14 +8,19 @@ the project, a team can commit them with the repo, and each user keeps their own
 
 | Surface | What it does |
 | --- | --- |
-| The header's **Run** menu (outlined, beside Open In) | Stop what's running, Run Last, the project's actions, the repo's ("From the repo"), up to five suggestions (Add, Add and Run, Dismiss), and Edit Actions… |
-| The menu bar's **Run** menu | Run Last (⇧⌘R), Stop, every action of the visible task's project with the shortcut the user gave it, Edit Project Actions… |
+| The header's **Run** split button (outlined, between Changes and Terminal) | Run the named action; while running, Stop, then End Now. The chevron opens the actions, Stop rows, repo actions, suggestions and Edit Actions… |
+| The menu bar's **Run** menu | Run Last (⇧⌘R), Stop (⇧⌘.), every action of the visible task's project with the shortcut the user gave it, Edit Project Actions… |
 | The command palette (⌘K) | "Run: Test", "Run: Install"… for the visible task's project, plus Run Last Action, Stop Action, Edit Project Actions… |
-| The project's menu (sidebar "…" and context menu) | **Run ▸** the same as the header's menu |
+| The project's menu (sidebar "…" and context menu) | **Run ▸** the actions menu, including Run Last |
 | Settings ▸ the project's page ▸ **Actions** | Add, edit, reorder and delete the user's actions; the repo's; every suggestion |
 
-While an action runs, the header's button shows a loader and the action's name; after the last run
-failed, a red dot beside Run. Every action is a command of its own, `projectActions.run.<name>`
+The header names the newest running action, or the project's last-run action, or the first of your
+own actions, or the first from the repo. Its label stays the same while that action runs: a neutral
+loader becomes Stop on hover, then End Now after interruption. With multiple runs, it names the
+newest and shows the additional count. A successful run briefly shows a neutral checkmark (1.6s);
+a failed run keeps a red five-dot mark, with exit code and duration in its tooltip. Hover shows Play
+again. With no actions, Run is a single pull-down. A removed task folder disables only the run half;
+the menu remains available. Every action is a command of its own, `projectActions.run.<name>`
 ("Run: Test"), named after the action, so a shortcut given to it in Settings ▸ Keyboard Shortcuts
 runs Test in whichever project is in view (`docs/keyboard.md`, Project actions).
 
@@ -35,7 +40,8 @@ runs Test in whichever project is in view (`docs/keyboard.md`, Project actions).
   (the output, copyable) and, after a failure, Run in Terminal.
 - **Stop** sends ⌃C, so the program can clean up; stopping again ends it. A background run's
   command is ended.
-- **Run Last** (⇧⌘R) runs the project's last action again in the visible task.
+- **Run Last** (⇧⌘R) runs the header's named action in the visible task, including its first-action fallback.
+- **Stop Action** (⇧⌘.) stops all running actions in the visible task; the run half stops only its named action.
 - A terminal run that ends out of sight (another task in view, the panel hidden, another tab
   selected) says so in a toast with Show, which brings the task and the tab back.
 - Every run gets `NATIVE_PROJECT_PATH` (the project's checkout), `NATIVE_WORKTREE_PATH` (the task's
@@ -106,7 +112,9 @@ keep working.
 (`.native/setup.sh` and the rest), so it shares their per-project switch ("Run scripts from the
 repo") and the organization's `policy.taskScripts.repositoryScripts`. Until the project allows its
 repo scripts, running a repo action first shows its command and asks: Run (this once), or Always
-Allow for the project. With the policy off, repo actions aren't read at all, and Settings says so.
+Allow for the project. With the policy off, repo actions are unavailable. If a repo action file exists, the header menu
+shows a disabled lock row, "Off by your organization". Native policy currently has no organization-name
+field. The user's own actions remain available.
 
 ## States
 

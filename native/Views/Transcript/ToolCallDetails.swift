@@ -8,6 +8,21 @@ struct ToolCallBody: View {
     let phase: ToolPhase
 
     var body: some View {
+        let artifacts = call.artifacts
+        VStack(alignment: .leading, spacing: 0) {
+            output(hasArtifacts: !artifacts.isEmpty)
+            if !artifacts.isEmpty {
+                FlowLayout(spacing: DS.Space.sm) {
+                    ForEach(artifacts.indices, id: \.self) { index in
+                        ArtifactThumbnail(artifact: artifacts[index])
+                    }
+                }
+                .padding(DS.Space.lg)
+            }
+        }
+    }
+
+    @ViewBuilder private func output(hasArtifacts: Bool) -> some View {
         switch presentation.body {
         case .command(let command):
             // While a command runs Claude Code puts its description in the content, not output; what
@@ -19,7 +34,7 @@ struct ToolCallBody: View {
             MCPOutput(
                 rawName: rawName, input: call.mcpArguments,
                 output: ToolOutput.text(of: call) ?? ToolOutput.mcpResult(of: call),
-                phase: phase)
+                phase: phase, hasArtifacts: hasArtifacts)
         case .lines:
             if let output = ToolOutput.text(of: call) {
                 Text(verbatim: output)
@@ -113,6 +128,7 @@ private struct MCPOutput: View {
     let input: JSONValue?
     let output: String?
     let phase: ToolPhase
+    let hasArtifacts: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -130,7 +146,7 @@ private struct MCPOutput: View {
                 Text(verbatim: output)
                     .foregroundStyle(phase == .failed ? Color.dsDanger : .dsTextSecondary)
                     .monospacedOutput()
-            } else {
+            } else if !hasArtifacts {
                 Text(placeholder)
                     .foregroundStyle(phase == .failed ? Color.dsDanger : .dsTextTertiary)
                     .monospacedOutput()
@@ -178,19 +194,8 @@ private struct ContentBlockView: View {
 
     var body: some View {
         switch content {
-        case .content(.image(let data, let mimeType)):
-            if let image = Data(base64Encoded: data).flatMap(Image.init(decoding:)) {
-                image
-                    .resizable()
-                    .scaledToFit()
-                    .frame(maxHeight: TranscriptMetrics.toolImageMaxHeight, alignment: .leading)
-                    .clipShape(.rect(cornerRadius: DS.Radius.row))
-                    .padding(DS.Space.lg)
-            } else {
-                placeholder("Image (\(mimeType))", systemImage: "photo")
-            }
-        case .content(.resourceLink(let uri, let name)):
-            placeholder(name.isEmpty ? uri : name, systemImage: "link")
+        case .content(.image), .content(.resourceLink), .content(.resource), .content(.resourceBlob):
+            EmptyView()
         case .content(let block):
             if let text = block.text.map(ToolErrorMarkup.stripped) {
                 if let code = text.unfenced.map(ToolErrorMarkup.stripped) {
@@ -202,7 +207,7 @@ private struct ContentBlockView: View {
                         .font(.dsBody)
                         .padding(DS.Space.lg)
                 }
-            } else if case .resource(let uri, _) = block {
+            } else if case .resource(let uri, _, _) = block {
                 placeholder(uri, systemImage: "doc")
             } else {
                 placeholder("Unsupported content", systemImage: "questionmark.square.dashed")
@@ -255,3 +260,28 @@ private extension String {
         return lines.joined(separator: "\n")
     }
 }
+
+#if DEBUG
+#Preview("Tool output - Image and artifact") {
+    let json = """
+        {"toolCallId":"read-image","title":"Read diagram.png","kind":"read","status":"completed",
+        "content":[{"type":"content","content":{"type":"image","mimeType":"image/png",
+        "data":"\(ArtifactPreviewFixtures.imageData.base64EncodedString())"}}]}
+        """
+    return DSPreviewPair {
+        if let update = SessionModel.previewDecode(ToolCallUpdate.self, json) {
+            let call: ToolCallState? = {
+                var state = SessionState()
+                state.apply(.toolCall(update))
+                if case .toolCall(let call) = state.items.first { return call }
+                return nil
+            }()
+            if let call {
+                ToolCallBody(call: call, presentation: ToolPresentation(call), phase: .completed)
+                    .environment(\.openTranscriptArtifact, TranscriptArtifactOpener(session: nil, filesAreLocal: true))
+                    .frame(width: 440)
+            }
+        }
+    }
+}
+#endif
