@@ -28,7 +28,9 @@ extension SettingsPane {
         },
         content: {
             SettingsPage {
-                SettingsHeader("Appearance")
+                SettingsHeader(
+                    "Appearance",
+                    plainly: .init(title: "Appearance", description: "How Native looks, from its window to your code."))
                 SettingsRowGroup {
                     AppearanceModeSettingsRow()
                     LightToneSettingsRow()

@@ -76,7 +76,7 @@ private struct KeyboardShortcutsEditor: View {
                 title: "Keyboard shortcuts",
                 description: Text(
                     "Click a shortcut to record a new one; right-click for more. Tab, the arrow keys, Space and Escape work as they do everywhere on macOS."
-                )
+                ), plainly: .init(title: "Keyboard", description: "Click a shortcut to change it.")
             ) {
                 actions
             }

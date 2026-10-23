@@ -77,6 +77,8 @@ public struct NativePolicy: Equatable, Sendable {
     /// Permission mode ids (an agent's `mode` choices) users can't pick.
     public var forbiddenPermissionModes: Set<String> = []
     public var scriptsEnabled = true
+    /// Fetch the base branch before creating a task worktree. False keeps creation entirely local.
+    public var worktreeFetchEnabled = true
     public var taskScripts = TaskScripts()
     public var labsEnabled = true
     public var companionEnabled = true

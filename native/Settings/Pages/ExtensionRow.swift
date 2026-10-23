@@ -4,6 +4,7 @@ import SwiftUI
 /// One plugin on the Extensions page: what it adds, what switching it off does, and where it
 /// comes from.
 struct ExtensionRow: View {
+    @Environment(\.settingsPlainly) private var plainly
     let loaded: PluginRegistry.LoadedPlugin
     @Binding var isEnabled: Bool
 
@@ -13,15 +14,16 @@ struct ExtensionRow: View {
         SettingsRow(
             id: ExtensionsSettingsPage.rowID(manifest.id),
             title: Text(manifest.name),
+            plainly: loaded.source == .builtIn ? SettingsFeatureCopy.content(for: manifest.id) : nil,
             description: manifest.description.map(Text.init),
-            detail: Text(detailLines.joined(separator: "\n"))
+            detail: plainly && loaded.source == .builtIn ? nil : Text(detailLines.joined(separator: "\n"))
         ) {
             if let version = manifest.version {
                 Text(version)
                     .settingsText(.caption)
                     .foregroundStyle(.dsTextTertiary)
             }
-            if loaded.source == .builtIn {
+            if loaded.source == .builtIn && !plainly {
                 SettingsBadge("Built-in")
             }
         } control: {

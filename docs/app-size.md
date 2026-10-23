@@ -16,7 +16,7 @@ noticed while there's still room to choose what to cut; lower them as the cuts i
 | Download, update archive | 47 MB | 42.7 MB |
 | Download, disk image | 48 MB | about 43.3 MB |
 | Installed app | 118 MB | 107.5 MB |
-| App binary (`Contents/MacOS/Native`) | 58.7 MB | 53.2 MB |
+| App binary (`Contents/MacOS/Native`) | 59 MB | 53.2 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
 `scripts/release/size-check.sh` holds the same numbers and fails when anything is over. It also
@@ -47,14 +47,20 @@ unchanged limits.
 
 Home Next's inline questions, plan review and failure recovery add about 0.1 MB of compiled UI
 and model code. Nightly measured 58.4 MB on base `638e0771` and just over 58.5 MB on `2b6cfdb9`
-with this slice. The binary budget is 58.7 MB for that measured cost and a small margin. The
-download stays at 46.0 MB and the installed app rises from 115.1 MB to 115.3 MB, within their
+with this slice. The download stays at 46.0 MB and the installed app rises from 115.1 MB to 115.3 MB, within their
 unchanged budgets. The slice reuses the composer and error components and adds no dependencies
 or bundled assets. `NativeHomeNext` remains off by default; remove the old Home presentation
 when Next is complete, then remeasure its temporary duplication.
 
 Measurements: [base Nightly](https://github.com/binbandit/native/actions/runs/39949712258/job/120400913612)
 and [Home Next Nightly](https://github.com/binbandit/native/actions/runs/39952262729/job/120409343802).
+
+2026-10-24: the integrated worktree-creation commands and Plainly Settings build at `dde394e1`
+measures 58.6 MB for the Nightly binary, 46.1 MB downloaded and 115.4 MB installed. Earlier
+feature measurements used separate branches; their combined code now exceeds the 58.5 MB
+binary allowance. Creation hooks, captured terminal logs and their retry controls add no assets
+or dependencies. The binary budget is now 59 MB for this measured integration, with a small
+margin. The download, installed, disk-image and script-runtime budgets stay unchanged.
 
 ## Measuring
 
@@ -160,6 +166,19 @@ The runtime starts V8 with `--jitless`, so it never runs the compilers or WebAss
 without them comes out 16.2 MB smaller, since not all of their code carries their namespace. The
 ICU data is what `Intl` and localized formatting in scripts run on. "The script runtime: V8 or
 JavaScriptCore" below weighs what to do.
+
+## Plainly Settings allowance (2026-10-23)
+
+The binary budget is 58.5 MB for the Plainly Settings page-map slice (PR #92). Its base,
+`7e98b62a`, measured 57.9 MB in both Release and Nightly. The new map, grouped rows and
+New Tasks page brought the binary to about 58.1 MB. The new presentation remains behind
+a default-off switch, with the original Settings presentation still available. The slice
+adds about 0.2 MB of compiled UI and copy.
+
+This allowance covers the measured feature cost without removing settings or raising the
+47 MB download and 118 MB installed budgets. Both remain below their limits at about
+45.8 MB and 114.8 MB. Remove the legacy Settings presentation when Plainly is complete,
+then remeasure before carrying its temporary duplication forward.
 
 ## What changed
 

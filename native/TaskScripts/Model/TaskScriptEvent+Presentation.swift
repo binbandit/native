@@ -4,8 +4,27 @@ import TaskScripts
 // How Native names each event, its scripts and their sources, in Settings and in the task's log.
 // Plain strings, so they're nonisolated: a script's name goes into its output from the runner's queue.
 extension TaskScriptEvent {
+    var plainlyCopy: SettingsPlainlyCopy {
+        switch self {
+        case .beforeWorktree, .afterWorktree:
+            .init(title: title, description: summary)
+        case .setup:
+            .init(
+                title: "After the worktree is made", description: "Install dependencies here. The agent waits for it.")
+        case .taskStarted: .init(title: "When a task starts")
+        case .turnFinished: .init(title: "After each turn")
+        case .teardown:
+            .init(
+                title: "Before the worktree is removed",
+                description: "Stop servers here. A failure never blocks removal.")
+        case .taskDeleted: .init(title: "After a task is deleted")
+        }
+    }
+
     nonisolated var title: String {
         switch self {
+        case .beforeWorktree: "Before creating a worktree"
+        case .afterWorktree: "After creating a worktree"
         case .setup: "Setup"
         case .taskStarted: "Task started"
         case .turnFinished: "Turn finished"
@@ -17,6 +36,10 @@ extension TaskScriptEvent {
     /// When it runs, for Settings.
     nonisolated var summary: String {
         switch self {
+        case .beforeWorktree:
+            "Runs in the project folder before fetching the base branch and creating the task's worktree. A failure leaves the task ready to retry."
+        case .afterWorktree:
+            "Runs in the new task's worktree in the background. Its output and Retry are in the task's terminal; your first message does not wait."
         case .setup:
             "When Native makes a task's worktree, after copying its env files. The agent waits for it, so install dependencies or start services here."
         case .taskStarted: "When a task starts, in its worktree or the project's folder."
@@ -29,6 +52,8 @@ extension TaskScriptEvent {
 
     nonisolated var systemImage: String {
         switch self {
+        case .beforeWorktree: "arrow.down.to.line"
+        case .afterWorktree: "terminal"
         case .setup: "hammer"
         case .taskStarted: "play"
         case .turnFinished: "checkmark.bubble"
@@ -86,7 +111,10 @@ nonisolated enum TaskScriptTimeouts {
 /// The environment variables every script gets, for Settings' reference.
 enum TaskScriptVariables {
     static let all: [(name: String, meaning: String)] = [
-        ("NATIVE_EVENT", "setup, task-started, turn-finished, teardown or task-deleted"),
+        (
+            "NATIVE_EVENT",
+            "before-worktree, after-worktree, setup, task-started, turn-finished, teardown or task-deleted"
+        ),
         ("NATIVE_PROJECT_PATH", "The project's main checkout"),
         ("NATIVE_WORKTREE_PATH", "The task's folder, where the script runs"),
         ("NATIVE_BRANCH", "The task's branch"),

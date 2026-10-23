@@ -32,7 +32,9 @@ struct TerminalSettingsPage: View {
         @Bindable var preferences = store.preferences
         let usesGhostty = preferences.settings.usesGhosttyConfig
         SettingsPage {
-            SettingsHeader("Terminal", description: Text("Each task's terminal, opened with ⌃` in its folder."))
+            SettingsHeader(
+                "Terminal", description: Text("Each task's terminal, opened with ⌃` in its folder."),
+                plainly: .init(title: "Terminal", description: "The look and behavior of each task's terminal."))
             TerminalGhosttySection(store: store)
             SettingsRowGroup {
                 TerminalShellRow(store: store)
@@ -73,7 +75,7 @@ struct TerminalSettingsPage: View {
                     }
                     SettingsRow(
                         id: Self.scrollbackRow,
-                        "Scrollback",
+                        "Scrollback", plainly: .scrollback,
                         description: Text("Lines each terminal keeps above the screen. Applies to new terminals.")
                     ) {
                         SettingsSelect(

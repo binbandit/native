@@ -12,6 +12,7 @@ public enum PolicyKey: String, CaseIterable, Hashable, Sendable {
     case skillsBlocked = "policy.skills.blocked"
     case forbiddenPermissionModes = "policy.permissions.forbiddenModes"
     case scriptsEnabled = "policy.scripts.enabled"
+    case worktreeFetch = "policy.git.worktreeFetch"
     case taskScriptsUser = "policy.taskScripts.userScripts"
     case taskScriptsRepository = "policy.taskScripts.repositoryScripts"
     case labsEnabled = "policy.labs.enabled"

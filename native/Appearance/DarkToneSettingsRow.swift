@@ -10,8 +10,7 @@ struct DarkToneSettingsRow: View {
             id: rowID,
             title: "Dark mode",
             description: "Draw dark mode on a deep neutral, or on True Black for OLED screens.",
-            keywords: ["true black", "black", "amoled", "oled", "standard", "background", "dark"]
-        )
+            keywords: ["true black", "black", "amoled", "oled", "standard", "background", "dark"], plainly: .darkTone)
     }
 
     @AppStorage(AppearancePreferences.darkToneKey) private var darkTone = DSDarkTone.standard
@@ -23,7 +22,7 @@ struct DarkToneSettingsRow: View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             SettingsRow(
                 id: Self.rowID,
-                "Dark mode",
+                "Dark mode", plainly: .darkTone,
                 description: Text(
                     "Draw dark mode on Standard, a deep neutral, or on True Black, pure black for OLED screens.")
             ) {

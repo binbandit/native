@@ -1,5 +1,6 @@
 import Foundation
 import Git
+import NativePolicy
 import Observation
 
 #if os(macOS)
@@ -23,6 +24,8 @@ final class GitStore {
     /// Told about each task worktree Native makes, once its env files are copied, so its setup
     /// scripts can start. Set by the app's wiring so Git doesn't know who runs them.
     @ObservationIgnored var onTaskWorktreeCreated: (@MainActor (GitTaskWorktree) -> Void)?
+    @ObservationIgnored var beforeCreatingTaskWorktree: (@MainActor (GitTaskWorktree) async throws -> Void)?
+    @ObservationIgnored var allowsWorktreeFetch: () -> Bool = { PolicyCenter.shared.policy.worktreeFetchEnabled }
     /// Awaited before Native removes a task worktree, for its teardown scripts. It never stops the
     /// removal.
     @ObservationIgnored var beforeRemovingTaskWorktree: (@MainActor (GitTaskWorktree) async -> Void)?
@@ -124,11 +127,18 @@ final class GitStore {
     // MARK: - Task worktrees
 
     /// Gives a new task its own worktree of the repository at `folder`, on a new branch from its
-    /// current HEAD, and returns the worktree's folder to run the session in.
+    /// latest remote base when available, and returns its folder to run the task in.
     func createTaskWorktree(in folder: URL, title: String, branchPrefix: String = "") async throws -> URL {
         let repository = try await requireRepository(at: folder)
+        let main = try await repository.worktrees().first(where: \.isMain)?.path ?? repository.root
+        try await beforeCreatingTaskWorktree?(GitTaskWorktree(folder: repository.root, projectRoot: main, branch: nil))
+        let base = try await repository.taskWorktreeBase(fetchRemote: allowsWorktreeFetch())
         let worktree = try await repository.createWorktree(
-            forTask: title, branchPrefix: branchPrefix, in: worktreesBase(of: repository))
+            forTask: title, branchPrefix: branchPrefix, startPoint: base.commit, in: worktreesBase(of: repository))
+        if let branch = worktree.branch {
+            _ = try await setUp(
+                worktree, of: repository, branch: branch, baseBranch: base.branch, baseNotice: base.localNotice)
+        }
         return worktree.path
     }
 

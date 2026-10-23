@@ -25,10 +25,15 @@ enum TaskScriptsWiring {
         center.removeScratchWorktree = { [weak git] folder in
             await git?.removeScratchWorktree(at: folder)
         }
+        git.beforeCreatingTaskWorktree = { [weak center] worktree in
+            try await center?.beforeWorktree(
+                folder: worktree.folder, projectRoot: worktree.projectRoot, branch: worktree.branch)
+        }
         git.onTaskWorktreeCreated = { [weak center] worktree in
             center?.worktreeCreated(
                 folder: worktree.folder, projectRoot: worktree.projectRoot, branch: worktree.branch,
-                baseBranch: worktree.baseBranch, copiedFiles: worktree.copiedFiles, copyFailure: worktree.copyFailure)
+                baseBranch: worktree.baseBranch, copiedFiles: worktree.copiedFiles, copyFailure: worktree.copyFailure,
+                baseNotice: worktree.baseNotice)
         }
         git.beforeRemovingTaskWorktree = { [weak center] worktree in
             await center?.teardown(folder: worktree.folder, projectRoot: worktree.projectRoot, branch: worktree.branch)

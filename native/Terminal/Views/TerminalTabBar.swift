@@ -7,6 +7,7 @@ struct TerminalTabBar: View {
     let panel: TerminalPanelModel
     /// False when the terminal isn't available, leaving just the hide button.
     let showsTabs: Bool
+    var canAddTab = true
 
     var body: some View {
         HStack(spacing: DS.Space.xs) {
@@ -29,6 +30,7 @@ struct TerminalTabBar: View {
                 .scrollIndicators(.never)
                 .fixedSize(horizontal: false, vertical: true)
                 IconButton("New Terminal Tab", systemImage: "plus") { panel.newTab() }
+                    .disabled(!canAddTab)
             } else {
                 Text("Terminal")
                     .font(.dsBodyMedium)
@@ -163,6 +165,17 @@ private struct TerminalTabCloseButton: View {
                 .background(.dsSurfaceSunken)
         }
         .frame(width: 640)
+    }
+}
+#endif
+
+#if DEBUG
+#Preview("Terminal tabs - Background worktree command") {
+    let panel = TerminalPanelModel(workingDirectory: URL(filePath: "/work/task"), engine: { nil })
+    panel.attach(TerminalLogPreviewFixtures.running)
+    return DSPreviewPair {
+        TerminalTabBar(panel: panel, showsTabs: true, canAddTab: false)
+            .frame(width: 640)
     }
 }
 #endif

@@ -19,11 +19,11 @@ extension SettingsPane {
             TaskScriptEvent.allCases.map {
                 SettingsSearchEntry(
                     id: TaskScriptsSettingsPage.row($0), title: "\($0.title) script", description: $0.summary,
-                    keywords: ["script", "hook"])
+                    keywords: ["script", "hook"], plainly: $0.plainlyCopy)
             } + [
                 SettingsSearchEntry(
                     id: TaskScriptsSettingsPage.variablesRow, title: "Script environment variables",
-                    keywords: ["NATIVE_WORKTREE_PATH", "env"])
+                    keywords: ["NATIVE_WORKTREE_PATH", "env"], plainly: .init(title: "Variables"))
             ]
         },
         content: { TaskScriptsSettingsPage() }
@@ -53,11 +53,12 @@ struct TaskScriptsSettingsPage: View {
                 "Scripts",
                 description: Text(
                     "Your own commands, run with your shell in a task's folder: when Native makes its worktree, when it starts, after each turn, before its worktree is removed and once it's deleted."
-                ))
+                ), plainly: .init(title: "Scripts", description: "Your commands, run at each stage of a task's work."))
             SettingsRowGroup {
                 ForEach(TaskScriptEvent.allCases) { event in
                     SettingsRow(
-                        id: Self.row(event), event.title, description: Text(event.summary), detail: detail(event)
+                        id: Self.row(event), event.title, plainly: event.plainlyCopy, description: Text(event.summary),
+                        detail: detail(event)
                     ) {
                         Button(settings.script(for: event).isEmpty ? "Add…" : "Edit…") {
                             editing = .init(event: event, scope: .global)

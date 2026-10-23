@@ -13,8 +13,10 @@ struct SettingsSearchIndex {
         let title: String
         let description: String
         let keywords: [String]
+        var scopeName: String?
 
         var id: String { "\(paneID.rawValue)/\(rowID?.rawValue ?? "")" }
+        var location: String { [paneTitle, scopeName].compactMap { $0 }.joined(separator: " ▸ ") }
     }
 
     struct Result: Identifiable {
@@ -38,7 +40,8 @@ struct SettingsSearchIndex {
                 + pane.searchEntries().map { entry in
                     Item(
                         paneID: pane.id, paneTitle: pane.title, systemImage: pane.systemImage, rowID: entry.id,
-                        title: entry.title, description: entry.description, keywords: entry.keywords)
+                        title: entry.title, description: entry.description, keywords: entry.keywords,
+                        scopeName: entry.scopeName)
                 }
         }
     }

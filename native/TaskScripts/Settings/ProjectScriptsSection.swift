@@ -8,6 +8,8 @@ import TaskScripts
 ///
 ///     ProjectScriptsSection(projectRoot: project.url)
 struct ProjectScriptsSection: View {
+    @Environment(\.settingsPlainly) private var plainly
+    @Environment(SettingsPresentation.self) private var presentation
     /// The project's main checkout.
     let projectRoot: URL
 
@@ -20,8 +22,17 @@ struct ProjectScriptsSection: View {
             SettingsSubheading(
                 "Scripts",
                 note:
-                    "Commands this project's tasks run, after the global ones in Settings ▸ Scripts or instead of them. A repository can commit its own as .native/<event>.sh."
+                    "Commands this project's tasks run, after the global ones in Settings ▸ Scripts or instead of them. A repository can commit its own as .native/<event>.sh.",
+                plainly: .init(
+                    title: "Scripts",
+                    description:
+                        "Runs after the scripts for every project, or instead of them. A repository can commit its own as .native/<moment>.sh."
+                )
             )
+            if plainly {
+                Button("Scripts for Every Project…") { presentation.open(.scripts) }
+                    .buttonStyle(.settings)
+            }
             SettingsRowGroup {
                 SettingsRow(
                     "Run scripts from the repo", description: Text(repositoryDescription)
@@ -47,7 +58,9 @@ struct ProjectScriptsSection: View {
     private func row(_ event: TaskScriptEvent) -> some View {
         let source = source(of: event)
         return SettingsRow(
-            title: Text(event.title), description: Text(effect(of: event, source: source))
+            title: Text(event.title),
+            plainly: .init(title: event.plainlyCopy.title, preservesDescription: true),
+            description: Text(effect(of: event, source: source))
         ) {
             if let source, source != .global {
                 SettingsBadge(source.label, systemImage: source == .repository ? "arrow.down.doc" : nil)
@@ -115,5 +128,15 @@ struct ProjectScriptsSection: View {
             .settingsPreviewPage()
     }
     .environment(TaskScriptsPreviewFixtures.settings())
+}
+#endif
+
+#if DEBUG
+#Preview("Project scripts - Worktree commands") {
+    DSPreviewPair {
+        ProjectScriptsSection(projectRoot: TaskScriptWorktreePreviewFixtures.project)
+            .settingsPreviewPage()
+    }
+    .environment(TaskScriptWorktreePreviewFixtures.settings())
 }
 #endif
