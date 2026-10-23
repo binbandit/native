@@ -181,6 +181,7 @@ final class SessionModel {
     /// Questions the agent is waiting on (`elicitation/create`), oldest first; see
     /// SessionModel+Questions.
     var questions: [PendingQuestion] = []
+    @ObservationIgnored var questionsBeingAnswered: Set<RequestID> = []
     /// While a hidden command runs: the session takes no new turn, but its phase stays idle.
     var isRunningHiddenCommand = false
     @ObservationIgnored var hiddenCommand: HiddenCommandCapture?

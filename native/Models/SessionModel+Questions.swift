@@ -45,16 +45,35 @@ extension SessionModel {
     }
 
     private func respondToQuestion(_ response: CreateElicitationResponse) async {
-        guard !questions.isEmpty else { return }
-        let question = questions.removeFirst()
+        guard let question = pendingQuestion else { return }
+        do {
+            try await respondToQuestion(response, for: question.id)
+        } catch {
+            state.appendNotice("Couldn't send your answer: \(error.localizedDescription)", isError: true)
+        }
+    }
+
+    /// An answer belongs to the request that was displayed, even when another client answers first.
+    func respondToQuestion(_ response: CreateElicitationResponse, for requestID: RequestID) async throws {
+        guard let question = pendingQuestion, question.id == requestID,
+            questionsBeingAnswered.insert(requestID).inserted
+        else { throw SendError.busy }
+        defer { questionsBeingAnswered.remove(requestID) }
         do {
             if host != nil {
                 try await respondOnHost(to: question, with: response)
+            } else if let connection {
+                try await connection.respond(to: question.id, with: response)
             } else {
-                try await connection?.respond(to: question.id, with: response)
+                throw SendError.disconnected
             }
+            questions.removeAll { $0.id == requestID }
         } catch {
-            state.appendNotice("Couldn’t send your answer: \(error.localizedDescription)", isError: true)
+            if host != nil, case .string(let id) = requestID {
+                answeredQuestions.remove(id)
+                mirrorHostQuestions()
+            }
+            throw error
         }
     }
 }

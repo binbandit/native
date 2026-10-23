@@ -8,7 +8,7 @@ struct HomeNextReceiptView: View {
     var body: some View {
         HStack(spacing: DS.Space.md) {
             Image(systemName: "checkmark").foregroundStyle(.dsTextTertiary)
-            Text("\(receipt.rejected ? "Rejected" : "Allowed") \(receipt.command) in \(receipt.title).")
+            Text("\(receipt.action) in \(receipt.title).")
                 .lineLimit(1).truncationMode(.middle)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Button("Open Task", action: openTask).buttonStyle(.plain).foregroundStyle(.dsTextPrimary)
@@ -19,7 +19,7 @@ struct HomeNextReceiptView: View {
         .frame(minHeight: DS.HomeNext.finishedHeight)
         .background(.dsHover, in: RoundedRectangle(cornerRadius: DS.Radius.card))
         .padding(.horizontal, -DS.Space.lg)
-        .help("\(receipt.rejected ? "Rejected" : "Allowed") \(receipt.command) in \(receipt.title).")
+        .help("\(receipt.action) in \(receipt.title).")
         .accessibilityIdentifier("home-next-receipt")
     }
 }
@@ -32,8 +32,8 @@ struct HomeNextReceiptView: View {
                 HomeNextReceiptView(
                     receipt: HomeNextReceipt(
                         task: SessionKey(agent: .init(rawValue: "codex"), id: .init("fixture")),
-                        title: "Fix flaky PermissionRequestTests", command: "swift test",
-                        rejected: rejected, date: .now), openTask: {})
+                        title: "Fix flaky PermissionRequestTests",
+                        action: rejected ? "Rejected swift test" : "Allowed swift test", date: .now), openTask: {})
             }
         }.padding(DS.Space.xxl).frame(width: DS.HomeNext.column)
     }

@@ -296,6 +296,11 @@ the usual permission keys: Cmd-Y allows once, Option-Cmd-Y always allows when of
 Shift-Cmd-Delete rejects. Tab and Space reach Up next, Open Task, the ordering menu, and Show
 more. Cmd-Return opens the current ask's task; Shift-Cmd-Down shows the next five rows.
 Cmd-N starts a task and Cmd-O opens a folder, including before the first project exists.
+The current question uses the composer's question keys: 1-9 pick an offered choice, Return
+sends, and typing in the answer field keeps digits as text. Plans use Cmd-Y to approve,
+Shift-Cmd-Delete to request a revised plan.
+Option-Cmd-Down expands the remaining plan steps. A failed task uses Cmd-R to retry and
+Option-Cmd-O to show its error output. Cmd-Return opens the task for every ask kind.
 
 ## Task tools (Labs)
 

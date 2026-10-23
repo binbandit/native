@@ -6,6 +6,7 @@ import SwiftUI
 enum HomeNextPreviewFixtures {
     enum State: String {
         case busy, quiet, first, empty, loading, recovery, narrow
+        case question, questionText, questions, questionFailure, plan, planText, failure
     }
 
     static var requested: State? {
@@ -34,15 +35,30 @@ enum HomeNextPreviewFixtures {
         ]
         let count = state == .quiet ? 10 : (state == .empty || state == .loading) ? 0 : state == .recovery ? 1 : 5
         for index in 0..<count {
+            let titleIndex: Int
+            switch fixtureKind(state, index: index) {
+            case .question, .questionText, .questions, .questionFailure: titleIndex = 1
+            case .plan, .planText: titleIndex = 2
+            case .failure: titleIndex = 3
+            default: titleIndex = index
+            }
             let title =
                 state == .narrow && index == 0
-                ? "Fix flaky PermissionRequestTests when approvals arrive while the host reconnects" : titles[index]
+                ? "Fix flaky PermissionRequestTests when approvals arrive while the host reconnects"
+                : titles[titleIndex]
+            let kind = fixtureKind(state, index: index)
+            let agent =
+                [State.question, .questionText, .questions, .questionFailure, .plan, .planText].contains(kind)
+                ? "claude-code" : "codex"
             let id = "home-next-\(index)"
             let date = Date.now.addingTimeInterval(-Double(52 - index * 8) * 60)
             app.catalog.add(
                 SessionInfo(sessionId: SessionID(id), cwd: project.path, title: title, updatedAt: date),
-                for: AgentDefinition.ID(rawValue: "codex"), in: project.id)
-            guard let session = SessionModel.preview(in: app, agent: "codex", id: id, cwd: project.path, title: title)
+                for: AgentDefinition.ID(rawValue: agent), in: project.id)
+            guard
+                let session = fixtureSession(
+                    in: app, agent: agent, id: id, cwd: project.path, title: title,
+                    failsAnswer: kind == .questionFailure)
             else { continue }
             if state == .quiet {
                 session.previewExchange(
@@ -51,14 +67,109 @@ enum HomeNextPreviewFixtures {
                 session.phase = .disconnected
             } else {
                 session.previewRunningTurn(title)
-                permission(
-                    session,
-                    command: index == 0
-                        ? "swift test --filter PermissionRequestTests" : "swift test --filter TaskListTests",
-                    date: date)
+                switch kind {
+                case .question, .questionText, .questions, .questionFailure:
+                    question(session, kind: kind)
+                case .plan, .planText:
+                    plan(session, includesSteps: kind == .plan, date: date)
+                case .failure:
+                    session.state.endTurn(.error)
+                    session.state.apply(
+                        .userMessageChunk(ContentChunk(content: .text(RecoveryPrompt(reason: .agentStopped).text))))
+                    session.state.appendNotice("Codex exited (signal 9) while the build was linking.", isError: true)
+                    session.state.endTurn(.error)
+                    session.phase = .idle
+                    session.lastStopReason = .error
+                case .quiet:
+                    break
+                default:
+                    permission(session, command: "swift test --filter PermissionRequestTests", date: date)
+                }
+                session.lastActivity = date
             }
         }
         return app
+    }
+
+    private static func fixtureSession(
+        in app: AppModel, agent: String, id: String, cwd: String, title: String, failsAnswer: Bool
+    ) -> SessionModel? {
+        guard failsAnswer else { return SessionModel.preview(in: app, agent: agent, id: id, cwd: cwd, title: title) }
+        guard let definition = app.runtime(AgentDefinition.ID(rawValue: agent))?.agent,
+            let readOnly = FileHandle(forReadingAtPath: "/dev/null")
+        else { return nil }
+        // A read-only sink makes answering fail without starting a process or touching project data.
+        let connection = ACPConnection(reading: .nullDevice, writing: readOnly) { _ in }
+        let session = SessionModel(
+            agent: definition, id: SessionID(id), cwd: URL(filePath: cwd), connection: connection,
+            services: app.sessions.services, supportsSteering: false, phase: .idle, title: title)
+        app.sessions.register(session)
+        return session
+    }
+
+    private static func fixtureKind(_ state: State, index: Int) -> State {
+        let sequence: [State] = [.busy, .question, .plan, .failure, .quiet]
+        let start: Int
+        switch state {
+        case .question, .questionText, .questions, .questionFailure: start = 1
+        case .plan, .planText: start = 2
+        case .failure: start = 3
+        default: start = 0
+        }
+        if index == 0 && start > 0 { return state }
+        return sequence[min(start + index, sequence.count - 1)]
+    }
+
+    private static func question(_ session: SessionModel, kind: State) {
+        let schema: String
+        if kind == .questions, let questionnaire = AgentQuestionnaire.preview {
+            // The composer's multi-question fixture uses the same wire schema.
+            let fields = questionnaire.questions.map { question in
+                "\"\(question.key)\":{\"type\":\"string\",\"description\":\"\(question.prompt)\"}"
+            }.joined(separator: ",")
+            schema = "{\"type\":\"object\",\"properties\":{\(fields)}}"
+        } else if kind == .questionText {
+            schema = #"{"type":"object","properties":{"answer":{"type":"string"}}}"#
+        } else {
+            schema =
+                #"{"type":"object","properties":{"size":{"type":"string","title":"Thumbnail sizes","oneOf":[{"const":"both","title":"1x and 2x","description":"Sharp on Retina screens. About 1.4 GB more storage at today's library size."},{"const":"single","title":"Only 1x","description":"Today's behavior. Thumbnails look soft on Retina screens."}]},"size_custom":{"type":"string"}}}"#
+        }
+        let json = """
+            {"sessionId":"\(session.id.rawValue)","mode":"form","message":"Should thumbnails cover 2x sizes too, or only 1x?","requestedSchema":\(schema)}
+            """
+        guard let request = SessionModel.previewDecode(CreateElicitationRequest.self, json) else { return }
+        session.requestQuestion(request, id: kind == .questionFailure ? .string("unavailable") : .int(2))
+    }
+
+    private static func plan(_ session: SessionModel, includesSteps: Bool, date: Date) {
+        if includesSteps {
+            let steps = [
+                "Create Packages/DesignSystem with one library target, and move Tokens, Fonts and Brand into it.",
+                "Move Components, Patterns and Status, making the types features use public.",
+                "Load Geist through Bundle.module, keeping the fallback to the system font.",
+                "Point the app at the package and remove the moved files from native.xcodeproj.",
+                "Keep the Gallery as a preview target, and move its fixtures into the package's tests.",
+                "Build the Mac app and typecheck the shared views for iPadOS.",
+                "Run the package tests and compare the Gallery in light and dark.",
+            ]
+            let entries = steps.compactMap { step -> PlanEntry? in
+                guard
+                    let data = try? JSONEncoder().encode(["content": step, "priority": "medium", "status": "pending"])
+                else { return nil }
+                return try? JSONDecoder().decode(PlanEntry.self, from: data)
+            }
+            session.state.apply(.plan(entries))
+        }
+        let json = """
+            {"sessionId":"\(session.id.rawValue)","toolCall":{
+            "toolCallId":"plan-\(session.id.rawValue)","title":"Move DesignSystem into a package","kind":"switch_mode",
+            "status":"pending","rawInput":{"plan":"Move the shared views into Packages/DesignSystem, then build both clients."}},
+            "options":[{"optionId":"revise","name":"Revise","kind":"reject_once"},
+            {"optionId":"approve","name":"Approve Plan","kind":"allow_once"}]}
+            """
+        guard let request = SessionModel.previewDecode(RequestPermissionRequest.self, json) else { return }
+        session.state.apply(.toolCall(request.toolCall), at: date)
+        session.state.requestPermission(request, id: .int(3))
     }
 
     private static func permission(_ session: SessionModel, command: String, date: Date) {
@@ -75,11 +186,12 @@ enum HomeNextPreviewFixtures {
         session.state.requestPermission(request, id: .int(1))
     }
 
-    static func page(_ state: State) -> some View {
+    static func page(_ state: State, narrow: Bool = false) -> some View {
         DSPreviewPair {
             HomeNextFixtureView(state: state)
                 .environment(SettingsPresentation())
-                .frame(width: state == .narrow ? DS.Size.popoverWidth : DS.HomeNext.column + DS.Space.xxxl * 2)
+                .frame(
+                    width: (narrow || state == .narrow) ? DS.Size.popoverWidth : DS.HomeNext.column + DS.Space.xxxl * 2)
         }
     }
 }

@@ -14,16 +14,18 @@ import SwiftUI
 /// `.inline` sits in a list or above the composer (a `NoticeBanner`); `.pane` fills an empty pane.
 public struct ErrorState: View {
     public enum Layout: Sendable {
-        case inline, pane
+        case inline, pane, reading
     }
 
     /// A button the error offers.
     public struct Action {
         let title: String
         let perform: () -> Void
+        let shortcut: KeyboardShortcut?
 
-        public init(_ title: String, perform: @escaping () -> Void) {
+        public init(_ title: String, shortcut: KeyboardShortcut? = nil, perform: @escaping () -> Void) {
             self.title = title
+            self.shortcut = shortcut
             self.perform = perform
         }
     }
@@ -80,6 +82,29 @@ public struct ErrorState: View {
                         .padding(.top, DS.Space.xs)
                 }
             }
+        case .reading:
+            VStack(alignment: .leading, spacing: 0) {
+                Text(title).font(.dsCalloutMedium).foregroundStyle(.dsTextPrimary)
+                if let explanation {
+                    Text(explanation).font(.dsBody).foregroundStyle(.dsTextSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, DS.Space.xs)
+                }
+                if let details {
+                    detailsView(
+                        isShowingDetails
+                            ? details : details.components(separatedBy: .newlines).prefix(3).joined(separator: "\n")
+                    )
+                    .padding(.top, DS.Space.lg)
+                }
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: DS.Space.md) {
+                        Spacer(minLength: 0); buttons
+                    }
+                    VStack(alignment: .leading, spacing: DS.Space.md) { buttons }
+                }
+                .padding(.top, DS.Space.lg)
+            }
         case .pane:
             VStack(spacing: DS.Space.md) {
                 Image(systemName: "exclamationmark.octagon")
@@ -114,18 +139,25 @@ public struct ErrorState: View {
 
     @ViewBuilder private var buttons: some View {
         if details != nil {
-            Button(isShowingDetails ? "Hide Details" : "Show Details") {
+            Button(
+                isShowingDetails
+                    ? (layout == .reading ? "Hide Output" : "Hide Details")
+                    : (layout == .reading ? "Show Output" : "Show Details")
+            ) {
                 withAnimation(.dsDisclosure) { isShowingDetails.toggle() }
             }
             .buttonStyle(.ds(.ghost))
+            .keyboardShortcut(layout == .reading ? KeyboardShortcut("o", modifiers: [.command, .option]) : nil)
         }
         if let secondary {
             Button(secondary.title, action: secondary.perform)
                 .buttonStyle(.ds(.secondary))
+                .keyboardShortcut(secondary.shortcut)
         }
         if let primary {
             Button(primary.title, action: primary.perform)
                 .buttonStyle(.ds(.primary))
+                .keyboardShortcut(primary.shortcut)
         }
     }
 
@@ -170,3 +202,16 @@ public struct ErrorState: View {
         .frame(width: 560)
     }
 }
+
+#if DEBUG
+#Preview("Error state - Reading column") {
+    DSPreviewPair {
+        ErrorState(
+            "Codex stopped before finishing", recovery: "Native kept the task's conversation.",
+            details: "The build stopped while linking.", primary: .init("Retry") {},
+            secondary: .init("Open Task") {}, layout: .reading
+        )
+        .padding(DS.Space.xl).frame(width: DS.HomeNext.column)
+    }
+}
+#endif

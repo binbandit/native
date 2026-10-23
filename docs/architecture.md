@@ -168,15 +168,26 @@ The sidebar owns the shared status signal; Home currently uses `StatusIndicator`
 `HomeAskOrder` in `Packages/TaskList` puts approvals before questions, plans, and failures,
 oldest within each kind. The ask being read stays put when another arrives. Answering uses the
 exact `SessionModel` and tool-call request displayed, including subagent requests. Home records
-a receipt and advances when the model removes the permission. Questions, plans and failures
-open their task until the next slice adds their inline answers. Finished today includes tasks
+a receipt and advances when the model acknowledges an answer. Questions embed the composer's
+`AgentQuestionSection`, with the same digit keys, multiple-question paging and free text. Plan
+permissions embed `ComposerPlanSection` in its numbered review presentation (first five steps,
+then Show more), with Approve Plan and Revise from the shared permission buttons. Agents without
+structured plan entries keep the existing tool-call presentation of their proposal.
+
+Failures use `ErrorState` in its reading layout: what happened, recorded recovery from the current
+turn, error output, Retry and Open Task. `TurnFailureContext` in ACP keeps earlier turns' errors
+and recovery out of this explanation. Retry asks the existing session to check completed work and
+continue, preserving the draft; a disconnected in-process agent instead opens its task to reconnect.
+Home retains the exact question or permission on screen, including subagent asks. An answer that
+cannot reach the host stays on screen with its error and no success receipt. Finished today includes tasks
 with a known successful turn completion today, five at a time; unknown history is not called done.
 On Home, the sidebar's asks should fold to their title when the new sidebar lands.
 
 For isolated Debug checks, enable the gate with Settings > Labs > Next or
 `defaults write dev.binbandit.native.dev.<name> experiment.NativeHomeNext -bool YES`, then launch
 with `-nativeHomeNextFixture busy` for inert preview models. Other fixture values are `quiet`,
-`first`, `empty`, `loading`, `recovery`, and `narrow`.
+`first`, `empty`, `loading`, `recovery`, `narrow`, `question`, `questionText`, `questions`,
+`plan`, `planText`, `failure`, and `questionFailure` (a read-only sink exercises answer delivery failure).
 The fixture is absent from Release and Nightly and never opens an agent or writes project data.
 
 New UIs, designs and behaviors ship as opt-in experiments first (see "Experiments behind flags" in
