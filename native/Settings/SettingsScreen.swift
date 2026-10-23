@@ -157,7 +157,10 @@ struct SettingsScreen: View {
         .background(.dsBackground)
         .dsToolbarBand(showsDivider: isScrolled)
         // Each page starts at the top, with its own scroller.
-        .onChange(of: selectedPane?.id) { isScrolled = false }
+        .onChange(of: selectedPane?.id) {
+            isScrolled = false
+            scrollPosition = ScrollPosition()
+        }
         .task(id: pane) {
             if plainly, let pane, SettingsPageMap.destination(pane) != pane {
                 reveal = SettingsReveal(rowID: SettingsPageMap.sectionID(pane))

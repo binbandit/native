@@ -102,6 +102,9 @@ struct CelebrationRow: View {
     }
 
     private var accessibleDates: String {
+        guard ready else {
+            return event.dateStatus(on: center.today) == .resolvable ? "artwork coming" : "dates coming"
+        }
         guard let occurrence else { return "dates coming" }
         if showing {
             return "showing now until \(CelebrationDates.accessible(CivilDayRange(day: occurrence.display.last)))"
