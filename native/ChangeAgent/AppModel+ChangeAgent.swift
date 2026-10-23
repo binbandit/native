@@ -97,6 +97,11 @@ extension AppModel {
                 throw AgentChangeFailure("The new agent is still getting ready. Wait a moment, then try again.")
             }
         }
+        // Publishing marks a send attempt. A lost reply is not proof that nothing arrived,
+        // so wait for transcript evidence instead of sending a second handoff on retry.
+        guard deletedSessions.contains(target.key) || target.hasStarted else {
+            throw AgentChangeFailure.unconfirmedHandoff
+        }
         // Publish before sending so a quit or dropped reply can never hide work that reached
         // the new agent. Cancel removes an unused candidate; an accepted one stays recoverable.
         titles.rename(target.titleKey, to: source.displayTitle)
@@ -111,7 +116,7 @@ extension AppModel {
             do {
                 _ = try await target.submit(handoff, .queue)
             } catch {
-                guard target.hasStarted else { throw error }
+                guard target.hasStarted else { throw AgentChangeFailure.unconfirmedHandoff }
             }
         }
         earlierConversations.record(target.key, after: source.key)
@@ -127,7 +132,9 @@ extension AppModel {
     }
 
     func discardAgentChange(_ candidate: SessionModel) {
-        guard !candidate.hasStarted else { return }
+        // Only a candidate that never attempted a send can be hidden safely. Published
+        // candidates stay openable even when the host has not confirmed their first turn.
+        guard !candidate.hasStarted, deletedSessions.contains(candidate.key) else { return }
         deletedSessions.insert(candidate.key)
         unsentSessions.forget(candidate.key)
         catalog.remove(candidate.key)
@@ -143,6 +150,9 @@ extension AppModel {
 }
 
 private struct AgentChangeFailure: LocalizedError {
+    static let unconfirmedHandoff = AgentChangeFailure(
+        "Couldn't confirm whether the new agent received the handoff. Cancel and check the new task before sending again."
+    )
     let message: String
     init(_ message: String) { self.message = message }
     var errorDescription: String? { message }
