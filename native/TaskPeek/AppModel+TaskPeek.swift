@@ -9,8 +9,12 @@ extension AppModel {
     }
 
     func taskAsks(for key: SessionKey) -> [TaskPeekAsk] {
-        guard taskIsReachable(key), let session = session(key) else { return [] }
+        guard taskIsAvailable(key), taskIsReachable(key), let session = session(key) else { return [] }
         return TaskPeekAsk.requests(in: session, task: key)
+    }
+
+    func taskIsAvailable(_ key: SessionKey) -> Bool {
+        catalog.contains(key) && !pendingDeletionKeys.contains(key)
     }
 
     func taskIsReachable(_ key: SessionKey) -> Bool {
@@ -19,7 +23,7 @@ extension AppModel {
     }
 
     func peekTask(_ key: SessionKey, ask: TaskPeekAsk? = nil) {
-        guard offersTaskPeek, catalog.contains(key) else { return }
+        guard offersTaskPeek, taskIsAvailable(key) else { return }
         taskPeek.request = .init(task: key, ask: ask ?? taskAsks(for: key).first)
         Task { await loadSession(key) }
     }
@@ -43,7 +47,8 @@ extension AppModel {
     }
 
     func answerTaskAsk(_ ask: TaskPeekAsk, option: PermissionOption) async {
-        guard !taskPeek.isAnswering, taskIsReachable(ask.task), session(ask.session.key) === ask.session, ask.isCurrent,
+        guard !taskPeek.isAnswering, taskIsAvailable(ask.task), taskIsReachable(ask.task),
+            session(ask.session.key) === ask.session, ask.isCurrent,
             case .permission(let call) = ask.content, call.permission?.options.contains(option) == true
         else { return }
         taskPeek.isAnswering = true
@@ -53,7 +58,8 @@ extension AppModel {
     }
 
     func answerTaskQuestion(_ ask: TaskPeekAsk, content: [String: JSONValue]?) async {
-        guard !taskPeek.isAnswering, taskIsReachable(ask.task), session(ask.session.key) === ask.session, ask.isCurrent,
+        guard !taskPeek.isAnswering, taskIsAvailable(ask.task), taskIsReachable(ask.task),
+            session(ask.session.key) === ask.session, ask.isCurrent,
             case .question = ask.content
         else { return }
         taskPeek.isAnswering = true
@@ -64,7 +70,8 @@ extension AppModel {
 
     /// Recovery uses the same host/agent lifecycle as the task screen and leaves the current task alone.
     func recoverPeekedTask(_ key: SessionKey) async {
-        guard taskIsReachable(key), let session = session(key), session.taskStatus == .failed else { return }
+        guard taskIsAvailable(key), taskIsReachable(key), let session = session(key), session.taskStatus == .failed
+        else { return }
         let presentation = taskPeek.request?.id
         if session.phase == .disconnected, session.host == nil {
             await restart(key.agent)

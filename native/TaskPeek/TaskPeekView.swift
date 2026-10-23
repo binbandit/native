@@ -90,7 +90,7 @@ struct TaskPeekView: View {
     }
 
     @ViewBuilder private var moment: some View {
-        if !model.catalog.contains(request.task) {
+        if !model.taskIsAvailable(request.task) {
             notice("This task is no longer available", detail: "It may have been deleted from another window.")
         } else if !model.taskIsReachable(request.task) {
             notice("This host is offline", detail: "The task and its ask are kept. Reconnect the host to answer.")
