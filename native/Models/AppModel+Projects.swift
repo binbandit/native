@@ -3,8 +3,12 @@ import Foundation
 // The projects in the sidebar: adding, focusing, removing (with undo) and reordering them.
 extension AppModel {
     /// Opens a folder as a project, or finds it if it's open already, and lists its sessions.
-    @discardableResult
-    func addProject(_ url: URL, focus: Bool = true) async -> Project {
+    func addProject(_ url: URL) async {
+        _ = await addProject(url, focus: true)
+    }
+
+    /// Quick Entry adds a folder without replacing the task behind its panel.
+    func addProject(_ url: URL, focus: Bool) async -> Project {
         let project = projects.add(url)
         if focus { focusProject(project.id) }
         // Agents that are parked list it once they've started (starting lists every project).
