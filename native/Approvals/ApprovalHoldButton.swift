@@ -33,7 +33,8 @@ struct ApprovalHoldButton: View {
         }
         .buttonStyle(
             ApprovalActionStyle(
-                primary: true, sweepProgress: reduceMotion || forceReducedMotion || allowed ? nil : progress,
+                primary: true, acknowledgesCompletion: allowed,
+                sweepProgress: reduceMotion || forceReducedMotion || allowed ? nil : progress,
                 pressing: pressed)
         )
         .accessibilityLabel(allowed ? "Allowed" : confirming ? "Confirm Allow" : "Allow, can't be undone")
