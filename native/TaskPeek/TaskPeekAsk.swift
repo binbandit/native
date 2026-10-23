@@ -5,6 +5,7 @@ import Foundation
 /// but is answered on the child. Capturing the request prevents a late click answering its successor.
 struct TaskPeekAsk: Identifiable {
     struct ID: Hashable {
+        let task: SessionKey
         let session: SessionKey
         let request: RequestID
         let tool: String?
@@ -42,14 +43,15 @@ struct TaskPeekAsk: Identifiable {
             guard let permission = call.permission else { return nil }
             return Self(
                 task: task, session: session, content: .permission(call),
-                id: ID(session: session.key, request: permission.requestID, tool: call.id),
+                id: ID(task: task, session: session.key, request: permission.requestID, tool: call.id),
                 since: permission.requestedAt)
         }
         if let question = session.pendingQuestion {
             result.append(
                 Self(
                     task: task, session: session, content: .question(question),
-                    id: ID(session: session.key, request: question.id, tool: nil), since: question.requestedAt))
+                    id: ID(task: task, session: session.key, request: question.id, tool: nil),
+                    since: question.requestedAt))
         }
         for child in session.children.values.sorted(by: { $0.id.rawValue < $1.id.rawValue }) {
             result += requests(in: child, task: task)

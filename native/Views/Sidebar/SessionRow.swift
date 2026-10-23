@@ -13,6 +13,7 @@ struct SessionRow<Accessory: View>: View {
     @Environment(\.sidebarSelection) private var picking
     @Environment(\.sidebarTaskInsights) private var insights
     @Environment(\.sidebarAllInView) private var isAllInView
+    @Environment(\.oldestTaskAskID) private var oldestAskID
     let summary: SessionSummary
     /// Grouped under a project header, or flush in the Pinned section.
     var indent: TaskRowIndent = .grouped
@@ -102,7 +103,7 @@ struct SessionRow<Accessory: View>: View {
     @ViewBuilder private var taskRow: some View {
         if isAllInView {
             let attention = session.flatMap {
-                SidebarSessionAttention(session: $0, task: summary.id, oldest: model.oldestTaskAsk?.id)
+                SidebarSessionAttention(session: $0, task: summary.id, oldest: oldestAskID)
             }
             AllInViewTaskRow(
                 title: title, status: TaskStatus(session), isSelected: isSelected,

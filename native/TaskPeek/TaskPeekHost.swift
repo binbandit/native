@@ -65,4 +65,5 @@ extension View {
 
 extension EnvironmentValues {
     @Entry var globalTaskAskShortcut = false
+    @Entry var oldestTaskAskID: TaskPeekAsk.ID?
 }
