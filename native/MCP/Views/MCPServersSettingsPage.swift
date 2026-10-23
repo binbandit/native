@@ -1,6 +1,17 @@
 import MCPClient
 import SwiftUI
 
+#if DEBUG
+#Preview("MCP settings - No servers") {
+    DSPreviewPair {
+        MCPServersSettingsPage()
+            .environment(AppModel.preview(.empty))
+            .environment(SettingsPresentation())
+            .settingsPreviewPage()
+    }
+}
+#endif
+
 extension SettingsPane.ID {
     static let mcpServers = Self("mcp-servers")
 }
@@ -120,7 +131,7 @@ struct MCPServersSettingsPage: View {
             managedSection(library)
             agentsSection(library)
         }
-        .task { if library.lastRead == nil { await library.readConfigurations() } }
+        .task { await library.readConfigurationsIfStale() }
         // A project's settings link here to show its switches.
         .onAppear { takeScope() }
         .onChange(of: presentation.projectScope) { takeScope() }

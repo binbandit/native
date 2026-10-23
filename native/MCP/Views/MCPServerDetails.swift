@@ -1,6 +1,12 @@
 import MCPClient
 import SwiftUI
 
+#if DEBUG
+#Preview("MCP details - Shared sign-in states") {
+    DSPreviewPair { MCPAuthenticationPreview() }
+}
+#endif
+
 /// A server's details under its row: why it failed (with its own error output) and what to do,
 /// why it needs sign-in and how, or who it is and the tools it offers.
 struct MCPServerDetails: View {
@@ -36,6 +42,33 @@ struct MCPServerDetails: View {
                     .settingsText(.body)
                     .foregroundStyle(.dsTextSecondary)
             }
+        } else if library.health(of: key) == .signedIn {
+            message(
+                "Signed in with \(entry?.format.displayName ?? "your agent"). Tasks using this server share that sign-in."
+            )
+            if let report = library.reports[key], case .needsAuth = report.status {
+                message(
+                    "Native's separate check has no access to the agent's sign-in credentials, so it couldn't list the tools."
+                )
+            }
+            Button("Check Again") {
+                Task {
+                    await library.readConfigurations()
+                    await library.probe(key)
+                }
+            }
+            .buttonStyle(.ds(.secondary, size: .medium))
+        } else if library.health(of: key) == .authenticationUnknown {
+            message(
+                "Native couldn't confirm this server's shared sign-in. Check it in a task with \(entry?.format.displayName ?? "your agent")."
+            )
+            Button("Check Again") {
+                Task {
+                    await library.readConfigurations()
+                    await library.probe(key)
+                }
+            }
+            .buttonStyle(.ds(.secondary, size: .medium))
         } else if let report = library.reports[key] {
             switch report.status {
             case .connected: connected(report)
@@ -102,7 +135,7 @@ struct MCPServerDetails: View {
             )
         } else if let entry {
             message(
-                "\(name) asks you to sign in (HTTP \(challenge.statusCode)). \(entry.format.displayName) signs in itself and keeps the token, so Native can't use it to list the tools; \(entry.format.displayName) may already be signed in."
+                "\(entry.format.displayName) has no usable shared sign-in for \(name). Sign in once to use it across tasks."
             )
         } else {
             message(

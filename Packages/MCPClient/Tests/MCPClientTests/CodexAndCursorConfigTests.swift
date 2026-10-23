@@ -70,7 +70,7 @@ struct CodexConfigTests {
         let review = try #require(merged.servers.first { $0.name == "review" })
         #expect(review.scope == .plugin("review"))
         #expect(review.source.path(percentEncoded: false).hasSuffix("example-bundled/review/1.4.0/"))
-        #expect(merged.signInRequired == ["docs"])
+        #expect(merged.servers.first { $0.name == "docs" }?.authentication == .signedOut)
         // Files already describe the others; the listing doesn't duplicate them.
         #expect(merged.servers.filter { $0.name == "inspector" }.count == 1)
     }

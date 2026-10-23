@@ -236,6 +236,7 @@ struct NativeApp: App {
                     BuiltInPlugins.automation.center.automations.isEnabled = model.plugins.isEnabled(
                         BuiltInPlugins.automations.manifest.id)
                 }
+                .mcpAuthenticationFixture()
         }
         .defaultSize(width: 1120, height: 780)
         .commands {

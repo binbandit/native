@@ -111,11 +111,19 @@ public struct CodexListing: Hashable, Sendable {
     public struct Server: Hashable, Sendable {
         public var name: String
         public var isEnabled: Bool
-        /// `unsupported`, `not_logged_in`, `bearer_token` or `oauth`.
+        /// Preserved wire value, including values from newer CLI versions.
         public var authStatus: String?
         public var transport: MCPTransport
 
         public var needsSignIn: Bool { authStatus == "not_logged_in" }
+
+        public var authentication: MCPAuthenticationStatus {
+            switch authStatus {
+            case "o_auth", "oauth", "bearer_token": .signedIn
+            case "not_logged_in": .signedOut
+            default: .unknown
+            }
+        }
     }
 
     public var servers: [Server]
@@ -185,8 +193,31 @@ extension AgentMCPConfiguration {
                     status: server.isEnabled ? .enabled : .disabled
                 ))
         }
-        merged.signInRequired = Set(listing.servers.filter(\.needsSignIn).map(\.name))
+        for index in merged.servers.indices {
+            let entry = merged.servers[index]
+            // A project may reuse a user server's name for a different endpoint. Its sign-in
+            // belongs to that endpoint, not to whichever same-named server the CLI listed.
+            merged.servers[index].authentication =
+                listed[entry.name].flatMap {
+                    $0.transport == entry.server.transport ? $0.authentication : nil
+                } ?? .unknown
+        }
         return merged
+    }
+
+    /// Shares only matching credential identities with separately read task folders.
+    public func withAuthentication(from configuration: AgentMCPConfiguration) -> AgentMCPConfiguration {
+        guard format == configuration.format else { return self }
+        var result = self
+        for index in result.servers.indices {
+            let entry = result.servers[index]
+            if let match = configuration.servers.first(where: {
+                $0.name == entry.name && $0.server.transport == entry.server.transport
+            }) {
+                result.servers[index].authentication = match.authentication
+            }
+        }
+        return result
     }
 
     /// Plugins run from `…/plugins/cache/<marketplace>/<plugin>/<version>`.
