@@ -14,6 +14,7 @@ extension ExperimentCatalog {
         Gate.sidebarNext,
         Gate.composerNext,
         Gate.composeTask,
+        Gate.homeNext,
     ])
 }
 
@@ -65,6 +66,17 @@ extension Gate {
         site: "New Task ▸ Quick Entry",
         stage: .labs,
         owner: "new-task",
+        reviewBy: ReviewDate(year: 2026, month: 12, day: 15),
+        default: false
+    )
+
+    static let homeNext = Gate(
+        id: "NativeHomeNext",
+        title: "Next",
+        summary: "Answer asks one at a time on Home, with the quickest decisions first.",
+        site: "Home > Next",
+        stage: .labs,
+        owner: "home",
         reviewBy: ReviewDate(year: 2026, month: 12, day: 15),
         default: false
     )

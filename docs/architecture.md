@@ -31,6 +31,16 @@
   When every installed, enabled agent has failed, `AppModel.agentStartupFailure` supplies Home
   and New Task with the same named recovery state (`NativeSetup.AgentStartupFailure`). New Task
   opens the agent picker for Restart or Agents Settings instead of preparing a task that cannot start.
+- **Stop ends attributable processes.** ACP's cancel acknowledgement alone cannot prove a shell stopped.
+  The host records the agent's descendants before sending cancel, gives it a short grace period,
+  then freezes and terminates the known tree. Process start times guard
+  against reused pids, and remembered children remain owned if their parent exits. A shared agent
+  is not terminated while another task is using it: the stopped task remains Stopping with a
+  warning until the other tasks finish or are stopped. Its next message reloads the agent.
+  Snapshots cannot account for a process that forks and exits between observations. Without an ACP
+  command-lifetime guarantee, the result is a failed turn warning that background commands may
+  remain, never a promise of Stopped. Closing a task retains its pending cleanup. Immediate host
+  restart finishes cleanup without waiting for siblings and leaves their turns for recovery.
 - **State is a reducer.** `SessionState` folds `session/update`s and the user's actions into a
   transcript (messages, tool calls, subagents, inter-session messages, plan, usage). It's pure and
   tested against captured traffic, and it's shared with the future companion app.
@@ -147,6 +157,28 @@ the panel create no session or workspace. Start hands the message to the existin
 pipeline. A background start leaves selection alone, and its confirmation follows the starting
 task to its finished session. During the first slice, Expand hands the same draft to today's
 full New Task view. Compose's page and the shared well's pre-start presentation follow later.
+
+### Home Next
+
+`NativeHomeNext` (Settings > Labs > Next) defaults to off. `HomeDetail` switches to
+`native/HomeNext/`: one centered reading column with a task title, the existing shared
+`ToolCallView` approval, Up next, and a quiet working-status line. The composer owns the
+annotated approval replacement; Home must embed that component when it lands, never copy it.
+The sidebar owns the shared status signal; Home currently uses `StatusIndicator`.
+
+`HomeAskOrder` in `Packages/TaskList` puts approvals before questions, plans, and failures,
+oldest within each kind. The ask being read stays put when another arrives. Answering uses the
+exact `SessionModel` and tool-call request displayed, including subagent requests. Home records
+a receipt and advances when the model removes the permission. Questions, plans and failures
+open their task until the next slice adds their inline answers. Finished today includes tasks
+with a known successful turn completion today, five at a time; unknown history is not called done.
+On Home, the sidebar's asks should fold to their title when the new sidebar lands.
+
+For isolated Debug checks, enable the gate with Settings > Labs > Next or
+`defaults write dev.binbandit.native.dev.<name> experiment.NativeHomeNext -bool YES`, then launch
+with `-nativeHomeNextFixture busy` for inert preview models. Other fixture values are `quiet`,
+`first`, `empty`, `loading`, `recovery`, and `narrow`.
+The fixture is absent from Release and Nightly and never opens an agent or writes project data.
 
 New UIs, designs and behaviors ship as opt-in experiments first (see "Experiments behind flags" in
 `docs/decisions.md`). It's one contract system with three tiers, all typed end to end:

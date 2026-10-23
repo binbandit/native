@@ -1,4 +1,5 @@
 import ACP
+import Experiments
 import SwiftUI
 
 /// The detail pane while no session is selected: the home page, which starts tasks in any project
@@ -7,10 +8,13 @@ import SwiftUI
 struct HomeDetail: View {
     @Environment(AppModel.self) private var model
     @Environment(SettingsPresentation.self) private var settings
+    @Experiment(.homeNext) private var homeNext
 
     var body: some View {
         let agents = model.agents.map(homeAgent)
-        if let current = model.currentProject {
+        if homeNext {
+            next(agents: agents)
+        } else if let current = model.currentProject {
             HomeView(
                 agents: agents,
                 projects: model.projects.all.map { HomeProject(id: $0.id, name: $0.name, url: $0.url) },
@@ -28,6 +32,24 @@ struct HomeDetail: View {
                 agents: agents, addProjectShortcut: CommandRegistry.shared.keyboardShortcut(for: .projectOpen),
                 onAddProject: { model.isAddingProject = true })
         }
+    }
+
+    @ViewBuilder private func next(agents: [HomeAgent<AgentDefinition.ID>]) -> some View {
+        #if DEBUG
+        if let fixture = HomeNextPreviewFixtures.requested {
+            HomeNextFixtureView(state: fixture)
+        } else {
+            nextLive(agents: agents)
+        }
+        #else
+        nextLive(agents: agents)
+        #endif
+    }
+
+    private func nextLive(agents: [HomeAgent<AgentDefinition.ID>]) -> some View {
+        HomeNextView(
+            agents: agents,
+            isLoading: model.projects.all.contains { model.isFindingSessions(in: $0.id) })
     }
 
     private func homeAgent(_ runtime: AgentRuntime) -> HomeAgent<AgentDefinition.ID> {
@@ -118,3 +140,7 @@ struct HomeDetail: View {
         lastActivity(summary) ?? .distantPast
     }
 }
+
+#if DEBUG
+#Preview("Home detail - Next") { HomeNextPreviewFixtures.page(.busy) }
+#endif

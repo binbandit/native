@@ -16,7 +16,7 @@ struct ComposerPlaceholder {
             switch phase {
             case .loading: "Loading… messages send when \(agent) is ready"
             case .disconnected: "\(agent) isn’t running"
-            case .prompting where isStopping: "Stopping \(agent)… press Stop again to stop waiting"
+            case .prompting where isStopping: "Stopping \(agent)… waiting for commands to end"
             case .prompting where hasQuestion: "\(agent) is waiting for your answer above…"
             case .prompting where needsApproval: "\(agent) is waiting for your approval…"
             case .idle where isNewSession: "What would you like \(agent) to work on?"
