@@ -31,7 +31,11 @@ struct QuickEntryPanel: View {
         .dsShadow(.modal)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Quick Entry")
-        .onAppear { isFocused = true }
+        .task {
+            // A page opening underneath the panel can set its own initial focus in onAppear.
+            await Task.yield()
+            if !Task.isCancelled { isFocused = true }
+        }
         .onDisappear(perform: model.restoreQuickEntryFocus)
         .fileImporter(isPresented: $entry.isChoosingFolder, allowedContentTypes: [.folder]) { result in
             if case .success(let url) = result {
