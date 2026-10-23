@@ -1,4 +1,7 @@
+import ACP
 import Foundation
+import Git
+import GitHub
 
 /// Connects the model action to existing git and GitHub services. A shared checkout is read once,
 /// including tasks hidden by pins, filters, folding or the archive.
