@@ -1,2 +1,4 @@
-Screenshots: 0ce7e5d67913f6847a98ac70587c4ef67671a89e
-1440x900 isolated Debug fixture; motion images include window shadows.
+Static captures: eb74fcf70e08afb8ef8d9f42f8e7254a8674bde7, isolated Debug, 1440x900.
+Final source a4c0baa99e7d8ecef47a63de3345325ee82b2c90 only adds DEBUG guards around three existing previews.
+Motion captures: 0ce7e5d67913f6847a98ac70587c4ef67671a89e, before the restored-window clock fix. These include window shadows.
+Static captures may be covered by another window and are not motion evidence.
