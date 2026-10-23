@@ -6,6 +6,7 @@ extension DS {
         static let pageWidth: CGFloat = 640
         static let pageTopInset = Space.xl
         static let rowHeight: CGFloat = 44
+        static let rowTitleHeight: CGFloat = 18
         static let rowInset = Space.xl
         static let rowVerticalInset: CGFloat = 9
         static let navRowHeight: CGFloat = 30
@@ -13,6 +14,7 @@ extension DS {
         static let navGroupGap = Space.xl
         static let navRowGap = Space.xxs
         static let navInset: CGFloat = 10
+        static let searchBottomInset: CGFloat = 14
         static let controlHeight: CGFloat = 26
         static let wideControl: CGFloat = 224
         static let scopeWidth: CGFloat = 220

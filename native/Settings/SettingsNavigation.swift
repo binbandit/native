@@ -24,8 +24,9 @@ struct SettingsNavigation<Search: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             search
                 .padding(.leading, DS.Space.xxs)
-                .padding(.top, DS.Space.xs)
-                .padding(.bottom, DS.Space.lg)
+                .padding(.trailing, plainly ? DS.Space.xxs : 0)
+                .padding(.top, plainly ? DS.Space.xxs : DS.Space.xs)
+                .padding(.bottom, plainly ? DS.Settings.searchBottomInset : DS.Space.lg)
                 .zIndex(1)
             ScrollView {
                 list
@@ -33,8 +34,8 @@ struct SettingsNavigation<Search: View>: View {
             }
             .scrollEdgeEffectStyle(.soft, for: .vertical)
         }
-        .padding(.leading, DS.Space.sm)
-        .padding(.trailing, DS.Space.md)
+        .padding(.leading, plainly ? DS.Settings.navInset : DS.Space.sm)
+        .padding(.trailing, plainly ? DS.Settings.navInset : DS.Space.md)
         .frame(maxHeight: .infinity, alignment: .top)
         .onChange(of: focus.wrappedValue) { _, newValue in
             showsFocusRing = newValue == .navigation && !isFocusingQuietly

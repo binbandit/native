@@ -54,7 +54,7 @@ struct SettingsRow<Accessory: View, Control: View>: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: DS.Space.md) {
                     (usesPlainly ? plainly.map { Text($0.title) } ?? title : title)
-                        .settingsText(.bodyMedium)
+                        .settingsText(usesPlainly ? .body : .bodyMedium)
                         .foregroundStyle(.dsTextPrimary)
                     accessory
                     if let lockReason {
@@ -67,7 +67,7 @@ struct SettingsRow<Accessory: View, Control: View>: View {
                 .frame(
                     maxWidth: .infinity,
                     minHeight: usesPlainly
-                        ? DS.Settings.rowHeight - DS.Settings.rowVerticalInset * 2 : SettingsMetrics.rowTitleHeight,
+                        ? DS.Settings.rowTitleHeight : SettingsMetrics.rowTitleHeight,
                     alignment: .leading)
                 if let description = usesPlainly && plainly != nil && plainly?.preservesDescription != true
                     ? plainly?.description.map(Text.init) : description

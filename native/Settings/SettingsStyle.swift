@@ -80,7 +80,7 @@ struct SettingsTextStyle {
     static let body = SettingsTextStyle(.ds(14), size: 14, lineHeight: 20).plain(DS.Settings.body)
     /// `text-sm font-medium`: row titles.
     static let bodyMedium = SettingsTextStyle(.dsHeadline, size: 14, weight: .medium, lineHeight: 20).plain(
-        DS.Settings.body)
+        DS.Settings.groupTitle)
     /// `text-base font-medium`: section headings, a step above row titles.
     static let heading = SettingsTextStyle(.dsTitle3, size: 16, weight: .medium, lineHeight: 24).plain(
         DS.Settings.groupTitle)
