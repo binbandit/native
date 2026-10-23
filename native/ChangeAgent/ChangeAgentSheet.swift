@@ -86,7 +86,7 @@ struct ChangeAgentSheet: View {
                 Button("Cancel") { change.cancel() }
                     .buttonStyle(.ds(.secondary, size: .medium))
                     .keyboardShortcut(.cancelAction)
-                    .disabled(change.isWorking)
+                    .disabled(change.isWorking && change.candidate != nil)
                 Button(change.candidate == nil ? "Choose Model" : "Change Agent and Send") {
                     Task {
                         if change.candidate == nil { await change.prepare() } else { await change.send() }
@@ -145,6 +145,16 @@ private struct ChangeAgentPresentation: ViewModifier {
             ChangeAgentSheet(
                 change: .preview(
                     in: app, source: source, error: "The agent stopped. Cancel and restart it in Settings > Agents."))
+        }
+    }
+}
+#Preview("Change Agent - Running turn") {
+    let app = ChangeAgentPreviewFixtures.app()
+    DSPreviewPair {
+        if let source = ChangeAgentPreviewFixtures.source(in: app) {
+            let change = ChangeAgentModel.preview(in: app, source: source)
+            ChangeAgentSheet(change: change)
+                .onAppear { source.phase = .prompting }
         }
     }
 }

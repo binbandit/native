@@ -14,6 +14,7 @@ final class ChangeAgentModel {
     private(set) var error: String?
     private(set) var isLoadingContext = true
     private var reviewedItems: [TranscriptItem] = []
+    private var wasCancelled = false
     private weak var app: AppModel?
 
     init(source: SessionModel, app: AppModel) {
@@ -46,7 +47,12 @@ final class ChangeAgentModel {
         error = nil
         defer { isWorking = false }
         do {
-            candidate = try await app.prepareAgentChange(source, to: agentID)
+            let prepared = try await app.prepareAgentChange(source, to: agentID)
+            guard !wasCancelled else {
+                app.discardAgentChange(prepared)
+                return
+            }
+            candidate = prepared
             if case .select(let value, _) = modelOption?.kind { modelValue = value }
         } catch {
             self.error = error.localizedDescription
@@ -86,7 +92,10 @@ final class ChangeAgentModel {
     #endif
 
     func cancel() {
-        guard !isWorking else { return }
+        // Starting an empty conversation can finish after dismissal; prepare() closes it then.
+        // Once sending begins, wait for its result so cancellation cannot hide accepted work.
+        guard !isWorking || candidate == nil else { return }
+        wasCancelled = true
         if let candidate { app?.discardAgentChange(candidate) }
         candidate = nil
         app?.changingAgent = nil
