@@ -82,6 +82,8 @@ private struct UserMessageAttachmentButtonStyle: ButtonStyle {
             .overlay { shape.fill(configuration.isPressed ? .dsPressed : isHovered ? .dsHover : .clear) }
             .clipShape(shape)
             .overlay { shape.strokeBorder(.dsBorder) }
+            // A lone panoramic or tall image still needs a full touch target on iPad.
+            .frame(minWidth: DS.Size.minimumHitTarget, minHeight: DS.Size.minimumHitTarget, alignment: .trailing)
             .contentShape(shape)
             .dsFocusShape(shape)
             .trackHover($isHovered)
