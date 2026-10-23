@@ -267,6 +267,14 @@ to the user's choice.
 | ⌃⌘A | Keep Mac awake: cycle Off → While agents work → On (View ▸ Keep Mac Awake) | View | `keepAwake.nextMode` |
 | | Show or hide the status bar along the window's bottom edge (on by default) | View | `statusBar.toggle` |
 
+## Home Next (Labs)
+
+With Next enabled in Settings > Labs, Home shows one ask at a time. The visible approval owns
+the usual permission keys: Cmd-Y allows once, Option-Cmd-Y always allows when offered, and
+Shift-Cmd-Delete rejects. Tab and Space reach Up next, Open Task, the ordering menu, and Show
+more. Cmd-Return opens the current ask's task; Shift-Cmd-Down shows the next five rows.
+Cmd-N starts a task and Cmd-O opens a folder, including before the first project exists.
+
 ## Task tools (Labs)
 
 With Task Tools enabled in Settings ▸ Labs (off by default), the Changes fact under the title
