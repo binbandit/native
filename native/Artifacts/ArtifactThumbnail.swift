@@ -22,7 +22,7 @@ struct ArtifactThumbnail: View {
                 .frame(minWidth: DS.Size.minimumHitTarget, minHeight: DS.Size.minimumHitTarget)
                 .contentShape(.rect)
             } else {
-                Label(artifact.name, systemImage: artifact.isImage ? "photo" : "doc")
+                Label(artifact.name, systemImage: artifact.isImage ? "photo" : artifact.isFolder ? "folder" : "doc")
                     .font(.dsBody)
                     .foregroundStyle(.dsTextSecondary)
                     .lineLimit(1)
@@ -56,6 +56,7 @@ extension EnvironmentValues {
             ArtifactThumbnail(
                 artifact: TranscriptArtifact(name: "Diagram.png", data: ArtifactPreviewFixtures.imageData))
             ArtifactThumbnail(artifact: TranscriptArtifact(name: "Report.pdf", url: URL(filePath: "/report.pdf")))
+            ArtifactThumbnail(artifact: TranscriptArtifact(name: "References", url: URL(filePath: "/repo/References/")))
             ArtifactThumbnail(artifact: TranscriptArtifact(name: "Image", mimeType: "image/png"))
         }
         .environment(\.openTranscriptArtifact, TranscriptArtifactOpener(session: nil, filesAreLocal: true))

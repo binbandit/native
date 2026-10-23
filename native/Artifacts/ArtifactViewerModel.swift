@@ -50,6 +50,12 @@ final class ArtifactViewerModel {
 
     func open(_ artifact: TranscriptArtifact, localFiles: Bool, reader: @escaping Reader) {
         close()
+        if localFiles, PlatformFileBrowser.canReveal, artifact.isFolder, artifact.data == nil,
+            let url = artifact.url, url.isFileURL
+        {
+            revealFile(url)
+            return
+        }
         self.artifact = artifact
         self.reader = reader
         canRevealFiles = localFiles && PlatformFileBrowser.canReveal
@@ -153,8 +159,15 @@ final class ArtifactViewerModel {
     }
 
     func exported(_ result: Result<URL, any Error>) {
+        isExporting = false
         switch result {
-        case .success: feedback = "Saved"
+        case .success(let url):
+            feedback = "Saved"
+            if PlatformFileBrowser.canReveal, url.isFileURL {
+                // A slow origin check must not replace the copy the user just saved.
+                loading?.cancel()
+                revealURL = url
+            }
         case .failure: feedback = "Couldn't save the file. Try Save As again."
         }
     }

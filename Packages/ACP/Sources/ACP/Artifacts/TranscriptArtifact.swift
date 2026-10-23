@@ -62,6 +62,8 @@ public struct TranscriptArtifact: Hashable, Sendable {
         #endif
     }
 
+    public var isFolder: Bool { url?.hasDirectoryPath == true || name.hasSuffix("/") }
+
     /// Check the platform's supported headers without decoding full-sized pixels on the UI thread.
     public var hasImageHeader: Bool {
         guard let data else { return false }

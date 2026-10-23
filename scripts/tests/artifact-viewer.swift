@@ -42,8 +42,19 @@ private struct ArtifactViewerRegression {
         model.exported(.success(exported))
         expect(try Data(contentsOf: exported) == bytes, "Saved bytes match the original")
         expect(model.feedback == "Saved", "Export reports success")
+        model.reveal()
+        expect(revealed == exported, "After Save As, reveal opens the saved copy")
         model.close()
         expect(!model.isPresented && model.data == nil && model.image == nil, "Close releases image bytes")
+
+        let folder = directory.appendingPathComponent("Attachments", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        revealed = nil
+        model.open(TranscriptArtifact(name: "Attachments", url: folder), localFiles: true) { _ in
+            throw CocoaError(.fileReadUnsupportedScheme)
+        }
+        expect(revealed == folder && !model.isPresented, "Folders keep their existing file-browser action")
+        model.close()
 
         model.open(TranscriptArtifact(name: "notes.txt", data: Data("Notes".utf8)), localFiles: false) { _ in Data() }
         await loaded(model)
