@@ -44,3 +44,12 @@ struct CelebrationCountryMenu: View {
         Locale.current.localizedString(forRegionCode: code) ?? code
     }
 }
+
+#if DEBUG
+#Preview("Celebrations - Country menu") {
+    DSPreviewPair {
+        CelebrationCountryMenu(counts: ["AU": 4, "US": 5, "CA": 3]) { _ in }
+            .settingsPreviewPage()
+    }
+}
+#endif

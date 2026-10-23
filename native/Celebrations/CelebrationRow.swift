@@ -44,6 +44,7 @@ struct CelebrationRow: View {
                     get: { selection.isEnabled }, set: { center.setAutomatic($0, for: event.id) })
             )
             .disabled(!ready)
+            .dsHitTarget(SettingsMetrics.switchSize.height)
             Image(systemName: "chevron.right")
                 .font(.system(size: CelebrationMetrics.chevron, weight: .medium))
                 .foregroundStyle(.dsTextTertiary)
@@ -68,12 +69,15 @@ struct CelebrationRow: View {
         .accessibilityValue(selection.isEnabled ? "on" : "off")
         .accessibilityAddTraits(.isButton)
         .accessibilityAction { open() }
-        .accessibilityAction(named: "Toggle celebration", toggle)
-        .accessibilityAction(named: "Open celebration", open)
+        .accessibilityActions {
+            if ready { Button("Toggle celebration", action: toggle) }
+            Button("Open celebration", action: open)
+        }
         .settingsRevealTarget(CelebrationsSettingsPage.rowID(event.id))
         .task(id: flash) {
             guard flash else { return }
             flashOpacity = 1
+            await Task.yield()
             withAnimation(reduceMotion ? nil : CelebrationMetrics.bulkFade) { flashOpacity = 0 }
         }
     }

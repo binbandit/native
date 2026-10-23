@@ -1,5 +1,6 @@
 import AppAppearance
 import NativeCommands
+import NativePolicy
 import SwiftUI
 
 extension CommandID {
@@ -37,7 +38,8 @@ extension NativeCommand {
             ) { context in
                 context.openMainWindow()
                 settings.open(.celebrations)
-            },
+            }
+            .available { _ in PolicyCenter.shared.policy.celebrationsEnabled },
         ]
     }
 }

@@ -1,4 +1,5 @@
 import NativeCommands
+import NativePolicy
 import SwiftUI
 import Undo
 
@@ -91,9 +92,11 @@ private struct ViewCommands: Commands {
                 .keyboardShortcut(menu.registry.keyboardShortcut(for: .transcriptFoldEarlierTurns))
             CommandMenuItem(.transcriptJumpToLatest, in: menu)
 
-            Divider()
-            CommandMenuItem(.celebrationRestore, in: menu)
-            CommandMenuItem(.celebrationChoose, in: menu)
+            if PolicyCenter.shared.policy.celebrationsEnabled {
+                Divider()
+                CommandMenuItem(.celebrationRestore, in: menu)
+                CommandMenuItem(.celebrationChoose, in: menu)
+            }
         }
     }
 }

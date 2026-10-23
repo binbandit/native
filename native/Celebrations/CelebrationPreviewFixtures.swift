@@ -44,6 +44,7 @@ enum CelebrationPreviewFixtures {
         if state == .waiting || state == .failed {
             center.setHome(false, for: FirstPartyCelebrations.halloweenID)
         }
+        if state == .rows { center.setAutomatic(true, for: CelebrationID("native.australia-day")) }
         if state == .skipped { center.restoreBase() }
         return center
     }

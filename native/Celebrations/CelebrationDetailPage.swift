@@ -24,7 +24,7 @@ struct CelebrationDetailPage: View {
                 .buttonStyle(.settings).accessibilityLabel("Back to Celebrations")
             HStack(spacing: DS.Space.xl) {
                 CelebrationPreview(event: event, size: CelebrationMetrics.detailPreview)
-                SettingsHeader(title, description: event.contribution.summary.map { Text($0.resolved()) }) {
+                SettingsHeader(title: title, description: event.contribution.summary.map { Text($0.resolved()) }) {
                     SettingsSwitch(
                         "Celebrate \(title) automatically",
                         isOn: Binding(

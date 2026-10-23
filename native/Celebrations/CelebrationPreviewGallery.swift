@@ -17,7 +17,7 @@ struct CelebrationPreviewGallery: View {
         Group {
             switch state {
             case .page, .offline, .empty:
-                CelebrationsSettingsPage()
+                CelebrationsSettingsPage(organizationName: state == .offline ? "Northwind Federal IT" : nil)
             case .showing, .homeOnly, .skipped, .waiting, .failed:
                 CelebrationStatusCard()
             case .yearHover:
@@ -26,6 +26,7 @@ struct CelebrationPreviewGallery: View {
                 VStack(spacing: DS.Space.lg) {
                     row("halloween")
                     row("diwali")
+                    row("bandi-chhor-divas")
                     row("australia-day", flash: true)
                     row("diwali", query: "Deepavali")
                     ForEach(center.celebrations.filter { !$0.canBeChosen(on: center.today) }.prefix(2)) { event in
@@ -50,7 +51,8 @@ struct CelebrationPreviewGallery: View {
 
     @ViewBuilder private func row(_ id: String, query: String = "", flash: Bool = false) -> some View {
         if let event = center.celebrations.first(where: { $0.id.rawValue == "native.\(id)" }) {
-            CelebrationRow(event: event, query: query, flash: flash)
+            CelebrationRow(event: event, query: query)
+                .background(flash ? Color.dsFill : .clear)
         }
     }
 }

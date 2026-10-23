@@ -147,6 +147,7 @@ struct CelebrationYearStrip: View {
                 .opacity(skipped ? 0.35 : 1)
         }
         .buttonStyle(.plain)
+        .dsHitTarget(CelebrationMetrics.yearIcon)
         .onHover { hovered = $0 ? item.event.id : nil }
         .accessibilityLabel(
             "\(item.event.contribution.title.resolved()), \(CelebrationDates.accessible(item.occurrence.display))"
@@ -158,7 +159,7 @@ struct CelebrationYearStrip: View {
                 )
                 .settingsText(.caption).foregroundStyle(.dsTextPrimary)
                 .padding(.horizontal, DS.Space.sm).padding(.vertical, DS.Space.xs)
-                .background(.dsOverlayBackground, in: .rect(cornerRadius: DS.Radius.row))
+                .dsOverlayBackground(in: .rect(cornerRadius: DS.Radius.row))
                 .dsShadow(.modal).fixedSize()
                 .offset(y: -CelebrationMetrics.yearIcon - DS.Space.sm)
                 .allowsHitTesting(false).accessibilityHidden(true)
