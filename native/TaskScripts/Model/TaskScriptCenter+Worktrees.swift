@@ -16,6 +16,9 @@ extension TaskScriptCenter {
             context: TaskScriptContext(
                 event: .beforeWorktree, projectPath: projectRoot.folderPath,
                 worktreePath: projectRoot.folderPath, branch: branch), plan: plan, state: .running)
+        // Creation owns the error and Retry. Keep the log without a second failure banner on a
+        // task restored into this same folder after retrying creation.
+        run.isDismissed = true
         record(run)
         start(run)
         if let work = run.work {

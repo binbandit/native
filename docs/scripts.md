@@ -44,6 +44,7 @@ the base. They must succeed before the worktree is created. An untrusted reposit
 asks the user to allow repository scripts in Project Settings, then retry the starting task.
 After-commands run independently of the existing Setup event, which still holds messages when
 configured. For a nonblocking dependency install, put it in **After creating a worktree**.
+Both creation hooks also run when an archived task's worktree is restored, preserving its branch.
 
 ## Where scripts come from
 

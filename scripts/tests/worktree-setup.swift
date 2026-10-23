@@ -159,6 +159,31 @@ private struct WorktreeSetupRegression {
             check(false, "creation cancellation stays a cancellation")
         }
         check(try await repository.worktrees().count == before, "cancelled before-command leaves no worktree")
+        settings.setProjectScript("exit 13", for: .beforeWorktree, at: project)
+        settings.setProjectScript("", for: .afterWorktree, at: project)
+        let archived = ArchivedWorktree(path: fresh.folder, branch: fresh.branch, checkpoint: nil)
+        try await repository.recordArchivedWorktree(archived)
+        try await repository.removeWorktree(at: fresh.folder, force: true)
+        do {
+            _ = try await git.restoreArchivedTaskWorktree(archived, of: project)
+            check(false, "a failed before-command prevents restoration")
+        } catch {
+            check(error.localizedDescription.contains("13"), "restoration explains a failed before-command")
+        }
+        check(
+            try await repository.archivedWorktrees().contains { $0.branch == archived.branch },
+            "a failed before-command preserves the archived worktree record")
+        settings.setProjectScript("printf restored > restored-before.txt", for: .beforeWorktree, at: project)
+        let restored = try await git.restoreArchivedTaskWorktree(archived, of: project)
+        check(
+            FileManager.default.fileExists(atPath: project.appending(path: "restored-before.txt").path()),
+            "restoring an archived worktree runs its before-command")
+        check(
+            FileManager.default.fileExists(atPath: restored.appending(path: "remote.txt").path()),
+            "restoration preserves the archived branch rather than choosing a new base")
+        check(
+            !center.failures(in: restored).contains { $0.event == .beforeWorktree },
+            "a successful creation retry does not leave an obsolete before-command failure banner")
         panel.closeAll()
         if failures > 0 { exit(1) }
         print("PASS: before/after worktree commands, nonblocking creation, terminal output, Retry and managed policy")
