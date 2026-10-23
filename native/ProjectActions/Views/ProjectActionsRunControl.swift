@@ -1,4 +1,5 @@
 import SwiftUI
+import Terminal
 
 /// The header control's rendering, independent of the runner so every transient state is previewable.
 struct ProjectActionsRunControl<MenuContent: View>: View {

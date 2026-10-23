@@ -1,5 +1,6 @@
 #if DEBUG
 import SwiftUI
+import Terminal
 
 /// Inert render states: no project reads, commands, agents or persistent preferences.
 struct ProjectActionsRunPreview: View {

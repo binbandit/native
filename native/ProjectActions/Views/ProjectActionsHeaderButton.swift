@@ -1,6 +1,7 @@
 import NativeCommands
 import ProjectActions
 import SwiftUI
+import Terminal
 
 extension View {
     /// Adds the task's Run control, using the project's actions in this task's worktree.
