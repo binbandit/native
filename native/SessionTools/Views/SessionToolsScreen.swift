@@ -174,12 +174,12 @@ struct SessionToolsScreen: View {
         return actions
     }
 
-    private func toggleWellSubagents() {
-        if openSubagent != nil {
+    private func toggleWellSubagents(_ requested: SessionID?) {
+        if requested == nil, openSubagent != nil {
             openSubagent = nil
-        } else if let first = session.state.subagents.first {
+        } else if let id = requested ?? session.state.subagents.first?.id {
             tools.close(.side)
-            inspectorRoom.open(DS.SessionTools.sidePanelIdealWidth) { openSubagent = first.id }
+            inspectorRoom.open(DS.SessionTools.sidePanelIdealWidth) { openSubagent = id }
         }
     }
 

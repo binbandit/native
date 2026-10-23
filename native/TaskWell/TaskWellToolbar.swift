@@ -7,6 +7,7 @@ struct TaskWellToolbar<Dev: View>: View {
     let location: String
     let turnChanges: TurnChangesActions?
     let detail: (TaskWellTool) -> String
+    var openSubagent: (SessionID) -> Void = { _ in }
     @ViewBuilder var dev: () -> Dev
     @State private var isLanding = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -14,7 +15,7 @@ struct TaskWellToolbar<Dev: View>: View {
     var body: some View {
         Button {
             if content.isWaiting || content.status == .failed {
-                session.focusTaskAttention()
+                if let child = session.focusTaskAttention() { openSubagent(child) }
             } else if content.showsReview {
                 session.markTaskWellOutcomeReviewed(latestTurn?.id)
                 turnChanges?.review()

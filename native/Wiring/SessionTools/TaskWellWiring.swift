@@ -11,13 +11,16 @@ struct TaskWellWiring: View {
     let tools: SessionToolsScreenModel
     let location: String
     let turnChanges: TurnChangesActions?
-    let openSubagents: () -> Void
+    let openSubagents: (SessionID?) -> Void
     @Environment(AppModel.self) private var app
     @Environment(TerminalStore.self) private var terminal
     @Environment(ProjectActionRunner.self) private var actions
 
     var body: some View {
-        TaskWellToolbar(session: session, tools: tools, location: location, turnChanges: turnChanges, detail: detail) {
+        TaskWellToolbar(
+            session: session, tools: tools, location: location, turnChanges: turnChanges, detail: detail,
+            openSubagent: { openSubagents($0) }
+        ) {
             if let target = ProjectActionsWiring.target(for: session, model: app) {
                 ProjectActionsMenuContent(target: target)
             }
@@ -56,7 +59,7 @@ struct TaskWellWiring: View {
         case .changes: tools.toggle(.changes)
         case .terminal: terminal.toggle(for: session)
         case .dev: break
-        case .subagents: openSubagents()
+        case .subagents: openSubagents(nil)
         case .pullRequest: CommandRegistry.shared.perform(.pullRequestOpenForTask, in: CommandContext(session: session))
         }
     }
