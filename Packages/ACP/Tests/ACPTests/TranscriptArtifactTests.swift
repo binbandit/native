@@ -44,6 +44,8 @@ struct TranscriptArtifactTests {
         defer { file.remove() }
         #expect(file.url.lastPathComponent == "notes.txt")
         #expect(try Data(contentsOf: file.url) == Data("Notes".utf8))
+        let permissions = try FileManager.default.attributesOfItem(atPath: file.url.path)[.posixPermissions] as? Int
+        #expect(permissions == 0o600)
         file.remove()
         #expect(!FileManager.default.fileExists(atPath: file.url.path))
     }

@@ -10,9 +10,11 @@ public struct ArtifactPreviewFile: Sendable {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("Native-Artifact-\(UUID().uuidString)", isDirectory: true)
         let url = directory.appendingPathComponent(artifact.filename, isDirectory: false)
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
+        try FileManager.default.createDirectory(
+            at: directory, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
         do {
             try data.write(to: url, options: .atomic)
+            try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
         } catch {
             try? FileManager.default.removeItem(at: directory)
             throw error
