@@ -18,6 +18,8 @@ extension DS {
         public static let maxTicks = 12
         public static let titleMaxWidth: CGFloat = 220
         public static let titleMinWidth: CGFloat = 40
+        /// Room occupied by the window controls, sidebar and search before the task title.
+        public static let leadingToolbarWidth: CGFloat = 180
         public static let panelWidth: CGFloat = 500
         public static let panelHeaderHeight: CGFloat = 42
         public static let panelHeaderLeading: CGFloat = 15

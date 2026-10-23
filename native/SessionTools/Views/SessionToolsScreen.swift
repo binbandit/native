@@ -164,7 +164,9 @@ struct SessionToolsScreen: View {
     }
 
     private var wellTitleWidth: CGFloat {
-        min(DS.TaskWell.titleMaxWidth, max(DS.TaskWell.titleMinWidth, (width - DS.TaskWell.width) / 2 - DS.Space.xl))
+        min(
+            DS.TaskWell.titleMaxWidth,
+            max(DS.TaskWell.titleMinWidth, (width - DS.TaskWell.width) / 2 - DS.TaskWell.leadingToolbarWidth))
     }
 
     private func recordActions(_ actions: TurnChangesActions?) -> TurnChangesActions? {
