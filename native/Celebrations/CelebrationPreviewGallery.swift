@@ -6,17 +6,18 @@ import SwiftUI
 struct CelebrationPreviewGallery: View {
     let state: CelebrationPreviewFixtures.State
     @State private var center: CelebrationCenter
-    @State private var registry = CelebrationPreviewFixtures.registry()
+    @State private var registry: PluginRegistry
 
     init(_ state: CelebrationPreviewFixtures.State) {
         self.state = state
+        _registry = State(initialValue: CelebrationPreviewFixtures.registry(state))
         _center = State(initialValue: CelebrationPreviewFixtures.center(state))
     }
 
     var body: some View {
         Group {
             switch state {
-            case .page, .offline, .empty:
+            case .off, .menu, .page, .offline, .empty:
                 CelebrationsSettingsPage(organizationName: state == .offline ? "Northwind Federal IT" : nil)
             case .showing, .homeOnly, .skipped, .waiting, .failed:
                 CelebrationStatusCard()
@@ -35,8 +36,12 @@ struct CelebrationPreviewGallery: View {
                 }
             case .overlaps:
                 CelebrationOverlaps(overlaps: center.overlaps(within: 365))
-            case .detail:
-                if let event = center.celebrations.first(where: { $0.id == FirstPartyCelebrations.halloweenID }) {
+            case .detail, .style:
+                if let event = center.celebrations.first(where: {
+                    $0.id
+                        == (state == .style
+                            ? CelebrationID("native.australia-day") : FirstPartyCelebrations.halloweenID)
+                }) {
                     CelebrationDetailPage(event: event)
                 }
             case .confirmation:
@@ -62,5 +67,11 @@ struct CelebrationPreviewGallery: View {
 }
 #Preview("Celebrations - Offline install") {
     DSPreviewPair { CelebrationPreviewGallery(.offline).settingsPreviewPage() }.environment(SettingsPresentation())
+}
+#Preview("Celebrations - Feature off") {
+    DSPreviewPair { CelebrationPreviewGallery(.off).settingsPreviewPage() }.environment(SettingsPresentation())
+}
+#Preview("Celebrations - Bulk menu trigger") {
+    DSPreviewPair { CelebrationPreviewGallery(.menu).settingsPreviewPage() }.environment(SettingsPresentation())
 }
 #endif

@@ -188,4 +188,7 @@ struct CelebrationDetailPage: View {
 #Preview("Celebrations - Halloween") {
     DSPreviewPair { CelebrationPreviewGallery(.detail).settingsPreviewPage() }.environment(SettingsPresentation())
 }
+#Preview("Celebrations - Style choices") {
+    DSPreviewPair { CelebrationPreviewGallery(.style).settingsPreviewPage() }.environment(SettingsPresentation())
+}
 #endif
