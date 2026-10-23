@@ -7,6 +7,46 @@ import Testing
 
 @MainActor
 @Suite struct UndoHistoryTests {
+    @Test func shortcutHintFollowsTheSpecificOffer() {
+        let history = UndoHistory()
+        let manager = UndoManager()
+        manager.groupsByEvent = false
+        history.track(manager)
+        manager.beginUndoGrouping()
+        let offered = UndoableAction("Archived task", name: "Archive Task", undoManager: manager) { _ in }
+        manager.endUndoGrouping()
+        #expect(history.willUndo(offered))
+
+        let changed = Mutex(false)
+        withObservationTracking {
+            _ = history.willUndo(offered)
+        } onChange: {
+            changed.withLock { $0 = true }
+        }
+        manager.beginUndoGrouping()
+        let draft = NSObject()
+        manager.registerUndo(withTarget: draft) { _ in }
+        manager.setActionName("Typing")
+        manager.endUndoGrouping()
+        #expect(changed.withLock { $0 })
+        #expect(!history.willUndo(offered))
+        history.undo()
+        #expect(history.willUndo(offered))
+        offered.undo()
+        #expect(!history.willUndo(offered))
+    }
+
+    @Test func unregisteredAndOtherWindowOffersHaveNoShortcutHint() {
+        let history = UndoHistory()
+        let manager = UndoManager()
+        history.track(manager)
+        let unregistered = UndoableAction("Removed host", name: "Remove Host", undoManager: nil) { _ in }
+        #expect(!history.willUndo(unregistered))
+        let other = UndoManager()
+        let elsewhere = UndoableAction("Archived task", name: "Archive Task", undoManager: other) { _ in }
+        #expect(!history.willUndo(elsewhere))
+    }
+
     @Test func menuFollowsTheWindowStackWithoutATextResponder() {
         let history = UndoHistory()
         let manager = UndoManager()
