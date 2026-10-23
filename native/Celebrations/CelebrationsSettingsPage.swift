@@ -79,9 +79,7 @@ struct CelebrationsSettingsPage: View {
                             scrollTo?(Self.monthID(month), .top)
                         }
                     },
-                    chooseRegion: {
-                        if let region = Locale.current.region?.identifier { chooseCountry(region) }
-                    })
+                    chooseCountry: chooseCountry)
                 CelebrationOverlaps(overlaps: center.overlaps(within: 365))
                 catalogue
             }

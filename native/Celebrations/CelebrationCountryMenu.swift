@@ -7,9 +7,10 @@ struct CelebrationCountryMenu: View {
     /// How many celebrations each country (ISO 3166-1 alpha-2) has as public holidays.
     let counts: [String: Int]
     let onPick: (String) -> Void
+    @Environment(\.locale) private var locale
 
     private var region: String? {
-        Locale.current.region?.identifier
+        locale.region?.identifier
     }
 
     private var countries: [String] {

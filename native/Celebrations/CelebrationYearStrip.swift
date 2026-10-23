@@ -5,10 +5,11 @@ import SwiftUI
 struct CelebrationYearStrip: View {
     var reveal: (CelebrationID) -> Void = { _ in }
     var revealMonth: (CivilDate) -> Void = { _ in }
-    var chooseRegion: () -> Void = {}
+    var chooseCountry: (String) -> Void = { _ in }
     var previewHover: CelebrationID?
 
     @Environment(CelebrationCenter.self) private var center
+    @Environment(\.locale) private var locale
     @State private var hovered: CelebrationID?
 
     private var chosen: [CelebrationEvent] { center.priority }
@@ -97,11 +98,15 @@ struct CelebrationYearStrip: View {
         VStack(spacing: DS.Space.md) {
             Text("Start with your region's public holidays. Nothing turns on until you click.")
                 .settingsText(.caption).foregroundStyle(.dsTextTertiary)
-            if let region = Locale.current.region?.identifier,
+            if let region = locale.region?.identifier,
                 let count = CelebrationPreferences.publicHolidayCountries(in: center.celebrations)[region]
             {
-                Button("Turn On \(CelebrationCountryMenu.name(region))'s \(count) Holidays", action: chooseRegion)
+                Button("Turn On \(CelebrationCountryMenu.name(region))'s \(count) Holidays") { chooseCountry(region) }
                     .buttonStyle(.settings)
+            } else {
+                CelebrationCountryMenu(
+                    counts: CelebrationPreferences.publicHolidayCountries(in: center.celebrations),
+                    onPick: chooseCountry)
             }
         }
     }

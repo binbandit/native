@@ -52,6 +52,7 @@ struct CelebrationPreviewGallery: View {
         }
         .environment(center)
         .environment(registry)
+        .environment(\.locale, Locale(identifier: "en_AU"))
     }
 
     @ViewBuilder private func row(_ id: String, query: String = "", flash: Bool = false) -> some View {

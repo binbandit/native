@@ -61,7 +61,7 @@ enum CelebrationPreviewFixtures {
                 event.iconSet = nil
                 event.alternateIconSets = []
             case "native.eid-al-fitr", "native.eid-al-adha":
-                event.calendar = CelebrationCalendar(rule: .unsupported("preview-calendar"))
+                event.calendar = CelebrationCalendar(rule: .unsupported(kind: "preview-calendar"))
             default: break
             }
             return event

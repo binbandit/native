@@ -5,6 +5,16 @@ import Testing
 struct CelebrationListingTests {
     typealias F = CelebrationFixtures
 
+    @Test func existingCountryMetadataReachesTheCatalogue() {
+        let australian = FirstPartyCelebrations.celebrations.filter { $0.publicHolidays.contains("AU") }
+        #expect(
+            Set(australian.map(\.id))
+                == Set(
+                    [
+                        "native.australia-day", "native.christmas", "native.easter", "native.new-year",
+                    ].map { CelebrationID($0) }))
+    }
+
     @Test func monthsStartTodayAndPastOctoberClosesTheList() throws {
         let halloween = try #require(F.events.first { $0.id == F.halloween })
         let past = CelebrationContribution(
