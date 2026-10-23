@@ -154,7 +154,7 @@ private struct UndoToastEdgeStyle: ButtonStyle {
             .dsFocusShape(shape)
             .overlay {
                 if preview == .focus {
-                    shape.strokeBorder(.dsAccent.opacity(0.5), lineWidth: 3)
+                    shape.inset(by: -3).strokeBorder(.dsAccent.opacity(0.5), lineWidth: 3)
                 }
             }
     }
