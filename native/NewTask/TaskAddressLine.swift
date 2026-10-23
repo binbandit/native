@@ -8,20 +8,41 @@ struct TaskAddressLine: View {
     var deviceLook = HostLook(symbol: .laptop, tint: .graphite)
     let project: String
     var branch: String?
+    var isCompact = false
     let picker: QuickEntryModel.Picker?
     let choose: (QuickEntryModel.Picker) -> Void
 
     var body: some View {
-        HStack(spacing: DS.Space.xxs) {
-            preposition("to")
-            address(.agent, title: agent, detail: model)
-            preposition("on")
-            address(.device, title: device)
-            preposition("from")
-            address(.project, title: project, detail: branch)
+        Group {
+            if isCompact {
+                VStack(alignment: .leading, spacing: DS.Space.xs) {
+                    HStack(spacing: DS.Space.xxs) {
+                        preposition("to")
+                        address(.agent, title: agent, detail: model)
+                    }
+                    HStack(spacing: DS.Space.xxs) {
+                        preposition("on")
+                        address(.device, title: device)
+                    }
+                    HStack(spacing: DS.Space.xxs) {
+                        preposition("from")
+                        address(.project, title: project, detail: branch)
+                    }
+                }
+            } else {
+                HStack(spacing: DS.Space.xxs) {
+                    preposition("to")
+                    address(.agent, title: agent, detail: model)
+                    preposition("on")
+                    address(.device, title: device)
+                    preposition("from")
+                    address(.project, title: project, detail: branch)
+                }
+                .fixedSize(horizontal: true, vertical: false)
+            }
         }
         .font(.dsCallout)
-        .fixedSize(horizontal: true, vertical: false)
+        .fixedSize(horizontal: false, vertical: true)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Task address")
     }

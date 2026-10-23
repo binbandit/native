@@ -158,13 +158,13 @@ struct QuickEntryPanel: View {
     private var controls: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: DS.Space.md) {
-                address
+                address()
                 Spacer(minLength: DS.Space.md)
                 startButton
             }
             VStack(alignment: .trailing, spacing: DS.Space.sm) {
-                ScrollView(.horizontal) { address }
-                    .scrollIndicators(.never)
+                address(isCompact: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 startButton
             }
         }
@@ -173,7 +173,7 @@ struct QuickEntryPanel: View {
         .frame(minHeight: DS.QuickEntry.barHeight)
     }
 
-    private var address: some View {
+    private func address(isCompact: Bool = false) -> some View {
         TaskAddressLine(
             agent: model.quickEntryRuntime?.agent.displayName ?? "Choose agent",
             model: model.quickEntryModelName,
@@ -181,6 +181,7 @@ struct QuickEntryPanel: View {
             deviceLook: HostLookStore.shared.look(for: entry.device, named: model.deviceName(entry.device)),
             project: entry.project.flatMap(model.projects.project)?.name ?? "Choose project",
             branch: branch,
+            isCompact: isCompact,
             picker: entry.picker, choose: entry.toggle)
     }
 
