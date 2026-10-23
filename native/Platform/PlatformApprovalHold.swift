@@ -73,10 +73,9 @@ private struct ApprovalHoldKeyMonitor: NSViewRepresentable {
             }
             observer = NotificationCenter.default.addObserver(
                 forName: NSWindow.didResignKeyNotification, object: nil, queue: .main
-            ) { [weak self, weak view] note in
-                MainActor.assumeIsolated {
-                    if let window = note.object as? NSWindow, window === view?.window { self?.release() }
-                }
+            ) { [weak self] _ in
+                // Any focus transfer between this app's windows cancels a held shortcut.
+                MainActor.assumeIsolated { self?.release() }
             }
         }
 
