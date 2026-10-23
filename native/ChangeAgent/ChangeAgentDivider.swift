@@ -9,7 +9,9 @@ struct ChangeAgentDivider: View {
             Text("Continued with \(agentName)")
                 .font(.dsCaption)
                 .foregroundStyle(.dsTextTertiary)
-                .fixedSize()
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .layoutPriority(1)
             Rectangle().fill(.dsBorder).frame(height: DS.AgentChange.dividerHeight)
         }
         .padding(.vertical, DS.Space.lg)

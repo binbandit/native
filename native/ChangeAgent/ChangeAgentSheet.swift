@@ -97,7 +97,7 @@ struct ChangeAgentSheet: View {
             }
         }
         .padding(DS.Space.xxl)
-        .frame(width: DS.AgentChange.sheetWidth)
+        .frame(idealWidth: DS.AgentChange.sheetWidth, maxWidth: DS.AgentChange.sheetWidth)
         .background(.dsBackground)
         .interactiveDismissDisabled()
         .task { await change.loadContext() }

@@ -59,8 +59,8 @@ final class AppModel {
     /// Whether the agent picker for a new session is showing.
     var isChoosingAgent = false
     var changingAgent: ChangeAgentModel?
-    @ObservationIgnored var agentChangeGoalBlock: (SessionModel) -> String? = { _ in nil }
-    @ObservationIgnored var changeAgentHandoff: (SessionModel) async -> String = { source in
+    @ObservationIgnored var agentChangeGoalBlock: @MainActor (SessionModel) -> String? = { _ in nil }
+    @ObservationIgnored var changeAgentHandoff: @MainActor (SessionModel) async -> String = { source in
         TaskHandoff.draft(title: source.displayTitle, state: source.state)
     }
     /// Whether Add Agent (agents that aren't installed, and how to install them) is showing.

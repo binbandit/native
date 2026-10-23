@@ -12,7 +12,9 @@ extension AppModel {
 
     func changeAgentBlock(for source: SessionModel) -> String? {
         guard offersAgentChange else { return "Enable Change Agent in Settings > Labs first." }
-        guard source.origin == .user, !source.isSubagent, !source.isEarlierConversation else {
+        guard sessions.session(source.key) === source, source.origin == .user,
+            !source.isSubagent, !source.isEarlierConversation
+        else {
             return "Open the current task to change its agent."
         }
         guard source.hasStarted else { return "Send a message in this task first." }
@@ -46,8 +48,13 @@ extension AppModel {
             let runtime = await ensureRunning(agent)
         else { throw AgentChangeFailure(startFailure(of: agent)) }
         if let reason = changeAgentBlock(for: source) { throw AgentChangeFailure(reason) }
-        return try await launcher.start(
+        let candidate = try await launcher.start(
             on: runtime, cwd: source.cwd, project: catalog.lookup(source.key)?.project, continuing: source)
+        // Some agents list even empty conversations. Keep the unsent candidate out of the sidebar,
+        // including after quitting during review; an accepted handoff removes this tombstone.
+        deletedSessions.insert(candidate.key)
+        catalog.remove(candidate.key)
+        return candidate
     }
 
     /// No worktree is created: the replacement runs at the exact folder the task already owns.
@@ -80,6 +87,7 @@ extension AppModel {
         // If the host received a previous attempt but its reply was lost, keep that turn instead
         // of sending a second copy of the handoff.
         if !target.hasStarted { _ = try await target.submit(handoff, .queue) }
+        deletedSessions.remove(target.key)
         catalog.add(
             SessionInfo(sessionId: target.id, cwd: source.cwd.folderPath, updatedAt: .now),
             for: target.agent.id, in: project)
@@ -97,6 +105,8 @@ extension AppModel {
 
     func discardAgentChange(_ candidate: SessionModel) {
         guard !candidate.hasStarted else { return }
+        deletedSessions.insert(candidate.key)
+        catalog.remove(candidate.key)
         if let runtime = runtime(candidate.agent.id), candidate.host != nil {
             closeOnHost(candidate, on: runtime)
         } else {
