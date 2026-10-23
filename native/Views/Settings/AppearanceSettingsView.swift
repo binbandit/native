@@ -9,7 +9,9 @@ struct AppearanceSettingsView: View {
 
     var body: some View {
         SettingsRowGroup {
-            SettingsRow("App icon", description: Text("A little more you, in your Dock."), detail: iconDetail) {
+            SettingsRow(
+                "App icon", plainly: .appIcon, description: Text("A little more you, in your Dock."), detail: iconDetail
+            ) {
                 IconThemePicker(
                     "App icon",
                     selection: Binding {

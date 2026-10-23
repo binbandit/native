@@ -17,7 +17,7 @@ extension SettingsPane {
             [
                 SettingsSearchEntry(
                     id: GitHubSettingsPage.openingRow, title: "Open pull requests",
-                    keywords: ["browser", "native", "pr"])
+                    keywords: ["browser", "native", "pr"], plainly: .pullRequests)
             ]
         },
         content: { GitHubSettingsPage() }
@@ -39,7 +39,8 @@ struct GitHubSettingsPage: View {
             SettingsHeader(
                 "GitHub",
                 description: Text(
-                    "Choose the GitHub account Native uses and where pull requests open."))
+                    "Choose the GitHub account Native uses and where pull requests open."),
+                plainly: .init(title: "GitHub", description: "Uses the GitHub CLI's sign-in."))
             #if os(macOS)
             SettingsRowGroup {
                 SettingsRow(
@@ -55,7 +56,7 @@ struct GitHubSettingsPage: View {
             #endif
             SettingsRowGroup {
                 SettingsRow(
-                    id: Self.openingRow, "Open pull requests",
+                    id: Self.openingRow, "Open pull requests", plainly: .pullRequests,
                     description: Text(
                         "Clicking a pull request in the list, on a task or in a link opens its page in Native, where you can read and review it, or on GitHub in your browser."
                     )

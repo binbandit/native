@@ -16,12 +16,15 @@ struct SettingsRow<Accessory: View, Control: View>: View {
     /// Where search reveals the row.
     var id: SettingsRowID?
     let title: Text
+    var plainly: SettingsPlainlyCopy?
     /// An SF Symbol shown in a tile before the text, for rows that stand for a thing (an agent, a server).
     var icon: String?
     var description: Text?
     var detail: Text?
     @ViewBuilder var accessory: Accessory
     @ViewBuilder var control: Control
+
+    @Environment(\.settingsPlainly) private var usesPlainly
 
     @Environment(\.settingsLockReason) private var lockReason
     @Environment(\.settingsControlBelow) private var isControlBelow
@@ -50,7 +53,7 @@ struct SettingsRow<Accessory: View, Control: View>: View {
             }
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: DS.Space.md) {
-                    title
+                    (usesPlainly ? plainly.map { Text($0.title) } ?? title : title)
                         .settingsText(.bodyMedium)
                         .foregroundStyle(.dsTextPrimary)
                     accessory
@@ -61,8 +64,12 @@ struct SettingsRow<Accessory: View, Control: View>: View {
                 // The line takes the text column's width. Sized to its own, it was laid out again a
                 // fraction narrower beside a wider description, truncating its last accessory and
                 // centering in the leftover ("node_repl" on MCP Servers).
-                .frame(maxWidth: .infinity, minHeight: SettingsMetrics.rowTitleHeight, alignment: .leading)
-                if let description {
+                .frame(
+                    maxWidth: .infinity,
+                    minHeight: usesPlainly
+                        ? DS.Settings.rowHeight - DS.Settings.rowVerticalInset * 2 : SettingsMetrics.rowTitleHeight,
+                    alignment: .leading)
+                if let description = usesPlainly && plainly != nil ? plainly?.description.map(Text.init) : description {
                     description
                         .settingsText(.body)
                         .foregroundStyle(.dsTextSecondary)
@@ -86,6 +93,7 @@ struct SettingsRow<Accessory: View, Control: View>: View {
     /// button here is an action, so one without a style of its own gets the settings button.
     private var trailing: some View {
         control
+            .environment(\.settingsRowTitle, usesPlainly ? plainly?.title : nil)
             .buttonStyle(.settings)
             // Beside the text a control keeps its own width; under it, it may take the row's.
             .fixedSize(horizontal: !isControlBelow, vertical: true)
@@ -111,13 +119,14 @@ extension SettingsRow where Accessory == EmptyView {
     init(
         id: SettingsRowID? = nil,
         _ title: String,
+        plainly: SettingsPlainlyCopy? = nil,
         icon: String? = nil,
         description: Text? = nil,
         detail: Text? = nil,
         @ViewBuilder control: () -> Control
     ) {
         self.init(
-            id: id, title: Text(title), icon: icon, description: description, detail: detail,
+            id: id, title: Text(title), plainly: plainly, icon: icon, description: description, detail: detail,
             accessory: { EmptyView() }, control: control)
     }
 }
@@ -142,6 +151,7 @@ extension SettingsRow where Accessory == EmptyView, Control == EmptyView {
     init(
         id: SettingsRowID? = nil,
         _ title: String,
+        plainly: SettingsPlainlyCopy? = nil,
         icon: String? = nil,
         description: Text? = nil,
         detail: Text? = nil,
@@ -154,6 +164,7 @@ extension SettingsRow where Accessory == EmptyView, Control == EmptyView {
 /// Rows with a hairline between each (every row but the first gets a top border with
 /// 20pt either side).
 struct SettingsRowGroup<Content: View>: View {
+    @Environment(\.settingsPlainly) private var plainly
     @ViewBuilder var content: Content
 
     var body: some View {
@@ -162,9 +173,22 @@ struct SettingsRowGroup<Content: View>: View {
                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                     if index > 0 {
                         SeparatorLine()
-                            .padding(.vertical, SettingsMetrics.rowSpacing)
+                            .padding(.vertical, plainly ? 0 : SettingsMetrics.rowSpacing)
+                            .padding(.leading, plainly ? DS.Settings.rowInset : 0)
                     }
                     row
+                        .padding(.horizontal, plainly ? DS.Settings.rowInset : 0)
+                        .padding(.vertical, plainly ? DS.Settings.rowVerticalInset : 0)
+                }
+            }
+            .background(
+                plainly ? Color.dsSurface : .clear,
+                in: RoundedRectangle(cornerRadius: DS.Radius.panel)
+            )
+            .overlay {
+                if plainly {
+                    RoundedRectangle(cornerRadius: DS.Radius.panel)
+                        .strokeBorder(.dsSeparator, lineWidth: DS.Settings.hairline)
                 }
             }
         }

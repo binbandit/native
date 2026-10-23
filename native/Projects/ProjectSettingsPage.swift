@@ -7,6 +7,7 @@ import SwiftUI
 /// contribute their own sections; a value left on Default follows the setting for every project.
 struct ProjectSettingsPage: View {
     let projectID: Project.ID
+    @Environment(\.settingsPlainly) private var plainly
 
     @Environment(AppModel.self) private var model
     @Environment(SettingsPresentation.self) private var settings
@@ -29,7 +30,17 @@ struct ProjectSettingsPage: View {
                         "Settings for \(project.name) alone. Anything left on Default follows your settings for every project."
                     ))
                 ProjectIdentitySection(project: project)
-                ProjectNewTasksSection(project: project)
+                if plainly {
+                    SettingsRowGroup {
+                        SettingsRow(id: ProjectSettingsRows(project: project.id).agent, "New tasks in \(project.name)")
+                        {
+                            Button("New Tasks…") { settings.open(.newTasks, scopedTo: project.url) }
+                        }
+                    }
+                    ProjectNewTasksSection(project: project, prefixOnly: true)
+                } else {
+                    ProjectNewTasksSection(project: project)
+                }
                 ProjectScriptsSection(projectRoot: project.url)
                 AIInstructionsProjectSection(projectRoot: project.url)
                 ModesProjectSection(project: project)

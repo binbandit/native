@@ -4,6 +4,21 @@ import TaskScripts
 // How Native names each event, its scripts and their sources, in Settings and in the task's log.
 // Plain strings, so they're nonisolated: a script's name goes into its output from the runner's queue.
 extension TaskScriptEvent {
+    var plainlyCopy: SettingsPlainlyCopy {
+        switch self {
+        case .setup:
+            .init(
+                title: "After the worktree is made", description: "Install dependencies here. The agent waits for it.")
+        case .taskStarted: .init(title: "When a task starts")
+        case .turnFinished: .init(title: "After each turn")
+        case .teardown:
+            .init(
+                title: "Before the worktree is removed",
+                description: "Stop servers here. A failure never blocks removal.")
+        case .taskDeleted: .init(title: "After a task is deleted")
+        }
+    }
+
     nonisolated var title: String {
         switch self {
         case .setup: "Setup"

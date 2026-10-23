@@ -82,7 +82,10 @@ struct MCPServersSettingsPage: View {
                 title: "MCP Servers",
                 description: Text(
                     "Servers give agents tools. Set one up here once and every agent gets it in every task. Agents also load servers from their own configuration, listed below; Native doesn't hand them a second copy."
-                )
+                ),
+                plainly: .init(
+                    title: "MCP Servers",
+                    description: "Tools for your agents. Set a server up here and every agent gets it.")
             ) {
                 Button("Check All", systemImage: "stethoscope") { Task { await library.probeAll() } }
                     .buttonStyle(.ds(.secondary, size: .medium))

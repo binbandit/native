@@ -1,10 +1,17 @@
 #if DEBUG
+import Experiments
 import Foundation
 import NativeTelemetry
 import SwiftUI
 
 /// Settings previews' data, and pages framed the way the Settings screen shows them.
 enum SettingsPreviewFixtures {
+    static func plainly() -> ExperimentStore {
+        let store = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
+        store.set(true, for: .settingsPlainly)
+        return store
+    }
+
     /// The agent extensions and a few of Native's own, without the ones that watch the clock or the
     /// network as soon as they exist.
     static func registry() -> PluginRegistry {

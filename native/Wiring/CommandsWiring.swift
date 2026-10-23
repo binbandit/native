@@ -77,11 +77,12 @@ enum CommandsWiring {
             .projects(model: model, settings: settings),
             .settingsPages(
                 {
-                    (SettingsPane.builtIn(registry: model.plugins)
-                        + AppSettingsPanes.all(
-                            plugins: model.plugins, terminals: terminals, keepAwake: features.keepAwake,
-                            projects: model.projects.all))
-                        .sorted { ($0.group, $0.order) < ($1.group, $1.order) }
+                    SettingsPageMap.panes(
+                        SettingsPane.builtIn(registry: model.plugins)
+                            + AppSettingsPanes.all(
+                                plugins: model.plugins, terminals: terminals, keepAwake: features.keepAwake,
+                                projects: model.projects.all),
+                        registry: model.plugins, plainly: SettingsPageMap.isEnabled)
                 }, settings: settings),
             .queryCommands(registry),
         ]

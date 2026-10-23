@@ -30,6 +30,7 @@ extension SettingsPane {
 /// adds beyond the agents: Native starts minimal, so some built-ins start off.
 struct ExtensionsSettingsPage: View {
     let registry: PluginRegistry
+    @Environment(\.settingsPlainly) private var plainly
 
     #if os(macOS)
     @Environment(\.openURL) private var openURL
@@ -40,7 +41,7 @@ struct ExtensionsSettingsPage: View {
     }
 
     private var builtIn: [PluginRegistry.LoadedPlugin] {
-        registry.plugins.filter { $0.source == .builtIn }
+        registry.plugins.filter { $0.source == .builtIn && (!plainly || $0.plugin.manifest.agents.isEmpty) }
     }
 
     private var installed: [PluginRegistry.LoadedPlugin] {
@@ -53,7 +54,10 @@ struct ExtensionsSettingsPage: View {
                 title: "Extensions",
                 description: Text(
                     "Turn on what you use. Changes apply to tasks started afterwards; agents start or stop right away."
-                )
+                ),
+                plainly: .init(
+                    title: "Features",
+                    description: "Native starts small. Turn on what you use; a feature that's off is gone, not hidden.")
             ) {
                 Button("Reload", systemImage: "arrow.clockwise") { registry.reload() }
                     .buttonStyle(.ds(.secondary, size: .medium))

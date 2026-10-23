@@ -49,6 +49,8 @@ struct AgentsSettingsPage: View {
 
     /// The host's registry, passed in so a client of several hosts can show any of them.
     let registry: PluginRegistry
+    @Environment(\.settingsPlainly) private var plainly
+    @Environment(SettingsPresentation.self) private var presentation
 
     @Environment(AppModel.self) private var model
     @Environment(PolicyCenter.self) private var policy
@@ -63,23 +65,35 @@ struct AgentsSettingsPage: View {
         SettingsPage {
             SettingsHeader(
                 "Agents",
-                description: Text("Agents Native can run tasks with. Each comes from an extension and speaks ACP."))
+                description: Text("Agents Native can run tasks with. Each comes from an extension and speaks ACP."),
+                plainly: .init(
+                    title: "Agents",
+                    description: "The coding agents on this Mac. New tasks can start with any agent that's on."))
             SettingsRowGroup {
                 ForEach(shownEntries) { entry in
                     agentRow(entry)
                         .settingsLocked(isAllowed(entry) ? nil : Self.notAllowed)
                     if registry.isEnabled(entry.plugin.id), isAllowed(entry) {
-                        AgentDefaultsRow(agentName: entry.agent.name, agentID: entry.definition.id)
-                            // Under the agent's name, past its icon.
-                            .padding(.leading, SettingsMetrics.iconTile + DS.Space.lg)
+                        if !plainly {
+                            AgentDefaultsRow(agentName: entry.agent.name, agentID: entry.definition.id)
+                                .padding(.leading, SettingsMetrics.iconTile + DS.Space.lg)
+                        }
                     }
                 }
+            }
+            if plainly {
+                Button("New Task Defaults…") { presentation.open(.newTasks) }
+                    .buttonStyle(.settings)
             }
             SettingsHeader(
                 "Add an Agent",
                 description: Text(
                     "Agents Native knows but can't find on this Mac. Install one in your terminal, then check again. Native never runs these commands."
-                ))
+                ),
+                plainly: .init(
+                    title: "Not on this Mac",
+                    description:
+                        "Install one in Terminal and Native notices. It shows the command; it never runs it for you."))
             AddAgentList(agents: model.agentsToAdd, summaries: registry.descriptions) {
                 await model.checkForAgents()
             }
@@ -165,5 +179,6 @@ struct AgentsSettingsPage: View {
     }
     .environment(app)
     .environment(PolicyCenter.shared)
+    .environment(SettingsPresentation())
 }
 #endif

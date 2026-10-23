@@ -26,10 +26,10 @@ extension SettingsPane {
                 SettingsSearchEntry(
                     id: BackgroundSettingsPage.keepRunningRow, title: "Keep agents running when Native quits",
                     description: "Agents finish their work in Native's background host after you quit.",
-                    keywords: ["durable", "quit", "background", "host"]),
+                    keywords: ["durable", "quit", "background", "host"], plainly: .keepRunning),
                 SettingsSearchEntry(
                     id: BackgroundSettingsPage.hostRow, title: "Background host",
-                    keywords: ["restart", "status", "login items"]),
+                    keywords: ["restart", "status", "login items"], plainly: .backgroundHelper),
                 SettingsSearchEntry(
                     id: BackgroundSettingsPage.checkRow, title: "Check this Mac",
                     keywords: ["doctor", "droid", "mac mini", "health", "diagnose"]),
@@ -57,7 +57,10 @@ struct BackgroundSettingsPage: View {
                 "Background",
                 description: Text(
                     "Agents keep working when you quit Native or close its window, and pick up where they left off after a crash, an update or a restart of your Mac."
-                ))
+                ),
+                plainly: .init(
+                    title: "While You're Away",
+                    description: "Agents keep working when you quit Native or step away from your Mac."))
             if let host, needsRelaunch(host) {
                 relaunchNotice
             } else if let fallback = host?.placement.fallback {
@@ -66,7 +69,7 @@ struct BackgroundSettingsPage: View {
             SettingsRowGroup {
                 SettingsRow(
                     id: Self.keepRunningRow,
-                    "Keep agents running when Native quits",
+                    "Keep agents running when Native quits", plainly: .keepRunning,
                     description: Text(
                         "Agents run in Native's background host, listed as Native under Login Items in System Settings. Turn this off to run them inside Native, so quitting stops them."
                     ),
@@ -159,7 +162,7 @@ struct BackgroundSettingsPage: View {
 
     private func hostRow(_ host: DurableHost) -> some View {
         SettingsRow(
-            id: Self.hostRow, "Background host",
+            id: Self.hostRow, "Background host", plainly: .backgroundHelper,
             description: Text(hostDescription(host))
         ) {
             if host.isUnavailable {

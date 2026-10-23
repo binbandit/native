@@ -86,7 +86,11 @@ struct SkillsSettingsPage: View {
                 title: "Skills",
                 description: Text(
                     "Skills teach agents one kind of work. Turn one off and Native leaves it out of every agent's new tasks, without touching its files."
-                )
+                ),
+                plainly: .init(
+                    title: "Skills",
+                    description:
+                        "Know-how your agents load, like a release checklist. Turning one off never touches its files.")
             ) {
                 Button("Install Skill", systemImage: "plus") { isInstalling = true }
                     .buttonStyle(.ds(.primary, size: .medium))

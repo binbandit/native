@@ -35,8 +35,7 @@ extension SettingsPane {
                         id: TerminalSettingsPage.scrollbackRow,
                         title: "Scrollback",
                         description: "How many lines each terminal keeps.",
-                        keywords: ["history", "lines", "buffer"]
-                    ),
+                        keywords: ["history", "lines", "buffer"], plainly: .scrollback),
                 ]
             },
             content: { TerminalSettingsPage(store: store) }

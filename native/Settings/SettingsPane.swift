@@ -19,8 +19,11 @@ struct SettingsPane: Identifiable {
         case agents
         /// Everything Native adds beyond the agents themselves, each switchable (Native starts
         /// minimal; see `docs/decisions.md`).
+        case tasks
+        case work
         case extensions
         case more
+        case native
         /// A page per open project, after everything that applies to all of them.
         case projects
 
@@ -28,6 +31,9 @@ struct SettingsPane: Identifiable {
             switch self {
             case .personal: "Personal"
             case .agents: "Agents"
+            case .tasks: "Tasks"
+            case .work: "Work"
+            case .native: "Native"
             case .extensions: "Extensions"
             case .more: "More"
             case .projects: "Projects"
@@ -92,6 +98,7 @@ struct SettingsSearchEntry {
     let title: String
     var description = ""
     var keywords: [String] = []
+    var plainly: SettingsPlainlyCopy?
 }
 
 /// Where a row lives on its page, for search to scroll to and flash.

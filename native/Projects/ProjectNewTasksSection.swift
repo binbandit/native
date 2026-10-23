@@ -5,12 +5,17 @@ import SwiftUI
 /// its prefix. Each picker's Default follows the setting for every project, and says what that is.
 struct ProjectNewTasksSection: View {
     let project: Project
+    var defaultsOnly = false
+    var prefixOnly = false
+    @Environment(\.settingsPlainly) private var plainly
 
     @Environment(AppModel.self) private var model
     @Environment(GitSettings.self) private var git
     @AppStorage private var agentID: String?
 
-    init(project: Project) {
+    init(project: Project, defaultsOnly: Bool = false, prefixOnly: Bool = false) {
+        self.defaultsOnly = defaultsOnly
+        self.prefixOnly = prefixOnly
         self.project = project
         _agentID = AppStorage(ProjectTaskDefaults.agentKey(for: project.id))
     }
@@ -22,58 +27,63 @@ struct ProjectNewTasksSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             SettingsSubheading(
-                "New tasks", note: "How tasks you start in \(project.name) begin, unless you choose otherwise.")
+                prefixOnly ? "Git" : "New tasks",
+                note: prefixOnly ? nil : "How tasks you start in \(project.name) begin, unless you choose otherwise.")
             SettingsRowGroup {
-                SettingsRow(id: rows.agent, "Agent", description: Text(agentDescription)) {
-                    SettingsSelect(
-                        label: "Agent for new tasks", selection: $agentID, options: agentOptions,
-                        width: Self.selectWidth)
-                }
-                if let modelAgent {
-                    // Its own view, since where the model is kept depends on the agent.
-                    ProjectModelDefaultRow(
-                        project: project, agent: modelAgent, rowID: rows.model, width: Self.selectWidth
-                    )
-                    .id(modelAgent.id)
-                } else {
+                if !prefixOnly {
+                    SettingsRow(id: rows.agent, "Agent", description: Text(agentDescription)) {
+                        SettingsSelect(
+                            label: "Agent for new tasks", selection: $agentID, options: agentOptions,
+                            width: Self.selectWidth)
+                    }
+                    if let modelAgent {
+                        // Its own view, since where the model is kept depends on the agent.
+                        ProjectModelDefaultRow(
+                            project: project, agent: modelAgent, rowID: rows.model, width: Self.selectWidth
+                        )
+                        .id(modelAgent.id)
+                    } else {
+                        SettingsRow(
+                            id: rows.model, "Model",
+                            description: Text("Choose an installed agent above to pick its model.")
+                        ) {
+                            SettingsSelect(
+                                label: "Model for new tasks", selection: .constant(String?.none),
+                                options: [.init(value: nil, title: "Default")], width: Self.selectWidth
+                            )
+                            .disabled(true)
+                        }
+                    }
                     SettingsRow(
-                        id: rows.model, "Model",
-                        description: Text("Choose an installed agent above to pick its model.")
+                        id: rows.workspace, "New tasks get", plainly: .workspace,
+                        description: Text("A worktree keeps parallel tasks from editing the same files.")
                     ) {
                         SettingsSelect(
-                            label: "Model for new tasks", selection: .constant(String?.none),
-                            options: [.init(value: nil, title: "Default")], width: Self.selectWidth
-                        )
-                        .disabled(true)
+                            label: "New tasks get", selection: override(\.newTaskWorkspace),
+                            options: [.init(value: nil, title: "Default (\(git.newTaskWorkspace.title))")]
+                                + GitSettings.NewTaskWorkspace.allCases.map { .init(value: $0, title: $0.title) },
+                            width: Self.selectWidth)
                     }
                 }
-                SettingsRow(
-                    id: rows.workspace, "New tasks get",
-                    description: Text("A worktree keeps parallel tasks from editing the same files.")
-                ) {
-                    SettingsSelect(
-                        label: "New tasks get", selection: override(\.newTaskWorkspace),
-                        options: [.init(value: nil, title: "Default (\(git.newTaskWorkspace.title))")]
-                            + GitSettings.NewTaskWorkspace.allCases.map { .init(value: $0, title: $0.title) },
-                        width: Self.selectWidth)
-                }
-                SettingsRow(
-                    id: rows.prefix, "Branch prefix",
-                    description: Text(
-                        "New branches start with it, like \(git.branchPrefix(forProjectAt: project.url, gitHubLogin: "you"))fix-login-bug."
-                    )
-                ) {
-                    HStack(spacing: DS.Space.sm) {
-                        if overrides.branchPrefixMode == .custom {
-                            TextField("prefix", text: customPrefix)
-                                .settingsField()
-                                .frame(width: GitMetrics.prefixFieldWidth)
+                if !defaultsOnly {
+                    SettingsRow(
+                        id: rows.prefix, "Branch prefix",
+                        description: Text(
+                            "New branches start with it, like \(git.branchPrefix(forProjectAt: project.url, gitHubLogin: "you"))fix-login-bug."
+                        )
+                    ) {
+                        HStack(spacing: DS.Space.sm) {
+                            if overrides.branchPrefixMode == .custom {
+                                TextField("prefix", text: customPrefix)
+                                    .settingsField()
+                                    .frame(width: GitMetrics.prefixFieldWidth)
+                            }
+                            SettingsSelect(
+                                label: "Branch prefix", selection: override(\.branchPrefixMode),
+                                options: [.init(value: nil, title: "Default (\(git.branchPrefixMode.title))")]
+                                    + GitSettings.BranchPrefixMode.allCases.map { .init(value: $0, title: $0.title) },
+                                width: Self.selectWidth)
                         }
-                        SettingsSelect(
-                            label: "Branch prefix", selection: override(\.branchPrefixMode),
-                            options: [.init(value: nil, title: "Default (\(git.branchPrefixMode.title))")]
-                                + GitSettings.BranchPrefixMode.allCases.map { .init(value: $0, title: $0.title) },
-                            width: Self.selectWidth)
                     }
                 }
             }
