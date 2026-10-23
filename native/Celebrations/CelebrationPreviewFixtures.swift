@@ -5,7 +5,8 @@ import SwiftUI
 /// Inert catalogue fixtures: no timers, downloads or persisted choices.
 enum CelebrationPreviewFixtures {
     enum State: String, CaseIterable {
-        case page, showing, homeOnly, skipped, waiting, failed, empty, yearHover, rows, overlaps, detail, offline,
+        case off, menu, style, page, showing, homeOnly, skipped, waiting, failed, empty, yearHover, rows, overlaps,
+            detail, offline,
             confirmation
     }
 
@@ -14,6 +15,7 @@ enum CelebrationPreviewFixtures {
         let center = CelebrationCenter(
             defaults: PreviewUserDefaults(), runsEffects: false,
             now: { day.start(in: .current) })
+        if state == .off { return center }
         let catalogue = AppearanceCatalog([
             .init(
                 source: ContributionSource(
@@ -44,14 +46,14 @@ enum CelebrationPreviewFixtures {
         if state == .waiting || state == .failed {
             center.setHome(false, for: FirstPartyCelebrations.halloweenID)
         }
-        if state == .rows { center.setAutomatic(true, for: CelebrationID("native.australia-day")) }
+        if state == .rows || state == .style { center.setAutomatic(true, for: CelebrationID("native.australia-day")) }
         if state == .skipped { center.restoreBase() }
         return center
     }
 
-    static func registry() -> PluginRegistry {
+    static func registry(_ state: State = .page) -> PluginRegistry {
         let defaults = PreviewUserDefaults()
-        defaults.set([CelebrationsPlugin.id: true], forKey: "pluginChoices")
+        defaults.set([CelebrationsPlugin.id: state != .off], forKey: "pluginChoices")
         return PluginRegistry(builtIns: [CelebrationsPlugin()], defaults: defaults)
     }
 }
