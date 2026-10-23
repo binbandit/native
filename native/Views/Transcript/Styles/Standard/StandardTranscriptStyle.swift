@@ -49,6 +49,7 @@ private struct StandardTranscript: View {
                     WorkingIndicator(
                         status: transcript.session.taskStatus, quietSince: transcript.session.state.quietSince
                     )
+                    .environment(\.dsWorkingAnimation, transcript.session.workingAnimation)
                     .padding(.top, DS.Space.xl)
                 }
             }

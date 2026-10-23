@@ -1,3 +1,4 @@
+import AppAppearance
 import SwiftUI
 
 /// The dot-grid loaders: a 3x3 grid of dots that pop in and out in sequence, laid out on a 240pt
@@ -6,13 +7,20 @@ import SwiftUI
 /// Draws in the foreground style; with Reduce Motion it holds a still grid. Core Animation runs the
 /// animation (`DotGridPulse`), so a loader costs nothing per frame.
 public struct DotGridLoader: View {
-    public enum Pattern: Sendable {
+    public enum Pattern: Equatable, Sendable {
         case typing, waiting, settingUp
+        case working(WorkingAnimation)
     }
 
     let pattern: Pattern
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dsWorkingAnimation) private var workingAnimation
+
+    private var effectivePattern: Pattern {
+        if pattern == .typing, let workingAnimation { return .working(workingAnimation) }
+        return pattern
+    }
 
     public init(pattern: Pattern) {
         self.pattern = pattern
@@ -23,7 +31,7 @@ public struct DotGridLoader: View {
             if reduceMotion {
                 stillGrid
             } else {
-                DotGridPulse(pattern: pattern)
+                DotGridPulse(pattern: effectivePattern)
             }
         }
         .accessibilityHidden(true)
@@ -85,6 +93,7 @@ extension DotGridLoader.Pattern {
         case .typing: Self.typingTiming
         case .waiting: Self.waitingTiming
         case .settingUp: Self.settingUpTiming
+        case .working(let animation): Self.workingTiming(animation)
         }
     }
 

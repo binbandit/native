@@ -143,3 +143,11 @@ scripts/check-ios.sh native/DesignSystem
 ```
 
 Then look at the gallery in both appearances, and at your screen in the running app.
+
+### Playful working spinners
+
+Settings > Appearance > Playful spinners defaults to off. Each task model keeps one saved random
+choice from sweep, ripple, orbit, rain, checkerboard, snake and breathe. Its sidebar and transcript
+share that choice through `dsWorkingAnimation`; other loading states keep their existing patterns.
+All variants use the same neutral 3x3 grid and 2.4-second Core Animation loop. Reduce Motion shows
+the still grid. The Gallery and Appearance show every variation.
