@@ -31,6 +31,7 @@ private struct ArtifactViewerRegression {
         expect(model.viewport.zoom == 1, "Fit resets zoom")
         model.copy()
         expect(copied == bytes && model.feedback == "Copied", "Copy sends the original image to the fake pasteboard")
+        for _ in 0..<100 where model.revealURL == nil { try await Task.sleep(for: .milliseconds(10)) }
         model.reveal()
         expect(revealed == original, "Reveal sends only the on-disk original to the fake Finder")
         model.saveAs()
