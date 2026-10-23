@@ -187,6 +187,8 @@ extension SessionModel {
     func submitToHost(
         _ text: String, attachments: [PromptAttachment], behavior: FollowUpBehavior, echo: Bool
     ) async throws -> FollowUpDelivery {
+        guard !isChangingWorkspace, !isWorkspaceReplaced else { throw SendError.busy }
+        hasSubmittedPrompt = true
         if holdsPrompts {
             heldPrompts.append(HeldPrompt(text: text, attachments: attachments, behavior: behavior, isEchoed: echo))
             return .queued

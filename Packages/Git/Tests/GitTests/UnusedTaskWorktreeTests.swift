@@ -5,6 +5,21 @@ import Testing
 
 @Suite("Unused task worktree cleanup")
 struct UnusedTaskWorktreeTests {
+    @Test func receiptSurvivesReopeningAndIsAbsentForUserWorktrees() async throws {
+        let test = try await TestRepository.make()
+        defer { test.remove() }
+        let repository = try await test.repository
+        let folder = test.folder.deletingLastPathComponent().appending(path: "task with spaces")
+        let worktree = try await repository.addWorktree(at: folder, newBranch: "task")
+        #expect(try await repository.unusedTaskWorktree(at: folder) == nil)
+        try await repository.recordUnusedTaskWorktree(worktree)
+        let reopened = try await test.repository
+        let receipt = try #require(await reopened.unusedTaskWorktree(at: folder))
+        #expect(receipt.branch == "task")
+        #expect(try await reopened.removeUnusedTaskWorktree(receipt))
+        #expect(try await reopened.unusedTaskWorktree(at: folder) == nil)
+    }
+
     @Test func removesUntouchedCheckoutAndKeepsBranch() async throws {
         let test = try await TestRepository.make()
         defer { test.remove() }

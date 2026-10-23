@@ -10,9 +10,9 @@ import TaskScripts
 /// when the task is archived. Only worktrees Native made are ever removed. The task scripts run
 /// around them: setup and teardown through GitStore's hooks, task-deleted from here.
 final class GitTaskWorkspaceProvider: TaskWorkspaceProvider {
-    private let git: GitStore
+    let git: GitStore
     private let gitHub: GitHubModel
-    private let scripts: TaskScriptCenter
+    let scripts: TaskScriptCenter
     /// Each project's last verdicts on removed workspaces, kept while its branches stay put.
     private var removedVerdicts: [URL: RemovedVerdicts] = [:]
 
@@ -191,7 +191,7 @@ final class GitTaskWorkspaceProvider: TaskWorkspaceProvider {
     }
 
     /// The signed-in GitHub user, only asked for when the prefix needs it.
-    private func gitHubLogin(for project: Project) async -> String? {
+    func gitHubLogin(for project: Project) async -> String? {
         guard git.settings.branchPrefixMode(forProjectAt: project.url) == .gitHubUsername else { return nil }
         if let login = gitHub.currentLogin { return login }
         return try? await gitHub.cli().currentUser().login
