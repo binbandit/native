@@ -16,7 +16,7 @@ noticed while there's still room to choose what to cut; lower them as the cuts i
 | Download, update archive | 47 MB | 42.7 MB |
 | Download, disk image | 48 MB | about 43.3 MB |
 | Installed app | 118 MB | 107.5 MB |
-| App binary (`Contents/MacOS/Native`) | 59.5 MB | 53.2 MB |
+| App binary (`Contents/MacOS/Native`) | 60 MB | 53.2 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
 `scripts/release/size-check.sh` holds the same numbers and fails when anything is over. It also
@@ -88,6 +88,14 @@ opt-in panel with the worktree setup, Settings and task Peek changes already on 
 budget is now 59.5 MB, with a small margin for this measured integration. The largest update
 archive (46.3 MB) and installed app (115.8 MB) remain within their unchanged budgets; no assets
 or dependencies were added.
+
+Fine print integrated with Home Next and main through `db0f3012` at `408ba425` measures
+59.560 MB for both Release and Nightly binaries, about 0.060 MB above the 59.5 MB allowance.
+The annotated approvals, command analysis and deliberate confirmation compile alongside the
+new Home questions, plan review and recovery code, with no added assets or dependencies. The
+binary budget is now 60 MB for this measured integration. Downloads remain 46.4/46.5 MB and
+installed apps 116.2/116.3 MB, within their unchanged limits. Remeasure when the gated redesign
+components replace their legacy presentations.
 
 ## Measuring
 
