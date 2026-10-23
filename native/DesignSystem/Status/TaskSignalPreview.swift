@@ -1,4 +1,5 @@
 #if DEBUG
+import AppAppearance
 import SwiftUI
 
 /// Interactive fixture for checking the grid's transitions without starting an agent.
