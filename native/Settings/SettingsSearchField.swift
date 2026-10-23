@@ -112,7 +112,7 @@ private struct ResultRow: View {
                         .settingsText(.body)
                         .lineLimit(1)
                     if result.item.rowID != nil {
-                        Text(result.item.paneTitle)
+                        Text(result.item.location)
                             .settingsText(.caption)
                             .foregroundStyle(.dsTextSecondary)
                             .lineLimit(1)
@@ -130,7 +130,7 @@ private struct ResultRow: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(
-            result.item.rowID == nil ? result.item.title : "\(result.item.title), \(result.item.paneTitle)")
+            result.item.rowID == nil ? result.item.title : "\(result.item.title), \(result.item.location)")
     }
 
     /// Matched letters at full strength, the rest at half. A

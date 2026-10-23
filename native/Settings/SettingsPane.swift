@@ -99,6 +99,7 @@ struct SettingsSearchEntry {
     var description = ""
     var keywords: [String] = []
     var plainly: SettingsPlainlyCopy?
+    var scopeName: String?
 }
 
 /// Where a row lives on its page, for search to scroll to and flash.

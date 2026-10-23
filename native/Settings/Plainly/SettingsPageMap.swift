@@ -134,7 +134,7 @@ enum SettingsPageMap {
             return SettingsSearchEntry(
                 id: entry.id, title: copy.title,
                 description: copy.description ?? "",
-                keywords: entry.keywords + [entry.title])
+                keywords: entry.keywords + [entry.title], scopeName: entry.scopeName)
         }
     }
 

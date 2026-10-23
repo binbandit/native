@@ -106,6 +106,9 @@ private struct SettingsRegression {
         row(
             AgentDefaultsRow.settingRowID(agentID: .init(rawValue: "codex"), setting: .model), title: "Model",
             page: .newTasks)
+        expect(
+            index.results(for: "Codex model", limit: 1).first?.item.location == "New Tasks ▸ Codex",
+            "Model results name the agent while keeping the row's title")
         expect(SettingsPageMap.destination(.scripts) == .git, "Existing Scripts links open Git")
         expect(SettingsPageMap.destination(.pairedDevices) == .background, "Device links open While You're Away")
         expect(panes.contains { $0.id == .usage }, "The activity graph stays in Settings")

@@ -11,7 +11,7 @@ extension SettingsPane {
                         SettingsSearchEntry(
                             id: AgentDefaultsRow.settingRowID(agentID: entry.definition.id, setting: setting),
                             title: setting == .model ? "Model" : "Effort", description: entry.agent.name,
-                            keywords: [entry.agent.name, "default"])
+                            keywords: [entry.agent.name, "default"], scopeName: entry.agent.name)
                     }
                 } + [
                     SettingsSearchEntry(
