@@ -128,6 +128,7 @@ private struct TaskWorkspaceRegression {
         )
 
         // Hold session/new at the wire: both composer sends and API sends must be refused before any await.
+        await host.configure()
         let waiting = try await start(at: folder)
         let previousBranch = try await git.requireRepository(at: inNewTree.cwd).status().branch.name
         guard let previousBranch else { throw Failure("task branch exists") }
