@@ -22,7 +22,7 @@ extension SettingsPane {
             [
                 AppearanceModeSettingsRow.searchEntry, LightToneSettingsRow.searchEntry,
                 DarkToneSettingsRow.searchEntry,
-                TransparencySettingsRow.searchEntry,
+                TransparencySettingsRow.searchEntry, PlayfulSpinnersSettingsRow.searchEntry,
                 CodeThemeSettingsRow.searchEntry, CodeFontSettingsRow.searchEntry, AccentSettingsRow.searchEntry,
             ]
         },
@@ -33,6 +33,7 @@ extension SettingsPane {
                     AppearanceModeSettingsRow()
                     LightToneSettingsRow()
                     DarkToneSettingsRow()
+                    PlayfulSpinnersSettingsRow()
                 }
                 SeparatorLine()
                 #if os(macOS)

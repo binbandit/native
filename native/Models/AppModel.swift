@@ -1,4 +1,5 @@
 import ACP
+import AppAppearance
 import Foundation
 import Observation
 import Undo
@@ -12,6 +13,7 @@ import os
 final class AppModel {
     let plugins: PluginRegistry
     let titles: SessionTitles
+    let workingSpinners: WorkingSpinnerPreferences
     let runtimes: AgentRuntimes
     /// Paired hosts sessions can run on besides this Mac (AppModel+Hosts.swift).
     let hosts = RemoteHosts()
@@ -177,6 +179,8 @@ final class AppModel {
         self.plugins = plugins
         self.titles = titles
         self.defaults = defaults
+        let workingSpinners = WorkingSpinnerPreferences(defaults: defaults)
+        self.workingSpinners = workingSpinners
         installations = AgentInstallations(defaults: defaults)
         unsentSessions = UnsentSessions(defaults: defaults)
         archivedSessions = ArchivedSessions(defaults: defaults)
@@ -190,7 +194,8 @@ final class AppModel {
         let sendGate = AgentSendGate()
         self.sendGate = sendGate
         services = SessionServices(
-            plugins: plugins, titles: titles, sendGate: sendGate, earlierConversations: earlierConversations
+            plugins: plugins, titles: titles, sendGate: sendGate, earlierConversations: earlierConversations,
+            workingSpinners: workingSpinners
         ) {
             continuation.yield($0)
         } titleLanded: { key, folder, title in

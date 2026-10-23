@@ -19,6 +19,8 @@ struct GalleryStatus: View {
                     }
                 }
             }
+            Text("Playful working spinners").font(.dsHeadline).foregroundStyle(.dsTextPrimary)
+            WorkingSpinnerSamples()
             HStack(spacing: DS.Space.xxl) {
                 ForEach(
                     [("typing", DotGridLoader.Pattern.typing), ("waiting", .waiting), ("settingUp", .settingUp)],
