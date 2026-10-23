@@ -1,4 +1,5 @@
 #if DEBUG
+import ACP
 import NativeAutomation
 import SwiftUI
 
