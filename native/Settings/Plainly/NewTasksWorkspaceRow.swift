@@ -16,7 +16,8 @@ struct NewTasksWorkspaceRow: View {
                 label: "New tasks get", selection: $settings.newTaskWorkspace,
                 options: GitSettings.NewTaskWorkspace.allCases.map {
                     .init(value: $0, title: plainly && $0 != .worktree ? "The project folder" : $0.title)
-                }, width: plainly ? DS.Settings.wideControl : SettingsMetrics.selectWidth)
+                }, width: plainly ? DS.Settings.wideControl : SettingsMetrics.selectWidth,
+                isDefault: settings.newTaskWorkspace == .worktree)
         }
 
     }

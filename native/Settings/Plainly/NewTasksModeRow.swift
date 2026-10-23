@@ -10,7 +10,8 @@ struct NewTasksModeRow: View {
                 label: "Mode",
                 selection: Binding(
                     get: { library.startingMode.id }, set: { library.defaultMode = $0 }),
-                options: (Mode.builtIn + library.custom).map { .init(value: $0.id, title: $0.name) })
+                options: (Mode.builtIn + library.custom).map { .init(value: $0.id, title: $0.name) },
+                isDefault: library.startingMode.id == .build)
         }
     }
 }
