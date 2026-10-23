@@ -168,7 +168,9 @@ struct RouteReviewView: View {
                 .buttonStyle(.ds(.primary, size: .medium))
                 .keyboardShortcut(.return, modifiers: .command)
                 .disabled(isRevising || approvedRoute.assignments.isEmpty)
-                .help("Start the crew on this route (⌘Return or ⌘Y)")
+                .help(
+                    globalShortcut
+                        ? "Start the crew on this route (⌘Return)" : "Start the crew on this route (⌘Return or ⌘Y)")
         }
         .padding(.horizontal, DS.Space.xxl)
         .padding(.vertical, DS.Space.lg)
