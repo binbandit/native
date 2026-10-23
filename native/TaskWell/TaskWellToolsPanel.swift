@@ -1,3 +1,5 @@
+import ACP
+import NativeCommands
 import SwiftUI
 
 struct TaskWellToolsPanel<Dev: View>: View {

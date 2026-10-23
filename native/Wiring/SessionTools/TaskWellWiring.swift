@@ -1,3 +1,7 @@
+import ACP
+import NativeCommands
+import ProjectActions
+import SessionTools
 import SwiftUI
 
 /// Adapts the existing task tools to the well without making a second terminal, action menu,
