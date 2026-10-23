@@ -9,6 +9,14 @@ public enum HomeAskOrder: String, CaseIterable, Sendable {
         case approval, question, plan, failure, limit
     }
 
+    /// A task can contain several simultaneous asks from its parent and child sessions.
+    public static func first<Element, ID: Equatable>(
+        _ elements: [Element], retaining current: ID?, id: (Element) -> ID
+    ) -> Element? {
+        if let current, let retained = elements.first(where: { id($0) == current }) { return retained }
+        return elements.first
+    }
+
     public func sorted<Element, ID: Hashable>(
         _ elements: [Element], retaining current: ID? = nil,
         id: (Element) -> ID, kind: (Element) -> Kind, date: (Element) -> Date?

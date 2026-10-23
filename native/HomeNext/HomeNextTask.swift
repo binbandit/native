@@ -16,6 +16,8 @@ struct HomeNextTask: Identifiable {
     var finishedAt: Date?
     var diff: String?
 
+    var approvalID: HomeNextApprovalID? { HomeNextApprovalID(session: approvalSession, call: approval) }
+
     var kind: HomeAskOrder.Kind {
         if approval != nil { return .approval }
         return switch status {

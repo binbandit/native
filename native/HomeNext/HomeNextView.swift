@@ -12,13 +12,14 @@ struct HomeNextView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var order = HomeAskOrder.quickest
     @State private var current: SessionKey?
+    @State private var currentApproval: HomeNextApprovalID?
     @State private var visibleCount = DS.HomeNext.pageSize
     @State private var receipt: HomeNextReceipt?
     @State private var isAnswering = false
     @State private var safeAreaTop: CGFloat = 0
 
     var body: some View {
-        let tasks = model.homeNextTasks
+        let tasks = model.homeNextTasks(retaining: currentApproval)
         let asks = order.sorted(tasks.filter(\.needsYou), retaining: current, id: \.id, kind: \.kind, date: \.date)
         let finished = tasks.filter {
             $0.finishedAt.map { Calendar.current.isDateInToday($0) } == true
@@ -97,6 +98,7 @@ struct HomeNextView: View {
             safeAreaTop = $0
         }
         .onChange(of: asks.first?.id, initial: true) { _, id in current = id }
+        .onChange(of: asks.first?.approvalID, initial: true) { _, id in currentApproval = id }
         .animation(reduceMotion ? nil : .dsDisclosure, value: asks.map { $0.approval?.id ?? $0.id.id.rawValue })
         .animation(reduceMotion ? nil : .dsDisclosure, value: visibleCount)
         .animation(reduceMotion ? nil : .dsDisclosure, value: receipt?.date)
@@ -121,7 +123,10 @@ struct HomeNextView: View {
                 }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
-                .onChange(of: order) { current = nil }
+                .onChange(of: order) {
+                    current = nil
+                    currentApproval = nil
+                }
             }
         }
         .frame(minHeight: DS.HomeNext.headerHeight)

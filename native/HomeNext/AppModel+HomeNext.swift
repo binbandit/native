@@ -1,12 +1,16 @@
 import ACP
 import Foundation
+import TaskList
 
 extension AppModel {
-    var homeNextTasks: [HomeNextTask] {
+    func homeNextTasks(retaining current: HomeNextApprovalID?) -> [HomeNextTask] {
         sessionList.map { summary in
             let live = session(summary.id)
             let status = live?.taskStatus ?? .idle
-            let approval = live.flatMap(homeNextApproval)
+            let approvals = live.map(homeNextApprovals) ?? []
+            let approval = HomeAskOrder.first(approvals, retaining: current) {
+                HomeNextApprovalID(session: $0.0, call: $0.1)
+            }
             let turn = status == .done ? live?.state.turns.last : nil
             let changes = turn.flatMap { live?.state.summary(of: $0) }
             return HomeNextTask(
@@ -25,12 +29,9 @@ extension AppModel {
         }
     }
 
-    private func homeNextApproval(_ session: SessionModel) -> (SessionModel, ToolCallState)? {
-        if let call = session.permissionRequests.first, call.kind != .switchMode {
-            return (session, call)
-        }
-        return session.children.values.sorted { $0.id.rawValue < $1.id.rawValue }
-            .lazy.compactMap(homeNextApproval).first
+    private func homeNextApprovals(_ session: SessionModel) -> [(SessionModel, ToolCallState)] {
+        session.permissionRequests.filter { $0.kind != .switchMode }.map { (session, $0) }
+            + session.children.values.sorted { $0.id.rawValue < $1.id.rawValue }.flatMap(homeNextApprovals)
     }
 
     func openHomeNextTask(_ key: SessionKey) { selection = key }
