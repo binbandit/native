@@ -89,7 +89,11 @@ struct HostAgentNamesTests {
         _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "queued", behavior: .queue))
         try await recorder.client.cancel(session.id)
         try Data().write(to: gate)
-        try await recorder.wait("the stopped turn") { await $0.turnsEnded(session.id).count == 1 }
+        try await recorder.wait("the stopped turn and paused queue") {
+            let ended = await $0.turnsEnded(session.id).count == 1
+            let paused = await $0.summaries[session.id]?.isQueuePaused == true
+            return ended && paused
+        }
         #expect(await recorder.turnsEnded(session.id) == ["error"])
         #expect(harness.received == ["rename\tDo not send this"])
         #expect(await recorder.summaries[session.id]?.isQueuePaused == true)
