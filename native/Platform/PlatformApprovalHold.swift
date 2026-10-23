@@ -29,13 +29,14 @@ extension View {
         #if canImport(AppKit)
         background(ApprovalHoldKeyMonitor(enabled: enabled, changed: changed))
         #else
-        onKeyPress(keys: ["y"], phases: [.down, .repeat, .up]) { press in
-            guard enabled, press.modifiers == .command || press.phase == .up else { return .ignored }
+        onKeyPress(phases: [.down, .repeat, .up]) { press in
+            guard enabled else { return .ignored }
+            guard press.key == "y", press.modifiers == .command else {
+                changed(false)
+                return .ignored
+            }
             changed(press.phase != .up)
             return .handled
-        }
-        .onModifierKeysChanged(mask: [.command, .shift, .option, .control]) { _, modifiers in
-            if modifiers != .command { changed(false) }
         }
         #endif
     }
