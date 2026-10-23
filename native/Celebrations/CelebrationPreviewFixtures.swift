@@ -12,7 +12,9 @@ enum CelebrationPreviewFixtures {
     }
 
     static func center(_ state: State = .page) -> CelebrationCenter {
-        let day = CivilDate("2026-10-23") ?? CivilDate(dayNumber: 20749)
+        let day =
+            CivilDate(state == .waiting || state == .failed ? "2026-11-01" : "2026-10-23")
+            ?? CivilDate(dayNumber: 20749)
         let center = CelebrationCenter(
             defaults: PreviewUserDefaults(), runsEffects: false,
             now: { day.start(in: .current) })
@@ -33,7 +35,7 @@ enum CelebrationPreviewFixtures {
                                 dark: .asset("CelebrationThumbnail-\(edition)-dark"))
                             return .ready(Dictionary(uniqueKeysWithValues: AppIconVariant.allCases.map { ($0, pair) }))
                         }
-                    }), iconSets: IconSetContributions(FirstPartyCelebrations.iconSets),
+                    }), iconSets: IconSetContributions(iconContributions(state)),
                 celebrations: CelebrationContributions(contributions(state)))
         ])
         center.update(catalog: catalogue)
@@ -45,11 +47,22 @@ enum CelebrationPreviewFixtures {
             for id in ids { center.setAutomatic(true, for: CelebrationID("native.\(id)")) }
         }
         if state == .waiting || state == .failed {
-            center.setHome(false, for: FirstPartyCelebrations.halloweenID)
+            center.setAutomatic(false, for: FirstPartyCelebrations.halloweenID)
+            center.setHome(false, for: FirstPartyCelebrations.diaDeMuertosID)
         }
         if state == .rows || state == .style { center.setAutomatic(true, for: CelebrationID("native.australia-day")) }
         if state == .skipped { center.restoreBase() }
         return center
+    }
+
+    private static func iconContributions(_ state: State) -> [IconSetContribution] {
+        FirstPartyCelebrations.iconSets.map { original in
+            guard (state == .offline || state == .homeOnly), original.id == FirstPartyCelebrations.halloweenIcons.id
+            else { return original }
+            var icons = original
+            icons.icons = .pack("halloween")
+            return icons
+        }
     }
 
     private static func contributions(_ state: State) -> [CelebrationContribution] {
