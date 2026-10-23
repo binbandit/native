@@ -4,6 +4,16 @@ import Testing
 @testable import ACP
 
 struct TaskActivityTests {
+    @Test func aNewTurnDoesNotNarrateEarlierTools() throws {
+        var state = SessionState()
+        state.appendUserMessage("Read the file")
+        state.apply(try Wire.update(Wire.readToolCall))
+        #expect(state.taskActivity.verb == "Reading")
+        state.appendUserMessage("A different task")
+        #expect(state.taskActivity.verb == "Working")
+        #expect(state.taskActivity.object == nil)
+    }
+
     @Test func capturedReadUsesTheReportedFile() throws {
         var state = SessionState()
         state.apply(try Wire.update(Wire.readToolCall))

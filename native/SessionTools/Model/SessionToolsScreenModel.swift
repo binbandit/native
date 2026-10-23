@@ -17,6 +17,10 @@ final class SessionToolsScreenModel {
         showsWell.toggle()
     }
 
+    func showWellTools() {
+        showsWellDev = false
+    }
+
     func performWellTool(_ tool: TaskWellTool) {
         guard hasWell, wellToolAvailable(tool) else { return }
         showsWell = tool == .dev

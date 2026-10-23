@@ -27,7 +27,7 @@ struct TaskWellToolbar<Dev: View>: View {
         }
         .buttonStyle(.plain)
         .dsHitTarget(DS.TaskWell.height)
-        .help(CommandRegistry.shared.help(content.isWaiting ? "Show the request" : "Task tools", for: .taskWellToggle))
+        .help(help)
         .popover(isPresented: $tools.showsWell, arrowEdge: .bottom) {
             TaskWellToolsPanel(content: content, location: location, tools: tools, detail: detail, dev: dev)
         }
@@ -45,6 +45,12 @@ struct TaskWellToolbar<Dev: View>: View {
 
     private var latestTurn: TranscriptTurn? { session.state.turns.last(where: { !$0.isLateOutput }) }
 
+    private var help: String {
+        let action =
+            content.isWaiting ? "Show the request. " : content.showsReview ? "Review this turn's changes. " : ""
+        return action + CommandRegistry.shared.help("Task tools", for: .taskWellToggle)
+    }
+
     private var content: TaskWellContent {
         var content = TaskWellContent(status: session.taskStatus, agent: session.agentName)
         if let wait = session.wait {
@@ -58,9 +64,7 @@ struct TaskWellToolbar<Dev: View>: View {
             content.verb = "Waiting on you"
             content.object = "A subagent needs your approval"
         } else if session.phase == .prompting {
-            let state = session.state
-            let range = latestTurn?.items ?? state.items.endIndex..<state.items.endIndex
-            let activity = TaskActivity(items: state.items[range], plan: session.plan)
+            let activity = session.taskActivity
             content.verb = session.isRetryScheduled ? "Reconnecting" : activity.verb
             content.object = session.isRetryScheduled ? nil : activity.object
             content.progress = session.isRetryScheduled ? nil : activity.progress

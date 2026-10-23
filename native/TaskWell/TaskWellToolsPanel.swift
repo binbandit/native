@@ -18,7 +18,7 @@ struct TaskWellToolsPanel<Dev: View>: View {
             SeparatorLine()
             if tools.showsWellDev {
                 VStack(alignment: .leading, spacing: DS.Space.sm) {
-                    Button("Back to tools", systemImage: "chevron.left") { tools.showsWellDev = false }
+                    Button("Back to tools", systemImage: "chevron.left", action: tools.showWellTools)
                         .buttonStyle(.plain)
                     dev()
                 }

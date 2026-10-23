@@ -250,9 +250,9 @@ struct SessionToolsScreen: View {
     /// The task's branch, else its folder, at the head of the facts.
     private var location: String {
         guard case .branch(let name)? = git.model(for: session.cwd, session: session.key).branch?.head else {
-            return session.cwd.abbreviatedPath
+            return usesTaskWell ? session.cwd.lastPathComponent : session.cwd.abbreviatedPath
         }
-        return name
+        return usesTaskWell ? "\(session.cwd.lastPathComponent) · \(name)" : name
     }
 }
 

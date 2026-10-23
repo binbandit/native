@@ -57,3 +57,11 @@ public struct TaskActivity: Equatable, Sendable {
         }
     }
 }
+
+extension SessionState {
+    /// Only the live turn can narrate work. Replayed tools and earlier unfinished calls do not
+    /// become today's activity when a task is opened or a new turn starts.
+    public var taskActivity: TaskActivity {
+        TaskActivity(items: items[(openTurn ?? items.endIndex)...], plan: plan)
+    }
+}
