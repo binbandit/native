@@ -36,7 +36,7 @@ struct SessionApprovalView: View {
 
     private func instruct(_ text: String) async throws {
         #if DEBUG
-        if ApprovalPreviewOverride.current == .instructionFailure { throw CocoaError(.fileWriteNoPermission) }
+        if ApprovalPreviewOverride.failNextInstruction() { throw CocoaError(.fileWriteNoPermission) }
         #endif
         try await session.instructInstead(text, for: call)
     }
