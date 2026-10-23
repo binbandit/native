@@ -45,7 +45,8 @@ struct AgentDefaultsRow: View {
             ForEach(AgentSessionDefaults.Setting.allCases, id: \.self) { setting in
                 SettingsRow(
                     id: Self.settingRowID(agentID: agentID, setting: setting), setting == .model ? "Model" : "Effort",
-                    description: hasChoices ? nil : Text("Start one task with \(agentName) to see its models.")
+                    description: hasChoices || setting != .model
+                        ? nil : Text("Start one task with \(agentName) to see its models.")
                 ) {
                     AgentDefaultPicker(agentName: agentName, agentID: agentID, setting: setting)
                 }
