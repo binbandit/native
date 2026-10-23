@@ -5,7 +5,8 @@ import SwiftUI
 /// Inert catalogue fixtures: no timers, downloads or persisted choices.
 enum CelebrationPreviewFixtures {
     enum State: String, CaseIterable {
-        case off, menu, style, page, showing, homeOnly, skipped, waiting, failed, empty, yearHover, rows, overlaps,
+        case off, menu, style, page, pending, showing, homeOnly, skipped, waiting, failed, empty, yearHover, rows,
+            overlaps,
             detail, offline,
             confirmation
     }
@@ -33,7 +34,7 @@ enum CelebrationPreviewFixtures {
                             return .ready(Dictionary(uniqueKeysWithValues: AppIconVariant.allCases.map { ($0, pair) }))
                         }
                     }), iconSets: IconSetContributions(FirstPartyCelebrations.iconSets),
-                celebrations: CelebrationContributions(FirstPartyCelebrations.celebrations))
+                celebrations: CelebrationContributions(contributions(state)))
         ])
         center.update(catalog: catalogue)
         if state != .empty {
@@ -49,6 +50,22 @@ enum CelebrationPreviewFixtures {
         if state == .rows || state == .style { center.setAutomatic(true, for: CelebrationID("native.australia-day")) }
         if state == .skipped { center.restoreBase() }
         return center
+    }
+
+    private static func contributions(_ state: State) -> [CelebrationContribution] {
+        FirstPartyCelebrations.celebrations.map { original in
+            guard state == .rows || state == .pending else { return original }
+            var event = original
+            switch event.id.rawValue {
+            case "native.songkran", "native.vesak":
+                event.iconSet = nil
+                event.alternateIconSets = []
+            case "native.eid-al-fitr", "native.eid-al-adha":
+                event.calendar = CelebrationCalendar(rule: .unsupported("preview-calendar"))
+            default: break
+            }
+            return event
+        }
     }
 
     static func registry(_ state: State = .page) -> PluginRegistry {

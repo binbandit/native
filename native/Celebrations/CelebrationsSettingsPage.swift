@@ -24,7 +24,7 @@ struct CelebrationsSettingsPage: View {
     private var isSearching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
 
     var body: some View {
-        Group {
+        VStack(alignment: .leading, spacing: 0) {
             if let detail, let event = center.celebrations.first(where: { $0.id == detail }) {
                 CelebrationDetailPage(event: event) { settings.goBack() }
             } else {
@@ -136,9 +136,12 @@ struct CelebrationsSettingsPage: View {
                 let events = section.events
                 VStack(alignment: .leading, spacing: DS.Space.md) {
                     HStack {
-                        Text(CelebrationDates.month(month, includeYear: month.year != center.today.year))
-                            .settingsText(.bodyMedium).foregroundStyle(.dsTextPrimary)
-                            .accessibilityAddTraits(.isHeader)
+                        Text(
+                            CelebrationDates.month(
+                                month, includeYear: month.year > center.today.year && month.month == center.today.month)
+                        )
+                        .settingsText(.bodyMedium).foregroundStyle(.dsTextPrimary)
+                        .accessibilityAddTraits(.isHeader)
                         Spacer()
                         Text("\(events.filter { center.preferences.selection(for: $0.id).isEnabled }.count) on")
                             .settingsText(.caption).foregroundStyle(.dsTextTertiary)
