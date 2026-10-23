@@ -10,8 +10,8 @@ struct LightToneSettingsRow: View {
             id: rowID,
             title: "Light mode",
             description: "Draw light mode on crisp Paper white or warm Wool.",
-            keywords: ["paper", "wool", "white", "off-white", "warm", "cream", "background", "glare"]
-        )
+            keywords: ["paper", "wool", "white", "off-white", "warm", "cream", "background", "glare"],
+            plainly: .lightTone)
     }
 
     @AppStorage(AppearancePreferences.lightToneKey) private var lightTone = DSLightTone.paper
@@ -23,7 +23,7 @@ struct LightToneSettingsRow: View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             SettingsRow(
                 id: Self.rowID,
-                "Light mode",
+                "Light mode", plainly: .lightTone,
                 description: Text(
                     "Draw light mode on crisp Paper white, or on Wool, a warm off-white that’s easier on the eyes.")
             ) {

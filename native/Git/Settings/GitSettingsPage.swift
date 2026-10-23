@@ -17,9 +17,11 @@ extension SettingsPane {
                 SettingsSearchEntry(
                     id: GitSettingsPage.prefixRow, title: "Branch prefix", keywords: ["username", "github"]),
                 SettingsSearchEntry(
-                    id: GitSettingsPage.workspaceRow, title: "New tasks get", keywords: ["worktree", "branch"]),
+                    id: GitSettingsPage.workspaceRow, title: "New tasks get", keywords: ["worktree", "branch"],
+                    plainly: .workspace),
                 SettingsSearchEntry(
-                    id: GitSettingsPage.envFilesRow, title: "Files to copy into new worktrees", keywords: [".env"]),
+                    id: GitSettingsPage.envFilesRow, title: "Files to copy into new worktrees", keywords: [".env"],
+                    plainly: .envFiles),
             ]
         },
         content: { GitSettingsPage() }
@@ -32,6 +34,7 @@ struct GitSettingsPage: View {
     static let workspaceRow = SettingsRowID("git.workspace")
     static let envFilesRow = SettingsRowID("git.env-files")
 
+    @Environment(\.settingsPlainly) private var plainly
     @Environment(GitSettings.self) private var settings
     @Environment(SettingsPresentation.self) private var presentation
 
@@ -40,7 +43,8 @@ struct GitSettingsPage: View {
         SettingsPage {
             SettingsHeader(
                 "Git",
-                description: Text("How new tasks get their branch and worktree. Everything runs with your own git."))
+                description: Text("How new tasks get their branch and worktree. Everything runs with your own git."),
+                plainly: .init(title: "Git", description: "Changes, commits and a branch per task."))
             SettingsRowGroup {
                 SettingsRow(
                     id: Self.prefixRow, "Branch prefix",
@@ -59,23 +63,14 @@ struct GitSettingsPage: View {
                     }
                 }
                 SettingsRow(
-                    "Rename branches from the task",
+                    "Rename branches from the task", plainly: .renameBranch,
                     description: Text("A new task's branch is renamed after its title, until it's pushed.")
                 ) {
                     SettingsSwitch("Rename branches from the task", isOn: $settings.renamesBranches)
                 }
+                if !plainly { NewTasksWorkspaceRow() }
                 SettingsRow(
-                    id: Self.workspaceRow, "New tasks get",
-                    description: Text(
-                        "A worktree keeps parallel tasks from editing the same files. Worktrees live in ~/.native/worktrees."
-                    )
-                ) {
-                    SettingsSelect(
-                        label: "New tasks get", selection: $settings.newTaskWorkspace,
-                        options: GitSettings.NewTaskWorkspace.allCases.map { .init(value: $0, title: $0.title) })
-                }
-                SettingsRow(
-                    id: Self.envFilesRow, "Files to copy into new worktrees",
+                    id: Self.envFilesRow, "Files to copy into new worktrees", plainly: .envFiles,
                     description: Text("Ignored files a task needs to run, as gitignore patterns separated by commas.")
                 ) {
                     TextField(".env*", text: patterns)
@@ -83,19 +78,26 @@ struct GitSettingsPage: View {
                         .frame(width: GitMetrics.patternsFieldWidth)
                 }
                 SettingsRow(
-                    "Delete the branch when archiving",
+                    "Delete the branch when archiving", plainly: .deleteBranch,
                     description: Text("Its commits stay reachable, so restoring the task brings the branch back.")
                 ) {
                     SettingsSwitch("Delete the branch when archiving", isOn: $settings.deletesBranchOnArchive)
                 }
-                SettingsRow(
-                    "Setup and teardown scripts",
-                    description: Text(
-                        "Commands that run as worktrees are made and removed, and as tasks start, finish turns and are deleted."
-                    )
-                ) {
-                    Button("Open Scripts") { presentation.open(.scripts) }
+                if !plainly {
+                    SettingsRow(
+                        "Setup and teardown scripts",
+                        description: Text(
+                            "Commands that run as worktrees are made and removed, and as tasks start, finish turns and are deleted."
+                        )
+                    ) {
+                        Button("Open Scripts") { presentation.open(.scripts) }
+                    }
                 }
+
+            }
+            if plainly {
+                Button("New Task Workspace…") { presentation.open(.newTasks) }
+                    .buttonStyle(.settings)
             }
         }
     }

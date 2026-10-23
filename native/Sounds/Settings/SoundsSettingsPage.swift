@@ -33,7 +33,8 @@ struct SoundsSettingsPage: View {
             SettingsHeader(
                 "Sounds",
                 description: Text(
-                    "Hear when an agent finishes, needs you, or runs into trouble, without watching it work."))
+                    "Hear when an agent finishes, needs you, or runs into trouble, without watching it work."),
+                plainly: .init(title: "Sounds", description: "A sound when a task finishes, needs you, or fails."))
             SettingsRowGroup {
                 SettingsRow(
                     id: Self.enabledRow, "Play sounds",
@@ -47,7 +48,9 @@ struct SoundsSettingsPage: View {
                         )
                     )
                 }
-                SettingsRow(id: Self.volumeRow, "Volume", description: Text("How loud Native's sounds play.")) {
+                SettingsRow(
+                    id: Self.volumeRow, "Volume", plainly: .volume, description: Text("How loud Native's sounds play.")
+                ) {
                     VolumeSlider(volume: $preferences.volume) {
                         sounds.preview(.taskFinished)
                     }
@@ -56,7 +59,7 @@ struct SoundsSettingsPage: View {
                 .disabled(!plugins.isEnabled(SoundsPlugin.id))
                 SettingsRow(
                     id: Self.focusRow,
-                    "Stay quiet during Focus",
+                    "Stay quiet during Focus", plainly: .quietFocus,
                     description: Text(
                         "When off, Native plays sounds even while Do Not Disturb or another Focus is on."),
                     detail: focusNote
@@ -71,7 +74,7 @@ struct SoundsSettingsPage: View {
                 }
                 .disabled(!plugins.isEnabled(SoundsPlugin.id))
                 SettingsRow(
-                    id: Self.timingRow, "When to play",
+                    id: Self.timingRow, "When to play", plainly: .playSounds,
                     description: Text("Stay quiet for the task you're looking at, or whenever Native is in front.")
                 ) {
                     SettingsSelect(

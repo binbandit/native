@@ -25,7 +25,8 @@ extension SettingsPane {
                     keywords: ["never sent", "prompts", "crash reports"]),
                 SettingsSearchEntry(id: PrivacySettingsPage.logRow, title: "What Native has sent", keywords: ["log"]),
                 SettingsSearchEntry(
-                    id: PrivacySettingsPage.idRow, title: "Reset installation ID", keywords: ["identifier"]),
+                    id: PrivacySettingsPage.idRow, title: "Reset installation ID", keywords: ["identifier"],
+                    plainly: .init(title: "Installation ID")),
             ]
         },
         content: { PrivacySettingsPage() }
@@ -43,6 +44,7 @@ struct PrivacySettingsPage: View {
     static let idRow = SettingsRowID("privacy.id")
 
     @Environment(TelemetryCenter.self) private var telemetry
+    @Environment(\.settingsPlainly) private var plainly
     @State private var isShowingLog = false
     /// Batches in the sent log, read when the page opens.
     @State private var sentBatches: Int?
@@ -68,8 +70,12 @@ struct PrivacySettingsPage: View {
             if !telemetry.organizationEndpoints.isEmpty {
                 SettingsRowGroup { collectorRow }
             }
-            PrivacyDisclosure(scope: disclosureScope)
-                .settingsRevealTarget(Self.disclosureRow)
+            PrivacyDisclosure(
+                scope: disclosureScope,
+                collectionTitle: plainly && !telemetry.isNativeDestinationAvailable
+                    && telemetry.organizationEndpoints.isEmpty ? "If a later version asks" : "Sent"
+            )
+            .settingsRevealTarget(Self.disclosureRow)
             SettingsSubheading("On this Mac")
             SettingsRowGroup {
                 SettingsRow(id: Self.logRow, "What Native has sent", description: Text(logDescription)) {

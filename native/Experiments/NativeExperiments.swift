@@ -16,6 +16,7 @@ extension ExperimentCatalog {
         Gate.composerNext,
         Gate.changeAgent,
         Gate.homeNext,
+        Gate.settingsPlainly,
     ])
 }
 
@@ -86,6 +87,17 @@ extension Gate {
         site: "Task ▸ toolbar and tools",
         stage: .labs,
         owner: "tasks",
+        reviewBy: ReviewDate(year: 2026, month: 12, day: 15),
+        default: false
+    )
+
+    static let settingsPlainly = Gate(
+        id: "NativeSettingsPlainly",
+        title: "Plainly settings",
+        summary: "A simpler page map, with one home for new-task defaults and related settings together.",
+        site: "Settings",
+        stage: .labs,
+        owner: "settings",
         reviewBy: ReviewDate(year: 2026, month: 12, day: 15),
         default: false
     )

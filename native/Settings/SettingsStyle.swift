@@ -56,6 +56,7 @@ struct SettingsTextStyle {
     let font: Font
     let tracking: CGFloat
     let leading: CGFloat
+    var plainFont: Font?
 
     private init(
         _ font: Font, size: CGFloat, weight: DSTypography.Weight = .regular, design: DSTypography.Design = .sans,
@@ -67,14 +68,22 @@ struct SettingsTextStyle {
         leading = max(0, lineHeight - (metrics.ascender - metrics.descender + metrics.leading))
     }
 
+    private func plain(_ font: Font) -> Self {
+        var style = self
+        style.plainFont = font
+        return style
+    }
+
     /// `text-xs`: details and nav group labels.
     static let caption = SettingsTextStyle(.dsBody, size: 12, lineHeight: 16, trackingEm: 0.01)
     /// `text-sm`: descriptions, nav items and control values.
-    static let body = SettingsTextStyle(.ds(14), size: 14, lineHeight: 20)
+    static let body = SettingsTextStyle(.ds(14), size: 14, lineHeight: 20).plain(DS.Settings.body)
     /// `text-sm font-medium`: row titles.
-    static let bodyMedium = SettingsTextStyle(.dsHeadline, size: 14, weight: .medium, lineHeight: 20)
+    static let bodyMedium = SettingsTextStyle(.dsHeadline, size: 14, weight: .medium, lineHeight: 20).plain(
+        DS.Settings.groupTitle)
     /// `text-base font-medium`: section headings, a step above row titles.
-    static let heading = SettingsTextStyle(.dsTitle3, size: 16, weight: .medium, lineHeight: 24)
+    static let heading = SettingsTextStyle(.dsTitle3, size: 16, weight: .medium, lineHeight: 24).plain(
+        DS.Settings.groupTitle)
     /// `text-2xl`: page titles, in Geist at 300, light enough that the title sits back from the
     /// rows under it.
     static let title = SettingsTextStyle(
@@ -85,7 +94,17 @@ struct SettingsTextStyle {
 
 extension View {
     func settingsText(_ style: SettingsTextStyle) -> some View {
-        font(style.font)
+        modifier(SettingsTypographyModifier(style: style))
+    }
+}
+
+private struct SettingsTypographyModifier: ViewModifier {
+    let style: SettingsTextStyle
+    @Environment(\.settingsPlainly) private var plainly
+
+    func body(content: Content) -> some View {
+        content
+            .font(plainly ? style.plainFont ?? style.font : style.font)
             .tracking(style.tracking)
             .lineSpacing(style.leading)
             .padding(.vertical, style.leading / 2)

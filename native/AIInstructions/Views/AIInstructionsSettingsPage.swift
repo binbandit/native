@@ -17,7 +17,8 @@ extension SettingsPane {
         searchEntries: {
             AIInstructionPurpose.allCases.map {
                 SettingsSearchEntry(
-                    id: $0.settingsRowID, title: $0.title, description: $0.summary, keywords: $0.keywords)
+                    id: $0.settingsRowID, title: $0.title, description: $0.summary, keywords: $0.keywords,
+                    plainly: $0.plainlyCopy)
             }
         },
         content: { AIInstructionsSettingsPage() }
@@ -37,7 +38,10 @@ struct AIInstructionsSettingsPage: View {
                 "AI Instructions",
                 description: Text(
                     "Your own instructions for what Native writes with AI. They're added to Native's built-in instructions, which keep each result in the shape Native needs. A project can replace them in its settings."
-                ))
+                ),
+                plainly: .init(
+                    title: "Writing Style",
+                    description: "Your rules for the titles, branch names, commits and pull requests Native writes."))
             SettingsSubheading("Written on this Mac", note: "Apple Intelligence writes these privately, on this Mac.")
             if let reason = PullRequestDrafter.unavailableReason {
                 // Nothing here is written until it's available, so say so before anyone tunes it.
@@ -56,7 +60,8 @@ struct AIInstructionsSettingsPage: View {
         SettingsRowGroup {
             ForEach(purposes) { purpose in
                 SettingsRow(
-                    id: purpose.settingsRowID, purpose.title, description: Text(purpose.summary),
+                    id: purpose.settingsRowID, purpose.title, plainly: purpose.plainlyCopy,
+                    description: Text(purpose.summary),
                     detail: detail(for: purpose)
                 ) {
                     AIInstructionEditor(
