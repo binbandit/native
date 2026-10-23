@@ -31,7 +31,9 @@ extension AppModel {
         if let host = source.host, launcher.isRemote(host.client) {
             return "Changing agents on paired hosts is not available yet."
         }
-        guard catalog.lookup(source.key) != nil, !isArchived(source.key), removedWorkspaces[source.key] == nil else {
+        guard catalog.lookup(source.key) != nil, !isArchived(source.key), !pendingDeletionKeys.contains(source.key),
+            removedWorkspaces[source.key] == nil
+        else {
             return "Open an active task with an available worktree."
         }
         return agentChangeGoalBlock(source)
@@ -49,10 +51,11 @@ extension AppModel {
         else { throw AgentChangeFailure(startFailure(of: agent)) }
         if let reason = changeAgentBlock(for: source) { throw AgentChangeFailure(reason) }
         let candidate = try await launcher.start(
-            on: runtime, cwd: source.cwd, project: catalog.lookup(source.key)?.project, continuing: source)
+            on: runtime, cwd: source.cwd, project: catalog.lookup(source.key)?.project)
         // Some agents list even empty conversations. Keep the unsent candidate out of the sidebar,
         // including after quitting during review; an accepted handoff removes this tombstone.
         deletedSessions.insert(candidate.key)
+        unsentSessions.started(candidate.key)
         catalog.remove(candidate.key)
         return candidate
     }
@@ -82,15 +85,23 @@ extension AppModel {
         }
         if let reason = changeAgentBlock(for: source) { throw AgentChangeFailure(reason) }
         if let reason = target.sendBlockedReason { throw AgentChangeFailure(reason) }
-        // A failed send leaves this same candidate available for retry, without replacing the task.
+        // Publish before sending so a quit or dropped reply can never hide work that reached
+        // the new agent. Cancel removes an unused candidate; an accepted one stays recoverable.
         titles.rename(target.titleKey, to: source.displayTitle)
-        // If the host received a previous attempt but its reply was lost, keep that turn instead
-        // of sending a second copy of the handoff.
-        if !target.hasStarted { _ = try await target.submit(handoff, .queue) }
+        target.draft = handoff
         deletedSessions.remove(target.key)
-        catalog.add(
-            SessionInfo(sessionId: target.id, cwd: source.cwd.folderPath, updatedAt: .now),
-            for: target.agent.id, in: project)
+        if !catalog.contains(target.key) {
+            catalog.add(
+                SessionInfo(sessionId: target.id, cwd: source.cwd.folderPath, updatedAt: .now),
+                for: target.agent.id, in: project)
+        }
+        if !target.hasStarted {
+            do {
+                _ = try await target.submit(handoff, .queue)
+            } catch {
+                guard target.hasStarted else { throw error }
+            }
+        }
         earlierConversations.record(target.key, after: source.key)
         earlierConversations.keep(target.key)
         ordering.replace(source.key, with: target.key)
@@ -106,6 +117,7 @@ extension AppModel {
     func discardAgentChange(_ candidate: SessionModel) {
         guard !candidate.hasStarted else { return }
         deletedSessions.insert(candidate.key)
+        unsentSessions.forget(candidate.key)
         catalog.remove(candidate.key)
         if let runtime = runtime(candidate.agent.id), candidate.host != nil {
             closeOnHost(candidate, on: runtime)
