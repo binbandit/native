@@ -72,6 +72,8 @@ struct ProjectList<TaskAccessory: View>: View {
                 ArchivedSection(select: select)
             }
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Project tasks")
         .contextMenu {
             if isAllInView {
                 Button("Add Project…") { model.isAddingProject = true }
@@ -79,6 +81,12 @@ struct ProjectList<TaskAccessory: View>: View {
                     ForEach(SidebarFilterOption.all(filter: $filter, agents: model.agents.map(\.agent))) { option in
                         Toggle(option.title, isOn: option.isOn)
                     }
+                    Picker("Sort By", selection: $filter.sort) {
+                        ForEach(TaskFilter.Sort.allCases, id: \.self) { sort in
+                            Text(sort.title).tag(sort)
+                        }
+                    }
+                    .pickerStyle(.inline)
                 }
             }
         }

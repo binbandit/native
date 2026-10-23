@@ -130,9 +130,10 @@ nonisolated final class TaskSignalLayer: CALayer {
                 pulse.values = (0...frames).map { rest + (1 - rest) * moving.scale(at: timing.start + Double($0)) }
                 pulse.duration = Double(frames) / 60
                 // An answered ask restarts at the left column; existing working rows keep one beat.
-                pulse.beginTime =
+                let start =
                     previous?.status.needsAttention == true
                     ? now : now - now.truncatingRemainder(dividingBy: pulse.duration)
+                pulse.beginTime = dot.convertTime(start, from: nil)
                 pulse.repeatCount = .infinity
                 pulse.preferredFrameRateRange = .dsMotion
                 dot.add(pulse, forKey: "pulse")
@@ -185,7 +186,8 @@ nonisolated final class TaskSignalLayer: CALayer {
         animation.fromValue = from
         animation.toValue = to
         animation.duration = duration
-        animation.beginTime = CACurrentMediaTime() + delay
+        // The mask's clock excludes time spent hidden, so global media time would delay restoration.
+        animation.beginTime = dot.convertTime(CACurrentMediaTime() + delay, from: nil)
         animation.fillMode = .backwards
         dot.add(animation, forKey: key)
     }
