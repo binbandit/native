@@ -10,6 +10,8 @@ struct AttachmentImage: View {
     /// Shows all of it at its own shape within this size; without one it fills (and crops to) the
     /// frame it's given.
     var fitting: CGSize?
+    /// Cropped tiles need enough pixels along their short edge, including tall and wide sources.
+    var filling: CGSize?
 
     @Environment(\.displayScale) private var displayScale
     @State private var image: CGImage?
@@ -25,7 +27,8 @@ struct AttachmentImage: View {
             }
         }
         .task(id: data) {
-            image = await Self.decode(data, maxPixels: Int(maxSide * displayScale))
+            let fillPixels = filling.map { CGSize(width: $0.width * displayScale, height: $0.height * displayScale) }
+            image = await Self.decode(data, maxPixels: Int(maxSide * displayScale), fillPixels: fillPixels)
         }
     }
 
@@ -49,12 +52,26 @@ struct AttachmentImage: View {
     }
 
     @concurrent
-    private static func decode(_ data: Data, maxPixels: Int) async -> CGImage? {
+    private static func decode(_ data: Data, maxPixels: Int, fillPixels: CGSize?) async -> CGImage? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        var decodePixels = maxPixels
+        if let fillPixels,
+            let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+            let width = properties[kCGImagePropertyPixelWidth] as? NSNumber,
+            let height = properties[kCGImagePropertyPixelHeight] as? NSNumber,
+            width.doubleValue > 0, height.doubleValue > 0
+        {
+            let orientation = (properties[kCGImagePropertyOrientation] as? NSNumber)?.intValue ?? 1
+            let rotated = (5...8).contains(orientation)
+            let sourceWidth = rotated ? height.doubleValue : width.doubleValue
+            let sourceHeight = rotated ? width.doubleValue : height.doubleValue
+            let scale = min(1, max(fillPixels.width / sourceWidth, fillPixels.height / sourceHeight))
+            decodePixels = Int(ceil(max(sourceWidth, sourceHeight) * scale))
+        }
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: max(maxPixels, 1),
+            kCGImageSourceThumbnailMaxPixelSize: max(decodePixels, 1),
         ]
         return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
     }
