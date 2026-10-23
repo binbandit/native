@@ -8,6 +8,8 @@ public enum DefaultShortcuts {
     static let table: [CommandID: String] = [
         // Sessions and navigation
         "session.new": "⌘N",
+        "task.compose": "⇧⌘N",
+        "task.chooseDevice": "⌥⌘O",
         "session.newWithAgent": "⌥⌘N",
         "expedition.new": "⌥⌘E",
         "project.open": "⌘O",
