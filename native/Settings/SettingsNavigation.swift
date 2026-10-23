@@ -146,7 +146,7 @@ private struct NavItem: View {
             }
             .padding(.horizontal, plainly ? DS.Settings.navInset : DS.Space.md)
             .padding(.vertical, plainly ? DS.Space.xs : DS.Space.sm)
-            .frame(minHeight: plainly ? DS.Settings.navRowHeight : nil)
+            .frame(minHeight: plainly ? max(DS.Settings.navRowHeight, DS.Size.minimumHitTarget) : nil)
             .background(isSelected ? Color.dsSelected : isHovered ? .dsHover : .clear, in: shape)
             .overlay {
                 if showsFocusRing {
