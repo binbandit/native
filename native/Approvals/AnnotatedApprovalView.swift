@@ -17,6 +17,7 @@ struct AnnotatedApprovalView: View {
     let onInstruct: (String) async throws -> Void
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.legacyAskShortcutEnabled) private var legacyShortcut
     @Environment(\.permissionShortcutsEnabled) private var shortcutsEnabled
     @FocusState private var instructionFocused: Bool
     @State var instruction = ""
@@ -109,7 +110,8 @@ struct AnnotatedApprovalView: View {
         }
         .disabled(sending || committed || !isAvailable)
         .approvalHoldKeys(
-            enabled: shortcutsEnabled && isAvailable && !sending && !committed && analysis?.risk == .irreversible
+            enabled: shortcutsEnabled && legacyShortcut && isAvailable && !sending && !committed
+                && analysis?.risk == .irreversible
         ) {
             keyboardHeld = $0
         }
@@ -219,10 +221,11 @@ struct AnnotatedApprovalView: View {
         }
         ForEach(options.filter { $0.kind == .allowOnce }) { allow in
             let ownsShortcut = isFirst(allow)
+            let canUseShortcut = shortcutsEnabled && legacyShortcut && ownsShortcut
             let title = optionTitle(allow, ordinary: "Allow")
             if analysis?.risk == .irreversible {
                 ApprovalHoldButton(
-                    shortcutsEnabled: shortcutsEnabled && ownsShortcut, keyboardHeld: ownsShortcut && keyboardHeld,
+                    shortcutsEnabled: canUseShortcut, keyboardHeld: ownsShortcut && keyboardHeld,
                     actionName: title == "Allow" ? nil : title, primary: ownsShortcut,
                     forceReducedMotion: forceReducedMotion,
                     didCommit: { committed = true }
@@ -231,10 +234,10 @@ struct AnnotatedApprovalView: View {
                 Button {
                     onChoose(allow)
                 } label: {
-                    actionLabel(title, keys: ownsShortcut ? "⌘Y" : "")
+                    actionLabel(title, keys: canUseShortcut ? "⌘Y" : "")
                 }
                 .buttonStyle(ApprovalActionStyle(primary: ownsShortcut))
-                .keyboardShortcut(shortcutsEnabled && ownsShortcut ? KeyboardShortcut("y", modifiers: .command) : nil)
+                .keyboardShortcut(canUseShortcut ? KeyboardShortcut("y", modifiers: .command) : nil)
             }
         }
     }
@@ -297,6 +300,17 @@ struct AnnotatedApprovalView: View {
                     .frame(width: 760)
             }.padding(DS.Space.xl)
         }.frame(height: 900)
+    }
+}
+#Preview("Approval - global ask owns the shortcut") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xl) {
+            ApprovalPreviewFixtures.card(command: ApprovalPreviewFixtures.commands[0])
+            ApprovalPreviewFixtures.card(command: ApprovalPreviewFixtures.commands[2])
+        }
+        .environment(\.legacyAskShortcutEnabled, false)
+        .frame(width: 760)
+        .padding(DS.Space.xl)
     }
 }
 #endif

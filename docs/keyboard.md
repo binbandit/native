@@ -235,8 +235,9 @@ They're chosen not to collide with text editing in the composer.
 | ⌘⇧⌫ | Reject |
 | ⌘⇧Y | Ask the agent to use the suggested command (Fine print fix-it, when offered) |
 
-With Fine print enabled, irreversible commands require holding ⌘Y for 0.6 seconds. Releasing
-before it fills sends nothing. Pointer and touch use the same hold; VoiceOver and Switch Control
+With Fine print enabled, irreversible commands require a 0.6-second hold. Hold ⌘Y when the local
+Allow once shortcut is available; All in view reserves ⌘Y for the oldest task ask. Releasing
+before the hold fills sends nothing. Pointer and touch use the same hold; VoiceOver and Switch Control
 use Allow followed by Confirm Allow within five seconds. The button acknowledges Allowed for
 0.4 seconds before the request folds away. Reduce Motion keeps the ring but removes the fill sweep.
 ⌘L focuses Tell the agent what to do instead while an approval is shown; Return sends the instruction.
