@@ -35,7 +35,10 @@ struct CelebrationStatusCard: View {
         }
         .padding(.vertical, DS.Space.xl)
         .background(.dsSurface, in: .rect(cornerRadius: DS.Radius.panel))
-        .overlay { RoundedRectangle(cornerRadius: DS.Radius.panel).strokeBorder(.dsSeparator, lineWidth: 1) }
+        .overlay {
+            RoundedRectangle(cornerRadius: DS.Radius.panel).strokeBorder(
+                .dsSeparator, lineWidth: CelebrationMetrics.hairline)
+        }
         .accessibilityElement(children: .contain)
     }
 

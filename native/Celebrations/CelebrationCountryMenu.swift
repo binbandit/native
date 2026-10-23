@@ -14,7 +14,8 @@ struct CelebrationCountryMenu: View {
     }
 
     private var countries: [String] {
-        counts.keys.sorted { Self.name($0).localizedStandardCompare(Self.name($1)) == .orderedAscending }
+        counts.keys.filter { $0 != region }
+            .sorted { Self.name($0).localizedStandardCompare(Self.name($1)) == .orderedAscending }
     }
 
     var body: some View {
