@@ -1,13 +1,23 @@
 import SwiftUI
 
-/// No organization name is available in policy yet; don't invent the administrator's identity.
+/// Names the administrator only when policy supplies an identity.
 struct CelebrationOfflineNotice: View {
+    var organizationName: String?
+
     var body: some View {
         HStack(alignment: .top, spacing: DS.Space.md) {
             Image(systemName: "wifi.slash").font(.system(size: CelebrationMetrics.offlineGlyph)).foregroundStyle(
                 .dsTextTertiary)
-            Text("This install can't download celebration icons. Home still dresses up on the days you choose.")
-                .settingsText(.body).foregroundStyle(.dsTextSecondary)
+            Group {
+                if let organizationName {
+                    Text(
+                        "\(Text(organizationName).font(SettingsTextStyle.bodyMedium.font)) installed Native without internet access, so celebration icons can't download. Home still dresses up on the days you choose."
+                    )
+                } else {
+                    Text("This install can't download celebration icons. Home still dresses up on the days you choose.")
+                }
+            }
+            .settingsText(.body).foregroundStyle(.dsTextSecondary)
         }
     }
 }

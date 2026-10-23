@@ -36,6 +36,14 @@ public enum PolicyLoader {
             resolver.resolve(.taskScriptsUser, expecting: "a Boolean", PolicyParse.bool) ?? true
         policy.taskScripts.repositoryScriptsEnabled =
             resolver.resolve(.taskScriptsRepository, expecting: "a Boolean", PolicyParse.bool) ?? true
+        policy.celebrationsEnabled =
+            resolver.resolve(.celebrationsEnabled, expecting: "a Boolean", PolicyParse.bool) ?? true
+        policy.organizationName = resolver.resolve(.organizationName, expecting: "a nonempty organization name") {
+            value, _ in
+            guard let text = value as? String else { return nil }
+            let name = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            return name.isEmpty ? nil : name
+        }
         policy.labsEnabled = resolver.resolve(.labsEnabled, expecting: "a Boolean", PolicyParse.bool) ?? true
         policy.companionEnabled = resolver.resolve(.companionEnabled, expecting: "a Boolean", PolicyParse.bool) ?? true
         policy.remoteHostsEnabled =

@@ -7,9 +7,10 @@ struct SettingsReveal: Equatable {
 }
 
 extension EnvironmentValues {
-    /// The row that should flash, once the page has scrolled to it.
-    @Entry var settingsScrollTo: (SettingsRowID, UnitPoint) -> Void = { _, _ in }
+    /// Pages use the containing scroller for local links, just as Settings search does.
+    @Entry var settingsScrollTo: SettingsScrollAction?
 
+    /// The row that should flash, once the page has scrolled to it.
     @Entry var settingsFlash: SettingsReveal?
 }
 

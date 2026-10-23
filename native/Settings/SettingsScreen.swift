@@ -111,7 +111,9 @@ struct SettingsScreen: View {
         ScrollViewReader { proxy in
             ScrollView {
                 selectedPane?.makeContent()
-                    .environment(\.settingsScrollTo) { id, anchor in proxy.scrollTo(id, anchor: anchor) }
+                    .environment(
+                        \.settingsScrollTo, SettingsScrollAction { id, anchor in proxy.scrollTo(id, anchor: anchor) }
+                    )
                     .padding(.horizontal, SettingsMetrics.pageInset)
                     .padding(.top, plainly ? DS.Settings.pageTopInset : SettingsMetrics.pageTopInset)
                     .padding(.bottom, SettingsMetrics.pageBottomInset)

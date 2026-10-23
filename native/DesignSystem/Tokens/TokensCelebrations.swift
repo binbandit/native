@@ -26,6 +26,6 @@ enum CelebrationMetrics {
     static let yearTick: CGFloat = 5
     static let yearLabelOffset: CGFloat = 9
     static let yearTodayClearance: CGFloat = 30
-    static let yearLabelFont = Font.system(size: 10.5)
+    static let yearLabelFont = Font.ds(10.5)
     static let bulkFade = Animation.easeOut(duration: 1.2)
 }

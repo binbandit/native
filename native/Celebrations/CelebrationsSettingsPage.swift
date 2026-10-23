@@ -1,8 +1,11 @@
 import AppAppearance
+import NativePolicy
 import SwiftUI
 
 /// The catalogue stays compact: today's look, a year, genuine collisions, then months.
 struct CelebrationsSettingsPage: View {
+    var organizationName: String?
+
     @Environment(CelebrationCenter.self) private var center
     @Environment(PluginRegistry.self) private var plugins
     @Environment(SettingsPresentation.self) private var settings
@@ -54,14 +57,17 @@ struct CelebrationsSettingsPage: View {
                 description: Text(
                     "Native dresses its icon and Home on the days you choose, then puts your look back."))
             if !plugins.isEnabled(CelebrationsPlugin.id) { turnOn }
-            if hasUnavailableIcons { CelebrationOfflineNotice() }
+            if hasUnavailableIcons {
+                CelebrationOfflineNotice(
+                    organizationName: organizationName ?? PolicyCenter.shared.policy.organizationName)
+            }
             if !center.catalog.celebrations.isEmpty {
                 CelebrationStatusCard(
                     reveal: { id in
                         query = ""
                         Task { @MainActor in
                             await Task.yield()
-                            scrollTo(Self.rowID(id), .center)
+                            scrollTo?(Self.rowID(id), .center)
                             reveal = SettingsReveal(rowID: Self.rowID(id))
                         }
                     },
@@ -69,7 +75,7 @@ struct CelebrationsSettingsPage: View {
                         query = ""
                         Task { @MainActor in
                             await Task.yield()
-                            scrollTo(Self.monthID(month), .top)
+                            scrollTo?(Self.monthID(month), .top)
                         }
                     },
                     chooseRegion: {
@@ -170,7 +176,7 @@ struct CelebrationsSettingsPage: View {
             Image(systemName: "ellipsis").frame(width: CelebrationMetrics.menuSize, height: CelebrationMetrics.menuSize)
         }
         .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
-        .buttonStyle(.settings).accessibilityLabel("Celebration choices")
+        .buttonStyle(.settings).dsHitTarget(CelebrationMetrics.menuSize).accessibilityLabel("Celebration choices")
     }
 
     private func chooseCountry(_ country: String) {

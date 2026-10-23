@@ -16,27 +16,39 @@ extension CelebrationPolicy {
         days: Int, canApplyAppIcon: Bool = true
     ) -> [CelebrationOverlap] {
         guard days > 0 else { return [] }
-        let last = first.adding(days: days - 1)
-        var day = first
+        guard let horizon = CivilDayRange(first: first, last: first.adding(days: days - 1)) else { return [] }
+        // Resolve dates once. A full catalogue has many boundaries but only a few occurrences;
+        // asking the calendar again at every boundary made the settings body unnecessarily costly.
+        let occurrences = events.map(preferences.styled).flatMap { event -> [CelebrationOccurrence] in
+            let selection = preferences.selection(for: event.id)
+            guard selection.isEnabled,
+                (selection.home && event.home.isReady)
+                    || (selection.appIcon && event.appIcon.isReady && canApplyAppIcon)
+            else { return [] }
+            return event.occurrences(window: selection.window, overlapping: horizon)
+                .filter { !preferences.skipped.contains($0.id) }
+        }
+        let edges = Set(
+            occurrences.flatMap(\.edges).filter { horizon.contains($0) } + [first, horizon.last.adding(days: 1)]
+        ).sorted()
         var result: [CelebrationOverlap] = []
-        while day <= last {
-            let resolution = resolve(events, preferences: preferences, on: day, canApplyAppIcon: canApplyAppIcon)
-            let end = min(resolution.nextChange?.adding(days: -1) ?? last, last)
-            defer { day = end.adding(days: 1) }
-            guard let active = resolution.active, case .priority = active.reason,
+        for (day, boundary) in zip(edges, edges.dropFirst()) {
+            let end = boundary.adding(days: -1)
+            let active = occurrences.filter { $0.display.contains(day) }
+            guard !active.contains(where: { $0.id == preferences.chosen }),
+                let tier = active.compactMap({ $0.tier(on: day) }).max(),
                 let range = CivilDayRange(first: day, last: end)
             else { continue }
-            let tied = ([active.occurrence] + resolution.runnersUp)
-                .filter { $0.tier(on: day) == active.tier }
+            let tied = active.filter { $0.tier(on: day) == tier }
                 .map(\.eventID).sorted { $0.rawValue < $1.rawValue }
             for (index, a) in tied.enumerated() {
                 for b in tied.dropFirst(index + 1) where a != b {
                     if let previous = result.lastIndex(where: {
-                        $0.first == a && $0.second == b && $0.tier == active.tier && $0.days.last.adding(days: 1) == day
+                        $0.first == a && $0.second == b && $0.tier == tier && $0.days.last.adding(days: 1) == day
                     }), let merged = CivilDayRange(first: result[previous].days.first, last: end) {
-                        result[previous] = CelebrationOverlap(first: a, second: b, days: merged, tier: active.tier)
+                        result[previous] = CelebrationOverlap(first: a, second: b, days: merged, tier: tier)
                     } else {
-                        result.append(CelebrationOverlap(first: a, second: b, days: range, tier: active.tier))
+                        result.append(CelebrationOverlap(first: a, second: b, days: range, tier: tier))
                     }
                 }
             }

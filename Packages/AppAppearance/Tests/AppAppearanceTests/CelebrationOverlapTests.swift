@@ -61,4 +61,23 @@ struct CelebrationOverlapTests {
                 from: try F.day("2026-10-30"), days: 0
             ).isEmpty)
     }
+    @Test func fullCatalogueOffersOnlyActualPriorityTies() throws {
+        let events = F.events.map { event in
+            CelebrationEvent(
+                contribution: event.contribution, pluginID: event.pluginID,
+                order: event.order, iconSet: F.events.first { $0.id == F.halloween }?.iconSet)
+        }
+        var preferences = CelebrationPreferences()
+        for event in events { preferences.setEnabled(true, for: event.id) }
+        let overlaps = CelebrationPolicy.overlaps(
+            events, preferences: preferences,
+            from: try F.day("2026-10-23"), days: 365)
+        #expect(!overlaps.isEmpty)
+        for overlap in overlaps {
+            let result = CelebrationPolicy.resolve(events, preferences: preferences, on: overlap.days.first)
+            guard let active = result.active else { Issue.record("An overlap must have a winner"); continue }
+            if case .priority = active.reason {} else { Issue.record("Only priority ties need a choice") }
+        }
+    }
+
 }
