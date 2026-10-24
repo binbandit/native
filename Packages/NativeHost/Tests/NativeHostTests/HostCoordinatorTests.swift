@@ -36,13 +36,14 @@ struct HostCoordinatorTests {
         let recorder = try await harness.connect()
         let client = recorder.client
         let target = try await client.newSession(NewSessionParams(agentID: "fake", cwd: harness.root.path))
+        _ = try await client.prompt(PromptParams(sessionID: target.id, text: "slow 30"))
         let assigned = try identity(target)
         let params = NewCoordinatorParams(
             task: NewSessionParams(agentID: "fake", cwd: harness.root.path), assignments: [assigned])
         let owner = try await client.newCoordinator(params)
         try await client.deleteAgentSession(
             DeleteAgentSessionParams(agentID: "fake", agentSessionID: try #require(owner.agentSessionID)))
-        #expect(try await client.sessions().contains { $0.id == target.id })
+        #expect(try await client.sessions().contains { $0.id == target.id && $0.isWorking })
         let replacement = try await client.newCoordinator(params)
         #expect(replacement.id != owner.id)
         await recorder.stop()
