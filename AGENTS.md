@@ -26,6 +26,8 @@ these rules exist to keep changes small, isolated and easy to review.
 
 ## Rules
 
+- **Secrets.** Native never reads other apps' secrets. Only Native-owned credential stores may be read; agent configuration without secrets and agent-reported authentication status remain supported.
+
 - **Where code goes.** New feature: its own folder (`native/<Feature>/`), or a package if it has no
   UI. Don't add to another feature's folder; depend on its public types instead. Logic that can run
   without SwiftUI belongs in a package with tests.

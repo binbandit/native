@@ -25,7 +25,8 @@ enum MCPAuthenticationPreviewFixtures {
     static func entry(_ authentication: MCPAuthenticationStatus) -> ConfiguredServer {
         let url = URL(string: "https://docs.example.com/mcp") ?? URL(filePath: "/fixture")
         var entry = ConfiguredServer(
-            server: MCPServerConfig(name: "docs", transport: .http(url: url)), format: .codex,
+            server: MCPServerConfig(name: "docs", transport: .http(url: url)),
+            format: authentication == .unknown ? .claudeCode : .codex,
             scope: .user, source: URL(filePath: "/fixture/config.toml"))
         entry.authentication = authentication
         return entry
@@ -35,7 +36,9 @@ enum MCPAuthenticationPreviewFixtures {
         let entry = entry(authentication)
         let library = MCPLibrary(
             secretStore: MemorySecretStore(), storeURL: nil,
-            initialConfigurations: [.codex: AgentMCPConfiguration(format: .codex, servers: [entry])])
+            initialConfigurations: [
+                entry.format: AgentMCPConfiguration(format: entry.format, servers: [entry])
+            ])
         library.reports[.agent(entry.id)] = MCPProbeReport(
             status: .needsAuth(MCPAuthChallenge(statusCode: 401, sentCredentials: false)),
             startedAt: Date(timeIntervalSince1970: 1_800_000_000), duration: .zero)

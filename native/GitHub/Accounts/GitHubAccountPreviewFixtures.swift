@@ -49,7 +49,7 @@ nonisolated enum GitHubAccountPreviewFixtures {
 }
 
 /// Inert account states for isolated UI checks. Every command is answered locally, never delegated
-/// to real gh. The account choice still travels through Native's token-selection path.
+/// to real gh. The account choice still travels through Native's account-checking path.
 nonisolated struct GitHubAccountFixtureRunner: CommandRunner {
     let state: GitHubAccountPreviewFixtures.State
 
@@ -67,15 +67,12 @@ nonisolated struct GitHubAccountFixtureRunner: CommandRunner {
             return success(
                 try JSONSerialization.data(withJSONObject: ["hosts": rows.isEmpty ? [:] : ["github.com": rows]]))
         }
-        if arguments.starts(with: ["auth", "token"]) {
-            return success(Data((arguments.last?.replacingOccurrences(of: "--user=", with: "") ?? "alex-morgan").utf8))
-        }
         if state == .offline { return failure("error connecting to api.github.com") }
         if state == .expired { return failure("HTTP 401: Bad credentials") }
         if arguments.starts(with: ["api", "user"]) || arguments.contains(where: { $0.hasPrefix("users/") }) {
             let login =
                 arguments.first(where: { $0.hasPrefix("users/") })?.replacingOccurrences(of: "users/", with: "")
-                ?? command.environment["GH_TOKEN"] ?? "alex-morgan"
+                ?? "alex-morgan"
             if state == .failedSwitch, login == "alex-work" { return failure("HTTP 401: Bad credentials") }
             return success(
                 try JSONEncoder().encode(
