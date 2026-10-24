@@ -15,8 +15,6 @@ public struct AgentMCPConfiguration: Hashable, Sendable {
     public var disabledInProject: [String: Set<String>]
     /// An administrator's configuration is in force; the agent loads only its servers.
     public var isManagedOnly: Bool
-    /// Servers the agent itself says need the user to sign in (Codex's listing does).
-    public var signInRequired: Set<String> = []
 
     public init(
         format: AgentConfigFormat, servers: [ConfiguredServer] = [], files: [ConfigFile] = [],

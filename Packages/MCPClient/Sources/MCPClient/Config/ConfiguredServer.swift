@@ -80,6 +80,8 @@ public struct ConfiguredServer: Hashable, Sendable, Identifiable {
     public var resolution: ValueResolution
     /// Facts worth showing beside it, such as "Bearer token from $LINEAR_TOKEN".
     public var notes: [String]
+    /// Read from the agent's shared credential owner, so it applies to every task using this entry.
+    public var authentication: MCPAuthenticationStatus = .unknown
 
     public init(
         server: MCPServerConfig, format: AgentConfigFormat, scope: Scope, source: URL,

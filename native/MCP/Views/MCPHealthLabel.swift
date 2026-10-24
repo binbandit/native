@@ -1,4 +1,20 @@
+import MCPClient
 import SwiftUI
+
+#if DEBUG
+#Preview("MCP status - Shared sign-in states") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.md) {
+            MCPHealthLabel(health: .signedIn)
+            MCPHealthLabel(health: .authenticationUnknown)
+            MCPHealthLabel(health: .needsAuth(MCPAuthChallenge(statusCode: 401, sentCredentials: false)))
+            MCPHealthLabel(health: .checking)
+            MCPHealthLabel(health: .connected(tools: 3))
+        }
+        .padding(DS.Space.lg)
+    }
+}
+#endif
 
 /// A server's status as a dot and a few words: the one way MCP views show it.
 struct MCPHealthLabel: View {

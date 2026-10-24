@@ -42,8 +42,10 @@ final class MCPLibrary {
     /// Whether this build can run scripts at all; without it nothing can run through them.
     var scriptsAvailable = false
     @ObservationIgnored let files: any ConfigFileSystem
+    @ObservationIgnored let credentialKeychain: any MCPCredentialKeychain
+    @ObservationIgnored private var readAgainRequested = false
     @ObservationIgnored private let secretStore: any SecretStore
-    @ObservationIgnored private let storeURL: URL
+    @ObservationIgnored private let storeURL: URL?
     /// Secrets read this launch, so the Keychain is asked once per server.
     @ObservationIgnored private var secretCache: [UUID: ManagedServerSecrets] = [:]
     /// Configuration read for folders sessions work in that aren't projects (worktrees,
@@ -64,15 +66,19 @@ final class MCPLibrary {
         runner: any CommandRunner = LocalCommandRunner(),
         launcher: any StdioLauncher = LocalStdioLauncher(),
         files: any ConfigFileSystem = LocalConfigFiles(),
+        credentialKeychain: any MCPCredentialKeychain = LocalMCPCredentialKeychain(),
         secretStore: any SecretStore = KeychainSecretStore(),
-        storeURL: URL = MCPLibrary.defaultStoreURL
+        storeURL: URL? = MCPLibrary.defaultStoreURL,
+        initialConfigurations: [AgentConfigFormat: AgentMCPConfiguration] = [:]
     ) {
         self.runner = runner
         self.launcher = launcher
         scriptConnections = MCPScriptConnections(launcher: launcher)
         self.files = files
+        self.credentialKeychain = credentialKeychain
         self.secretStore = secretStore
         self.storeURL = storeURL
+        configurations = initialConfigurations
         let stored = load()
         servers = stored.servers
         switches = stored.switches
@@ -195,6 +201,7 @@ final class MCPLibrary {
 
     /// One small JSON file in Application Support, rewritten on every change. Secrets aren't in it.
     private func persist() {
+        guard let storeURL else { return }
         do {
             try FileManager.default.createDirectory(
                 at: storeURL.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -208,7 +215,7 @@ final class MCPLibrary {
     }
 
     private func load() -> MCPStoreFile {
-        guard let data = try? Data(contentsOf: storeURL) else { return MCPStoreFile() }
+        guard let storeURL, let data = try? Data(contentsOf: storeURL) else { return MCPStoreFile() }
         do {
             return try JSONDecoder().decode(MCPStoreFile.self, from: data)
         } catch {
@@ -233,11 +240,22 @@ final class MCPLibrary {
     /// every folder a tracked session works in, and asks Codex for the servers its plugins add.
     /// Runs at connect, when the app becomes active, and on demand; nothing reads files in `body`.
     func readConfigurations() async {
-        guard !isReadingConfigurations, let host else { return }
+        guard let host else { return }
+        guard !isReadingConfigurations else {
+            readAgainRequested = true
+            return
+        }
         isReadingConfigurations = true
-        defer { isReadingConfigurations = false }
+        defer {
+            isReadingConfigurations = false
+            if readAgainRequested {
+                readAgainRequested = false
+                Task { await readConfigurations() }
+            }
+        }
         let environment = await host.mcpEnvironment()
-        let reader = AgentConfigReader(files: files, home: home(in: environment), environment: environment)
+        let reader = AgentConfigReader(
+            files: files, home: home(in: environment), environment: environment, credentialKeychain: credentialKeychain)
         let projects = host.mcpProjects
         let projectKeys = Set(projects.map(ProjectPath.key))
         let folders = Set(trackedSessions.values.map { ProjectPath.key($0.cwd) }).subtracting(projectKeys)
@@ -272,7 +290,8 @@ final class MCPLibrary {
     func startReadingConfigurations() {
         guard configurations.isEmpty, firstRead == nil, let host else { return }
         let environment = ProcessInfo.processInfo.environment
-        let reader = AgentConfigReader(files: files, home: home(in: environment), environment: environment)
+        let reader = AgentConfigReader(
+            files: files, home: home(in: environment), environment: environment, credentialKeychain: credentialKeychain)
         let projects = host.mcpProjects
         firstRead = Task {
             let read = await Task.detached {
@@ -326,7 +345,9 @@ final class MCPLibrary {
         guard !readProjects.contains(folder),
             folderConfigurations["\(AgentConfigFormat.claudeCode.rawValue)|\(folder)"] == nil
         else { return }
-        let reader = AgentConfigReader(files: files, home: home(in: readEnvironment), environment: readEnvironment)
+        let reader = AgentConfigReader(
+            files: files, home: home(in: readEnvironment), environment: readEnvironment,
+            credentialKeychain: credentialKeychain)
         let read = await Task.detached {
             Dictionary(
                 uniqueKeysWithValues: AgentConfigFormat.allCases.map { format in
@@ -354,19 +375,6 @@ final class MCPLibrary {
         environment["HOME"].map { URL(filePath: $0, directoryHint: .isDirectory) }
             ?? FileManager.default.homeDirectoryForCurrentUser
     }
-
-    /// `codex mcp list --json`: read-only, and the only way to see what Codex's plugins add.
-    private func codexListing(environment: [String: String]) async -> CodexListing? {
-        do {
-            let result = try await runner.run(
-                Command("codex", ["mcp", "list", "--json"], environment: environment, timeout: .seconds(20)))
-            guard result.succeeded else { return nil }
-            return try CodexListing.decode(result.standardOutput)
-        } catch {
-            logger.info("No Codex MCP listing: \(error.localizedDescription, privacy: .public)")
-            return nil
-        }
-    }
 }
 
 /// A managed server just removed, kept so the removal can be undone.
@@ -392,7 +400,6 @@ private extension AgentMCPConfiguration {
         var copy = self
         let known = Set(copy.servers.map(\.name))
         copy.servers += full.servers.filter { if case .plugin = $0.scope { !known.contains($0.name) } else { false } }
-        copy.signInRequired = full.signInRequired
-        return copy
+        return copy.withAuthentication(from: full)
     }
 }
