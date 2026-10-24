@@ -1,3 +1,4 @@
+import ApprovalAnalysis
 import NativePolicy
 import NativeTelemetry
 import SwiftUI
