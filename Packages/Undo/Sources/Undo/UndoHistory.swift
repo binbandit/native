@@ -5,36 +5,41 @@ import Observation
 @MainActor
 @Observable
 public final class UndoHistory {
-    private var revision = 0
+    private struct MenuState: Equatable {
+        var canUndo = false
+        var canRedo = false
+        var undoTitle = "Undo"
+        var redoTitle = "Redo"
+    }
+
+    private var menu = MenuState()
     public private(set) weak var manager: UndoManager?
     @ObservationIgnored private var observers: [any NSObjectProtocol] = []
+    @ObservationIgnored private var pendingRefresh: Task<Void, Never>?
+    @ObservationIgnored private var isRefreshing = false
 
     public init() {}
 
-    // Checkpoints can precede a stack mutation. Invalidate observers there, but read the current
-    // value when the menu renders rather than caching the stack's previous state.
     public var canUndo: Bool {
-        _ = revision
-        return manager?.canUndo == true
+        menu.canUndo
     }
 
     public var canRedo: Bool {
-        _ = revision
-        return manager?.canRedo == true
+        menu.canRedo
     }
 
     public var undoTitle: String {
-        _ = revision
-        return manager?.undoMenuItemTitle ?? "Undo"
+        menu.undoTitle
     }
 
     public var redoTitle: String {
-        _ = revision
-        return manager?.redoMenuItemTitle ?? "Redo"
+        menu.redoTitle
     }
 
     public func track(_ manager: UndoManager?) {
         guard self.manager !== manager else { return }
+        pendingRefresh?.cancel()
+        pendingRefresh = nil
         observers.forEach(NotificationCenter.default.removeObserver)
         observers.removeAll()
         self.manager = manager
@@ -47,12 +52,12 @@ public final class UndoHistory {
                 observers.append(
                     NotificationCenter.default.addObserver(forName: name, object: manager, queue: .main) {
                         [weak self] _ in
-                        if name == .NSUndoManagerCheckpoint {
-                            // A checkpoint precedes registration and naming. Let both finish before
-                            // SwiftUI samples the next action for the menu title.
-                            Task { @MainActor [weak self] in self?.refresh() }
-                        } else {
-                            MainActor.assumeIsolated { self?.refresh() }
+                        MainActor.assumeIsolated {
+                            if name == .NSUndoManagerCheckpoint {
+                                self?.scheduleRefresh()
+                            } else {
+                                self?.refresh()
+                            }
                         }
                     })
             }
@@ -71,10 +76,36 @@ public final class UndoHistory {
     }
 
     private func refresh() {
-        revision &+= 1
+        // UndoManager's redo getters post checkpoints themselves. Reading them while rendering
+        // a menu must not invalidate that menu and start another render indefinitely.
+        guard !isRefreshing else { return }
+        isRefreshing = true
+        defer { isRefreshing = false }
+        // Checkpoint listeners can commit pending edits. Let the redo queries finish those
+        // before sampling Undo, so a newly registered edit appears in the same snapshot.
+        let redoTitle = manager?.redoMenuItemTitle ?? "Redo"
+        let canRedo = manager?.canRedo == true
+        let next = MenuState(
+            canUndo: manager?.canUndo == true,
+            canRedo: canRedo,
+            undoTitle: manager?.undoMenuItemTitle ?? "Undo",
+            redoTitle: redoTitle)
+        if menu != next { menu = next }
+    }
+
+    private func scheduleRefresh() {
+        guard !isRefreshing, pendingRefresh == nil else { return }
+        // A checkpoint precedes registration and naming. Coalesce the notifications and read
+        // after both finish, even when the undo group stays open until the next event.
+        pendingRefresh = Task { @MainActor [weak self] in
+            guard !Task.isCancelled, let self else { return }
+            pendingRefresh = nil
+            refresh()
+        }
     }
 
     isolated deinit {
+        pendingRefresh?.cancel()
         observers.forEach(NotificationCenter.default.removeObserver)
     }
 }
