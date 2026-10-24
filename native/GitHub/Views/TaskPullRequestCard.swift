@@ -275,13 +275,13 @@ struct TaskPullRequestCard: View {
     /// Refreshes the branch's lookup and, for an open pull request, its page (without the diffs a
     /// glance doesn't need).
     private func refresh(_ page: PullRequestPageModel?, isOpen: Bool, maxAge: TimeInterval) async {
-        async let lookup: Void = model.loadPullRequest(for: branch, maxAge: maxAge)
+        async let lookup = model.loadPullRequest(for: branch, maxAge: maxAge)
         if isOpen, let page, model.availability != .notAuthenticated,
             maxAge == 0 || page.page == nil || page.isStale
         {
             await page.load(prefetchingPatches: false)
         }
-        await lookup
+        _ = await lookup
     }
 
     private func hasNotice(_ found: BranchPullRequest?) -> Bool {

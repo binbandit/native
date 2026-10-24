@@ -71,6 +71,7 @@ public struct NativePolicy: Equatable, Sendable {
     /// Ids of the plugins installed from manifests that may load; nil allows all. Built-in plugins
     /// are part of Native and governed by their own keys.
     public var allowedPlugins: Set<String>?
+    public var celebrations = Celebrations()
     public var catalog = Catalog()
     /// Skills, by name, denied in every session.
     public var blockedSkills: [String] = []
@@ -80,6 +81,10 @@ public struct NativePolicy: Equatable, Sendable {
     /// Fetch the base branch before creating a task worktree. False keeps creation entirely local.
     public var worktreeFetchEnabled = true
     public var taskScripts = TaskScripts()
+    /// False removes celebrations and their entry points, while keeping personal choices for later.
+    public var celebrationsEnabled = true
+    /// A display name supplied by the administrator, never inferred from an account or hostname.
+    public var organizationName: String?
     public var labsEnabled = true
     public var companionEnabled = true
     public var remoteHostsEnabled = true

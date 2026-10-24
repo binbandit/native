@@ -3,25 +3,25 @@ import Foundation
 import TaskList
 
 extension AppModel {
-    func homeNextTasks(retaining current: HomeNextApprovalID?) -> [HomeNextTask] {
+    func homeNextTasks(retaining current: HomeNextRequest.ID?) -> [HomeNextTask] {
         sessionList.map { summary in
             let live = session(summary.id)
             let status = live?.taskStatus ?? .idle
-            let approvals = live.map(homeNextApprovals) ?? []
-            let approval = HomeAskOrder.first(approvals, retaining: current) {
-                HomeNextApprovalID(session: $0.0, call: $0.1)
-            }
+            let requests = (live.map(homeNextRequests) ?? []).sorted { $0.kind.rawValue < $1.kind.rawValue }
+            let request = HomeAskOrder.first(requests, retaining: current, id: \.id)
             let turn = status == .done ? live?.state.turns.last : nil
             let changes = turn.flatMap { live?.state.summary(of: $0) }
             return HomeNextTask(
                 id: summary.id, title: title(for: summary), agent: summary.agent.displayName,
-                status: approval == nil ? status : .needsPermission,
-                ask: live?.wait?.summary
+                status: request?.status ?? status,
+                ask: request?.summary ?? live?.wait?.summary
                     ?? (status == .failed
-                        ? "The agent stopped. Open the task to review its output and retry." : status.label),
-                date: approval?.1.startedAt ?? lastActivity(for: summary),
+                        ? live.flatMap { TurnFailureContext(state: $0.state).details }
+                            ?? "The agent stopped before finishing. Retry or open the task."
+                        : status.label),
+                date: request?.call?.startedAt ?? lastActivity(for: summary),
                 host: remotePlace(of: summary.id)?.host.name,
-                approval: approval?.1, approvalSession: approval?.0, finishedAt: turn?.endedAt,
+                request: request, session: live, finishedAt: turn?.endedAt,
                 diff: changes.flatMap {
                     $0.linesAdded + $0.linesRemoved > 0
                         ? DSFormat.diffStat(added: $0.linesAdded, removed: $0.linesRemoved) : nil
@@ -29,9 +29,10 @@ extension AppModel {
         }
     }
 
-    private func homeNextApprovals(_ session: SessionModel) -> [(SessionModel, ToolCallState)] {
-        session.permissionRequests.filter { $0.kind != .switchMode }.map { (session, $0) }
-            + session.children.values.sorted { $0.id.rawValue < $1.id.rawValue }.flatMap(homeNextApprovals)
+    private func homeNextRequests(_ session: SessionModel) -> [HomeNextRequest] {
+        session.permissionRequests.map { HomeNextRequest(session: session, call: $0) }
+            + (session.pendingQuestion.map { [HomeNextRequest(session: session, question: $0)] } ?? [])
+            + session.children.values.sorted { $0.id.rawValue < $1.id.rawValue }.flatMap(homeNextRequests)
     }
 
     func openHomeNextTask(_ key: SessionKey) { selection = key }

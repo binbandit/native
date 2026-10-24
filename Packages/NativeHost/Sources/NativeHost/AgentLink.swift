@@ -1,7 +1,6 @@
 import ACP
 import Foundation
 import NativeHostProtocol
-import Synchronization
 
 /// One agent's process and connection inside the host. Many sessions share it.
 @HostActor
@@ -341,15 +340,7 @@ enum AgentLaunch {
         process.standardInput = stdin
         process.standardOutput = stdout
         process.standardError = stderrPipe
-        let stderr = StderrTail()
-        stderrPipe.fileHandleForReading.readabilityHandler = { handle in
-            let data = handle.availableData
-            if data.isEmpty {
-                handle.readabilityHandler = nil
-            } else {
-                stderr.append(data)
-            }
-        }
+        let stderr = try StderrTail(reading: stderrPipe.fileHandleForReading)
         try process.run()
         // The channel gets its own copies of our ends; closing the originals means that when the
         // channel closes stdin, the agent sees EOF. Close-on-exec copies, like the pipes themselves.
@@ -378,24 +369,5 @@ enum AgentLaunch {
         environment["PATH", default: ""].split(separator: ":")
             .map { URL(filePath: String($0)).appending(path: name).path(percentEncoded: false) }
             .first { FileManager.default.isExecutableFile(atPath: $0) }
-    }
-}
-
-/// The last few KB of an agent's stderr, for explaining why it failed.
-final class StderrTail: Sendable {
-    private static let limit = 16 * 1024
-    private let buffer = Mutex(Data())
-
-    func append(_ data: Data) {
-        buffer.withLock { buffer in
-            buffer.append(data)
-            if buffer.count > Self.limit {
-                buffer.removeFirst(buffer.count - Self.limit)
-            }
-        }
-    }
-
-    var text: String {
-        buffer.withLock { String(decoding: $0, as: UTF8.self) }
     }
 }

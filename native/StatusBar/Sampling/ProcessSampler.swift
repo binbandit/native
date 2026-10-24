@@ -1,4 +1,5 @@
 import Darwin
+import Exec
 import Foundation
 
 /// Samples memory and CPU of Native and its agents' process trees with libproc. A sample costs a
@@ -29,6 +30,7 @@ actor ProcessSampler {
 
     private var previous: [Identity: (cpuTime: UInt64, at: UInt64)] = [:]
     private var names: [Identity: String] = [:]
+    private let processorCount = ProcessInfo.processInfo.activeProcessorCount
     private let timebase: (numer: UInt64, denom: UInt64) = {
         var info = mach_timebase_info()
         mach_timebase_info(&info)
@@ -96,8 +98,10 @@ actor ProcessSampler {
         guard let reading = read(pid) else { return nil }
         var cpu: Double?
         if let last = previous[reading.identity], now > last.at, reading.cpuTime >= last.cpuTime {
-            let wall = Double(ticksToNanoseconds(now - last.at))
-            cpu = Double(reading.cpuTime - last.cpuTime) / wall * 100
+            cpu = ProcessCPUUsage.percent(
+                cpuTime: reading.cpuTime - last.cpuTime,
+                elapsedTime: ticksToNanoseconds(now - last.at),
+                processorCount: processorCount)
         }
         previous[reading.identity] = (reading.cpuTime, now)
         return ProcessUsage(

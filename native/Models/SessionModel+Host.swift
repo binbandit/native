@@ -187,6 +187,8 @@ extension SessionModel {
     func submitToHost(
         _ text: String, attachments: [PromptAttachment], behavior: FollowUpBehavior, echo: Bool
     ) async throws -> FollowUpDelivery {
+        guard !isChangingWorkspace, !isWorkspaceReplaced else { throw SendError.busy }
+        hasSubmittedPrompt = true
         if holdsPrompts {
             heldPrompts.append(HeldPrompt(text: text, attachments: attachments, behavior: behavior, isEchoed: echo))
             return .queued
@@ -342,10 +344,10 @@ extension SessionModel {
 
     func respondOnHost(to question: PendingQuestion, with response: CreateElicitationResponse) async throws {
         guard let host, let questionID = question.hostID else { return }
-        answeredQuestions.insert(questionID)
         let json = try JSONDecoder().decode(JSONValue.self, from: JSONEncoder().encode(response))
         let params = RespondQuestionParams(sessionID: host.id, questionID: questionID, response: json)
         try await host.request { try await $0.respondQuestion(params) }
+        answeredQuestions.insert(questionID)
     }
 }
 

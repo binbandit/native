@@ -8,7 +8,9 @@ extension HostCore {
     /// Starts a session on an agent. An id the host already has returns that session, so a client
     /// retrying after a dropped connection never starts two. With `follower`, that client follows
     /// the session's events from the first.
-    func newSession(_ params: NewSessionParams, follower: ClientLink? = nil) async throws -> HostSessionSummary {
+    func newSession(
+        _ params: NewSessionParams, follower: ClientLink? = nil, coordinator: NewCoordinatorParams? = nil
+    ) async throws -> HostSessionSummary {
         if let id = params.sessionID, let existing = sessions[id] {
             follower.map { follow(existing, by: $0) }
             return existing.summary
@@ -31,19 +33,51 @@ extension HostCore {
             follower.map { follow(existing, by: $0) }
             return existing.summary
         }
-        let record = StoredSession(
-            id: sessionID, agentID: params.agentID, agentSessionID: response.sessionId,
-            cwd: params.cwd, parentID: params.parentID, origin: params.origin, mcpServers: params.mcpServers,
-            meta: params.meta,
-            configChoices: response.configOptions.map { Self.configValues(Self.configOptions($0)) } ?? [:])
-        try store.insertSession(record)
+        let initialOptions: JSONValue?
+        let record: StoredSession
+        do {
+            if coordinator != nil {
+                initialOptions = try await coordinatorReadOnly(response, on: peer)
+            } else {
+                initialOptions = response.configOptions
+            }
+            record = StoredSession(
+                id: sessionID, agentID: params.agentID, agentSessionID: response.sessionId,
+                cwd: params.cwd, parentID: params.parentID, origin: params.origin, mcpServers: params.mcpServers,
+                meta: params.meta,
+                configChoices: initialOptions.map { Self.configValues(Self.configOptions($0)) } ?? [:])
+            try store.transaction {
+                if let coordinator {
+                    let identity = HostTaskIdentity(agentID: params.agentID, agentSessionID: response.sessionId)
+                    try validateAssignments(coordinator.assignments, coordinator: identity)
+                    let assignment = HostCoordinator(
+                        task: identity, projectPath: params.cwd, assignments: coordinator.assignments,
+                        hostSessionID: sessionID)
+                    var updated = coordinators
+                    updated.append(assignment)
+                    try store.setMeta(
+                        Self.coordinatorsKey, String(decoding: try JSONEncoder().encode(updated), as: UTF8.self))
+                }
+                try store.insertSession(record)
+            }
+        } catch {
+            if coordinator != nil { await discardCoordinatorCandidate(response.sessionId, on: link, peer: peer) }
+            throw error
+        }
+        if let coordinator {
+            coordinators.append(
+                HostCoordinator(
+                    task: HostTaskIdentity(agentID: params.agentID, agentSessionID: response.sessionId),
+                    projectPath: params.cwd, assignments: coordinator.assignments, hostSessionID: sessionID))
+            for client in clients.values { client.notify(HostProtocol.Method.coordinatorsChanged, coordinators) }
+        }
         let session = HostSession(
             record: record, agentName: link.spec.name, phase: .idle, needsLoad: false, mcpServers: params.mcpServers)
         session.supportsSteering = link.supportsSteering
         sessions[record.id] = session
         follower.map { follow(session, by: $0) }
         append(.reset(loading: false), to: session)
-        if let options = response.configOptions {
+        if let options = initialOptions {
             append(.update(SessionMirror.configOptionsUpdate(options)), to: session)
         }
         route(session, on: link)
@@ -389,6 +423,12 @@ extension HostCore {
     /// the agent can). Its history stays with the agent.
     func closeSession(_ id: HostSessionID, closeInAgent: Bool = false) async throws {
         let session = try session(id)
+        // Coordination owns the durable record after the app stops displaying its transcript.
+        // Reuse idle unloading so a later tool call resumes the task with its history and settings.
+        if participatesInCoordination(session) {
+            if closeInAgent { unloadIfIdle(session) }
+            return
+        }
         await cancel(session)
         try store.keepClosedSessionConfig(session.record)
         forget(session)

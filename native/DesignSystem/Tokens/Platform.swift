@@ -66,6 +66,15 @@ enum DSPasteboard {
 }
 
 extension DSPlatformColor {
+    /// The system keyboard ring, also used when an inert preview illustrates keyboard focus.
+    nonisolated static var dsKeyboardFocusIndicator: DSPlatformColor {
+        #if canImport(AppKit)
+        .keyboardFocusIndicatorColor
+        #else
+        .systemBlue.withAlphaComponent(0.5)
+        #endif
+    }
+
     /// An sRGB color from a 0xRRGGBB literal.
     nonisolated static func dsSRGB(_ hex: UInt32, alpha: CGFloat = 1) -> DSPlatformColor {
         let red = CGFloat((hex >> 16) & 0xFF) / 255

@@ -7,14 +7,13 @@ struct SessionGoalControl: View {
     let session: SessionModel
     /// The pill as only its icon, when the composer is short of room.
     var showsIcon = false
-    var isQuiet = false
 
     @Environment(AutomationCenter.self) private var center
     @State private var isEditing = false
 
     var body: some View {
         if let controller = center.goal(for: session) {
-            GoalPillButton(status: controller.goal?.status, showsIcon: showsIcon, isQuiet: isQuiet) { isEditing = true }
+            GoalPillButton(status: controller.goal?.status, showsIcon: showsIcon) { isEditing = true }
                 .popover(isPresented: $isEditing, arrowEdge: .top) {
                     GoalEditor(goal: controller.goal, agentName: session.agentName) { objective, budget in
                         isEditing = false
@@ -50,7 +49,6 @@ struct SessionGoalControl: View {
             HStack(spacing: DS.Space.lg) {
                 SessionGoalControl(session: session)
                 SessionGoalControl(session: session, showsIcon: true)
-                SessionGoalControl(session: session, isQuiet: true)
             }
         }
     }

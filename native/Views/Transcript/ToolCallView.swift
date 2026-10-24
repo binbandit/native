@@ -8,15 +8,18 @@ import SwiftUI
 /// the agent waits for approval the details stay open above the permission buttons.
 struct ToolCallView: View, Equatable {
     let call: ToolCallState
+    var permissionPresentation: ToolPermissionButtons.Presentation = .standard
     let onChoose: (PermissionOption) -> Void
 
     @Environment(TranscriptDisclosures.self) private var disclosures: TranscriptDisclosures?
     /// For rows shown outside a transcript, which has no `TranscriptDisclosures`.
     @State private var isOpenHere = false
+    @Experiment(.composerNext) private var finePrint
+    @Environment(\.isPrimaryTranscript) private var isPrimaryTranscript
 
     /// Rows only change with their call; `onChoose` always answers the same session.
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.call == rhs.call
+        lhs.call == rhs.call && lhs.permissionPresentation == rhs.permissionPresentation
     }
 
     var body: some View {
@@ -47,7 +50,8 @@ struct ToolCallView: View, Equatable {
         let presentation = ToolPresentation(call)
         let phase = ToolPhase(call)
         let hasDetails = detailsAvailable(for: presentation)
-        let showsDetails = hasDetails && (isOpen || phase == .awaitingApproval)
+        let inComposer = finePrint && isPrimaryTranscript && call.permission != nil
+        let showsDetails = !inComposer && hasDetails && (isOpen || phase == .awaitingApproval)
         VStack(alignment: .leading, spacing: DS.Space.xxs) {
             ToolRow(
                 presentation: presentation,
@@ -71,10 +75,12 @@ struct ToolCallView: View, Equatable {
                 }
                 .transition(RevealTransition())
             }
-            if let permission = call.permission {
-                ToolPermissionButtons(options: permission.options, onChoose: onChoose)
-                    .padding(.top, DS.Space.sm)
-                    .transition(.opacity)
+            if let permission = call.permission, !inComposer {
+                ToolPermissionButtons(
+                    options: permission.options, onChoose: onChoose, presentation: permissionPresentation
+                )
+                .padding(.top, DS.Space.sm)
+                .transition(.opacity)
             }
         }
         .animation(.smooth, value: phase)

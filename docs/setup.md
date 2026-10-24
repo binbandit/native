@@ -90,11 +90,11 @@ Native needs macOS 27. It ships through
 
 | Channel | What it is | Get it |
 | --- | --- | --- |
-| Stable | tested releases | the latest release (`v1.4.0`), `Native-<version>.dmg` |
+| Stable | tested releases | the latest release (`v1.4.0`), `Native-<version>.zip` |
 | Beta | upcoming features a few weeks early | a prerelease (`v1.5.0-beta.1`); or, in a stable install, Settings ▸ Updates ▸ Update channel ▸ Beta |
-| Nightly | built from `main` every night | the rolling `nightly` prerelease, `Native-Nightly.dmg` |
+| Nightly | built from `main` every night | the rolling `nightly` prerelease, `Native-Nightly-<build>.zip` |
 
-Open the DMG and drag the app to Applications. Builds are signed and notarized. Native Nightly is a
+Extract the ZIP and drag the app to Applications. Builds are signed and notarized. Native Nightly is a
 separate app (Native Nightly.app) with its own settings, data and background host, so it installs
 beside Native and the two never share anything. A beta user still gets stable releases; switching
 back to Stable keeps the beta until a newer stable release arrives.

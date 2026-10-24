@@ -205,9 +205,24 @@ files; a file moved or deleted before sending is marked on its chip and holds th
 
 ## Permission requests
 
-With the All in view sidebar experiment, the ⌘Y keycap marks that visible task's oldest tool
-approval, provided it offers Allow once. Questions and requests in other tasks have no keycap.
-Global routing through Peek is a later slice.
+With the All in view sidebar experiment, ⌘Y targets the oldest connected task ask across all
+projects, including child tasks. Its row carries the keycap. Routine approvals offering Allow once
+are answered in place; questions, plans and commands with irreversible or unknown effects open
+Peek for review. The full request is always shown there. The current task and its draft stay put.
+
+| Keys | Action | Menu | Command |
+| --- | --- | --- | --- |
+| ⌘Y | Answer oldest task ask, or open its Peek | Task | `task.answerOldestAsk` |
+| | Peek at the selected task (Space with the sidebar list focused) | Task / row context menu | `task.peek` |
+| Escape in Peek | Close Peek | | |
+| Return in Peek (except a question) | Open Task | | |
+| ⌘R in a failure Peek | Retry the failed task | | |
+
+A click on a row's signal, a force click, or Peek in its context menu opens the same 600pt popover.
+Questions keep their digit, arrow and Return controls. An answer closes Peek. Hidden or filtered
+rows use a window anchor. The experiment defaults to off; the shortcuts below keep today's
+behavior while it is off. Workflow and expedition approvals retain their local shortcut when no
+task ask owns ⌘Y and the user has not reassigned it to another command.
 
 The oldest pending request in the visible task answers these: a tool's permission request, a
 workflow step waiting for approval, or an expedition's route (or route change) waiting for review.
@@ -216,8 +231,21 @@ They're chosen not to collide with text editing in the composer.
 | Keys | Action |
 | --- | --- |
 | ⌘Y | Allow once (approve the workflow step) |
-| ⌥⌘Y | Allow always (when offered) |
+| ⌥⌘Y | Allow always (when offered, never for an irreversible action) |
 | ⌘⇧⌫ | Reject |
+| ⌘⇧Y | Ask the agent to use the suggested command (Fine print fix-it, when offered) |
+
+With Fine print enabled, irreversible commands require a 0.6-second hold. Hold ⌘Y when the local
+Allow once shortcut is available; All in view reserves ⌘Y for the oldest task ask. Releasing
+before the hold fills sends nothing. Pointer and touch use the same hold; VoiceOver and Switch Control
+use Allow followed by Confirm Allow within five seconds. The button acknowledges Allowed for
+0.4 seconds before the request folds away. Reduce Motion keeps the ring but removes the fill sweep.
+⌘L focuses Tell the agent what to do instead while an approval is shown; Return sends the instruction.
+The fix-it and every permission option are also in the keyboard tab order.
+Only the oldest request owns these keys; changing tasks or losing the window cancels a hold.
+When an agent offers several choices of one permission kind, each stays visible under its own name;
+only the first owns that kind's shortcut. The iPad hold route is installed at the window root so
+focus can remain in the sidebar, toolbar or transcript.
 
 On an expedition's route review, ⌘Return approves too, and ⌘L focuses the message field for the
 expedition's lead (the composer key, on a page without a composer).
@@ -260,11 +288,14 @@ Other file types use the platform's Quick Look preview, with its native navigati
 | --- | --- | --- | --- |
 | ⌘K | Command palette: run any command, or jump to a task, project or Settings page | View | `palette.show` |
 | ⌘/ | Keyboard shortcuts (also the "?" at the status bar's trailing end) | Help | `help.keyboardShortcuts` |
-| ⌘N | New task with the last-used agent | File | `session.new` |
+| ⌘N | New task with the last-used agent; with Compose Task on, open Quick Entry over the current task | File | `session.new` |
+| ⇧⌘N | With Compose Task on, expand Quick Entry into New Task, keeping the draft and context | File | `task.compose` |
+| ⌥⌘O | With Quick Entry open, choose the device the task runs on | File | `task.chooseDevice` |
 | ⌥⌘N | New task with… (agent picker) | File | `session.newWithAgent` |
 | ⌥⌘E | New expedition (`docs/expeditions.md`) | File | `expedition.new` |
 | ⌘O | Open folder | File | `project.open` |
 | | The current project's settings (Settings ▸ Projects; also in the project's menu in the sidebar) | File | `project.settings` |
+| | Refresh git and pull-request state for every task in the current project (also Refresh in its sidebar menu) | File | `project.refresh` |
 | | Clean up the current project's merged task worktrees, branches and stale worktree records, after a review (also "Clean Up Merged…" in the project's menu in the sidebar) | File | `git.cleanUpMerged` |
 | ⇧⌘O | Open the task's folder in the default app (Open In) | Task | `session.openInDefaultApp` |
 | ⌥⌘P | Open the task's pull request, where clicking one goes (Settings ▸ GitHub); listed while its branch has one | Task | `pullRequest.openForTask` |
@@ -276,6 +307,7 @@ Other file types use the platform's Quick Look preview, with its native navigati
 | ⌃⌘S | Show or hide the sidebar | View | `view.toggleSidebar` |
 | ⌥⌘↑ / ⌥⌘↓ | Move the selected project or task up / down (a queued message instead, while one is open in the composer) | Task | `sidebar.moveUp` / `sidebar.moveDown` |
 | ⌘Z / ⇧⌘Z | Undo / redo the window's latest change, newest first: typing, or archiving, renaming, pinning or deleting a task or project (a deletion until it's carried out). The undo toast's Undo takes back the same change, once | Edit | |
+| ⌘Z after removing a host | Restore the removed host's pairing, also offered by the toast's Undo | Edit | |
 | ⇧⌘A | Archive the selected task and open the next task in the sidebar's current filter and sort order (or the previous task at the end). ⌘Z or the toast's Undo restores and reopens it. Unarchive an archived task; with several tasks picked, archive them all | Task | `session.archive` |
 | ⌥⌘J | Turn the sidebar's Needs you filter on or off (its filter menu has the rest) | View | `view.needsYouFilter` |
 | ⌘⇧P | Pull requests | Go | `go.pullRequests` |
@@ -289,6 +321,11 @@ Other file types use the platform's Quick Look preview, with its native navigati
 | ⌃⌘A | Keep Mac awake: cycle Off → While agents work → On (View ▸ Keep Mac Awake) | View | `keepAwake.nextMode` |
 | | Show or hide the status bar along the window's bottom edge (on by default) | View | `statusBar.toggle` |
 
+Undo toasts show ⌘Z only while the window's next Undo takes back that offer. Tab reaches Undo and
+the corner Dismiss button; VoiceOver exposes both as actions on the announced message. Hover or
+keyboard focus holds the toast open. Escape keeps its task behavior and never dismisses a toast.
+On iPad, the corner Dismiss button is always visible and swiping down dismisses the toast.
+
 ## Home Next (Labs)
 
 With Next enabled in Settings > Labs, Home shows one ask at a time. The visible approval owns
@@ -296,15 +333,34 @@ the usual permission keys: Cmd-Y allows once, Option-Cmd-Y always allows when of
 Shift-Cmd-Delete rejects. Tab and Space reach Up next, Open Task, the ordering menu, and Show
 more. Cmd-Return opens the current ask's task; Shift-Cmd-Down shows the next five rows.
 Cmd-N starts a task and Cmd-O opens a folder, including before the first project exists.
+The current question uses the composer's question keys: 1-9 pick an offered choice, Return
+sends, and typing in the answer field keeps digits as text. Plans use Cmd-Y to approve,
+Shift-Cmd-Delete to request a revised plan.
+Option-Cmd-Down expands the remaining plan steps. A failed task uses Cmd-R to retry and
+Option-Cmd-O to show its error output. Cmd-Return opens the task for every ask kind.
 
 ## Task tools (Labs)
+
+With The well enabled (`NativeTaskWell`, off by default), Cmd-I opens the centered task well.
+Its tools appear in this fixed key order. Missing tools leave no row; their keys stay reserved.
+Clicking a waiting well focuses the composer, where the full request can be answered.
+
+| Keys | Action | Menu | Command |
+| --- | --- | --- | --- |
+| ⌘I | Open or close the task well | View | `taskWell.toggle` |
+| ⌥⌘1 | Changes | View ▸ Tools | `sessionTools.changes` |
+| ⌥⌘2 | Terminal | View ▸ Tools | `taskWell.terminal` |
+| ⌥⌘3 | Dev (project actions) | View ▸ Tools | `taskWell.dev` |
+| ⌥⌘4 | Subagents | View ▸ Tools | `taskWell.subagents` |
+| ⌥⌘5 | Pull request | View ▸ Tools | `taskWell.pullRequest` |
+| Escape | Close the well and return focus to the task | | |
 
 With Task Tools enabled in Settings ▸ Labs (off by default), the Changes fact under the title
 opens the changes panel. It docks beside a wide conversation and overlays a narrow one.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
-| ⌥⌘1 | Show or hide Changes | View ▸ Tools | `sessionTools.changes` |
+| ⌥⌘1 | Show or hide Changes (same command as above) | View ▸ Tools | |
 | ⇧⌘D | Show or hide Changes, as on the standard task screen | View | |
 | Escape | Close the Changes overlay before composer Stop, suggestions or attachment actions; while focus is in the docked panel, close that panel | | |
 
@@ -353,11 +409,6 @@ Controls ("…") menu. Each setting lists its choices with the current value che
 keys and Return to choose from the menu. Model, effort, autonomy and mode keep their dedicated
 controls, moving into More only as the row runs out of room.
 
-With the Quiet composer experiment enabled, each setting is a plain-word button under the draft.
-The same keys below still apply. The agent name opens New Task With (⌥⌘N), or Change Agent
-when that experiment is also enabled. Tab reaches the buttons, Space opens their pickers, and
-Escape closes a picker.
-
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
 | ⌘⇧M | Next permission mode | Task | `session.nextPermissionMode` |
@@ -365,6 +416,7 @@ Escape closes a picker.
 | | Put the task in a mode, one command per mode ("Debug Mode"); your own and the project's modes get theirs too | Task ▸ Mode | `mode.build` / `mode.plan` / `mode.ask` / `mode.debug` / `mode.review` |
 | | Edit Modes… (Settings ▸ Modes) | Task ▸ Mode | `modes.edit` |
 | ⌘⇧E | Model picker | Task | `session.chooseModel` |
+| | Change Workspace…: choose a branch, new worktree or project folder before the first message | Task | `session.changeWorkspace` |
 | ⌥⌘G | Set or edit the task's goal | Task | `goal.edit` |
 | ⌥⌘R | Run a workflow | Task | `workflow.run` |
 
@@ -394,6 +446,26 @@ the same failure with Restart on its agent cards and a link to Settings > Agents
 | Return | Start the task with the highlighted agent; one that needs sign-in signs in first, then starts it |
 | Escape | Clear the filter; with it empty, close the picker |
 
+## Quick Entry (Compose Task experiment)
+
+With `NativeComposeTask` on (off by default), ⌘N opens Quick Entry 12pt below the toolbar.
+The current text selection in Native is included as removable context. The address reads
+"to [agent and model] on [device] from [project]", in that order.
+
+| Keys (Quick Entry open) | Action |
+| --- | --- |
+| Return | Start the task and stay on the current task |
+| ⌘Return | Start the task and open it |
+| Shift-Return, Option-Return | Insert a new line |
+| ⇧⌘N | Expand into New Task, keeping the draft and context |
+| ⌥⌘O | Open the device picker |
+| Escape | Close the picker first, then Quick Entry; keep the draft for next time |
+
+During slice 1, expanding uses today's full New Task view. The Compose page replaces it in
+slice 2. After a background start, the confirmation's Open button opens that task. Quick Entry
+captures only a selection inside Native; global shortcuts and capture from other apps are not
+part of this experiment.
+
 ## Choosing a device
 
 New Task's device picker says where the task runs: This Mac or a paired host (Settings ▸ Hosts),
@@ -421,7 +493,7 @@ in Git, for example). No shortcuts change.
 | ↑ / ↓ | Move through the search results |
 | Return | Open the highlighted result |
 | Escape | Clear the search; with it empty, close Settings |
-| ⌘[ | Close Settings, back to where you were (Go menu) |
+| ⌘[ | Return from a celebration detail page first; otherwise close Settings (Go menu) |
 | ↑ / ↓ in the page list | Move to the previous / next page |
 
 ## Search
@@ -510,3 +582,14 @@ them. Composer keys in `native/Views/Composer*`; permission keys in
 | Keys | Action | Command |
 | --- | --- | --- |
 | ⌥⇧⌘H | Restore the usual icon and Home while a celebration shows (skips it until it next occurs), or bring a skipped one back (View menu) | `celebration.restore` |
+
+In Celebrations, Tab focuses a row, Space toggles it, and Return opens its detail page.
+Escape or ⌘[ in a celebration detail page returns to the list at its previous scroll position
+before closing Settings. The bulk-change confirmation also supports ⌘Z and Redo.
+
+## Coordinator tasks (Labs)
+
+With Settings > Labs > Coordinator tasks enabled, File > New Coordinator Task opens the assignment
+picker in the current project. File > Edit Assigned Tasks edits the selected coordinator. Both
+commands are also in the command palette. They have no default shortcut. Tab, Space and Return
+operate the picker; Escape cancels without changing assignments.

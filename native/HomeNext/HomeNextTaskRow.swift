@@ -8,7 +8,7 @@ struct HomeNextTaskRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: DS.Space.lg) {
-                StatusIndicator(status: finished ? .idle : task.status)
+                TaskSignal(status: finished ? .done : task.status, placement: .sidebar, attentionSince: task.date)
                 VStack(alignment: .leading, spacing: DS.Space.xxs) {
                     Text(task.title)
                         .font(finished ? .dsCallout : .dsCalloutMedium)

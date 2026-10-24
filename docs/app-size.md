@@ -8,15 +8,18 @@ It belongs with `docs/performance.md`.
 
 MB here are 10^6 bytes, as Finder counts them. "Installed" is the bytes in the app bundle;
 "download" is Sparkle's update archive (what every update fetches) and the disk image (a first
-install). The budgets sit about 10% above where the app was when they were set, so growth gets
-noticed while there's still room to choose what to cut; lower them as the cuts in "Still to do" land.
+install rehearsal). Public releases now attach only the ZIP for both first installs and updates;
+the DMG still builds locally with the existing signing, notarization and size checks. The asset
+inventory and retention limits are in `docs/releasing.md`. This changes file count, not the app
+bundle or its size budgets. The budgets sit about 10% above where the app was when they were set,
+so growth gets noticed while there's still room to choose what to cut; lower them as the cuts in "Still to do" land.
 
 | What | Budget | 2026-10-19, after the grammar cut |
 | --- | --- | --- |
 | Download, update archive | 47 MB | 42.7 MB |
 | Download, disk image | 48 MB | about 43.3 MB |
 | Installed app | 118 MB | 107.5 MB |
-| App binary (`Contents/MacOS/Native`) | 59 MB | 53.2 MB |
+| App binary (`Contents/MacOS/Native`) | 70 MB | 53.2 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
 `scripts/release/size-check.sh` holds the same numbers and fails when anything is over. It also
@@ -45,12 +48,63 @@ tool messages, with no bundled assets or dependencies. It uses the same 58.5 MB 
 At `d242798c`, the measured download was 45.8 MB and installed app was 114.8 MB, within their
 unchanged limits.
 
+2026-10-23: Fine print's annotated approval, command analysis and deliberate-confirmation controls
+bring the integrated Nightly binary to 58.7 MB at `c19a6495` (PR #97, Check Nightly job
+120414607392). The old quiet-settings-line implementation is removed; this slice adds no bundled
+assets or third-party dependencies. The binary allowance is 59 MB for this shared component and
+its platform key routing. The measured update archive (46.1 MB) and installed app (115.5 MB) remain
+within their unchanged limits. These are integrated build measurements, not an isolated size delta.
+
+Home Next's inline questions, plan review and failure recovery add about 0.1 MB of compiled UI
+and model code. Nightly measured 58.4 MB on base `638e0771` and just over 58.5 MB on `2b6cfdb9`
+with this slice. The download stays at 46.0 MB and the installed app rises from 115.1 MB to 115.3 MB, within their
+unchanged budgets. The slice reuses the composer and error components and adds no dependencies
+or bundled assets. `NativeHomeNext` remains off by default; remove the old Home presentation
+when Next is complete, then remeasure its temporary duplication.
+
+Measurements: [base Nightly](https://github.com/binbandit/native/actions/runs/39949712258/job/120400913612)
+and [Home Next Nightly](https://github.com/binbandit/native/actions/runs/39952262729/job/120409343802).
+
 2026-10-24: the integrated worktree-creation commands and Plainly Settings build at `dde394e1`
 measures 58.6 MB for the Nightly binary, 46.1 MB downloaded and 115.4 MB installed. Earlier
 feature measurements used separate branches; their combined code now exceeds the 58.5 MB
 binary allowance. Creation hooks, captured terminal logs and their retry controls add no assets
 or dependencies. The binary budget is now 59 MB for this measured integration, with a small
 margin. The download, installed, disk-image and script-runtime budgets stay unchanged.
+
+The task well integrated with current main at `a050243f` measures 59.026 MB for both Release
+and Nightly binaries, about 0.026 MB above that allowance. The default-off toolbar, tool list
+and child-question handoff compile alongside the existing task screen, with no added assets
+or dependencies; their fixtures remain Debug-only. The binary budget is now 59.5 MB for this
+integration. Nightly downloads at 46.3 MB and installs at 115.8 MB, within the unchanged limits.
+Remeasure when the well replaces the legacy task presentation.
+
+Quick Entry adds the opt-in panel, context capture, address pickers and background-start
+confirmation, reusing the existing editor and task pipeline without assets or dependencies.
+With main through `638e0771`, its Nightly binary at `00eef888` measured 58.61 MB, about 0.6 MB
+above the artifact-viewer baseline above. That feature measurement used a 59 MB binary allowance;
+the measured 46.3 MB update archive and 115.3 MB installed app remain within unchanged budgets.
+
+2026-10-24: Quick Entry integrated with main through `a9f1ff11` at `bf3c0b49` measures 59.1 MB
+for both Release and Nightly binaries, exceeding the shared 59 MB allowance. This combines the
+opt-in panel with the worktree setup, Settings and task Peek changes already on main. The binary
+budget is now 59.5 MB, with a small margin for this measured integration. The largest update
+archive (46.3 MB) and installed app (115.8 MB) remain within their unchanged budgets; no assets
+or dependencies were added.
+
+Fine print integrated with Home Next and main through `db0f3012` at `408ba425` measures
+59.560 MB for both Release and Nightly binaries, about 0.060 MB above the 59.5 MB allowance.
+The annotated approvals, command analysis and deliberate confirmation compile alongside the
+new Home questions, plan review and recovery code, with no added assets or dependencies. The
+binary budget is now 60 MB for this measured integration. Downloads remain 46.4/46.5 MB and
+installed apps 116.2/116.3 MB, within their unchanged limits. Remeasure when the gated redesign
+components replace their legacy presentations.
+
+2026-10-24: approved by Brayden, the app binary budget is now 70 MB to give a little room for
+growth. Growth since the budgets were set at a 53.2 MB binary is mostly the redesign compiling
+old and new versions of six areas behind switches. Reclaim that space by deleting each old
+version when its switch flips. An app-size job is cutting size now. The download, disk-image,
+installed-app and script-runtime budgets are unchanged.
 
 ## Measuring
 

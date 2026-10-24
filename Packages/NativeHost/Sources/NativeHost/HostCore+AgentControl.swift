@@ -58,6 +58,11 @@ extension HostCore {
     func deleteAgentSession(_ params: DeleteAgentSessionParams) async throws {
         let link = try await readyAgent(params.agentID)
         guard let peer = link.peer else { throw HostError.agentUnavailable(link.spec.name) }
+        let identity = HostTaskIdentity(agentID: params.agentID, agentSessionID: params.agentSessionID)
+        if var coordinator = coordinators.first(where: { $0.task == identity }) {
+            coordinator.assignments = []
+            try saveCoordinator(coordinator)
+        }
         if let session = sessions.values.first(where: {
             $0.record.agentID == params.agentID && $0.record.agentSessionID == params.agentSessionID
         }) {

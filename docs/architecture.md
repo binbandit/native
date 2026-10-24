@@ -24,10 +24,11 @@
   login-shell environment. `ACPConnection` (an actor) speaks JSON-RPC and delivers events in wire
   order: when a request returns, every update sent before its response has been applied.
   A host agent that exits during initialization stays failed, with its diagnostic output and a
-  Restart action. Only intentionally stopped or previously initialized agents return to idle;
-  a failed launch must never be presented as ready to start a task. A task requested during an
-  agent restart stays in Starting until the whole restart finishes. If it fails, Restart and Retry
-  restarts the agent and continues the same task, keeping its draft and prepared workspace.
+  Restart action. Diagnostic snapshots drain pending stderr without waiting for its callback or
+  for a process holding the pipe open to exit. Only intentionally stopped or previously initialized
+  agents return to idle; a failed launch must never be presented as ready to start a task. A task
+  requested during an agent restart stays in Starting until the whole restart finishes. If it fails,
+  Restart and Retry restarts the agent and continues the same task, keeping its draft and prepared workspace.
   When every installed, enabled agent has failed, `AppModel.agentStartupFailure` supplies Home
   and New Task with the same named recovery state (`NativeSetup.AgentStartupFailure`). New Task
   opens the agent picker for Restart or Agents Settings instead of preparing a task that cannot start.
@@ -52,6 +53,9 @@
   file API, embedded bytes work offline, and opening a remote URL never downloads it. Temporary
   preview copies are private to the viewer and removed when it closes. Copy and Save As keep the
   original bytes; Finder is offered only for an existing file on this Mac.
+  User-message attachments form one trailing-aligned group above the bubble. Mixed image and file
+  tiles share a height; a lone image keeps its aspect ratio. File sizes come from attachment metadata
+  carried through host echoes or embedded bytes, with an unavailable label when history has neither.
 - **Task recency follows activity.** The host's startup snapshot and live summaries supply prompt
   dates even for completed tasks whose transcripts aren't open. Task lists use the latest known
   host, live-session or agent-listing date for both ages and order; opening history doesn't change it.
@@ -80,6 +84,18 @@ What follows from that:
 - **Layouts adapt to width, not to platform.** A Mac window, an iPad in Stage Manager and an iPhone
   are points on one range: the sidebar and inspector become overlays at narrow widths, and the
   iPhone's compact width is the companion layout.
+
+### Resource percentages
+
+The status bar, its tooltip, and the resource panel's process rows and totals show CPU as a
+percentage of the sampling machine's total CPU capacity, from 0 to 100. `ProcessSampler` normalizes
+CPU time by elapsed time and that machine's active logical processor count using `Exec.ProcessCPUUsage`.
+Clients format the normalized value without dividing by their own processor count. Group and overall
+totals are capped at 100 to account for skew between sequential process reads. For example, 395% of
+one core is 49.375% of an eight-core machine, displayed as 49%.
+
+Memory stays in bytes of physical footprint, as in Activity Monitor; its tooltip compares the total
+footprint with physical RAM. It has no per-core scaling.
 
 ### GitHub account selection
 
@@ -157,26 +173,47 @@ The move is mechanical and happens in small PRs once the current feature work la
 
 ## Experiments
 
+New Task's `NativeComposeTask` gate adds Quick Entry over the selected task. Its draft and
+removable selection context live in `native/NewTask/QuickEntryModel`; writing and dismissing
+the panel create no session or workspace. Start hands the message to the existing `StartingTask`
+pipeline. A background start leaves selection alone, and its confirmation follows the starting
+task to its finished session. During the first slice, Expand hands the same draft to today's
+full New Task view. Compose's page and the shared well's pre-start presentation follow later.
+
 ### Home Next
 
 `NativeHomeNext` (Settings > Labs > Next) defaults to off. `HomeDetail` switches to
 `native/HomeNext/`: one centered reading column with a task title, the existing shared
 `ToolCallView` approval, Up next, and a quiet working-status line. The composer owns the
 annotated approval replacement; Home must embed that component when it lands, never copy it.
-The sidebar owns the shared status signal; Home currently uses `StatusIndicator`.
+The sidebar owns the shared `TaskSignal`; Home uses it for the current ask and Up next rows.
 
 `HomeAskOrder` in `Packages/TaskList` puts approvals before questions, plans, and failures,
 oldest within each kind. The ask being read stays put when another arrives. Answering uses the
 exact `SessionModel` and tool-call request displayed, including subagent requests. Home records
-a receipt and advances when the model removes the permission. Questions, plans and failures
-open their task until the next slice adds their inline answers. Finished today includes tasks
+a receipt and advances when the model acknowledges an answer. Questions embed the composer's
+`AgentQuestionSection`, with the same digit keys, multiple-question paging and free text. Plan
+permissions embed `ComposerPlanSection` in its numbered review presentation (first five steps,
+then Show more), using only the current turn's checklist. The exact permission proposal always
+stays visible in the shared `ToolCallView`, with Approve Plan and Revise from its permission buttons.
+Session-wide progress from earlier turns cannot replace the proposal being approved.
+
+Failures use `ErrorState` in its reading layout: what happened, recorded recovery from the current
+turn, error output, Retry and Open Task. `TurnFailureContext` in ACP includes live host recovery
+notices and replayed recovery markers, keeping earlier turns' errors and recovery out of this
+explanation. Retry asks the existing session to check completed work and
+continue, preserving the draft; a disconnected in-process agent instead opens its task to reconnect.
+Home retains the exact question or permission on screen, including subagent asks. An answer that
+cannot reach the host stays on screen with its error and no success receipt. Finished today includes tasks
 with a known successful turn completion today, five at a time; unknown history is not called done.
-On Home, the sidebar's asks should fold to their title when the new sidebar lands.
+The sidebar still needs to fold its asks to their title on Home.
 
 For isolated Debug checks, enable the gate with Settings > Labs > Next or
 `defaults write dev.binbandit.native.dev.<name> experiment.NativeHomeNext -bool YES`, then launch
 with `-nativeHomeNextFixture busy` for inert preview models. Other fixture values are `quiet`,
-`first`, `empty`, `loading`, `recovery`, and `narrow`.
+`first`, `empty`, `loading`, `recovery`, `narrow`, `question`, `questionText`, `questions`,
+`plan`, `planText`, `planRetained`, `failure`, `failurePaused`, and `questionFailure` (a read-only sink
+exercises answer delivery failure).
 The fixture is absent from Release and Nightly and never opens an agent or writes project data.
 
 New UIs, designs and behaviors ship as opt-in experiments first (see "Experiments behind flags" in
@@ -256,14 +293,35 @@ Existing surfaces keep `StatusIndicator` until their gated redesign adopts `Task
 Requests show a two-line sentence and a mono waiting clock, using the request's arrival timestamp
 from ACP or the host event log. The grid breathes for its first 60 seconds and for four seconds
 when the scene becomes active, then holds still. Reduce Motion is always still. The keycap marks
-the visible task's oldest permission request, matching the existing shortcut routing. Questions
-and asks in other tasks do not claim a shortcut that would answer something else.
+the oldest reachable ask across projects and child tasks, using the same request identity as ⌘Y.
+
+Slice 2 adds `TaskPeek`: Space in the sidebar, the signal button, force click and the context menu
+all open one 600pt popover without changing selection. A visible row supplies its anchor; hidden
+rows and Settings use the window anchor. The model routes captured requests to their owning
+session and checks identity again before answering. Questions, plans and commands with unknown
+or irreversible effects open Peek from ⌘Y; a small ACP vocabulary permits routine approvals.
+Peek reuses `ToolCallView` and `AgentQuestionSection`. The composer's annotated approval has not
+landed yet and replaces the former when available. Recovered failures use their live signal;
+unrecovered failures expose the real notice and the model's recovery action.
 
 Selection, menus, ordering, pins, archive and keyboard navigation remain shared with today's
 sidebar. All tasks stay visible in this slice; the rejected three-recent-task fold is removed.
-Peek with the composer's shared approval, global ask routing, fold by day, the collapsed toolbar
-signal and optional row facts are later slices. Enable before an isolated launch with
+Fold by day, the collapsed toolbar signal and optional row facts are later slices. Enable before an isolated launch with
 `defaults write dev.binbandit.native.dev.<name> experiment.NativeSidebarNext -bool YES`.
+
+The sidebar's filter and sort controls also offer "Show agent icons", on by default. This only
+hides agent artwork; working, attention and unread indicators stay visible. Archived tasks appear
+under their project names in project order in both sidebar presentations.
+All in view already omits agent artwork; the preference never hides its status signals, including
+while renaming a task. The isolated Debug fixture `-nativeSidebarFixture trio` includes grouped
+archives and a simulated Refresh failure followed by a successful Retry.
+
+A project's Refresh action (its menu, File menu and command palette) re-reads all of its task
+checkouts, including pinned and filtered-out tasks, once per checkout. Pull-request lookups bypass
+the normal cache and wait for fresh results. Removed archived worktrees stay put away. A neutral
+loader marks the project while work runs; failures retain the last known state and offer Retry
+with recovery guidance. Remote git runs on the task's host; unavailable remote pull-request reads
+are reported rather than running against a local folder with the same path.
 
 ### Plainly Settings
 
@@ -285,16 +343,38 @@ on its project page. Search follows the moved rows. `SettingsPlainlyCopy` suppli
 accessible control names and search titles together. The inheritance popovers, context accounting,
 feature presets, agent detail pages and the shared overnight receipt belong to later slices.
 
-### Quiet composer
+### Fine print approvals
 
-`NativeComposerNext` is an off-by-default Labs gate at the composer's resting controls. Enable it
-with Settings > Labs > Quiet composer, or set `experiment.NativeComposerNext` as a boolean in
-the app's user defaults before launch.
-The editor keeps its identity as the session starts and finishes work; only its footer changes.
-At rest, plain words open the agent, model, effort, autonomy and task-mode pickers. The agent entry
-opens New Task With, unless the Change Agent experiment is also enabled. Other
-agent settings, attachments, goals and context remain reachable. Running turns and approval
-requests keep today's composer until their own slices land.
+`NativeComposerNext` is an off-by-default Labs gate at the composer's approval state. Enable it
+with Settings > Labs > Fine print, or set `experiment.NativeComposerNext` as a boolean in the
+isolated app's defaults. The rejected quiet-settings-line experiment has been removed.
+
+`AnnotatedApprovalView` in `native/Approvals` is the shared approval for the composer and future
+Peek and Home hosts. `SessionApprovalView` connects it to model actions. Only the oldest request
+owns shortcuts; the primary transcript leaves its response controls to the composer while enabled.
+The ordinary composer and approvals are unchanged with the gate off.
+
+`Packages/ApprovalAnalysis` describes literal rm and git push commands without running them or
+reading files or the network. It preserves the exact command and source ranges, distinguishes
+regenerable DerivedData paths from destructive deletion and remote history rewrites, and makes no
+claims for unsupported commands or shell syntax. Reach is lexical, relative to the command's cwd
+and the task's worktree; contents, symlinks and remote commits are explicitly uninspected. Host-side
+measurements and additional command families are later slices, subject to managed network policy.
+
+Irreversible requests use the tested `ApprovalHold` state machine: 0.6 seconds, early release
+cancels, 0.4 seconds of acknowledgement, five-second accessibility confirmation, and no Always
+Allow. Platform key monitoring and haptics live in `native/Platform`. An alternative instruction is
+queued through `SessionModel.instructInstead` before declining the original request. ACP never
+receives an edited tool call, and the ordinary draft is kept.
+
+### Task well
+
+`NativeTaskWell` is an off-by-default Labs gate selecting the task-tools screen with a centered
+activity capsule instead of the facts header and tool buttons. `TaskActivityNarration` in ACP projects
+reported tool activity and counted plan steps; `TaskWellWiring` connects the existing tool models.
+Requests lead to the existing composer or child request surface, and turn outcomes reuse detected
+Changes. The shared `TaskSignal` supplies the status vocabulary and finite attention animation.
+The behavior, tool order and remaining slices are described in `docs/session-tools.md`.
 
 ### Changing a task's agent (Labs)
 
@@ -332,6 +412,20 @@ Scroll positions remain per window in `SessionTranscriptMemory`.
 
 ### Task worktree preparation
 
+Before the first message, Change Workspace replaces the empty agent conversation in the chosen
+folder, retaining its draft, attachments, title, order and settings. The model blocks sends while
+the replacement is prepared. Once a message is submitted, including a queued message, the task
+keeps its workspace. Existing branches reuse their checkout when present; otherwise Native makes
+a worktree. Creation receipts in the repository's local config identify task worktrees that can
+be cleaned up, including after a draft is reopened. Cleanup requires that their original branch,
+commit and clean working tree remain unchanged. Ignored
+files, running setup commands, other tasks and user-owned worktrees prevent automatic removal.
+Open terminal tabs and project actions must finish or close before the task moves, so their work
+stays reachable in the original task.
+Paired-host replacements stay in the remote index, never the local catalog or local draft recovery.
+Explicitly chosen worktrees outside the host's managed folder are associated with the project's
+paired checkout, so reconnecting can list their tasks again.
+
 Git chooses an immutable task base with `Repository.taskWorktreeBase`, fetching the configured
 remote unless `policy.git.worktreeFetch` disables it. Failure falls back to the local commit;
 `GitStore` carries that explanation into the task's setup notice. Before-commands run through
@@ -368,3 +462,10 @@ the card keeps the agent's reported edits rather than attributing a whole branch
 - `docs/keyboard.md`: every shortcut.
 - `docs/decisions.md`: decisions and why they were made.
 - `docs/companion.md`: the iPhone companion layout, pairing and transport.
+
+### Coordinator tasks (Labs)
+
+`coordinator-tasks` defaults off. The local host persists explicit assignments separately from
+agent-created subagents, and `TaskOrchestrator` checks that scope on each tool call. Creation uses
+the project folder and an advertised read-only setting, bypassing workspace preparation. See
+`docs/coordinator-tasks.md` for scope, message attribution, lifecycle and deferred work.

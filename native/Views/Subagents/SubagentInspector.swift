@@ -1,12 +1,13 @@
 import ACP
 import SwiftUI
 
-/// A subagent's own conversation, beside its parent's. Subagents can't be prompted, only watched
-/// and, when the agent allows it, stopped.
+/// A subagent's own conversation, beside its parent's. Subagents can't be prompted; the well can
+/// reveal their existing question form without adding an unrestricted composer.
 struct SubagentInspector: View {
     let subagent: SubagentState
     /// The child session, once the agent has sent any of its traffic.
     let child: SessionModel?
+    var showsQuestions = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -23,6 +24,15 @@ struct SubagentInspector: View {
             }
         }
         .background(.dsBackground)
+        .safeAreaBar(edge: .bottom, spacing: 0) {
+            if showsQuestions, let session = child?.pendingQuestionSession, let question = session.pendingQuestion {
+                ComposerSurface {
+                    AgentQuestionDock(session: session, question: question)
+                        .id(question.id)
+                }
+                .padding(DS.Space.md)
+            }
+        }
     }
 
     private var header: some View {
@@ -51,6 +61,25 @@ struct SubagentInspector: View {
 }
 
 #if DEBUG
+#Preview("Subagent inspector - Well question") {
+    let app = AppModel.preview()
+    let subagent = SubagentPreviewFixtures.subagents[1]
+    let child = SessionModel.preview(in: app, id: subagent.id.rawValue, title: subagent.title)
+    let json = #"""
+        {"sessionId":"preview-child","mode":"form","message":"Which layout should the helper check?",
+         "requestedSchema":{"type":"object","properties":{"layout":{"type":"string","title":"Layout",
+         "description":"Which layout should the helper check?","oneOf":[
+         {"const":"narrow","title":"Narrow"},{"const":"wide","title":"Wide"}]}}}}
+        """#
+    if let request = SessionModel.previewDecode(CreateElicitationRequest.self, json) {
+        child?.requestQuestion(request, id: .string("well-question"))
+    }
+    return DSPreviewPair {
+        SubagentInspector(subagent: subagent, child: child, showsQuestions: true)
+            .frame(width: DS.SessionTools.sidePanelIdealWidth, height: DS.TaskWell.panelWidth)
+    }
+}
+
 #Preview("Subagent inspector") {
     let app = AppModel.preview()
     let subagents = SubagentPreviewFixtures.subagents

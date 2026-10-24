@@ -2,6 +2,7 @@ import ACP
 import NativeHostClient
 import NativeHostProtocol
 import SwiftUI
+import Undo
 
 extension SettingsPane.ID {
     static let hosts = Self("hosts")
@@ -92,6 +93,9 @@ struct HostsSettingsContent: View {
     @State private var signingIn: SignInRequest?
     @State private var checking: CheckRequest?
     @State private var undo: UndoToastItem?
+    @State private var removedHostUndo: UndoableAction?
+    @State private var undoHistory = UndoHistory()
+    @Environment(\.undoManager) private var undoManager
 
     /// The host whose setup is being checked.
     private struct CheckRequest: Identifiable {
@@ -160,6 +164,13 @@ struct HostsSettingsContent: View {
             HostDoctorSheet(hostName: request.name, client: request.client)
         }
         .undoToast($undo)
+        .onChange(of: undoManager, initial: true) { undoHistory.track(undoManager) }
+        .onChange(of: removedHostUndo?.canUndo) {
+            if removedHostUndo?.canUndo == false { undo = nil }
+        }
+        .onChange(of: removedHostUndo.map { undoHistory.willUndo($0) } ?? false) { _, matches in
+            undo?.undoesWithCommandZ = matches
+        }
     }
 
     private var emptyState: some View {
@@ -248,6 +259,7 @@ struct HostsSettingsContent: View {
         directory.rename(id, to: newName)
         let shownName = newName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard shownName != oldName else { return }
+        removedHostUndo = nil
         undo = UndoToastItem(
             shownName.isEmpty ? "Renamed \(oldName) back to its own name" : "Renamed \(oldName) to \(shownName)"
         ) {
@@ -257,7 +269,11 @@ struct HostsSettingsContent: View {
 
     private func remove(_ host: HostDisplay) {
         guard let id = host.device.remoteHostID, let restore = directory.remove(id) else { return }
-        undo = UndoToastItem("Removed \(host.name)", undo: restore)
+        let action = UndoableAction("Removed \(host.name)", name: "Remove Host", undoManager: undoManager) { _ in
+            restore()
+        }
+        removedHostUndo = action
+        undo = UndoToastItem(action.message, undoesWithCommandZ: undoHistory.willUndo(action)) { action.undo() }
     }
 
     /// What removing does to the host's tasks, in the confirmation.

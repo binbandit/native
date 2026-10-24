@@ -7,13 +7,15 @@ struct CelebrationCountryMenu: View {
     /// How many celebrations each country (ISO 3166-1 alpha-2) has as public holidays.
     let counts: [String: Int]
     let onPick: (String) -> Void
+    @Environment(\.locale) private var locale
 
     private var region: String? {
-        Locale.current.region?.identifier
+        locale.region?.identifier
     }
 
     private var countries: [String] {
-        counts.keys.sorted { Self.name($0).localizedStandardCompare(Self.name($1)) == .orderedAscending }
+        counts.keys.filter { $0 != region }
+            .sorted { Self.name($0).localizedStandardCompare(Self.name($1)) == .orderedAscending }
     }
 
     var body: some View {
@@ -25,7 +27,7 @@ struct CelebrationCountryMenu: View {
                 ForEach(countries, id: \.self) { item($0) }
             }
         } label: {
-            Label("Turn On a Country's Holidays", systemImage: "globe")
+            Text("Turn On a Country's Holidays")
         }
         .menuStyle(.button)
         .buttonStyle(.ds(.ghost, size: .medium))
@@ -44,3 +46,12 @@ struct CelebrationCountryMenu: View {
         Locale.current.localizedString(forRegionCode: code) ?? code
     }
 }
+
+#if DEBUG
+#Preview("Celebrations - Country menu") {
+    DSPreviewPair {
+        CelebrationCountryMenu(counts: ["AU": 4, "US": 5, "CA": 3]) { _ in }
+            .settingsPreviewPage()
+    }
+}
+#endif

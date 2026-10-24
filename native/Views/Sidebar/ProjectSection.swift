@@ -42,10 +42,8 @@ struct ProjectSection<TaskAccessory: View>: View {
         let starting = model.startingTasks(in: project.id)
         projectGroup(starting: starting.count) {
             // Work Native did on its own for the project that failed, above the list it may have left stale.
-            if !isFiltered {
-                ForEach(problems) { problem in
-                    ProjectProblemRow(problem: problem)
-                }
+            ForEach(problems.filter { !isFiltered || $0.work == .refresh }) { problem in
+                ProjectProblemRow(problem: problem)
             }
             ForEach(starting) { task in
                 StartingTaskRow(task: task)
@@ -60,6 +58,7 @@ struct ProjectSection<TaskAccessory: View>: View {
                     select(summary.id)
                 }
                 .equatable()
+                .padding(.leading, model.isCoordinatorChild(summary.id, among: sessions) ? DS.Space.xl : 0)
                 .sidebarDraggable(row, title: model.title(for: summary), state: drag)
                 .sidebarDropTarget(row, state: drag, isActive: drag.dragged.isSession, onDrop: model.applySidebarDrop)
             }
@@ -91,6 +90,7 @@ struct ProjectSection<TaskAccessory: View>: View {
         .accessibilityLabel(project.name)
         .accessibilityActions {
             Button("New Task") { Task { await model.newSession(in: project.id) } }
+            Button("Refresh") { Task { await model.refreshProject(project.id) } }
             Button("Move Up") { model.move(.project(project.id), .up) }
             Button("Move Down") { model.move(.project(project.id), .down) }
             Button("Archive") { model.archiveProject(project.id, undoManager: undoManager) }
@@ -108,14 +108,22 @@ struct ProjectSection<TaskAccessory: View>: View {
         if isAllInView {
             AllInViewProjectGroup(
                 name: project.name, isFirst: position.index == 0, isExpanded: isExpanded, taskCount: sessions.count,
-                activity: activity,
+                isRefreshing: model.refreshingProjects.contains(project.id), activity: activity,
                 note: hasNoMatches ? "No matching tasks" : nil, onNewTask: onNewTask,
                 menu: { projectMenu }, content: content)
         } else {
             ProjectGroup(
                 name: project.name, icon: iconStore.icon(for: project), isExpanded: isExpanded,
-                taskCount: sessions.count, activity: activity, note: hasNoMatches ? "No matching tasks" : nil,
+                taskCount: sessions.count, activity: activity,
+                isRefreshing: model.refreshingProjects.contains(project.id),
+                note: hasNoMatches ? "No matching tasks" : nil,
                 onNewTask: onNewTask, menu: { projectMenu }, content: content)
+        }
+        // A refresh requested from a collapsed or filtered project still needs a visible recovery.
+        if !isExpanded.wrappedValue {
+            ForEach(model.problems.list(for: project.id).filter { $0.work == .refresh }) { problem in
+                ProjectProblemRow(problem: problem)
+            }
         }
     }
 
@@ -261,7 +269,7 @@ extension ProjectProblem {
     fileprivate var leavesListUnknown: Bool {
         switch work {
         case .folder, .listing: true
-        case .agentCopyDeletion, .workspaceDeletion, .workspaceArchive, .workspaceRestore: false
+        case .refresh, .agentCopyDeletion, .workspaceDeletion, .workspaceArchive, .workspaceRestore: false
         }
     }
 }
@@ -302,5 +310,19 @@ extension ProjectProblem {
         }
     }
     .sidebarPreviewEnvironment(app)
+}
+#Preview("Project section - Coordinator assignments") {
+    let app = CoordinatorTaskPreviewFixtures.app()
+    DSPreviewPair {
+        if let project = app.previewProject(0) {
+            ProjectSection(
+                project: project,
+                sessions: app.sessions(in: project.id).sorted { $0.id.id.rawValue < $1.id.id.rawValue },
+                order: [:], position: (0, 1), isFiltered: false, isExpanded: .constant(true),
+                drag: SidebarDragState(), taskAccessory: { _ in EmptyView() }, select: { _ in }
+            )
+            .frame(width: DS.Size.sidebarWidth)
+        }
+    }.sidebarPreviewEnvironment(app)
 }
 #endif

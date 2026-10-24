@@ -78,6 +78,14 @@ final class AppTaskRuntime {
             ?? []
     }
 
+    func coordinatorScope(of clientID: UUID) -> CoordinatorScope? {
+        guard let model, let session = model.sessions.session(clientID: clientID),
+            model.coordinator(for: session.key) != nil
+        else { return nil }
+        // Coordinators require the durable host. A fallback app server must fail closed.
+        return CoordinatorScope(title: session.displayTitle, tasks: [])
+    }
+
     func caller(of clientID: UUID) async -> OrchestrationCaller? {
         if let caller = callers[clientID] {
             return caller
@@ -263,6 +271,7 @@ nonisolated struct AppTaskRuntimeAdapter: TaskRuntime {
 
     func taskAgents() async -> [TaskAgent] { await base.taskAgents() }
     func caller(of clientID: UUID) async -> OrchestrationCaller? { await base.caller(of: clientID) }
+    func coordinatorScope(of clientID: UUID) async -> CoordinatorScope? { await base.coordinatorScope(of: clientID) }
     func session(of clientID: UUID) async -> TaskSessionRef? { await base.session(of: clientID) }
     func tasks() async -> [OrchestrationTask] { await base.tasks() }
     func startTask(_ request: TaskRequest) async throws -> OrchestrationTask { try await base.startTask(request) }

@@ -22,6 +22,10 @@ public enum PolicyLoader {
                 PolicyParse.requiredServers) ?? []
         policy.allowedPlugins = resolver.resolve(
             .pluginsAllowed, expecting: "an array of plugin ids", PolicyParse.stringSet)
+        policy.celebrations.downloadsEnabled =
+            resolver.resolve(.celebrationDownloadsEnabled, expecting: "a Boolean", PolicyParse.bool) ?? true
+        policy.celebrations.baseURL = resolver.resolve(
+            .celebrationAssetsBaseURL, expecting: "an http or https URL", PolicyParse.webURL)
         policy.catalog.isEnabled = resolver.resolve(.catalogEnabled, expecting: "a Boolean", PolicyParse.bool) ?? true
         policy.catalog.indexURL = resolver.resolve(
             .catalogIndexURL, expecting: "an http or https URL", PolicyParse.webURL)
@@ -36,6 +40,14 @@ public enum PolicyLoader {
             resolver.resolve(.taskScriptsUser, expecting: "a Boolean", PolicyParse.bool) ?? true
         policy.taskScripts.repositoryScriptsEnabled =
             resolver.resolve(.taskScriptsRepository, expecting: "a Boolean", PolicyParse.bool) ?? true
+        policy.celebrationsEnabled =
+            resolver.resolve(.celebrationsEnabled, expecting: "a Boolean", PolicyParse.bool) ?? true
+        policy.organizationName = resolver.resolve(.organizationName, expecting: "a nonempty organization name") {
+            value, _ in
+            guard let text = value as? String else { return nil }
+            let name = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            return name.isEmpty ? nil : name
+        }
         policy.labsEnabled = resolver.resolve(.labsEnabled, expecting: "a Boolean", PolicyParse.bool) ?? true
         policy.companionEnabled = resolver.resolve(.companionEnabled, expecting: "a Boolean", PolicyParse.bool) ?? true
         policy.remoteHostsEnabled =

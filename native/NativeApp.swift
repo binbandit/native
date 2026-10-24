@@ -68,6 +68,7 @@ struct NativeApp: App {
         model.taskWorkspaces = taskWorkspaces
         // A paired host's tasks get theirs there; this Mac's are unchanged.
         RemoteHostsWiring.connect(model: model, local: taskWorkspaces, git: git, gitHub: gitHub)
+        ProjectRefreshWiring.connect(model: model, git: git, gitHub: gitHub)
         // Agents are child processes; ending them with the app keeps them from outliving it. New
         // sessions still without a message keep their drafts for the next launch.
         NotificationCenter.default.addObserver(

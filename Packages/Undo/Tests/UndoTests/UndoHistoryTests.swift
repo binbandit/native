@@ -7,6 +7,208 @@ import Testing
 
 @MainActor
 @Suite struct UndoHistoryTests {
+    @Test func shortcutHintFollowsTheSpecificOffer() {
+        let history = UndoHistory()
+        let manager = UndoManager()
+        manager.groupsByEvent = false
+        history.track(manager)
+        manager.beginUndoGrouping()
+        let offered = UndoableAction("Archived task", name: "Archive Task", undoManager: manager) { _ in }
+        manager.endUndoGrouping()
+        #expect(history.willUndo(offered))
+
+        let changed = Mutex(false)
+        withObservationTracking {
+            _ = history.willUndo(offered)
+        } onChange: {
+            changed.withLock { $0 = true }
+        }
+        manager.beginUndoGrouping()
+        let draft = NSObject()
+        manager.registerUndo(withTarget: draft) { _ in }
+        manager.setActionName("Typing")
+        manager.endUndoGrouping()
+        #expect(changed.withLock { $0 })
+        #expect(!history.willUndo(offered))
+        history.undo()
+        #expect(history.willUndo(offered))
+        offered.undo()
+        #expect(!history.willUndo(offered))
+    }
+
+    @Test func shortcutHintChangesWhenAnotherOfferHasTheSameName() {
+        let history = UndoHistory()
+        let manager = UndoManager()
+        manager.groupsByEvent = false
+        history.track(manager)
+        manager.beginUndoGrouping()
+        let offered = UndoableAction("Archived first task", name: "Archive Task", undoManager: manager) { _ in }
+        manager.endUndoGrouping()
+        let changed = Mutex(false)
+        withObservationTracking {
+            _ = history.willUndo(offered)
+        } onChange: {
+            changed.withLock { $0 = true }
+        }
+        manager.beginUndoGrouping()
+        let newer = UndoableAction("Archived second task", name: "Archive Task", undoManager: manager) { _ in }
+        manager.endUndoGrouping()
+        #expect(changed.withLock { $0 })
+        #expect(!history.willUndo(offered))
+        #expect(history.willUndo(newer))
+    }
+
+    @Test func unregisteredAndOtherWindowOffersHaveNoShortcutHint() {
+        let history = UndoHistory()
+        let manager = UndoManager()
+        history.track(manager)
+        let unregistered = UndoableAction("Removed host", name: "Remove Host", undoManager: nil) { _ in }
+        #expect(!history.willUndo(unregistered))
+        let other = UndoManager()
+        let elsewhere = UndoableAction("Archived task", name: "Archive Task", undoManager: other) { _ in }
+        #expect(!history.willUndo(elsewhere))
+    }
+
+    @Test func readingAnIdleMenuDoesNotInvalidateIt() async throws {
+        let history = UndoHistory()
+        let manager = UndoManager()
+        history.track(manager)
+        let changed = Mutex(false)
+        withObservationTracking {
+            _ = history.undoTitle
+            _ = history.redoTitle
+            _ = history.canUndo
+            _ = history.canRedo
+        } onChange: {
+            changed.withLock { $0 = true }
+        }
+
+        // Redo queries post checkpoints even with an empty stack. Allow their deferred work
+        // to run, as it would between SwiftUI menu updates.
+        _ = manager.canRedo
+        _ = manager.redoMenuItemTitle
+        try await Task.sleep(for: .milliseconds(30))
+        #expect(!changed.withLock { $0 })
+    }
+
+    @Test func checkpointRefreshIncludesTheRegisteredActionName() async throws {
+        let history = UndoHistory()
+        let manager = UndoManager()
+        manager.groupsByEvent = false
+        history.track(manager)
+        manager.beginUndoGrouping()
+        let action = UndoableAction("Archived task", name: "Archive Task", undoManager: manager) { _ in }
+
+        // Registration checkpoints precede the action and its name, before the group closes.
+        try await Task.sleep(for: .milliseconds(30))
+        #expect(history.canUndo)
+        #expect(history.undoTitle == "Undo Archive Task")
+        manager.endUndoGrouping()
+        action.withdraw()
+        #expect(!history.canUndo)
+    }
+
+    @Test func switchingWindowsCancelsAPendingCheckpoint() async throws {
+        let history = UndoHistory()
+        let first = UndoManager()
+        let second = UndoManager()
+        first.groupsByEvent = false
+        history.track(first)
+        first.beginUndoGrouping()
+        _ = UndoableAction("Archived task", name: "Archive Task", undoManager: first) { _ in }
+        history.track(second)
+        first.endUndoGrouping()
+
+        let changed = Mutex(false)
+        withObservationTracking {
+            _ = history.undoTitle
+            _ = history.canUndo
+        } onChange: {
+            changed.withLock { $0 = true }
+        }
+        try await Task.sleep(for: .milliseconds(30))
+        #expect(history.manager === second)
+        #expect(history.undoTitle == "Undo")
+        #expect(!history.canUndo)
+        #expect(!changed.withLock { $0 })
+    }
+
+    @Test func checkpointListenersCanCommitAPendingEdit() {
+        let history = UndoHistory()
+        let manager = UndoManager()
+        manager.groupsByEvent = false
+        let committed = Mutex(false)
+        let observer = NotificationCenter.default.addObserver(
+            forName: .NSUndoManagerCheckpoint, object: manager, queue: .main
+        ) { _ in
+            let shouldCommit = committed.withLock { committed in
+                guard !committed else { return false }
+                committed = true
+                return true
+            }
+            guard shouldCommit else { return }
+            MainActor.assumeIsolated {
+                manager.beginUndoGrouping()
+                _ = UndoableAction("Edited draft", name: "Edit", undoManager: manager) { _ in }
+                manager.endUndoGrouping()
+            }
+        }
+        defer { NotificationCenter.default.removeObserver(observer) }
+
+        history.track(manager)
+        #expect(history.canUndo)
+        #expect(history.undoTitle == "Undo Edit")
+    }
+
+    @Test func releasedWindowManagerLeavesNoEnabledCommands() async throws {
+        let history = UndoHistory()
+        do {
+            let manager = UndoManager()
+            manager.groupsByEvent = false
+            history.track(manager)
+            manager.beginUndoGrouping()
+            _ = UndoableAction("Edited draft", name: "Edit", undoManager: manager) { _ in }
+            manager.endUndoGrouping()
+            try await Task.sleep(for: .milliseconds(30))
+            #expect(history.manager === manager)
+            #expect(history.canUndo)
+        }
+
+        #expect(history.manager == nil)
+        #expect(!history.canUndo)
+        #expect(!history.canRedo)
+        #expect(history.undoTitle == "Undo")
+        #expect(history.redoTitle == "Redo")
+        history.track(nil)
+        #expect(!history.canUndo)
+    }
+
+    @Test(arguments: [false, true])
+    func removingATargetUpdatesTheClosedStack(hasOlderAction: Bool) async throws {
+        let history = UndoHistory()
+        let manager = UndoManager()
+        manager.groupsByEvent = false
+        let older = NSObject()
+        let removed = NSObject()
+        history.track(manager)
+        if hasOlderAction {
+            manager.beginUndoGrouping()
+            manager.registerUndo(withTarget: older) { _ in }
+            manager.setActionName("Older Edit")
+            manager.endUndoGrouping()
+        }
+        manager.beginUndoGrouping()
+        manager.registerUndo(withTarget: removed) { _ in }
+        manager.setActionName("Settings Edit")
+        manager.endUndoGrouping()
+        try await Task.sleep(for: .milliseconds(30))
+        #expect(history.undoTitle == "Undo Settings Edit")
+
+        manager.removeActions(withTarget: removed)
+        #expect(history.canUndo == hasOlderAction)
+        #expect(history.undoTitle == (hasOlderAction ? "Undo Older Edit" : "Undo"))
+    }
+
     @Test func menuFollowsTheWindowStackWithoutATextResponder() {
         let history = UndoHistory()
         let manager = UndoManager()

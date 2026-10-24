@@ -59,6 +59,7 @@ extension SessionModel {
         else {
             return
         }
+        hasSubmittedPrompt = true
         draft = ""
         self.attachments = []
         if host != nil {
@@ -85,6 +86,7 @@ extension SessionModel {
         else {
             return
         }
+        hasSubmittedPrompt = true
         draft = ""
         self.attachments = []
         if host != nil {
@@ -113,10 +115,11 @@ extension SessionModel {
     ) async throws -> FollowUpDelivery {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty || !attachments.isEmpty else { throw SendError.emptyMessage }
-        guard !isChangingAgent else { throw SendError.busy }
+        guard !isChangingAgent, !isChangingWorkspace, !isWorkspaceReplaced else { throw SendError.busy }
         guard acceptsPrompts else {
             throw isEarlierConversation ? SendError.earlierConversation : .notAcceptingPrompts
         }
+        hasSubmittedPrompt = true
         if host != nil {
             // The host takes messages whatever the session is doing: one for a session whose agent
             // couldn't start is its cue to try again.

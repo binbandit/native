@@ -18,12 +18,13 @@ struct SessionView: View {
     @State private var drops = ComposerDropInbox()
     @Environment(\.inspectorRoom) private var inspectorRoom
     @Experiment(.sessionTools) private var usesSessionTools
+    @Experiment(.taskWell) private var usesTaskWell
     private static let subagentInspectorWidth: CGFloat = 420
 
     var body: some View {
         Group {
-            if usesSessionTools {
-                SessionToolsScreen(session: session)
+            if usesSessionTools || usesTaskWell {
+                SessionToolsScreen(session: session, usesTaskWell: usesTaskWell)
             } else {
                 standardBody
             }
@@ -32,6 +33,7 @@ struct SessionView: View {
             ToolbarItem { ChangeAgentControl(session: session) }
                 .sharedBackgroundVisibility(.hidden)
         }
+        .taskWorkspacePresentation(session: session)
     }
 
     private var standardBody: some View {
@@ -54,6 +56,7 @@ struct SessionView: View {
                     ComposerView(session: session)
                 }
             }
+            .undoToastBottomInset(isEnabled: !session.isEarlierConversation)
         }
         // How the task's worktree setup is going, and any of its scripts that failed (TaskScripts).
         .safeAreaBar(edge: .top, spacing: 0) {

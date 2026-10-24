@@ -2,6 +2,7 @@ import ACP
 import AppAppearance
 import Experiments
 import Foundation
+import NativeHostProtocol
 import Observation
 import Undo
 import os
@@ -18,11 +19,12 @@ final class AppModel {
     let workingSpinners: WorkingSpinnerPreferences
     let runtimes: AgentRuntimes
     /// Paired hosts sessions can run on besides this Mac (AppModel+Hosts.swift).
-    let hosts = RemoteHosts()
+    let hosts: RemoteHosts
     let projects: Projects
     let catalog: SessionCatalog
     let ordering: SessionOrdering
     let sessions: SessionStore
+    let taskPeek = TaskPeekPresentation()
     let unread: UnreadSessions
     /// New sessions that haven't had a message yet, so an empty one doesn't outlive the run.
     let unsentSessions: UnsentSessions
@@ -32,6 +34,8 @@ final class AppModel {
     /// Makes and removes the folders tasks run in (worktrees). Set by the app from the Git feature;
     /// without it tasks run in the project folder.
     weak var taskWorkspaces: (any TaskWorkspaceProvider)?
+    /// Features with work tied to the old folder can ask the user to finish it before moving.
+    @ObservationIgnored var workspaceChangeBlock: (SessionModel) -> String? = { _ in nil }
     /// The latest action offered on the window's undo toast (`offeredUndo`), which ⌘Z can take
     /// back too.
     var lastUndoable: UndoableAction?
@@ -58,7 +62,12 @@ final class AppModel {
     var isAddingProject = false
     /// Whether the agent picker for a new session is showing.
     var isChoosingAgent = false
+    /// The draft and presentation for the opt-in New Task entry point.
+    let quickEntry = QuickEntryModel()
     var changingAgent: ChangeAgentModel?
+    var coordinatorEditor: CoordinatorTaskEditor?
+    var coordinators: [HostCoordinator] = []
+    @ObservationIgnored var followedCoordinatorClients: Set<ObjectIdentifier> = []
     @ObservationIgnored var agentChangeGoalBlock: @MainActor (SessionModel) -> String? = { _ in nil }
     @ObservationIgnored var changeAgentHandoff: @MainActor (SessionModel) async -> String = { source in
         TaskHandoff.draft(title: source.displayTitle, state: source.state)
@@ -76,6 +85,9 @@ final class AppModel {
     var actionFailure: ActionFailure?
     /// Background work that failed for a project, shown with the project until it's fixed.
     let problems = ProjectProblems()
+    /// Refreshed through the app's Git/GitHub wiring, so views never run repository work.
+    @ObservationIgnored var refreshProjectState: (@MainActor (Project, [SessionSummary]) async -> [String])?
+    var refreshingProjects: Set<Project.ID> = []
     /// Listed tasks that couldn't be opened before they had a model, shown in their place (a load
     /// that fails later says so in the task's transcript).
     var openFailures: [SessionKey: SessionOpenFailure] = [:]
@@ -178,11 +190,12 @@ final class AppModel {
     init(
         plugins: PluginRegistry = PluginRegistry(), titles: SessionTitles = SessionTitles(),
         defaults: UserDefaults = .standard, catalogURL: URL? = SessionCatalog.defaultURL,
-        experiments: ExperimentStore = .shared
+        experiments: ExperimentStore = .shared, hosts: RemoteHosts = RemoteHosts()
     ) {
         // Writing to an agent that just exited must surface as an error, not kill the app.
         signal(SIGPIPE, SIG_IGN)
         self.experiments = experiments
+        self.hosts = hosts
         self.plugins = plugins
         self.titles = titles
         self.defaults = defaults
@@ -293,7 +306,8 @@ final class AppModel {
         }
     }
 
-    func restart(_ agent: AgentDefinition.ID) async {
+    func restart(_ agent: AgentDefinition.ID, preservingDrafts: Bool = false) async {
+        if preservingDrafts { sessions.preserveDrafts(of: agent) }
         if let restart = agentRestarts[agent] { return await restart.value }
         let restart = Task {
             if runsAgentsInHost {

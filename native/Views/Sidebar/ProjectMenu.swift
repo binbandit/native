@@ -42,6 +42,10 @@ struct ProjectMenu: View {
         Button("Show Project Home") {
             model.focusProject(project.id)
         }
+        Button("Refresh", systemImage: "arrow.clockwise") {
+            Task { await model.refreshProject(project.id) }
+        }
+        .disabled(model.refreshingProjects.contains(project.id))
         ProjectActionsProjectMenu(project: project)
         Divider()
         Button("Project Settings…") {

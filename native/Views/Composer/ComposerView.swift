@@ -104,90 +104,101 @@ struct ComposerView: View {
 
     var body: some View {
         let settings = ComposerSettings(session.configOptions)
-        let suggestions = suggestions
-        surface(settings, suggestions: suggestions)
-            .overlay(alignment: .top) {
-                // Float above the composer instead of growing it, so the transcript doesn't move:
-                // a zero-height frame on the top edge, with the list or toast hanging up out of it.
-                Group {
-                    if let suggestions {
-                        ComposerSuggestionsPanel(
-                            suggestions: suggestions,
-                            highlighted: $highlighted,
-                            changedFiles: mentionSource?.changed ?? [],
-                            onChooseCommand: insert,
-                            onChooseFile: insert
-                        )
-                    } else {
-                        toast
-                            .frame(maxWidth: .infinity, alignment: .trailing)
-                    }
+        let suggestions = composerNext && !session.permissionRequests.isEmpty ? nil : suggestions
+        Group {
+            if composerNext, let call = session.permissionRequests.first {
+                ApprovalSurface {
+                    SessionApprovalView(session: session, call: call)
                 }
-                .padding(.bottom, DS.Space.md)
-                .frame(height: 0, alignment: .bottom)
-                .animation(.dsQuick, value: feedback)
+            } else {
+                surface(settings, suggestions: suggestions)
             }
-            .frame(maxWidth: columnWidth)
-            .padding(.horizontal, DS.Space.xxl)
-            .padding(.top, DS.Space.md)
-            .padding(.bottom, DS.Space.xl)
-            .frame(maxWidth: .infinity)
-            // Only a brand-new session takes focus on its own (⌘N, then type). Others wait for ⌘L or a
-            // click, so arrowing through the sidebar doesn't hand Return to a composer.
-            .onAppear {
-                if session.isTranscriptEmpty, session.phase != .loading {
-                    isFocused = true
-                }
-                takeFocusIfWanted()
-            }
-            .onChange(of: session.draft) { draftChanged() }
-            // A click in the text, typing, or the editor losing focus hands the keys back to the text.
-            .onChange(of: selection) { selectedAttachment = nil }
-            .onChange(of: isFocused) { _, focused in
-                if !focused { selectedAttachment = nil }
-            }
-            // Undo by any route (⌘Z, Edit ▸ Undo, the toast's button) takes back what the toast offered
-            // to, so the toast goes with it.
-            .onReceive(NotificationCenter.default.publisher(for: .NSUndoManagerDidUndoChange)) { note in
-                if let undoManager, note.object as? UndoManager === undoManager, feedback?.canUndo == true {
-                    feedback = nil
+        }
+        .overlay(alignment: .top) {
+            // Float above the composer instead of growing it, so the transcript doesn't move:
+            // a zero-height frame on the top edge, with the list or toast hanging up out of it.
+            Group {
+                if let suggestions {
+                    ComposerSuggestionsPanel(
+                        suggestions: suggestions,
+                        highlighted: $highlighted,
+                        changedFiles: mentionSource?.changed ?? [],
+                        onChooseCommand: insert,
+                        onChooseFile: insert
+                    )
+                } else {
+                    toast
+                        .frame(maxWidth: .infinity, alignment: .trailing)
                 }
             }
-            .onChange(of: mentionQuery != nil) { _, isMentioning in
-                guard isMentioning else { return }
-                let source = mentionSource ?? FileMentionSource(root: session.cwd)
-                mentionSource = source
-                Task { await source.loadIfNeeded() }
+            .padding(.bottom, DS.Space.md)
+            .frame(height: 0, alignment: .bottom)
+            .animation(.dsQuick, value: feedback)
+        }
+        .frame(
+            maxWidth: composerNext && !session.permissionRequests.isEmpty
+                ? max(columnWidth, DS.Approval.composerWidth) : columnWidth
+        )
+        .padding(.horizontal, DS.Space.xxl)
+        .padding(.top, DS.Space.md)
+        .padding(.bottom, DS.Space.xl)
+        .frame(maxWidth: .infinity)
+        // Only a brand-new session takes focus on its own (⌘N, then type). Others wait for ⌘L or a
+        // click, so arrowing through the sidebar doesn't hand Return to a composer.
+        .onAppear {
+            if session.isTranscriptEmpty, session.phase != .loading {
+                isFocused = true
             }
-            .task(id: feedback?.id) {
-                guard let shown = feedback else { return }
-                try? await Task.sleep(for: shown.duration)
-                if feedback?.id == shown.id {
-                    feedback = nil
-                }
+            takeFocusIfWanted()
+        }
+        .onChange(of: session.draft) { draftChanged() }
+        // A click in the text, typing, or the editor losing focus hands the keys back to the text.
+        .onChange(of: selection) { selectedAttachment = nil }
+        .onChange(of: isFocused) { _, focused in
+            if !focused { selectedAttachment = nil }
+        }
+        // Undo by any route (⌘Z, Edit ▸ Undo, the toast's button) takes back what the toast offered
+        // to, so the toast goes with it.
+        .onReceive(NotificationCenter.default.publisher(for: .NSUndoManagerDidUndoChange)) { note in
+            if let undoManager, note.object as? UndoManager === undoManager, feedback?.canUndo == true {
+                feedback = nil
             }
-            // ⌘L, mouse selection in the sidebar and ⇧⌘E reach the composer through the session.
-            .onChange(of: session.wantsComposerFocus) { takeFocusIfWanted() }
-            .onChange(of: session.isModelPickerRequested, initial: true) { _, isRequested in
-                guard isRequested else { return }
-                isModelPickerOpen = true
-                session.isModelPickerRequested = false
+        }
+        .onChange(of: mentionQuery != nil) { _, isMentioning in
+            guard isMentioning else { return }
+            let source = mentionSource ?? FileMentionSource(root: session.cwd)
+            mentionSource = source
+            Task { await source.loadIfNeeded() }
+        }
+        .task(id: feedback?.id) {
+            guard let shown = feedback else { return }
+            try? await Task.sleep(for: shown.duration)
+            if feedback?.id == shown.id {
+                feedback = nil
             }
-            .onChange(of: drops?.items.isEmpty == false) { _, hasDrops in
-                guard hasDrops, let drops else { return }
-                attach(drops.items)
-                drops.items = []
+        }
+        // ⌘L, mouse selection in the sidebar and ⇧⌘E reach the composer through the session.
+        .onChange(of: session.wantsComposerFocus) { takeFocusIfWanted() }
+        .onChange(of: session.isModelPickerRequested, initial: true) { _, isRequested in
+            guard isRequested else { return }
+            isModelPickerOpen = true
+            session.isModelPickerRequested = false
+        }
+        .onChange(of: drops?.items.isEmpty == false) { _, hasDrops in
+            guard hasDrops, let drops else { return }
+            attach(drops.items)
+            drops.items = []
+        }
+        .onChange(of: session.isAttachmentPickerRequested, initial: true) { _, isRequested in
+            guard isRequested else { return }
+            isPickingFiles = true
+            session.isAttachmentPickerRequested = false
+        }
+        .onChange(of: settings.autonomy?.value, initial: true) { _, mode in
+            if let mode, mode != ComposerSettings.planValue {
+                autonomyBeforePlan = mode
             }
-            .onChange(of: session.isAttachmentPickerRequested, initial: true) { _, isRequested in
-                guard isRequested else { return }
-                isPickingFiles = true
-                session.isAttachmentPickerRequested = false
-            }
-            .onChange(of: settings.autonomy?.value, initial: true) { _, mode in
-                if let mode, mode != ComposerSettings.planValue {
-                    autonomyBeforePlan = mode
-                }
-            }
+        }
     }
 
     // MARK: - Layout
@@ -237,14 +248,8 @@ struct ComposerView: View {
             VStack(spacing: 0) {
                 // Keep the editor mounted when a turn changes the footer, preserving focus and selection.
                 inputSection(suggestions: suggestions)
-                if composerNext && (session.phase == .idle || session.phase == .disconnected)
-                    && !session.needsApproval && session.pendingQuestion == nil
-                {
-                    nextControls(settings)
-                } else {
-                    Rectangle().fill(.dsBorder).frame(height: DS.Composer.separatorWidth)
-                    currentControls(settings)
-                }
+                Rectangle().fill(.dsBorder).frame(height: DS.Composer.separatorWidth)
+                currentControls(settings)
             }
         }
         .dropDestination(for: ComposerDropItem.self) { items, _ in
@@ -373,40 +378,14 @@ struct ComposerView: View {
 
     /// Takes focus when the app asks (⌘L, a click on the session in the sidebar), then clears the ask.
     func takeFocusIfWanted() {
-        guard session.wantsComposerFocus else { return }
+        guard session.wantsComposerFocus, !(composerNext && !session.permissionRequests.isEmpty) else { return }
         isFocused = true
         session.wantsComposerFocus = false
     }
 }
 
 #if DEBUG
-#Preview("Composer - Quiet at rest") {
-    DSPreviewPair {
-        VStack(spacing: DS.Space.lg) {
-            ComposerNextPreviewFixtures.composer()
-            ComposerNextPreviewFixtures.composer(draft: "Review @native/Views/Composer and the attached notes.")
-        }
-        .frame(width: 860)
-    }
-}
-
-#Preview("Composer - Quiet loading and disconnected") {
-    DSPreviewPair {
-        VStack(spacing: DS.Space.lg) {
-            ComposerNextPreviewFixtures.composer(phase: .loading)
-            ComposerNextPreviewFixtures.composer(draft: "Keep my draft", phase: .disconnected)
-        }
-        .frame(width: 860)
-    }
-}
-
-#Preview("Composer - Experiment off and running") {
-    DSPreviewPair {
-        VStack(spacing: DS.Space.lg) {
-            ComposerNextPreviewFixtures.composer(enabled: false)
-            ComposerNextPreviewFixtures.composer(phase: .prompting)
-        }
-        .frame(width: 860)
-    }
+#Preview("Composer - Fine print approval") {
+    DSPreviewPair { ApprovalPreviewFixtures.composer().frame(width: 850) }
 }
 #endif

@@ -7,10 +7,12 @@ extension GitStore {
     /// Makes the checkout a new task runs in, following `settings`. A worktree gets the project's
     /// ignored env files before this returns, so the agent sees them from its first turn, and its
     /// setup scripts start in the background. `nil` when the project isn't a git repository.
-    func prepareTaskCheckout(in project: URL, prefix: String) async throws -> GitTaskCheckout? {
+    func prepareTaskCheckout(
+        in project: URL, prefix: String, forceWorktree: Bool = false
+    ) async throws -> GitTaskCheckout? {
         guard let repository = try await resolveGit().repository(at: project) else { return nil }
         let (branch, code) = try await provisionalBranch(in: repository, prefix: prefix)
-        switch settings.newTaskWorkspace(forProjectAt: project) {
+        switch forceWorktree ? .worktree : settings.newTaskWorkspace(forProjectAt: project) {
         case .branch:
             try await repository.createAndSwitchBranch(branch)
             try await repository.markProvisional(branch)
@@ -33,6 +35,7 @@ extension GitStore {
                 throw error
             }
             try await repository.markProvisional(branch)
+            try await repository.recordUnusedTaskWorktree(worktree)
             return try await setUp(
                 worktree, of: repository, branch: branch, baseBranch: base.branch, baseNotice: base.localNotice)
         }
@@ -47,6 +50,7 @@ extension GitStore {
             GitTaskWorktree(folder: repository.root, projectRoot: main, branch: branch))
         let worktree = try await repository.createWorktree(
             checkingOut: branch, folderName: branch, in: worktreesBase(of: repository))
+        try await repository.recordUnusedTaskWorktree(worktree)
         return try await setUp(worktree, of: repository, branch: branch)
     }
 

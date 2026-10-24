@@ -25,6 +25,7 @@ extension OrchestrationPlugin {
         for await epoch in epochs {
             guard let epoch, epoch != configured, let client = durableHost.client else { continue }
             configured = epoch
+            await model.followCoordinators(on: client)
             if HostTasksSetting.isEnabled, await serve(from: client, model: model) {
                 continue
             }

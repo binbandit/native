@@ -42,7 +42,8 @@ struct NewSessionContextBuilder {
                 }
                 settings.open(.project(project.id))
             },
-            device: device
+            device: device,
+            changeWorkspace: session.canChangeWorkspace ? { [session] in session.requestWorkspaceChange() } : nil
         )
     }
 

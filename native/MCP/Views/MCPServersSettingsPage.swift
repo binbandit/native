@@ -1,5 +1,6 @@
 import MCPClient
 import SwiftUI
+import Undo
 
 #if DEBUG
 #Preview("MCP settings - No servers") {
@@ -254,7 +255,7 @@ struct MCPServersSettingsPage: View {
 
     private func undo(_ removed: MCPRemovedServer, in library: MCPLibrary) {
         library.restore(removed)
-        undoManager?.removeAllActions(withTarget: library)
+        undoManager?.removeActions(withTarget: library)
         withAnimation(.dsStandard) { self.removed = nil }
     }
 }
