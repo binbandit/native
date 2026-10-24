@@ -75,7 +75,7 @@ let package = Package(
                 "NativeHostClient", "NativeHostProtocol", "ACP", .product(name: "Exec", package: "Exec"),
                 .product(name: "Git", package: "Git"), "native-host",
                 "FakeACPAgent", .product(name: "SessionTitling", package: "SessionTitling"),
-                .product(name: "MCPClient", package: "MCPClient"),
+                .product(name: "MCPClient", package: "MCPClient", condition: .when(platforms: [.macOS])),
                 .product(name: "NativeOrchestration", package: "Orchestration"),
             ]
         ),

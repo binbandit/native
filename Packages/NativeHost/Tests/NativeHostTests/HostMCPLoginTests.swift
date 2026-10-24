@@ -1,3 +1,4 @@
+#if os(macOS)
 import Exec
 import Foundation
 import MCPClient
@@ -76,3 +77,4 @@ struct HostMCPLoginTests {
         try #require(predicate())
     }
 }
+#endif
