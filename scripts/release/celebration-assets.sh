@@ -67,6 +67,21 @@ pack() {
     mkdir -p "$out"
     # A clean slate, so a pack dropped since the last run (an excluded edition) is never uploaded.
     rm -f "$out"/celebration-*.json "$out/celebration-assets.json.sig"
+    # Release checkouts can skip LFS smudging. A pointer has a .png name too, but signing it
+    # produces a pack every client rejects. Fetch only the renders, from this repo's LFS remote.
+    local needs_lfs
+    needs_lfs=$(python3 -I - "$art" $(editions) <<'PY'
+from pathlib import Path
+import sys
+art = Path(sys.argv[1])
+print(int(any(path.read_bytes().startswith(b"version https://git-lfs.github.com/spec/v1")
+              for slug in sys.argv[2:] for path in (art / slug).glob("*-*.png"))))
+PY
+    )
+    if [ "$needs_lfs" = 1 ]; then
+        git -C "$root" lfs pull \
+            --include='design/app-icon/celebrations/*/*-light.png,design/app-icon/celebrations/*/*-dark.png' --exclude=''
+    fi
     # shellcheck disable=SC2046
     python3 -I - "$art" "$out" "$version" $(editions) <<'PY'
 import base64, hashlib, json, os, sys
@@ -76,8 +91,12 @@ for slug in editions:
     images = {}
     for channel in ("stable", "beta", "nightly", "dev"):
         for appearance in ("light", "dark"):
-            with open(os.path.join(art, slug, f"{channel}-{appearance}.png"), "rb") as png:
-                images[f"{channel}-{appearance}"] = base64.b64encode(png.read()).decode()
+            path = os.path.join(art, slug, f"{channel}-{appearance}.png")
+            with open(path, "rb") as png:
+                image = png.read()
+            if not image.startswith(b"\x89PNG\r\n\x1a\n"):
+                raise SystemExit(f"Not a PNG render: {path}. Materialize Git LFS artwork before packing.")
+            images[f"{channel}-{appearance}"] = base64.b64encode(image).decode()
     data = json.dumps({"schema": 1, "edition": slug, "images": images}, sort_keys=True).encode()
     name = f"celebration-{slug}.json"
     with open(os.path.join(out, name), "wb") as f:

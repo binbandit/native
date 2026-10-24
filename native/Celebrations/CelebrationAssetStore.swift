@@ -1,5 +1,6 @@
 import AppAppearance
 import Foundation
+import NativePolicy
 import Observation
 
 /// Native's celebration icons that download instead of shipping in the app: fetched from the latest
@@ -9,19 +10,11 @@ import Observation
 @MainActor
 @Observable
 final class CelebrationAssetStore {
-    /// Packs on their way or that failed; a cached pack is read from disk instead.
-    private(set) var states: [String: IconPackState] = [:]
-    /// Bumped when a pack lands, so anything showing its state looks again.
-    private(set) var generation = 0
-
-    @ObservationIgnored let cache: CelebrationAssetCache
     @ObservationIgnored private let source: Source?
-    /// Debug builds use the repository's artwork as if it were downloaded, so celebrations work
-    /// from source with no release; an explicit `-celebrationAssetsURL` turns that off.
+    @ObservationIgnored private let policy: PolicyCenter
+    @ObservationIgnored private let downloads: CelebrationAssetDownloads
     @ObservationIgnored private let usesRepositoryArtwork: Bool
     @ObservationIgnored private var repositoryIcons: [String: [AppIconVariant: AppIconImagePair]?] = [:]
-    @ObservationIgnored private let session: URLSession
-    @ObservationIgnored private var index: CelebrationAssets.Index?
 
     /// Where packs come from and the key their index is signed with.
     struct Source {
@@ -53,23 +46,51 @@ final class CelebrationAssetStore {
         }
     }
 
-    init(source: Source? = Source.override ?? Source.release, session: URLSession = .shared) {
+    init(
+        source: Source? = Source.override ?? Source.release, session: URLSession = .shared,
+        policy: PolicyCenter = .shared
+    ) {
         self.source = source
-        self.session = session
+        self.policy = policy
         #if DEBUG
         usesRepositoryArtwork = Source.override == nil
         #else
         usesRepositoryArtwork = false
         #endif
         let support = URL.applicationSupportDirectory.appending(path: Bundle.main.bundleIdentifier ?? "Native")
-        cache = CelebrationAssetCache(root: support.appending(path: "CelebrationAssets", directoryHint: .isDirectory))
+        downloads = CelebrationAssetDownloads(
+            configuration: Self.configuration(source: source, policy: policy.policy),
+            cache: CelebrationAssetCache(
+                root: support.appending(path: "CelebrationAssets", directoryHint: .isDirectory)),
+            session: session)
+        trackPolicy()
     }
 
     func state(_ edition: String) -> IconPackState {
-        _ = generation
-        if let icons = repositoryArtwork(edition) ?? cache.icons(for: edition) { return .ready(icons) }
-        if let state = states[edition] { return state }
-        return source == nil ? .unavailable(Self.cantDownload) : .notDownloaded
+        if let icons = repositoryArtwork(edition) { return .ready(icons) }
+        return downloads.state(edition)
+    }
+
+    func fetch(_ edition: String, retryFailed: Bool = true) {
+        downloads.configure(Self.configuration(source: source, policy: policy.policy))
+        guard repositoryArtwork(edition) == nil else { return }
+        downloads.fetch(edition, retryFailed: retryFailed)
+    }
+
+    private func trackPolicy() {
+        let configuration = withObservationTracking {
+            Self.configuration(source: source, policy: policy.policy)
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in self?.trackPolicy() }
+        }
+        downloads.configure(configuration)
+    }
+
+    private static func configuration(source: Source?, policy: NativePolicy) -> CelebrationAssetDownloads.Configuration
+    {
+        guard policy.celebrations.downloadsEnabled else { return .unavailable(CelebrationAssetDownloads.disabled) }
+        guard let source else { return .unavailable(CelebrationAssetDownloads.cantDownload) }
+        return .download(.init(base: policy.celebrations.baseURL ?? source.base, publicKey: source.publicKey))
     }
 
     /// The edition's renders in `design/app-icon/celebrations`, when this is a Debug build from a
@@ -111,63 +132,4 @@ final class CelebrationAssetStore {
     }
     #endif
 
-    /// Fetches an edition's pack unless it's here or already on its way.
-    func fetch(_ edition: String) {
-        switch state(edition) {
-        case .ready, .downloading, .unavailable: return
-        case .notDownloaded, .failed: break
-        }
-        states[edition] = .downloading
-        Task {
-            do {
-                let pack = try await download(edition)
-                try cache.store(pack)
-                states[edition] = nil
-                generation += 1
-            } catch {
-                states[edition] = .failed(Self.message(for: error))
-            }
-        }
-    }
-
-    private func download(_ edition: String) async throws -> CelebrationAssets.Pack {
-        guard let source else { throw Unavailable() }
-        if index?.packs[edition] == nil {
-            let indexURL = source.base.appending(path: CelebrationAssets.indexName)
-            async let data = load(indexURL)
-            async let signature = load(indexURL.appendingPathExtension("sig"))
-            index = try await CelebrationAssets.verifiedIndex(
-                data, signature: String(decoding: signature, as: UTF8.self), publicKey: source.publicKey)
-        }
-        guard let index, let entry = index.packs[edition] else { throw CelebrationAssets.Failure.notInIndex(edition) }
-        let data = try await load(source.base.appending(path: entry.file))
-        return try CelebrationAssets.verifiedPack(data, edition: edition, index: index)
-    }
-
-    private func load(_ url: URL) async throws -> Data {
-        let (data, response) = try await session.data(from: url)
-        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-            throw URLError(.fileDoesNotExist)
-        }
-        return data
-    }
-
-    private struct Unavailable: Error {}
-
-    /// What the chooser says: offline is a normal state, not an error.
-    private static func message(for error: any Error) -> String {
-        switch error {
-        case let error as URLError
-        where [.notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost, .dataNotAllowed]
-            .contains(error.code):
-            offline
-        case is Unavailable: cantDownload
-        case URLError.fileDoesNotExist: "The latest release doesn't have these icons yet."
-        default: error.localizedDescription
-        }
-    }
-
-    static let offline = "Downloads when you're online."
-    static let cantDownload =
-        "Icons can't download in this build of Native. You can still choose it; the icon changes once its icons are available."
 }

@@ -22,6 +22,10 @@ public enum PolicyLoader {
                 PolicyParse.requiredServers) ?? []
         policy.allowedPlugins = resolver.resolve(
             .pluginsAllowed, expecting: "an array of plugin ids", PolicyParse.stringSet)
+        policy.celebrations.downloadsEnabled =
+            resolver.resolve(.celebrationDownloadsEnabled, expecting: "a Boolean", PolicyParse.bool) ?? true
+        policy.celebrations.baseURL = resolver.resolve(
+            .celebrationAssetsBaseURL, expecting: "an http or https URL", PolicyParse.webURL)
         policy.catalog.isEnabled = resolver.resolve(.catalogEnabled, expecting: "a Boolean", PolicyParse.bool) ?? true
         policy.catalog.indexURL = resolver.resolve(
             .catalogIndexURL, expecting: "an http or https URL", PolicyParse.webURL)
