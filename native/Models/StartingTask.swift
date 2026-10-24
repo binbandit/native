@@ -51,6 +51,10 @@ final class StartingTask: Identifiable {
     var isAgentReady = false
     var failure: Failure?
     var draft = ""
+    var attachments: [PromptAttachment] = []
+    var configChoices: [String: String] = [:]
+    var workspaceChoice: TaskWorkspaceChoice?
+    var usesComposePresentation = false
     /// The user sent the draft; it goes out as soon as the session can take it.
     var isSendRequested = false
     /// The finished task's destination for a background start's Open action.

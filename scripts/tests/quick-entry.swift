@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import NativeCommands
 import NativeHostClient
 import NativeHostProtocol
 
@@ -199,11 +200,76 @@ private struct QuickEntryRegression {
         entry.draft = "Expand without sending"
         app.expandQuickEntry()
         try require(entry.taskOpenRequests == 3, "Expand did not request a visible destination")
+        try require(app.composeTask.isPresented, "Expand did not show Compose")
+        try require(app.composeTask.editor?.draft == "Expand without sending", "Expand lost the draft")
+        try require(app.startingTasks.isEmpty, "Expand created a task before Start")
+        try require(await host.pending == nil, "Expand contacted the agent")
+        try require(await host.prompts.count == 2, "Expand submitted the draft")
+        app.closeComposeTask()
+        app.expandQuickEntry()
+        try require(app.composeTask.editor?.draft == "Expand without sending", "Reopening Compose lost the draft")
+        guard let editor = app.composeTask.editor else { throw CheckFailure("No Compose editor") }
+        let draftContext = CommandContext(composeDraft: app.composeTask.commandDraft)
+        for id in [CommandID.composerAttachFiles, .composerFocus, .sessionChooseModel] {
+            guard let command = NativeCommand.composer.first(where: { $0.id == id }) else {
+                throw CheckFailure("Missing draft command")
+            }
+            try require(command.isAvailable(draftContext), "A draft command was unavailable")
+            command.perform(draftContext)
+        }
+        try require(
+            editor.isAttachmentPickerRequested && editor.isModelPickerRequested,
+            "Draft commands did not reach the editor")
+        editor.isAttachmentPickerRequested = false
+        editor.isModelPickerRequested = false
+        for command in NativeCommand.composer where [.sessionStop, .sessionChangeWorkspace].contains(command.id) {
+            try require(!command.isAvailable(draftContext), "A task-only command was enabled before Start")
+        }
+        editor.attachments = [
+            PromptAttachment(url: folder.appending(path: "missing-file"), content: .reference, byteCount: nil)
+        ]
+        app.startComposeTask()
+        try require(app.startingTasks.isEmpty && entry.failure != nil, "Missing attachment did not block Start")
+        editor.attachments = []
+        app.startComposeTask()
+        guard let composed = app.composeTask.starting else { throw CheckFailure("Compose did not create a task") }
+        let startingContext = CommandContext(composeDraft: app.composeTask.commandDraft)
+        for command in NativeCommand.composer
+        where [CommandID.composerAttachFiles, .composerFocus, .sessionChooseModel].contains(command.id) {
+            try require(!command.isAvailable(startingContext), "A starting letter still exposed editing commands")
+        }
+        try require(composed.draft == "Expand without sending", "Start did not snapshot the draft")
+        app.startComposeTask()
+        try require(app.startingTasks.count == 1, "A second Start duplicated the task")
         try await wait { await host.pending != nil }
         try await host.complete()
+        try await wait { await host.prompts.count == 3 }
+        app.composeTask.stage = .settled
+        app.finishComposeTransition()
+        try require(!app.composeTask.isPresented, "The transition did not reveal the task")
+        try require(entry.draft.isEmpty, "Start retained a duplicate draft")
+        if let key = composed.openedSession, let session = app.session(key) {
+            let unavailable = StartingTask(
+                project: project.id, agent: editor.agent, isAgentPicked: true, workspaceLabel: "Fixture")
+            unavailable.isSendRequested = true
+            unavailable.configChoices = ["model": "no-longer-offered"]
+            await app.applyComposeChoices(of: unavailable, to: session)
+            try require(!unavailable.isSendRequested, "An unavailable setting allowed the prompt to send")
+        } else {
+            throw CheckFailure("The composed task was not registered")
+        }
+
+        app.expandQuickEntry()
+        app.composeTask.editor?.draft = "Cancel without sending"
+        app.startComposeTask()
+        try await wait { await host.pending != nil }
+        app.cancelComposeStart()
+        try require(app.composeTask.stage == .writing, "Cancel did not return to the letter")
+        try require(app.composeTask.editor?.draft == "Cancel without sending", "Cancel lost the draft")
+        try await host.complete()
         try await wait { app.startingTasks.isEmpty }
-        try require(app.selection.flatMap(app.session)?.draft == "Expand without sending", "Expand lost the draft")
-        try require(await host.prompts.count == 2, "Expand submitted the draft")
+        try require(await host.prompts.count == 3, "Cancelled Start sent a message")
+        app.closeComposeTask()
 
         app.showQuickEntry()
         entry.draft = "Retry me"
@@ -217,7 +283,7 @@ private struct QuickEntryRegression {
         try await wait { await host.pending != nil }
         try await host.complete()
         await retry.value
-        try await wait { await host.prompts.count == 3 }
+        try await wait { await host.prompts.count == 4 }
         try require(await host.prompts.last == "Retry me", "Retry did not send the retained message")
 
         app.showQuickEntry()
@@ -230,11 +296,51 @@ private struct QuickEntryRegression {
         app.startQuickEntry(open: false)
         try require(entry.isPresented && entry.picker == .device, "Unavailable device did not stay editable")
         entry.device = .thisMac
+        app.expandQuickEntry()
+        let heldDevice = SessionDevice.remote(NativeHostProtocol.HostID())
+        entry.device = heldDevice
+        entry.previewDeviceOptions = [
+            .init(
+                device: heldDevice, name: "elara", availability: .offline(reason: "Fixture offline"),
+                checkout: .present(path: "native"))
+        ]
+        app.holdComposeTask()
+        try require(app.composeTask.isHeld, "Hold did not retain the offline task")
+        let heldContext = CommandContext(composeDraft: app.composeTask.commandDraft)
+        for command in NativeCommand.composer
+        where [CommandID.composerAttachFiles, .composerFocus, .sessionChooseModel].contains(command.id) {
+            try require(!command.isAvailable(heldContext), "A held letter still exposed editing commands")
+        }
+        let restoredHold = ComposeTaskModel(defaults: defaults)
+        try require(restoredHold.heldDraft?.text == "Keep while unavailable", "Hold was not durable")
+        try require(restoredHold.heldDraft?.device == heldDevice, "Hold changed the destination")
+        app.closeComposeTask()
+        app.expandQuickEntry()
+        try require(app.composeTask.editor?.draft == "Keep while unavailable", "Opening Hold lost its draft")
+        app.composeTask.cancelHold()
+        try require(app.composeTask.commandDraft != nil, "Cancel Hold did not restore draft commands")
+        try require(ComposeTaskModel(defaults: defaults).heldDraft == nil, "Cancel Hold did not clear persistence")
+        app.closeComposeTask()
+        entry.previewDeviceOptions = nil
+        app.showQuickEntry()
+        entry.device = .thisMac
         try FileManager.default.removeItem(at: folder)
         app.startQuickEntry(open: false)
         try require(entry.isPresented && entry.failure != nil, "Missing folder did not stay editable")
         try require(entry.draft == "Keep while unavailable", "Validation discarded the draft")
         try require(app.startingTasks.isEmpty, "Validation created a placeholder")
+        var options = ComposeTaskPreviewFixtures.options
+        AgentSessionDefaults.remember(options, for: editor.agent.id, isNew: true, defaults: defaults)
+        if let index = options.firstIndex(where: { $0.category == "mode" }),
+            case .select(_, let offered) = options[index].kind
+        {
+            options[index].kind = .select(currentValue: "agent-full-access", options: offered)
+        }
+        AgentSessionDefaults.remember(options, for: editor.agent.id, defaults: defaults)
+        let newOptions = AgentSessionDefaults.offeredOptions(for: editor.agent.id, defaults: defaults)
+        try require(
+            ComposerSettings(newOptions).autonomy?.value == "workspace-write",
+            "A prior task's permissions became the default")
         await client.stop()
     }
 

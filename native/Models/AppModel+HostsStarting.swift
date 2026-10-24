@@ -131,6 +131,8 @@ extension AppModel {
                 sessions.remove(session)
                 return
             }
+            await applyComposeChoices(of: task, to: session)
+            guard !task.isDiscarded else { sessions.remove(session); return }
             finish(task, with: session)
         } catch {
             if runtime.noteSignInRequired(by: error) {
@@ -161,7 +163,11 @@ extension AppModel {
         guard let path else { throw RemoteCheckoutError.noFolder(host.name) }
         let folder =
             if let workspaces = await taskWorkspaces(on: host) {
-                try await workspaces.workspace(forNewTaskIn: project.onHost(at: path), title: nil)
+                if let choice = task.workspaceChoice {
+                    try await workspaces.workspace(for: choice, in: project.onHost(at: path))
+                } else {
+                    try await workspaces.workspace(forNewTaskIn: project.onHost(at: path), title: nil)
+                }
             } else {
                 // A host that can't run commands for this Mac still runs agents: in its checkout.
                 URL(filePath: path, directoryHint: .isDirectory)

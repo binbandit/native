@@ -1,3 +1,4 @@
+import ACP
 import NativeCommands
 import SwiftUI
 import UniformTypeIdentifiers
@@ -13,6 +14,13 @@ struct QuickEntryPanel: View {
         VStack(alignment: .leading, spacing: 0) {
             editor
             if let context = entry.context { clip(context) }
+            if !entry.attachments.isEmpty {
+                ComposerAttachmentsSection(
+                    attachments: entry.attachments, pending: [], missing: [], selected: nil,
+                    capabilities: model.quickEntryRuntime?.capabilities?.prompt ?? .init(),
+                    agentName: model.quickEntryRuntime?.agent.displayName ?? "the agent",
+                    onRemove: { id in entry.attachments.removeAll { $0.id == id } })
+            }
             readiness
             SeparatorLine()
             controls

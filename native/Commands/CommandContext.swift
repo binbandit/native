@@ -7,6 +7,7 @@ import SwiftUI
 struct CommandContext {
     /// The task in the window's detail column, if one is showing.
     var session: SessionModel?
+    var composeDraft: SessionModel?
     var sidebarVisibility: Binding<NavigationSplitViewVisibility>?
     var taskAttentionList: Binding<Bool>?
     var taskPeekInstructionFocus: Binding<Bool>?
@@ -34,6 +35,7 @@ struct CommandContext {
 @propertyWrapper
 struct FocusedCommandContext: DynamicProperty {
     @FocusedValue(\.activeSession) private var session
+    @FocusedValue(\.composeDraft) private var composeDraft
     @FocusedValue(\.sidebarVisibility) private var sidebarVisibility
     @FocusedValue(\.taskAttentionList) private var taskAttentionList
     @FocusedValue(\.taskPeekInstructionFocus) private var taskPeekInstructionFocus
@@ -49,6 +51,7 @@ struct FocusedCommandContext: DynamicProperty {
     var wrappedValue: CommandContext {
         CommandContext(
             session: session,
+            composeDraft: composeDraft,
             sidebarVisibility: sidebarVisibility,
             taskAttentionList: taskAttentionList,
             taskPeekInstructionFocus: taskPeekInstructionFocus,
