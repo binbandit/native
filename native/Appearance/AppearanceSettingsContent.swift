@@ -9,6 +9,8 @@ import Terminal
 struct AppearanceSettingsContent: View {
     var defaults: UserDefaults = .standard
     var fixedSpecimen: SpecimenLine?
+    @AppStorage(AppearancePreferences.accentKey) private var accent = ""
+    @Environment(PluginRegistry.self) private var plugins
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(PolicyCenter.self) private var policyCenter: PolicyCenter?
     #if os(macOS)
@@ -59,7 +61,9 @@ struct AppearanceSettingsContent: View {
             }
             #endif
             // Existing optional appearance controls remain reachable below the four primary groups.
-            SettingsRowGroup { AccentSettingsRow() }
+            if !accent.isEmpty || !PluginThemeCatalog(plugins).accents.isEmpty {
+                SettingsRowGroup { AccentSettingsRow() }
+            }
             SettingsRowGroup { PlayfulSpinnersSettingsRow() }
         }
         .environment(\.settingsPlainly, true)
