@@ -14,12 +14,12 @@ inventory and retention limits are in `docs/releasing.md`. This changes file cou
 bundle or its size budgets. The budgets sit about 10% above where the app was when they were set,
 so growth gets noticed while there's still room to choose what to cut; lower them as the cuts in "Still to do" land.
 
-| What | Budget | 2026-10-19, after the grammar cut |
+| What | Budget | 2026-10-24, after the cold-package and gallery cut |
 | --- | --- | --- |
-| Download, update archive | 47 MB | 42.7 MB |
-| Download, disk image | 48 MB | about 43.3 MB |
-| Installed app | 118 MB | 107.5 MB |
-| App binary (`Contents/MacOS/Native`) | 70 MB | 53.2 MB |
+| Download, update archive | 47 MB | 46.8 MB |
+| Download, disk image | 48 MB | not remeasured |
+| Installed app | 118 MB | 116.4 MB |
+| App binary (`Contents/MacOS/Native`) | 70 MB | 59.6 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
 `scripts/release/size-check.sh` holds the same numbers and fails when anything is over. It also
@@ -103,8 +103,103 @@ components replace their legacy presentations.
 2026-10-24: approved by Brayden, the app binary budget is now 70 MB to give a little room for
 growth. Growth since the budgets were set at a 53.2 MB binary is mostly the redesign compiling
 old and new versions of six areas behind switches. Reclaim that space by deleting each old
-version when its switch flips. An app-size job is cutting size now. The download, disk-image,
-installed-app and script-runtime budgets are unchanged.
+version when its switch flips. The size cut below brings the executable under the former 60 MB
+limit. The download, disk-image, installed-app and script-runtime budgets are unchanged.
+
+## 2026-10-24: recover headroom by cutting size
+
+Measured arm64 Release builds with Xcode 27.1 (27A9275), without signing or launching them,
+in the same `/tmp/native-dd/app-size` folder. The historical build is `d2cfc5aa`, the last
+commit on October 21 in Melbourne. The October 24 baseline is `7347ad34`, including sidebar
+PR #90 and the celebration screens in #104. This is a controlled comparison on that base.
+The pinned terminal and script runtime are identical in all three builds. This cut does not alter the budgets. PR #116 separately raised
+the executable allowance to 70 MB while the work was underway; the results below also pass
+the original 60 MB gate from `0cb6f62d`.
+
+| Component, MB on disk | October 21 | October 24 before | After |
+| --- | ---: | ---: | ---: |
+| Main executable | 57.192 | 60.253 | 59.550 |
+| Script runtime | 41.373 | 41.373 | 41.373 |
+| Host helper bundle | 4.987 | 5.270 | 5.270 |
+| Frameworks | 2.781 | 2.781 | 2.781 |
+| Resources | 7.344 | 7.345 | 7.345 |
+| Other bundle files | 0.003 | 0.003 | 0.003 |
+| **Installed total** | **113.679** | **117.025** | **116.322** |
+| Update archive, rounded by `size-check.sh` | 45.5 | 47.0 | 46.8 |
+
+The executable falls by 702,896 bytes, leaving 449,592 bytes below 60 MB with #90 already
+included. Earlier builds measured #90 itself at 50,592 bytes, from `74353da1` to `0cb6f62d`.
+The preceding main at `74353da1` was 59.951 MB, only 49 KB below the limit.
+
+Final integration through #100 (`3c0d9258`) measures 59.618 MB for Release and 59.618 MB
+for Nightly. Release installs at 116.390 MB; the update archives are 46.8 and 46.9 MB. Both
+pass the original 60 MB script as well as the current policy checks. The controlled table
+above isolates this cut from the later Undo presentation changes.
+
+### What grew
+
+From October 21 to `7347ad34`, the executable grew 3.062 MB and the host helper 0.283 MB. Assets, frameworks
+and V8 were effectively unchanged. The largest increases attributed by the link map are Home
+Next (0.273 MB), Settings (0.205), Quick Entry/NewTask (0.190), task Peek (0.170), approvals
+(0.161), DesignSystem (0.162), Hosts (0.143), GitHub views (0.140), SessionTools (0.119), and
+Artifacts (0.109). This is accumulated feature code, including presentations behind switches.
+
+The largest unchanged dependencies are libghostty (12.394 MB), TreeSitterSwift (4.178),
+TreeSitterTSX (1.433), TreeSitterTypeScript (1.406), TreeSitterBash (1.363), and TreeSitterRust
+(1.104). The app's largest folders before this cut are Views (3.178 MB), DesignSystem (2.027),
+GitHub (1.822), and Models (1.277). Link-map attribution includes zero-fill data and shared
+symbols, so it is not an exact partition of the executable's file bytes.
+
+The largest individual symbols are Swift's tree-sitter parse table (2.677 MB), Ghostty's
+embedded Symbols Nerd Font (2.440), TSX's parse table (0.917), TypeScript's parse table
+(0.897), Swift's small parse table (0.787), and Rust's parse table (0.747). The largest Swift
+function is the celebration catalogue initializer, only 0.031 MB. Rewriting that catalogue
+would not address the main source of growth.
+
+Swift metadata sections total 2.521 MB before and 2.492 MB after, including type references
+(1.664 to 1.638 MB) and reflection names (0.143 MB). Named function-specialization symbols
+account for about 1.81 MB before and 1.77 MB after. Reflection remains enabled; dead stripping,
+whole-module optimization, and stripping the shipped executable were already enabled.
+
+### What was cut
+
+Seven packages now use Swift's `-Osize` in release configurations. They perform workflow
+decisions, preference/catalogue work, or operations dominated by disk, subprocess or network
+I/O. The app, ACP, host protocol, transcript, Markdown and diff renderer retain `-O`.
+Debug optimization is unchanged. These are local package target flags, not a global override.
+
+| Link-map contribution, MB | Before | After |
+| --- | ---: | ---: |
+| Git | 0.725 | 0.566 |
+| GitHub | 1.103 | 1.006 |
+| NativeAutomation | 0.745 | 0.678 |
+| NativeExpeditions | 0.622 | 0.557 |
+| AppAppearance | 0.577 | 0.498 |
+| MCPClient | 0.522 | 0.474 |
+| Skills | 0.311 | 0.284 |
+| App DesignSystem | 2.027 | 1.840 |
+
+The design gallery has no entry point in the shipping app, but its public SwiftUI conformances
+kept it and its sample screens linked. Its eight view files and the three component previews
+that reference them now sit under `#if DEBUG`. Shared preview fixtures remain available for
+other preview bodies to type-check; without the gallery, they strip out. The gallery is still
+built in Debug.
+No feature, asset, protocol, or dependency was removed.
+
+### Asset and runtime audit
+
+`Assets.car` is 6.779 MB in every measured Release build (6.847 MB in Nightly). Its catalogues contain alternate/channel
+icons and 88 celebration thumbnail renditions at 128 by 128 pixels. The thumbnail PNG sources
+total 1.231 MB before asset-catalog compilation; `assetutil` rendition sizes do not include all
+shared pixel storage. The full celebration packs from #109 are downloaded on demand, not
+embedded. There are no byte-identical duplicate PNGs in either bundled catalogue. The two
+bundled Geist fonts total 0.287 MB, and there are no bundled sound files. Larger celebration
+artwork under `design/` is not an app resource.
+
+V8 remains 41.373 MB, and the framework payload remains 2.781 MB. Ghostty still embeds its
+3.05 MB of fallback fonts and supports custom shaders. Removing those, replacing grammars
+with lexers, or changing the script engine would change existing behavior. Channel-specific
+icon catalogues remain a separate opportunity below. The safe cuts here target compiled code.
 
 ## Measuring
 
@@ -340,10 +435,6 @@ Considered and not worth it now:
 
 - **The script runtime on JavaScriptCore (41 / 15 MB) or V8 without its compilers (16.2 / 4.9 MB).**
   Brayden kept V8 as it is (above).
-- **`-Osize` for cold Swift modules.** The GitHub package's code goes from 0.89 MB to 0.77 MB (14%),
-  so every cold module together would save about 1 MB installed and 0.3 MB of download, for slower
-  code and per-package compiler flags. The transcript, Markdown and diff code live in the app module
-  and must stay at `-O`.
 - **Sharing code between the app and its host helper.** ACP, NativeLink and the host protocol are in
   both (about 1.5 MB installed, 0.5 MB download). A shared framework would cost launch time and
   cross-module optimization on ACP's streaming path.

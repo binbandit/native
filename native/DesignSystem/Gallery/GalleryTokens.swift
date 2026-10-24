@@ -1,3 +1,4 @@
+#if DEBUG
 import SwiftUI
 
 // Gallery sections for the tokens.
@@ -188,4 +189,5 @@ struct GalleryMetrics: View {
         .frame(width: 640)
     }
 }
+#endif
 #endif

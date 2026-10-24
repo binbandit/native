@@ -1,3 +1,4 @@
+#if DEBUG
 import SwiftUI
 
 // Gallery sections for the brand and the accent palettes.
@@ -69,4 +70,5 @@ struct GalleryAccentPalettes: View {
         }
     }
 }
+#endif
 #endif
