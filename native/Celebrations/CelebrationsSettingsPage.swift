@@ -2,6 +2,7 @@ import AppAppearance
 import Foundation
 import NativePolicy
 import SwiftUI
+import Undo
 
 /// The catalogue stays compact: today's look, a year, genuine collisions, then months.
 struct CelebrationsSettingsPage: View {
@@ -239,7 +240,7 @@ struct CelebrationsSettingsPage: View {
         // Search-field edits can sit above this action in the window's undo stack. The link
         // always restores this bulk change, and removes only its own history entry.
         center.restore(change.before)
-        undoManager?.removeAllActions(withTarget: change.undoTarget)
+        undoManager?.removeActions(withTarget: change.undoTarget)
         lastChange = nil
         flashed = []
     }

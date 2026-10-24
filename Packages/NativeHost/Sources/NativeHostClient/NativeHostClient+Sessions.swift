@@ -128,7 +128,7 @@ extension NativeHostClient {
 
     /// Runs a request that attaches `session` as it goes: events count from the first, and a
     /// failure leaves the session unfollowed.
-    private func following<Result: Sendable>(
+    func following<Result: Sendable>(
         _ session: HostSessionID, _ request: (isolated NativeHostClient) async throws -> Result
     ) async throws -> Result {
         let wasFollowing = attachments.keys.contains(session)

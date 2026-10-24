@@ -69,10 +69,11 @@ extension View {
     /// from the body style, whatever its anchor's (a status-bar item's one-line caption, say).
     public func dsPopover(
         isPresented: Binding<Bool>,
+        attachmentAnchor: PopoverAttachmentAnchor = .rect(.bounds),
         arrowEdge: Edge = .top,
         @ViewBuilder content: @escaping () -> some View
     ) -> some View {
-        popover(isPresented: isPresented, arrowEdge: arrowEdge) {
+        popover(isPresented: isPresented, attachmentAnchor: attachmentAnchor, arrowEdge: arrowEdge) {
             content()
                 .font(.dsBody)
                 .foregroundStyle(.dsTextPrimary)

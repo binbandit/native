@@ -1,3 +1,4 @@
+import Exec
 import Foundation
 
 /// What the status bar shows of a sample, to the precision it shows it. The monitor assigns a new
@@ -45,7 +46,7 @@ struct ResourceReading: Hashable {
         let others = snapshot.groups.filter { $0.kind != .app }
         let appMemory = app?.memory ?? 0
         let othersMemory = others.reduce(0) { $0 + $1.memory }
-        let othersCPU = others.reduce(0) { $0 + $1.cpu }
+        let othersCPU = ProcessCPUUsage.total(others.map(\.cpu))
         self.app = Figures(memory: DSFormat.memory(appMemory), cpu: DSFormat.cpu(app?.cpu ?? 0))
         agents =
             others.isEmpty ? nil : Figures(memory: DSFormat.memory(othersMemory), cpu: DSFormat.cpu(othersCPU))
@@ -61,6 +62,7 @@ struct ResourceReading: Hashable {
         let total = Int(clamping: snapshot.memory)
         summary +=
             " Together that's \(DSFormat.share(total, of: Int(clamping: physicalMemory))) of this Mac's \(DSFormat.memory(physicalMemory))."
+        summary += " CPU percentages are shares of this Mac's total CPU capacity."
         self.summary = summary
     }
 }

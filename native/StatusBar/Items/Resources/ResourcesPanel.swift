@@ -49,7 +49,7 @@ struct ResourcesPanel: View {
             .frame(maxHeight: StatusBarMetrics.panelListHeight)
             .fixedSize(horizontal: false, vertical: true)
             PopoverPanelFootnote(
-                "Memory is each process's footprint, as Activity Monitor shows it. CPU is a share of one core. Updated every 3 seconds while this is open."
+                "Memory is each process's footprint, as Activity Monitor shows it. CPU is a share of this Mac's total CPU capacity (0 to 100%). Updated every 3 seconds while this is open."
             )
         }
         .onAppear { monitor.setShowingDetails(true) }
@@ -78,7 +78,7 @@ struct ResourcesPanel: View {
 }
 
 #if NATIVE_PREVIEWS_WIP
-#Preview("Memory and CPU panel") {
+#Preview("Memory and CPU panel - Machine share") {
     ResourcesPanelPreview()
 }
 

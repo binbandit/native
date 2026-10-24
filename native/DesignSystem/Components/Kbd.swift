@@ -10,8 +10,9 @@ public struct Kbd: View {
         self.compact = compact
     }
 
-    public init(_ shortcut: KeyboardShortcut) {
+    public init(_ shortcut: KeyboardShortcut, compact: Bool = false) {
         keys = shortcut.displayString
+        self.compact = compact
     }
 
     public var body: some View {

@@ -6,6 +6,10 @@ import MCP
 /// Sessions in memory: each one's snapshot is what the test says, and every request is recorded.
 actor FakeRuntime: TaskRuntime {
     var ready = true
+    var scopes: [UUID: CoordinatorScope] = [:]
+    func setScope(_ scope: CoordinatorScope, for caller: OrchestrationCaller) { scopes[caller.clientID] = scope }
+    func coordinatorScope(of clientID: UUID) -> CoordinatorScope? { scopes[clientID] }
+    func recentTranscript(of session: TaskSessionRef) -> String? { "Recent visible transcript" }
     var agents = [TaskAgent(id: "claude", name: "Claude Code"), TaskAgent(id: "codex", name: "Codex")]
     /// Open sessions by Native's id, with their lasting name and agent.
     var open: [UUID: (session: TaskSessionRef, cwd: URL)] = [:]

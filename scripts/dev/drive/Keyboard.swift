@@ -7,9 +7,12 @@ struct Keyboard {
     let pid: pid_t
 
     /// Presses a combo like `cmd+shift+n`, `return`, `escape` or `opt+cmd+up`.
-    func press(_ combo: String) throws(DriveError) {
+    func press(_ combo: String, hold: Double = 0.012) throws(DriveError) {
+        guard hold.isFinite, (0...3).contains(hold) else {
+            throw DriveError("--hold must be between 0 and 3 seconds", code: 2)
+        }
         let (code, flags) = try Self.parse(combo)
-        try post(code: code, flags: flags, text: nil)
+        try post(code: code, flags: flags, text: nil, hold: hold)
     }
 
     /// Types `text` a character at a time, as unicode key events; a newline is Shift-Return, the
@@ -24,7 +27,7 @@ struct Keyboard {
         }
     }
 
-    private func post(code: CGKeyCode, flags: CGEventFlags, text: String?) throws(DriveError) {
+    private func post(code: CGKeyCode, flags: CGEventFlags, text: String?, hold: Double = 0.012) throws(DriveError) {
         // A private source, so keys held on the real keyboard don't leak into the event.
         let source = CGEventSource(stateID: .privateState)
         guard let down = CGEvent(keyboardEventSource: source, virtualKey: code, keyDown: true),
@@ -38,7 +41,7 @@ struct Keyboard {
             }
         }
         down.postToPid(pid)
-        usleep(12_000)
+        usleep(useconds_t(hold * 1_000_000))
         up.postToPid(pid)
         usleep(30_000)
     }

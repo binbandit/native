@@ -8,6 +8,40 @@ off, a task is the conversation and the composer, and nothing is missing.
 It's behind the Task Tools gate (Settings ▸ Labs, off by default) while it's built; `SessionView` shows
 `SessionToolsScreen` when it's on.
 
+## The well
+
+The separate `NativeTaskWell` gate (Settings > Labs > The well) also selects this screen, replacing
+its facts header with the approved centered 340 by 30pt capsule. It defaults to off. The title gives
+way first, then the agent name, then the middle of the activity's object. Progress keeps its space.
+
+At rest it names the agent. During a turn it describes the latest unfinished tool with ACP's kind
+and reported command or file. Counted progress is available for reported plan steps only; the count
+and accessibility description identify those steps. Unstructured test output never supplies a
+denominator. A request keeps its own wording, including destructive verbs, and clicking it focuses
+the composer and reveals today's transcript approval, opening the child conversation when its
+request needs attention, including a request owned by a nested child. Child questions reuse the
+existing question dock in that inspector, with
+answers and dismissal routed to the child; no unrestricted child composer is mounted. The well
+cannot approve or reject anything. A stop says Stopping until
+the host confirms it ended; a scheduled retry says Reconnecting.
+
+The latest turn's detected or reported file changes supply the landed outcome. Its status settles
+within a second; Review opens that same turn in Changes and returns the capsule to rest. The turn
+card becomes a record that opens Changes, with Commit only in the pane. A one-second light runs at
+turn start and landing, never throughout work, and is absent with Reduce Motion.
+
+Cmd-I opens the tool list in key order: Changes, Terminal, Dev, Subagents, Pull request (Option-Cmd-1
+through 5). The list reuses `SessionToolsScreenModel` for Changes and existing terminal, project
+action and pull request actions for the other tools. Subagents and the pull request appear only
+when present. Dev opens the existing project-actions menu inside the well. No new tool runtime or
+network request is introduced. The old Task Tools gate and standard task screen remain available.
+
+The well uses the sidebar's shared `TaskSignal` at its well placement, with the actual request
+arrival driving its finite attention breath. The composer owns the annotated approval; until
+that replacement merges, this slice uses the existing approval surface.
+Later slices cover title identity and managed-policy details, full tool contributions and workbench
+placement, narrow full-width Changes, and diff quoting with the composer.
+
 ## Places
 
 Each tool lives in one place, or is off (`SessionToolPlace`, `Packages/SessionTools`):
