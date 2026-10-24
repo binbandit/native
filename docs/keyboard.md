@@ -588,8 +588,8 @@ operate the picker; Escape cancels without changing assignments.
 These Help menu actions have no default shortcut and can be rebound in Settings > Keyboard Shortcuts.
 They appear only while Fine print is enabled.
 
-| Action | Command |
-| --- | --- |
-| Command Diagnostics (opens Settings > Privacy) | `help.commandDiagnostics` |
-| Count Unknown Programs Locally | `privacy.countUnknownPrograms` |
-| Clear Unknown Program Counts | `privacy.clearUnknownPrograms` |
+| Keys | Action | Command |
+| --- | --- | --- |
+| | Command Diagnostics (opens Settings > Privacy) | `help.commandDiagnostics` |
+| | Count Unknown Programs Locally | `privacy.countUnknownPrograms` |
+| | Clear Unknown Program Counts | `privacy.clearUnknownPrograms` |
