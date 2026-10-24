@@ -1,6 +1,8 @@
 # PR 100 visual check
 
 Revision: 11b8abe94410cc6e4af930ac97e1c59148c25ea7, clean working tree. All screenshots and the archive/Hosts Cmd-Z checks were repeated after merging main at 004b345e. Package tests and lint passed again.
+Final integration revision: ae03bfce41b9bb09e4342883c5e8124ddf361b58. Its additional main merge contains only release-packaging changes. `git diff 11b8abe9 ae03bfce -- native Packages Companion native.xcodeproj Config Runtime` is empty, so the screenshots cover identical app inputs. The isolated build, warning gate, 22 Undo tests, lint and diff checks passed again at ae03bfce.
+
 Environment: macOS 27.2 (26B5091g), isolated Debug instance vc-100.
 Reference: supplied polish.html item 03 and polish-spec.md section 03. The self-contained mock-toast.html preserves the supplied toast CSS, tokens, state definitions and fixture content, with local font references embedded. It is a mock source artifact, not a screenshot of the app.
 
