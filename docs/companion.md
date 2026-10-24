@@ -164,9 +164,12 @@ session. The composer draft, delivery status and measured transcript passage sur
 and visiting another task. `TranscriptReadingPosition` in AppAppearance keeps a row ID plus its
 fractional viewport anchor, using the same placement equation as the Mac transcript. The companion
 resolves row and viewport geometry together, freezes the last valid passage before a size change,
-and restores it with bounded, nonanimated scroll requests. Missing rows during teardown do not
-mean the user returned to the end; a measured end still follows the latest output. User scrolling
-cancels restoration. The navigation tree is not replaced when a size class changes.
+and restores it with bounded, nonanimated scroll requests. The saved target stays fixed for the
+restoration window, even if an intermediate layout aligns before lazy rows reflow. Missing rows
+during teardown do not mean the user returned to the end; a measured end still follows the latest
+output. User scrolling cancels restoration, and only user scroll phases replace the saved passage:
+Duo can replay an old offset while idle, before its dimensions change. The navigation tree is not
+replaced when a size class changes.
 Landscape is supported on the outer display as well as on regular iPhones. Compact vertical
 size classes shorten the scanner and rearrange the welcome screen with `AnyLayout`; approval
 cards scroll within a fraction of the current task viewport so their actions remain reachable.
