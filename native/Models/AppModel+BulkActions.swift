@@ -20,6 +20,7 @@ extension AppModel {
         let archived = listed.map(\.0)
         let selected = moveAfterArchiving(archived)
         for (key, _) in listed {
+            _ = taskActionRoute(for: key)
             archivedSessions.set(key, archived: true)
         }
         offerUndo("Archived \(listed.count) tasks.", name: "Archive Tasks", undoManager: undoManager) { model in
@@ -47,6 +48,7 @@ extension AppModel {
         }
         moveAfterArchiving(listed.map(\.0))
         for (key, _) in listed {
+            _ = taskActionRoute(for: key)
             archivedSessions.set(key, archived: true)
         }
         Task {

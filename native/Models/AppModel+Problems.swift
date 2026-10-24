@@ -32,9 +32,18 @@ extension AppModel {
                 await retryListing(in: project, of: agent)
                 return
             case .agentCopyDeletion(let key):
-                try await deleteAgentCopy(of: key)
-            case .workspaceDeletion(_, let folder):
-                try await taskWorkspaces?.deleteWorkspace(at: folder, in: project)
+                guard let route = taskActionRoute(for: key) else { throw TaskActionRoute.Failure.missingRoute }
+                try await deleteAgentCopy(using: route, startingIfNeeded: true)
+            case .workspaceDeletion(let key, let folder):
+                if let route = taskActionRoute(for: key) {
+                    try await deleteWorkspace(using: route)
+                } else if !offersRemoteHosts, taskActionOwner(for: key) == .local {
+                    // Legacy discarded local drafts have no catalog entry. Preserve their retry
+                    // while remote hosts are off; enabled remote actions require a captured route.
+                    try await taskWorkspaces?.deleteWorkspace(at: folder, in: project)
+                } else {
+                    throw TaskActionRoute.Failure.missingRoute
+                }
             case .workspaceArchive(let key):
                 _ = try await archiveWorkspace(of: key, in: project)
             case .workspaceRestore(let key):
@@ -50,12 +59,12 @@ extension AppModel {
 
     /// Takes the other way forward a problem offers (`ProjectProblem.alternative`), which settles it.
     func takeAlternative(of problem: ProjectProblem) async {
-        guard let alternative = problem.alternative, let project = projects.project(problem.project) else { return }
+        guard let alternative = problem.alternative, projects.project(problem.project) != nil else { return }
         switch alternative {
         case .startInProjectFolder(let key):
             do {
-                _ = try await startTask(
-                    in: project.id, folder: project.url, title: titleOfSession(key), agent: key.agent)
+                guard let route = taskActionRoute(for: key) else { throw TaskActionRoute.Failure.missingRoute }
+                try await startInProjectFolder(using: route)
                 problems.resolve(problem.id)
             } catch {
                 var again = problem
@@ -70,18 +79,4 @@ extension AppModel {
         problems.resolve(problem.id)
     }
 
-    /// Asks the agent to delete its copy of a deleted task, starting the agent if it's stopped.
-    private func deleteAgentCopy(of key: SessionKey) async throws {
-        guard let runtime = await ensureRunning(for: key), let connection = runtime.connection else {
-            throw ProjectProblemRetryFailure(errorDescription: startFailure(of: key.agent))
-        }
-        // An agent that can't delete sessions anymore has nothing left to do.
-        guard runtime.capabilities?.deleteSessions == true else { return }
-        _ = try await connection.send(DeleteSessionRequest(sessionId: key.id))
-    }
-}
-
-/// Why a retry couldn't even begin, such as the agent not starting.
-private struct ProjectProblemRetryFailure: LocalizedError {
-    let errorDescription: String?
 }
