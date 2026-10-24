@@ -18,7 +18,7 @@ final class CompanionStore {
     /// The host the person is looking at, picked from the home screen's host chip; nil is all of
     /// them. Its color tints the screens and its app icon, if it has one, shows.
     var activeHostID: HostID? {
-        didSet { UserDefaults.standard.set(activeHostID?.description, forKey: Self.activeHostKey) }
+        didSet { defaults.set(activeHostID?.description, forKey: Self.activeHostKey) }
     }
 
     private static let activeHostKey = "activeHost"
@@ -26,12 +26,15 @@ final class CompanionStore {
     private static let logger = Logger(subsystem: "Native.Companion", category: "Hosts")
 
     @ObservationIgnored private let store: any PairedHostStore
-    @ObservationIgnored private let browser = LinkBrowser()
+    @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private let browser: LinkBrowser?
     @ObservationIgnored private var browsing: Task<Void, Never>?
 
     init(store: any PairedHostStore) {
         self.store = store
-        let browser = browser
+        defaults = .standard
+        let browser = LinkBrowser()
+        self.browser = browser
         do {
             hosts = try store.hosts().map { HostConnection(host: $0, discovered: { browser.current }) }
         } catch {
@@ -47,6 +50,15 @@ final class CompanionStore {
             }
         }
     }
+
+    #if DEBUG
+    init(previewHosts: [HostConnection]) {
+        store = MemoryPairedHostStore()
+        defaults = CompanionPreviewDefaults()
+        browser = nil
+        hosts = previewHosts
+    }
+    #endif
 
     func host(_ id: HostID) -> HostConnection? {
         hosts.first { $0.id == id }
@@ -75,7 +87,7 @@ final class CompanionStore {
             hosts.removeAll { $0.id == pairedHost.hostID }
         }
         let browser = browser
-        let connection = HostConnection(host: pairedHost, discovered: { browser.current })
+        let connection = HostConnection(host: pairedHost, discovered: { browser?.current ?? [] })
         configure(connection)
         hosts.append(connection)
         connection.start()
@@ -84,7 +96,7 @@ final class CompanionStore {
     func unpair(_ connection: HostConnection) {
         connection.stop()
         try? store.remove(connection.id)
-        HostPreferences.remove(for: connection.id)
+        HostPreferences.remove(for: connection.id, defaults: defaults)
         hosts.removeAll { $0.id == connection.id }
         if activeHostID == connection.id { activeHostID = nil }
     }

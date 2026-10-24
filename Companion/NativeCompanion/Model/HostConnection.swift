@@ -12,7 +12,7 @@ final class HostConnection: Identifiable {
     let id: HostID
     private(set) var host: PairedHost
     var preferences: HostPreferences {
-        didSet { preferences.save(for: id) }
+        didSet { preferences.save(for: id, defaults: defaults) }
     }
     private(set) var phase = HostConnectionPhase.connecting
     private(set) var sessions: [HostSessionSummary] = []
@@ -29,6 +29,10 @@ final class HostConnection: Identifiable {
     @ObservationIgnored private var listening: Task<Void, Never>?
     @ObservationIgnored private var attached: Set<HostSessionID> = []
     @ObservationIgnored private let discovered: @Sendable () -> [DiscoveredHost]
+    @ObservationIgnored private let defaults: UserDefaults
+    #if DEBUG
+    @ObservationIgnored private var isPreview = false
+    #endif
     /// Called when the host first reports an update it can install (for the local notification).
     @ObservationIgnored var onUpdateAvailable: ((HostConnection, HostUpdateStatus.Release) -> Void)?
 
@@ -38,8 +42,27 @@ final class HostConnection: Identifiable {
         id = host.hostID
         self.host = host
         self.discovered = discovered
+        defaults = .standard
         preferences = HostPreferences.load(for: host.hostID)
     }
+
+    #if DEBUG
+    init(previewHost: PairedHost, sessions: [HostSessionSummary], mirror: SessionMirror) {
+        id = previewHost.hostID
+        host = previewHost
+        preferences = HostPreferences()
+        discovered = { [] }
+        defaults = CompanionPreviewDefaults()
+        isPreview = true
+        self.sessions = sessions
+        mirrors = Dictionary(uniqueKeysWithValues: sessions.map { ($0.id, mirror) })
+        phase = .connected(
+            HostInfo(
+                protocolVersion: HostProtocol.version, hostID: id, machineName: previewHost.machineName,
+                hostInfo: PeerInfo(name: "Native", version: "1.0", build: "1"), epoch: UUID(), processID: 0,
+                startedAt: .now, channel: "preview"))
+    }
+    #endif
 
     var name: String {
         let label = preferences.label?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -52,6 +75,9 @@ final class HostConnection: Identifiable {
     // MARK: - Connection
 
     func start() {
+        #if DEBUG
+        if isPreview { return }
+        #endif
         guard client == nil else { return }
         phase = .connecting
         record(LinkLogEntry(.info, "Connecting to \(host.machineName)"))
