@@ -19,7 +19,7 @@ so growth gets noticed while there's still room to choose what to cut; lower the
 | Download, update archive | 47 MB | 42.7 MB |
 | Download, disk image | 48 MB | about 43.3 MB |
 | Installed app | 118 MB | 107.5 MB |
-| App binary (`Contents/MacOS/Native`) | 60 MB | 53.2 MB |
+| App binary (`Contents/MacOS/Native`) | 60.5 MB | 53.2 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
 `scripts/release/size-check.sh` holds the same numbers and fails when anything is over. It also
@@ -99,6 +99,15 @@ new Home questions, plan review and recovery code, with no added assets or depen
 binary budget is now 60 MB for this measured integration. Downloads remain 46.4/46.5 MB and
 installed apps 116.2/116.3 MB, within their unchanged limits. Remeasure when the gated redesign
 components replace their legacy presentations.
+
+2026-10-24: the compact Appearance page integrated with main through `74353da1` at `b28b4354`
+measures 60.1 MB for the Release binary, exceeding the 60 MB allowance. The current-theme card,
+palette-chip menus, safe task excerpts and managed theme controls add compiled UI and logic;
+the old window and transparency previews are removed. No assets or new third-party dependencies
+are added. The binary budget is now 60.5 MB for this measured integration. The 46.7 MB update
+archive and 116.9 MB installed app remain within their unchanged limits. These are integrated
+measurements, not an isolated size delta.
+Measurement: [Release size check](https://github.com/binbandit/native/actions/runs/40057946416/job/120765061946).
 
 ## Measuring
 
