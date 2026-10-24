@@ -23,9 +23,11 @@ struct ComposerEditor: View {
     var isFocused: FocusState<Bool>.Binding
     /// While an attachment chip is selected the keys are its, so the caret steps aside.
     var hidesCaret = false
+    var inputLabel = "Message"
     var font: Font = .dsCallout
     var lineSpacing: CGFloat = ComposerMetrics.editorLineSpacing
     var insets: EdgeInsets = DS.Composer.textInsets
+    var maximumHeight = ComposerMetrics.editorMaxHeight
     let onKey: (KeyPress) -> KeyPress.Result
 
     /// Whether the rich-text editor is in use, from the first backtick or `~~~` on.
@@ -48,7 +50,7 @@ struct ComposerEditor: View {
             .lineSpacing(lineSpacing)
             .padding(.horizontal, ComposerMetrics.editorLineFragmentPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .frame(maxHeight: ComposerMetrics.editorMaxHeight, alignment: .top)
+            .frame(maxHeight: maximumHeight, alignment: .top)
             // Size to the text (capped) rather than to whatever height is on offer.
             .fixedSize(horizontal: false, vertical: true)
             .hidden()
@@ -75,7 +77,7 @@ struct ComposerEditor: View {
                 .scrollIndicators(.never)
                 .focused(isFocused)
                 .onKeyPress(phases: [.down, .repeat], action: onKey)
-                .accessibilityLabel("Message")
+                .accessibilityLabel(inputLabel)
                 // Files and images dropped on the text attach instead (the composer's drop area).
                 .textViewTakesOnlyTextDrops()
             }

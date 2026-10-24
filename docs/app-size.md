@@ -16,7 +16,7 @@ noticed while there's still room to choose what to cut; lower them as the cuts i
 | Download, update archive | 47 MB | 42.7 MB |
 | Download, disk image | 48 MB | about 43.3 MB |
 | Installed app | 118 MB | 107.5 MB |
-| App binary (`Contents/MacOS/Native`) | 59.5 MB | 53.2 MB |
+| App binary (`Contents/MacOS/Native`) | 60 MB | 53.2 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
 `scripts/release/size-check.sh` holds the same numbers and fails when anything is over. It also
@@ -45,6 +45,23 @@ tool messages, with no bundled assets or dependencies. It uses the same 58.5 MB 
 At `d242798c`, the measured download was 45.8 MB and installed app was 114.8 MB, within their
 unchanged limits.
 
+2026-10-23: Fine print's annotated approval, command analysis and deliberate-confirmation controls
+bring the integrated Nightly binary to 58.7 MB at `c19a6495` (PR #97, Check Nightly job
+120414607392). The old quiet-settings-line implementation is removed; this slice adds no bundled
+assets or third-party dependencies. The binary allowance is 59 MB for this shared component and
+its platform key routing. The measured update archive (46.1 MB) and installed app (115.5 MB) remain
+within their unchanged limits. These are integrated build measurements, not an isolated size delta.
+
+Home Next's inline questions, plan review and failure recovery add about 0.1 MB of compiled UI
+and model code. Nightly measured 58.4 MB on base `638e0771` and just over 58.5 MB on `2b6cfdb9`
+with this slice. The download stays at 46.0 MB and the installed app rises from 115.1 MB to 115.3 MB, within their
+unchanged budgets. The slice reuses the composer and error components and adds no dependencies
+or bundled assets. `NativeHomeNext` remains off by default; remove the old Home presentation
+when Next is complete, then remeasure its temporary duplication.
+
+Measurements: [base Nightly](https://github.com/binbandit/native/actions/runs/39949712258/job/120400913612)
+and [Home Next Nightly](https://github.com/binbandit/native/actions/runs/39952262729/job/120409343802).
+
 2026-10-24: the integrated worktree-creation commands and Plainly Settings build at `dde394e1`
 measures 58.6 MB for the Nightly binary, 46.1 MB downloaded and 115.4 MB installed. Earlier
 feature measurements used separate branches; their combined code now exceeds the 58.5 MB
@@ -71,6 +88,14 @@ opt-in panel with the worktree setup, Settings and task Peek changes already on 
 budget is now 59.5 MB, with a small margin for this measured integration. The largest update
 archive (46.3 MB) and installed app (115.8 MB) remain within their unchanged budgets; no assets
 or dependencies were added.
+
+Fine print integrated with Home Next and main through `db0f3012` at `408ba425` measures
+59.560 MB for both Release and Nightly binaries, about 0.060 MB above the 59.5 MB allowance.
+The annotated approvals, command analysis and deliberate confirmation compile alongside the
+new Home questions, plan review and recovery code, with no added assets or dependencies. The
+binary budget is now 60 MB for this measured integration. Downloads remain 46.4/46.5 MB and
+installed apps 116.2/116.3 MB, within their unchanged limits. Remeasure when the gated redesign
+components replace their legacy presentations.
 
 ## Measuring
 

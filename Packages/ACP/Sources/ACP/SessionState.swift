@@ -9,6 +9,11 @@ public struct SessionState: Sendable {
     public private(set) var items: [TranscriptItem] = []
     /// The agent's latest plan; each `plan` update replaces the previous one.
     public private(set) var plan: [PlanEntry] = []
+    /// The checklist received during the current turn, separate from retained progress.
+    public var currentTurnPlan: [PlanEntry] {
+        guard let planTurnStart, planTurnStart == turnStarts.last else { return [] }
+        return plan
+    }
     /// A retained plan isn't progress for a new turn until the agent reports it there.
     var planTurnStart: Int?
     public var configOptions: [ConfigOption] = []
@@ -153,8 +158,8 @@ public struct SessionState: Sendable {
         return nil
     }
 
-    public mutating func appendNotice(_ text: String, isError: Bool) {
-        appendItem(.notice(TranscriptNotice(text: text, isError: isError)))
+    public mutating func appendNotice(_ text: String, isError: Bool, isRecovery: Bool = false) {
+        appendItem(.notice(TranscriptNotice(text: text, isError: isError, isRecovery: isRecovery)))
     }
 
     public mutating func requestPermission(_ request: RequestPermissionRequest, id: RequestID, at date: Date = .now) {
@@ -460,6 +465,8 @@ public struct TranscriptNotice: Hashable, Sendable {
     public let id = UUID()
     public var text: String
     public var isError: Bool
+    /// A host recovery event, distinct from a diagnostic or a replayed message sent to the agent.
+    public var isRecovery = false
     /// For the notice of a message Native is sending again: how far that got.
     public internal(set) var retry: Retry?
     /// What Native told the agent, for a notice that stands in for Native's own message in the

@@ -136,6 +136,7 @@ first use (a few seconds) and needs the instance running. `drive.sh <name> help`
 | `set <text> <value>` | Writes a text field or the composer, as if typed in one go; `-` reads stdin |
 | `type <text>` | Types into whatever has focus, a key at a time (for `/` and `@` lists); `\n` is Shift-Return |
 | `key <combo>…` | `cmd+n`, `return`, `escape`, `shift+cmd+a`, `opt+cmd+up`, `ctrl+tab` |
+| `key <combo> --hold <seconds>` | Holds each key combination before releasing it (0 to 3 seconds), for deliberate confirmation controls |
 | `menu <Menu> [<Item>…]` | Lists a menu with its shortcuts and disabled items, or presses an item |
 | `action <text> <name> [--item <text>]` | Performs an accessibility action; `AXShowMenu` lists a context menu's items, or picks one |
 | `scroll <text> <up\|down\|top\|bottom\|reveal>` | Pages the scroll area at or around a match, or scrolls the match into view |
@@ -147,6 +148,13 @@ first use (a few seconds) and needs the instance running. `drive.sh <name> help`
 | `logs [--last 10m \| --stream]`, `crashes` | This instance's log lines, and its crash reports |
 | `processes` | The instance's app and host with every process under them (agents, their tools): the only ones you may kill |
 | `seed`, `screen`, `pid` | The workspace, whether the screen is locked, the instance's pid |
+
+Fine print has Debug-only state overrides for an existing fixture approval. Relaunch the isolated
+instance with `-nativeApprovalPreview instruction-failure`, `reconnecting`, or `reduced-motion`
+to fail the first instruction and retry it, check unavailable controls, or check the ring without its sweep. They apply
+only to the experimental approval view and never change system accessibility settings. Omit the
+argument to return to the normal path. An accessibility `press` on Hold to Allow exercises its
+two-step confirmation; `key cmd+y --hold 0.3` exercises early release.
 
 `<text>` matches an accessibility identifier first, then a title or label exactly, then ignoring
 case, then as part of any label, value or help text. Few elements in Native have identifiers of their

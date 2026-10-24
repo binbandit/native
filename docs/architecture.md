@@ -183,20 +183,34 @@ full New Task view. Compose's page and the shared well's pre-start presentation 
 `native/HomeNext/`: one centered reading column with a task title, the existing shared
 `ToolCallView` approval, Up next, and a quiet working-status line. The composer owns the
 annotated approval replacement; Home must embed that component when it lands, never copy it.
-The sidebar owns the shared status signal; Home currently uses `StatusIndicator`.
+The sidebar owns the shared `TaskSignal`; Home uses it for the current ask and Up next rows.
 
 `HomeAskOrder` in `Packages/TaskList` puts approvals before questions, plans, and failures,
 oldest within each kind. The ask being read stays put when another arrives. Answering uses the
 exact `SessionModel` and tool-call request displayed, including subagent requests. Home records
-a receipt and advances when the model removes the permission. Questions, plans and failures
-open their task until the next slice adds their inline answers. Finished today includes tasks
+a receipt and advances when the model acknowledges an answer. Questions embed the composer's
+`AgentQuestionSection`, with the same digit keys, multiple-question paging and free text. Plan
+permissions embed `ComposerPlanSection` in its numbered review presentation (first five steps,
+then Show more), using only the current turn's checklist. The exact permission proposal always
+stays visible in the shared `ToolCallView`, with Approve Plan and Revise from its permission buttons.
+Session-wide progress from earlier turns cannot replace the proposal being approved.
+
+Failures use `ErrorState` in its reading layout: what happened, recorded recovery from the current
+turn, error output, Retry and Open Task. `TurnFailureContext` in ACP includes live host recovery
+notices and replayed recovery markers, keeping earlier turns' errors and recovery out of this
+explanation. Retry asks the existing session to check completed work and
+continue, preserving the draft; a disconnected in-process agent instead opens its task to reconnect.
+Home retains the exact question or permission on screen, including subagent asks. An answer that
+cannot reach the host stays on screen with its error and no success receipt. Finished today includes tasks
 with a known successful turn completion today, five at a time; unknown history is not called done.
-On Home, the sidebar's asks should fold to their title when the new sidebar lands.
+The sidebar still needs to fold its asks to their title on Home.
 
 For isolated Debug checks, enable the gate with Settings > Labs > Next or
 `defaults write dev.binbandit.native.dev.<name> experiment.NativeHomeNext -bool YES`, then launch
 with `-nativeHomeNextFixture busy` for inert preview models. Other fixture values are `quiet`,
-`first`, `empty`, `loading`, `recovery`, and `narrow`.
+`first`, `empty`, `loading`, `recovery`, `narrow`, `question`, `questionText`, `questions`,
+`plan`, `planText`, `planRetained`, `failure`, `failurePaused`, and `questionFailure` (a read-only sink
+exercises answer delivery failure).
 The fixture is absent from Release and Nightly and never opens an agent or writes project data.
 
 New UIs, designs and behaviors ship as opt-in experiments first (see "Experiments behind flags" in
@@ -312,16 +326,29 @@ on its project page. Search follows the moved rows. `SettingsPlainlyCopy` suppli
 accessible control names and search titles together. The inheritance popovers, context accounting,
 feature presets, agent detail pages and the shared overnight receipt belong to later slices.
 
-### Quiet composer
+### Fine print approvals
 
-`NativeComposerNext` is an off-by-default Labs gate at the composer's resting controls. Enable it
-with Settings > Labs > Quiet composer, or set `experiment.NativeComposerNext` as a boolean in
-the app's user defaults before launch.
-The editor keeps its identity as the session starts and finishes work; only its footer changes.
-At rest, plain words open the agent, model, effort, autonomy and task-mode pickers. The agent entry
-opens New Task With, unless the Change Agent experiment is also enabled. Other
-agent settings, attachments, goals and context remain reachable. Running turns and approval
-requests keep today's composer until their own slices land.
+`NativeComposerNext` is an off-by-default Labs gate at the composer's approval state. Enable it
+with Settings > Labs > Fine print, or set `experiment.NativeComposerNext` as a boolean in the
+isolated app's defaults. The rejected quiet-settings-line experiment has been removed.
+
+`AnnotatedApprovalView` in `native/Approvals` is the shared approval for the composer and future
+Peek and Home hosts. `SessionApprovalView` connects it to model actions. Only the oldest request
+owns shortcuts; the primary transcript leaves its response controls to the composer while enabled.
+The ordinary composer and approvals are unchanged with the gate off.
+
+`Packages/ApprovalAnalysis` describes literal rm and git push commands without running them or
+reading files or the network. It preserves the exact command and source ranges, distinguishes
+regenerable DerivedData paths from destructive deletion and remote history rewrites, and makes no
+claims for unsupported commands or shell syntax. Reach is lexical, relative to the command's cwd
+and the task's worktree; contents, symlinks and remote commits are explicitly uninspected. Host-side
+measurements and additional command families are later slices, subject to managed network policy.
+
+Irreversible requests use the tested `ApprovalHold` state machine: 0.6 seconds, early release
+cancels, 0.4 seconds of acknowledgement, five-second accessibility confirmation, and no Always
+Allow. Platform key monitoring and haptics live in `native/Platform`. An alternative instruction is
+queued through `SessionModel.instructInstead` before declining the original request. ACP never
+receives an edited tool call, and the ordinary draft is kept.
 
 ### Task well
 
