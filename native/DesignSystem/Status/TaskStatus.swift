@@ -139,8 +139,10 @@ public struct StatusIndicator: View {
     }
 }
 
+#if DEBUG
 #Preview("Task status") {
     DSPreviewPair {
         GalleryStatus()
     }
 }
+#endif

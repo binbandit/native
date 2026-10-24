@@ -17,7 +17,9 @@ let package = Package(
             dependencies: [
                 .product(name: "Exec", package: "Exec"),
                 .product(name: "AIInstructions", package: "AIInstructions"),
-            ]),
+            ],
+            // Optimize infrequent operations for size; the app and streaming path stay at -O.
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         .testTarget(
             name: "GitTests", dependencies: ["Git", .product(name: "AIInstructions", package: "AIInstructions")]),
     ]
