@@ -69,8 +69,8 @@ public struct SpecimenLine: Equatable, Sendable {
         guard let language = CodeLanguage.forPath(file), after.utf8.count <= 100_000,
             (before?.utf8.count ?? 0) <= 100_000
         else { return [] }
-        let old = (before ?? "").split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
-        let new = after.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        let old = sourceLines(before ?? "")
+        let new = sourceLines(after)
         guard old.count <= 2_000, new.count <= 2_000 else { return [] }
         let difference = new.difference(from: old)
         var removed = Set<Int>(), inserted = Set<Int>()
@@ -97,6 +97,15 @@ public struct SpecimenLine: Equatable, Sendable {
             if deleted.isEmpty && added.isEmpty { a += 1; b += 1 }
         }
         return result
+    }
+
+    private static func sourceLines(_ text: String) -> [String] {
+        guard !text.isEmpty else { return [] }
+        let normalized = text.replacingOccurrences(of: "\r\n", with: "\n")
+        var lines = normalized.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        // A final line terminator does not add a blank line to a diff.
+        if normalized.hasSuffix("\n") { lines.removeLast() }
+        return lines
     }
 
     public static func isSafe(_ text: String) -> Bool {

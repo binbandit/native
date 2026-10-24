@@ -82,6 +82,21 @@ import Testing
             ).isEmpty)
     }
 
+    @Test func newFilesAndWindowsLineEndingsKeepRealHunks() {
+        let created = SpecimenLine.candidates(file: "chunker.ts", project: "pier", before: nil, after: rich)
+        #expect(created.first?.deleted.isEmpty == true)
+        #expect(created.first?.added.map(\.number) == [1])
+        let specimen = SpecimenLine.choose(from: created)
+        #expect(specimen.deleted.first?.number == nil)
+        #expect(specimen.deleted.first?.text == String(rich.dropLast()))
+        let windows = SpecimenLine.candidates(
+            file: "chunker.ts", project: "pier",
+            before: "same\r\nold\r\n", after: "same\r\n" + rich + "\r\n")
+        #expect(windows.first?.added.first?.number == 2)
+        #expect(windows.first?.added.first?.text == rich)
+        #expect(!SpecimenLine.choose(from: windows).isSample)
+    }
+
     @Test(arguments: [CodeLanguage.typeScript, .swift, .python, .go, .rust])
     func fallbackUsesMostCommonLanguage(_ language: CodeLanguage) {
         let result = SpecimenLine.choose(from: [], recentLanguages: [.swift, language, language, .python])
