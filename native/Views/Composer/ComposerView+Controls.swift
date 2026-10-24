@@ -1,6 +1,28 @@
+import ACP
+import NativePolicy
 import SwiftUI
 
 extension ComposerView {
+    @ViewBuilder
+    func settingsNote(_ settings: ComposerSettings) -> some View {
+        if PolicyCenter.shared.isManaged(.forbiddenPermissionModes) {
+            let manager = PolicyCenter.shared.policy.organizationName ?? "your organization"
+            let choice = settings.autonomy?.current?.askingTitle
+            Label(
+                "Managed by \(manager)\(choice.map { ": \($0.lowercased())" } ?? "")",
+                systemImage: "lock"
+            )
+            .font(.dsCaption)
+            .foregroundStyle(.dsTextTertiary)
+            .padding(.horizontal, DS.Space.xxl)
+        } else if let followUpHint {
+            Text(followUpHint.text)
+                .font(.dsCaption)
+                .foregroundStyle(.dsTextTertiary)
+                .padding(.horizontal, DS.Space.xxl)
+        }
+    }
+
     func currentControls(_ settings: ComposerSettings) -> some View {
         ComposerControlsRow(
             settings: settings,

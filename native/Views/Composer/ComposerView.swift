@@ -9,7 +9,7 @@ struct ComposerView: View {
     @Bindable var session: SessionModel
     /// Previews supply an in-memory mode library.
     var taskModes: TaskModes = .shared
-    @Experiment(.composerNext) private var composerNext
+    @Experiment(.composerNext) var composerNext
 
     @AppStorage(FollowUpBehavior.storageKey) var followUp = FollowUpBehavior.defaultValue
     @Environment(\.undoManager) var undoManager
@@ -111,7 +111,10 @@ struct ComposerView: View {
                     SessionApprovalView(session: session, call: call)
                 }
             } else {
-                surface(settings, suggestions: suggestions)
+                VStack(alignment: .leading, spacing: DS.Space.sm) {
+                    surface(settings, suggestions: suggestions)
+                    if composerNext { settingsNote(settings) }
+                }
             }
         }
         .overlay(alignment: .top) {
@@ -136,8 +139,7 @@ struct ComposerView: View {
             .animation(.dsQuick, value: feedback)
         }
         .frame(
-            maxWidth: composerNext && !session.permissionRequests.isEmpty
-                ? max(columnWidth, DS.Approval.composerWidth) : columnWidth
+            maxWidth: composerNext ? max(columnWidth, DS.ComposerSettings.width) : columnWidth
         )
         .padding(.horizontal, DS.Space.xxl)
         .padding(.top, DS.Space.md)
@@ -248,8 +250,10 @@ struct ComposerView: View {
             VStack(spacing: 0) {
                 // Keep the editor mounted when a turn changes the footer, preserving focus and selection.
                 inputSection(suggestions: suggestions)
-                Rectangle().fill(.dsBorder).frame(height: DS.Composer.separatorWidth)
-                currentControls(settings)
+                if !composerNext {
+                    Rectangle().fill(.dsBorder).frame(height: DS.Composer.separatorWidth)
+                    currentControls(settings)
+                }
             }
         }
         .dropDestination(for: ComposerDropItem.self) { items, _ in
@@ -268,7 +272,8 @@ struct ComposerView: View {
         HStack(alignment: .bottom, spacing: 0) {
             ComposerEditor(
                 text: $session.draft, selection: $selection, placeholder: placeholder, isFocused: $isFocused,
-                hidesCaret: selectedAttachmentIndex != nil
+                hidesCaret: selectedAttachmentIndex != nil,
+                insets: composerNext ? DS.ComposerSettings.textInsets : DS.Composer.textInsets
             ) { press in
                 handleKey(press, suggestions: suggestions)
             }
@@ -278,6 +283,12 @@ struct ComposerView: View {
             // idle (once there's a draft); while the agent works, Stop, with a slot
             // beside it where Send appears to queue or steer what's typed, by pointer or touch too.
             HStack(spacing: DS.Space.sm) {
+                if composerNext {
+                    ComposerSettingsControl(
+                        session: session, settings: ComposerSettings(session.configOptions),
+                        mode: TaskModeControl(session: session, modes: taskModes),
+                        isPresented: $isModelPickerOpen, isPickingFiles: $isPickingFiles, onAttach: attach)
+                }
                 if session.canCancel {
                     actionSlot { if hasContent { sendButton } }
                     actionSlot {
@@ -289,13 +300,13 @@ struct ComposerView: View {
                             action: stop
                         )
                     }
-                } else {
+                } else if !composerNext || hasContent {
                     actionSlot { if hasContent { sendButton } }
                 }
             }
-            .padding(DS.Space.md)
+            .padding(composerNext ? DS.ComposerSettings.trailingInset : DS.Space.md)
         }
-        .frame(minHeight: DS.Size.composerInputMinHeight)
+        .frame(minHeight: composerNext ? DS.ComposerSettings.inputHeight : DS.Size.composerInputMinHeight)
         .background {
             // Stop's shortcut (⌘. unless remapped) stops the turn too; a button takes one shortcut,
             // so this one is invisible.
@@ -365,7 +376,8 @@ struct ComposerView: View {
 
     /// Invites a message, or explains what the session is waiting for.
     var placeholder: String {
-        ComposerPlaceholder(
+        if composerNext, session.phase == .idle { return "Message \(session.agentName)" }
+        return ComposerPlaceholder(
             phase: session.phase,
             agentName: session.agentName,
             hasQuestion: session.pendingQuestion != nil,

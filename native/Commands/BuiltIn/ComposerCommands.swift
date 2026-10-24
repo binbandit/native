@@ -1,4 +1,5 @@
 import ACP
+import Experiments
 import NativeCommands
 
 extension CommandID {
@@ -57,7 +58,9 @@ extension NativeCommand {
             $0.session?.isModelPickerRequested = true
         }
         .available { context in
-            context.session.map { ComposerSettings($0.configOptions).model != nil } ?? false
+            context.session.map {
+                ExperimentStore.shared.value(of: .composerNext) || ComposerSettings($0.configOptions).model != nil
+            } ?? false
         },
     ]
 
