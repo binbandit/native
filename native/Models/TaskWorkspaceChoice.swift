@@ -1,7 +1,7 @@
 import Foundation
 
 /// A task's working folder, chosen before its first message.
-enum TaskWorkspaceChoice: Hashable {
+enum TaskWorkspaceChoice: Hashable, Codable {
     case project
     case newWorktree
     case branch(String)

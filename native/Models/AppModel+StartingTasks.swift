@@ -139,6 +139,11 @@ extension AppModel {
                 sessions.remove(session)
                 return removeWorkspace(of: task)
             }
+            await applyComposeChoices(of: task, to: session)
+            guard !task.isDiscarded else {
+                sessions.remove(session)
+                return removeWorkspace(of: task)
+            }
             catalog.add(
                 SessionInfo(sessionId: session.id, cwd: folder.folderPath, updatedAt: .now), for: agent, in: project.id)
             unsentSessions.started(session.key)
@@ -172,6 +177,9 @@ extension AppModel {
         let previous = workspacePreparations[project.id]
         let work = Task { [taskWorkspaces] in
             await previous?.value
+            if let choice = task.workspaceChoice, let taskWorkspaces {
+                return try await taskWorkspaces.workspace(for: choice, in: project)
+            }
             return try await taskWorkspaces?.workspace(forNewTaskIn: project, title: nil) ?? project.url
         }
         workspacePreparations[project.id] = Task { _ = try? await work.value }
@@ -185,6 +193,8 @@ extension AppModel {
     func finish(_ task: StartingTask, with session: SessionModel) {
         task.openedSession = session.key
         session.draft = task.draft
+        session.attachments = task.attachments
+        session.usesComposePresentation = task.usesComposePresentation
         let wasSelected = selection == task.id
         startingTasks.removeAll { $0 === task }
         history.replace(task.id, with: session.key)

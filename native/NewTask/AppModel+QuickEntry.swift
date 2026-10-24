@@ -5,6 +5,14 @@ import NativePolicy
 extension AppModel {
     func showQuickEntry(selection text: String? = nil) {
         guard quickEntry.isEnabled else { return }
+        if composeTask.isPresented { return }
+        if composeTask.isHeld {
+            composeTask.isPresented = true
+            composeTask.navigationSelection = self.selection
+            restoreComposeHold()
+            quickEntry.taskOpenRequests &+= 1
+            return
+        }
         if !quickEntry.isPresented, quickEntry.draft.isEmpty, quickEntry.context == nil {
             let project = currentProject
             quickEntry.project = project?.id
@@ -34,29 +42,34 @@ extension AppModel {
     }
 
     func chooseQuickEntryProject(_ project: Project.ID) {
+        guard !composeTask.isHeld else { return }
         quickEntry.project = project
         quickEntry.device = preferredDevice(for: project)
         quickEntry.agent = defaultAgent(in: projects.project(project))?.id
         quickEntry.failure = nil
         quickEntry.picker = nil
         reconcileQuickEntryAgent()
+        if composeTask.isPresented { prepareComposeEditor() }
     }
 
     func addQuickEntryProject(_ url: URL) async {
         let project = projects.add(url)
-        if quickEntry.isPresented { chooseQuickEntryProject(project.id) }
+        if quickEntry.isPresented || composeTask.isPresented { chooseQuickEntryProject(project.id) }
         // Listing can take time. The address must change before the user can press Start again.
         _ = await addProject(url, focus: false)
     }
 
     func chooseQuickEntryDevice(_ device: SessionDevice) {
+        guard !composeTask.isHeld else { return }
         quickEntry.device = device
         quickEntry.failure = nil
         quickEntry.picker = nil
         reconcileQuickEntryAgent()
+        if composeTask.isPresented { prepareComposeEditor() }
     }
 
     func reconcileQuickEntryAgent() {
+        if composeTask.isPresented, quickEntry.device.isRemote, quickEntryRuntimes.isEmpty { return }
         if !quickEntryRuntimes.contains(where: { $0.agent.id == quickEntry.agent }) {
             let preferred = defaultAgent(in: quickEntry.project.flatMap(projects.project))?.id
             quickEntry.agent =
@@ -103,6 +116,7 @@ extension AppModel {
             workspaceLabel: taskWorkspaces?.newTaskWorkspaceLabel(in: project) ?? "Preparing the workspace")
         task.device = quickEntry.device
         task.draft = quickEntry.message
+        task.attachments = quickEntry.attachments
         task.isSendRequested = send
         task.wantsComposerFocus = open && !send
         startingTasks.insert(task, at: 0)
@@ -117,9 +131,20 @@ extension AppModel {
     }
 
     func expandQuickEntry(selection: String? = nil) {
+        guard quickEntry.isEnabled, !composeTask.isPresented else { return }
         if !quickEntry.isPresented { showQuickEntry(selection: selection) }
-        // Slice 2 replaces this destination with Compose's page, using the same draft.
-        startQuickEntry(open: true, send: false)
+        quickEntry.dismiss()
+        composeTask.isPresented = true
+        composeTask.navigationSelection = self.selection
+        composeTask.stage = .writing
+        if composeTask.starting != nil { composeTask.editor = nil }
+        composeTask.starting = nil
+        prepareComposeEditor()
+        restoreComposeHold()
+        quickEntry.taskOpenRequests &+= 1
+        #if DEBUG
+        ComposeTaskPreviewFixtures.applyLaunchState(to: self)
+        #endif
     }
 
     func openQuickEntryTask() {
