@@ -190,7 +190,7 @@ struct ComposerView: View {
         .onChange(of: session.wantsComposerFocus) { takeFocusIfWanted() }
         .onChange(of: session.isModelPickerRequested, initial: true) { _, isRequested in
             guard isRequested else { return }
-            isModelPickerOpen = true
+            if let page { page.openSettings() } else { isModelPickerOpen = true }
             session.isModelPickerRequested = false
         }
         .onChange(of: drops?.items.isEmpty == false) { _, hasDrops in

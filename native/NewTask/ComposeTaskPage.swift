@@ -108,12 +108,13 @@ struct ComposeTaskPage: View {
                         page: .init(
                             allowsFileMentions: entry.project != nil && entry.device == .thisMac,
                             needsFolder: entry.project == nil,
+                            openSettings: { entry.toggle(.agent) },
                             start: { model.submitComposeTask() },
                             attachmentsPending: { compose.pendingAttachments = $0 })
                     )
                     .id(editor.id)
                     .environment(drops)
-                    .focusedSceneValue(\.activeSession, editor)
+                    .focusedSceneValue(\.composeDraft, editor)
                     .disabled(compose.isHeld || compose.stage != .writing)
                 }
                 if let failure = entry.failure {

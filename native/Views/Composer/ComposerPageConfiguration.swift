@@ -2,6 +2,7 @@
 struct ComposerPageConfiguration {
     var allowsFileMentions = true
     var needsFolder = false
+    var openSettings: () -> Void = {}
     let start: () -> Void
     let attachmentsPending: (Bool) -> Void
 }

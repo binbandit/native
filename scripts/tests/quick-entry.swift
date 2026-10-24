@@ -208,6 +208,22 @@ private struct QuickEntryRegression {
         app.expandQuickEntry()
         try require(app.composeTask.editor?.draft == "Expand without sending", "Reopening Compose lost the draft")
         guard let editor = app.composeTask.editor else { throw CheckFailure("No Compose editor") }
+        let draftContext = CommandContext(composeDraft: editor)
+        for id in [CommandID.composerAttachFiles, .composerFocus, .sessionChooseModel] {
+            guard let command = NativeCommand.composer.first(where: { $0.id == id }) else {
+                throw CheckFailure("Missing draft command")
+            }
+            try require(command.isAvailable(draftContext), "A draft command was unavailable")
+            command.perform(draftContext)
+        }
+        try require(
+            editor.isAttachmentPickerRequested && editor.isModelPickerRequested,
+            "Draft commands did not reach the editor")
+        editor.isAttachmentPickerRequested = false
+        editor.isModelPickerRequested = false
+        for command in NativeCommand.composer where [.sessionStop, .sessionChangeWorkspace].contains(command.id) {
+            try require(!command.isAvailable(draftContext), "A task-only command was enabled before Start")
+        }
         editor.attachments = [
             PromptAttachment(url: folder.appending(path: "missing-file"), content: .reference, byteCount: nil)
         ]
