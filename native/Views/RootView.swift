@@ -58,6 +58,7 @@ struct RootView: View {
             StatusBar(registry: statusBar)
         }
         .taskPeekHost()
+        .approvalHoldKeyRoot()
         .addHostPresentation(hosts: model.hosts)
         // After an update with highlights, once nothing waits on the user.
         .whatsNewSheet(whatsNew, blocked: model.hasWorkNeedingUser)
