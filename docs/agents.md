@@ -208,6 +208,28 @@ How it works (`HostCore+Credentials.swift`, tests in `HostSignInTests`):
 - **This Mac.** Unchanged: `AgentRuntime.authMethods` is still what the agent advertises, the host
   advertises URL elicitations only for a link sign-in, and keys are only ever set by a request.
 
+## MCP server sign-in
+
+Settings and task MCP rows use the agent's `mcp login <name> --no-browser` command. Native gives
+the command a private terminal, streams its authorization link, and opens that link on the client
+device. The agent runs OAuth with its own PKCE, state validation, loopback listener and credential
+store. Native does not exchange, copy or persist tokens. On a paired host, the command and credentials
+stay on that host; if the browser cannot reach its loopback callback, the sheet accepts the full
+redirect address and forwards it privately to the same command. Native checks the callback's host,
+port, path and state before sending it, and the agent validates it again.
+
+Network access for this flow is user initiated and controlled by `policy.mcp.allowed` and
+`policy.mcp.blocked`. Endpoints come from the chosen server's agent configuration and OAuth discovery;
+there is no built-in authentication endpoint or background request. Offline or failed sign-in ends
+with retry guidance, and the command times out after five minutes. Cancel or closing the sheet stops
+the pending command. Paired devices need `runCommands`; input is accepted only for that client's own
+command and is not journaled. Raw command output and pasted redirect addresses are not added to tasks
+or command history. The agent may maintain its own diagnostic logs under its own policy.
+
+Both the client and paired host need a version that supports interactive command input. The CLI must
+support `--no-browser` with a loopback callback or pasted redirect. Cursor continues to use its own
+MCP settings for sign-in.
+
 ## What Native still needs for these agents
 
 - **Pi's MCP.** Native's tools reach Pi only once `pi-acp` forwards `mcpServers` (a draft issue

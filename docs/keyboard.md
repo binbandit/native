@@ -124,6 +124,12 @@ sidebar, the projects and the Settings pages, recently used ones first. With a t
 | ⌘Return | Commit the selected files |
 | Escape | Close the popover |
 
+## MCP sign-in sheet
+
+Return starts sign-in, submits a pasted redirect address while waiting, or closes a successful sign-in.
+Escape cancels the pending sign-in and closes the sheet. Tab reaches Open Browser and the redirect
+field; Space activates Open Browser. Closing the sheet stops its pending command on the host.
+
 ## Git sheets
 
 | Keys | Action |

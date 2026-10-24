@@ -22,8 +22,14 @@ public struct LocalCommandRunner: CommandRunner {
         try await run(command, streaming: onOutput)
     }
 
+    public func run(
+        _ command: Command, input: CommandInput, onOutput: @escaping @Sendable (CommandOutput) -> Void
+    ) async throws -> CommandResult {
+        try await run(command, streaming: onOutput, input: input)
+    }
+
     private func run(
-        _ command: Command, streaming onOutput: (@Sendable (CommandOutput) -> Void)?
+        _ command: Command, streaming onOutput: (@Sendable (CommandOutput) -> Void)?, input: CommandInput? = nil
     ) async throws -> CommandResult {
         try Task.checkCancellation()
         guard let executable = Self.resolve(command.executable, path: command.environment["PATH"]) else {
@@ -37,14 +43,28 @@ public struct LocalCommandRunner: CommandRunner {
             process.currentDirectoryURL = URL(filePath: directory, directoryHint: .isDirectory)
         }
         let inputPipe = Self.makePipe()
+        let terminal = try input.map { _ in try CommandTerminal() }
+        let inputTask = input.flatMap { terminal?.forward($0) }
+        defer {
+            inputTask?.cancel()
+            terminal?.stop()
+        }
         let outputPipe = Self.makePipe()
         let errorPipe = Self.makePipe()
-        process.standardInput = inputPipe
-        process.standardOutput = outputPipe
-        process.standardError = errorPipe
+        if let terminal {
+            process.standardInput = terminal.slave
+            process.standardOutput = terminal.slave
+            process.standardError = terminal.slave
+            try? outputPipe.fileHandleForWriting.close()
+            try? errorPipe.fileHandleForWriting.close()
+        } else {
+            process.standardInput = inputPipe
+            process.standardOutput = outputPipe
+            process.standardError = errorPipe
+        }
 
         // Our ends of the pipes move to descriptors that only their channels close (see `PipeEnd`).
-        let outputEnd = try PipeEnd(outputPipe.fileHandleForReading)
+        let outputEnd = try PipeEnd(terminal?.output ?? outputPipe.fileHandleForReading)
         let errorEnd = try PipeEnd(errorPipe.fileHandleForReading)
         let inputEnd = try PipeEnd(inputPipe.fileHandleForWriting)
 
@@ -69,6 +89,8 @@ public struct LocalCommandRunner: CommandRunner {
                     }
                     do {
                         try lifecycle.launch(timeout: command.timeout)
+                        // Only the child keeps the slave, so its exit ends the terminal's output.
+                        try? terminal?.slave.close()
                     } catch {
                         process.terminationHandler = nil
                         continuation.resume(throwing: error)
@@ -80,6 +102,7 @@ public struct LocalCommandRunner: CommandRunner {
         } catch {
             // Nothing launched, so nothing will close the command's ends of the pipes: close them to end
             // the reads and the write.
+            terminal?.stop()
             try? outputPipe.fileHandleForWriting.close()
             try? errorPipe.fileHandleForWriting.close()
             try? inputPipe.fileHandleForReading.close()

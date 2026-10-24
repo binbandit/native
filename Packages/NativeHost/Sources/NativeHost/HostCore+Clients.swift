@@ -40,6 +40,7 @@ final class ClientLink {
     var attached: Set<HostSessionID> = []
     /// Commands this client is running, by `execID`: what `exec/cancel` and disconnecting stop.
     var commands: [UUID: Task<CommandResult, any Error>] = [:]
+    var commandInputs: [UUID: CommandInput] = [:]
     /// Folders this client watches, by `watchID` (`HostCore+FileWatches.swift`).
     var fileWatches: [UUID: HostFileWatch] = [:]
 
@@ -285,6 +286,9 @@ extension HostCore {
             try reply(await doctorReport())
         case Method.execRun:
             try reply(try await runCommand(try message.params(as: ExecRunParams.self), for: client))
+        case Method.execInput:
+            try inputCommand(try message.params(as: ExecInputParams.self), for: client)
+            try reply(EmptyMessage())
         case Method.execCancel:
             cancelCommand(try message.params(as: ExecCancelParams.self).execID, for: client)
             try reply(EmptyMessage())
