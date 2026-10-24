@@ -1,0 +1,90 @@
+{
+  "revision": "9d4ddcadf0980ed98d4b9c471f9fc9c250a7842c",
+  "instance": "vc-101",
+  "configuration": "Debug",
+  "modes": [
+    "Plainly",
+    "Legacy"
+  ],
+  "appearances": [
+    "light",
+    "dark"
+  ],
+  "fixtures": [
+    "single",
+    "multiple",
+    "signedOut",
+    "missing",
+    "expired",
+    "offline",
+    "failedSwitch"
+  ],
+  "notes": [
+    "Visual acceptance of an existing PR; no before-revision UI reproduction.",
+    "Fixture runner answers all GitHub commands locally.",
+    "AccountTests: 13 passed. Swift lint and diff check passed."
+  ],
+  "visual_check": "done",
+  "ui_acceptance": "passed",
+  "feature_code_changes": false,
+  "build": "passed; no repository warnings",
+  "settings_regression": "passed",
+  "account_tests": "13 passed",
+  "interactions": [
+    "Footer opens General > Accounts",
+    "Go > GitHub Account clears active search and reveals Accounts",
+    "Typed search finds GitHub accounts in General with Plainly on and off",
+    "Switch updates selection and footer",
+    "Selection survives app restart",
+    "Failed switch retains original selection",
+    "Add account reveals local sign-in instructions",
+    "Check Again clears switch failure"
+  ],
+  "screenshot_sizes": [
+    "1440x900 state captures",
+    "900x700 compact checks"
+  ],
+  "before_evidence": "Not repeated for this visual acceptance of an existing PR",
+  "runtime": "Local inert GitHubAccountFixtureRunner; no real account changes",
+  "screenshots": [
+    "footer-switched-dark.png",
+    "legacy-compact-light.png",
+    "legacy-expired-dark.png",
+    "legacy-expired-light.png",
+    "legacy-failedSwitch-dark.png",
+    "legacy-failedSwitch-light.png",
+    "legacy-missing-dark.png",
+    "legacy-missing-light.png",
+    "legacy-multiple-dark.png",
+    "legacy-multiple-light.png",
+    "legacy-offline-dark.png",
+    "legacy-offline-light.png",
+    "legacy-signedOut-dark.png",
+    "legacy-signedOut-light.png",
+    "legacy-single-dark.png",
+    "legacy-single-light.png",
+    "plainly-compact-dark.png",
+    "plainly-expired-dark.png",
+    "plainly-expired-light.png",
+    "plainly-failedSwitch-dark.png",
+    "plainly-failedSwitch-light.png",
+    "plainly-missing-dark.png",
+    "plainly-missing-light.png",
+    "plainly-multiple-dark.png",
+    "plainly-multiple-light.png",
+    "plainly-offline-dark.png",
+    "plainly-offline-light.png",
+    "plainly-signedOut-dark-footer.png",
+    "plainly-signedOut-dark.png",
+    "plainly-signedOut-light-footer.png",
+    "plainly-signedOut-light.png",
+    "plainly-single-dark-add.png",
+    "plainly-single-dark-footer.png",
+    "plainly-single-dark.png",
+    "plainly-single-light-add.png",
+    "plainly-single-light-footer.png",
+    "plainly-single-light.png",
+    "reference-A1-dark.png",
+    "reference-A1-light.png"
+  ]
+}
