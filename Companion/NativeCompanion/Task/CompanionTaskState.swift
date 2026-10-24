@@ -1,3 +1,4 @@
+import AppAppearance
 import NativeHostProtocol
 import Observation
 
@@ -9,5 +10,5 @@ final class CompanionTaskState {
     var notSent: String?
     var isSending = false
     var delivered: String?
-    var visibleItemID: String?
+    @ObservationIgnored var transcriptPlace: TranscriptReadingPosition.Place?
 }
