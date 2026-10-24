@@ -32,6 +32,7 @@ struct CelebrationDetailPage: View {
                     )
                     .disabled(!event.canBeChosen(on: center.today) && !selection.isEnabled)
                 }
+                .environment(\.settingsSectionTitle, nil)
             }
             facts
             if !event.display.windows.isEmpty {
