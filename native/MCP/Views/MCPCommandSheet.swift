@@ -1,11 +1,22 @@
 import MCPClient
 import SwiftUI
 
+#if DEBUG
+#Preview("MCP command - Sign in") {
+    if let command = try? AgentCLI.signIn(MCPAuthenticationPreviewFixtures.entry(.signedOut)).get() {
+        DSPreviewPair {
+            MCPCommandSheet(library: MCPAuthenticationPreviewFixtures.library(.signedOut), command: command)
+        }
+    }
+}
+#endif
+
 /// Shows the exact agent CLI command a change runs, runs it when asked, then shows what happened.
 /// Native never edits an agent's configuration any other way.
 struct MCPCommandSheet: View {
     let library: MCPLibrary
     let command: AgentCLICommand
+    var task: SessionModel?
 
     @Environment(\.dismiss) private var dismiss
     @State private var run: MCPCommandRun?
@@ -32,6 +43,14 @@ struct MCPCommandSheet: View {
     }
 
     var body: some View {
+        if command.action == .signIn {
+            MCPSignInSheet(library: library, command: command, task: task)
+        } else {
+            commandBody
+        }
+    }
+
+    private var commandBody: some View {
         VStack(alignment: .leading, spacing: DS.Space.xl) {
             VStack(alignment: .leading, spacing: DS.Space.md) {
                 Text(title)

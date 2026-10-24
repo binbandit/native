@@ -24,6 +24,8 @@ let package = Package(
         .package(path: "../SessionTitling"),
         // Tests only: Git running against a host through `RemoteCommandRunner`.
         .package(path: "../Git"),
+        // Tests only: MCP browser sign-in through the paired command runner.
+        .package(path: "../MCPClient"),
     ],
     targets: [
         .target(name: "NativeHostProtocol", dependencies: ["ACP"]),
@@ -73,6 +75,7 @@ let package = Package(
                 "NativeHostClient", "NativeHostProtocol", "ACP", .product(name: "Exec", package: "Exec"),
                 .product(name: "Git", package: "Git"), "native-host",
                 "FakeACPAgent", .product(name: "SessionTitling", package: "SessionTitling"),
+                .product(name: "MCPClient", package: "MCPClient", condition: .when(platforms: [.macOS])),
                 .product(name: "NativeOrchestration", package: "Orchestration"),
             ]
         ),

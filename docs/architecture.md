@@ -88,6 +88,12 @@ What follows from that:
   including the iPhone Duo inner display. Folding does not replace the navigation tree; selection,
   unsent messages and transcript anchors belong to window-owned task state (`docs/companion.md`).
 
+MCP sign-in follows the same host boundary: `MCPLibrary.startSignIn` selects the task's command
+runner, while its sheet opens the authorization link on the client. `Exec.CommandInput` carries
+private terminal input locally or through `_native/exec/input` on the paired connection. The host
+checks command ownership and the `runCommands` grant. OAuth and credential storage remain with the
+agent CLI; see `docs/agents.md`, "MCP server sign-in".
+
 ### Resource percentages
 
 The status bar, its tooltip, and the resource panel's process rows and totals show CPU as a

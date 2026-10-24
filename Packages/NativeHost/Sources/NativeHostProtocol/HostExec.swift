@@ -8,6 +8,8 @@ import Foundation
 extension HostProtocol.Method {
     public static let execRun = "_native/exec/run"
     public static let execCancel = "_native/exec/cancel"
+    /// Private stdin for an interactive command owned by this client. Never journaled.
+    public static let execInput = "_native/exec/input"
     /// Host → client: output of a command it's running, before the command's answer.
     public static let execOutput = "_native/exec/output"
 }
@@ -30,10 +32,13 @@ public struct ExecRunParams: Codable, Sendable {
     /// Send output as it arrives (`exec/output`), for showing a long command's progress. Without it,
     /// the host still sends output early once there's more than `ExecRunResult.inlineLimit`.
     public var stream: Bool
+    /// A private terminal for CLI sign-ins that reject pipes. Optional for older hosts.
+    public var interactive: Bool?
 
     public init(
         execID: UUID = UUID(), executable: String, arguments: [String], directory: String?,
-        environment: [String: String] = [:], stdin: Data? = nil, timeout: Double? = nil, stream: Bool = false
+        environment: [String: String] = [:], stdin: Data? = nil, timeout: Double? = nil, stream: Bool = false,
+        interactive: Bool? = nil
     ) {
         self.execID = execID
         self.executable = executable
@@ -43,7 +48,24 @@ public struct ExecRunParams: Codable, Sendable {
         self.stdin = stdin
         self.timeout = timeout
         self.stream = stream
+        self.interactive = interactive
     }
+}
+
+public struct ExecInputParams: Codable, Sendable {
+    public var execID: UUID
+    public var data: Data
+
+    public init(execID: UUID, data: Data) {
+        self.execID = execID
+        self.data = data
+    }
+}
+
+extension ExecInputParams: CustomStringConvertible, CustomDebugStringConvertible, CustomReflectable {
+    public var description: String { "ExecInputParams(execID: \(execID), data: <redacted>)" }
+    public var debugDescription: String { description }
+    public var customMirror: Mirror { Mirror(self, children: ["execID": execID]) }
 }
 
 /// How a command ended. Its output is every `exec/output` notification for it, in order, followed by
