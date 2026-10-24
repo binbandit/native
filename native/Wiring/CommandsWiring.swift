@@ -27,6 +27,8 @@ enum CommandsWiring {
     static func connect(_ registry: CommandRegistry, palette: CommandPalette, features: Features) {
         let model = features.model
         let settings = features.settings
+        CommandKnowledgeWiring.connect(model)
+        registry.register(NativeCommand.commandKnowledge(settings: settings))
         let terminals = features.terminals
         registry.register(
             [.palette(palette, stepsAsideWhen: { NativeCommand.terminalHasFocus(terminals, in: $0) })])

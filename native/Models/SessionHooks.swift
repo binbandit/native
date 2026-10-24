@@ -15,6 +15,9 @@ final class SessionHooks {
     /// turn changed. It must return right away: work it starts runs after the prompt is sent.
     var turnStarted: (_ session: SessionModel, _ startedAt: Date) -> Void = { _, _ in }
 
+    /// Live approval requests changed. Coverage diagnostics observe names without keeping command text.
+    var approvalsChanged: (SessionModel, [ToolCallState]) -> Void = { _, _ in }
+
     /// What goes ahead of `prompt`. An agent's slash command has to lead its prompt, so the
     /// instructions wait for the next one.
     func preamble(for session: SessionModel, prompt: String) -> PromptPreamble? {

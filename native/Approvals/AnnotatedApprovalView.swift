@@ -9,6 +9,7 @@ struct AnnotatedApprovalView: View {
     let agentName: String
     let workingDirectory: String
     var homeDirectory: String? = nil
+    var knowledge: CommandKnowledge = .bundled
     var isAvailable = true
     var forceReducedMotion = false
     var focusRequested = false
@@ -32,7 +33,7 @@ struct AnnotatedApprovalView: View {
             ApprovalCommand(
                 command: $0,
                 workingDirectory: call.rawInput?["cwd"]?.stringValue ?? workingDirectory,
-                worktreeDirectory: workingDirectory, homeDirectory: homeDirectory)
+                worktreeDirectory: workingDirectory, homeDirectory: homeDirectory, knowledge: knowledge)
         }
     }
     private var options: [PermissionOption] { call.permission?.options ?? [] }
@@ -138,7 +139,7 @@ struct AnnotatedApprovalView: View {
     private var fixItExplanation: some View {
         HStack(spacing: DS.Approval.fixItGap) {
             Text("Fix-it").font(.dsCaption).foregroundStyle(.dsTextTertiary)
-            Text("\(Text("--force-with-lease").font(DS.Approval.fixItFont)) refuses if the remote tip has changed.")
+            Text(analysis?.suggestedExplanation ?? "Review the suggested alternative before running it.")
                 .font(.dsBody).foregroundStyle(.dsTextSecondary)
         }
     }
@@ -148,7 +149,7 @@ struct AnnotatedApprovalView: View {
             sendInstruction("Don't run that. Run this instead:\n\(replacement)")
         }
         .buttonStyle(ApprovalActionStyle(small: true))
-        .accessibilityLabel("Ask \(agentName) to Use --force-with-lease")
+        .accessibilityLabel("Ask \(agentName) to Use the Suggested Command")
         .keyboardShortcut(shortcutsEnabled ? KeyboardShortcut("y", modifiers: [.command, .shift]) : nil)
         .help("Declines this request and sends the suggested command as an instruction.")
     }
