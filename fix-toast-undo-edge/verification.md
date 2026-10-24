@@ -1,7 +1,8 @@
 # PR 100 visual check
 
-Revision: 11b8abe94410cc6e4af930ac97e1c59148c25ea7, clean working tree. All screenshots and the archive/Hosts Cmd-Z checks were repeated after merging main at 004b345e. Package tests and lint passed again.
-Final integration revision: ae03bfce41b9bb09e4342883c5e8124ddf361b58. Its additional main merge contains only release-packaging changes. `git diff 11b8abe9 ae03bfce -- native Packages Companion native.xcodeproj Config Runtime` is empty, so the screenshots cover identical app inputs. The isolated build, warning gate, 22 Undo tests, lint and diff checks passed again at ae03bfce.
+Revision: 8972b612e4016c87bf99e4043f73b6c2d760dd46, clean working tree, including main at 7347ad34. All nine screenshots, archive Undo and Cmd-Z, composer-edit shortcut refresh, both Task Tools appearances, and Hosts Cmd-Z were repeated after the latest main merge. The isolated Debug build, repository-warning gate, 22 Undo tests, changed-file lint and diff checks passed again.
+
+Earlier detailed edge checks were performed at 11b8abe94410cc6e4af930ac97e1c59148c25ea7. Subsequent merges brought release packaging, sidebar and celebrations/settings changes from main; the toast implementation itself is unchanged.
 
 Environment: macOS 27.2 (26B5091g), isolated Debug instance vc-100.
 Reference: supplied polish.html item 03 and polish-spec.md section 03. The self-contained mock-toast.html preserves the supplied toast CSS, tokens, state definitions and fixture content, with local font references embedded. It is a mock source artifact, not a screenshot of the app.
@@ -14,7 +15,7 @@ Reference: supplied polish.html item 03 and polish-spec.md section 03. The self-
 - Cmd-Z archive check used the existing long-session scripted ACP plugin in the normal app model. Edit changed from Undo Archive Task to Redo Archive Task after Cmd-Z, the archived row returned, and its toast disappeared. No real model session was used.
 - Hosts: removal stays anchored in the Settings pane above the status bar in both appearances. The Edit menu offers Undo Remove Host; Cmd-Z restores it. Removing two hosts replaces the first toast; Undo restores the second, then Cmd-Z restores the first in order.
 - Accessibility exposes one toast element with named Undo and Dismiss actions; both were exercised through drive.sh.
-- No instance crash reports. The screen was unlocked before every capture. Captures were checked against the live labels after animation settled; the driver reported covered windows, so stale captures were discarded. The final dark Task Tools capture used an uncovered window at x=2700.
+- No instance crash reports. The screen was unlocked before every capture. Captures were checked against the live labels after animation settled; the driver reported covered windows, so stale captures were discarded. The final captures used uncovered windows at x=2400 or x=2700.
 
 One five-second Hosts confirmation wait timed out in the batch. Repeating the same actions from a fresh launch with a fifteen-second wait passed in both appearances. No app crash was reported.
 
@@ -33,8 +34,12 @@ All screenshots use source-defined fixture content. The /fixture/native label an
 - defaults write dev.binbandit.native.dev.vc-100 experiment.session-tools -bool YES (deleted after Task Tools checks)
 - scripts/check-ios.sh native/DesignSystem/Patterns/UndoToastBottomInset.swift (passed, including DesignSystem dependencies)
 - git diff --check
-- scripts/dev/run-isolated.sh vc-100 --no-build -- -nativeSidebarFixture undo-toast -nativeWindowFrame '50 50 900 1250' -appearance.mode dark
-- scripts/dev/run-isolated.sh vc-100 --no-build -- -nativeSidebarFixture busy -nativeWindowFrame '50 700 1440 900' -appearance.mode dark
-- scripts/dev/run-isolated.sh vc-100 --no-build -- -nativeSidebarFixture busy -nativeWindowFrame '50 700 1000 850' -appearance.mode light
-- scripts/dev/run-isolated.sh vc-100 --no-build -- -NativeHostsFixtures all -nativeWindowFrame '50 700 1100 900' -appearance.mode light (and dark)
+- scripts/dev/run-isolated.sh vc-100 --no-build -- -nativeSidebarFixture undo-toast -nativeWindowFrame '2700 300 900 1250' -appearance.mode dark
+- scripts/dev/run-isolated.sh vc-100 --no-build -- -nativeSidebarFixture busy -nativeWindowFrame '2400 1000 1440 900' -appearance.mode dark
+- scripts/dev/run-isolated.sh vc-100 --no-build -- -nativeSidebarFixture busy -nativeWindowFrame '2700 1000 1000 850' -appearance.mode light
+- scripts/dev/run-isolated.sh vc-100 --no-build -- -NativeHostsFixtures all -nativeWindowFrame '2700 1000 1100 900' -appearance.mode light (and dark)
 - All actions used scripts/dev/drive.sh vc-100; each scenario ended with run-isolated.sh vc-100 --quit.
+
+## Handoff
+
+The 60-minute CI polling limit was reached. Pullfrog approval, lint and path checks pass at 8972b612; Mac build, iOS build and both package-test shards were still pending after the latest required main merge. No check had failed. PR 100 remains open until required checks pass.
