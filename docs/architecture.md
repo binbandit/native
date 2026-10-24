@@ -314,13 +314,19 @@ all open one 600pt popover without changing selection. A visible row supplies it
 rows and Settings use the window anchor. The model routes captured requests to their owning
 session and checks identity again before answering. Questions, plans and commands with unknown
 or irreversible effects open Peek from ⌘Y; a small ACP vocabulary permits routine approvals.
-Peek reuses `ToolCallView` and `AgentQuestionSection`. The composer's annotated approval has not
-landed yet and replaces the former when available. Recovered failures use their live signal;
+Peek reuses `AnnotatedApprovalView` and `AgentQuestionSection`, including command explanations,
+instruction recovery and the hold for irreversible approvals. Recovered failures use their live signal;
 unrecovered failures expose the real notice and the model's recovery action.
 
 Selection, menus, ordering, pins, archive and keyboard navigation remain shared with today's
 sidebar. All tasks stay visible in this slice; the rejected three-recent-task fold is removed.
-Fold by day, the collapsed toolbar signal and optional row facts are later slices. Enable before an isolated launch with
+Slice 3 keeps the platform's full sidebar hide. Back and forward remain beside search, followed by
+one amber signal while a reachable task has an ask or an unresolved failure. Its count is per task,
+including child asks under their parent, independent of sidebar filters and project folding.
+The popover lists oldest asks first, then failures; a click or Space opens the same `TaskPeekView`
+in place. Answering returns to the remaining list, and resolving the last task dismisses it.
+The current task and draft stay untouched until Open Task. No second approval or status view is used.
+Fold by day and optional row facts remain later slices. Enable before an isolated launch with
 `defaults write dev.binbandit.native.dev.<name> experiment.NativeSidebarNext -bool YES`.
 
 The sidebar's filter and sort controls also offer "Show agent icons", on by default. This only

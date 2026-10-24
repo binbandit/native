@@ -25,13 +25,21 @@ extension AppModel {
 
     func peekTask(_ key: SessionKey, ask: TaskPeekAsk? = nil) {
         guard offersTaskPeek, taskIsAvailable(key) else { return }
-        taskPeek.request = .init(task: key, ask: ask ?? taskAsks(for: key).first)
+        let ask = ask ?? taskAsks(for: key).first
+        // Repeating the review shortcut must not replace an instruction being edited in this Peek.
+        if let current = taskPeek.request, current.task == key, let shown = current.ask,
+            shown.id == ask?.id, shown.isCurrent
+        {
+            return
+        }
+        taskPeek.request = .init(task: key, ask: ask)
         Task { await loadSession(key) }
     }
 
     func closeTaskPeek() { taskPeek.request = nil }
 
     func openPeekedTask(_ key: SessionKey) {
+        closeTasksNeedingAttention()
         closeTaskPeek()
         selection = key
     }
@@ -69,6 +77,17 @@ extension AppModel {
         if let content { await ask.session.answerQuestion(content) } else { await ask.session.declineQuestion() }
         if let presentation, taskPeek.request?.id == presentation { closeTaskPeek() }
         taskPeek.isAnswering = false
+    }
+
+    func instructTaskAsk(_ ask: TaskPeekAsk, text: String) async throws {
+        guard !taskPeek.isAnswering, taskIsAvailable(ask.task), taskIsReachable(ask.task),
+            session(ask.session.key) === ask.session, ask.isCurrent, case .permission(let call) = ask.content
+        else { throw CancellationError() }
+        let presentation = peekPresenting(ask)
+        taskPeek.isAnswering = true
+        defer { taskPeek.isAnswering = false }
+        try await ask.session.instructInstead(text, for: call)
+        if let presentation, taskPeek.request?.id == presentation { closeTaskPeek() }
     }
 
     private func peekPresenting(_ ask: TaskPeekAsk) -> UUID? {

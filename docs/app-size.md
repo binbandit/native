@@ -35,6 +35,14 @@ build them, and such an app looks 12 to 40 MB smaller than what ships.
 
 Raise a budget only with the reason written here, in the same change.
 
+2026-10-24: the collapsed sidebar attention list integrated with main through `44feb957` at
+`a69f9095` measures 47.1 MB for the Release update archive and 47.2 MB for Nightly, over the
+47 MB download allowance. The shared rows, Peek and command focus routing add compiled code
+without bundled assets or dependencies; fixtures remain Debug-only. The download budget is
+47.5 MB for this integration, with a small margin. Installed apps remain 117.0/117.1 MB and
+both app binaries are 60.0 MB, within their unchanged budgets. These are integrated measurements,
+not an isolated feature delta. Remeasure when the gated redesign replaces its legacy views.
+
 2026-10-24: Fine print's resting field and merged settings popover keep the existing composer
 available behind the default-off switch. The integrated local build at `ffb4c380` measures
 47.1 MB downloaded for Release and 47.2 MB for Nightly, with installed sizes of 117.0 and
