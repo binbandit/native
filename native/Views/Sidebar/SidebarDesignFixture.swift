@@ -136,6 +136,17 @@ struct SidebarDesignFixture: View {
                     age: Double(index) * 60)
             }
         }
+        if scenario == "collapsed-child" || scenario == "collapsed-home" {
+            let key = SessionKey(agent: agent, id: SessionID("native-1"))
+            if let parent = app.session(key) {
+                let child = parent.addSubagent(SessionID("approval-child"))
+                app.sessions.register(child)
+                child.phase = .prompting
+                child.previewPermissionRequest(command: "swift test --filter ChildApprovalTests")
+            }
+            app.session(selection)?.draft = "Keep this conversation draft."
+            if scenario == "collapsed-home" { app.selection = nil }
+        }
         return app
     }
 

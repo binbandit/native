@@ -9,6 +9,7 @@ struct TaskPeekView: View {
     @Environment(AppModel.self) private var model
     var openTask: ((SessionKey) -> Void)?
     @FocusState private var isFocused: Bool
+    @State private var wantsInstructionFocus = false
 
     private var session: SessionModel? { request.ask?.session ?? model.session(request.task) }
     private var ask: TaskPeekAsk? {
@@ -31,6 +32,7 @@ struct TaskPeekView: View {
         .accessibilityIdentifier("task-peek")
         .focusable()
         .focused($isFocused)
+        .focusedSceneValue(\.taskPeekInstructionFocus, showsInstructionEditor ? $wantsInstructionFocus : nil)
         .focusEffectDisabled()
         .onAppear {
             if case .question = ask?.content { return }
@@ -59,6 +61,11 @@ struct TaskPeekView: View {
             case .permission = ask.content
         else { return false }
         return true
+    }
+
+    private var showsInstructionEditor: Bool {
+        guard showsAnnotatedApproval, case .permission(let call) = ask?.content else { return false }
+        return call.permission?.options.contains(where: \.isRejection) == true
     }
 
     private var header: some View {
@@ -153,6 +160,7 @@ struct TaskPeekView: View {
                 call: call, agentName: ask.session.agentName, workingDirectory: ask.session.cwd.path,
                 homeDirectory: model.device(of: ask.task) == .thisMac ? NSHomeDirectory() : nil,
                 knowledge: model.plugins.commandKnowledge,
+                focusRequested: wantsInstructionFocus, didFocus: { wantsInstructionFocus = false },
                 onChoose: { option in Task { await model.answerTaskAsk(ask, option: option) } },
                 onInstruct: { try await model.instructTaskAsk(ask, text: $0) })
         case .question(let question):
@@ -186,6 +194,10 @@ struct TaskPeekView: View {
             return message.text
         }.first ?? "No answer yet. Open the task to see its conversation."
     }
+}
+
+extension FocusedValues {
+    @Entry var taskPeekInstructionFocus: Binding<Bool>?
 }
 
 #if DEBUG

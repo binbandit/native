@@ -9,6 +9,7 @@ struct CommandContext {
     var session: SessionModel?
     var sidebarVisibility: Binding<NavigationSplitViewVisibility>?
     var taskAttentionList: Binding<Bool>?
+    var taskPeekInstructionFocus: Binding<Bool>?
     var needsYouFilter: Binding<Bool>?
     /// The window's sidebar multi-selection, for the bulk commands.
     var sidebarSelection: SidebarSelectionModel?
@@ -35,6 +36,7 @@ struct FocusedCommandContext: DynamicProperty {
     @FocusedValue(\.activeSession) private var session
     @FocusedValue(\.sidebarVisibility) private var sidebarVisibility
     @FocusedValue(\.taskAttentionList) private var taskAttentionList
+    @FocusedValue(\.taskPeekInstructionFocus) private var taskPeekInstructionFocus
     @FocusedValue(\.sidebarNeedsYouFilter) private var needsYouFilter
     @FocusedValue(\.sidebarSelection) private var sidebarSelection
     @FocusedValue(\.mcpServersPopover) private var mcpServersPopover
@@ -49,6 +51,7 @@ struct FocusedCommandContext: DynamicProperty {
             session: session,
             sidebarVisibility: sidebarVisibility,
             taskAttentionList: taskAttentionList,
+            taskPeekInstructionFocus: taskPeekInstructionFocus,
             needsYouFilter: needsYouFilter,
             sidebarSelection: sidebarSelection,
             mcpServersPopover: mcpServersPopover,

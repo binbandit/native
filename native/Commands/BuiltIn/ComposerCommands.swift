@@ -1,5 +1,6 @@
 import ACP
 import NativeCommands
+import SwiftUI
 
 extension CommandID {
     static let composerFocus: Self = "composer.focus"
@@ -20,9 +21,13 @@ extension NativeCommand {
         .available { $0.session?.canChangeWorkspace == true },
 
         NativeCommand(.composerFocus, title: "Focus Composer", category: .composer, systemImage: "text.cursor") {
-            $0.session?.wantsComposerFocus = true
+            if let instruction = $0.taskPeekInstructionFocus {
+                instruction.wrappedValue = true
+            } else {
+                $0.session?.wantsComposerFocus = true
+            }
         }
-        .available { $0.session.map { !$0.isSubagent } ?? false },
+        .available { $0.taskPeekInstructionFocus != nil || ($0.session.map { !$0.isSubagent } ?? false) },
 
         NativeCommand(
             .composerAttachFiles, title: "Attach Files…", category: .composer, systemImage: "paperclip",

@@ -247,6 +247,8 @@ before the hold fills sends nothing. Pointer and touch use the same hold; VoiceO
 use Allow followed by Confirm Allow within five seconds. The button acknowledges Allowed for
 0.4 seconds before the request folds away. Reduce Motion keeps the ring but removes the fill sweep.
 ⌘L focuses Tell the agent what to do instead while an approval is shown; Return sends the instruction.
+In Peek, this focuses the shown approval, including a child task ask or a Peek opened from Home,
+without selecting its task or changing the current draft. Closing Peek restores Focus Composer.
 The fix-it and every permission option are also in the keyboard tab order.
 Only the oldest request owns these keys; changing tasks or losing the window cancels a hold.
 When an agent offers several choices of one permission kind, each stays visible under its own name;

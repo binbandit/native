@@ -2,6 +2,7 @@ import ACP
 import Experiments
 import Foundation
 import NativeCommands
+import SwiftUI
 
 @testable import Native
 
@@ -114,6 +115,29 @@ private struct TaskPeekChecks {
         require(
             app.tasksNeedingAttention.map(\.id) == [waiting.key, failed.key], "Count tasks once, asks before failures")
         require(app.tasksNeedingAttention.first?.ask?.session === child, "The row keeps the oldest child's owner")
+        guard let focus = NativeCommand.composer.first(where: { $0.id == .composerFocus }) else {
+            throw MissingFixture()
+        }
+        var wantsInstructionFocus = false
+        let instructionFocus = Binding(get: { wantsInstructionFocus }, set: { wantsInstructionFocus = $0 })
+        let peekContext = CommandContext(session: current, taskPeekInstructionFocus: instructionFocus)
+        require(focus.isAvailable(peekContext), "The visible Peek offers Focus Composer")
+        focus.perform(peekContext)
+        require(
+            wantsInstructionFocus && !current.wantsComposerFocus && !child.wantsComposerFocus,
+            "Focus goes to the visible child-owned instruction, not either task's composer")
+        require(
+            app.selection == current.key && current.draft == "Keep reading here.",
+            "Instruction focus preserves the current task and draft")
+        wantsInstructionFocus = false
+        let homeContext = CommandContext(taskPeekInstructionFocus: instructionFocus)
+        require(focus.isAvailable(homeContext), "Peek offers instruction focus on Home without an active task")
+        focus.perform(homeContext)
+        require(wantsInstructionFocus, "Home routes focus to the shown instruction")
+        focus.perform(CommandContext(session: current))
+        require(current.wantsComposerFocus, "Closing Peek restores normal composer focus")
+        require(!focus.isAvailable(CommandContext()), "Home without Peek has no composer to focus")
+        current.wantsComposerFocus = false
         app.showTasksNeedingAttention()
         require(!app.taskPeek.showsAttentionList, "Default gate blocks the collapsed list")
         app.experiments.set(true, for: .sidebarNext)
