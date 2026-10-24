@@ -90,5 +90,12 @@
   "prior_revision": "9d4ddcadf0980ed98d4b9c471f9fc9c250a7842c",
   "post_merge_check": "All seven fixture states, both themes and settings modes repeated; navigation, successful and failed switching, and restart persistence passed.",
   "comparison": "Content matches earlier accepted screenshots; light content is pixel-identical, dark content differs only by at most two color levels. Window corners and live status-bar values excluded.",
-  "historical_check_again_revision": "9d4ddcadf0980ed98d4b9c471f9fc9c250a7842c"
+  "historical_check_again_revision": "9d4ddcadf0980ed98d4b9c471f9fc9c250a7842c",
+  "integration_revision": "608b5b1553a18735e734fa643f2afca8425a2366",
+  "integration_check": "After the next main merge: build, warnings, settings regression, AccountTests, lint, typed search, switching, restart persistence and compact screenshots passed. Account and settings source unchanged from revision 07891194.",
+  "integration_screenshots": [
+    "plainly-compact-dark.png",
+    "legacy-compact-light.png",
+    "footer-switched-dark.png"
+  ]
 }
