@@ -1,0 +1,39 @@
+diff --git a/native/Appearance/AppearanceSettingsContent.swift b/native/Appearance/AppearanceSettingsContent.swift
+index 6e841ab8..f92c4285 100644
+--- a/native/Appearance/AppearanceSettingsContent.swift
++++ b/native/Appearance/AppearanceSettingsContent.swift
+@@ -11,7 +11,10 @@ struct AppearanceSettingsContent: View {
+     var fixedSpecimen: SpecimenLine?
+     @AppStorage(AppearancePreferences.accentKey) private var accent = ""
+     @Environment(PluginRegistry.self) private var plugins
+-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
++    @Environment(\.accessibilityReduceTransparency) private var systemReduceTransparency
++    private var reduceTransparency: Bool {
++        systemReduceTransparency || UserDefaults.standard.bool(forKey: "nativeAppearanceReduceTransparency")
++    }
+     @Environment(PolicyCenter.self) private var policyCenter: PolicyCenter?
+     #if os(macOS)
+     @Environment(TerminalStore.self) private var terminal: TerminalStore?
+@@ -47,7 +50,7 @@ struct AppearanceSettingsContent: View {
+                 AppearanceModeSettingsRow()
+                 LightToneSettingsRow()
+                 DarkToneSettingsRow()
+-                TransparencySettingsRow()
++                TransparencySettingsRow(reduceTransparencyOverride: reduceTransparency)
+             }
+             CodeThemeSettingsRow(defaults: defaults, fixedSpecimen: fixedSpecimen, ghosttyColors: ghosttyColors)
+             VStack(alignment: .leading, spacing: DS.Space.md) {
+diff --git a/native/NativeApp.swift b/native/NativeApp.swift
+index b22f1821..76efca38 100644
+--- a/native/NativeApp.swift
++++ b/native/NativeApp.swift
+@@ -238,6 +238,9 @@ struct NativeApp: App {
+                         BuiltInPlugins.automations.manifest.id)
+                 }
+                 .mcpAuthenticationFixture()
++                #if DEBUG
++                .appearanceVisualCheckFixture()
++                #endif
+         }
+         .defaultSize(width: 1120, height: 780)
+         .commands {
