@@ -30,31 +30,17 @@ extension GitHubCLI {
             }
             return command
         }
-        let token = try await accountToken(login: login, host: target)
-        let key = target == "github.com" || target.hasSuffix(".ghe.com") ? "GH_TOKEN" : "GH_ENTERPRISE_TOKEN"
-        command.environment[key] = token
-        // gh filters translated remotes by GH_HOST. Pin it to the credential's host so a further
-        // SSH alias translation cannot redirect an enterprise credential to another server.
+        // Ask gh for status only. Its credentials stay inside gh, including when it uses Keychain.
+        let status = try await GitHubCLI(environment: environment, host: target, runner: runner).authStatus()
+        guard status.hosts[target]?.contains(where: { $0.active && $0.login == login && $0.state != .error }) == true
+        else {
+            throw GitHubError.notAuthenticated(
+                "Activate @\(login) on \(target) with gh auth switch in a terminal, then check accounts in Native."
+            )
+        }
         command.environment["GH_HOST"] = target
         command.environment["GH_DEBUG"] = nil
         return command
-    }
-
-    /// Never returns token output as an error, and never caches or persists it.
-    private func accountToken(login: String, host: String) async throws -> String {
-        var environment = processEnvironment
-        for key in ["GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN", "GH_DEBUG"] {
-            environment[key] = nil
-        }
-        let result = try await runner.run(
-            Command(
-                "gh", ["auth", "token", "--hostname=\(host)", "--user=\(login)"],
-                environment: environment, timeout: .seconds(10)))
-        let token = result.output.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard result.succeeded, !token.isEmpty else {
-            throw GitHubError.notAuthenticated("Sign in to \(login) on \(host) again, or choose another account.")
-        }
-        return token
     }
 
     private func accountHost(for request: GitHubCommand, environment: [String: String]) async throws -> String {
@@ -70,7 +56,7 @@ extension GitHubCLI {
         if let repo = request.repository { return GitHubCommand.host(of: repo, defaultHost: defaultHost) }
         if let directory = request.directory {
             if let repo = environment["GH_REPO"] { return GitHubCommand.host(of: repo, defaultHost: defaultHost) }
-            // Match gh's effective URLs, including insteadOf rewrites, before choosing a token.
+            // Match gh's effective URLs, including insteadOf rewrites, before checking the active account.
             let remotes = try await runner.run(
                 Command(
                     "git", ["remote", "-v"], in: directory.path(percentEncoded: false),

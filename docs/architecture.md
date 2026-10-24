@@ -108,10 +108,12 @@ Account opens General at the Accounts group. A signed-out footer shows just Sett
 `GitHubAccountsModel` lists all
 accounts from `gh auth status --json hosts`, loads names and cached avatars asynchronously, and
 remembers one chosen login per host in Native's defaults. Without a choice it follows gh's active
-account. `GitHubCLI` retrieves a chosen account's token with `gh auth token --hostname --user` and
-passes it only in its child process environment. It resolves Git URL rewrites before selecting
-credentials and pins the request host to that credential's host. API and search requests do not
-inherit the repository override from `GH_REPO`. It never runs `gh auth switch` or saves tokens.
+account. `GitHubCLI` checks the selected login against gh's active account before requests. It never
+retrieves tokens or reads gh's credential store. To use an inactive account, activate it with
+`gh auth switch` in a terminal and check accounts in Native. Native does not change gh's active
+account itself. It resolves Git URL rewrites and pins requests to the selected host. API and search
+requests do not inherit the repository override from `GH_REPO`. The status check cannot lock gh's
+configuration against a concurrent external account change.
 Switching clears account-specific inbox, branch and review-page caches. An unavailable selected
 account fails with sign-in guidance instead of silently using another account. Cross-host checkouts
 need a default remote set in gh when their target is ambiguous; unresolved SSH aliases need a remote
@@ -475,3 +477,10 @@ the card keeps the agent's reported edits rather than attributing a whole branch
 agent-created subagents, and `TaskOrchestrator` checks that scope on each tool call. Creation uses
 the project folder and an advertised read-only setting, bypassing workspace preparation. See
 `docs/coordinator-tasks.md` for scope, message attribution, lifecycle and deferred work.
+
+### Credential ownership
+
+Native reads only its own credential stores. Agent MCP configuration (server lists and URLs) remains
+readable, but agent-owned sign-in stays unknown unless reported by the agent. An anonymous connection
+check cannot establish that the agent is signed out. Native-owned MCP secrets continue to support
+connection checks; agents retain responsibility for their own authentication.

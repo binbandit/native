@@ -78,6 +78,10 @@ final class GitHubAccountsModel {
     var guidance: String? {
         if switchingTo != nil { return "Switching account…" }
         if let switchFailure { return switchFailure }
+        if let current, !current.active, current.state != .error {
+            return
+                "GitHub CLI manages this account. Activate @\(current.login) with gh auth switch in a terminal, then check accounts."
+        }
         if current?.state == .error { return "Sign-in expired or removed. Sign in again, or choose another account." }
         if case .notInstalled = error { return "Install GitHub CLI in a terminal, then check again." }
         if case .offline = error {
@@ -110,6 +114,11 @@ final class GitHubAccountsModel {
     /// Confirm identity before remembering it. Failure leaves the previous choice intact.
     func select(_ account: AuthStatus.Account, using cli: GitHubCLI) async -> Bool {
         guard switchingTo == nil else { return false }
+        guard account.active else {
+            switchFailure =
+                "Activate @\(account.login) on \(account.host) with gh auth switch in a terminal, then check accounts."
+            return false
+        }
         switchingTo = key(account)
         switchFailure = nil
         error = nil
@@ -140,7 +149,7 @@ final class GitHubAccountsModel {
             let retained = current.map { " Still using \(name($0))." } ?? ""
             let recovery =
                 if case .notAuthenticated = error {
-                    " Sign in to @\(account.login) again, then check accounts."
+                    " \(error.localizedDescription)"
                 } else {
                     " \(error.localizedDescription) Try again when GitHub is available."
                 }

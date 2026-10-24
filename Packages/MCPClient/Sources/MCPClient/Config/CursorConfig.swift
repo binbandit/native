@@ -49,38 +49,30 @@ public struct AgentConfigReader: Sendable {
     public var environment: [String: String]
     /// Where Claude Code's administrator configuration would be; replaceable for tests.
     public var claudeManagedFile: URL
-    /// Optional because configuration-only readers, including previews, need no secret access.
-    public var credentialKeychain: (any MCPCredentialKeychain)?
 
     public init(
         files: any ConfigFileSystem = LocalConfigFiles(),
         home: URL = .homeDirectory,
         environment: [String: String] = ProcessInfo.processInfo.environment,
-        claudeManagedFile: URL = URL(filePath: "/Library/Application Support/ClaudeCode/managed-mcp.json"),
-        credentialKeychain: (any MCPCredentialKeychain)? = nil
+        claudeManagedFile: URL = URL(filePath: "/Library/Application Support/ClaudeCode/managed-mcp.json")
     ) {
         self.files = files
         self.home = home
         self.environment = environment
         self.claudeManagedFile = claudeManagedFile
-        self.credentialKeychain = credentialKeychain
     }
 
     /// The format's servers at user scope and in each of `projects`.
     public func read(_ format: AgentConfigFormat, projects: [URL]) -> AgentMCPConfiguration {
         let projects = projects.map { ProjectPath.url(ProjectPath.key($0)) }
         let reader = ConfigFileReader(files: files)
-        let configuration =
-            switch format {
-            case .claudeCode:
-                ClaudeCodeConfig(home: home, environment: environment, managedFile: claudeManagedFile, reader: reader)
-                    .read(
-                        projects: projects)
-            case .codex: CodexConfig(home: home, environment: environment, reader: reader).read(projects: projects)
-            case .cursor: CursorConfig(home: home, reader: reader).read(projects: projects)
-            }
-        guard let credentialKeychain else { return configuration }
-        return ClaudeMCPAuthentication(files: files, keychain: credentialKeychain).read(
-            configuration, home: home, environment: environment)
+        return switch format {
+        case .claudeCode:
+            ClaudeCodeConfig(home: home, environment: environment, managedFile: claudeManagedFile, reader: reader)
+                .read(
+                    projects: projects)
+        case .codex: CodexConfig(home: home, environment: environment, reader: reader).read(projects: projects)
+        case .cursor: CursorConfig(home: home, reader: reader).read(projects: projects)
+        }
     }
 }

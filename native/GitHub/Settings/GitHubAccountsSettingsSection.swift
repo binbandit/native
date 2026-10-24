@@ -24,7 +24,8 @@ struct GitHubAccountsSettingsSection: View {
         VStack(alignment: .leading, spacing: DS.Space.md) {
             SettingsGroup(
                 title: "Accounts",
-                footer: "GitHub accounts signed in on this Mac. Your choice applies only to Native."
+                footer:
+                    "GitHub CLI manages sign-in. To use another account, activate it with gh auth switch in a terminal, then check again."
             ) {
                 ForEach(accounts.accounts, id: \.self) { account in
                     accountRow(account)

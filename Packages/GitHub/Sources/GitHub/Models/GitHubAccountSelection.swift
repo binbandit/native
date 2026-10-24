@@ -22,8 +22,8 @@ public struct GitHubAccountSelection: Sendable, Equatable {
         }
     }
 
-    /// Pin gh's discovered defaults for a request too, so the identity on screen and the request
-    /// agree even if the terminal switches accounts in between refreshes. Environment-only
+    /// Remember gh's discovered defaults so requests can reject an account changed since refresh.
+    /// gh owns credential selection; this check cannot lock its configuration. Environment-only
     /// credentials already belong to the captured environment and have no stored user token.
     public func includingDefaults(from status: AuthStatus) -> Self {
         var result = self
@@ -41,7 +41,7 @@ public struct GitHubAccountSelection: Sendable, Equatable {
 
     public func availability(in status: AuthStatus) -> GitHubAvailability {
         let accounts = accounts(in: status)
-        let working = accounts.filter { $0.state == .success }
+        let working = accounts.filter { $0.active && $0.state == .success }
         if !working.isEmpty { return .ready(accounts: working) }
         if !accounts.isEmpty, accounts.allSatisfy({ $0.state == .timeout }) { return .offline }
         return .notAuthenticated

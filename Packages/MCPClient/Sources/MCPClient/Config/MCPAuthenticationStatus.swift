@@ -4,6 +4,6 @@ import Foundation
 public enum MCPAuthenticationStatus: Hashable, Sendable {
     case signedIn
     case signedOut
-    /// The owner doesn't expose its state, or its credential store couldn't be read.
+    /// The owner hasn't reported its state. Native never reads another app's secrets.
     case unknown
 }

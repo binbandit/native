@@ -33,37 +33,29 @@ struct AccountTests {
         #expect(chosenEnvironment.logins["github.com"] == "environment")
     }
 
-    @Test func selectedTokenOnlyEntersNativeCommands() async throws {
+    @Test func activeAccountUsesGhWithoutExtractingCredentials() async throws {
         let environment = ["GH_TOKEN": "terminal-token", "GITHUB_TOKEN": "terminal-fallback", "PATH": "/usr/bin"]
         let runner = FakeRunner { command in
-            if command.arguments.starts(with: ["auth", "token"]) {
-                #expect(command.environment["GH_TOKEN"] == nil)
-                #expect(command.environment["GITHUB_TOKEN"] == nil)
-                #expect(command.arguments.contains("--hostname=github.com"))
-                #expect(command.arguments.contains("--user=sage-smudge"))
-                return FakeRunner.success(Data("selected-token\n".utf8))
+            #expect(command.environment["GH_TOKEN"] == "terminal-token")
+            if command.arguments.starts(with: ["auth", "status"]) {
+                return Self.status(host: "github.com", login: "personal")
             }
-            #expect(command.environment["GH_TOKEN"] == "selected-token")
             return FakeRunner.success(try Fixtures.data("api-user"))
         }
         let base = GitHubCLI(environment: environment, runner: runner)
-        _ = try await base.selecting(.init(logins: ["github.com": "sage-smudge"])).currentUser()
+        _ = try await base.selecting(.init(logins: ["github.com": "personal"])).currentUser()
         #expect(base.environment == environment)
         #expect(runner.commands.count == 2)
-        #expect(!runner.commands.contains { $0.arguments.contains("switch") })
+        #expect(!runner.commands.contains { $0.arguments.contains("token") || $0.arguments.contains("switch") })
     }
 
     @Test func enterpriseAndPublicSelectionsStayOnTheirHosts() async throws {
         let runner = FakeRunner { command in
-            if command.arguments.starts(with: ["auth", "token"]) {
-                return FakeRunner.success(Data(command.arguments.last?.utf8 ?? "".utf8))
-            }
-            if command.environment["GH_HOST"] == "work.example.com" {
-                #expect(command.environment["GH_ENTERPRISE_TOKEN"] == "--user=work")
-                #expect(command.environment["GH_TOKEN"] == nil)
-            } else {
-                #expect(command.environment["GH_TOKEN"] == "--user=personal")
-                #expect(command.environment["GH_ENTERPRISE_TOKEN"] == nil)
+            let host = command.environment["GH_HOST"] ?? "github.com"
+            #expect(command.environment["GH_ENTERPRISE_TOKEN"] == nil)
+            #expect(command.environment["GH_TOKEN"] == nil)
+            if command.arguments.starts(with: ["auth", "status"]) {
+                return Self.status(host: host, login: host == "github.com" ? "personal" : "work")
             }
             return FakeRunner.success(try Fixtures.data("api-user"))
         }
@@ -73,10 +65,16 @@ struct AccountTests {
         _ = try await cli.targeting(host: "work.example.com").currentUser()
     }
 
-    @Test func missingTokenNeverFallsBackOrLeaksOutput() async {
-        let runner = FakeRunner { _ in FakeRunner.failure(1, "sensitive-output") }
-        let cli = GitHubCLI(environment: ["GH_TOKEN": "terminal"], runner: runner)
-            .selecting(.init(logins: ["github.com": "removed"]))
+    @Test(arguments: ["inactive", "removed"])
+    func unavailableChoiceNeverFallsBackToAnotherAccount(login: String) async {
+        let runner = FakeRunner { _ in
+            FakeRunner.success(
+                Data(
+                    "{\"hosts\":{\"github.com\":[{\"host\":\"github.com\",\"login\":\"active\",\"active\":true,\"state\":\"SUCCESS\"},{\"host\":\"github.com\",\"login\":\"inactive\",\"active\":false,\"state\":\"SUCCESS\"}]}}"
+                        .utf8))
+        }
+        let cli = GitHubCLI(environment: [:], runner: runner)
+            .selecting(.init(logins: ["github.com": login]))
         do {
             _ = try await cli.currentUser()
             Issue.record("Expected an unavailable selected account")
@@ -85,12 +83,13 @@ struct AccountTests {
                 Issue.record("Expected sign-in guidance")
                 return
             }
-            #expect(!message.contains("sensitive-output"))
+            #expect(message.contains("gh auth switch"))
         }
         #expect(runner.commands.count == 1)
+        #expect(runner.commands.first?.arguments.starts(with: ["auth", "status"]) == true)
     }
 
-    @Test func authStatusDoesNotUseSelectedToken() async throws {
+    @Test func authStatusDoesNotRetrieveCredentials() async throws {
         let runner = FakeRunner { _ in FakeRunner.success(try Fixtures.data("auth-status-all-accounts")) }
         let cli = GitHubCLI(environment: [:], runner: runner).selecting(.init(logins: ["github.com": "sage-smudge"]))
         _ = try await cli.authStatus()
@@ -103,11 +102,11 @@ struct AccountTests {
             if command.executable == "git" {
                 return FakeRunner.success(Data("origin\thttps://work.example.com/team/repo.git (fetch)\n".utf8))
             }
-            if command.arguments.starts(with: ["auth", "token"]) {
-                #expect(command.arguments.contains("--hostname=work.example.com"))
-                return FakeRunner.success(Data("work-token".utf8))
+            if command.arguments.starts(with: ["auth", "status"]) {
+                #expect(command.environment["GH_HOST"] == "work.example.com")
+                return Self.status(host: "work.example.com", login: "work")
             }
-            #expect(command.environment["GH_ENTERPRISE_TOKEN"] == "work-token")
+            #expect(command.environment["GH_ENTERPRISE_TOKEN"] == nil)
             return FakeRunner.success(Data("[]".utf8))
         }
         let cli = GitHubCLI(environment: [:], runner: runner)
@@ -136,7 +135,7 @@ struct AccountTests {
         #expect(runner.commands.count == 3)
     }
 
-    @Test func effectiveRemoteURLSelectsTheRewrittenEnterpriseCredential() async throws {
+    @Test func effectiveRemoteURLChecksTheRewrittenEnterpriseAccount() async throws {
         let runner = FakeRunner { command in
             if command.executable == "git" {
                 if command.arguments == ["remote", "-v"] {
@@ -147,11 +146,11 @@ struct AccountTests {
                 }
                 return FakeRunner.success(Data("remote.origin.url\nhttps://old.example.com/team/repo.git\0".utf8))
             }
-            if command.arguments.starts(with: ["auth", "token"]) {
-                #expect(command.arguments.contains("--hostname=new.example.com"))
-                return FakeRunner.success(Data(command.arguments.last?.utf8 ?? "".utf8))
+            if command.arguments.starts(with: ["auth", "status"]) {
+                #expect(command.environment["GH_HOST"] == "new.example.com")
+                return Self.status(host: "new.example.com", login: "new-account")
             }
-            #expect(command.environment["GH_ENTERPRISE_TOKEN"] == "--user=new-account")
+            #expect(command.environment["GH_ENTERPRISE_TOKEN"] == nil)
             #expect(command.environment["GH_HOST"] == "new.example.com")
             return FakeRunner.success(Data("[]".utf8))
         }
@@ -162,11 +161,11 @@ struct AccountTests {
 
     @Test func repositoryEnvironmentDoesNotOverrideAPIOrExplicitRepositoryHosts() async throws {
         let runner = FakeRunner { command in
-            if command.arguments.starts(with: ["auth", "token"]) {
-                #expect(command.arguments.contains("--hostname=github.com"))
-                return FakeRunner.success(Data("public-token".utf8))
+            if command.arguments.starts(with: ["auth", "status"]) {
+                #expect(command.environment["GH_HOST"] == "github.com")
+                return Self.status(host: "github.com", login: "personal")
             }
-            #expect(command.environment["GH_TOKEN"] == "public-token")
+            #expect(command.environment["GH_TOKEN"] == nil)
             #expect(command.environment["GH_ENTERPRISE_TOKEN"] == nil)
             return FakeRunner.success(Data("{}".utf8))
         }
@@ -198,12 +197,12 @@ struct AccountTests {
     @Test func repositoryEnvironmentStillAppliesToCheckoutCommands() async throws {
         let runner = FakeRunner { command in
             #expect(command.executable == "gh")
-            if command.arguments.starts(with: ["auth", "token"]) {
-                #expect(command.arguments.contains("--hostname=work.example.com"))
-                return FakeRunner.success(Data("work-token".utf8))
+            if command.arguments.starts(with: ["auth", "status"]) {
+                #expect(command.environment["GH_HOST"] == "work.example.com")
+                return Self.status(host: "work.example.com", login: "work")
             }
             #expect(command.environment["GH_HOST"] == "work.example.com")
-            #expect(command.environment["GH_ENTERPRISE_TOKEN"] == "work-token")
+            #expect(command.environment["GH_ENTERPRISE_TOKEN"] == nil)
             return FakeRunner.success(Data("[]".utf8))
         }
         let cli = GitHubCLI(environment: ["GH_REPO": "work.example.com/team/repo"], runner: runner)
@@ -213,11 +212,11 @@ struct AccountTests {
 
     @Test func searchURLIsAKeywordNotACredentialHost() async throws {
         let runner = FakeRunner { command in
-            if command.arguments.starts(with: ["auth", "token"]) {
-                #expect(command.arguments.contains("--hostname=github.com"))
-                return FakeRunner.success(Data("public-token".utf8))
+            if command.arguments.starts(with: ["auth", "status"]) {
+                #expect(command.environment["GH_HOST"] == "github.com")
+                return Self.status(host: "github.com", login: "personal")
             }
-            #expect(command.environment["GH_TOKEN"] == "public-token")
+            #expect(command.environment["GH_TOKEN"] == nil)
             return FakeRunner.success(Data("[]".utf8))
         }
         let cli = GitHubCLI(environment: [:], runner: runner)
@@ -225,5 +224,10 @@ struct AccountTests {
         var search = PullRequestSearch(.author)
         search.keywords = "https://work.example.com/team/repo/pull/1"
         _ = try await cli.search(search)
+    }
+    private static func status(host: String, login: String) -> CommandResult {
+        let row: [String: Any] = ["host": host, "login": login, "active": true, "state": "SUCCESS"]
+        let data = (try? JSONSerialization.data(withJSONObject: ["hosts": [host: [row]]])) ?? Data()
+        return FakeRunner.success(data)
     }
 }
