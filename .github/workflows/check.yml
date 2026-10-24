@@ -29,6 +29,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  release-assets:
+    name: Check release assets
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test release plans and delta selection without publishing
+        run: |
+          python3 -m unittest discover -s scripts/release/tests -p test_release_assets.py
+          bash -n scripts/release/release.sh
+
   release-configurations:
     # Release and Nightly build side by side, each on its own runner.
     name: Check ${{ matrix.configuration }}

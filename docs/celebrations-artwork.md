@@ -34,8 +34,8 @@ above:
 2. **Packs, downloaded.** `celebration-assets.sh pack <dir>` writes `celebration-<edition>.json` (the
    eight PNGs) per edition, the index `celebration-assets.json` (each pack's SHA-256 and size) and
    `celebration-assets.json.sig`, the index's Ed25519 signature made with the update key. The release
-   workflow uploads them beside the app. Native fetches an edition's pack from the latest release
-   when someone chooses it (or a week before its dates, if it was chosen earlier), checks the index
+   workflow uploads them beside the stable app only; beta and nightly releases need no copies.
+   Native fetches an edition's pack from the latest release when someone chooses it (or a week before its dates, if it was chosen earlier), checks the index
    signature with `SUPublicEDKey` and the pack against the index, and caches it in Application
    Support per bundle id. Offline or failed downloads keep the base icon; the chooser says
    "Downloads when you're online" or shows the error with Retry.

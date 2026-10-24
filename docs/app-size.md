@@ -8,8 +8,11 @@ It belongs with `docs/performance.md`.
 
 MB here are 10^6 bytes, as Finder counts them. "Installed" is the bytes in the app bundle;
 "download" is Sparkle's update archive (what every update fetches) and the disk image (a first
-install). The budgets sit about 10% above where the app was when they were set, so growth gets
-noticed while there's still room to choose what to cut; lower them as the cuts in "Still to do" land.
+install rehearsal). Public releases now attach only the ZIP for both first installs and updates;
+the DMG still builds locally with the existing signing, notarization and size checks. The asset
+inventory and retention limits are in `docs/releasing.md`. This changes file count, not the app
+bundle or its size budgets. The budgets sit about 10% above where the app was when they were set,
+so growth gets noticed while there's still room to choose what to cut; lower them as the cuts in "Still to do" land.
 
 | What | Budget | 2026-10-19, after the grammar cut |
 | --- | --- | --- |
