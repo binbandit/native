@@ -208,6 +208,8 @@ struct ComposeTaskPage: View {
 #Preview("Compose - Offline") { ComposeTaskPreviewFixture(state: "offline") }
 #Preview("Compose - Held") { ComposeTaskPreviewFixture(state: "held") }
 #Preview("Compose - Devices") { ComposeTaskPreviewFixture(state: "devices") }
+#Preview("Compose - Attachments") { ComposeTaskPreviewFixture(state: "attachments") }
+#Preview("Compose - Changed defaults") { ComposeTaskPreviewFixture(state: "consequences") }
 #Preview("Compose - Failure") { ComposeTaskPreviewFixture(state: "failure") }
 #Preview("Compose - Narrow") { ComposeTaskPreviewFixture(state: "narrow") }
 #endif

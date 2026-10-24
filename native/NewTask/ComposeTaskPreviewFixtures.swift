@@ -33,6 +33,16 @@ enum ComposeTaskPreviewFixtures {
         compose.editor?.draft = state == "firstLaunch" || state == "empty" ? "" : prompt
         compose.options = options
         compose.defaults = ["model": "gpt-6.1-sol", "thought_level": "low", "mode": "workspace-write"]
+        if state == "attachments" {
+            compose.editor?.attachments = [
+                PromptAttachment(
+                    url: URL(filePath: "Host device.png"),
+                    content: .image(ComposerPreviewFixtures.screenshot, mimeType: "image/png"), byteCount: 124000)
+            ]
+        }
+        if state == "consequences", let setting = ComposerSettings(compose.options).effort {
+            compose.choose(setting, value: "high")
+        }
         if state == "firstLaunch" { entry.project = nil }
         if state == "failure" {
             entry.failure = "The folder is unavailable. Restore it or choose another folder. Your draft is kept."

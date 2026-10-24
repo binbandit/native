@@ -50,7 +50,9 @@ struct RootView: View {
         // The status bar is part of the layout, under everything, so nothing ends up beneath it.
         let navigation = VStack(spacing: 0) {
             contentWithUndo
-            StatusBar(registry: statusBar)
+            if !model.quickEntry.isEnabled || !model.composeTask.isPresented {
+                StatusBar(registry: statusBar)
+            }
         }
         .taskPeekHost()
         .onGeometryChange(for: CGSize.self, of: \.size) { contentSize = $0 }
