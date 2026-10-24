@@ -15,12 +15,14 @@ struct TaskActionRoute {
         case unavailable
         case missingCheckout
         case missingRoute
+        case agentUnavailable(String)
 
         var errorDescription: String? {
             switch self {
             case .unavailable: "The task's host is unavailable. Reconnect it and retry."
             case .missingCheckout: "The task's project checkout on its host is unavailable. Reconnect it and retry."
             case .missingRoute: "The task's original host and workspace are no longer known. Nothing was changed."
+            case .agentUnavailable(let reason): reason
             }
         }
     }
@@ -151,7 +153,10 @@ extension AppModel {
             }
         }
         guard let runtime, let connection = runtime.connection else {
-            if route.owner == .local && !startingIfNeeded { return }
+            if route.owner == .local {
+                if !startingIfNeeded { return }
+                throw TaskActionRoute.Failure.agentUnavailable(startFailure(of: route.key.agent))
+            }
             throw TaskActionRoute.Failure.unavailable
         }
         guard runtime.capabilities?.deleteSessions == true else { return }

@@ -211,18 +211,22 @@ extension AppModel {
         archivedSessions.set(key, archived: false)
         unread.set(key, unread: false)
         catalog.remove(key)
+        catalog.remote[key] = nil
         ordering.unpin(key)
         // Putting its workspace away or bringing it back no longer matters: deleting removes it.
         problems.resolve(.workspaceArchive(key), in: projectID)
         problems.resolve(.workspaceRestore(key), in: projectID)
+        let agentName =
+            taskRuntime(for: route.owner, agent: key.agent)?.agent.displayName
+            ?? plugins.agent(key.agent)?.displayName ?? key.agent.rawValue
         do {
             try await deleteAgentCopy(using: route, startingIfNeeded: false)
         } catch {
             problems.report(
                 ProjectProblem(
                     project: projectID, work: .agentCopyDeletion(key),
-                    title: "Couldn't delete “\(title)” from its agent",
-                    recovery: "The task is gone from Native, but its agent still has its copy.",
+                    title: "\(agentName) couldn't delete “\(title)”",
+                    recovery: "The task is gone from Native, but \(agentName) still has its copy.",
                     details: error.localizedDescription))
         }
         do {
