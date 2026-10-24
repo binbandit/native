@@ -1,6 +1,6 @@
 PR #109 visual check, 2026-10-24
-Revision: ec5e26d9508d53b3efc96a1cc7084be17f718f27
-Base: 547d6675ab7916ef07733ca4a1c9ddaa5a69538b
+Revision: 376aaba660d0728a95553a88357dc4d6ccee51e3
+Base: d7a52f01c2fa8e6e790f57c99b74e802abe3febb
 Working tree: clean. Isolated Debug instance: vc-109.
 
 Visual check done. Successful, offline, policy-disabled and cached-offline-under-policy states passed in light and dark. The application used the documented celebrationAssetsURL/celebrationAssetsKey overrides with a loopback server and a throwaway signer. Repository artwork bypass was disabled by these overrides. Native's date was 2026-11-01, with Dia de Muertos enabled through the real Settings controls.
@@ -28,3 +28,5 @@ swift format lint --strict <changed Swift files>
 Results: Debug build passed with zero repository warnings; 58 celebration tests and 34 policy tests passed; changed Swift files passed strict lint. Four packaging regressions passed with standard Git LFS filters supplied to the temporary test clones. Without those filters, the pointer-checkout test fails on this Mac because LFS is configured only in the source repository. No global Git configuration was changed. A regenerated catalogue contained 44 packs and 352 PNGs with matching hashes and sizes.
 
 All UI actions used scripts/dev/drive.sh vc-109. Each capture was preceded by the screen-lock check. The instance was quit between scenarios.
+
+Refreshed every published screenshot after merging the CPU-display fix from main. The celebration sources are unchanged from ec5e26d9. The new head passed the isolated Debug build, strict lint, all 58 celebration tests, all 34 policy tests, and all 8 ProcessCPUUsageTests. Although other windows overlapped the isolated instance, each captured state was visually inspected and matched its accessibility state; the window was never raised.
