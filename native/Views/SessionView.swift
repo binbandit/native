@@ -18,12 +18,13 @@ struct SessionView: View {
     @State private var drops = ComposerDropInbox()
     @Environment(\.inspectorRoom) private var inspectorRoom
     @Experiment(.sessionTools) private var usesSessionTools
+    @Experiment(.taskWell) private var usesTaskWell
     private static let subagentInspectorWidth: CGFloat = 420
 
     var body: some View {
         Group {
-            if usesSessionTools {
-                SessionToolsScreen(session: session)
+            if usesSessionTools || usesTaskWell {
+                SessionToolsScreen(session: session, usesTaskWell: usesTaskWell)
             } else {
                 standardBody
             }

@@ -4,13 +4,20 @@ import Terminal
 extension View {
     /// Adds the task's terminal panel under this view: the transcript and composer above, the
     /// terminal below, with a divider to resize it. ⌃` shows and hides it (`TerminalCommands`).
-    func terminalPanel(for session: SessionModel) -> some View {
-        modifier(TerminalPanelModifier(session: session))
+    @ViewBuilder func terminalPanel(
+        for session: SessionModel, showsToolbarButton: Bool = true, isEnabled: Bool = true
+    ) -> some View {
+        if isEnabled {
+            modifier(TerminalPanelModifier(session: session, showsToolbarButton: showsToolbarButton))
+        } else {
+            self
+        }
     }
 }
 
 private struct TerminalPanelModifier: ViewModifier {
     let session: SessionModel
+    let showsToolbarButton: Bool
     @Environment(TerminalStore.self) private var store
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dsAccentPalette) private var palette
@@ -33,12 +40,14 @@ private struct TerminalPanelModifier: ViewModifier {
         // The pointer and touch way in, beside ⌃` and View ▸ Show Terminal: an outlined header
         // control, selected while the panel shows, rather than a button on the toolbar's glass.
         .toolbar {
-            ToolbarItem {
-                TerminalToolbarButton(activity: panel.tabs.activity, isVisible: panel.isVisible) {
-                    store.toggle(for: session)
+            if showsToolbarButton {
+                ToolbarItem {
+                    TerminalToolbarButton(activity: panel.tabs.activity, isVisible: panel.isVisible) {
+                        store.toggle(for: session)
+                    }
                 }
+                .sharedBackgroundVisibility(.hidden)
             }
-            .sharedBackgroundVisibility(.hidden)
         }
         .animation(.dsPanel, value: panel.isVisible)
         // Reported whether or not the panel shows, so a terminal opened from the menu starts in

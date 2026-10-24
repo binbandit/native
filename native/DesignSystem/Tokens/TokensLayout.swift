@@ -27,6 +27,8 @@ public nonisolated enum DS {
         public static let card: CGFloat = 8
         /// Large panels and sheets.
         public static let panel: CGFloat = 12
+        /// User-message bubbles and their attachment tiles.
+        public static let message: CGFloat = 16
     }
 
     public enum Size {

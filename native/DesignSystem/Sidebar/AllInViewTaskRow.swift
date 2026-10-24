@@ -6,12 +6,15 @@ public struct AllInViewTaskRow: View {
     let title: String
     let status: TaskStatus
     var isSelected = false
+    var isPeeking = false
     var isUnread = false
     var ask: String?
     var attentionSince: Date?
     var answersShortcut = false
+    var askShortcut: KeyboardShortcut? = KeyboardShortcut("y", modifiers: .command)
     var unavailable: String?
     var hostName: String?
+    var peek: (() -> Void)?
     let action: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
@@ -23,10 +26,8 @@ public struct AllInViewTaskRow: View {
     public var body: some View {
         Button(action: action) {
             HStack(alignment: .top, spacing: DS.Space.md) {
-                TaskSignal(
-                    status: status, isUnread: isUnread, attentionSince: attentionSince, unavailable: unavailable
-                )
-                .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
+                signal
+                    .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
                 VStack(alignment: .leading, spacing: DS.Sidebar.askGap) {
                     HStack(spacing: DS.Space.md) {
                         DSInlineCodeText(title)
@@ -64,8 +65,8 @@ public struct AllInViewTaskRow: View {
                                 .fixedSize(horizontal: false, vertical: true)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .frame(minHeight: DS.Sidebar.askLineHeight, alignment: .bottomLeading)
-                            if answersShortcut, unavailable == nil {
-                                Kbd("⌘Y", compact: true)
+                            if answersShortcut, unavailable == nil, let askShortcut {
+                                Kbd(askShortcut, compact: true)
                                     .padding(.bottom, DS.Sidebar.keycapBottom)
                             }
                         }
@@ -82,7 +83,25 @@ public struct AllInViewTaskRow: View {
         .buttonStyle(SidebarRowButtonStyle())
         .background {
             RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
-                .fill(isSelected ? .dsSelected : isHovered ? .dsHover : .clear)
+                .fill(isSelected || isPeeking ? .dsSelected : isHovered ? .dsHover : .clear)
+                .overlay {
+                    if isPeeking {
+                        RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous).strokeBorder(.dsBorder)
+                    }
+                }
+        }
+        .overlay(alignment: .topLeading) {
+            if let peek {
+                Button(action: peek) { Color.clear }
+                    .buttonStyle(.plain)
+                    .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
+                    .contentShape(.rect)
+                    .dsHitTarget(DS.Size.rowLeading)
+                    .padding(.leading, DS.Sidebar.leading)
+                    .padding(.top, DS.Sidebar.rowVertical)
+                    .help("Peek")
+                    .accessibilityLabel("Peek at \(DSInlineCode.plain(title))")
+            }
         }
         .trackHover($isHovered)
         .animation(reduceMotion ? nil : ask == nil ? .dsSidebarAnswer : .dsSidebarAsk, value: ask)
@@ -90,14 +109,18 @@ public struct AllInViewTaskRow: View {
         .accessibilityValue(
             [
                 unavailable ?? status.label, isUnread ? "Unread" : nil, ask,
-                answersShortcut ? "Command Y answers this request" : nil,
+                answersShortcut ? "Oldest ask" : nil,
             ].compactMap(\.self).joined(separator: ", ")
         )
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
+    private var signal: some View {
+        TaskSignal(status: status, isUnread: isUnread, attentionSince: attentionSince, unavailable: unavailable)
+    }
+
     private var emphasizesTitle: Bool {
-        isSelected || isUnread || status.needsAttention || status == .failed
+        isSelected || isPeeking || isUnread || status.needsAttention || status == .failed
     }
 }
 
@@ -115,6 +138,10 @@ public struct AllInViewTaskRow: View {
                 ask: "Use the repo's PR template, or keep the built-in body?", attentionSince: .now
             ) {}
             AllInViewTaskRow(title: "Wrap diff lines at word boundaries", status: .done, isSelected: true) {}
+            AllInViewTaskRow(
+                title: "Squash the release notes on main", status: .needsPermission, isPeeking: true,
+                ask: "Allow `git push`?", attentionSince: .now.addingTimeInterval(-240), peek: {}
+            ) {}
             AllInViewTaskRow(title: "Task titles from the first prompt", status: .done, isUnread: true) {}
             AllInViewTaskRow(
                 title: "Landing page hero", status: .failed,

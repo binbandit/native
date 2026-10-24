@@ -23,6 +23,11 @@ struct ComposerEditor: View {
     var isFocused: FocusState<Bool>.Binding
     /// While an attachment chip is selected the keys are its, so the caret steps aside.
     var hidesCaret = false
+    var inputLabel = "Message"
+    var font: Font = .dsCallout
+    var lineSpacing: CGFloat = ComposerMetrics.editorLineSpacing
+    var insets: EdgeInsets = DS.Composer.textInsets
+    var maximumHeight = ComposerMetrics.editorMaxHeight
     let onKey: (KeyPress) -> KeyPress.Result
 
     /// Whether the rich-text editor is in use, from the first backtick or `~~~` on.
@@ -41,11 +46,11 @@ struct ComposerEditor: View {
         // TextEditor doesn't size to its content, so a hidden copy of the text sets the height and the
         // editor fills it, scrolling once the cap is reached.
         Text(sizingText)
-            .font(.dsCallout)
-            .lineSpacing(ComposerMetrics.editorLineSpacing)
+            .font(font)
+            .lineSpacing(lineSpacing)
             .padding(.horizontal, ComposerMetrics.editorLineFragmentPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .frame(maxHeight: ComposerMetrics.editorMaxHeight, alignment: .top)
+            .frame(maxHeight: maximumHeight, alignment: .top)
             // Size to the text (capped) rather than to whatever height is on offer.
             .fixedSize(horizontal: false, vertical: true)
             .hidden()
@@ -63,8 +68,8 @@ struct ComposerEditor: View {
                         TextEditor(text: $text, selection: $selection)
                     }
                 }
-                .font(.dsCallout)
-                .lineSpacing(ComposerMetrics.editorLineSpacing)
+                .font(font)
+                .lineSpacing(lineSpacing)
                 .foregroundStyle(.dsTextPrimary)
                 // The window's tint (`dsAccentPalette`) colors the caret; nil would reset it to blue.
                 .tint(hidesCaret ? .clear : .dsAccent)
@@ -72,22 +77,24 @@ struct ComposerEditor: View {
                 .scrollIndicators(.never)
                 .focused(isFocused)
                 .onKeyPress(phases: [.down, .repeat], action: onKey)
-                .accessibilityLabel("Message")
+                .accessibilityLabel(inputLabel)
                 // Files and images dropped on the text attach instead (the composer's drop area).
                 .textViewTakesOnlyTextDrops()
             }
             .overlay(alignment: .topLeading) {
                 if text.isEmpty {
                     Text(placeholder)
-                        .font(.dsCallout)
+                        .font(font)
                         .foregroundStyle(.dsTextTertiary)
                         .padding(.leading, ComposerMetrics.editorLineFragmentPadding)
                         .allowsHitTesting(false)
                         .accessibilityHidden(true)
                 }
             }
-            .padding(.horizontal, DS.Composer.textInsets.leading - ComposerMetrics.editorLineFragmentPadding)
-            .padding(.vertical, DS.Composer.textInsets.top)
+            .padding(.leading, insets.leading - ComposerMetrics.editorLineFragmentPadding)
+            .padding(.trailing, insets.trailing - ComposerMetrics.editorLineFragmentPadding)
+            .padding(.top, insets.top)
+            .padding(.bottom, insets.bottom)
             .onAppear(perform: textChangedOutside)
             .onChange(of: styled, editorChanged)
             .onChange(of: styledSelection, editorSelectionChanged)

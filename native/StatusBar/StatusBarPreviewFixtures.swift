@@ -54,20 +54,21 @@ nonisolated final class PreviewResourceSampler: ResourceSampling, @unchecked Sen
                 ProcessGroup(
                     kind: .app, title: "Native",
                     processes: [
-                        ProcessUsage(pid: 4012, name: "Native", depth: 0, memory: 212 * mb + drift, cpu: 1.4),
-                        ProcessUsage(pid: 4018, name: "Native Host", depth: 1, memory: 38 * mb, cpu: 0.2),
+                        ProcessUsage(pid: 4012, name: "Native", depth: 0, memory: 212 * mb + drift, cpu: 0.175),
+                        ProcessUsage(pid: 4018, name: "Native Host", depth: 1, memory: 38 * mb, cpu: 0.025),
                     ]),
                 ProcessGroup(
                     kind: .agent("claude-code"), title: "Claude Code",
                     processes: [
-                        ProcessUsage(pid: 5120, name: "claude-agent-acp", depth: 0, memory: 96 * mb, cpu: 0.8),
-                        ProcessUsage(pid: 5131, name: "claude", depth: 1, memory: 610 * mb + drift * 2, cpu: 12.5),
-                        ProcessUsage(pid: 5190, name: "swift-frontend", depth: 2, memory: 1_840 * mb, cpu: 96.3),
+                        ProcessUsage(pid: 5120, name: "claude-agent-acp", depth: 0, memory: 96 * mb, cpu: 0.1),
+                        ProcessUsage(pid: 5131, name: "claude", depth: 1, memory: 610 * mb + drift * 2, cpu: 1.5625),
+                        // 395% of one core on an eight-core machine becomes 49% in every resource view.
+                        ProcessUsage(pid: 5190, name: "swift-frontend", depth: 2, memory: 1_840 * mb, cpu: 49.375),
                     ]),
                 ProcessGroup(
                     kind: .agent("codex"), title: "Codex",
                     processes: [
-                        ProcessUsage(pid: 6201, name: "codex-acp", depth: 0, memory: 54 * mb, cpu: 0.1),
+                        ProcessUsage(pid: 6201, name: "codex-acp", depth: 0, memory: 54 * mb, cpu: 0.0125),
                         ProcessUsage(pid: 6214, name: "codex", depth: 1, memory: 188 * mb, cpu: nil),
                     ]),
                 ProcessGroup(

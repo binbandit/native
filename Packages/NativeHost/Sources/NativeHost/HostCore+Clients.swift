@@ -243,6 +243,8 @@ extension HostCore {
         case Method.closeSession:
             let params = try message.params(as: CloseSessionParams.self)
             try await closeSession(params.sessionID, closeInAgent: params.closeInAgent)
+            client.attached.remove(params.sessionID)
+            sessions[params.sessionID]?.subscribers.remove(client.id)
             try reply(EmptyMessage())
         case Method.listActivity:
             let params = try message.params(as: ListActivityParams.self)
@@ -294,6 +296,13 @@ extension HostCore {
             try reply(try removeProject(try message.params(as: RemoveProjectParams.self), for: client))
         case Method.fsRead, Method.fsList, Method.fsStat, Method.fsWatch, Method.fsUnwatch:
             try reply(try await answerFiles(message, from: client))
+        case Method.newCoordinator:
+            try reply(try await newCoordinator(try message.params(as: NewCoordinatorParams.self), by: client))
+        case Method.listCoordinators:
+            guard client.grants.isLocal else { throw HostError.notAuthorized("read coordinator assignments") }
+            try reply(coordinators)
+        case Method.setCoordinator:
+            try reply(try setCoordinator(try message.params(as: HostCoordinator.self), by: client))
         case Method.listTasks:
             try reply(tasks.hostTasks)
         case Method.configureTasks:

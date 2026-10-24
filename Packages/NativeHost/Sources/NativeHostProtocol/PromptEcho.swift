@@ -49,33 +49,37 @@ public struct EchoAttachment: Codable, Hashable, Sendable {
     public var imageBase64: String?
     public var embeddedBase64: String?
     public var mimeType: String?
+    public var byteCount: Int?
 
     public init(
         name: String, url: URL? = nil, imageBase64: String? = nil, embeddedBase64: String? = nil,
-        mimeType: String? = nil
+        mimeType: String? = nil, byteCount: Int? = nil
     ) {
         self.name = name
         self.url = url
         self.imageBase64 = imageBase64
         self.embeddedBase64 = embeddedBase64
         self.mimeType = mimeType
+        self.byteCount = byteCount
     }
 
     public init(_ attachment: MessageAttachment) {
         self.init(
             name: attachment.name, url: attachment.url, imageBase64: attachment.imageData?.base64EncodedString(),
-            embeddedBase64: attachment.embeddedData?.base64EncodedString(), mimeType: attachment.mimeType)
+            embeddedBase64: attachment.embeddedData?.base64EncodedString(), mimeType: attachment.mimeType,
+            byteCount: attachment.byteCount)
     }
 
     public var messageAttachment: MessageAttachment {
         MessageAttachment(
             name: name, url: url, imageData: imageBase64.flatMap { Data(base64Encoded: $0) },
-            embeddedData: embeddedBase64.flatMap { Data(base64Encoded: $0) }, mimeType: mimeType, isLocalFile: true)
+            embeddedData: embeddedBase64.flatMap { Data(base64Encoded: $0) }, mimeType: mimeType, isLocalFile: true,
+            byteCount: byteCount)
     }
 
     /// Without embedded contents, for summaries every client gets on every change.
     var withoutImage: EchoAttachment {
-        EchoAttachment(name: name, url: url)
+        EchoAttachment(name: name, url: url, byteCount: byteCount)
     }
 }
 

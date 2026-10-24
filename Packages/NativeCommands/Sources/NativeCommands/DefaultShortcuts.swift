@@ -8,6 +8,8 @@ public enum DefaultShortcuts {
     static let table: [CommandID: String] = [
         // Sessions and navigation
         "session.new": "⌘N",
+        "task.compose": "⇧⌘N",
+        "task.chooseDevice": "⌥⌘O",
         "session.newWithAgent": "⌥⌘N",
         "expedition.new": "⌥⌘E",
         "project.open": "⌘O",
@@ -37,6 +39,11 @@ public enum DefaultShortcuts {
         "view.toggleSubagentInspector": "⌥⌘I",
         "view.toggleChanges": "⇧⌘D",
         "sessionTools.changes": "⌥⌘1",
+        "taskWell.toggle": "⌘I",
+        "taskWell.terminal": "⌥⌘2",
+        "taskWell.dev": "⌥⌘3",
+        "taskWell.subagents": "⌥⌘4",
+        "taskWell.pullRequest": "⌥⌘5",
         "view.mcpServers": "⌃⌘M",
         "keepAwake.nextMode": "⌃⌘A",
         "palette.show": "⌘K",
@@ -48,6 +55,7 @@ public enum DefaultShortcuts {
         "session.chooseModel": "⇧⌘E",
         "goal.edit": "⌥⌘G",
         "workflow.run": "⌥⌘R",
+        "task.answerOldestAsk": "⌘Y",
         // Sending and attachments
         "session.stop": "⌘.",
         "composer.attachFiles": "⌘U",

@@ -6,6 +6,7 @@ import SwiftUI
 /// assumptions, and every leg and assignment, all editable in place. Approving is the one-way door:
 /// from then on the crew works to the route.
 struct RouteReviewView: View {
+    @Environment(\.legacyAskShortcutEnabled) private var legacyShortcut
     let expedition: Expedition
     let route: Route
     let send: (ExpeditionEvent) -> Void
@@ -96,7 +97,9 @@ struct RouteReviewView: View {
         }
         // The route answers the approval keys, like every other approval card.
         .background {
-            Button("Approve Route", action: approve).keyboardShortcut("y", modifiers: .command).hidden().disabled(
+            Button("Approve Route", action: approve).keyboardShortcut(
+                legacyShortcut ? KeyboardShortcut("y", modifiers: .command) : nil
+            ).hidden().disabled(
                 isRevising)
             Button("Discard Route") { send(.discard) }.keyboardShortcut(.delete, modifiers: [.command, .shift]).hidden()
         }
@@ -165,7 +168,9 @@ struct RouteReviewView: View {
                 .buttonStyle(.ds(.primary, size: .medium))
                 .keyboardShortcut(.return, modifiers: .command)
                 .disabled(isRevising || approvedRoute.assignments.isEmpty)
-                .help("Start the crew on this route (⌘Return or ⌘Y)")
+                .help(
+                    legacyShortcut
+                        ? "Start the crew on this route (⌘Return or ⌘Y)" : "Start the crew on this route (⌘Return)")
         }
         .padding(.horizontal, DS.Space.xxl)
         .padding(.vertical, DS.Space.lg)
