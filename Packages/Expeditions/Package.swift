@@ -13,7 +13,10 @@ let package = Package(
         .package(path: "../Automation")
     ],
     targets: [
-        .target(name: "NativeExpeditions", dependencies: [.product(name: "NativeAutomation", package: "Automation")]),
+        .target(
+            name: "NativeExpeditions", dependencies: [.product(name: "NativeAutomation", package: "Automation")],
+            // Optimize infrequent operations for size; the app and streaming path stay at -O.
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         .testTarget(name: "NativeExpeditionsTests", dependencies: ["NativeExpeditions"]),
     ]
 )

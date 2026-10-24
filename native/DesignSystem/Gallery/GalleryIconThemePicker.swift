@@ -1,3 +1,4 @@
+#if DEBUG
 import SwiftUI
 
 /// The icon picker over stand-in icons: the emblem on each accent palette's tile, with a plugin's
@@ -46,4 +47,5 @@ struct GalleryIconThemePicker: View {
         GalleryIconThemePicker()
     }
 }
+#endif
 #endif

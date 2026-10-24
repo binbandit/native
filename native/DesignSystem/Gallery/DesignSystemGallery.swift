@@ -1,3 +1,4 @@
+#if DEBUG
 import SwiftUI
 
 #if canImport(AppKit)
@@ -142,3 +143,4 @@ private struct GallerySection<Content: View>: View {
 #Preview("Gallery") {
     DesignSystemGallery()
 }
+#endif
