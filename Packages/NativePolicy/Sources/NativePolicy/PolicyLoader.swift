@@ -6,7 +6,6 @@ public enum PolicyLoader {
     public static func load(from source: any PolicySource) -> NativePolicy {
         var resolver = PolicyResolver(source: source)
         var policy = NativePolicy()
-        policy.organizationName = resolver.resolve(.organizationName, expecting: "a non-empty string", PolicyParse.text)
         policy.organizationContact = resolver.resolve(
             .organizationContact, expecting: "a non-empty string", PolicyParse.text)
         policy.appearanceCodeTheme = resolver.resolve(

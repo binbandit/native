@@ -154,8 +154,6 @@
             <!-- Off removes celebration settings and restores the usual appearance. -->
             <key>policy.celebrations.enabled</key>
             <false/>
-            <key>policy.organization.name</key>
-            <string>Example Corp</string>
 
             <key>policy.labs.enabled</key>
             <false/>

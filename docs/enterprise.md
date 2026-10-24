@@ -29,7 +29,7 @@ shipped as a sample `.mobileconfig` in `docs/enterprise/`.
 
 | Key | Effect |
 | --- | --- |
-| `policy.organization.name` / `policy.organization.contact` | Organization and help channel shown beside managed Appearance settings, for example Northwind Federal IT and #it-help. |
+| `policy.organization.contact` | Help channel shown beside managed Appearance settings, for example #it-help. |
 | `policy.appearance.codeTheme` | A built-in code theme id for both appearances. Unknown ids are reported and ignored. Personal choices are preserved and return when the key is removed. Themes without a palette for one appearance use Native in that appearance. |
 | `policy.appearance.codeTheme.reason` | Optional explanation shown when opening the locked code theme row. |
 | `policy.agents.allowed` | Agent ids that may be listed or started; others are hidden with "Not allowed by your organization". |
