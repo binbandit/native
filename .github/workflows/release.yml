@@ -118,21 +118,9 @@ jobs:
           path: |
             ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/appcast/*.zip
             ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/appcast/*.delta
-            ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/appcast/*.md
             ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/appcast/appcast.xml
-            ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/*.dmg
             ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/host/
             ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/celebrations/
-      - name: Upload the rehearsal's symbols
-        if: github.event_name != 'push' && !inputs.publish && !cancelled()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: native-${{ steps.version.outputs.version }}-${{ github.run_number }}-dSYMs
-          retention-days: 7
-          path: |
-            ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/*.xcarchive/dSYMs/
-            ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/host-dSYMs/
-
       - name: Tear down signing
         if: always() && steps.checkout.outcome == 'success'
         run: scripts/release/ci-signing.sh teardown

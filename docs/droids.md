@@ -20,14 +20,13 @@ account for the one-time settings, and SSH from your laptop to it.
 
 ## 1. Install Native
 
-- **A release:** download the latest from [GitHub Releases](https://github.com/binbandit/native/releases)
-  and drag Native to Applications. Over SSH:
+- **A release:** download the latest from [GitHub Releases](https://github.com/binbandit/native/releases),
+  extract the ZIP, and drag Native to Applications. Over SSH:
 
   ```sh
-  gh release download -R binbandit/native --pattern 'Native-*.dmg' --dir /tmp/native
-  hdiutil attach /tmp/native/Native-*.dmg -nobrowse -mountpoint /Volumes/Native
-  cp -R /Volumes/Native/Native.app /Applications/
-  hdiutil detach /Volumes/Native
+  gh release download -R binbandit/native --pattern 'Native-*.zip' --dir /tmp/native
+  ditto -x -k /tmp/native/Native-*.zip /tmp/native/unpacked
+  cp -R /tmp/native/unpacked/Native.app /Applications/
   ```
 
   Releases are signed and notarized, and update themselves (Running it, below).

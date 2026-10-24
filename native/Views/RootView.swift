@@ -44,17 +44,7 @@ struct RootView: View {
         @Bindable var automation = automation
         // The status bar is part of the layout, under everything, so nothing ends up beneath it.
         let navigation = VStack(spacing: 0) {
-            // Search's panel hangs off the content, out of the long chain below, which the type
-            // checker already finds heavy.
-            content
-                .transcriptSearchPanel()
-                // Opening a pull request (from a badge, a link or the list) shows its page there,
-                // even the one the pane already held while a task had the column.
-                .onChange(of: gitHub.pageRequests, initial: true) {
-                    if gitHub.presentedPullRequest != nil { showsPullRequests = true }
-                }
-                // Over the content, so the toast clears the status bar.
-                .undoToast($undoToast)
+            contentWithUndo
             StatusBar(registry: statusBar)
         }
         .taskPeekHost()
@@ -65,14 +55,6 @@ struct RootView: View {
         // Asked once, after real use, and never while an agent works (docs/enterprise.md).
         .telemetryConsentPrompt(isTurnRunning: isAnyTurnRunning)
         .focusedSceneValue(\.sidebarVisibility, $columnVisibility)
-        .onChange(of: undoManager, initial: true) { model.undoHistory.track(undoManager) }
-        // Undone by ⌘Z or redone by ⇧⌘Z, it leaves the toast or comes back to it.
-        .onChange(of: model.offeredUndo?.id) {
-            undoToast = model.offeredUndo.map { action in UndoToastItem(action.message) { action.undo() } }
-        }
-        .onChange(of: model.offeredUndo?.message) {
-            undoToast = model.offeredUndo.map { action in UndoToastItem(action.message) { action.undo() } }
-        }
         .focusedSceneValue(\.showsPullRequests, $showsPullRequests)
         // The pull requests page and a session take turns in the detail column.
         .onChange(of: showsPullRequests) { _, shows in
@@ -165,6 +147,38 @@ struct RootView: View {
         model.agents.contains { runtime in
             model.sessions.open(of: runtime.agent.id).contains { $0.phase == .prompting }
         }
+    }
+
+    /// Keep toast observation off the root's sheet chain so the type checker can finish it.
+    private var contentWithUndo: some View {
+        content
+            .transcriptSearchPanel()
+            // Opening a pull request (from a badge, a link or the list) shows its page there,
+            // even the one the pane already held while a task had the column.
+            .onChange(of: gitHub.pageRequests, initial: true) {
+                if gitHub.presentedPullRequest != nil { showsPullRequests = true }
+            }
+            // Over the content, so the toast clears the status bar.
+            .undoToast($undoToast)
+            .onChange(of: undoManager, initial: true) { model.undoHistory.track(undoManager) }
+            // Undone by ⌘Z or redone by ⇧⌘Z, it leaves the toast or comes back to it.
+            .onChange(of: model.offeredUndo?.id) {
+                undoToast = model.offeredUndo.map { action in
+                    UndoToastItem(action.message, undoesWithCommandZ: model.undoHistory.willUndo(action)) {
+                        action.undo()
+                    }
+                }
+            }
+            .onChange(of: model.offeredUndo?.message) {
+                undoToast = model.offeredUndo.map { action in
+                    UndoToastItem(action.message, undoesWithCommandZ: model.undoHistory.willUndo(action)) {
+                        action.undo()
+                    }
+                }
+            }
+            .onChange(of: model.offeredUndo.map { model.undoHistory.willUndo($0) } ?? false) { _, matches in
+                undoToast?.undoesWithCommandZ = matches
+            }
     }
 
     /// The sidebar with the other features' parts: the pull requests page, and each task row's pull

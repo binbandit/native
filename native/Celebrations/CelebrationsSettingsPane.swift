@@ -23,7 +23,19 @@ extension SettingsPane {
                         keywords: event.contribution.aliases + event.contribution.tags)
                 }
             },
-            content: { CelebrationsSettingsPage() }
+            content: {
+                #if DEBUG
+                if let name = UserDefaults.standard.string(forKey: "celebrationPreview"),
+                    let state = CelebrationPreviewFixtures.State(rawValue: name)
+                {
+                    CelebrationPreviewGallery(state)
+                } else {
+                    CelebrationsSettingsPage()
+                }
+                #else
+                CelebrationsSettingsPage()
+                #endif
+            }
         )
     }
 }

@@ -8,15 +8,18 @@ It belongs with `docs/performance.md`.
 
 MB here are 10^6 bytes, as Finder counts them. "Installed" is the bytes in the app bundle;
 "download" is Sparkle's update archive (what every update fetches) and the disk image (a first
-install). The budgets sit about 10% above where the app was when they were set, so growth gets
-noticed while there's still room to choose what to cut; lower them as the cuts in "Still to do" land.
+install rehearsal). Public releases now attach only the ZIP for both first installs and updates;
+the DMG still builds locally with the existing signing, notarization and size checks. The asset
+inventory and retention limits are in `docs/releasing.md`. This changes file count, not the app
+bundle or its size budgets. The budgets sit about 10% above where the app was when they were set,
+so growth gets noticed while there's still room to choose what to cut; lower them as the cuts in "Still to do" land.
 
 | What | Budget | 2026-10-19, after the grammar cut |
 | --- | --- | --- |
 | Download, update archive | 47 MB | 42.7 MB |
 | Download, disk image | 48 MB | about 43.3 MB |
 | Installed app | 118 MB | 107.5 MB |
-| App binary (`Contents/MacOS/Native`) | 60 MB | 53.2 MB |
+| App binary (`Contents/MacOS/Native`) | 70 MB | 53.2 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
 `scripts/release/size-check.sh` holds the same numbers and fails when anything is over. It also
@@ -96,6 +99,12 @@ new Home questions, plan review and recovery code, with no added assets or depen
 binary budget is now 60 MB for this measured integration. Downloads remain 46.4/46.5 MB and
 installed apps 116.2/116.3 MB, within their unchanged limits. Remeasure when the gated redesign
 components replace their legacy presentations.
+
+2026-10-24: approved by Brayden, the app binary budget is now 70 MB to give a little room for
+growth. Growth since the budgets were set at a 53.2 MB binary is mostly the redesign compiling
+old and new versions of six areas behind switches. Reclaim that space by deleting each old
+version when its switch flips. An app-size job is cutting size now. The download, disk-image,
+installed-app and script-runtime budgets are unchanged.
 
 ## Measuring
 

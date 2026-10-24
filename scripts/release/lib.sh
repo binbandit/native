@@ -111,3 +111,16 @@ require_tool() {
 keep_all_but_two() {
     awk '{ a[NR] = $0 } END { for (i = 1; i <= NR - 2; i++) print a[i] }'
 }
+
+# Reads nightly asset names and prints only obsolete files. Keep the previous ZIP and host for
+# in-flight downloads; icons always come from latest stable, and the ZIP replaces the public DMG.
+obsolete_nightly_assets() {
+    local asset_base=$1 current_deltas=$2 names
+    names=$(cat)
+    { grep -E "^$asset_base-[0-9]+\.zip$" <<<"$names" || true; } | sort -t- -k3 -n | keep_all_but_two
+    { grep -E '^native-host-[0-9]+-' <<<"$names" || true; } | sort -t- -k3 -n | keep_all_but_two
+    grep -E '^(Native-Nightly\.dmg|celebration-.*\.json(\.sig)?)$' <<<"$names" || true
+    { grep -E '\.delta$' <<<"$names" || true; } | while read -r name; do
+        [[ $current_deltas == *" $name "* ]] || echo "$name"
+    done
+}

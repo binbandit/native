@@ -110,7 +110,7 @@ releases="https://github.com/$repo/releases"
 custom_url_prefix=1
 [ -n "$url_prefix" ] || { url_prefix="$releases/download/$tag/"; custom_url_prefix=0; }
 # How many earlier archives each update gets a delta from (see Appcast).
-delta_seeds=3
+delta_seeds=2
 output=${output:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}/native-release/$channel}
 output=${output%/}
 archive="$output/$asset_base.xcarchive"
@@ -213,7 +213,7 @@ previous_tag=""
 case $channel in
     stable) previous_tag=$(last_stable_tag "$sha^") ;;
     beta) previous_tag=$(git describe --tags --abbrev=0 --match 'v[0-9]*' "$sha^" 2>/dev/null || true) ;;
-    nightly) git fetch --quiet --force origin tag nightly 2>/dev/null || true
+    nightly) [ "$MODE" = plan ] || git fetch --quiet --force origin tag nightly 2>/dev/null || true
         previous_tag=$(git rev-parse --verify --quiet nightly 2>/dev/null || true) ;;
 esac
 if [ "$channel" = beta ] && [ -n "${NATIVE_RELEASE_NOTES_FROM:-}" ]; then
@@ -334,9 +334,19 @@ if [ "$can_sign" = 1 ] && [ "$MODE" != plan ]; then
             run mv "$delta" "$output/appcast/${name// /-}"
             replace_in_appcast "/${name// /%20}\"" "/${name// /-}\""
         fi
-        deltas+=("$output/appcast/${name// /-}")
     done
-    [ ${#deltas[@]} = 0 ] || log "Made ${#deltas[@]} delta updates"
+    # Seeds can produce deltas to older feed items too. Only publish this build's deltas;
+    # older items retain their original downloads or fall back to their full archive.
+    selected_deltas=$(python3 "$ROOT/scripts/release/deltas.py" "$appcast" "$zip_name" "$url_prefix" "$delta_seeds")
+    deltas=()
+    while IFS= read -r delta; do
+        [ -z "$delta" ] || deltas+=("$delta")
+    done <<<"$selected_deltas"
+    [ ${#deltas[@]} = 0 ] || log "Publishing ${#deltas[@]} delta updates"
+    # Rehearsal artifacts should contain the new download, not its downloaded delta seeds.
+    for seed in ${seeds[@]+"${seeds[@]}"}; do
+        run rm -f "$output/appcast/${seed%% *}"
+    done
     # generate_appcast only warns when the app's SUPublicEDKey doesn't match the signing key, and then
     # leaves the archive unsigned, which no installed copy would accept.
     if [ -n "$public_key" ]; then
@@ -366,7 +376,11 @@ host_files=()
 # printed bare by `sign_update -p`; --disable-signing-warning keeps it from editing the file.
 celebration_files=()
 celebration_sign="$sparkle_bin/sign_update -p --disable-signing-warning"
-if [ "$MODE" = plan ]; then
+if [ "$channel" != stable ]; then
+    # Every channel's client reads packs from releases/latest, which only selects stable releases.
+    # Clear a reused output folder so rehearsals cannot retain packs from an earlier run.
+    run rm -rf "$output/celebrations"
+elif [ "$MODE" = plan ]; then
     printf '  [plan] would run: %s\n' "scripts/release/celebration-assets.sh pack $output/celebrations $version" >&2
 elif [ "$key_file" = - ]; then
     warn "the Sparkle key came on stdin and is already read; not packing celebration icons"
@@ -395,7 +409,8 @@ esac
 log "Publishing to $repo"
 assets=("$output/appcast/$zip_name" "$output/host/native-host-$build_number-macos-universal"
     ${deltas[@]+"${deltas[@]}"})
-[ "$make_dmg" = 1 ] && assets+=("$output/$dmg_name")
+# The ZIP serves first installs and Sparkle. The DMG remains available locally for rehearsals,
+# with its existing signing and notarization checks, but is not a second public app download.
 notes_flag=(--notes-file "$notes")
 
 if [ "$channel" = nightly ]; then
@@ -417,13 +432,7 @@ if [ "$channel" = nightly ]; then
         # next nightly has deltas from both), and only the deltas this appcast lists.
         names=$(gh release view nightly --repo "$repo" --json assets --jq '.assets[].name')
         current_deltas=" $(for delta in ${deltas[@]+"${deltas[@]}"}; do basename "$delta"; done | tr '\n' ' ')"
-        # A listing can be empty (the first nightly has no deltas): `|| true` keeps pipefail from
-        # stopping the release over a grep that matched nothing.
-        { { grep -E "^$asset_base-[0-9]+\.zip$" <<<"$names" || true; } | sort -t- -k3 -n | keep_all_but_two
-          { grep -E "^native-host-[0-9]+-" <<<"$names" || true; } | sort -t- -k3 -n | keep_all_but_two
-          { grep -E '\.delta$' <<<"$names" || true; } | while read -r name; do
-              [[ $current_deltas == *" $name "* ]] || echo "$name"
-          done; } |
+        obsolete_nightly_assets "$asset_base" "$current_deltas" <<<"$names" |
             while read -r old; do run gh release delete-asset nightly "$old" --repo "$repo" --yes; done
     fi
 else
