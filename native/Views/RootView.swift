@@ -12,6 +12,7 @@ struct RootView: View {
     @Environment(\.undoManager) private var undoManager
     @Environment(\.releaseChannel) private var releaseChannel
     @State private var columnVisibility = NavigationSplitViewVisibility.all
+    @State private var contentSize = CGSize.zero
     /// The sidebar's width as the user left it. Settings replaces the split view, and a new one opens
     /// at its ideal width, so this is the ideal.
     @State private var sidebarWidth = RootSidebarWidth()
@@ -39,6 +40,10 @@ struct RootView: View {
     @Environment(UpdateController.self) private var updates: UpdateController?
     @Environment(WhatsNewCenter.self) private var whatsNew
 
+    init(initialSidebarVisibility: NavigationSplitViewVisibility = .all) {
+        _columnVisibility = State(initialValue: initialSidebarVisibility)
+    }
+
     var body: some View {
         @Bindable var model = model
         @Bindable var automation = automation
@@ -48,6 +53,7 @@ struct RootView: View {
             StatusBar(registry: statusBar)
         }
         .taskPeekHost()
+        .onGeometryChange(for: CGSize.self, of: \.size) { contentSize = $0 }
         .approvalHoldKeyRoot()
         .addHostPresentation(hosts: model.hosts)
         // After an update with highlights, once nothing waits on the user.
@@ -243,7 +249,9 @@ struct RootView: View {
                     }
                     // Pushes the toggle and search to the leading edge, next to the window controls, and
                     // back and forward to its trailing edge, by the content they navigate.
-                    ToolbarSpacer(.flexible)
+                    if columnVisibility != .detailOnly || !model.offersTaskPeek {
+                        ToolbarSpacer(.flexible)
+                    }
                     // The update button: right-aligned before back and forward, and still there when
                     // the sidebar is hidden. It shows only when an update needs the user.
                     if let updates, updates.showsToolbarButton {
@@ -252,8 +260,8 @@ struct RootView: View {
                         }
                         .sharedBackgroundVisibility(.hidden)
                     }
-                    // They belong to the sidebar's header, so they go away with it (⌘[ and ⌘] still work).
-                    if columnVisibility != .detailOnly {
+                    // All in view keeps navigation beside search when the platform hides the column.
+                    if columnVisibility != .detailOnly || model.offersTaskPeek {
                         ToolbarItem {
                             HistoryNavigationButtons(
                                 canGoBack: model.canGoBack,
@@ -261,6 +269,18 @@ struct RootView: View {
                                 onBack: model.goBack,
                                 onForward: model.goForward
                             )
+                        }
+                        .sharedBackgroundVisibility(.hidden)
+                    }
+                    if columnVisibility == .detailOnly, model.offersTaskPeek, !model.tasksNeedingAttention.isEmpty {
+                        ToolbarItem {
+                            TaskAttentionToolbarButton(
+                                maxWidth: max(0, contentSize.width - DS.Peek.windowInset * 2),
+                                maxBodyHeight: max(
+                                    DS.Peek.headerHeight,
+                                    contentSize.height - DS.Peek.headerHeight - DS.Peek.windowInset * 2)
+                            )
+                            .fixedSize()
                         }
                         .sharedBackgroundVisibility(.hidden)
                     }

@@ -2,7 +2,7 @@ import ACP
 import SwiftUI
 
 /// One moment, in the place the user is already reading. Permission and question content is shared
-/// with the task. Replace ToolCallView with the composer's annotated approval when that lands.
+/// with the task.
 struct TaskPeekView: View {
     let request: TaskPeekPresentation.Request
     var maxBodyHeight = DS.Peek.maxBodyHeight
@@ -140,9 +140,12 @@ struct TaskPeekView: View {
     @ViewBuilder private func answer(_ ask: TaskPeekAsk) -> some View {
         switch ask.content {
         case .permission(let call):
-            ToolCallView(call: call) { option in
-                Task { await model.answerTaskAsk(ask, option: option) }
-            }
+            AnnotatedApprovalView(
+                call: call, agentName: ask.session.agentName, workingDirectory: ask.session.cwd.path,
+                homeDirectory: model.device(of: ask.task) == .thisMac ? NSHomeDirectory() : nil,
+                knowledge: model.plugins.commandKnowledge,
+                onChoose: { option in Task { await model.answerTaskAsk(ask, option: option) } },
+                onInstruct: { try await model.instructTaskAsk(ask, text: $0) })
         case .question(let question):
             if let schema = question.request.requestedSchema,
                 let questionnaire = AgentQuestionnaire(message: question.request.message, schema: schema)

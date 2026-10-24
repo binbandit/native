@@ -1,13 +1,23 @@
 import NativeCommands
+import SwiftUI
 
 extension CommandID {
     static let taskPeek: Self = "task.peek"
     static let taskAnswerOldestAsk: Self = "task.answerOldestAsk"
+    static let taskShowNeedsYou: Self = "task.showNeedsYou"
 }
 
 extension NativeCommand {
     static func taskPeek(model: AppModel) -> [NativeCommand] {
         [
+            NativeCommand(
+                .taskShowNeedsYou, title: "Tasks Needing You", category: .tasks, systemImage: "square.grid.3x3"
+            ) { $0.taskAttentionList?.wrappedValue = true }
+            .available {
+                model.offersTaskPeek && $0.taskAttentionList != nil
+                    && !model.tasksNeedingAttention.isEmpty
+            }
+            .shownInSettings { model.offersTaskPeek },
             NativeCommand(.taskPeek, title: "Peek", category: .tasks, systemImage: "eye") { _ in
                 if let key = model.selection { model.peekTask(key) }
             }.available { _ in model.offersTaskPeek && model.selection != nil }

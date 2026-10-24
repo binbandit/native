@@ -24,6 +24,15 @@ extension DS {
         public static let keycapFont = Font.ds(10, weight: .medium, design: .mono)
         public static let clockFont = Font.ds(11, weight: .medium, design: .mono)
         public static let askCodeFont = Font.ds(11.5, weight: .book, design: .mono)
+        public static let attentionWidth: CGFloat = 396
+        public static let attentionMaximumHeight: CGFloat = 480
+        public static let attentionHeaderTop: CGFloat = 8
+        public static let attentionHeaderBottom: CGFloat = 6
+        public static let attentionProjectFont = Font.ds(11.5, weight: .semibold)
+        public static let attentionCountHeight: CGFloat = 22
+        public static let attentionCountLeading: CGFloat = 7
+        public static let attentionCountTrailing: CGFloat = 8
+        public static let attentionCountRadius: CGFloat = 11
     }
 
     public nonisolated enum Signal {
