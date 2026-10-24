@@ -7,9 +7,9 @@ import Glibc
 #endif
 
 /// What the host says about its machine in `HostStatus`, read by the platform layer
-/// (`NativeHostMac.MacHost.systemInfo()`). A host without one says what Foundation knows.
+/// (`NativeHostMac.MacHost.systemInfo()`). Other hosts use os-release on Linux or Foundation.
 public struct HostSystemInfo: Sendable {
-    /// "macOS 27.1", later "Ubuntu 24.04".
+    /// "macOS 27.1" or "Ubuntu 24.04 LTS".
     public var system: String
     /// The hardware's model identifier ("Mac16,10"), where there is one.
     public var model: String?
@@ -23,7 +23,11 @@ public struct HostSystemInfo: Sendable {
     }
 
     public static var portable: HostSystemInfo {
+        #if os(Linux)
+        HostSystemInfo(system: HostLinuxReleaseInfo.systemName(), model: nil)
+        #else
         HostSystemInfo(system: ProcessInfo.processInfo.operatingSystemVersionString, model: nil)
+        #endif
     }
 
     /// `getloadavg(3)`, which Darwin and glibc both have.
