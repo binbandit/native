@@ -7,5 +7,6 @@ struct TaskWellToolDetail {
     var isRunning = false
     var runningSince: Date?
     var unavailableReason: String?
+    var note: String?
     var isManaged = false
 }

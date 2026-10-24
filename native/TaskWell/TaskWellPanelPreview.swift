@@ -22,7 +22,10 @@ struct TaskWellPanelPreview: View {
         }
         .onAppear {
             tools.hasWell = true
-            tools.wellToolAvailable = { isEmpty ? $0 == .changes || $0 == .terminal || $0 == .dev : true }
+            tools.wellToolAvailable = {
+                if isRemote && $0 == .dev { return false }
+                return isEmpty ? $0 == .changes || $0 == .terminal || $0 == .dev : true
+            }
         }
     }
 
@@ -37,7 +40,10 @@ struct TaskWellPanelPreview: View {
                 unavailableReason: isRemote
                     ? "This task runs on another machine. Its terminal cannot be opened on this Mac." : nil)
         case .dev:
-            TaskWellToolDetail(text: isEmpty ? "Project actions" : "Dev", isSelected: !isEmpty, isRunning: !isEmpty)
+            TaskWellToolDetail(
+                text: isEmpty ? "Project actions" : "Dev", isSelected: !isEmpty, isRunning: !isEmpty,
+                note: isManaged ? "Repository actions are off. Your actions are still available." : nil,
+                isManaged: isManaged)
         case .subagents: TaskWellToolDetail(text: "3 workers · 2 working")
         case .pullRequest: TaskWellToolDetail(text: "#128 Open · 3 checks passed")
         }

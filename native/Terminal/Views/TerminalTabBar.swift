@@ -10,6 +10,7 @@ struct TerminalTabBar: View {
     var canAddTab = true
     var isWorkbench = false
     var workbenchActions: AnyView?
+    @State private var tabsWidth: CGFloat?
 
     var body: some View {
         HStack(spacing: DS.Space.xs) {
@@ -28,9 +29,11 @@ struct TerminalTabBar: View {
                             )
                         }
                     }
+                    .onGeometryChange(for: CGFloat.self, of: \.size.width) { tabsWidth = $0 }
                 }
                 .scrollIndicators(.never)
                 .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: isWorkbench ? tabsWidth : nil)
                 if isWorkbench, let workbenchActions {
                     Menu {
                         Button("New Terminal Tab", systemImage: "terminal") { panel.newTab() }

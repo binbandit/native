@@ -10,6 +10,7 @@ struct TaskWellToolsPanel<Destination: View>: View {
     let detail: (TaskWellTool) -> TaskWellToolDetail
     @ViewBuilder var destination: (TaskWellTool) -> Destination
     @State private var hovered: TaskWellTool?
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -40,6 +41,10 @@ struct TaskWellToolsPanel<Destination: View>: View {
         }
         .frame(width: DS.TaskWell.panelWidth)
         .dsPopoverBackground()
+        .focusable()
+        .focusEffectDisabled()
+        .focused($isFocused)
+        .onAppear { isFocused = true }
         .onKeyPress(.escape) {
             if tools.wellPage != nil { tools.showWellTools() } else { tools.showsWell = false }
             return .handled
@@ -104,6 +109,7 @@ struct TaskWellToolsPanel<Destination: View>: View {
     @ViewBuilder private var management: some View {
         if let management = identity.management {
             Label(management, systemImage: "lock")
+                .font(.dsCaption)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -155,7 +161,7 @@ struct TaskWellToolsPanel<Destination: View>: View {
             .trackHover(Binding(get: { hovered == tool }, set: { hovered = $0 ? tool : nil }))
             .dsHitTarget(DS.TaskWell.rowHeight)
             .accessibilityIdentifier("taskWell.\(tool.title)")
-            if let reason = detail.unavailableReason {
+            if let reason = detail.unavailableReason ?? detail.note {
                 Text(reason)
                     .font(DS.TaskWell.body).foregroundStyle(.dsTextTertiary)
                     .fixedSize(horizontal: false, vertical: true)

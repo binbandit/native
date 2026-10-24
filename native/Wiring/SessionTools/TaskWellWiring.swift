@@ -145,12 +145,15 @@ struct TaskWellWiring: View {
             let since: Date? = action.flatMap {
                 if case .running(let since, _) = actions.state(of: $0, in: target) { since } else { nil }
             }
+            let repositoryActionsOff =
+                policy.isManaged(.taskScriptsRepository)
+                && !policy.policy.taskScripts.repositoryScriptsEnabled
             return TaskWellToolDetail(
                 text: running.isEmpty ? action?.name ?? "Project actions" : running.map(\.name).joined(separator: ", "),
                 isSelected: panel.isVisible && panel.tabs.selected?.job != nil,
                 isRunning: !running.isEmpty, runningSince: since,
-                isManaged: policy.isManaged(.taskScriptsRepository)
-                    && !policy.policy.taskScripts.repositoryScriptsEnabled)
+                note: repositoryActionsOff ? "Repository actions are off. Your actions are still available." : nil,
+                isManaged: repositoryActionsOff)
         case .subagents:
             let subagents = session.state.subagents
             let working = subagents.filter { $0.workState?.isWorking == true }.count
