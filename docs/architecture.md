@@ -359,7 +359,7 @@ feature presets, agent detail pages and the shared overnight receipt belong to l
 
 ### Fine print approvals
 
-`NativeComposerNext` is an off-by-default Labs gate at the composer's approval state. Enable it
+`NativeComposerNext` is an off-by-default Labs gate for the composer and its approval state. Enable it
 with Settings > Labs > Fine print, or set `experiment.NativeComposerNext` as a boolean in the
 isolated app's defaults. The rejected quiet-settings-line experiment has been removed.
 
@@ -367,6 +367,15 @@ isolated app's defaults. The rejected quiet-settings-line experiment has been re
 Peek and Home hosts. `SessionApprovalView` connects it to model actions. Only the oldest request
 owns shortcuts; the primary transcript leaves its response controls to the composer while enabled.
 The ordinary composer and approvals are unchanged with the gate off.
+
+At rest the gated composer is one field and a model-name control. `ComposerSettingsControl`
+opens model, effort, permission consequences and the agent's extra options in one popover;
+its MCP page embeds `MCPSessionPanel`. Picks still go through `SessionModel.pick`, including
+remembering successful choices and rejecting forbidden permission modes. `SettingsSourceLabel`
+is shared with New Tasks: personal choices need no tag, agent defaults name the agent, and
+managed permission rows name the configured organization. The existing policy
+catalog governs permission modes and MCP servers; it does not supply model locks or an offline
+web-search switch. Web search is editable only when the agent offers a config option for it.
 
 `Packages/ApprovalAnalysis` matches literal commands against bundled, versioned JSON knowledge,
 with additive plugin and managed-policy contributions. It never executes commands or inspects files
