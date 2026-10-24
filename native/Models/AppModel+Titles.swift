@@ -17,7 +17,8 @@ extension AppModel {
     /// title. That includes a task in the project's own folder, which in branch mode still gets
     /// its own provisional branch; the provider decides whether there's anything to rename.
     func workspaceGotTitle(_ event: TitleEvent) async {
-        guard let provider = taskWorkspaces, !titledWorkspaces.contains(event.key),
+        guard coordinator(for: event.key) == nil,
+            let provider = taskWorkspaces, !titledWorkspaces.contains(event.key),
             let projectID = catalog.lookup(event.key)?.project, let project = projects.project(projectID)
         else { return }
         titledWorkspaces.insert(event.key)

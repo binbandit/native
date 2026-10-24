@@ -11,17 +11,23 @@ extension SessionLauncher {
     /// the first one.
     func startOnHost(
         _ client: NativeHostClient, on runtime: AgentRuntime, cwd: URL, origin: SessionModel.Origin,
-        parent: SessionModel?
+        parent: SessionModel?, coordinatorAssignments: [HostTaskIdentity]? = nil, coordinatorID: HostSessionID? = nil
     ) async throws -> SessionModel {
-        let id = HostSessionID()
+        let id = coordinatorID ?? HostSessionID()
         let context = SessionContext(
             clientID: id.rawValue, agent: runtime.agent.id, agentName: runtime.agent.displayName, sessionID: nil,
             cwd: cwd, parentID: parent?.id)
-        let summary = try await client.newSession(
-            NewSessionParams(
-                sessionID: id, agentID: runtime.agent.id.rawValue, cwd: cwd.folderPath, parentID: parent?.host?.id,
-                origin: origin.host, mcpServers: try mcpServers(for: context, on: client), meta: meta(for: context),
-                attach: true))
+        let params = NewSessionParams(
+            sessionID: id, agentID: runtime.agent.id.rawValue, cwd: cwd.folderPath, parentID: parent?.host?.id,
+            origin: origin.host, mcpServers: try mcpServers(for: context, on: client), meta: meta(for: context),
+            attach: true)
+        let summary: HostSessionSummary
+        if let coordinatorAssignments {
+            summary = try await client.newCoordinator(
+                NewCoordinatorParams(task: params, assignments: coordinatorAssignments))
+        } else {
+            summary = try await client.newSession(params)
+        }
         guard let agentSessionID = summary.agentSessionID else {
             throw LaunchError.failed(
                 agent: runtime.agent.displayName, underlying: HostTurnFailure(message: "No task"))
