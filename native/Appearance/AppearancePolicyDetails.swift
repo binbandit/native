@@ -22,23 +22,31 @@ struct AppearancePolicyDetails: View {
                 .font(.dsCalloutMedium)
             Text(reason).font(.dsBody).fixedSize(horizontal: false, vertical: true)
             VStack(alignment: .leading, spacing: DS.Space.md) {
-                Text("Setting").foregroundStyle(.dsTextTertiary)
-                Text("policy.appearance.codeTheme").font(.dsMonoCaption)
-                Text("Value").foregroundStyle(.dsTextTertiary)
-                Text(policy.appearanceCodeTheme ?? "native").font(.dsMonoCaption)
+                detailRow("Setting", value: "policy.appearance.codeTheme")
+                detailRow("Value", value: policy.appearanceCodeTheme ?? "native")
             }
-            .font(.dsBody)
-            Text(contact).font(.dsBody).foregroundStyle(.dsTextSecondary)
-            Button(copied ? "Copied" : "Copy Details") {
-                DSPasteboard.copy(details)
-                copied = true
+            HStack(alignment: .center, spacing: DS.Space.lg) {
+                Text(contact).font(.dsBody).foregroundStyle(.dsTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+                Button(copied ? "Copied" : "Copy Details") {
+                    DSPasteboard.copy(details)
+                    copied = true
+                }
+                .buttonStyle(.settings)
             }
-            .buttonStyle(.settings)
         }
         .foregroundStyle(.dsTextPrimary)
         .padding(DS.Space.xl)
         .frame(width: DS.Appearance.lockWidth)
     }
+    private func detailRow(_ title: String, value: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: DS.Space.lg) {
+            Text(title).font(.dsBody).foregroundStyle(.dsTextTertiary)
+            Text(value).font(.dsMonoCaption)
+        }
+    }
+
 }
 
 #if DEBUG
