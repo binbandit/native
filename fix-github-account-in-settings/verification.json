@@ -1,5 +1,5 @@
 {
-  "revision": "9d4ddcadf0980ed98d4b9c471f9fc9c250a7842c",
+  "revision": "078911940240c22e7b7ef35535a98b145ca98c4f",
   "instance": "vc-101",
   "configuration": "Debug",
   "modes": [
@@ -86,5 +86,9 @@
     "plainly-single-light.png",
     "reference-A1-dark.png",
     "reference-A1-light.png"
-  ]
+  ],
+  "prior_revision": "9d4ddcadf0980ed98d4b9c471f9fc9c250a7842c",
+  "post_merge_check": "All seven fixture states, both themes and settings modes repeated; navigation, successful and failed switching, and restart persistence passed.",
+  "comparison": "Content matches earlier accepted screenshots; light content is pixel-identical, dark content differs only by at most two color levels. Window corners and live status-bar values excluded.",
+  "historical_check_again_revision": "9d4ddcadf0980ed98d4b9c471f9fc9c250a7842c"
 }
