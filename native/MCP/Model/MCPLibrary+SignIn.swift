@@ -4,6 +4,15 @@ import MCPClient
 import NativePolicy
 
 extension MCPLibrary {
+    func openSignInBrowser(_ command: AgentCLICommand, flow: MCPLoginFlow) -> String? {
+        guard organizationPolicy.allows(name: command.serverName) else {
+            flow.cancel()
+            return "Your policy settings don't allow signing in to this MCP server."
+        }
+        if let authorization = flow.authorization { PlatformURLOpener.open(authorization.url) }
+        return nil
+    }
+
     /// Sign-in is initiated here so policy, host selection and configuration refresh do not depend
     /// on which Settings or task view presented it. The browser always belongs to this client.
     func startSignIn(_ command: AgentCLICommand, flow: MCPLoginFlow, task: SessionModel? = nil) async -> String? {

@@ -45,8 +45,7 @@ struct MCPSignInSheet: View {
     }
 
     private func openBrowser() {
-        guard let link = flow.authorization else { return }
-        PlatformURLOpener.open(link.url)
+        problem = library.openSignInBrowser(command, flow: flow)
     }
 }
 
