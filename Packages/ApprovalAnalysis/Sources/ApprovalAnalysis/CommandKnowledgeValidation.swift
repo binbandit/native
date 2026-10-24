@@ -82,14 +82,13 @@ enum CommandKnowledgeValidation {
             for option in rule.options {
                 guard !option.names.isEmpty,
                     option.names.allSatisfy({ $0.hasPrefix("-") && $0 != "--" && identifier(String($0.dropFirst())) }),
-                    ["none", "next", "attached"].contains(option.value),
                     text(option.summary, placeholders: []),
                     option.alternative.map({ text($0, placeholders: []) }) ?? true
                 else { throw Invalid("invalid option names, value mode, or text") }
                 if let replacement = option.replacement {
-                    guard option.value == "none", option.alternative != nil,
+                    guard option.value == .none, option.alternative != nil,
                         rule.options.contains(where: {
-                            $0.names.contains(replacement) && $0.value == "none" && $0.replacement == nil
+                            $0.names.contains(replacement) && $0.value == .none && $0.replacement == nil
                         })
                     else {
                         throw Invalid("replacement must name an existing valueless option and explain the alternative")
@@ -105,11 +104,10 @@ enum CommandKnowledgeValidation {
     static func location(_ raw: Any) throws -> CommandKnowledge.Location {
         _ = try object(raw, keys: ["kind", "path", "summary"])
         let location = try decode(CommandKnowledge.Location.self, raw)
-        guard ["component", "homePrefix"].contains(location.kind),
-            !location.path.isEmpty, location.path.count <= 256, !location.path.contains(".."),
+        guard !location.path.isEmpty, location.path.count <= 256, !location.path.contains(".."),
             !location.path.hasPrefix("/"), !location.path.hasSuffix("/"),
             location.path.split(separator: "/").allSatisfy({ identifier(String($0)) }),
-            location.kind != "component" || !location.path.contains("/"),
+            location.kind != .component || !location.path.contains("/"),
             text(location.summary, placeholders: [])
         else { throw Invalid("invalid location kind, path, or summary") }
         return location

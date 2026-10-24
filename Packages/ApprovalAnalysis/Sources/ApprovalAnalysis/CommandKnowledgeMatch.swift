@@ -50,7 +50,7 @@ struct CommandKnowledgeMatch {
                 let option = CommandKnowledge.Option(
                     names: matched.options.flatMap(\.names),
                     summary: matched.options.map(\.summary).joined(separator: "; "),
-                    destructive: matched.options.contains(where: \.destructive), value: "none",
+                    destructive: matched.options.contains(where: \.destructive), value: .none,
                     replacement: matched.options.first?.replacement, alternative: matched.options.first?.alternative)
                 options.append(.init(range: range, option: option))
             } else {
@@ -68,11 +68,11 @@ struct CommandKnowledgeMatch {
         _ text: String, rule: CommandKnowledge.Command
     ) -> (options: [CommandKnowledge.Option], needsNext: Bool)? {
         if let exact = rule.options.first(where: { $0.names.contains(text) }) {
-            return ([exact], exact.value != "none")
+            return ([exact], exact.value != .none)
         }
         if let equals = text.firstIndex(of: "="), text.hasPrefix("--"),
             let option = rule.options.first(where: {
-                $0.value == "attached" && $0.names.contains(String(text[..<equals]))
+                $0.value == .attached && $0.names.contains(String(text[..<equals]))
             }),
             !text[text.index(after: equals)...].isEmpty
         {
@@ -86,9 +86,9 @@ struct CommandKnowledgeMatch {
                 index == 0 || rule.shortClusters == true
             else { return nil }
             matched.append(option)
-            if option.value != "none" {
+            if option.value != .none {
                 if index == chars.count - 1 { return (matched, true) }
-                return option.value == "attached" ? (matched, false) : nil
+                return option.value == .attached ? (matched, false) : nil
             }
         }
         return rule.shortClusters == true ? (matched, false) : nil
@@ -114,11 +114,10 @@ struct CommandKnowledgeMatch {
         path = URL(filePath: path).standardizedFileURL.path
         let location = knowledge.locations.first { location in
             switch location.kind {
-            case "component": return path.split(separator: "/").contains(Substring(location.path))
-            case "homePrefix":
+            case .component: return path.split(separator: "/").contains(Substring(location.path))
+            case .homePrefix:
                 guard let home else { return false }
                 return isInside(path, root: home + "/" + location.path)
-            default: return false
             }
         }
         return (

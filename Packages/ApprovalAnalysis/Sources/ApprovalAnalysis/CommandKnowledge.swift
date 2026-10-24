@@ -23,11 +23,12 @@ public struct CommandKnowledge: Equatable, Sendable {
     }
 
     struct Option: Codable, Equatable, Sendable {
+        enum ValueMode: String, Codable, Sendable { case none, next, attached }
         let names: [String]
         let summary: String
         let destructive: Bool
         /// none, next, or attached. Attached values also accept a separate next word.
-        let value: String
+        let value: ValueMode
         let replacement: String?
         let alternative: String?
     }
@@ -40,8 +41,9 @@ public struct CommandKnowledge: Equatable, Sendable {
     }
 
     struct Location: Codable, Equatable, Sendable {
+        enum Kind: String, Codable, Sendable { case homePrefix, component }
         /// homePrefix or component. These identify conventional names, never measured contents.
-        let kind: String
+        let kind: Kind
         let path: String
         let summary: String
     }
