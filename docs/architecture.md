@@ -515,11 +515,27 @@ forbids it. Usage stays in Settings by product decision. Modes are editable from
 there is no separate Modes feature switch. Sounds joins Notifications, GitHub and Scripts join Git,
 Sleep and paired devices join While You're Away, and enabled Celebrations join Appearance.
 
-New Tasks owns the existing agent model and effort defaults, starting mode and workspace choice.
-A project's agent, model and workspace controls move there with project scope; branch prefix stays
-on its project page. Search follows the moved rows. `SettingsPlainlyCopy` supplies row text,
-accessible control names and search titles together. The inheritance popovers, context accounting,
-feature presets, agent detail pages and the shared overnight receipt belong to later slices.
+New Tasks owns the agent model, effort and permissions defaults, starting mode and workspace choice.
+Both scope menus remain available for every project. Project overrides, user defaults, remembered
+choices and agent-reported defaults form a source stack; organization restrictions and the starting
+mode show when they supersede a choice. Unavailable choices remain explainable and can be Reset.
+Permissions and the new project effort/mode overrides apply only to new tasks while Plainly is on;
+reopened tasks and the original page map retain their behavior. Agent and project pages link here.
+Branch prefixes stay on project pages.
+
+`Packages/TaskDefaults` holds the tested default resolution, instruction metadata inventory and
+context estimate. The page reads existing MCP and Skills libraries and plugin-declared instruction
+locations without probing servers, starting tasks or reading agent secrets. It lists file metadata,
+not instruction contents. Counts stay approximate: instruction bytes and skill summaries use a
+four-byte heuristic, MCP tools use existing probe definitions, and matching agent/project/model
+context reports can supply counts and capacity. Missing counts are explicit, never zero-cost claims.
+Conditional files, inherited instructions, plugin tools and agent-managed context may remain unknown.
+Agent-owned instructions have no pretend switch; unsupported skill/server switches link to their
+existing management pages. Failed probes never imply an agent's sign-in expired.
+
+`SettingsPlainlyCopy` supplies row text, accessible control names and search titles together.
+Feature presets, agent detail pages, composer provenance persistence and the shared overnight
+receipt belong to later slices.
 
 ### Fine print approvals
 

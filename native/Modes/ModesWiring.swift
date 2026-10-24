@@ -12,8 +12,9 @@ enum ModesWiring {
             model.catalog.lookup(session.key).flatMap { model.projects.project($0.project)?.url }
         }
         model.sessionHooks.preamble = { session, delivered in modes.preamble(for: session, delivered: delivered) }
-        model.sessionHooks.taskStarted = { session, earlier in
-            await modes.taskStarted(session, continuing: earlier)
+        model.sessionHooks.taskStarted = { session, earlier, project in
+            let root = project.flatMap { model.projects.project($0)?.url }
+            await modes.taskStarted(session, continuing: earlier, projectRoot: root)
         }
         model.sessionHooks.taskRecovered = { old, replacement in
             modes.recoverSelection(from: old, to: replacement)

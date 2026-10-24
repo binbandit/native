@@ -13,7 +13,8 @@ public enum PolicyLoader {
             .foldersAllowedRoots, expecting: "an array of absolute local folder paths", ordinary: nil, restricted: [],
             invalid: [], PolicyParse.folderRoots)
         policy.organizationContact = resolver.resolve(
-            .organizationContact, expecting: "a non-empty string", ordinary: nil, restricted: nil, PolicyParse.text)
+            .organizationContact, expecting: "a nonempty contact", ordinary: nil, restricted: nil,
+            PolicyParse.trimmedText)
         // An unusable theme leaves the user's own, as the theme isn't a security setting.
         policy.appearanceCodeTheme = resolver.resolve(
             .appearanceCodeTheme, expecting: "a built-in code theme id", ordinary: nil, restricted: nil,
@@ -72,7 +73,7 @@ public enum PolicyLoader {
             .celebrationsEnabled, expecting: "a Boolean", ordinary: true, restricted: false, PolicyParse.bool)
         policy.organizationName = resolver.resolve(
             .organizationName, expecting: "a nonempty organization name", ordinary: nil, restricted: nil,
-            PolicyParse.organizationName)
+            PolicyParse.trimmedText)
         policy.labsEnabled = resolver.resolve(
             .labsEnabled, expecting: "a Boolean", ordinary: true, restricted: false, PolicyParse.bool)
         policy.companionEnabled = resolver.resolve(
@@ -198,10 +199,10 @@ enum PolicyParse {
         return number.boolValue
     }
 
-    static func organizationName(_ raw: Any, _ problems: inout [String]) -> String? {
+    static func trimmedText(_ raw: Any, _ problems: inout [String]) -> String? {
         guard let text = raw as? String else { return nil }
-        let name = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        return name.isEmpty ? nil : name
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 
     static func strings(_ raw: Any, _ problems: inout [String]) -> [String]? {

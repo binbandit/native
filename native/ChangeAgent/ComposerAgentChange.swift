@@ -137,7 +137,7 @@ final class ComposerAgentChange {
                 try validate(prepared, source: source, app: app)
                 // Mode state is Native-owned. Its task-start hook copies the selection locally,
                 // with `continuing` set; it does not send a prompt or run new-task defaults.
-                await source.services.hooks.taskStarted(prepared, source)
+                await source.services.hooks.taskStarted(prepared, source, nil)
                 try Task.checkCancellation()
                 guard revision == source.state.items, config == source.configOptions else {
                     throw Failure("The task changed while the model was starting. Try Again to use its latest context.")

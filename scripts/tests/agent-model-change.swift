@@ -109,8 +109,8 @@ private struct AgentModelChangeRegression {
         let tripwire = WorkspaceTripwire()
         app.taskWorkspaces = tripwire
         var hooks = 0
-        app.sessionHooks.taskStarted = { _, earlier in
-            if earlier === source { hooks += 1 }
+        app.sessionHooks.taskStarted = { _, earlier, project in
+            if earlier === source, project == nil { hooks += 1 }
         }
         let choice = ComposerAgentModel(
             agent: .init(rawValue: "droid"), agentName: "Droid",

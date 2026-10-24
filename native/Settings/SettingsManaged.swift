@@ -26,6 +26,6 @@ private struct SettingsManagedModifier: ViewModifier {
     @Environment(PolicyCenter.self) private var policy: PolicyCenter?
 
     func body(content: Content) -> some View {
-        content.settingsLocked(policy?.isManaged(key) == true ? PolicyCenter.managedExplanation : nil)
+        content.settingsLocked(policy?.isManaged(key) == true ? policy?.policy.managedExplanation : nil)
     }
 }

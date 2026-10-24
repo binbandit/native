@@ -33,7 +33,6 @@ maps every key to the capabilities it governs and the code that honors it.
 | --- | --- |
 | `policy.deployment.mode` | `ordinary` (today's behavior, the default), `internalOnly` or `airGapped`. See [Restricted deployment](#restricted-deployment). |
 | `policy.network` | Which network services may run and the exact origins they may use ([network admission](enterprise/network-admission.md)). |
-| `policy.organization.contact` | Help channel shown beside managed Appearance settings, for example #it-help. |
 | `policy.appearance.codeTheme` | A built-in code theme id for both appearances. Unknown ids are reported and leave the user's own theme. Personal choices are preserved and return when the key is removed. Themes without a palette for one appearance use Native in that appearance. |
 | `policy.appearance.codeTheme.reason` | Optional explanation shown when opening the locked code theme row. |
 | `policy.agents.allowed` | Agent ids that may be listed or started; others are hidden with "Not allowed by your organization". |
@@ -48,7 +47,8 @@ maps every key to the capabilities it governs and the code that honors it.
 | `policy.taskScripts.userScripts` | Task scripts written in Native, global and per project (`docs/scripts.md`): `false` stops them running and locks their settings. |
 | `policy.taskScripts.repositoryScripts` | Task scripts committed to repositories as `.native/<event>.sh`: `false` ignores them and locks each project's "Run scripts from the repo" off. |
 | `policy.celebrations.enabled` | `false` removes the Celebrations page and command, disables its plugin contributions, and restores the usual appearance. Personal choices are retained. Defaults to `true`. |
-| `policy.organization.name` | Optional display name for managed notices, such as "Northwind Federal IT". Without it, notices describe this install without inventing an organization. |
+| `policy.organization.contact` | Optional plain-text contact for policy explanations and managed Appearance settings, such as "#it-help". Without it, Native says to ask the administrator. |
+| `policy.organization.name` | Optional display name used across policy notices, source stacks and controls, such as "Northwind Federal IT". Falls back to "your organization". |
 | `policy.labs.enabled` | Labs and experiments, including plugin experiments. |
 | `policy.companion.enabled` / `policy.remoteHosts.enabled` | Pairing devices; connecting to hosts other than this Mac (see [remote hosts](#remote-hosts)). |
 | `policy.updates.feedURL` / `policy.updates.enabled` / `policy.updates.channels` | An internal update feed, or updates off; which channels are allowed. |

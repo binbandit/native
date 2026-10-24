@@ -90,7 +90,7 @@ final class SessionLauncher {
         await AgentSessionDefaults.apply(to: session, project: project)
         if origin == .user, parent == nil {
             // After the defaults, so what the task starts in (its mode) wins over them.
-            await services.hooks.taskStarted(session, earlier)
+            await services.hooks.taskStarted(session, earlier, project)
         }
         services.post(.sessionStarted(session.context))
         return session

@@ -8,6 +8,7 @@ import NativeAutomation
 import NativeHostProtocol
 import NativePolicy
 import Search
+import TaskDefaults
 
 /// Extends Native. Native's own agents and features are plugins too, so every extension point is
 /// exercised by built-in code before anything else depends on it.
@@ -157,6 +158,8 @@ struct AgentManifest: Codable, Hashable, Sendable {
     /// Variables to set to the absolute path of a command on the user's PATH, such as
     /// `{"CLAUDE_CODE_EXECUTABLE": "claude"}`, so an adapter runs the user's own CLI.
     var resolveExecutables: [String: String] = [:]
+    /// Declared instruction paths let Settings estimate context without reading file contents.
+    var instructionLocations: [TaskInstructionLocation] = []
     /// Where the agent keeps its own MCP configuration ("claude-code", "codex" or "cursor"), so the
     /// MCP feature can show and import the servers it already loads. Nil when unknown.
     var mcpConfig: String?
@@ -205,8 +208,9 @@ struct AgentManifest: Codable, Hashable, Sendable {
         icon: AgentIconSource? = nil, requires: [String] = [], setup: AgentSetupGuide? = nil,
         idleSessionTimeout: Int? = nil, idleUnloadTimeout: Int? = nil, renameCommand: String? = nil,
         steeringPolicy: SteeringPolicy? = nil,
-        authMethods: [AuthMethod] = [], settingsFiles: [String] = [],
-        networkCapabilities: AgentNetworkCapabilities? = nil, nativeSkill: NativeAgentSkillFormat? = nil
+        authMethods: [AuthMethod] = [], instructionLocations: [TaskInstructionLocation] = [],
+        settingsFiles: [String] = [], networkCapabilities: AgentNetworkCapabilities? = nil,
+        nativeSkill: NativeAgentSkillFormat? = nil
     ) {
         self.id = id
         self.name = name
@@ -225,6 +229,7 @@ struct AgentManifest: Codable, Hashable, Sendable {
         self.renameCommand = renameCommand
         self.steeringPolicy = steeringPolicy
         self.authMethods = authMethods
+        self.instructionLocations = instructionLocations
         self.settingsFiles = settingsFiles
         self.networkCapabilities = networkCapabilities
     }
@@ -238,6 +243,8 @@ struct AgentManifest: Codable, Hashable, Sendable {
         args = try container.decodeIfPresent([String].self, forKey: .args) ?? []
         env = try container.decodeIfPresent([String: String].self, forKey: .env) ?? [:]
         resolveExecutables = try container.decodeIfPresent([String: String].self, forKey: .resolveExecutables) ?? [:]
+        instructionLocations =
+            try container.decodeIfPresent([TaskInstructionLocation].self, forKey: .instructionLocations) ?? []
         mcpConfig = try container.decodeIfPresent(String.self, forKey: .mcpConfig)
         nativeSkill = try container.decodeIfPresent(NativeAgentSkillFormat.self, forKey: .nativeSkill)
         icon = try container.decodeIfPresent(AgentIconSource.self, forKey: .icon)

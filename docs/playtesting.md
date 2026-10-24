@@ -429,3 +429,14 @@ scripts/dev/run-isolated.sh playtest --quit      # after each check
 scripts/dev/drive.sh playtest seed --remove      # the scratch clone, sample repo and plugins
 scripts/dev/run-isolated.sh playtest --remove    # settings, data, host, worktrees and the 6 GB build
 ```
+
+### New Tasks sources (Plainly slice 2)
+
+Enable `experiment.NativeSettingsPlainly` in the isolated defaults. `-newTasksFixture populated`,
+`managed`, `empty`, or `unavailable` renders inert agent choices and load inventory on New Tasks.
+The managed fixture also needs simulated policy keys (`policy.debug.managedKeys`) for
+`policy.permissions.forbiddenModes`, `policy.organization.name`, and `policy.organization.contact`.
+Use `auto` as the forbidden fixture choice, Northwind Federal IT and #it-help as the identity.
+Fixtures do not start an agent or probe servers. Omit the argument for persistence and real-library
+checks. Check both scope menus, each source button, Why This Value, Reset, Undo and project/global
+isolation; an unavailable saved model must show the effective agent value and explain the fallback.

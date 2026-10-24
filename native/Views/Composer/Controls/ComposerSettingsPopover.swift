@@ -223,7 +223,7 @@ struct ComposerSettingsPopover: View {
             ComposerSettingsHeader(title: "When \(agentName) asks") {
                 if permissionsManaged {
                     Image(systemName: "lock").font(DS.ComposerSettings.lockFont)
-                        .accessibilityLabel("Managed by \(manager ?? "your organization")")
+                        .accessibilityLabel("Managed by \(manager ?? PolicyCenter.organizationName)")
                 }
             }
             if let autonomy = settings.autonomy {
@@ -257,7 +257,7 @@ struct ComposerSettingsPopover: View {
         .disabled(locked)
         .composerSettingsHover(target, hovered: $hovered)
         .accessibilityLabel(choice.askingTitle)
-        .accessibilityValue(locked ? "Managed by \(manager ?? "your organization")" : "")
+        .accessibilityValue(locked ? "Managed by \(manager ?? PolicyCenter.organizationName)" : "")
         .help(caption(for: choice) ?? choice.askingTitle)
         .accessibilityHint(caption(for: choice) ?? "")
         .accessibilityAddTraits(choice.value == shownAutonomy ? .isSelected : [])

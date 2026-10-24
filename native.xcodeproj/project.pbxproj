@@ -41,6 +41,7 @@
 		00000000000000007E1E0020 /* NativeTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000007E1E0010 /* NativeTelemetry */; };
 		0000000000000000901C0020 /* NativePolicy in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000901C0010 /* NativePolicy */; };
 		00000000000000009C010020 /* ProjectIcons in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000009C010010 /* ProjectIcons */; };
+		0000000000000000D3FA0020 /* TaskDefaults in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000D3FA0010 /* TaskDefaults */; };
 		0000000000000000A1150020 /* AIInstructions in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000A1150010 /* AIInstructions */; };
 		0000000000000000A99A0020 /* AppAppearance in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000A99A0010 /* AppAppearance */; };
 		0000000000000000AC7A0020 /* ProjectActions in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000AC7A0010 /* ProjectActions */; };
@@ -133,6 +134,7 @@
 				0000000000000000901C0020 /* NativePolicy in Frameworks */,
 				A6A700000000000000000020 /* NativeNetwork in Frameworks */,
 				0000000000000000A1150020 /* AIInstructions in Frameworks */,
+				0000000000000000D3FA0020 /* TaskDefaults in Frameworks */,
 				00000000000000005171E020 /* SessionTitling in Frameworks */,
 				000000000000000007C4E020 /* NativeOrchestration in Frameworks */,
 				00000000000000004D0DE520 /* Modes in Frameworks */,
@@ -268,6 +270,7 @@
 				0000000000000000901C0010 /* NativePolicy */,
 				A6A700000000000000000010 /* NativeNetwork */,
 				0000000000000000A1150010 /* AIInstructions */,
+				0000000000000000D3FA0010 /* TaskDefaults */,
 				00000000000000005171E010 /* SessionTitling */,
 				000000000000000007C4E010 /* NativeOrchestration */,
 				00000000000000004D0DE510 /* Modes */,
@@ -334,6 +337,7 @@
 				0000000000000000901C0000 /* XCLocalSwiftPackageReference "Packages/NativePolicy" */,
 				A6A700000000000000000000 /* XCLocalSwiftPackageReference "Packages/NativeNetwork" */,
 				0000000000000000A1150000 /* XCLocalSwiftPackageReference "Packages/AIInstructions" */,
+				0000000000000000D3FA0000 /* XCLocalSwiftPackageReference "Packages/TaskDefaults" */,
 				00000000000000005171E000 /* XCLocalSwiftPackageReference "Packages/SessionTitling" */,
 				000000000000000007C4E000 /* XCLocalSwiftPackageReference "Packages/Orchestration" */,
 				00000000000000004D0DE500 /* XCLocalSwiftPackageReference "Packages/Modes" */,
@@ -835,6 +839,10 @@
 
 /* Begin XCLocalSwiftPackageReference section */
 		A15000000000000000000000 /* XCLocalSwiftPackageReference "Packages/ProjectNames" */ = {isa = XCLocalSwiftPackageReference; relativePath = Packages/ProjectNames; };
+		0000000000000000D3FA0000 /* XCLocalSwiftPackageReference "Packages/TaskDefaults" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/TaskDefaults;
+		};
 		A6A700000000000000000000 /* XCLocalSwiftPackageReference "Packages/NativeNetwork" */ = {isa = XCLocalSwiftPackageReference; relativePath = Packages/NativeNetwork; };
 		C0A990010000000000000003 /* XCLocalSwiftPackageReference "Packages/ApprovalAnalysis" */ = {isa = XCLocalSwiftPackageReference; relativePath = Packages/ApprovalAnalysis; };
 		000000000000000000000300 /* XCLocalSwiftPackageReference "Packages/ACP" */ = {
@@ -984,6 +992,11 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		A15000000000000000000010 /* ProjectNames */ = {isa = XCSwiftPackageProductDependency; productName = ProjectNames; };
+		0000000000000000D3FA0010 /* TaskDefaults */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0000000000000000D3FA0000 /* XCLocalSwiftPackageReference "Packages/TaskDefaults" */;
+			productName = TaskDefaults;
+		};
 		A6A700000000000000000010 /* NativeNetwork */ = {isa = XCSwiftPackageProductDependency; productName = NativeNetwork; };
 		C0A990010000000000000002 /* ApprovalAnalysis */ = {isa = XCSwiftPackageProductDependency; productName = ApprovalAnalysis; };
 		000000000000000000000310 /* ACP */ = {
