@@ -5,6 +5,7 @@ import NativeHostClient
 import NativeHostProtocol
 import NativeOrchestration
 import NativePolicy
+import Undo
 
 extension AppModel {
     /// Resolve the gate once for every entry point and sidebar presentation.
