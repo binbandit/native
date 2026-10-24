@@ -121,6 +121,32 @@ import Testing
         #expect(!history.canUndo)
     }
 
+    @Test(arguments: [false, true])
+    func removingATargetUpdatesTheClosedStack(hasOlderAction: Bool) async throws {
+        let history = UndoHistory()
+        let manager = UndoManager()
+        manager.groupsByEvent = false
+        let older = NSObject()
+        let removed = NSObject()
+        history.track(manager)
+        if hasOlderAction {
+            manager.beginUndoGrouping()
+            manager.registerUndo(withTarget: older) { _ in }
+            manager.setActionName("Older Edit")
+            manager.endUndoGrouping()
+        }
+        manager.beginUndoGrouping()
+        manager.registerUndo(withTarget: removed) { _ in }
+        manager.setActionName("Settings Edit")
+        manager.endUndoGrouping()
+        try await Task.sleep(for: .milliseconds(30))
+        #expect(history.undoTitle == "Undo Settings Edit")
+
+        manager.removeActions(withTarget: removed)
+        #expect(history.canUndo == hasOlderAction)
+        #expect(history.undoTitle == (hasOlderAction ? "Undo Older Edit" : "Undo"))
+    }
+
     @Test func menuFollowsTheWindowStackWithoutATextResponder() {
         let history = UndoHistory()
         let manager = UndoManager()

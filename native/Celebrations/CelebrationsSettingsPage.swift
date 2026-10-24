@@ -1,5 +1,6 @@
 import AppAppearance
 import SwiftUI
+import Undo
 
 /// Settings ▸ Celebrations, the chooser: what's showing and why, the overlap order, and the whole
 /// catalogue all year with each celebration off until the user picks it. Nothing is chosen from the
@@ -177,7 +178,7 @@ struct CelebrationsSettingsPage: View {
     /// Puts back the choices from before the change, and drops its ⌘Z entry so it can't be undone twice.
     private func undo(_ change: BulkChange) {
         center.restore(change.before)
-        undoManager?.removeAllActions(withTarget: center)
+        undoManager?.removeActions(withTarget: center)
         lastChange = nil
     }
 

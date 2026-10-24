@@ -892,7 +892,9 @@ History indexing had already completed.
 `UndoHistory` now publishes a menu snapshot only when its availability or titles change. It
 coalesces external checkpoints until registration and naming finish, ignores checkpoints raised
 by its own reads, and cancels pending refreshes when the window's undo manager changes. Redo
-queries run before sampling Undo because checkpoint listeners can commit pending edits.
+queries run before sampling Undo because checkpoint listeners can commit pending edits. Explicit
+target removals, including the settings Undo buttons, go through `UndoManager.removeActions` to
+notify the history; Foundation's target-removal API sends no notification of its own.
 
 Measured on elara, macOS 27.0.1, normal Debug, in the isolated `idle-cpu` instance. Before:
 `acfbcccc`; after: `5f22d68b`. `scripts/dev/drive.sh idle-cpu seed` supplied two scratch projects;
@@ -911,7 +913,8 @@ Both runs left the window open, settled for 30-45 seconds, then sampled kernel c
 The after profile found the main thread waiting for events throughout the sample. The idle-menu
 regression failed before the fix. The Undo package's tests also cover normal
 undo/redo, deletion expiry, deferred naming, pending edits committed by checkpoint listeners,
-and switching managers before a pending refresh. No Accessibility or Screen Recording permission
+switching managers before a pending refresh, released window managers, and target removals that
+empty the stack or reveal an older action. No Accessibility or Screen Recording permission
 is available on elara, so hidden/minimized measurements and interactive menu checks need the
 main Mac; these measurements cover the open-window process only.
 
