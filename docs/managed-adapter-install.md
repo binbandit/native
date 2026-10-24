@@ -16,7 +16,7 @@ an install. There is no retry, update check, telemetry or adapter launch.
 
 Installation uses a private sibling staging directory, a local npm cache, a five-minute
 timeout and command-line `--ignore-scripts --no-audit --no-fund --global=false`.
-Optional packages are not explicitly omitted. npm checks lock integrity; both supplied
+`--include=optional` overrides inherited omission settings. npm checks lock integrity; both supplied
 files must remain byte-identical. Output is discarded because it can contain secrets.
 The entry must resolve to a regular file inside staging; absolute paths and traversal
 are refused. An atomic exclusive rename publishes the complete directory, failing

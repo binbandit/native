@@ -39,16 +39,22 @@ public struct ManagedAdapterInstaller: Sendable {
         let stage = parent.appending(path: ".adapter-install-\(UUID().uuidString)")
         guard mkdir(stage.path, 0o700) == 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
         defer { try? files.removeItem(at: stage) }
+        // npm compares prefix and physical cwd. Foundation can shorten /private/var back to /var.
+        guard let physical = realpath(stage.path, nil) else {
+            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+        }
+        let installPath = String(cString: physical)
+        free(physical)
         let pair = [("package.json", auditedPackageJSON), ("package-lock.json", auditedPackageLock)]
         for (name, bytes) in pair { try bytes.write(to: stage.appending(path: name)) }
         let result = try await runner.run(
             Command(
                 "npm",
                 [
-                    "ci", "--ignore-scripts", "--no-audit", "--no-fund", "--global=false", "--prefix", stage.path,
-                    "--cache", stage.appending(path: ".npm-cache").path,
+                    "ci", "--ignore-scripts", "--no-audit", "--no-fund", "--global=false", "--prefix", installPath,
+                    "--cache", installPath + "/.npm-cache", "--include=optional",
                 ],
-                in: stage.path, environment: environment, timeout: .seconds(300)))
+                in: installPath, environment: environment, timeout: .seconds(300)))
         try Task.checkCancellation()
         // npm's output can contain credentials. Only the exit status crosses this API.
         guard result.succeeded else { throw Failure.npmFailed(result.exitCode) }
