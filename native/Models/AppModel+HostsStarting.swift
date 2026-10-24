@@ -67,7 +67,7 @@ extension AppModel {
         let task = startingTask(key)
         let session = session(key)
         guard let project = task?.project ?? catalog.lookup(key)?.project,
-            task != nil || (session.map { !$0.hasStarted } ?? false)
+            task != nil || (session.map { $0.canChangeWorkspace } ?? false)
         else { return }
         let agent = (task?.agent ?? session?.agent)?.id
         let draft = task?.draft ?? session?.draft ?? ""

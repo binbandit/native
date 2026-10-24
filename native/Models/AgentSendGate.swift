@@ -44,6 +44,7 @@ nonisolated enum SessionSendBlock: Equatable {
     /// A conversation `/clear` set aside, kept to read.
     case earlierConversation
     case changingAgent
+    case changingWorkspace
     case disconnected(agentName: String)
     case signInNeeded(agentName: String)
     /// The usage limit's message.
@@ -54,6 +55,7 @@ nonisolated enum SessionSendBlock: Equatable {
         case .notAcceptingPrompts: "This subagent only takes work from the task that started it."
         case .earlierConversation: "This is an earlier conversation. Send to the current one instead."
         case .changingAgent: "Wait for the agent change to finish before sending another message."
+        case .changingWorkspace: "Wait for the workspace change to finish before sending a message."
         case .disconnected(let agentName): "\(agentName) stopped running. Restart it from the sidebar to send."
         case .signInNeeded(let agentName): "Sign in to \(agentName) to send messages."
         case .usageLimit(let message): message

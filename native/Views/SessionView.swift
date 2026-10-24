@@ -33,6 +33,7 @@ struct SessionView: View {
             ToolbarItem { ChangeAgentControl(session: session) }
                 .sharedBackgroundVisibility(.hidden)
         }
+        .taskWorkspacePresentation(session: session)
     }
 
     private var standardBody: some View {

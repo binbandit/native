@@ -34,6 +34,20 @@ enum ProjectActionsWiring {
         let store = ProjectActionStore()
         store.allowsRepositoryActions = trust.isAvailable
         let runner = ProjectActionRunner(store: store, terminals: terminals)
+        model.workspaceChangeBlock = { [weak runner, weak model] session in
+            if terminals.hasOpenTerminals(for: session.key) {
+                return "Close this task's terminal tabs before changing its workspace."
+            }
+            if let runner, let model, let target = target(for: session, model: model),
+                !runner.running(in: target).isEmpty
+            {
+                return "Stop this task's project action before changing its workspace."
+            }
+            if runner?.pendingRun?.target.session?.key == session.key {
+                return "Finish or cancel the pending project action before changing this task's workspace."
+            }
+            return nil
+        }
         runner.hooks = ProjectActionRunner.Hooks(
             environment: { await model.shellEnvironment() },
             commandRunner: commandRunner,

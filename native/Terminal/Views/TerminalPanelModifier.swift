@@ -42,14 +42,9 @@ private struct TerminalPanelModifier: ViewModifier {
         .toolbar {
             if showsToolbarButton {
                 ToolbarItem {
-                    Button(panel.isVisible ? "Hide Terminal" : "Show Terminal", systemImage: "apple.terminal") {
+                    TerminalToolbarButton(activity: panel.tabs.activity, isVisible: panel.isVisible) {
                         store.toggle(for: session)
                     }
-                    .buttonStyle(.header(isOn: panel.isVisible, iconOnly: true))
-                    .accessibilityAddTraits(panel.isVisible ? .isSelected : [])
-                    .help(
-                        CommandRegistry.shared.help(
-                            panel.isVisible ? "Hide Terminal" : "Show Terminal", for: .terminalToggle))
                 }
                 .sharedBackgroundVisibility(.hidden)
             }

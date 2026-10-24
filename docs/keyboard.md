@@ -415,6 +415,7 @@ controls, moving into More only as the row runs out of room.
 | | Put the task in a mode, one command per mode ("Debug Mode"); your own and the project's modes get theirs too | Task ▸ Mode | `mode.build` / `mode.plan` / `mode.ask` / `mode.debug` / `mode.review` |
 | | Edit Modes… (Settings ▸ Modes) | Task ▸ Mode | `modes.edit` |
 | ⌘⇧E | Model picker | Task | `session.chooseModel` |
+| | Change Workspace…: choose a branch, new worktree or project folder before the first message | Task | `session.changeWorkspace` |
 | ⌥⌘G | Set or edit the task's goal | Task | `goal.edit` |
 | ⌥⌘R | Run a workflow | Task | `workflow.run` |
 

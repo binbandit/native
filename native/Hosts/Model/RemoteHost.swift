@@ -151,6 +151,12 @@ final class RemoteHost: Identifiable {
             log: { [weak self] entry in Task { @MainActor in self?.record(entry) } },
             pairingEnded: { [weak self] error in Task { @MainActor in self?.pairingEnded(error) } })
         let client = NativeHostClient(transport: transport, clientInfo: RemoteHosts.peerInfo)
+        start(using: client)
+    }
+
+    /// Accepts a configured link so model checks can exercise the same routing over an isolated transport.
+    func start(using client: NativeHostClient) {
+        guard self.client == nil, !isPairingEnded else { return }
         self.client = client
         let receive: NativeHostClient.EventHandler = { [weak self] event in await self?.receive(event) }
         let receiveStatus: @Sendable (HostStatus) async -> Void = { [weak self] status in

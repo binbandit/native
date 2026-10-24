@@ -50,6 +50,9 @@ extension AppModel {
         session.draft = old.draft
         session.attachments = old.attachments
         session.heldPrompts = old.heldPrompts
+        session.hasSubmittedPrompt = old.hasSubmittedPrompt
+        session.isChangingWorkspace = old.isChangingWorkspace
+        session.isWorkspaceReplaced = old.isWorkspaceReplaced
         session.mirrorState()
         sessions.replace(old, with: session)
         catalog.swap(old.key, for: SessionInfo(sessionId: agentSessionID, cwd: old.cwd.folderPath, updatedAt: .now))

@@ -158,6 +158,12 @@
 
             <!-- Updates: off, or from your own feed, and which channels users may pick
                  (stable, beta, nightly). -->
+            <!-- Keep celebration artwork offline; a mirror can be enabled separately. -->
+            <key>policy.celebrations.downloadsEnabled</key>
+            <false/>
+            <key>policy.celebrations.baseURL</key>
+            <string>https://assets.example.com/native/celebrations/</string>
+
             <key>policy.updates.enabled</key>
             <true/>
             <key>policy.updates.feedURL</key>

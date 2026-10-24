@@ -40,6 +40,29 @@ above:
    Support per bundle id. Offline or failed downloads keep the base icon; the chooser says
    "Downloads when you're online" or shows the error with Retry.
 
+The pack command materializes Git LFS renders from the repository's configured LFS remote when
+needed, then rejects non-PNG input before signing. A pointer-only checkout must never publish a
+signed pack. Run `python3 -m unittest discover -s scripts/release/tests -p test_celebration_assets.py -v`
+to exercise real, local LFS remotes, missing objects and invalid artwork without release credentials.
+
+All runtime requests (index, signature and packs) go through `CelebrationAssetDownloads` in
+`Packages/AppAppearance`, configured by `CelebrationAssetStore`. The default base is the latest
+release under `NativeGitHubRepository`. Managed `policy.celebrations.downloadsEnabled = false`
+prevents all three requests, cancels in-flight downloads and keeps bundled or cached artwork usable.
+Managed `policy.celebrations.baseURL` selects an HTTP(S) mirror containing the same Native-signed
+index and packs. It does not change the trusted key or fall back to the public server when a mirror
+is unavailable. These keys also work as ordinary preferences when not managed.
+
+Offline, missing or rejected packs keep the base icon and bundled catalogue thumbnail. The chooser
+shows a quiet explanation and Retry for a failed download. Automatic refresh does not immediately
+retry a failed pack; Retry, selecting it again or restarting Native permits another attempt. Retry
+reloads the signed index, so repaired release assets can be used without restarting the app.
+
+The [2026-10-24 download audit](celebration-download-audit.md) lists every pack and the reproduced
+packaging failure. After this fix lands, a release maintainer must publish regenerated packs and
+their signed index through the normal release process; existing v0.1.0 assets remain broken until
+replaced or superseded. No update keys or published release assets are changed by this fix.
+
 An edition is in a pack once its folder has all eight PNGs; the script names any that are
 incomplete. Its icon set in `FirstPartyCelebrations` uses `icons: .pack("<edition>")` and its
 thumbnail; the catalogue entry exists already for every edition in `docs/celebrations.md`.

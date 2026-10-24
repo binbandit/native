@@ -53,6 +53,19 @@ final class SessionCatalog {
         listed[project]?[agent] ?? []
     }
 
+    /// Ownership includes unopened, pinned and archived tasks, even if their agent is unavailable.
+    func hasTask(in project: Project.ID, at folder: URL, excluding isExcluded: (SessionKey) -> Bool) -> Bool {
+        listed[project, default: [:]].contains { agent, tasks in
+            tasks.contains {
+                !isExcluded(SessionKey(agent: agent, id: $0.sessionId))
+                    && SessionFolder.isSame($0.cwd, folder.folderPath)
+            }
+        }
+            || remote.contains { key, entry in
+                entry.project == project && !isExcluded(key) && SessionFolder.isSame(entry.info.cwd, folder.folderPath)
+            }
+    }
+
     /// The project a session is listed in, and what the agent said about it.
     func lookup(_ key: SessionKey) -> (project: Project.ID, info: SessionInfo)? {
         for (project, agents) in listed {

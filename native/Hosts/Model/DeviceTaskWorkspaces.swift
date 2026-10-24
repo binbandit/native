@@ -31,6 +31,18 @@ final class DeviceTaskWorkspaces: TaskWorkspaceProvider {
     }
 
     // New tasks here; a host's are made through its own provider (AppModel+HostsStarting.swift).
+    func workspaceOptions(in project: Project, current: URL) async throws -> [TaskWorkspaceOption] {
+        try await local.workspaceOptions(in: project, current: current)
+    }
+
+    func workspace(for choice: TaskWorkspaceChoice, in project: Project) async throws -> URL {
+        try await local.workspace(for: choice, in: project)
+    }
+
+    func removeUnusedWorkspace(at folder: URL, in project: Project) async throws -> Bool {
+        try await local.removeUnusedWorkspace(at: folder, in: project)
+    }
+
     func workspace(forNewTaskIn project: Project, title: String?) async throws -> URL {
         try await local.workspace(forNewTaskIn: project, title: title)
     }
