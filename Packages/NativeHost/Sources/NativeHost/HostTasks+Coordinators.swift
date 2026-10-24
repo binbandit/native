@@ -10,7 +10,7 @@ extension HostTasks {
         let tasks = record.assignments.compactMap { target -> OrchestrationTask? in
             guard let assigned = core.coordinatorSession(target) else { return nil }
             return OrchestrationTask(
-                id: target.toolID, session: target.reference, agentName: assigned.agentName,
+                id: "task-\(assigned.id)", session: target.reference, agentName: assigned.agentName,
                 title: assigned.record.title ?? "Untitled task", parent: identity.reference,
                 parentAgentName: session.agentName, cwd: assigned.record.cwd)
         }
@@ -18,8 +18,9 @@ extension HostTasks {
     }
 
     func openCoordinatedTask(_ ref: TaskSessionRef) async throws {
-        guard let target = session(holding: ref) else { throw HostTaskError.closed }
-        try await core.load(target)
+        // Reads use the retained mirror. Loading an unsaved agent conversation can replace its
+        // identity; delivery loads it only after capturing the durable sender and recipient.
+        guard session(holding: ref) != nil else { throw HostTaskError.closed }
     }
 
     func recentTranscript(of ref: TaskSessionRef) -> String? {

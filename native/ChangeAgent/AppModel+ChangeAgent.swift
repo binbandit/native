@@ -13,9 +13,7 @@ extension AppModel {
     }
 
     func changeAgentBlock(for source: SessionModel) -> String? {
-        if coordinator(for: source.key) != nil {
-            return "Create a new coordinator to use another agent, then reassign its tasks."
-        }
+        if let reason = coordinatorConversationBlock(for: source.key) { return reason }
         guard offersAgentChange else { return "Enable Change Agent in Settings > Labs first." }
         guard sessions.session(source.key) === source, source.origin == .user,
             !source.isSubagent, !source.isEarlierConversation

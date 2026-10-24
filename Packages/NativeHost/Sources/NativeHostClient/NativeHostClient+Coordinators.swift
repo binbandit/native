@@ -4,7 +4,11 @@ import Synchronization
 
 public extension NativeHostClient {
     func newCoordinator(_ params: NewCoordinatorParams) async throws -> HostSessionSummary {
-        try await call(HostProtocol.Method.newCoordinator, params)
+        var params = params
+        guard params.task.attach else { return try await call(HostProtocol.Method.newCoordinator, params) }
+        let session = params.task.sessionID ?? HostSessionID()
+        params.task.sessionID = session
+        return try await following(session) { try await $0.call(HostProtocol.Method.newCoordinator, params) }
     }
 
     func coordinators() async throws -> [HostCoordinator] {

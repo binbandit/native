@@ -28,7 +28,7 @@ an existing coordinator's tool permissions.
 ## Tools and transcripts
 
 Reuse list_tasks, get_task and send_message. For a coordinator, the host returns only explicitly
-assigned tasks, including their current status. get_task returns a bounded local excerpt of recent
+assigned tasks, including their current status. Tool IDs remain stable when an unsaved conversation reloads. get_task returns a bounded local excerpt of recent
 visible messages, without reasoning or raw tool output. start_task and cancel_task are rejected
 for coordinators. Ordinary delegation retains its existing parent/child/sibling scope.
 
@@ -45,10 +45,10 @@ Assigned tasks appear indented immediately below their coordinator, using the ex
 and status language. Filtering, pinned tasks and archived coordinators must not hide an assigned
 task. The picker keeps selected assignments and explains unavailable choices, empty projects and
 save failures. Cancel leaves assignments unchanged; saving an empty selection releases all tasks. Editing assignments offers Undo, with a visible error if another coordinator has since claimed one.
-No automatic prompt is sent when a coordinator is created: the user writes its objective. New-task autonomy defaults and mode hooks are skipped so they cannot override read-only creation. Clear Conversation and Change Agent are unavailable on coordinators in this slice; create a new coordinator and reassign tasks instead.
+No automatic prompt is sent when a coordinator is created: the user writes its objective. New-task autonomy defaults and mode hooks are skipped so they cannot override read-only creation. Clear Conversation and Change Agent are unavailable on coordinators in this slice; create a new coordinator and reassign tasks instead. Assigned tasks must be unassigned before either action, so the coordinator cannot continue against a hidden earlier conversation.
 
 Membership survives app and host restarts. Native's usual host transcript and prompt persistence
-carry message delivery. The scope remains in force even if the feature switch is later disabled.
+carry message delivery, including automatic reattachment after a connection drops. Closing a coordinator or assigned task retains its host record; idle unloading still frees agent memory where supported, and the next tool call resumes the task. The scope remains in force even if the feature switch is later disabled.
 
 ## Verification
 

@@ -21,9 +21,8 @@ extension AppModel {
     /// opens from the new one.
     @discardableResult
     func clearConversation(of old: SessionModel) async throws -> SessionModel {
-        guard coordinator(for: old.key) == nil else {
-            throw CoordinatorTaskFailure(
-                "Create a new coordinator to start a fresh conversation, then reassign its tasks.")
+        if let reason = coordinatorConversationBlock(for: old.key) {
+            throw CoordinatorTaskFailure(reason)
         }
         guard old.hasStarted, old.acceptsPrompts else { throw ClearConversationError.nothingToClear }
         guard old.phase == .idle, !old.isRunningHiddenCommand else {
@@ -32,6 +31,7 @@ extension AppModel {
         guard let runtime = await ensureRunning(old.agent.id) else {
             throw SessionLauncher.LaunchError.agentUnavailable(old.agentName)
         }
+        if let reason = coordinatorConversationBlock(for: old.key) { throw CoordinatorTaskFailure(reason) }
         let session = try await launcher.start(
             on: runtime, cwd: old.cwd, project: catalog.lookup(old.key)?.project, continuing: old)
         await session.adoptSettings(of: old)

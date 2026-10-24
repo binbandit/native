@@ -10,8 +10,6 @@ public struct HostTaskIdentity: Codable, Hashable, Sendable {
         self.agentID = agentID
         self.agentSessionID = agentSessionID
     }
-
-    public var toolID: String { "task-\(agentID)-\(agentSessionID.rawValue)" }
 }
 
 public struct HostCoordinator: Codable, Hashable, Sendable {

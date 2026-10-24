@@ -15,6 +15,17 @@ extension AppModel {
         coordinators.first { $0.task == key.coordinatorIdentity }
     }
 
+    func coordinatorConversationBlock(for key: SessionKey) -> String? {
+        if coordinator(for: key) != nil {
+            return "Create a new coordinator and reassign its tasks to start a fresh conversation or use another agent."
+        }
+        if coordinators.contains(where: { $0.assignments.contains(key.coordinatorIdentity) }) {
+            return
+                "Remove this task from its coordinator with Edit Assigned Tasks before clearing its conversation or changing agents."
+        }
+        return nil
+    }
+
     func requestCoordinator(editing key: SessionKey? = nil) {
         guard offersCoordinatorTasks, coordinatorEditor == nil, let project = currentProject else { return }
         coordinatorEditor = CoordinatorTaskEditor(project: project, record: key.flatMap(coordinator), app: self)

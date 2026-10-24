@@ -69,6 +69,13 @@ extension HostCore {
         }
     }
 
+    func participatesInCoordination(_ session: HostSession) -> Bool {
+        guard let identity = HostTaskIdentity(session) else { return false }
+        return coordinators.contains {
+            $0.task == identity || $0.hostSessionID == session.id || $0.assignments.contains(identity)
+        }
+    }
+
     func saveCoordinator(_ record: HostCoordinator) throws {
         var updated = coordinators.filter { $0.task != record.task }
         updated.append(record)

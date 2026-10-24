@@ -423,6 +423,12 @@ extension HostCore {
     /// the agent can). Its history stays with the agent.
     func closeSession(_ id: HostSessionID, closeInAgent: Bool = false) async throws {
         let session = try session(id)
+        // Coordination owns the durable record after the app stops displaying its transcript.
+        // Reuse idle unloading so a later tool call resumes the task with its history and settings.
+        if participatesInCoordination(session) {
+            if closeInAgent { unloadIfIdle(session) }
+            return
+        }
         await cancel(session)
         try store.keepClosedSessionConfig(session.record)
         forget(session)

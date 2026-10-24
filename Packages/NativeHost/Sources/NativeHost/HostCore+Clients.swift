@@ -243,6 +243,7 @@ extension HostCore {
         case Method.closeSession:
             let params = try message.params(as: CloseSessionParams.self)
             try await closeSession(params.sessionID, closeInAgent: params.closeInAgent)
+            client.attached.remove(params.sessionID)
             try reply(EmptyMessage())
         case Method.listActivity:
             let params = try message.params(as: ListActivityParams.self)
