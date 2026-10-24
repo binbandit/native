@@ -463,8 +463,10 @@ write the existing light and dark preferences, with one undo action for both-mod
 `policy.appearance.codeTheme` overrides rendering while retaining those preferences.
 
 On entering the page, `AppearanceSpecimenSource` asks the Changes model for a bounded copy of the
-latest completed task's changes. It reads an already available local repository or captured edit diffs;
-it never opens a task or contacts a paired host. Search-excluded projects are skipped. `SpecimenLine`
+latest completed task's captured edit diffs. It never reads repository blobs, snapshots a shared
+working tree, opens a task or contacts a paired host. Without captured changes it uses a sample,
+so later edits from another task cannot be attributed to the completed one. Search-excluded projects
+are skipped. `SpecimenSource` selects completed task snapshots; `SpecimenLine`
 in `Packages/CodeThemes` scores highlighted added lines, filters every displayed line and metadata for
 secret patterns, and falls back to a language sample. The excerpt stays in memory and is not logged or
 persisted. The terminal line is always a sample. Try On's task preview is a later change.

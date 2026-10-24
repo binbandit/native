@@ -11,7 +11,6 @@ extension DS {
         static let tickHeight: CGFloat = 9
         static let tickRadius: CGFloat = 1.5
         static let tickGap: CGFloat = 2.5
-        static let codeLineHeight: CGFloat = 18
         static let headerHeight: CGFloat = 16
         static let numberWidth: CGFloat = 30
         static let markerWidth: CGFloat = 14

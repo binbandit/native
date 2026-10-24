@@ -8,6 +8,7 @@ struct CodeThemeCardWell: View {
     @Environment(\.dsLightTone) private var lightTone
     @Environment(\.dsDarkTone) private var darkTone
     @Environment(\.dsCodeThemes) private var themes
+    @Environment(\.dsCodeFont) private var codeFont
     @Environment(\.dsCodeStrongFont) private var strongFont
 
     private var colors: DSCodeColors {
@@ -47,7 +48,7 @@ struct CodeThemeCardWell: View {
                     Color(colors.palette.ansiColors(for: scheme == .dark ? .dark : .light)[2]))
             }
             .fixedSize(horizontal: true, vertical: false)
-            .frame(height: DS.Appearance.codeLineHeight)
+            .frame(minHeight: codeFont.size * codeFont.lineHeight)
         }
         .codeTextStyle()
         .padding(.top, DS.Space.lg)
@@ -86,7 +87,7 @@ struct CodeThemeCardWell: View {
             }
             Spacer(minLength: 0)
         }
-        .frame(height: DS.Appearance.codeLineHeight)
+        .frame(minHeight: codeFont.size * codeFont.lineHeight)
         .background(Color(added ? colors.palette.insertedBackground : colors.palette.deletedBackground))
     }
 
@@ -101,5 +102,17 @@ struct CodeThemeCardWell: View {
 #if DEBUG
 #Preview("Appearance - Sample code and narrow fade") {
     DSPreviewPair { CodeThemeCardWell(specimen: .sample()).frame(width: 320) }
+}
+#Preview("Appearance - Large code font, tight and loose lines") {
+    VStack {
+        DSPreviewPair {
+            CodeThemeCardWell(specimen: .sample()).frame(width: 640)
+                .dsCodeFont(.init(size: 18, lineHeight: 1.2))
+        }
+        DSPreviewPair {
+            CodeThemeCardWell(specimen: .sample()).frame(width: 640)
+                .dsCodeFont(.init(size: 18, lineHeight: 1.8))
+        }
+    }
 }
 #endif

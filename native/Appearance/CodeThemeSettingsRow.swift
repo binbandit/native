@@ -19,7 +19,6 @@ struct CodeThemeSettingsRow: View {
     @Environment(PluginRegistry.self) private var plugins
     @Environment(PolicyCenter.self) private var policyCenter: PolicyCenter?
     @Environment(AppModel.self) private var model: AppModel?
-    @Environment(GitStore.self) private var git: GitStore?
     @Environment(SettingsPresentation.self) private var settings: SettingsPresentation?
     @Environment(\.undoManager) private var undoManager
     @Environment(\.colorScheme) private var scheme
@@ -99,7 +98,7 @@ struct CodeThemeSettingsRow: View {
         .settingsRevealTarget(Self.rowID)
         .task {
             guard fixedSpecimen == nil, let model else { return }
-            let result = await AppearanceSpecimenSource.load(model: model, git: git)
+            let result = await AppearanceSpecimenSource.load(model: model)
             if !Task.isCancelled { specimen = result }
         }
     }
