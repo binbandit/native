@@ -99,6 +99,19 @@ extension AppModel {
         coordinatorEditor = nil
     }
 
+    /// Deleting the owner releases its tasks without cancelling any of them.
+    func releaseCoordinatorAssignments(beforeDeleting key: SessionKey) async throws {
+        guard var record = coordinator(for: key), !record.assignments.isEmpty else { return }
+        guard let client = runtimes.host else {
+            throw CoordinatorTaskFailure(
+                "Reconnect the local host to release this coordinator's assigned tasks, then delete it again.")
+        }
+        record.assignments = []
+        try await client.setCoordinator(record)
+        coordinators.removeAll { $0.task == record.task }
+        coordinators.append(record)
+    }
+
     func followCoordinators(on client: NativeHostClient) async {
         if followedCoordinatorClients.insert(ObjectIdentifier(client)).inserted {
             await client.addCoordinatorHandler { [weak self] records in

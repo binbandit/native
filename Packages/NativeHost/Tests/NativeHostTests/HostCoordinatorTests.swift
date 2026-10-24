@@ -28,6 +28,26 @@ struct HostCoordinatorTests {
         await recorder.stop()
     }
 
+    @Test("Deleting a coordinator releases its tasks without deleting or stopping them")
+    func deletion() async throws {
+        let harness = try HostHarness()
+        harness.agentEnvironment["FAKE_AGENT_READ_ONLY"] = "1"
+        try harness.start()
+        let recorder = try await harness.connect()
+        let client = recorder.client
+        let target = try await client.newSession(NewSessionParams(agentID: "fake", cwd: harness.root.path))
+        let assigned = try identity(target)
+        let params = NewCoordinatorParams(
+            task: NewSessionParams(agentID: "fake", cwd: harness.root.path), assignments: [assigned])
+        let owner = try await client.newCoordinator(params)
+        try await client.deleteAgentSession(
+            DeleteAgentSessionParams(agentID: "fake", agentSessionID: try #require(owner.agentSessionID)))
+        #expect(try await client.sessions().contains { $0.id == target.id })
+        let replacement = try await client.newCoordinator(params)
+        #expect(replacement.id != owner.id)
+        await recorder.stop()
+    }
+
     @Test("Read-only creation, scoped messages, exclusive ownership, revocation and host restart")
     func lifecycle() async throws {
         let harness = try HostHarness()

@@ -22,7 +22,7 @@ The host stores the coordinator and its assigned task IDs together, using lastin
 An agent cannot change assignments. A task has at most one coordinator; coordinators cannot be
 assigned to other coordinators. Removing an assignment takes effect on the next tool call.
 Already delivered or queued messages are not recalled. Closing or archiving a coordinator does
-not cancel its assigned tasks. Disabling Labs hides entry points and grouping, but never widens
+not cancel its assigned tasks. Deleting a coordinator releases its assignments after the undo window; if the host cannot confirm that change, the coordinator remains available to retry. Disabling Labs hides entry points and grouping, but never widens
 an existing coordinator's tool permissions.
 
 ## Tools and transcripts
