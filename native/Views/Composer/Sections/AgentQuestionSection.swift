@@ -8,6 +8,8 @@ struct AgentQuestionSection: View {
     let questionnaire: AgentQuestionnaire
     /// Takes focus on appear, when nothing else in the composer is in progress.
     let takesFocus: Bool
+    /// Peek answers the highlighted single choice with Return, as its compact option list promises.
+    var answersHighlightedOption = false
     let onSubmit: ([String: JSONValue]) -> Void
     /// Declines every question; the agent hears that the user skipped them.
     let onSkipAll: () -> Void
@@ -55,7 +57,7 @@ struct AgentQuestionSection: View {
                     RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
                         .strokeBorder(.dsBorder)
                 }
-                .onSubmit(advance)
+                .onSubmit(submit)
             footer
         }
         .padding(DS.Space.md)
@@ -66,7 +68,9 @@ struct AgentQuestionSection: View {
         .onAppear {
             if takesFocus { focus = .card }
         }
-        .onChange(of: index) { highlighted = 0 }
+        .onChange(of: index) {
+            highlighted = answersHighlightedOption ? answers.initialHighlight(in: question) : 0
+        }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Question \(index + 1) of \(questionnaire.questions.count)")
     }
@@ -162,7 +166,7 @@ struct AgentQuestionSection: View {
             Button("Skip") { skip() }
                 .buttonStyle(.ds(.ghost))
                 .help("Leave this question unanswered")
-            Button(isLast ? "Send Answers" : "Next") { advance() }
+            Button(isLast ? "Send Answers" : "Next") { submit() }
                 .buttonStyle(.ds(.primary))
                 .help("Return")
         }
@@ -170,7 +174,14 @@ struct AgentQuestionSection: View {
 
     private var typedText: Binding<String> {
         let key = AgentQuestionnaireAnswers.textKey(for: question)
-        return Binding(get: { answers.typed[key, default: ""] }, set: { answers.typed[key] = $0 })
+        return Binding(
+            get: { answers.typed[key, default: ""] },
+            set: {
+                if answersHighlightedOption, question.customKey == nil, !$0.isEmpty {
+                    answers.clear(question)
+                }
+                answers.typed[key] = $0
+            })
     }
 
     // MARK: - Actions
@@ -192,7 +203,7 @@ struct AgentQuestionSection: View {
         case .space where options.indices.contains(highlighted):
             pick(options[highlighted])
         case .return:
-            advance()
+            submit()
         default:
             return .ignored
         }
@@ -201,6 +212,14 @@ struct AgentQuestionSection: View {
 
     private func pick(_ option: AgentQuestionnaire.Option) {
         answers.pick(option, in: question)
+        if answersHighlightedOption, let index = question.options.firstIndex(of: option) {
+            highlighted = index
+        }
+    }
+
+    private func submit() {
+        if answersHighlightedOption { answers.answerHighlightedOption(highlighted, in: question) }
+        advance()
     }
 
     private func skip() {

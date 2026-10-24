@@ -10,11 +10,29 @@ struct AttachmentImage: View {
     /// Shows all of it at its own shape within this size; without one it fills (and crops to) the
     /// frame it's given.
     var fitting: CGSize?
+    /// Cropped tiles need enough pixels along their short edge, including tall and wide sources.
+    var filling: CGSize?
 
     @Environment(\.displayScale) private var displayScale
     @State private var image: CGImage?
 
     var body: some View {
+        Group {
+            if let fitting {
+                AttachmentImageFitLayout(size: fittedSize(in: fitting)) {
+                    content
+                }
+            } else {
+                content
+            }
+        }
+        .task(id: data) {
+            let fillPixels = filling.map { CGSize(width: $0.width * displayScale, height: $0.height * displayScale) }
+            image = await Self.decode(data, maxPixels: Int(maxSide * displayScale), fillPixels: fillPixels)
+        }
+    }
+
+    private var content: some View {
         Group {
             if let image {
                 Image(decorative: image, scale: displayScale)
@@ -24,29 +42,53 @@ struct AttachmentImage: View {
                 Rectangle().fill(.dsFill)
             }
         }
-        .frame(width: fittedSize?.width, height: fittedSize?.height)
-        .task(id: data) {
-            image = await Self.decode(data, maxPixels: Int(maxSide * displayScale))
-        }
     }
 
     /// The largest size of the image's shape (a photo's, until it's decoded) within `fitting`.
-    private var fittedSize: CGSize? {
-        guard let fitting else { return nil }
+    private func fittedSize(in fitting: CGSize) -> CGSize {
         let ratio = image.map { CGFloat($0.width) / CGFloat(max($0.height, 1)) } ?? 4 / 3
         let height = min(fitting.height, fitting.width / ratio)
         return CGSize(width: height * ratio, height: height)
     }
 
     @concurrent
-    private static func decode(_ data: Data, maxPixels: Int) async -> CGImage? {
+    private static func decode(_ data: Data, maxPixels: Int, fillPixels: CGSize?) async -> CGImage? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        var decodePixels = maxPixels
+        if let fillPixels,
+            let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+            let width = properties[kCGImagePropertyPixelWidth] as? NSNumber,
+            let height = properties[kCGImagePropertyPixelHeight] as? NSNumber,
+            width.doubleValue > 0, height.doubleValue > 0
+        {
+            let orientation = (properties[kCGImagePropertyOrientation] as? NSNumber)?.intValue ?? 1
+            let rotated = (5...8).contains(orientation)
+            let sourceWidth = rotated ? height.doubleValue : width.doubleValue
+            let sourceHeight = rotated ? width.doubleValue : height.doubleValue
+            let scale = min(1, max(fillPixels.width / sourceWidth, fillPixels.height / sourceHeight))
+            decodePixels = Int(ceil(max(sourceWidth, sourceHeight) * scale))
+        }
         let options: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: max(maxPixels, 1),
+            kCGImageSourceThumbnailMaxPixelSize: max(decodePixels, 1),
         ]
         return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
+    }
+}
+
+/// Keeps a fitted image's aspect ratio when a narrow message offers less than its maximum width.
+private struct AttachmentImageFitLayout: Layout {
+    let size: CGSize
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard size.width > 0, size.height > 0 else { return .zero }
+        let scale = min(1, (proposal.width ?? size.width) / size.width, (proposal.height ?? size.height) / size.height)
+        return CGSize(width: size.width * max(0, scale), height: size.height * max(0, scale))
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(at: bounds.origin, proposal: ProposedViewSize(bounds.size))
     }
 }
 

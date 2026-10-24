@@ -38,7 +38,7 @@ struct MessageView: View, Equatable {
         case .user:
             VStack(alignment: .trailing, spacing: DS.Space.sm) {
                 if !message.attachments.isEmpty {
-                    MessageAttachmentsView(attachments: message.attachments)
+                    UserMessageAttachmentsView(attachments: message.attachments)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 if !message.text.isEmpty {
@@ -184,6 +184,21 @@ private struct TrailingFractionLayout: Layout {
 }
 
 #if DEBUG
+#Preview("User messages - Attachments, Standard") {
+    DSPreviewPair {
+        ScrollView {
+            VStack(alignment: .trailing, spacing: DS.Space.xxl) {
+                ForEach(UserMessageAttachmentsPreviewFixtures.messages, id: \.id) { message in
+                    MessageView(message: message)
+                }
+            }
+            .padding(DS.Space.lg)
+        }
+        .frame(width: 380, height: 800)
+        .environment(\.openTranscriptArtifact, TranscriptArtifactOpener(session: nil, filesAreLocal: true))
+    }
+}
+
 #Preview("Messages") {
     ScrollView {
         VStack(alignment: .leading, spacing: 18) {

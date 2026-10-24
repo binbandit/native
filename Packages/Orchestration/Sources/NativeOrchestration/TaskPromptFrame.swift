@@ -16,6 +16,7 @@ public struct TaskPromptFrame: Hashable, Sendable {
     public enum Sender: Hashable, Sendable {
         /// The session that started the recipient; `agent` is its agent's display name.
         case parent(agent: String)
+        case coordinator(title: String)
         /// One of the recipient's own tasks. `label` is `OrchestrationTask.label`, which starts with `id`.
         case task(id: String, label: String)
         /// Another task of the recipient's parent.
@@ -30,6 +31,15 @@ public struct TaskPromptFrame: Hashable, Sendable {
         guard let terminator = text.range(of: Self.headerTerminator) else { return nil }
         let header = String(text[..<terminator.lowerBound])
         let body = String(text[terminator.upperBound...])
+
+        if header.hasPrefix(Self.coordinatorPrefix), header.hasSuffix(Self.coordinatorSuffix) {
+            let title = String(header.dropFirst(Self.coordinatorPrefix.count).dropLast(Self.coordinatorSuffix.count))
+            guard !title.isEmpty else { return nil }
+            kind = .message
+            sender = .coordinator(title: title)
+            self.body = body
+            return
+        }
 
         if header.hasPrefix(Self.taskHeaderPrefix), header.hasSuffix(Self.taskHeaderSuffix) {
             let agentStart = header.index(header.startIndex, offsetBy: Self.taskHeaderPrefix.count)
@@ -68,6 +78,9 @@ public struct TaskPromptFrame: Hashable, Sendable {
         let senderPhrase: String
         let replyTo: String
         switch sender {
+        case .coordinator(let title):
+            let safeTitle = title.replacingOccurrences(of: "]", with: ")").replacingOccurrences(of: "\n", with: " ")
+            return coordinatorPrefix + safeTitle + coordinatorSuffix + headerTerminator + body
         case let .parent(agent):
             senderPhrase = parentSenderPrefix + agent + parentSenderSuffix
             replyTo = "parent"
@@ -109,6 +122,9 @@ public struct TaskPromptFrame: Hashable, Sendable {
         return String(label[..<separator.lowerBound])
     }
 
+    private static let coordinatorPrefix = "[Message from coordinator task: "
+    private static let coordinatorSuffix =
+        ". This coordinator reads your progress through Native; continue your task with this guidance."
     private static let headerTerminator = "]\n\n"
     private static let taskHeaderPrefix = "[A task from your parent session ("
     private static let taskHeaderSuffix =

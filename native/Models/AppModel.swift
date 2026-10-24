@@ -2,6 +2,7 @@ import ACP
 import AppAppearance
 import Experiments
 import Foundation
+import NativeHostProtocol
 import Observation
 import Undo
 import os
@@ -23,6 +24,7 @@ final class AppModel {
     let catalog: SessionCatalog
     let ordering: SessionOrdering
     let sessions: SessionStore
+    let taskPeek = TaskPeekPresentation()
     let unread: UnreadSessions
     /// New sessions that haven't had a message yet, so an empty one doesn't outlive the run.
     let unsentSessions: UnsentSessions
@@ -58,7 +60,12 @@ final class AppModel {
     var isAddingProject = false
     /// Whether the agent picker for a new session is showing.
     var isChoosingAgent = false
+    /// The draft and presentation for the opt-in New Task entry point.
+    let quickEntry = QuickEntryModel()
     var changingAgent: ChangeAgentModel?
+    var coordinatorEditor: CoordinatorTaskEditor?
+    var coordinators: [HostCoordinator] = []
+    @ObservationIgnored var followedCoordinatorClients: Set<ObjectIdentifier> = []
     @ObservationIgnored var agentChangeGoalBlock: @MainActor (SessionModel) -> String? = { _ in nil }
     @ObservationIgnored var changeAgentHandoff: @MainActor (SessionModel) async -> String = { source in
         TaskHandoff.draft(title: source.displayTitle, state: source.state)
@@ -293,7 +300,8 @@ final class AppModel {
         }
     }
 
-    func restart(_ agent: AgentDefinition.ID) async {
+    func restart(_ agent: AgentDefinition.ID, preservingDrafts: Bool = false) async {
+        if preservingDrafts { sessions.preserveDrafts(of: agent) }
         if let restart = agentRestarts[agent] { return await restart.value }
         let restart = Task {
             if runsAgentsInHost {

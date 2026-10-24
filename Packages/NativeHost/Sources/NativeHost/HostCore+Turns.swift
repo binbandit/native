@@ -10,7 +10,9 @@ extension HostCore {
     /// Delivers a message: as a new turn when the session is idle, otherwise steered into the running
     /// turn or queued. A request id seen before gets the same answer and is never delivered twice,
     /// including a repeat that arrives while the first is still being handled.
-    func prompt(_ params: PromptParams) async throws -> PromptDelivery {
+    func prompt(
+        _ params: PromptParams, checking authorization: (@HostActor @Sendable () throws -> Void)? = nil
+    ) async throws -> PromptDelivery {
         // In flight first: a steer records itself as queued before the agent answers.
         if let inFlight = promptsInFlight[params.requestID] {
             return try await inFlight.value
@@ -18,7 +20,10 @@ extension HostCore {
         if let delivery = try store.delivery(for: params.requestID) {
             return delivery
         }
-        let task = Task { try await deliver(params) }
+        let task = Task {
+            try authorization?()
+            return try await deliver(params)
+        }
         promptsInFlight[params.requestID] = task
         defer { promptsInFlight[params.requestID] = nil }
         return try await task.value
