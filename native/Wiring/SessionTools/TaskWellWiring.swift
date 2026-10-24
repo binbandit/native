@@ -105,7 +105,9 @@ struct TaskWellWiring: View {
         case .changes: tools.toggle(.changes)
         case .terminal: terminal.panel(for: session).showShell()
         case .dev:
-            if let target, let action = actions.headerAction(in: target), actions.showOutput(of: action, in: target) {
+            if let target, let action = actions.latestOutputAction(in: target),
+                actions.showOutput(of: action, in: target)
+            {
                 tools.showsWell = false
             }
         case .subagents: break
@@ -139,8 +141,7 @@ struct TaskWellWiring: View {
                 isRunning: shells.contains { $0.isCommandRunning && $0.status == .running })
         case .dev:
             guard let target else { return TaskWellToolDetail() }
-            let running = actions.running(in: target)
-            let action = actions.headerAction(in: target)
+            let action = actions.latestOutputAction(in: target)
             let panel = terminal.panel(for: session)
             let since: Date? = action.flatMap {
                 if case .running(let since, _) = actions.state(of: $0, in: target) { since } else { nil }
@@ -149,9 +150,9 @@ struct TaskWellWiring: View {
                 policy.isManaged(.taskScriptsRepository)
                 && !policy.policy.taskScripts.repositoryScriptsEnabled
             return TaskWellToolDetail(
-                text: running.isEmpty ? action?.name ?? "Project actions" : running.map(\.name).joined(separator: ", "),
+                text: action?.name ?? "Project actions",
                 isSelected: panel.isVisible && panel.tabs.selected?.job != nil,
-                isRunning: !running.isEmpty, runningSince: since,
+                isRunning: since != nil, runningSince: since,
                 note: repositoryActionsOff ? "Repository actions are off. Your actions are still available." : nil,
                 isManaged: repositoryActionsOff)
         case .subagents:
