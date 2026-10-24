@@ -20,7 +20,14 @@ extension HostTasks {
     func openCoordinatedTask(_ ref: TaskSessionRef) async throws {
         // Reads use the retained mirror. Loading an unsaved agent conversation can replace its
         // identity; delivery loads it only after capturing the durable sender and recipient.
-        guard session(holding: ref) != nil else { throw HostTaskError.closed }
+        guard let target = session(holding: ref) else { throw HostTaskError.closed }
+        // A host restart has no replay yet. Saved tasks need one before their history is readable;
+        // quietly unloaded tasks still have their mirror, and unsent tasks have no saved history.
+        if target.needsLoad, !target.reloadsQuietly,
+            target.record.isAdopted || target.record.lastStopReason != nil
+        {
+            try await core.load(target)
+        }
     }
 
     func recentTranscript(of ref: TaskSessionRef) -> String? {

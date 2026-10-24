@@ -12,6 +12,61 @@ struct HostCoordinatorTests {
         HostTaskIdentity(agentID: summary.agentID, agentSessionID: try #require(summary.agentSessionID))
     }
 
+    @Test("Saved idle assignment history is readable after restarting the host")
+    func readAfterRestart() async throws {
+        let harness = try HostHarness()
+        harness.agentEnvironment["FAKE_AGENT_READ_ONLY"] = "1"
+        try harness.start()
+        let first = try await harness.connect()
+        let target = try await first.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: harness.root.path, attach: true))
+        _ = try await first.client.prompt(PromptParams(sessionID: target.id, text: "Completed docs work"))
+        try await first.wait("saved target") { await $0.turnsEnded(target.id) == ["end_turn"] }
+        let owner = try await first.client.newCoordinator(
+            NewCoordinatorParams(
+                task: NewSessionParams(agentID: "fake", cwd: harness.root.path, attach: true),
+                assignments: [try identity(target)]))
+        _ = try await first.client.prompt(PromptParams(sessionID: owner.id, text: "Coordinate the docs"))
+        try await first.wait("saved owner") { await $0.turnsEnded(owner.id) == ["end_turn"] }
+        harness.kill()
+        await first.stop()
+        try harness.start()
+        let restarted = try await harness.connect()
+        for tool in ["get_task", "wait_for_task"] {
+            let result = try await restarted.client.callTool(
+                CallToolParams(
+                    sessionID: owner.id, tool: tool,
+                    arguments: .object(["task_id": .string("task-\(target.id)")])))
+            #expect(!result.isError)
+            #expect(result.text.contains("Completed docs work"))
+        }
+        await restarted.stop()
+    }
+
+    @Test("Closing an assigned task unsubscribes only the closing client")
+    func unsubscribeOnClose() async throws {
+        let harness = try HostHarness()
+        harness.agentEnvironment["FAKE_AGENT_READ_ONLY"] = "1"
+        try harness.start()
+        let closing = try await harness.connect()
+        let target = try await closing.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: harness.root.path, attach: true))
+        _ = try await closing.client.newCoordinator(
+            NewCoordinatorParams(
+                task: NewSessionParams(agentID: "fake", cwd: harness.root.path), assignments: [try identity(target)]))
+        let watching = try await harness.connect()
+        try await watching.client.attach(target.id)
+        try await closing.client.closeSession(target.id)
+        let previous = await closing.events[target.id, default: []].count
+        _ = try await watching.client.prompt(PromptParams(sessionID: target.id, text: "Only the remaining subscriber"))
+        try await watching.wait("other client still follows") { await $0.turnsEnded(target.id) == ["end_turn"] }
+        _ = try await closing.client.sessions()
+        #expect(await closing.events[target.id, default: []].count == previous)
+        #expect(await watching.agentText(target.id).contains("Only the remaining subscriber"))
+        await closing.stop()
+        await watching.stop()
+    }
+
     @Test("Attached coordinators recover their transcript after a dropped connection", arguments: [false, true])
     func reconnect(suppliesID: Bool) async throws {
         let harness = try HostHarness()
