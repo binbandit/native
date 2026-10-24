@@ -1,3 +1,4 @@
+import AppAppearance
 import Foundation
 import NativeTelemetry
 import Observation
@@ -20,9 +21,48 @@ final class SettingsPresentation {
     var pane: SettingsPane.ID? {
         didSet {
             if let projectScope, projectScope.pane != pane { self.projectScope = nil }
+            if pane != oldValue { dismissDetail() }
             if oldValue == nil, pane != nil {
                 Telemetry.record(.featureUsed(.settings))
             }
+        }
+    }
+
+    /// A page can push a local detail without replacing Settings or losing its scroll position.
+    @ObservationIgnored private var detailBack: (() -> Void)?
+    @ObservationIgnored private var detailScroll = SettingsDetailScrollState()
+    @ObservationIgnored var pageOffset: Double = 0
+    @ObservationIgnored var scrollPage: ((Double) -> Void)?
+
+    func showDetail(_ id: String?, back: (() -> Void)? = nil) {
+        if id != nil {
+            detailScroll.openDetail(at: pageOffset)
+            detailBack = back
+        } else if detailBack != nil {
+            detailBack = nil
+            detailScroll.returnToList()
+        }
+    }
+
+    func detailListDidLayout() {
+        guard let offset = detailScroll.listDidLayout() else { return }
+        scrollPage?(offset)
+    }
+
+    /// A search result owns its destination; returning to the old list offset would override it.
+    func dismissDetail() {
+        let back = detailBack
+        detailScroll.discard()
+        detailBack = nil
+        back?()
+    }
+
+    func goBack() {
+        if let back = detailBack {
+            showDetail(nil)
+            back()
+        } else {
+            close()
         }
     }
 
@@ -47,6 +87,8 @@ final class SettingsPresentation {
     }
 
     func close() {
+        detailScroll.discard()
+        detailBack = nil
         pane = nil
         projectScope = nil
     }

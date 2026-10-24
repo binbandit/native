@@ -6,6 +6,7 @@ import Experiments
 import Foundation
 import NativeAutomation
 import NativeHostProtocol
+import NativePolicy
 import Search
 
 /// Extends Native. Native's own agents and features are plugins too, so every extension point is
@@ -30,6 +31,8 @@ protocol NativePlugin: Sendable {
     /// `docs/decisions.md`), so built-ins that add to what a new user sees start off; a manifest the
     /// user installed is on.
     var isEnabledByDefault: Bool { get }
+    /// Built-in features own their policy gate; the registry enforces it before loading contributions.
+    func isAllowed(by policy: NativePolicy) -> Bool
     /// What the plugin wants left out of a session (MCP servers, skills), as intent. Every enabled
     /// plugin's policy is merged, and the session's agent applies what it can.
     func sessionPolicy(for session: SessionContext) -> SessionPolicy
@@ -50,6 +53,7 @@ protocol NativePlugin: Sendable {
 
 extension NativePlugin {
     var isEnabledByDefault: Bool { true }
+    func isAllowed(by policy: NativePolicy) -> Bool { true }
     var titler: (any SessionTitler)? { nil }
     func mcpServers(for session: SessionContext) -> [MCPServer] { [] }
     func handle(_ event: SessionEvent) async {}

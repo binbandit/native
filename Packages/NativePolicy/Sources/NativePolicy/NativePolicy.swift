@@ -86,6 +86,10 @@ public struct NativePolicy: Equatable, Sendable {
     /// Fetch the base branch before creating a task worktree. False keeps creation entirely local.
     public var worktreeFetchEnabled = true
     public var taskScripts = TaskScripts()
+    /// False removes celebrations and their entry points, while keeping personal choices for later.
+    public var celebrationsEnabled = true
+    /// A display name supplied by the administrator, never inferred from an account or hostname.
+    public var organizationName: String?
     public var labsEnabled = true
     public var companionEnabled = true
     public var remoteHostsEnabled = true

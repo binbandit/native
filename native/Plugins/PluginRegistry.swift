@@ -109,6 +109,11 @@ final class PluginRegistry {
     /// Whether the organization lets the plugin load. Its list covers plugins installed from
     /// manifests; built-ins are part of Native and governed by their own policy keys.
     func isAllowed(_ id: String) -> Bool {
+        if let loaded = loadedPlugins.first(where: { $0.id == id }),
+            !loaded.plugin.isAllowed(by: PolicyCenter.shared.policy)
+        {
+            return false
+        }
         guard loadedPlugins.first(where: { $0.id == id })?.source != .builtIn else { return true }
         return PolicyCenter.shared.policy.allowsPlugin(id)
     }

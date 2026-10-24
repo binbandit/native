@@ -21,7 +21,7 @@ extension NativeCommand {
             // In Settings, Back returns to where you were, like its Back button and Escape.
             NativeCommand(.goBack, title: "Back", category: .navigation, systemImage: "chevron.backward") { _ in
                 if settings.isShown {
-                    settings.close()
+                    settings.goBack()
                 } else {
                     model.goBack()
                 }
