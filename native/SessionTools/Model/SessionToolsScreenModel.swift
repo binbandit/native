@@ -6,6 +6,28 @@ import SwiftUI
 /// Commands, facts and the transcript all open tools through it.
 @Observable
 final class SessionToolsScreenModel {
+    var hasWell = false
+    var showsWell = false
+    var showsWellDev = false
+    @ObservationIgnored var wellToolAvailable: (TaskWellTool) -> Bool = { _ in false }
+    @ObservationIgnored var wellToolAction: (TaskWellTool) -> Void = { _ in }
+
+    func toggleWell() {
+        showsWellDev = false
+        showsWell.toggle()
+    }
+
+    func showWellTools() {
+        showsWellDev = false
+    }
+
+    func performWellTool(_ tool: TaskWellTool) {
+        guard hasWell, wellToolAvailable(tool) else { return }
+        showsWell = tool == .dev
+        showsWellDev = tool == .dev
+        wellToolAction(tool)
+    }
+
     /// The open tool in each place; a place without one is closed.
     private var presentation = SessionToolPresentation()
     var openByPlace: [SessionToolPlace: SessionToolID] { presentation.openByPlace }
@@ -32,6 +54,7 @@ final class SessionToolsScreenModel {
         guard let tool = registry.tool(id),
             let place = presentation.request(tool.spec, arrangement: registry.arrangement, hasPane: tool.pane != nil)
         else { return }
+        showsWell = false
         // The side panel appears without sliding in, once there's room: sliding lays the whole
         // window out again every frame.
         let show: @MainActor @Sendable () -> Void = {
@@ -55,6 +78,8 @@ final class SessionToolsScreenModel {
     }
 
     func toggle(_ id: SessionToolID) {
+        // The existing tool shortcuts take the same path as choosing a row in the well.
+        showsWell = false
         if isOpen(id) { close(id) } else { open(id) }
     }
 

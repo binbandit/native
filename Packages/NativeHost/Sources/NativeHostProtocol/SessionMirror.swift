@@ -91,7 +91,7 @@ public struct SessionMirror: Sendable {
             if note.action != .resent {
                 state.interruptTurn(at: note.interruptedAt)
             }
-            state.appendNotice(note.sentence(), isError: note.action == .failed)
+            state.appendNotice(note.sentence(), isError: note.action == .failed, isRecovery: true)
             if note.action == .paused {
                 // Native gave up on the turn.
                 state.endTurn(.error, at: event.at)

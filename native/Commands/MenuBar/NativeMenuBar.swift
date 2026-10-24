@@ -28,7 +28,7 @@ struct NativeMenuBar: Commands {
         #endif
         WhatsNewCommands(menu: menu)
         HelpCommands(menu: menu, model: model)
-        FileCommands(menu: menu)
+        FileCommands(menu: menu, showsComposeTask: model.quickEntry.isEnabled, model: model)
         ViewCommands(menu: menu)
         AppearanceCommands(menu: menu)
         SettingsCommands(settings: settings)
@@ -51,11 +51,21 @@ struct NativeMenuBar: Commands {
 
 private struct FileCommands: Commands {
     let menu: CommandMenuContext
+    let showsComposeTask: Bool
+    let model: AppModel
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
             CommandMenuItem(.sessionNew, in: menu)
+            if showsComposeTask {
+                CommandMenuItem(.taskCompose, in: menu)
+                CommandMenuItem(.taskChooseDevice, in: menu)
+            }
             CommandMenuItem(.sessionNewWithAgent, in: menu)
+            if model.offersCoordinatorTasks {
+                CommandMenuItem(.coordinatorNew, in: menu)
+                CommandMenuItem(.coordinatorEdit, in: menu)
+            }
             CommandMenuItem(.expeditionNew, in: menu)
             CommandMenuItem(.projectOpen, in: menu)
             CommandMenuItem(.projectSettings, in: menu)
@@ -78,8 +88,16 @@ private struct ViewCommands: Commands {
             CommandMenuItem(.viewToggleSubagentInspector, in: menu)
             CommandMenuItem(.viewToggleChanges, in: menu)
             if menu.context.sessionTools != nil {
+                if menu.context.sessionTools?.hasWell == true {
+                    CommandMenuItem(.taskWellToggle, in: menu)
+                }
                 Menu("Tools") {
                     CommandMenuItem(.sessionToolChanges, in: menu)
+                    if menu.context.sessionTools?.hasWell == true {
+                        ForEach(TaskWellTool.allCases.filter { $0 != .changes }) { tool in
+                            CommandMenuItem(tool.command, in: menu)
+                        }
+                    }
                 }
             }
             CommandMenuItem(.viewMCPServers, in: menu)
@@ -139,6 +157,11 @@ private struct SessionCommands: Commands {
 
     var body: some Commands {
         CommandMenu("Task") {
+            if model.offersTaskPeek {
+                CommandMenuItem(.taskPeek, in: menu)
+                CommandMenuItem(.taskAnswerOldestAsk, in: menu)
+                Divider()
+            }
             CommandMenuItem(.composerFocus, in: menu)
             CommandMenuItem(.sessionStop, in: menu)
             CommandMenuItem(.sessionClearConversation, in: menu)

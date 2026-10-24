@@ -22,20 +22,19 @@ struct SidebarListing {
     init(model: AppModel, filter: TaskFilter, insights: SidebarTaskInsights) {
         self.filter = filter
         allPinned = model.pinnedSessions
-        guard filter.isActive else {
-            pinned = allPinned
-            groups = model.projects.all.map { project in
-                let all = model.sessions(in: project.id)
-                return Group(project: project, all: all, visible: all)
-            }
-            return
-        }
         let facts = { (summary: SessionSummary) in model.taskFacts(for: summary, insights: insights) }
-        pinned = filter.apply(to: allPinned, facts: facts)
-        groups = model.projects.all.map { project in
+        let filteredPinned = filter.isActive ? filter.apply(to: allPinned, facts: facts) : allPinned
+        let raw = model.projects.all.map { project in
             let all = model.sessions(in: project.id)
             let candidates = filter.includesArchived ? all + model.archivedSessions(in: project.id) : all
-            return Group(project: project, all: all, visible: filter.apply(to: candidates, facts: facts))
+            return Group(
+                project: project, all: all,
+                visible: filter.isActive ? filter.apply(to: candidates, facts: facts) : all)
+        }
+        let grouped = model.groupCoordinatorTasks([filteredPinned] + raw.map(\.visible))
+        pinned = grouped[0]
+        groups = raw.enumerated().map { index, group in
+            Group(project: group.project, all: group.all, visible: grouped[index + 1])
         }
     }
 

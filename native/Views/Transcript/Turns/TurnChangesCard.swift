@@ -34,7 +34,11 @@ struct TurnChangesCard: View {
     private var header: some View {
         HStack(spacing: DS.Space.sm) {
             Button {
-                withAnimation(.reveal) { showsFiles.toggle() }
+                if actions?.isRecordOnly == true {
+                    actions?.review()
+                } else {
+                    withAnimation(.reveal) { showsFiles.toggle() }
+                }
             } label: {
                 HStack(spacing: DS.Space.sm) {
                     Image(systemName: "doc.on.doc")
@@ -52,9 +56,10 @@ struct TurnChangesCard: View {
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
-            .accessibilityHint(showsFiles ? "Hides the files" : "Lists the files")
+            .accessibilityHint(
+                actions?.isRecordOnly == true ? "Shows Changes" : showsFiles ? "Hides the files" : "Lists the files")
 
-            if let actions {
+            if let actions, !actions.isRecordOnly {
                 Button("Review", action: actions.review)
                     .buttonStyle(.ds(.ghost))
                     .help("Review this turn's changes")
@@ -121,6 +126,8 @@ struct TurnChangesActions {
     /// What the latest turn changed as git sees it, whatever made the change; the card lists these
     /// in place of the agent's reported edits, so a turn that edited through the shell gets one too.
     var latestTurnChanges: TurnDetectedChanges?
+    /// The well owns Review and the Changes pane owns Commit; the card remains a record.
+    var isRecordOnly = false
 }
 
 /// A file row that opens its changes: a list row's hover fill, a shade darker while pressed.
@@ -147,6 +154,14 @@ extension EnvironmentValues {
 }
 
 #if DEBUG
+#Preview("Turn changes - Record under the well") {
+    DSPreviewPair {
+        TurnChangesCard(summary: TurnChangesPreviewFixtures.summary)
+            .environment(\.turnChangesActions, TurnChangesActions(review: {}, isRecordOnly: true))
+            .frame(width: 460)
+    }
+}
+
 #Preview("Turn changes - Committed, long paths and binary file") {
     DSPreviewPair {
         TurnChangesCard(summary: TurnChangesPreviewFixtures.summary)

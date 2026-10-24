@@ -18,7 +18,7 @@ extension View {
 #if DEBUG
 import ACP
 
-private struct SidebarDesignFixture: View {
+struct SidebarDesignFixture: View {
     let scenario: String
     @State private var app: AppModel
     @State private var gitHub = GitHubAccountPreviewFixtures.model(.single)
@@ -26,7 +26,7 @@ private struct SidebarDesignFixture: View {
 
     init(scenario: String) {
         self.scenario = scenario
-        _app = State(initialValue: Self.makeApp(scenario))
+        _app = State(initialValue: Self.makeApp(scenario == "peek-plan" ? "plan" : scenario))
     }
 
     var body: some View {
@@ -39,10 +39,18 @@ private struct SidebarDesignFixture: View {
                 .environment(statusBar)
                 .environment(\.projectIconStore, SidebarPreviewFixtures.iconStore)
                 .environment(\.taskSignalReducedMotion, scenario == "reduce-motion")
+                .task {
+                    CommandRegistry.shared.register(NativeCommand.taskPeek(model: app))
+                    if let state = TaskPeekPreviewFixtures.State(rawValue: String(scenario.dropFirst(5))),
+                        scenario.hasPrefix("peek-")
+                    {
+                        app.taskPeek.request = TaskPeekPreviewFixtures.prepare(app, state: state)
+                    }
+                }
         }
     }
 
-    private static func makeApp(_ scenario: String) -> AppModel {
+    static func makeApp(_ scenario: String) -> AppModel {
         let defaults = PreviewUserDefaults()
         defaults.set(["automation": false, "automations": false, "expeditions": false], forKey: "pluginChoices")
         let plugins = PluginRegistry(
@@ -123,14 +131,17 @@ private struct SidebarDesignFixture: View {
             session.state.requestPermission(request, id: .int(1))
         case .needsInput:
             let json =
-                #"{"sessionId":"kite-1","mode":"form","message":"Use the repo's PR template, or keep the built-in body?","requestedSchema":{"type":"object","properties":{"answer":{"type":"string"}}}}"#
+                #"{"sessionId":"kite-1","mode":"form","message":"Should kt pr fill in the repo's PR template?","requestedSchema":{"type":"object","properties":{"answer":{"type":"string","oneOf":[{"const":"template","title":"Fill in the repo's template","description":"Summary and test plan go under its headings."},{"const":"builtin","title":"Keep the built-in body","description":"Ignore the template."},{"const":"fallback","title":"Use the template when one exists","description":"Fall back to the built-in body otherwise."}]}}}}"#
             if let question = SessionModel.previewDecode(CreateElicitationRequest.self, json) {
                 session.questions = [.init(id: .int(1), request: question, requestedAt: .now.addingTimeInterval(-age))]
             }
         case .done:
             session.previewExchange(title, reply: "Done. The change is ready to review.")
             app.unread.set(SessionKey(agent: agent, id: session.id), unread: id != "native-2")
-        case .failed: session.phase = .disconnected
+        case .failed:
+            session.phase = .disconnected
+            session.addNotice(
+                "The provider was overloaded. Native tried to reconnect, but the agent stopped again.", isError: true)
         default: break
         }
     }

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C0A990010000000000000001 /* ApprovalAnalysis in Frameworks */ = {isa = PBXBuildFile; productRef = C0A990010000000000000002 /* ApprovalAnalysis */; };
 		000000000000000000000320 /* ACP in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000000310 /* ACP */; };
 		000000000000000000000420 /* MCP in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000000410 /* MCP */; };
 		000000000000000000474820 /* GitHub in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000474810 /* GitHub */; };
@@ -124,6 +125,7 @@
 				0000000000000000005E7020 /* NativeSetup in Frameworks */,
 				000000000000000005EA2C20 /* Search in Frameworks */,
 				000000000000000007A5C120 /* TaskList in Frameworks */,
+				C0A990010000000000000001 /* ApprovalAnalysis in Frameworks */,
 				00000000000000007A5C5C20 /* TaskScripts in Frameworks */,
 				0000000000000000C0DC1020 /* NativeCommands in Frameworks */,
 				0000000000000000901C0020 /* NativePolicy in Frameworks */,
@@ -255,6 +257,7 @@
 				0000000000000000005E7010 /* NativeSetup */,
 				000000000000000005EA2C10 /* Search */,
 				000000000000000007A5C110 /* TaskList */,
+				C0A990010000000000000002 /* ApprovalAnalysis */,
 				00000000000000007A5C5C10 /* TaskScripts */,
 				0000000000000000C0DC1010 /* NativeCommands */,
 				0000000000000000901C0010 /* NativePolicy */,
@@ -297,6 +300,7 @@
 			mainGroup = 000000000000000000000001;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				C0A990010000000000000003 /* XCLocalSwiftPackageReference "Packages/ApprovalAnalysis" */,
 				00000000000000005E171001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 				00000000000000005E171011 /* XCLocalSwiftPackageReference "Packages/NativeDiagnostics" */,
 				000000000000000071E10000 /* XCLocalSwiftPackageReference "Packages/Terminal" */,
@@ -803,6 +807,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		C0A990010000000000000003 /* XCLocalSwiftPackageReference "Packages/ApprovalAnalysis" */ = {isa = XCLocalSwiftPackageReference; relativePath = Packages/ApprovalAnalysis; };
 		000000000000000000000300 /* XCLocalSwiftPackageReference "Packages/ACP" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/ACP;
@@ -949,6 +954,7 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		C0A990010000000000000002 /* ApprovalAnalysis */ = {isa = XCSwiftPackageProductDependency; productName = ApprovalAnalysis; };
 		000000000000000000000310 /* ACP */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ACP;
