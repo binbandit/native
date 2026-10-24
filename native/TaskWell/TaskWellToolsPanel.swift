@@ -21,11 +21,10 @@ struct TaskWellToolsPanel<Destination: View>: View {
                 VStack(alignment: .leading, spacing: DS.Space.sm) {
                     Button("Back to tools", systemImage: "chevron.left", action: tools.showWellTools)
                         .buttonStyle(.ds(.ghost))
-                    ScrollView {
+                    CappedHeightScrollView(maxHeight: DS.TaskWell.devMaxHeight) {
                         VStack(alignment: .leading, spacing: DS.Space.sm) { destination(page) }
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .frame(maxHeight: DS.TaskWell.devMaxHeight)
                 }
                 .padding(DS.Space.lg)
             } else {

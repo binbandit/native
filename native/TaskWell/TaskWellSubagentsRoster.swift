@@ -8,6 +8,10 @@ struct TaskWellSubagentsRoster: View {
 
     var body: some View {
         VStack(spacing: DS.Space.sm) {
+            if session.state.subagents.isEmpty {
+                Text("No subagents on this task")
+                    .font(.dsBody).foregroundStyle(.dsTextTertiary)
+            }
             ForEach(session.state.subagents) { subagent in
                 let child = session.child(subagent.id)
                 Button {
@@ -15,7 +19,8 @@ struct TaskWellSubagentsRoster: View {
                 } label: {
                     HStack(spacing: DS.TaskWell.gap) {
                         TaskSignal(
-                            status: child?.taskStatus ?? status(subagent), placement: .well,
+                            status: subagent.workState == nil ? child?.taskStatus ?? .idle : status(subagent),
+                            placement: .well,
                             attentionSince: child?.taskWellAttentionSince
                         )
                         .frame(width: DS.TaskWell.signal, height: DS.TaskWell.signal)
