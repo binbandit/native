@@ -16,7 +16,6 @@ final class GitHubAccountsModel {
     private(set) var preferredHost: String?
     private(set) var profiles: [String: GitHubUser] = [:]
     private(set) var avatars: [String: Data] = [:]
-    var isMenuPresented = false
     var showsSignIn = false
     var copiedCommand = false
     @ObservationIgnored private let defaults: UserDefaults
@@ -157,7 +156,6 @@ final class GitHubAccountsModel {
         }
     }
 
-    func showMenu() { isMenuPresented = true }
     func addAccount() { showsSignIn = true; copiedCommand = false }
     var signInCommand: String { error == .notInstalled ? "brew install gh" : "gh auth login" }
     func copySignInCommand() { DSPasteboard.copy(signInCommand); copiedCommand = true }

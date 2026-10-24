@@ -3,6 +3,7 @@ import SwiftUI
 struct GitHubAccountAvatar: View {
     let name: String
     var data: Data?
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         Group {
@@ -10,14 +11,17 @@ struct GitHubAccountAvatar: View {
                 image.resizable().scaledToFill()
             } else {
                 Text(name.first.map { String($0).uppercased() } ?? "?")
-                    .font(.dsCaptionMedium)
+                    .font(DS.Account.initials)
                     .foregroundStyle(.dsTextSecondary)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(.dsSelected)
             }
         }
-        .frame(width: DS.Size.controlXS, height: DS.Size.controlXS)
+        .frame(width: DS.Account.avatarSize, height: DS.Account.avatarSize)
         .clipShape(.circle)
+        .overlay {
+            Circle().strokeBorder(DS.Account.avatarStroke(in: colorScheme), lineWidth: DS.Account.avatarBorder)
+        }
         .accessibilityHidden(true)
     }
 }

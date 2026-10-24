@@ -1,3 +1,4 @@
+#if DEBUG
 import SwiftUI
 
 /// The status bar narrowing in stages: everything at full length; the innermost item with a compact
@@ -81,4 +82,5 @@ struct GalleryStatusBar: View {
             .frame(width: 640)
     }
 }
+#endif
 #endif

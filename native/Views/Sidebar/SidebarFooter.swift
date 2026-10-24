@@ -7,9 +7,11 @@ struct SidebarFooter: View {
 
     var body: some View {
         let isAboveStatusBar = statusBar?.isVisible == true
-        HStack {
+        HStack(spacing: DS.Space.md) {
             #if os(macOS)
-            if let gitHub {
+            if let gitHub, gitHub.accounts.current != nil,
+                gitHub.accounts.status == nil || !gitHub.accounts.accounts.isEmpty
+            {
                 GitHubAccountButton().environment(gitHub)
             } else {
                 Spacer(minLength: 0)
@@ -19,7 +21,7 @@ struct SidebarFooter: View {
             #endif
             SettingsButton()
         }
-        .padding(.horizontal, DS.Space.xl)
+        .padding(.horizontal, DS.Space.md)
         .padding(.vertical, isAboveStatusBar ? 0 : DS.Space.lg)
         .frame(height: isAboveStatusBar ? DS.Size.chromeBar : nil)
         .overlay(alignment: .top) {
@@ -40,14 +42,13 @@ private struct SettingsButton: View {
         } label: {
             FooterGlyph(systemImage: "gearshape")
         }
-        .buttonStyle(.plain)
+        .buttonStyle(SidebarRowButtonStyle())
         .help("Settings (⌘,)")
         .accessibilityLabel("Settings")
     }
 }
 
-/// A footer icon: a 16pt muted glyph that brightens on hover, with no fill. The status
-/// bar's glyphs (`StatusBarGlyph`) are the same size.
+/// The Settings cog shares the identity's row height and hover treatment.
 private struct FooterGlyph: View {
     let systemImage: String
 
@@ -55,11 +56,12 @@ private struct FooterGlyph: View {
 
     var body: some View {
         Image(systemName: systemImage)
-            .font(.dsCallout)
+            .font(DS.Account.settingsGlyph)
             .foregroundStyle(isHovered ? .dsTextPrimary : .dsTextSecondary)
-            .frame(width: DS.Size.chromeGlyph, height: DS.Size.chromeGlyph)
+            .frame(width: DS.Size.controlSM, height: DS.Size.controlSM)
+            .background(isHovered ? Color.dsHover : .clear, in: .rect(cornerRadius: DS.Radius.row))
             .contentShape(.rect)
-            .dsHitTarget(DS.Size.chromeGlyph)
+            .dsHitTarget(DS.Size.controlSM)
             .trackHover($isHovered)
     }
 }
@@ -72,5 +74,13 @@ private struct FooterGlyph: View {
     }
     .sidebarPreviewEnvironment(AppModel.preview())
     .environment(GitHubAccountPreviewFixtures.model(.multiple))
+}
+
+#Preview("Sidebar footer - Signed out") {
+    DSPreviewPair {
+        SidebarFooter().frame(width: DS.Size.sidebarWidth)
+    }
+    .sidebarPreviewEnvironment(AppModel.preview())
+    .environment(GitHubAccountPreviewFixtures.model(.signedOut))
 }
 #endif

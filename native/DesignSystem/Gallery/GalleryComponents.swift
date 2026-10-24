@@ -1,3 +1,4 @@
+#if DEBUG
 import SwiftUI
 
 // Gallery sections for status, the composer and general controls.
@@ -217,4 +218,5 @@ struct GalleryControls: View {
         }
     }
 }
+#endif
 #endif

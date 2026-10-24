@@ -7,6 +7,7 @@ import SwiftUI
 struct TaskView: View {
     let host: HostConnection
     let sessionID: HostSessionID
+    @Bindable var state: CompanionTaskState
 
     @State private var stopFailure: String?
     @State private var selectedCall: ToolCallState?
@@ -22,62 +23,70 @@ struct TaskView: View {
     }
 
     private func content(_ session: HostSessionSummary, mirror: SessionMirror?) -> some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: DS.Space.lg) {
-                if mirror == nil || mirror?.isLoading == true {
-                    HStack(spacing: DS.Space.md) {
-                        DotGridLoader(pattern: .settingUp)
-                            .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
-                        Text("Loading the conversation from \(host.name)…")
-                            .font(CompanionType.subheadline).foregroundStyle(.dsTextSecondary)
+        GeometryReader { geometry in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: DS.Space.lg) {
+                    if mirror == nil || mirror?.isLoading == true {
+                        HStack(spacing: DS.Space.md) {
+                            DotGridLoader(pattern: .settingUp)
+                                .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
+                            Text("Loading the conversation from \(host.name)…")
+                                .font(CompanionType.subheadline).foregroundStyle(.dsTextSecondary)
+                        }
+                    }
+                    ForEach(mirror?.state.items ?? []) { item in
+                        CompanionTranscriptRow(item: item, answers: host.answers) { selectedCall = $0 }
                     }
                 }
-                ForEach(mirror?.state.items ?? []) { item in
-                    CompanionTranscriptRow(item: item, answers: host.answers) { selectedCall = $0 }
-                }
+                .scrollTargetLayout()
+                .padding(DS.Space.lg)
+                .frame(maxWidth: CompanionMetrics.readableWidth, alignment: .leading)
             }
-            .padding(DS.Space.lg)
-            .frame(maxWidth: CompanionMetrics.readableWidth, alignment: .leading)
-        }
-        .defaultScrollAnchor(.bottom)
-        .background(.dsBackground)
-        .safeAreaInset(edge: .top, spacing: 0) {
-            banner(session)
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            bottom(session, mirror: mirror)
-        }
-        .navigationTitle(session.displayTitle(mirror))
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                VStack(spacing: 0) {
-                    Text(session.displayTitle(mirror)).font(CompanionType.captionMedium).foregroundStyle(.dsTextPrimary)
+            .defaultScrollAnchor(.bottom)
+            .scrollPosition(id: $state.visibleItemID, anchor: .top)
+            .background(.dsBackground)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                banner(session)
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                bottom(session, mirror: mirror, availableHeight: geometry.size.height)
+                    .frame(maxWidth: CompanionMetrics.readableWidth)
+                    .dsReservedRegionPadding()
+            }
+            .navigationTitle(session.displayTitle(mirror))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    VStack(spacing: 0) {
+                        Text(session.displayTitle(mirror)).font(CompanionType.captionMedium).foregroundStyle(
+                            .dsTextPrimary
+                        )
                         .lineLimit(1)
-                    HStack(spacing: DS.Space.xs) {
-                        Text("\(session.agentName) · \(session.projectName) ·").lineLimit(1)
-                        HostMark(preferences: host.preferences, size: CompanionMetrics.hostMarkTiny)
-                        Text(host.name).lineLimit(1).layoutPriority(1)
+                        HStack(spacing: DS.Space.xs) {
+                            Text("\(session.agentName) · \(session.projectName) ·").lineLimit(1)
+                            HostMark(preferences: host.preferences, size: CompanionMetrics.hostMarkTiny)
+                            Text(host.name).lineLimit(1).layoutPriority(1)
+                        }
+                        .font(CompanionType.caption).foregroundStyle(.dsTextSecondary)
+                        .accessibilityElement(children: .combine)
                     }
-                    .font(CompanionType.caption).foregroundStyle(.dsTextSecondary)
-                    .accessibilityElement(children: .combine)
+                }
+                if session.isWorking {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Stop", systemImage: "stop.fill") {
+                            Task { stopFailure = await host.cancel(sessionID) }
+                        }
+                        // A system control: neutral, whatever the host's or the theme's color.
+                        .tint(.dsTextPrimary)
+                        .accessibilityIdentifier("stop")
+                    }
                 }
             }
-            if session.isWorking {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Stop", systemImage: "stop.fill") {
-                        Task { stopFailure = await host.cancel(sessionID) }
-                    }
-                    // A system control: neutral, whatever the host's or the theme's color.
-                    .tint(.dsTextPrimary)
-                    .accessibilityIdentifier("stop")
-                }
+            .sheet(item: $selectedCall) { call in
+                ToolCallDetailSheet(call: call)
             }
+            .onAppear { host.attach(sessionID) }
         }
-        .sheet(item: $selectedCall) { call in
-            ToolCallDetailSheet(call: call)
-        }
-        .onAppear { host.attach(sessionID) }
     }
 
     @ViewBuilder
@@ -109,14 +118,16 @@ struct TaskView: View {
     }
 
     @ViewBuilder
-    private func bottom(_ session: HostSessionSummary, mirror: SessionMirror?) -> some View {
+    private func bottom(_ session: HostSessionSummary, mirror: SessionMirror?, availableHeight: CGFloat) -> some View {
         if let pending = mirror?.state.pendingPermissions.first {
-            ApprovalCard(
-                host: host, sessionID: sessionID, toolCallID: pending.toolCallID, permission: pending.permission,
-                call: mirror?.state.toolCall(id: pending.toolCallID)
-            )
-            .padding(.horizontal, DS.Space.lg)
-            .padding(.top, DS.Space.sm)
+            CappedHeightScrollView(maxHeight: availableHeight * CompanionMetrics.approvalHeightFraction) {
+                ApprovalCard(
+                    host: host, sessionID: sessionID, toolCallID: pending.toolCallID, permission: pending.permission,
+                    call: mirror?.state.toolCall(id: pending.toolCallID)
+                )
+                .padding(.horizontal, DS.Space.lg)
+                .padding(.top, DS.Space.sm)
+            }
             // The card is content, not a floating control: the transcript stops behind it.
             .background(.dsBackground)
         } else {
@@ -124,12 +135,22 @@ struct TaskView: View {
                 if !session.queue.isEmpty {
                     QueuedMessagesView(host: host, session: session)
                 }
-                CompanionComposer(host: host, session: session)
+                CompanionComposer(host: host, session: session, state: state)
             }
             .padding(.top, DS.Space.sm)
         }
     }
 }
+
+#if DEBUG
+#Preview("Task - Compact") {
+    DSPreviewPair {
+        CompanionLayoutPreview()
+            .environment(\.horizontalSizeClass, .compact)
+            .frame(width: 390, height: 760)
+    }
+}
+#endif
 
 extension ToolCallState: @retroactive Identifiable {}
 

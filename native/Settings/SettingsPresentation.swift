@@ -17,12 +17,13 @@ final class SettingsPresentation {
     /// when a project's settings link there. The page takes it once it appears.
     private(set) var projectScope: ProjectScope?
 
-    private(set) var requestedRow: SettingsReveal?
+    /// A specific row requested by a feature outside Settings, including repeated visits.
+    private(set) var rowReveal: SettingsReveal?
 
     /// The page shown; nil while Settings is closed.
     var pane: SettingsPane.ID? {
         didSet {
-            if oldValue != pane { requestedRow = nil }
+            if oldValue != pane { rowReveal = nil }
             if let projectScope, projectScope.pane != pane { self.projectScope = nil }
             if pane != oldValue { dismissDetail() }
             if oldValue == nil, pane != nil {
@@ -71,25 +72,15 @@ final class SettingsPresentation {
 
     var isShown: Bool { pane != nil }
 
-    func open(_ pane: SettingsPane.ID = .general) {
-        requestedRow = nil
+    func open(_ pane: SettingsPane.ID = .general, revealing row: SettingsRowID? = nil) {
         projectScope = nil
         self.pane = pane
-    }
-
-    /// Opens a setting by the same reveal target search uses.
-    func open(_ pane: SettingsPane.ID, revealing row: SettingsRowID) {
-        open(pane)
-        requestedRow = SettingsReveal(rowID: row)
-    }
-
-    func takeRequestedRow() -> SettingsReveal? {
-        defer { requestedRow = nil }
-        return requestedRow
+        rowReveal = row.map { SettingsReveal(rowID: $0) }
     }
 
     /// Opens `pane` on `project`'s switches.
     func open(_ pane: SettingsPane.ID, scopedTo project: URL) {
+        rowReveal = nil
         projectScope = ProjectScope(pane: pane, project: project)
         self.pane = pane
     }

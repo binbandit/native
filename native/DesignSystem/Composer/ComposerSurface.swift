@@ -140,9 +140,11 @@ extension ComposerControlsBar where Trailing == EmptyView {
     }
 }
 
+#if DEBUG
 #Preview("Composer") {
     DSPreviewPair {
         GalleryComposer()
             .frame(width: 640)
     }
 }
+#endif

@@ -65,9 +65,11 @@ extension DS {
     }
 }
 
+#if DEBUG
 #Preview("Status bar") {
     DSPreviewPair {
         GalleryStatusBar()
             .padding(DS.Space.xl)
     }
 }
+#endif

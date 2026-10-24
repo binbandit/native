@@ -311,8 +311,8 @@ Other file types use the platform's Quick Look preview, with its native navigati
 | ⇧⌘A | Archive the selected task and open the next task in the sidebar's current filter and sort order (or the previous task at the end). ⌘Z or the toast's Undo restores and reopens it. Unarchive an archived task; with several tasks picked, archive them all | Task | `session.archive` |
 | ⌥⌘J | Turn the sidebar's Needs you filter on or off (its filter menu has the rest) | View | `view.needsYouFilter` |
 | ⌘⇧P | Pull requests | Go | `go.pullRequests` |
-| | GitHub Account: open the sidebar account menu (Mac only) | Go | `github.accounts` |
-| Tab, then Space on the sidebar account | Open the account menu; arrow keys select, Return chooses, Escape closes | | |
+| | GitHub Account: open Settings > General at Accounts (Mac only) | Go | `github.accounts` |
+| Tab, then Space on the sidebar account | Open Settings > General at Accounts; Tab and Space choose an account | | |
 | ⌘⇧X | Expeditions | Go | `go.expeditions` |
 | ⇧⌘F | Search every task (`docs/search.md`) | Go | `search.show` |
 | ⌥⌘I | Show or hide the subagent inspector | View | `view.toggleSubagentInspector` |

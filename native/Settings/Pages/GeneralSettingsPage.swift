@@ -12,7 +12,7 @@ extension SettingsPane {
         group: .personal,
         order: 0,
         searchEntries: {
-            [
+            var entries = [
                 SettingsSearchEntry(
                     id: GeneralSettingsPage.followUpRow,
                     title: "Follow-up behavior",
@@ -20,6 +20,10 @@ extension SettingsPane {
                     keywords: ["queue", "steer", "return", "send", "message"], plainly: .followUp
                 )
             ]
+            #if os(macOS)
+            entries.append(GitHubAccountsSettingsSection.searchEntry)
+            #endif
+            return entries
         },
         content: { GeneralSettingsPage() }
     )
@@ -29,6 +33,7 @@ struct GeneralSettingsPage: View {
     @Environment(\.settingsPlainly) private var plainly
     @Environment(SettingsPresentation.self) private var presentation
     @Environment(DockBadgePreference.self) private var injectedBadge: DockBadgePreference?
+    @Environment(GitHubModel.self) private var gitHub: GitHubModel?
     private let badgePreference: DockBadgePreference
 
     init(dockBadge: DockBadgePreference = .shared) {
@@ -82,6 +87,11 @@ struct GeneralSettingsPage: View {
             } else {
                 SettingsRowGroup { followUpControl }
             }
+            #if os(macOS)
+            if let gitHub {
+                GitHubAccountsSettingsSection().environment(gitHub)
+            }
+            #endif
         }
     }
 
@@ -125,6 +135,7 @@ struct GeneralSettingsPage: View {
             .settingsPreviewPage()
     }
     .environment(SettingsPresentation())
+    .environment(GitHubAccountPreviewFixtures.model(.single))
     .defaultAppStorage(PreviewUserDefaults())
 }
 
@@ -134,6 +145,7 @@ struct GeneralSettingsPage: View {
             .settingsPreviewPage(width: 420)
     }
     .environment(SettingsPresentation())
+    .environment(GitHubAccountPreviewFixtures.model(.longName))
     .defaultAppStorage(PreviewUserDefaults())
 }
 
@@ -142,6 +154,7 @@ struct GeneralSettingsPage: View {
         GeneralSettingsPage(dockBadge: DockBadgePreference(defaults: PreviewUserDefaults())).settingsPreviewPage()
     }
     .environment(SettingsPresentation())
+    .environment(GitHubAccountPreviewFixtures.model(.multiple))
     .environment(\.settingsPlainly, true)
     .defaultAppStorage(PreviewUserDefaults())
 }
