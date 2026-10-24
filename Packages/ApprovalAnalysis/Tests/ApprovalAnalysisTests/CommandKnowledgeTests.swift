@@ -78,7 +78,8 @@ import Testing
     }
 
     @Test(arguments: [
-        "git status --invented", "mv -R source destination", "cargo run --workspace", "swift build --filter Test",
+        "git status --invented", "find -- . -delete", "mv -R source destination", "cargo run --workspace",
+        "swift build --filter Test",
         "gh pr view --squash", "docker ps --volume foo", "git -c alias.status=push status",
         "git -C /tmp status",
         "git invented", "rm -rf /tmp/a && git status", "rm -rf /tmp/*", "rm -rf $(pwd)",
@@ -101,6 +102,16 @@ import Testing
         let result = ApprovalCommand(command: command, workingDirectory: "/repo")
         #expect(result.risk == .irreversible)
         #expect(result.suggestedCommand == nil)
+    }
+
+    @Test(arguments: [
+        "git reflog delete 'HEAD@{0}'", "git reflog expire HEAD", "git reflog drop refs/heads/main",
+        "git reflog write refs/heads/main abc123 def456 message",
+    ])
+    func reflogMutationsAreNeverHistoryDisplay(_ command: String) {
+        let result = ApprovalCommand(command: command, workingDirectory: "/repo")
+        #expect(result.risk == .irreversible)
+        #expect(result.action != "show ref update history")
     }
 
     @Test func cacheNamesNeverProveContentsOrUndo() {

@@ -40,7 +40,7 @@ enum CommandKnowledgeValidation {
                 command,
                 keys: [
                     "words", "summary", "consequence", "destructive", "options", "operands",
-                    "optionsBeforeOperands", "shortClusters", "noSuggestionWithOptions",
+                    "optionsBeforeOperands", "shortClusters", "allowsTerminator", "noSuggestionWithOptions",
                     "noSuggestionWithOperandPrefixes",
                 ])
             _ = try self.object(fields["operands"] as Any, keys: ["minimum", "maximum", "summary", "paths"])

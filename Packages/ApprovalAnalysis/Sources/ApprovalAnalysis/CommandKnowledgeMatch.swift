@@ -28,6 +28,7 @@ struct CommandKnowledgeMatch {
         while index < tokens.count {
             let token = tokens[index]
             if !ended && token.value == "--" {
+                guard rule.allowsTerminator != false else { return nil }
                 terminator = token.range
                 ended = true
                 index += 1

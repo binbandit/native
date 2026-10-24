@@ -488,7 +488,7 @@
           "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
           "destructive": false,
           "options": [],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+          "operands": {"minimum": 0, "maximum": 0, "summary": "argument: {value}; contents not inspected", "paths": false}
         },
         {
           "words": ["submodule", "update"],
@@ -689,6 +689,68 @@
             {"names": ["--prune"], "summary": "remove unreachable objects according to Git expiry rules", "value": "none", "destructive": true}
           ],
           "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["reflog", "show"],
+          "summary": "show ref update history",
+          "consequence": "Reflog contents and Git configuration have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["-n", "--max-count"], "summary": "limit the entry count", "value": "attached", "destructive": false}
+          ],
+          "operands": {"minimum": 0, "maximum": 1, "summary": "reflog argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["reflog", "exists"],
+          "summary": "check whether a reflog exists",
+          "consequence": "Reflog contents and Git configuration have not been inspected.",
+          "destructive": false,
+          "options": [],
+          "operands": {"minimum": 1, "maximum": 1, "summary": "reflog argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["reflog", "delete"],
+          "summary": "delete selected reflog entries",
+          "consequence": "Changes recovery records for Git refs. Reflog contents have not been inspected; Native cannot undo this command.",
+          "destructive": true,
+          "options": [
+            {"names": ["--dry-run", "-n"], "summary": "report changes without applying them", "value": "none", "destructive": false},
+            {"names": ["--rewrite"], "summary": "adjust old object ids in remaining entries", "value": "none", "destructive": false},
+            {"names": ["--updateref"], "summary": "update the ref to the newest remaining entry", "value": "none", "destructive": false}
+          ],
+          "operands": {"minimum": 1, "maximum": null, "summary": "reflog argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["reflog", "expire"],
+          "summary": "remove expired reflog entries",
+          "consequence": "Changes recovery records for Git refs. Reflog contents have not been inspected; Native cannot undo this command.",
+          "destructive": true,
+          "options": [
+            {"names": ["--dry-run", "-n"], "summary": "report changes without applying them", "value": "none", "destructive": false},
+            {"names": ["--rewrite"], "summary": "adjust old object ids in remaining entries", "value": "none", "destructive": false},
+            {"names": ["--updateref"], "summary": "update the ref to the newest remaining entry", "value": "none", "destructive": false},
+            {"names": ["--expire"], "summary": "expire entries older than this time", "value": "attached", "destructive": false},
+            {"names": ["--expire-unreachable"], "summary": "expire unreachable entries older than this time", "value": "attached", "destructive": false},
+            {"names": ["--all"], "summary": "process all reflogs", "value": "none", "destructive": false},
+            {"names": ["--single-worktree"], "summary": "limit processing to this worktree", "value": "none", "destructive": false}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "reflog argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["reflog", "drop"],
+          "summary": "remove entire reflogs",
+          "consequence": "Changes recovery records for Git refs. Reflog contents have not been inspected; Native cannot undo this command.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 1, "maximum": null, "summary": "reflog argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["reflog", "write"],
+          "summary": "append a reflog entry",
+          "consequence": "Changes recovery records for Git refs. Reflog contents have not been inspected; Native cannot undo this command.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 4, "maximum": null, "summary": "reflog argument: {value}; contents not inspected", "paths": false}
         }
       ]
     },
@@ -822,7 +884,8 @@
             {"names": ["-print0"], "summary": "print null-separated paths", "destructive": false, "value": "none"},
             {"names": ["-depth"], "summary": "visit directory contents first", "destructive": false, "value": "none"}
           ],
-          "operands": {"minimum": 1, "maximum": null, "summary": "{location} \u00b7 {scope}", "paths": true}
+          "operands": {"minimum": 1, "maximum": null, "summary": "{location} \u00b7 {scope}", "paths": true},
+          "allowsTerminator": false
         }
       ]
     },

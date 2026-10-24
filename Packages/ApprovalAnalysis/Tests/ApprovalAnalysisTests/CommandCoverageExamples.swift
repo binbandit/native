@@ -1,5 +1,11 @@
 enum CommandCoverageExamples {
     static let commands: [(String, Bool)] = [
+        ("git reflog show HEAD", false),
+        ("git reflog exists refs/heads/main", false),
+        ("git reflog delete 'HEAD@{0}'", true),
+        ("git reflog expire --expire=now --all", true),
+        ("git reflog drop refs/heads/main", true),
+        ("git reflog write refs/heads/main abc123 def456 message", true),
         ("git apply --check change.patch", true),
         ("git archive --format=tar HEAD", true),
         ("git blame file.swift", false),

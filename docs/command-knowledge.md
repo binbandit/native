@@ -52,6 +52,7 @@ The root object has exactly three fields. Unknown fields are rejected to catch m
 | `destructive` | Required Boolean. True uses deliberate confirmation. An option can raise this to true, never lower it. Build tools and script runners use true because their inputs execute code. |
 | `options` | Up to 128 known options. An unknown option rejects the whole command. Names must be unique within a command. |
 | `optionsBeforeOperands` | Optional Boolean, default false. True ends option parsing at the first operand, for wrappers such as `sudo` and `ssh`. Remaining arguments are explicitly uninspected. |
+| `allowsTerminator` | Optional Boolean, default true. False rejects a standalone `--`; used for `find`, whose expression predicates must never become unexamined operands. |
 | `shortClusters` | Optional Boolean, default false. Enables combinations such as `rm -rf` and `tar -xzf`. Every flag must be known; a value-taking flag consumes the rest or the next word. |
 | `operands.minimum`, `maximum` | Required nonnegative minimum and optional maximum, each up to 128. Omit maximum (or use null) for no grammar-specific upper bound. The parser still caps the entire command at 512 tokens. |
 | `operands.summary` | Up to 300 characters. `{value}` is the literal unquoted argument. `{scope}` is lexical reach and `{location}` is a conventional location name when `paths` is true. User text is substituted last. |

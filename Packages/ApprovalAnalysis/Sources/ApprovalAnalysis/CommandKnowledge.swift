@@ -18,6 +18,7 @@ public struct CommandKnowledge: Equatable, Sendable {
         let operands: Operands
         let optionsBeforeOperands: Bool?
         let shortClusters: Bool?
+        let allowsTerminator: Bool?
         let noSuggestionWithOptions: [String]?
         let noSuggestionWithOperandPrefixes: [String]?
     }
