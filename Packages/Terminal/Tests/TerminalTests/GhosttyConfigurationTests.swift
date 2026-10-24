@@ -65,6 +65,12 @@ struct GhosttyConfigurationTests {
         #expect(values(of: "term", in: configuration().text) == ["xterm-256color"])
     }
 
+    @Test func keepsShellActivityAvailableToTheEmbeddingApp() {
+        // libghostty's busy query is disabled when this setting is false.
+        #expect(values(of: "confirm-close-surface", in: configuration().text) == ["true"])
+        #expect(values(of: "confirm-close-surface", in: GhosttyConfiguration.userConfigOverrides(.opaque)) == ["true"])
+    }
+
     @Test func clearsGhosttysBindingsBeforeAddingTerminalOnes() {
         let bindings = values(of: "keybind", in: configuration().text)
         #expect(bindings.first == "clear")

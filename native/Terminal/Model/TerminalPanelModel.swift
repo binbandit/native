@@ -98,6 +98,7 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
             tabs.setJob(job, of: id)
             tabs.setTitle(nil, of: id)
             tabs.setStatus(.running, of: id)
+            tabs.resetCommand(in: id)
         } else {
             id = tabs.add(job: job).id
         }
@@ -209,6 +210,7 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
         surfaces.removeValue(forKey: id)?.close()
         tabs.setTitle(nil, of: id)
         tabs.setStatus(.running, of: id)
+        tabs.resetCommand(in: id)
         start(id, in: directory ?? workingDirectory, shell: shell)
         if tabs.selectedID == id {
             focusSelected()
@@ -270,9 +272,20 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
     }
 
     func surface(_ id: UUID, didFinishCommandWith status: Int32, after duration: Duration) {
-        // Shells report every command they run; only a job's own frame counts.
-        guard jobRequests[id] != nil else { return }
-        finishJob(in: id, status: status, duration: duration)
+        if jobRequests[id] != nil {
+            finishJob(in: id, status: status >= 0 ? status : nil, duration: duration)
+        } else {
+            tabs.finishCommand(status: status, in: id)
+        }
+    }
+
+    func surface(_ id: UUID, didChangeCommandRunning isRunning: Bool) {
+        // A command can finish and another start between samples. Compare with the model's
+        // completion state, so a missed idle prompt cannot suppress the next running command.
+        guard let tab = tabs.tabs.first(where: { $0.id == id }),
+            tab.status == .running, tab.isCommandRunning != isRunning
+        else { return }
+        tabs.setCommandRunning(isRunning, of: id)
     }
 
     func surfaceDidRequestClose(_ id: UUID) {

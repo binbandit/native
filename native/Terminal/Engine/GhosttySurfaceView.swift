@@ -94,6 +94,12 @@ final class GhosttySurfaceView: NSView, TerminalSurface {
         surface.map(ghostty_surface_needs_confirm_quit) ?? false
     }
 
+    func reportCommandActivity() {
+        guard let surface else { return }
+        let running = !ghostty_surface_process_exited(surface) && ghostty_surface_needs_confirm_quit(surface)
+        events?.surface(id, didChangeCommandRunning: running)
+    }
+
     func focus() {
         if let window {
             window.makeFirstResponder(self)

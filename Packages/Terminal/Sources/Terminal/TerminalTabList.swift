@@ -40,6 +40,10 @@ public struct TerminalTabList: Hashable, Sendable {
         public var status: TerminalStatus = .running
         /// The command the tab runs instead of a shell, when it runs one; it names the tab.
         public var job: TerminalJob?
+        /// A foreground command is running, as reported by the terminal engine's shell integration.
+        public var isCommandRunning = false
+        /// The last shell command's exit status. Cleared when another command starts.
+        public var lastCommandExitStatus: Int32?
 
         /// "Terminal", "Terminal 2", ..., the job's name, or the shell's title once it sets one.
         public var displayTitle: String {
@@ -63,6 +67,10 @@ public struct TerminalTabList: Hashable, Sendable {
     }
 
     public var isEmpty: Bool { tabs.isEmpty }
+
+    public var activity: TerminalActivitySummary {
+        TerminalActivitySummary(tabs: tabs)
+    }
 
     /// What a tab's button says: its display title, numbered when another tab shows the same one
     /// (two shells in the same folder, say).
@@ -112,6 +120,30 @@ public struct TerminalTabList: Hashable, Sendable {
     public mutating func setStatus(_ status: TerminalStatus, of id: UUID) {
         guard let index = tabs.firstIndex(where: { $0.id == id }) else { return }
         tabs[index].status = status
+        if status != .running {
+            tabs[index].isCommandRunning = false
+        }
+    }
+
+    public mutating func setCommandRunning(_ running: Bool, of id: UUID) {
+        guard let index = tabs.firstIndex(where: { $0.id == id }), tabs[index].status == .running else { return }
+        if running && !tabs[index].isCommandRunning {
+            tabs[index].lastCommandExitStatus = nil
+        }
+        tabs[index].isCommandRunning = running
+    }
+
+    public mutating func finishCommand(status: Int32, in id: UUID) {
+        guard let index = tabs.firstIndex(where: { $0.id == id }) else { return }
+        tabs[index].isCommandRunning = false
+        // libghostty uses -1 when shell integration did not report a status.
+        tabs[index].lastCommandExitStatus = status >= 0 ? status : nil
+    }
+
+    public mutating func resetCommand(in id: UUID) {
+        guard let index = tabs.firstIndex(where: { $0.id == id }) else { return }
+        tabs[index].isCommandRunning = false
+        tabs[index].lastCommandExitStatus = nil
     }
 
     /// The tab that runs the job with this key, running or finished.
