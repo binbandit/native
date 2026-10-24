@@ -16,7 +16,7 @@ source "$(dirname "$0")/lib.sh"
 BUDGET_DOWNLOAD=47
 BUDGET_DMG=48
 BUDGET_INSTALLED=118
-BUDGET_BINARY=60.5
+BUDGET_BINARY=60
 BUDGET_SCRIPT_RUNTIME=42
 
 apps=() zip="" dmg="" derived=""

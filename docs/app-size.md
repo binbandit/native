@@ -19,7 +19,7 @@ so growth gets noticed while there's still room to choose what to cut; lower the
 | Download, update archive | 47 MB | 42.7 MB |
 | Download, disk image | 48 MB | about 43.3 MB |
 | Installed app | 118 MB | 107.5 MB |
-| App binary (`Contents/MacOS/Native`) | 60.5 MB | 53.2 MB |
+| App binary (`Contents/MacOS/Native`) | 60 MB | 53.2 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
 `scripts/release/size-check.sh` holds the same numbers and fails when anything is over. It also
@@ -99,14 +99,6 @@ new Home questions, plan review and recovery code, with no added assets or depen
 binary budget is now 60 MB for this measured integration. Downloads remain 46.4/46.5 MB and
 installed apps 116.2/116.3 MB, within their unchanged limits. Remeasure when the gated redesign
 components replace their legacy presentations.
-
-2026-10-24: command knowledge integrated with main through `74353da1` at `d25e1c18`
-measures 60.103 MB for Release and 60.119 MB for Nightly, exceeding the 60 MB binary
-allowance. The deterministic catalog loader, extension validation, local coverage store and
-default-off diagnostics add no dependencies. Tool definitions ship as a 153 KB JSON resource,
-so new entries do not add compiled branches. The binary budget is now 60.5 MB for this
-measured integration. Downloads remain 46.7/46.8 MB and installed apps 117.0/117.1 MB,
-within the unchanged limits. These are integrated measurements, not an isolated feature delta.
 
 ## Measuring
 
