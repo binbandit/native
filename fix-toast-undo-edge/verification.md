@@ -7,12 +7,12 @@ Reference: supplied polish.html item 03 and polish-spec.md section 03. The self-
 ## Observed on the running app
 
 - Rest, Hover, Pressed, Keyboard focus, One line, Without Cmd-Z, Three lines and iPad appearance captured together in light and dark through the existing undo-toast gallery. Text does not clip, the action fills the trailing edge, and close/focus treatments match the written spec. The focus close button follows the written spec rather than the HTML's omission.
-- Standard task layout checked at 1440 x 900 dark and 1000 x 850 light. The initial integrated revision f62c22f8 left 20 points between visible toast and composer. c95501a4 excludes the shared 8-point top margin from measurement, leaving the specified 12 points. The Task Tools layout was also captured at 1000 x 850 dark.
+- Standard task layout checked at 1440 x 900 dark and 1000 x 850 light. The initial integrated revision f62c22f8 left 20 points between visible toast and composer. c95501a4 excludes the shared 8-point top margin from measurement, leaving the specified 12 points. The Task Tools layout was also captured at 1000 x 850 in both appearances, after setting its Boolean preference with defaults write. A launch-argument attempt had left this gate off; those captures were replaced.
 - Archive: named Undo restores the task. Dismiss removes the toast. Escape leaves it in place. A newer composer edit removes the Cmd-Z hint while keeping the toast's direct Undo effective. An untouched offer expires after five seconds.
 - Cmd-Z archive check used the existing long-session scripted ACP plugin in the normal app model. Edit changed from Undo Archive Task to Redo Archive Task after Cmd-Z, the archived row returned, and its toast disappeared. No real model session was used.
 - Hosts: removal stays anchored in the Settings pane above the status bar in both appearances. The Edit menu offers Undo Remove Host; Cmd-Z restores it. Removing two hosts replaces the first toast; Undo restores the second, then Cmd-Z restores the first in order.
 - Accessibility exposes one toast element with named Undo and Dismiss actions; both were exercised through drive.sh.
-- No instance crash reports. The screen was unlocked before every capture. Captures were checked against the live labels after animation settled; the driver reported covered windows, so immediate stale captures were discarded.
+- No instance crash reports. The screen was unlocked before every capture. Captures were checked against the live labels after animation settled; the driver reported covered windows, so stale captures were discarded. The final dark Task Tools capture used an uncovered window at x=2700.
 
 One five-second Hosts confirmation wait timed out in the batch. Repeating the same actions from a fresh launch with a fifteen-second wait passed in both appearances. No app crash was reported.
 
@@ -28,6 +28,7 @@ All screenshots use source-defined fixture content. The /fixture/native label an
 - scripts/check-warnings.sh /tmp/native-dd/vc-100/build.log
 - nice -n 10 swift test -j 4 --package-path Packages/Undo --filter 'UndoHistoryTests|UndoableActionTests|UndoToastLifetimeTests' (22 tests passed)
 - swift format lint --strict on all 17 changed Swift files
+- defaults write dev.binbandit.native.dev.vc-100 experiment.session-tools -bool YES (deleted after Task Tools checks)
 - scripts/check-ios.sh native/DesignSystem/Patterns/UndoToastBottomInset.swift (passed, including DesignSystem dependencies)
 - git diff --check
 - scripts/dev/run-isolated.sh vc-100 --no-build -- -nativeSidebarFixture undo-toast -nativeWindowFrame '50 50 900 1250' -appearance.mode dark
