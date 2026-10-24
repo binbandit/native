@@ -1,65 +1,66 @@
-# Celebration settings visual check
+# Celebrations visual check
 
-Preview gallery: fb30a626cb91bb6a8c5957b8d2656c72454484a1. Final navigation reproduction and Plainly title fix: 8b2e27212163580bb40cc3bafdd226432fd501eb. Isolated Debug instance vc-104, 1440 by 900 points.
+Visual check done at `dd8d1f36823c50b2d446389816d4c8623652d296`, Debug, isolated instance `vc-104`.
+Compared with Celebrations in `polish.html` and section 04 of `polish-spec.md`.
+The design explicitly uses existing Settings primitives; catalogue totals are the real catalogue.
 
-All preview captures use inert fixtures. The current Settings primitives intentionally differ from the Plainly styling in the mock. Catalogue counts follow real data.
+The Back failure was reproduced at `c401d3d9`: December at scrollbar 0.4275395033860045 returned to 0.
+The fix keeps the scroll callback on the stable Settings screen and restores the saved offset after catalogue layout.
+All 12 repeated round trips passed: light/dark, ordinary/Plainly, detail Back/Cmd-[/toolbar Back, and a manually scrolled bottom position.
+December returns to exactly 0.4275395033860045 in ordinary Settings and 0.67576099210823 in Plainly.
+Settings search from a detail to Diwali also passed in all four combinations.
 
-## Blocking finding
-
-From the page, choose December in the year strip, open Hanukkah, then use Back to Celebrations or Cmd-[. The catalogue returns to its top instead of December. Reproduced repeatedly, including on the final PR revision after the title fix. The main scrollbar changes from 0.4275395 to 0.
-
-| Before opening details | Detail | After Back |
+| Before fix: after Back | Fixed: after Back, dark | Fixed: after Back, light |
 | --- | --- | --- |
-| ![December](navigation-before-dark.png) | ![Hanukkah](navigation-detail-dark.png) | ![Returned to top](navigation-after-dark.png) |
+| ![](before-after-dark.png) | ![](fixed-after-dark.png) | ![](fixed-after-light.png) |
 
-## Preview states
+| Plainly, dark | Plainly, light |
+| --- | --- |
+| ![](back-restored-YES-dark.png) | ![](back-restored-YES-light.png) |
+
+## Gallery
+
+Each of the 21 states was recaptured and inspected in both appearances at 1440 x 900 points.
 
 | State | Dark | Light |
 | --- | --- | --- |
-| page | ![page dark](app-page-dark.png) | ![page light](app-page-light.png) |
-| showing | ![showing dark](app-showing-dark.png) | ![showing light](app-showing-light.png) |
-| homeOnly | ![homeOnly dark](app-homeOnly-dark.png) | ![homeOnly light](app-homeOnly-light.png) |
-| skipped | ![skipped dark](app-skipped-dark.png) | ![skipped light](app-skipped-light.png) |
-| waiting | ![waiting dark](app-waiting-dark.png) | ![waiting light](app-waiting-light.png) |
-| failed | ![failed dark](app-failed-dark.png) | ![failed light](app-failed-light.png) |
-| empty | ![empty dark](app-empty-dark.png) | ![empty light](app-empty-light.png) |
-| yearHover | ![yearHover dark](app-yearHover-dark.png) | ![yearHover light](app-yearHover-light.png) |
-| rows | ![rows dark](app-rows-dark.png) | ![rows light](app-rows-light.png) |
-| overlaps | ![overlaps dark](app-overlaps-dark.png) | ![overlaps light](app-overlaps-light.png) |
-| detail | ![detail dark](app-detail-dark.png) | ![detail light](app-detail-light.png) |
-| style | ![style dark](app-style-dark.png) | ![style light](app-style-light.png) |
-| offline | ![offline dark](app-offline-dark.png) | ![offline light](app-offline-light.png) |
-| confirmation | ![confirmation dark](app-confirmation-dark.png) | ![confirmation light](app-confirmation-light.png) |
-| off | ![off dark](app-off-dark.png) | ![off light](app-off-light.png) |
-| pending | ![pending dark](app-pending-dark.png) | ![pending light](app-pending-light.png) |
-| menu | ![menu dark](app-menu-dark.png) | ![menu light](app-menu-light.png) |
-| search | ![search dark](app-search-dark.png) | ![search light](app-search-light.png) |
-| noMatches | ![noMatches dark](app-noMatches-dark.png) | ![noMatches light](app-noMatches-light.png) |
-| unavailableSelections | ![unavailableSelections dark](app-unavailableSelections-dark.png) | ![unavailableSelections light](app-unavailableSelections-light.png) |
-| unavailableDetail | ![unavailableDetail dark](app-unavailableDetail-dark.png) | ![unavailableDetail light](app-unavailableDetail-light.png) |
-
-The menu preview starts at its trigger. The pending preview initially shows the catalogue; unavailable rows are visible in the rows and unavailable-selection previews.
+| page | ![](app-page-dark.png) | ![](app-page-light.png) |
+| showing | ![](app-showing-dark.png) | ![](app-showing-light.png) |
+| homeOnly | ![](app-homeOnly-dark.png) | ![](app-homeOnly-light.png) |
+| skipped | ![](app-skipped-dark.png) | ![](app-skipped-light.png) |
+| waiting | ![](app-waiting-dark.png) | ![](app-waiting-light.png) |
+| failed | ![](app-failed-dark.png) | ![](app-failed-light.png) |
+| empty | ![](app-empty-dark.png) | ![](app-empty-light.png) |
+| yearHover | ![](app-yearHover-dark.png) | ![](app-yearHover-light.png) |
+| rows | ![](app-rows-dark.png) | ![](app-rows-light.png) |
+| overlaps | ![](app-overlaps-dark.png) | ![](app-overlaps-light.png) |
+| detail | ![](app-detail-dark.png) | ![](app-detail-light.png) |
+| style | ![](app-style-dark.png) | ![](app-style-light.png) |
+| offline | ![](app-offline-dark.png) | ![](app-offline-light.png) |
+| confirmation | ![](app-confirmation-dark.png) | ![](app-confirmation-light.png) |
+| off | ![](app-off-dark.png) | ![](app-off-light.png) |
+| pending | ![](app-pending-dark.png) | ![](app-pending-light.png) |
+| menu | ![](app-menu-dark.png) | ![](app-menu-light.png) |
+| search | ![](app-search-dark.png) | ![](app-search-light.png) |
+| noMatches | ![](app-noMatches-dark.png) | ![](app-noMatches-light.png) |
+| unavailableSelections | ![](app-unavailableSelections-dark.png) | ![](app-unavailableSelections-light.png) |
+| unavailableDetail | ![](app-unavailableDetail-dark.png) | ![](app-unavailableDetail-light.png) |
 
 ## Additional checks
 
-Bulk menu choices, inline Undo, Cmd-Z/Redo, year-month navigation, unavailable opt-outs in rows and details, offline icon controls, and Settings search from Halloween to Diwali were exercised. Search also passed in Plainly in both appearances. The managed-off chooser is absent. Physical switch hit testing and row Space/Return are not claimed from this background accessibility run.
-
 | State | Dark | Light |
 | --- | --- | --- |
-| narrow-page | ![narrow-page dark](app-narrow-page-dark.png) | ![narrow-page light](app-narrow-page-light.png) |
-| narrow-detail | ![narrow-detail dark](app-narrow-detail-dark.png) | ![narrow-detail light](app-narrow-detail-light.png) |
-| pending-expanded | ![pending-expanded dark](app-pending-expanded-dark.png) | ![pending-expanded light](app-pending-expanded-light.png) |
-| menu-popup | ![menu-popup dark](app-menu-popup-dark.png) | ![menu-popup light](app-menu-popup-light.png) |
-| unavailable-disabled | ![unavailable-disabled dark](app-unavailable-disabled-dark.png) | ![unavailable-disabled light](app-unavailable-disabled-light.png) |
-| offline-detail | ![offline-detail dark](app-offline-detail-dark.png) | ![offline-detail light](app-offline-detail-light.png) |
-| plainly-search | ![plainly-search dark](app-plainly-search-dark.png) | ![plainly-search light](app-plainly-search-light.png) |
+| narrow-page | ![](app-narrow-page-dark.png) | ![](app-narrow-page-light.png) |
+| narrow-detail | ![](app-narrow-detail-dark.png) | ![](app-narrow-detail-light.png) |
+| plainly-detail-fixed | ![](app-plainly-detail-fixed-dark.png) | ![](app-plainly-detail-fixed-light.png) |
+| plainly-search | ![](app-plainly-search-dark.png) | ![](app-plainly-search-light.png) |
+| pending-expanded | ![](app-pending-expanded-dark.png) | ![](app-pending-expanded-light.png) |
+| offline-detail | ![](app-offline-detail-dark.png) | ![](app-offline-detail-light.png) |
+| unavailable-disabled | ![](app-unavailable-disabled-dark.png) | ![](app-unavailable-disabled-light.png) |
+| managed-off | ![](app-managed-off-dark.png) | ![](app-managed-off-light.png) |
 
-## Plainly title correction
+Unavailable selected rows and detail switches can turn off, then remain disabled. Offline icon switches are disabled while Home remains available. Managed-off hides the chooser and its search entries. Row accessibility toggle changes the selection without opening details; opening the row and returning keeps the filter. Physical switch hit-testing and row Space/Return are not claimed: the background driver cannot focus those rows, and pointer clicks are prohibited by the shared-Mac rules.
 
-The detail header inherited the combined section name and said Celebrations instead of Halloween. Clearing that local section override preserves the event title. Three consecutive light/dark runs passed, including opening the detail and revealing Diwali through Settings search.
+The initial review's popup and bulk Undo evidence remains at [80c9c297](https://github.com/binbandit/native/blob/80c9c297caeefde443c48bfa5c6f6823b7d017ec/feat-celebrations-settings/README.md).
 
-| Dark | Light |
-| --- | --- |
-| ![Corrected title](app-plainly-detail-fixed-dark.png) | ![Corrected title](app-plainly-detail-fixed-light.png) |
-
-Managed-off chooser navigation and search were also checked in both appearances; the celebration page is absent.
+Validation: isolated Debug build and repository warning check passed; 70 targeted AppAppearance tests and 2 managed-policy tests passed; strict lint passed on all changed Swift files. The local iPad type-check is blocked by unchanged `native/KeepAwake/Engine/PowerState.swift` importing `IOKit.ps`.
