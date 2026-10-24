@@ -121,6 +121,7 @@ private final class CompanionTranscriptPositionTracker {
                 var transaction = Transaction(animation: nil)
                 transaction.disablesAnimations = true
                 withTransaction(transaction) {
+                    if position.isInPlace { return }
                     if let place = position.place {
                         proxy.scrollTo(place.id, anchor: UnitPoint(x: 0.5, y: place.anchorY))
                     } else {
@@ -136,6 +137,7 @@ private final class CompanionTranscriptPositionTracker {
             guard let self, !Task.isCancelled, isVisible else { return }
             position.finishRestoration()
             state.transcriptPlace = position.place
+            restoration = nil
         }
     }
 }
