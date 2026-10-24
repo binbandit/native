@@ -23,8 +23,9 @@ private struct DSReservedRegionPadding: ViewModifier {
                     for region in geometry.reservedRegions(kind: .occlusion) {
                         let frame = region.frame
                         guard bounds.intersects(frame) else { continue }
-                        let leading = max(0, frame.maxX + region.margins.trailing)
-                        let trailing = max(0, bounds.maxX - frame.minX + region.margins.leading)
+                        // The frame already includes the system's recommended margins.
+                        let leading = max(0, frame.maxX)
+                        let trailing = max(0, bounds.maxX - frame.minX)
                         if leading < trailing {
                             result.leading = max(result.leading, leading)
                         } else {
