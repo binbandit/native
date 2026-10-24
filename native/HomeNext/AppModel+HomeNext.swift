@@ -35,6 +35,19 @@ extension AppModel {
             + session.children.values.sorted { $0.id.rawValue < $1.id.rawValue }.flatMap(homeNextRequests)
     }
 
+    func setHomeNextVisible(_ visible: Bool) { taskPeek.homeIsVisible = visible }
+
+    func peekHomeNextTask(_ task: HomeNextTask) {
+        let ask = taskAsks(for: task.id).first { ask in
+            guard let request = task.request, request.session === ask.session else { return false }
+            switch ask.content {
+            case .permission(let call): return call == request.call
+            case .question(let question): return question.id == request.question?.id
+            }
+        }
+        peekTask(task.id, ask: ask)
+    }
+
     func openHomeNextTask(_ key: SessionKey) { selection = key }
 
     func openHomeNextFolder() { isAddingProject = true }

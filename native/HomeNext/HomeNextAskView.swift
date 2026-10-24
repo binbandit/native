@@ -6,6 +6,8 @@ struct HomeNextAskView: View {
     let onReceipt: (HomeNextReceipt) -> Void
     let openTask: () -> Void
 
+    @Environment(AppModel.self) private var model
+    @State private var wantsInstructionFocus = false
     @State private var isAnswering = false
     @State private var answerError: String?
 
@@ -42,6 +44,9 @@ struct HomeNextAskView: View {
             }
         }
         .onChange(of: task.requestID) { answerError = nil }
+        .focusedSceneValue(\.taskPeekInstructionFocus, task.request?.call == nil ? nil : $wantsInstructionFocus)
+        .environment(\.legacyAskShortcutEnabled, model.legacyAskShortcutEnabled(in: .shared))
+        .environment(\.permissionShortcutsEnabled, model.taskPeek.request == nil)
     }
 
     @ViewBuilder private var content: some View {
@@ -52,13 +57,23 @@ struct HomeNextAskView: View {
                 }
             }
         } else if let request = task.request, let call = request.call {
-            if call.kind == .switchMode {
-                HomeNextPlanView(session: request.session, call: call) { option in
-                    answer(option, request: request, call: call)
+            AnnotatedApprovalView(
+                call: call, agentName: request.session.agentName, workingDirectory: request.session.cwd.path,
+                homeDirectory: model.device(of: task.id) == .thisMac ? NSHomeDirectory() : nil,
+                knowledge: model.plugins.commandKnowledge,
+                isAvailable: request.session.phase == .prompting && model.taskIsReachable(task.id),
+                focusRequested: wantsInstructionFocus, didFocus: { wantsInstructionFocus = false },
+                planEntries: call.kind == .switchMode ? request.session.state.currentTurnPlan : [],
+                showMorePlan: { model.peekHomeNextTask(task) },
+                onChoose: { answer($0, request: request, call: call) },
+                onInstruct: { text in
+                    try await request.session.instructHomeNext(text, call: call)
+                    onReceipt(
+                        HomeNextReceipt(task: task.id, title: task.title, action: "Sent your instruction", date: .now))
                 }
-            } else {
-                ToolCallView(call: call) { option in answer(option, request: request, call: call) }
-            }
+            )
+            .padding(.horizontal, -DS.Approval.inset)
+            .padding(.top, -DS.Space.xl)
         } else if task.status == .failed, let session = task.session {
             let turnID = session.state.turns.last?.id
             HomeNextFailureView(session: session, openTask: openTask) {
@@ -98,4 +113,9 @@ struct HomeNextAskView: View {
 #Preview("Next ask - Question") { HomeNextPreviewFixtures.page(.question) }
 #Preview("Next ask - Plan") { HomeNextPreviewFixtures.page(.plan) }
 #Preview("Next ask - Failure") { HomeNextPreviewFixtures.page(.failure) }
+#Preview("Next ask - Plan without steps") { HomeNextPreviewFixtures.page(.planText) }
+#Preview("Next ask - Previous plan") { HomeNextPreviewFixtures.page(.planRetained) }
+#Preview("Next ask - Destructive hold") { HomeNextPreviewFixtures.page(.destructive) }
+#Preview("Next ask - Unknown command") { HomeNextPreviewFixtures.page(.unknown) }
+#Preview("Next ask - Delivery failure") { HomeNextPreviewFixtures.page(.approvalFailure) }
 #endif
