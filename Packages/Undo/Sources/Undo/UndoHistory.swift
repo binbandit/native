@@ -21,23 +21,23 @@ public final class UndoHistory {
     public init() {}
 
     public var canUndo: Bool {
-        menu.canUndo
+        manager != nil && menu.canUndo
     }
 
     public var canRedo: Bool {
-        menu.canRedo
+        manager != nil && menu.canRedo
     }
 
     public var undoTitle: String {
-        menu.undoTitle
+        manager == nil ? "Undo" : menu.undoTitle
     }
 
     public var redoTitle: String {
-        menu.redoTitle
+        manager == nil ? "Redo" : menu.redoTitle
     }
 
     public func track(_ manager: UndoManager?) {
-        guard self.manager !== manager else { return }
+        guard self.manager !== manager || (manager == nil && !observers.isEmpty) else { return }
         pendingRefresh?.cancel()
         pendingRefresh = nil
         observers.forEach(NotificationCenter.default.removeObserver)

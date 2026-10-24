@@ -98,6 +98,29 @@ import Testing
         #expect(history.undoTitle == "Undo Edit")
     }
 
+    @Test func releasedWindowManagerLeavesNoEnabledCommands() async throws {
+        let history = UndoHistory()
+        do {
+            let manager = UndoManager()
+            manager.groupsByEvent = false
+            history.track(manager)
+            manager.beginUndoGrouping()
+            _ = UndoableAction("Edited draft", name: "Edit", undoManager: manager) { _ in }
+            manager.endUndoGrouping()
+            try await Task.sleep(for: .milliseconds(30))
+            #expect(history.manager === manager)
+            #expect(history.canUndo)
+        }
+
+        #expect(history.manager == nil)
+        #expect(!history.canUndo)
+        #expect(!history.canRedo)
+        #expect(history.undoTitle == "Undo")
+        #expect(history.redoTitle == "Redo")
+        history.track(nil)
+        #expect(!history.canUndo)
+    }
+
     @Test func menuFollowsTheWindowStackWithoutATextResponder() {
         let history = UndoHistory()
         let manager = UndoManager()
