@@ -54,7 +54,7 @@ enum CommandsWiring {
         registry.register(NativeCommand.navigation(model: model, settings: settings))
         registry.register([.searchShow])
         #if os(macOS)
-        registry.register([.gitHubAccounts(features.gitHub, settings: settings)])
+        registry.register([.gitHubAccounts(settings: settings)])
         #endif
         registry.register(NativeCommand.composer)
         registry.register(NativeCommand.clearConversation(model: model))

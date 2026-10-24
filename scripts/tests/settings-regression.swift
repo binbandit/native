@@ -32,12 +32,13 @@ private struct SettingsRegression {
         #if !BEFORE
         plainlyNavigation()
         combinedLibraryScope()
+        accountNavigation()
         #endif
         if failures > 0 {
             print("FAILED: \(failures) Settings regressions")
             exit(1)
         }
-        print("PASS: Settings order, sound migration, live switching and disabled playback")
+        print("PASS: Settings navigation, account links, sound migration, live switching and disabled playback")
     }
 
     private static func expect(_ condition: Bool, _ message: String) {
@@ -66,6 +67,26 @@ private struct SettingsRegression {
     }
 
     #if !BEFORE
+    private static func accountNavigation() {
+        let presentation = SettingsPresentation()
+        let row = GitHubAccountsSettingsSection.accountsRow
+        presentation.open(.general, revealing: row)
+        expect(presentation.pane == .general && presentation.rowReveal?.rowID == row, "Account links reveal General")
+        let first = presentation.rowReveal
+        presentation.open(.general, revealing: row)
+        expect(presentation.rowReveal != first, "Repeated account links reveal the row again")
+        presentation.pane = .appearance
+        expect(presentation.rowReveal == nil, "Navigating away clears the account reveal")
+        presentation.open(.general, revealing: row)
+        presentation.close()
+        presentation.open()
+        expect(presentation.rowReveal == nil, "Opening Settings normally does not replay an old account link")
+        let index = SettingsSearchIndex(panes: [.general, .gitHub])
+        expect(
+            index.results(for: "GitHub accounts", limit: 1).first?.item.rowID == row,
+            "Account search reveals the General group with Plainly off")
+    }
+
     private static func combinedLibraryScope() {
         let presentation = SettingsPresentation()
         let project = URL(filePath: "/tmp/native-settings-project")
@@ -136,6 +157,7 @@ private struct SettingsRegression {
                 "\(title) has one search result at its new home")
         }
         row(GeneralSettingsPage.followUpRow, title: "Return", page: .general)
+        row(GitHubAccountsSettingsSection.accountsRow, title: "GitHub accounts", page: .general)
         row(NotificationSettingsPage.dockBadgeRow, title: "Badge", page: .general)
         row(NotificationSettingsPage.thresholdRow, title: "After turns longer than", page: .notifications)
         row(GitSettingsPage.workspaceRow, title: "Work in", page: .newTasks)

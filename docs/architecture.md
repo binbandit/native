@@ -99,7 +99,10 @@ footprint with physical RAM. It has no per-core scaling.
 
 ### GitHub account selection
 
-The Mac sidebar footer shows the GitHub account used by Native. `GitHubAccountsModel` lists all
+Settings > General > Accounts lists and switches the GitHub accounts on this Mac. The Mac sidebar
+footer shows only the selected avatar and name beside Settings; clicking it or choosing Go > GitHub
+Account opens General at the Accounts group. A signed-out footer shows just Settings.
+`GitHubAccountsModel` lists all
 accounts from `gh auth status --json hosts`, loads names and cached avatars asynchronously, and
 remembers one chosen login per host in Native's defaults. Without a choice it follows gh's active
 account. `GitHubCLI` retrieves a chosen account's token with `gh auth token --hostname --user` and
@@ -109,7 +112,7 @@ inherit the repository override from `GH_REPO`. It never runs `gh auth switch` o
 Switching clears account-specific inbox, branch and review-page caches. An unavailable selected
 account fails with sign-in guidance instead of silently using another account. Cross-host checkouts
 need a default remote set in gh when their target is ambiguous; unresolved SSH aliases need a remote
-URL with the GitHub hostname. The footer control is hidden on iPad
+URL with the GitHub hostname. Account controls are hidden on iPad
 until account selection is carried by the remote-host protocol.
 
 ### Getting there
