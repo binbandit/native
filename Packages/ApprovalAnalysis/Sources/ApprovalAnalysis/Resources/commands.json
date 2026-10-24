@@ -722,8 +722,6 @@
             {"names": ["-f"], "summary": "replace destinations when permitted", "destructive": true, "value": "none"},
             {"names": ["-i"], "summary": "ask before overwriting", "destructive": false, "value": "none"},
             {"names": ["-n"], "summary": "do not overwrite existing paths", "destructive": false, "value": "none"},
-            {"names": ["-R", "-r"], "summary": "include directory contents", "destructive": false, "value": "none"},
-            {"names": ["-p"], "summary": "preserve file metadata", "destructive": false, "value": "none"},
             {"names": ["-v", "--verbose"], "summary": "show more detail", "destructive": false, "value": "none"}
           ],
           "operands": {"minimum": 2, "maximum": null, "summary": "{location} \u00b7 {scope}", "paths": true},
@@ -1533,7 +1531,6 @@
           "destructive": true,
           "options": [
             {"names": ["--release"], "summary": "use the release profile", "destructive": false, "value": "none"},
-            {"names": ["--workspace"], "summary": "include workspace members", "destructive": false, "value": "none"},
             {"names": ["--locked"], "summary": "require the lockfile", "destructive": false, "value": "none"},
             {"names": ["--offline"], "summary": "disable network access", "destructive": false, "value": "none"},
             {"names": ["-p", "--package"], "summary": "choose this package", "destructive": false, "value": "attached"},
@@ -1548,9 +1545,6 @@
           "destructive": true,
           "options": [
             {"names": ["--release"], "summary": "use the release profile", "destructive": false, "value": "none"},
-            {"names": ["--workspace"], "summary": "include workspace members", "destructive": false, "value": "none"},
-            {"names": ["--locked"], "summary": "require the lockfile", "destructive": false, "value": "none"},
-            {"names": ["--offline"], "summary": "disable network access", "destructive": false, "value": "none"},
             {"names": ["-p", "--package"], "summary": "choose this package", "destructive": false, "value": "attached"},
             {"names": ["--manifest-path"], "summary": "use this manifest", "destructive": false, "value": "attached"}
           ],
@@ -1562,12 +1556,8 @@
           "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
           "destructive": true,
           "options": [
-            {"names": ["--release"], "summary": "use the release profile", "destructive": false, "value": "none"},
-            {"names": ["--workspace"], "summary": "include workspace members", "destructive": false, "value": "none"},
             {"names": ["--locked"], "summary": "require the lockfile", "destructive": false, "value": "none"},
-            {"names": ["--offline"], "summary": "disable network access", "destructive": false, "value": "none"},
-            {"names": ["-p", "--package"], "summary": "choose this package", "destructive": false, "value": "attached"},
-            {"names": ["--manifest-path"], "summary": "use this manifest", "destructive": false, "value": "attached"}
+            {"names": ["--offline"], "summary": "disable network access", "destructive": false, "value": "none"}
           ],
           "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
         },
@@ -1591,7 +1581,6 @@
           "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
           "destructive": true,
           "options": [
-            {"names": ["--workspace"], "summary": "include workspace members", "destructive": false, "value": "none"},
             {"names": ["--locked"], "summary": "require the lockfile", "destructive": false, "value": "none"},
             {"names": ["--offline"], "summary": "disable network access", "destructive": false, "value": "none"},
             {"names": ["-p", "--package"], "summary": "choose this package", "destructive": false, "value": "attached"},
@@ -1637,7 +1626,6 @@
           "destructive": true,
           "options": [
             {"names": ["-c", "--configuration"], "summary": "use this build configuration", "destructive": false, "value": "attached"},
-            {"names": ["--filter"], "summary": "run matching tests", "destructive": false, "value": "attached"},
             {"names": ["-j", "--jobs"], "summary": "limit build jobs", "destructive": false, "value": "attached"},
             {"names": ["--package-path"], "summary": "use this package directory", "destructive": false, "value": "attached"}
           ],
@@ -1663,7 +1651,6 @@
           "destructive": true,
           "options": [
             {"names": ["-c", "--configuration"], "summary": "use this build configuration", "destructive": false, "value": "attached"},
-            {"names": ["--filter"], "summary": "run matching tests", "destructive": false, "value": "attached"},
             {"names": ["-j", "--jobs"], "summary": "limit build jobs", "destructive": false, "value": "attached"},
             {"names": ["--package-path"], "summary": "use this package directory", "destructive": false, "value": "attached"}
           ],

@@ -78,7 +78,8 @@ import Testing
     }
 
     @Test(arguments: [
-        "git status --invented", "gh pr view --squash", "docker ps --volume foo", "git -c alias.status=push status",
+        "git status --invented", "mv -R source destination", "cargo run --workspace", "swift build --filter Test",
+        "gh pr view --squash", "docker ps --volume foo", "git -c alias.status=push status",
         "git -C /tmp status",
         "git invented", "rm -rf /tmp/a && git status", "rm -rf /tmp/*", "rm -rf $(pwd)",
         "rm -rf `pwd`", "rm -rf /tmp/a\nwhoami", "curl -o", "curl --output=", "tar -Q archive",
