@@ -11,12 +11,14 @@ public struct MessageAttachment: Identifiable, Hashable, Sendable {
     public var imageData: Data?
     public var embeddedData: Data?
     public var mimeType: String?
+    /// The original file's known size, including files sent only as references.
+    public var byteCount: Int?
     /// Originally attached by the user; a local task can preview it on the client.
     public var isLocalFile: Bool
 
     public init(
         name: String, url: URL?, imageData: Data? = nil, embeddedData: Data? = nil, mimeType: String? = nil,
-        isLocalFile: Bool = false
+        isLocalFile: Bool = false, byteCount: Int? = nil
     ) {
         self.name = name
         self.url = url
@@ -24,6 +26,7 @@ public struct MessageAttachment: Identifiable, Hashable, Sendable {
         self.embeddedData = embeddedData
         self.mimeType = mimeType
         self.isLocalFile = isLocalFile
+        self.byteCount = byteCount
     }
 
     public var isImage: Bool {
@@ -45,7 +48,7 @@ public struct MessageAttachment: Identifiable, Hashable, Sendable {
             let mimeType: String? = if case .image(_, let mime) = attachment.content { mime } else { nil }
             return MessageAttachment(
                 name: attachment.name, url: attachment.url, imageData: image, embeddedData: embedded,
-                mimeType: mimeType, isLocalFile: true)
+                mimeType: mimeType, isLocalFile: true, byteCount: attachment.byteCount)
         }
     }
 
