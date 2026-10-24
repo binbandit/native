@@ -34,6 +34,7 @@ struct CodeFontSettingsRow: View {
                         options: DSCodeFont.sizes.map { .init(value: $0, title: "\(Int($0)) pt") },
                         width: SettingsMetrics.selectWidth * 0.6)
                 }
+                .fixedSize(horizontal: true, vertical: true)
             }
             SettingsRow("Line height") {
                 SettingsSelect(
@@ -55,6 +56,16 @@ struct CodeFontSettingsRow: View {
 #Preview("Code font row") {
     DSPreviewPair {
         CodeFontSettingsRow().settingsPreviewPage()
+    }
+    .environment(\.settingsPlainly, true)
+    .defaultAppStorage(PreviewUserDefaults())
+}
+#endif
+
+#if DEBUG
+#Preview("Code font row - Narrow") {
+    DSPreviewPair {
+        CodeFontSettingsRow().settingsPreviewPage(width: 396)
     }
     .environment(\.settingsPlainly, true)
     .defaultAppStorage(PreviewUserDefaults())
