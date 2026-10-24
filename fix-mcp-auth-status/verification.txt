@@ -1,0 +1,23 @@
+PR #103 visual check, 2026-10-24
+Revision: dc2b3d11d363c188f1ce888017ca7605c52ab93e
+Base: 3c0d925867001dc5c1145bbdb02cb3fbe6a950cf
+Instance: vc-103, Debug, dev.binbandit.native.dev.vc-103
+
+Reference: PR state descriptions, docs/product-quality.md, existing design-system MCP rows and task panel. No MCP-specific mock is referenced in this PR or the supplied polish spec.
+
+Settings captures: unmodified revision, built with scripts/dev/run-isolated.sh vc-103 --build. Launched with -nativeMCPAuthenticationFixture YES and -appearance.mode light/dark. Window 900 by 700 points.
+
+Task captures: same revision plus the temporary Debug-only fixture in task-fixture.diff. MCPAgentServerRow, MCPServerDetails, MCPSessionPanel, MCPHealthLabel and authentication implementation were unchanged. The fixture uses captured Codex output, in-memory configuration and no credentials, agent subprocesses or server connection. Launched with -nativeMCPAuthenticationFixture YES -nativeMCPTaskFixture YES and light/dark appearance. Window 960 by 520 points. Fixture was removed after capture.
+
+All GUI actions used scripts/dev/drive.sh vc-103. The screen was unlocked before every screenshot or window measurement. Captures were inspected directly. Although another window covered part of the instance, pixels showed each requested new state and agreed with the accessibility text; there was no stale content in the selected captures.
+
+States observed in both appearances:
+- Signed out: Settings and both project/worktree task panels show Needs sign-in, amber status and sign-in actions.
+- Sign in from another task: a fixture button changes the captured CLI status and calls the production MCPLibrary.readConfigurations path. Both existing task panels change to Signed in, green status and no warning actions; Settings explains shared credentials and the anonymous probe limitation.
+- Unknown credentials: all surfaces show neutral Sign-in not checked with no warning actions. Settings explains how to confirm the state.
+- Rejected configured credentials: amber Needs sign-in remains despite shared OAuth status, and Settings explains the rejected token and HTTP 401.
+- Sign-out and sign-in again update both task panels consistently.
+
+No clipped text, overlapping controls, inconsistent status colors, missing guidance or app crashes were found. No product changes were needed. Real browser OAuth and system Keychain flows were not invoked. This is visual and captured-response integration evidence, not a fresh before/after reproduction against the old app.
+
+Supporting check: scripts/tests/mcp-auth-status.sh vc-103 passed sign-in, sign-out and sign-in again for project and worktree tasks on the unmodified revision. The PR already contains the original failing-before evidence.

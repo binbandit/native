@@ -1,0 +1,171 @@
+diff --git a/native/MCP/Views/MCPAuthenticationPreviewFixtures.swift b/native/MCP/Views/MCPAuthenticationPreviewFixtures.swift
+index f6aa9fc0..a6e7059c 100644
+--- a/native/MCP/Views/MCPAuthenticationPreviewFixtures.swift
++++ b/native/MCP/Views/MCPAuthenticationPreviewFixtures.swift
+@@ -6,9 +6,15 @@ extension View {
+     @ViewBuilder func mcpAuthenticationFixture() -> some View {
+         #if DEBUG
+         if UserDefaults.standard.bool(forKey: "nativeMCPAuthenticationFixture") {
+-            ScrollView { MCPAuthenticationPreview() }
+-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+-                .background(.dsSurface)
++            ScrollView {
++                if UserDefaults.standard.bool(forKey: "nativeMCPTaskFixture") {
++                    VC103TaskFixture()
++                } else {
++                    MCPAuthenticationPreview()
++                }
++            }
++            .frame(maxWidth: .infinity, maxHeight: .infinity)
++            .background(.dsSurface)
+         } else {
+             self
+         }
+@@ -60,3 +66,147 @@ struct MCPAuthenticationPreview: View {
+     }
+ }
+ #endif
++
++#if DEBUG
++import ACP
++import Exec
++import Observation
++private struct VC103Keychain: MCPCredentialKeychain {
++    func data(service: String, account: String) throws -> Data? { nil }
++}
++
++private struct VC103Files: ConfigFileSystem {
++    func contents(atPath path: String) -> Data? {
++        guard path == "/fixture/.codex/config.toml" else { return nil }
++        return Data("[mcp_servers.docs]\nurl = \"https://docs.example.com/mcp\"\n".utf8)
++    }
++
++    func fileExists(atPath path: String) -> Bool { contents(atPath: path) != nil }
++}
++
++private actor VC103Runner: CommandRunner {
++    var status = "o_auth"
++    let capture: String
++
++    init(capture: Data) { self.capture = String(decoding: capture, as: UTF8.self) }
++
++    func setStatus(_ value: String) { status = value }
++
++    func run(_ command: Command) async throws -> CommandResult {
++        let output = capture.replacingOccurrences(of: "\"o_auth\"", with: "\"\(status)\"")
++        return CommandResult(exitCode: 0, standardOutput: Data(output.utf8), standardError: Data())
++    }
++}
++
++@MainActor
++private final class VC103Host: MCPLibraryHost {
++    var mcpAgents: [MCPAgent] {
++        BuiltInPlugins.codex.manifest.agents.map {
++            let definition = AgentDefinition($0, pluginID: "codex")
++            return MCPAgent(
++                id: definition.id, definition: definition, name: "Codex", symbol: "terminal", format: .codex,
++                transports: nil, isRunning: false)
++        }
++    }
++    var mcpProjects: [URL] { [URL(filePath: "/fixture/project")] }
++    var mcpContextReports: [SessionKey: ContextReport] { [:] }
++    var mcpAgentsAwaitingRestart: [MCPAgent] { [] }
++    func mcpEnvironment() async -> [String: String] { ["HOME": "/fixture"] }
++    func mcpPluginServers(for session: SessionContext?) -> [MCPPluginServer] { [] }
++    func mcpPolicySupport(for agent: AgentDefinition.ID) -> SessionPolicySupport { .perSession }
++    func mcpApplyLaunchPolicies(force: Bool) async {}
++    func mcpScriptSession(_ clientID: UUID) -> (any MCPScriptSessionLink)? { nil }
++}
++
++@MainActor
++@Observable
++private final class VC103Model {
++    let app = AppModel.preview(.empty)
++    let runner: VC103Runner
++    let library: MCPLibrary
++    var sessions: [SessionModel] = []
++    var state = "Preparing"
++
++    init() {
++        let capture = """
++            [
++              {
++                "name": "docs",
++                "enabled": true,
++                "disabled_reason": null,
++                "transport": {
++                  "type": "streamable_http",
++                  "url": "https://docs.example.com/mcp",
++                  "bearer_token_env_var": null,
++                  "http_headers": null,
++                  "env_http_headers": null,
++                  "http_headers_helper": null
++                },
++                "startup_timeout_sec": null,
++                "tool_timeout_sec": null,
++                "auth_status": "o_auth"
++              }
++            ]
++
++            """
++        runner = VC103Runner(capture: Data(capture.utf8))
++        library = MCPLibrary(
++            runner: runner, files: VC103Files(), credentialKeychain: VC103Keychain(), secretStore: MemorySecretStore(),
++            storeURL: nil)
++        library.host = VC103Host()
++        sessions = ["project", "worktree"].compactMap { name in
++            SessionModel.preview(in: app, agent: "codex", cwd: "/fixture/\(name)", title: "Fixture \(name)")
++        }
++    }
++
++    func update(_ status: String, rejected: Bool = false) async {
++        await runner.setStatus(status)
++        await library.readConfigurations()
++        for session in sessions { await library.track(session.context) }
++        for entry in library.configuration(of: .codex)?.servers ?? [] {
++            library.reports[.agent(entry.id)] = MCPProbeReport(
++                status: .needsAuth(MCPAuthChallenge(statusCode: 401, sentCredentials: rejected)),
++                startedAt: .now, duration: .zero)
++        }
++        state =
++            rejected
++            ? "Rejected configured credentials"
++            : status == "o_auth"
++                ? "Signed in from another task" : status == "not_logged_in" ? "Signed out" : "Unknown credentials"
++    }
++}
++
++private struct VC103TaskFixture: View {
++    @State private var model = VC103Model()
++    var body: some View {
++        VStack(alignment: .leading, spacing: DS.Space.lg) {
++            Text(model.state).font(.dsBodyMedium)
++            HStack(spacing: DS.Space.md) {
++                Button("Fixture: Sign out") { Task { await model.update("not_logged_in") } }
++                Button("Fixture: Sign in from another task") { Task { await model.update("o_auth") } }
++                Button("Fixture: Unknown") { Task { await model.update("unsupported") } }
++                Button("Fixture: Rejected token") { Task { await model.update("o_auth", rejected: true) } }
++            }
++            .buttonStyle(.ds(.secondary, size: .small))
++            if let entry = model.library.configuration(of: .codex)?.servers.first {
++                MCPAgentServerRow(
++                    library: model.library,
++                    group: MCPAgentServerGroup(endpoint: entry.server.endpoint, entries: [entry]),
++                    project: nil, isExpanded: .constant(true), onCommand: { _ in })
++            }
++            HStack(alignment: .top, spacing: DS.Space.lg) {
++                ForEach(model.sessions, id: \.clientID) { session in
++                    MCPSessionPanel(
++                        library: model.library, session: session,
++                        entries: model.library.entries(forSession: session.clientID)
++                    )
++                    .dsPopoverBackground()
++                }
++            }
++        }
++        .padding(DS.Space.lg)
++        .frame(width: DS.Size.popoverWidth * 2 + DS.Space.lg * 3)
++        .task { await model.update("not_logged_in") }
++    }
++}
++#endif
