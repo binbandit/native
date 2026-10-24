@@ -32,26 +32,28 @@ struct CompanionTranscriptScrollView<Content: View>: View {
                         Color.clear.frame(height: 0).id(CompanionTranscriptPositionTracker.bottomID)
                     }
                     .backgroundPreferenceValue(CompanionTranscriptFrames.self) { anchors in
-                        GeometryReader { geometry in
-                            // Resolve all anchors with one proxy. Independent row callbacks can pair
-                            // new-width frames with the old viewport during a fold.
-                            let layout = TranscriptReadingPosition.Layout(
-                                viewport: geometry.bounds(of: .scrollView(axis: .vertical)) ?? .zero,
-                                contentHeight: geometry.size.height,
-                                rows: anchors.mapValues { geometry[$0] })
-                            Color.clear.onChange(of: layout, initial: true) { _, layout in
+                        Color.clear
+                            .onGeometryChange(for: TranscriptReadingPosition.Layout.self) { geometry in
+                                // Resolve rows and viewport together. This callback also observes
+                                // scrolling when no lazy row needs another layout.
+                                TranscriptReadingPosition.Layout(
+                                    viewport: geometry.bounds(of: .scrollView(axis: .vertical)) ?? .zero,
+                                    contentHeight: geometry.size.height,
+                                    rows: anchors.mapValues { geometry[$0] })
+                            } action: { layout in
                                 tracker.observe(layout, with: proxy)
                             }
-                        }
                     }
             }
             .defaultScrollAnchor(.bottom)
             .onScrollPhaseChange { _, phase in
-                if phase != .idle {
+                if phase == .idle {
+                    tracker.userDidEndScrolling()
+                } else {
                     tracker.userDidScroll()
                 }
             }
-            .onAppear { tracker.appear() }
+            .onAppear { tracker.appear(with: proxy) }
             .onDisappear { tracker.disappear() }
         }
     }
@@ -71,9 +73,10 @@ private final class CompanionTranscriptPositionTracker {
         position = TranscriptReadingPosition(place: state.transcriptPlace)
     }
 
-    func appear() {
+    func appear(with proxy: ScrollViewProxy) {
         if !isVisible { position = TranscriptReadingPosition(place: state.transcriptPlace) }
         isVisible = true
+        restore(with: proxy)
     }
 
     func disappear() {
@@ -88,6 +91,10 @@ private final class CompanionTranscriptPositionTracker {
         restoration?.cancel()
         restoration = nil
         position.userDidScroll()
+    }
+
+    func userDidEndScrolling() {
+        position.userDidEndScrolling()
     }
 
     func observe(_ layout: TranscriptReadingPosition.Layout, with proxy: ScrollViewProxy) {
@@ -107,7 +114,11 @@ private final class CompanionTranscriptPositionTracker {
             state.transcriptPlace = position.place
             return
         }
-        guard restoration == nil else { return }
+        restore(with: proxy)
+    }
+
+    private func restore(with proxy: ScrollViewProxy) {
+        guard position.isRestoring, restoration == nil else { return }
         restoration = Task { [weak self] in
             // A lazy stack can ignore the first request while its initial bottom anchor wins.
             // Bound retries, and never hide the transcript if a row has gone away.
@@ -116,6 +127,7 @@ private final class CompanionTranscriptPositionTracker {
                 var transaction = Transaction(animation: nil)
                 transaction.disablesAnimations = true
                 withTransaction(transaction) {
+                    if position.isInPlace { return }
                     if let place = position.place {
                         proxy.scrollTo(place.id, anchor: UnitPoint(x: 0.5, y: place.anchorY))
                     } else {
@@ -128,6 +140,10 @@ private final class CompanionTranscriptPositionTracker {
                     return
                 }
             }
+            guard let self, !Task.isCancelled, isVisible else { return }
+            position.finishRestoration()
+            state.transcriptPlace = position.place
+            restoration = nil
         }
     }
 }
