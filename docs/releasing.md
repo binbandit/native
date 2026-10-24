@@ -35,6 +35,7 @@ For a local publication, supply the same token in the environment. `scripts/rele
 the pinned Sentry CLI download and uploads only dSYMs, waiting for processing before the release can
 publish: the archive's and the standalone `native-host`'s, which `host.sh` strips after keeping its
 symbols. It does not include source bundles.
+dSYMs are never GitHub release assets or rehearsal artifacts.
 A local dry run prints this step without uploading. A rehearsal (`--rehearse`) runs
 `sentry.sh --no-upload`, which finds the symbols and checks the token and project without uploading
 anything; Sentry still requires the token to look up the project's upload configuration.
@@ -221,6 +222,62 @@ values. `Config/Native-Info.plist` is merged into the app's generated Info.plist
 Release and Nightly turn on the hardened runtime (`ENABLE_HARDENED_RUNTIME`), which notarization
 requires of every executable.
 
+## Release asset inventory
+
+Audited on 2026-10-24 at `a60a125b`: `release.yml` (stable and beta) and `nightly.yml`
+both delegate all public attachments to `scripts/release/release.sh`. The workflows themselves
+only upload rehearsal artifacts; their optional Linux host job produces a workflow artifact,
+not a release attachment. GitHub also shows its automatic source ZIP/tarball links, which these
+workflows do not upload or control.
+
+| Asset before this change | Purpose | Publication now |
+| --- | --- | --- |
+| `Native-<version>.zip`, or `Native-Nightly-<build>.zip` | Complete signed, stapled app; Sparkle's fallback download | Keep as the single app download, also for first installs |
+| `Native-<version>.dmg`, or `Native-Nightly.dmg` | A second copy of the same app, with an Applications shortcut | Keep local packaging/signing checks; stop attaching |
+| `appcast.xml` | Sparkle versions, signatures, embedded notes and download URLs | Keep; beta also refreshes latest stable's copy |
+| `Native<new>-<old>.delta`, or `Native-Nightly<new>-<old>.delta` | Smaller Sparkle updates from earlier builds | Cap at two patches to the current build; remove unused seed-to-seed patches |
+| `native-host-<build>-macos-universal` | Standalone host download for Macs without the app | Keep |
+| `host-feed.json` and `host-feed.json.sig` | Signed standalone stable/nightly host feed | Keep |
+| `host-feed-beta.json` and `host-feed-beta.json.sig` | Signed standalone beta host feed | Keep on beta and refresh latest stable's copy |
+| `celebration-<edition>.json` (44 packs at audit) | On-demand icons for all app channels | Keep on stable only; every installed channel reads latest stable |
+| `celebration-assets.json` and `celebration-assets.json.sig` | Signed index of the icon packs | Keep on stable only |
+
+The 44 edition files are `celebration-<edition>.json` for each of:
+
+```text
+ada-lovelace-day, australia-day, australia-day-boxing-kangaroo,
+australia-day-reflection, australia-day-wattle, bandi-chhor-divas, carnival,
+christmas, chuseok, dia-de-muertos, dia-de-muertos-sugar-skull, diwali, earth-day,
+easter, eid-al-adha, eid-al-fitr, guru-nanak-gurpurab, hanukkah, holi, juneteenth,
+kwanzaa, lantern-festival, matariki, mathematics-day, meskel, mid-autumn,
+new-year, nowruz, orthodox-pascha, pride, programmers-day, seollal, songkran,
+spring-festival, st-patricks-day, tet, tet-trung-thu, thanksgiving-canada,
+thanksgiving-us, timkat, us-independence-day, vaisakhi, valentines-day, vesak
+```
+
+The observed beta `v0.2.0-beta.7` has 55 assets; future betas have at most **7**. The rolling
+nightly has 56; after pruning its unused icon copies and DMG it has at most **9**, including the
+previous ZIP and host for in-flight downloads. Stable drops the DMG and one delta slot: at most
+**53** with today's 44 packs, or **55** once a beta has added its two host feed files. Its icon
+files cannot be removed without breaking existing clients' downloads. Consolidating or relocating
+them needs a separate compatible icon-feed migration. Existing immutable releases are left alone.
+
+No release attaches dSYMs: publishing already sends app and host symbols to Sentry before making
+an update available. Rehearsals now omit their separate dSYM artifact too, while retaining Sentry's
+`--no-upload` validation. Temporary notarization ZIPs, archives, build folders and standalone
+release-note Markdown files are not public attachments. `host.sh --linux` can also generate
+`native-host-<build>-linux-<arch>` entries, but the publishing workflows do not currently wire
+those binaries into releases. TestFlight's independent workflow and artifacts are unchanged.
+
+Check the asset policy without building or publishing:
+
+```sh
+python3 -m unittest discover -s scripts/release/tests -p test_release_assets.py
+scripts/release/release.sh --channel stable --version 9.9.0 --identity - --plan
+scripts/release/release.sh --channel beta --version 9.9.0-beta.1 --identity - --plan
+scripts/release/release.sh --channel nightly --identity - --plan
+```
+
 ## Cutting a release
 
 ```sh
@@ -261,9 +318,9 @@ Sentry → publishes.
   the feed never sees a half-made release. Beta also refreshes the appcast on the latest stable
   release (see "The feed URLs").
 - **Publishing nightly** moves the `nightly` tag to the commit, uploads the archive (named with its
-  build number, so a download in flight never meets a replaced file), its deltas and the DMG, then
-  the appcast, and keeps the two newest archives and only the deltas the appcast lists. GitHub won't
-  let the workflow token tag a commit whose `.github/workflows` differ from `main`'s (a 403, "Resource
+  build number, so a download in flight never meets a replaced file) and its deltas, then
+  the appcast, and keeps the two newest archives and hosts and only the deltas the appcast lists.
+  GitHub won't let the workflow token tag a commit whose `.github/workflows` differ from `main`'s (a 403, "Resource
   not accessible by integration"), which happens when `main` moves on with workflow changes while a
   nightly builds, so `release.sh` checks that before building and again before tagging, and asks for
   a run on `main`'s head instead.
@@ -304,8 +361,8 @@ The next scheduled check still treats that tag as the baseline.
 `--rehearse` runs everything `--publish` does short of publishing: its checks (the Sparkle keys, the
 Sentry token and DSN, a clean tree), the archive, notarizing and stapling the app, the DMG and the
 standalone host, the appcast with its deltas (signed, and checked to be), the host feed, the
-celebration packs, and `sentry.sh --no-upload`. Everything that would change GitHub or Sentry is
-printed instead. On CI:
+celebration packs for stable, and `sentry.sh --no-upload`. Everything that would change GitHub
+or Sentry is printed instead. On CI:
 
 - `gh workflow run nightly.yml --ref <branch> -f dry_run=true` rehearses a nightly from that branch
   (the real one always builds `main`).
@@ -313,9 +370,11 @@ printed instead. On CI:
   with `-f version=1.5.0-beta.1`. This direct dispatch never publishes; automatic betas use a
   separate reusable workflow call.
 
-Each uploads two workflow artifacts, kept for a week: what it would have published (the update
-archive, deltas, notes, appcast, DMG, standalone host and its feed, celebration packs) and the
-dSYMs. Check one before the first release of its kind:
+Each uploads one workflow artifact, kept for a week: the new ZIP, selected deltas, appcast,
+standalone host and its signed feed, plus celebration packs for stable. Downloaded seed archives,
+standalone notes (already embedded in the appcast), DMGs and dSYMs are excluded. The signed DMG
+still gets built and checked locally; signing and notarization steps are unchanged.
+Check one before the first release of its kind:
 
 ```sh
 gh run download <run id> --dir rehearsal && cd rehearsal/native-nightly-<run number>
@@ -323,7 +382,7 @@ ditto -x -k appcast/Native-Nightly-*.zip check
 app="check/Native Nightly.app"               # Native.app for stable and beta
 codesign --verify --deep --strict --verbose=2 "$app"
 spctl -a -vv "$app"                          # accepted, source=Notarized Developer ID
-xcrun stapler validate "$app" && xcrun stapler validate Native-Nightly.dmg
+xcrun stapler validate "$app"
 grep -aqF "ghostty version=" "$app/Contents/MacOS/Native Nightly" && echo "libghostty is linked"
 codesign -dvv "$app/Contents/Helpers/native-script-runtime"   # the script runtime, Developer ID, timestamped
 plutil -extract SUPublicEDKey raw "$app/Contents/Info.plist"   # matches NATIVE_SPARKLE_PUBLIC_KEY
@@ -334,10 +393,13 @@ plutil -extract SUPublicEDKey raw "$app/Contents/Info.plist"   # matches NATIVE_
 Sparkle can update with a delta, the difference between two builds, instead of the whole app: a
 few MB where the update archive is over 40. `generate_appcast` makes a delta from every earlier
 archive in its folder to the new one, so before running it `release.sh` downloads the archives
-users are most likely to have, at most three (`delta_seeds`): for stable and beta the last three
+users are most likely to have, at most two (`delta_seeds`): for stable and beta the last two
 `v*` releases' archives, for nightly the ones the rolling release still holds (it keeps two). The
 deltas are uploaded beside the archive and listed in the new item; a user on any other version gets
-the whole archive, as before. Two details:
+the whole archive, as before. `deltas.py` selects at most two patches to the new archive and
+discards patches generated between seed archives. Any such patch references on older feed items
+are removed; their original remote deltas and full archives remain valid. Seed ZIPs are removed
+from the local output after generation so rehearsals do not attach old app downloads. Two details:
 
 - `generate_appcast` points every feed item whose archive is in the folder at the new release, so
   `release.sh` puts each earlier item's original URL back.
