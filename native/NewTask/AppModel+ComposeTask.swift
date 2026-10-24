@@ -23,6 +23,7 @@ extension AppModel {
         editor.attachments = old?.attachments ?? quickEntry.attachments
         editor.wantsComposerFocus = true
         compose.editor = editor
+        compose.pendingAttachments = false
         compose.choices = [:]
         compose.options = AgentSessionDefaults.offeredOptions(for: agent.id)
         var categories = AgentSessionDefaults.configuredValues(for: agent.id)
