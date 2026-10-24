@@ -136,8 +136,8 @@ extension Gate {
     static let composerNext = Gate(
         id: "NativeComposerNext",
         title: "Fine print",
-        summary: "Explain approval commands and hold to allow irreversible actions.",
-        site: "Composer ▸ approvals",
+        summary: "One field and settings popover, with explained approvals and deliberate confirmation.",
+        site: "Composer ▸ field, settings and approvals",
         stage: .labs,
         owner: "composer",
         reviewBy: ReviewDate(year: 2026, month: 12, day: 15),

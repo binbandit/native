@@ -247,6 +247,8 @@ before the hold fills sends nothing. Pointer and touch use the same hold; VoiceO
 use Allow followed by Confirm Allow within five seconds. The button acknowledges Allowed for
 0.4 seconds before the request folds away. Reduce Motion keeps the ring but removes the fill sweep.
 ⌘L focuses Tell the agent what to do instead while an approval is shown; Return sends the instruction.
+In Peek, this focuses the shown approval, including a child task ask or a Peek opened from Home,
+without selecting its task or changing the current draft. Closing Peek restores Focus Composer.
 The fix-it and every permission option are also in the keyboard tab order.
 Only the oldest request owns these keys; changing tasks or losing the window cancels a hold.
 When an agent offers several choices of one permission kind, each stays visible under its own name;
@@ -311,6 +313,7 @@ Other file types use the platform's Quick Look preview, with its native navigati
 | ⌃Tab / ⌃⇧Tab | Next / previous task | Task | `session.next` / `session.previous` |
 | Return on a selected sidebar task | Rename it (Escape cancels, Return commits) | Task | |
 | ⌃⌘S | Show or hide the sidebar | View | `view.toggleSidebar` |
+| | With All in view on and the sidebar hidden, show tasks needing you (also the amber toolbar count) | Task | `task.showNeedsYou` |
 | ⌥⌘↑ / ⌥⌘↓ | Move the selected project or task up / down (a queued message instead, while one is open in the composer) | Task | `sidebar.moveUp` / `sidebar.moveDown` |
 | ⌘Z / ⇧⌘Z | Undo / redo the window's latest change, newest first: typing, or archiving, renaming, pinning or deleting a task or project (a deletion until it's carried out). The undo toast's Undo takes back the same change, once | Edit | |
 | ⌘Z after removing a host | Restore the removed host's pairing, also offered by the toast's Undo | Edit | |
@@ -388,6 +391,12 @@ being hit by accident, since it ends work in progress.
 
 ## Picking tasks in the sidebar
 
+With All in view on, hiding the sidebar keeps back and forward in the toolbar. While tasks need
+you, one amber signal counts them. Click it or choose Task > Tasks Needing You to open the list.
+Up and Down highlight a task; Space, Return or a click opens its shared Peek without changing the
+current task or draft. Escape returns from Peek to the list, then closes the list. Answering the
+last ask removes the signal; unresolved failures also count until they recover.
+
 Several tasks can be picked at once and acted on together. While more than one is picked (or Select
 Tasks is on, which makes taps pick, for touch), a bar at the foot of the sidebar says how many, with
 Archive, Mark as Read, Delete and the rest under More; a picked task's context menu offers the same.
@@ -418,6 +427,14 @@ Extra agent settings, such as Claude Code's Agent selector, always live in the c
 Controls ("…") menu. Each setting lists its choices with the current value checked; use the arrow
 keys and Return to choose from the menu. Model, effort, autonomy and mode keep their dedicated
 controls, moving into More only as the row runs out of room.
+
+With Fine print (`NativeComposerNext`) enabled, the model name at the trailing edge of the
+field opens one Task Settings popover. Choose Model (⌘⇧E) opens the same popover, including
+effort, when the agent asks, MCP servers and the agent's extra settings from More. Tab reaches
+each control, Return chooses a focused option, and Escape closes the popover. Show MCP Servers
+(⌃⌘M) opens its existing panel inside this popover; Back returns to the settings. Attach Files
+(⌘U), Mode and Set Goal keep their existing commands and are available inside the popover too.
+Goal commands open the shared editor even when Task Settings is closed or showing MCP servers.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |

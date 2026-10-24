@@ -10,6 +10,7 @@ final class TaskPeekPresentation {
     }
 
     var request: Request?
+    var showsAttentionList = false
     var isAnswering = false
     var isRecovering = false
 }
