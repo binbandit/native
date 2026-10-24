@@ -43,7 +43,9 @@ struct SessionToolsScreen: View {
         .environment(\.turnChangesActions, recordActions(turnChanges))
         .environment(\.isPrimaryTranscript, true)
         .dsToolbarBand()
-        .safeAreaBar(edge: .bottom, spacing: 0) { composer }
+        .safeAreaBar(edge: .bottom, spacing: 0) {
+            composer.undoToastBottomInset(isEnabled: !session.isEarlierConversation)
+        }
         .safeAreaBar(edge: .top, spacing: 0) {
             TaskScriptBanner(folder: session.cwd)
         }

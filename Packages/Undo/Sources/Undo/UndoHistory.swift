@@ -10,6 +10,8 @@ public final class UndoHistory {
         var canRedo = false
         var undoTitle = "Undo"
         var redoTitle = "Redo"
+        var undoActionID: UUID?
+        var undoGroupingLevel = 0
     }
 
     private var menu = MenuState()
@@ -34,6 +36,13 @@ public final class UndoHistory {
 
     public var redoTitle: String {
         manager == nil ? "Redo" : menu.redoTitle
+    }
+
+    /// Whether the window's next Undo takes back this offer, rather than a newer edit.
+    public func willUndo(_ action: UndoableAction) -> Bool {
+        _ = menu
+        guard let manager else { return false }
+        return action.isNextUndo(on: manager)
     }
 
     public func track(_ manager: UndoManager?) {
@@ -89,7 +98,9 @@ public final class UndoHistory {
             canUndo: manager?.canUndo == true,
             canRedo: canRedo,
             undoTitle: manager?.undoMenuItemTitle ?? "Undo",
-            redoTitle: redoTitle)
+            redoTitle: redoTitle,
+            undoActionID: manager?.undoActionUserInfoValue(forKey: UndoableAction.identity) as? UUID,
+            undoGroupingLevel: manager?.groupingLevel ?? 0)
         if menu != next { menu = next }
     }
 
