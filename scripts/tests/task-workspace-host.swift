@@ -10,15 +10,22 @@ actor WorkspaceTestHost: HostTransport {
     private var counter = 0
     private var failNew = false
     private var holdNew = false
+    private var failClose = false
     private var pendingNew: JSONRPCPeer.Message?
+    private var summaries: [HostSessionSummary] = []
+    private let idPrefix: String
     private(set) var closed: [HostSessionID] = []
     private(set) var prompts: [PromptParams] = []
     private(set) var configChanges: [SetConfigOptionParams] = []
     var hasPendingNew: Bool { pendingNew != nil }
+    var newSessionCount: Int { counter }
 
-    func configure(fail: Bool = false, hold: Bool = false) {
+    init(idPrefix: String = "task") { self.idPrefix = idPrefix }
+
+    func configure(fail: Bool = false, hold: Bool = false, failClose: Bool = false) {
         failNew = fail
         holdNew = hold
+        self.failClose = failClose
     }
 
     func releaseNew() throws {
@@ -63,7 +70,7 @@ actor WorkspaceTestHost: HostTransport {
         case HostProtocol.Method.startAgent:
             try peer.respond(to: id, with: agent)
         case HostProtocol.Method.listSessions:
-            try peer.respond(to: id, with: [HostSessionSummary]())
+            try peer.respond(to: id, with: summaries)
         case HostProtocol.Method.listAgentSessions:
             try peer.respond(to: id, with: JSONValue.object(["sessions": .array([])]))
         case HostProtocol.Method.newSession:
@@ -91,16 +98,24 @@ actor WorkspaceTestHost: HostTransport {
             try peer.notify(
                 HostProtocol.Method.sessionEvent,
                 SessionEventNotification(sessionID: task, event: HostEvent(seq: 1, payload: .update(options))))
-            try peer.respond(
-                to: id,
-                with: HostSessionSummary(
-                    id: task, agentID: agent.id, agentName: agent.name, agentSessionID: SessionID("task-\(counter)"),
-                    cwd: params.cwd, phase: .idle))
+            let summary = HostSessionSummary(
+                id: task, agentID: agent.id, agentName: agent.name, agentSessionID: SessionID("\(idPrefix)-\(counter)"),
+                cwd: params.cwd, phase: .idle)
+            summaries.append(summary)
+            try peer.notify(HostProtocol.Method.sessionChanged, SessionChangedNotification(summary: summary))
+            try peer.respond(to: id, with: summary)
         case HostProtocol.Method.setConfigOption:
             configChanges.append(try message.params(as: SetConfigOptionParams.self))
             try peer.respond(to: id, with: EmptyMessage())
         case HostProtocol.Method.closeSession:
-            closed.append(try message.params(as: CloseSessionParams.self).sessionID)
+            if failClose {
+                try peer.respond(to: id, error: RPCError(code: -32603, message: "Fixture cannot close the task"))
+                return
+            }
+            let sessionID = try message.params(as: CloseSessionParams.self).sessionID
+            closed.append(sessionID)
+            summaries.removeAll { $0.id == sessionID }
+            try peer.notify(HostProtocol.Method.sessionClosed, SessionParams(sessionID: sessionID))
             try peer.respond(to: id, with: EmptyMessage())
         case HostProtocol.Method.prompt:
             prompts.append(try message.params(as: PromptParams.self))

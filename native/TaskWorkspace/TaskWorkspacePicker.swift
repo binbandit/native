@@ -60,4 +60,21 @@ extension View {
             cancel: {}, retry: {}, apply: {})
     }
 }
+
+#Preview("Workspace picker - Notice-only task") {
+    let app = AppModel.preview(.empty)
+    let session = SessionModel.preview(in: app)
+    let _ = session?.addNotice("The previous worktree was kept because its agent could not be closed.", isError: false)
+    DSPreviewPair {
+        if let session {
+            VStack(spacing: DS.Space.lg) {
+                TranscriptView(session: session) { _ in }
+                Button("Change Workspace…") { session.requestWorkspaceChange() }
+            }
+            .taskWorkspacePresentation(session: session)
+            .environment(app)
+            .frame(width: DS.TaskWorkspace.sheetWidth, height: DS.TaskWorkspace.listHeight)
+        }
+    }
+}
 #endif

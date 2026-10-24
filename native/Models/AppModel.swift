@@ -18,7 +18,7 @@ final class AppModel {
     let workingSpinners: WorkingSpinnerPreferences
     let runtimes: AgentRuntimes
     /// Paired hosts sessions can run on besides this Mac (AppModel+Hosts.swift).
-    let hosts = RemoteHosts()
+    let hosts: RemoteHosts
     let projects: Projects
     let catalog: SessionCatalog
     let ordering: SessionOrdering
@@ -183,11 +183,12 @@ final class AppModel {
     init(
         plugins: PluginRegistry = PluginRegistry(), titles: SessionTitles = SessionTitles(),
         defaults: UserDefaults = .standard, catalogURL: URL? = SessionCatalog.defaultURL,
-        experiments: ExperimentStore = .shared
+        experiments: ExperimentStore = .shared, hosts: RemoteHosts = RemoteHosts()
     ) {
         // Writing to an agent that just exited must surface as an error, not kill the app.
         signal(SIGPIPE, SIG_IGN)
         self.experiments = experiments
+        self.hosts = hosts
         self.plugins = plugins
         self.titles = titles
         self.defaults = defaults

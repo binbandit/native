@@ -7,6 +7,7 @@ import NativeHostProtocol
 import TaskScripts
 
 @testable import Native
+@testable import NativeLink
 
 @main
 @MainActor
@@ -28,7 +29,8 @@ private struct TaskWorkspaceRegression {
             ])
         let app = AppModel(
             plugins: PluginRegistry(builtIns: [ManifestPlugin(manifest: manifest)], defaults: defaults),
-            defaults: defaults, catalogURL: nil)
+            defaults: defaults, catalogURL: scratch.appending(path: "catalog.json"),
+            hosts: RemoteHosts(store: FilePairedHostStore(directory: scratch.appending(path: "hosts"))))
         app.connectHost(client: client)
         await app.followHost()
         _ = await app.checkForAgents()
@@ -84,6 +86,11 @@ private struct TaskWorkspaceRegression {
         try check(command?.isAvailable(CommandContext(session: source)) == true, "Task menu offers workspace change")
         command?.perform(CommandContext(session: source))
         try check(source.isWorkspacePickerRequested, "menu opens the picker through the model")
+        source.addNotice("The task is ready in its workspace.", isError: false)
+        try check(!source.isTranscriptEmpty && source.canChangeWorkspace, "notice-only tasks remain eligible")
+        source.isWorkspacePickerRequested = false
+        command?.perform(CommandContext(session: source))
+        try check(source.isWorkspacePickerRequested, "notice-only task can request the workspace picker")
         let target = try await app.changeWorkspace(of: source, to: .branch("feature"))
         try check(
             target.draft == "Keep the draft" && target.attachments == [attachment], "draft and attachment survive")
@@ -195,10 +202,95 @@ private struct TaskWorkspaceRegression {
         _ = try await app.changeWorkspace(of: shared, to: .project)
         try check(
             FileManager.default.fileExists(atPath: sharedTree.path()), "worktree shared by another task is preserved")
+        let pinnedTree = try await provider.workspace(for: .newWorktree, in: project)
+        let pinned = try await start(at: pinnedTree)
+        app.ordering.pin(pinned.key)
+        app.sessions.remove(pinned)
+        guard let pinnedBranch = try await git.requireRepository(at: pinnedTree).status().branch.name else {
+            throw Failure("pinned task branch exists")
+        }
+        let visitor = try await start(at: folder)
+        let visiting = try await app.changeWorkspace(of: visitor, to: .branch(pinnedBranch))
+        _ = try await app.changeWorkspace(of: visiting, to: .project)
+        try check(
+            FileManager.default.fileExists(atPath: pinnedTree.path()),
+            "unopened pinned owner preserves its task worktree")
+        let warningSource = try await start(at: pinnedTree)
+        await host.configure(failClose: true)
+        let warned = try await app.changeWorkspace(of: warningSource, to: .project)
+        try check(!warned.isTranscriptEmpty && warned.canChangeWorkspace, "close warning keeps workspace editable")
+        command?.perform(CommandContext(session: warned))
+        try check(warned.isWorkspacePickerRequested, "close warning keeps the Task menu action available")
+        await host.configure()
+        try await remoteReplacement(
+            app: app, provider: provider, project: project, scratch: scratch, localHost: host, defaults: defaults)
         await client.stop()
         print(
             "PASS: workspace choices, replacement, cleanup, draft/settings, failures, send races and first-message lock"
         )
+    }
+
+    private static func remoteReplacement(
+        app: AppModel, provider: GitTaskWorkspaceProvider, project: Project, scratch: URL, localHost: WorkspaceTestHost,
+        defaults: UserDefaults
+    ) async throws {
+        let transport = WorkspaceTestHost(idPrefix: "remote")
+        let client = NativeHostClient(
+            transport: transport, clientInfo: PeerInfo(name: "tests", version: "1", build: "1"))
+        let pairing = PairedHost(
+            result: LinkPairingResult(
+                hostID: NativeHostProtocol.HostID(), hostKey: LinkIdentity().publicKey, hostName: "Fixture host",
+                deviceID: UUID(), grants: LinkGrants(), addresses: []), identity: LinkIdentity())
+        let remote = app.hosts.add(pairing)
+        remote.taskWorkspaces = provider
+        remote.worktreesFolder = scratch.appending(path: "worktrees").path()
+        app.setCheckout(project.path, of: project.id, on: remote.id)
+        app.launcher.isRemote = { $0 === client }
+        remote.onEvent = { _, event in
+            app.sessions.handle(event)
+            app.indexRemoteSessions()
+        }
+        remote.start(using: client)
+        _ = try await client.connected()
+        await remote.refresh()
+        guard let runtime = remote.runtime(AgentDefinition.ID(rawValue: "workspace-fake")) else {
+            throw Failure("paired fixture agent is ready")
+        }
+        let source = try await app.launcher.start(on: runtime, cwd: project.url, project: project.id)
+        source.draft = "Keep the remote draft"
+        let inWorktree = try await app.changeWorkspace(of: source, to: .newWorktree)
+        let target = try await app.changeWorkspace(of: inWorktree, to: .branch("user-owned"))
+        try check(target.host?.client === client && target.draft == source.draft, "replacement stays on its host")
+        try check(
+            app.allSessions(in: project.id).filter { $0.id == target.key }.count == 1, "remote task is listed once")
+        try check(app.catalog.remote[target.key] != nil, "remote replacement is indexed by its host")
+        app.indexRemoteSessions()
+        try check(app.catalog.lookup(target.key)?.project == project.id, "index refresh retains a user-owned checkout")
+        _ = try await app.workspaceOptions(for: target)
+        let savedProjects = Projects(defaults: defaults)
+        try check(
+            savedProjects.project(project.id)?.checkouts.first(where: { $0.host == remote.id })?.taskFolders?
+                .contains(target.cwd.folderPath) == true,
+            "remote checkout association survives relaunch")
+        try check(
+            !app.catalog.sessions(in: project.id, of: target.agent.id).contains { $0.sessionId == target.id },
+            "remote replacement stays out of the local catalog")
+        try check(!app.unsentSessions.contains(target.key), "remote draft cannot reopen through the local agent")
+        app.unsentSessions.keepDrafts { app.sessions.session($0)?.draft }
+        remote.stop()
+        await client.stop()
+        let reloaded = AppModel(
+            plugins: app.plugins, defaults: PreviewUserDefaults(), catalogURL: scratch.appending(path: "catalog.json"),
+            hosts: RemoteHosts(store: FilePairedHostStore(directory: scratch.appending(path: "offline-hosts"))))
+        if let localClient = app.runtimes.host {
+            reloaded.connectHost(client: localClient)
+            await reloaded.followHost()
+            _ = await reloaded.checkForAgents()
+        }
+        let count = await localHost.newSessionCount
+        await reloaded.loadSession(target.key)
+        try check(reloaded.catalog.lookup(target.key) == nil, "offline relaunch has no local copy of the remote task")
+        try check(await localHost.newSessionCount == count, "offline relaunch never starts a remote task locally")
     }
 
     private static func check(_ condition: Bool, _ message: String) throws {

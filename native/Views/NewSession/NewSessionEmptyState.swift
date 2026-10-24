@@ -52,7 +52,6 @@ private struct NewSessionScreen: View {
             ).context()
             ScrollView {
                 NewSessionView(context: context)
-                    .taskWorkspacePresentation(session: session)
                     .frame(maxWidth: columnWidth, alignment: .leading)
                     .padding(.horizontal, DS.Space.xxl)
                     .padding(.top, DS.Space.xxl)

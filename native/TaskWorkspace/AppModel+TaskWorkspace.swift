@@ -66,14 +66,21 @@ extension AppModel {
             if let title = titles.namedTitle(for: source.titleKey) { titles.rename(target.titleKey, to: title) }
             let info = SessionInfo(sessionId: target.id, cwd: folder.folderPath, title: source.title, updatedAt: .now)
             catalog.remove(source.key)
-            catalog.add(info, for: target.agent.id, in: project.id)
+            let isRemote = target.host.map { launcher.isRemote($0.client) } ?? false
+            if !isRemote {
+                catalog.add(info, for: target.agent.id, in: project.id)
+                unsentSessions.started(target.key)
+            }
             ordering.replace(source.key, with: target.key)
             history.replace(source.key, with: target.key)
             earlierConversations.replace(source.key, with: target.key)
             unsentSessions.forget(source.key)
-            unsentSessions.started(target.key)
             deletedSessions.insert(source.key)
             deletedSessions.remove(target.key)
+            if isRemote {
+                rememberRemoteWorkspace(of: target, in: project)
+                indexRemoteSessions()
+            }
             source.isWorkspaceReplaced = true
             source.isWorkspacePickerRequested = false
             target.isChangingWorkspace = false
@@ -110,6 +117,20 @@ extension AppModel {
 
     private var workspaceChangeUnavailable: TaskWorkspaceSelectionError {
         TaskWorkspaceSelectionError("A task's workspace can only change before its first message. Its draft is kept.")
+    }
+
+    /// A user-owned checkout may live outside the host's managed folder. Keep its project
+    /// association with the paired checkout, so remote history can find it after reconnecting.
+    private func rememberRemoteWorkspace(of task: SessionModel, in project: Project) {
+        guard let link = task.host, let host = hosts.all.first(where: { $0.client === link.client }) else { return }
+        projects.update(project.id) { project in
+            guard let index = project.checkouts.firstIndex(where: { $0.host == host.id }),
+                !host.isTaskFolder(task.cwd.folderPath, ofCheckoutAt: project.checkouts[index].path)
+            else { return }
+            var folders = project.checkouts[index].taskFolders ?? []
+            if !folders.contains(task.cwd.folderPath) { folders.append(task.cwd.folderPath) }
+            project.checkouts[index].taskFolders = folders
+        }
     }
 
     /// Resolve by host identity: the same folder path can exist on two different machines.
@@ -155,9 +176,8 @@ extension AppModel {
         _ folder: URL, provider: any TaskWorkspaceProvider, project: Project, keeping task: SessionModel
     ) async {
         guard
-            !sessions(in: project.id).contains(where: {
-                SessionFolder.isSame($0.info.cwd, folder.folderPath) && !deletedSessions.contains($0.id)
-            }), sessions.open(in: folder).isEmpty,
+            !catalog.hasTask(in: project.id, at: folder, excluding: deletedSessions.contains),
+            sessions.open(in: folder).isEmpty,
             !startingTasks.contains(where: {
                 $0.folder.map { SessionFolder.isSame($0.folderPath, folder.folderPath) } ?? false
             }),
