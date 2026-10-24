@@ -16,10 +16,11 @@ extension MCPLibrary {
     /// tool. The report replaces any earlier one.
     func probe(_ key: MCPServerKey, in session: SessionContext? = nil) async {
         guard !probing.contains(key), let host else { return }
-        let environment = await host.mcpEnvironment()
-        guard let (config, directory) = target(of: key, environment: environment, session: session) else { return }
         probing.insert(key)
         defer { probing.remove(key) }
+        if case .agent = key { await readConfigurationsIfStale() }
+        let environment = await host.mcpEnvironment()
+        guard let (config, directory) = target(of: key, environment: environment, session: session) else { return }
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
         let probe = MCPProbe(clientVersion: version, launcher: launcher)
         reports[key] = await probe.probe(config, environment: environment, directory: directory)
@@ -64,7 +65,7 @@ extension MCPLibrary {
             guard let server = server(id) else { return nil }
             return (server.config(with: secrets(for: id)), session.map { ProjectPath.key($0.cwd) } ?? home)
         case .agent(let id):
-            guard let entry = configurations.values.lazy.flatMap(\.servers).first(where: { $0.id == id }) else {
+            guard let entry = configuredServer(for: .agent(id)) else {
                 return nil
             }
             let project = entry.scope.project ?? session?.cwd
@@ -79,14 +80,9 @@ extension MCPLibrary {
 
     /// Where a server stands, in the one vocabulary every MCP view uses.
     func health(of key: MCPServerKey, inactive reason: String? = nil) -> MCPHealth {
-        if probing.contains(key) { return .checking }
-        if let reason { return .inactive(reason) }
-        guard let report = reports[key] else { return .unchecked }
-        switch report.status {
-        case .connected: return .connected(tools: report.tools.count)
-        case .needsAuth(let challenge): return .needsAuth(challenge)
-        case .failed(let failure): return .failed(failure)
-        }
+        MCPHealth(
+            report: reports[key], authentication: configuredServer(for: key)?.authentication,
+            isChecking: probing.contains(key), inactiveReason: reason)
     }
 
     /// Tokens Claude Code counts for a server's tools: in `session`'s latest `/context` report, or

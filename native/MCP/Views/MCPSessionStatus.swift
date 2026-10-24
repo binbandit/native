@@ -1,6 +1,19 @@
 import MCPClient
 import SwiftUI
 
+#if DEBUG
+#Preview("MCP task - Shared sign-in") {
+    let app = AppModel.preview()
+    if let session = SessionModel.preview(in: app, agent: "codex") {
+        DSPreviewPair {
+            MCPSessionPanel(
+                library: MCPAuthenticationPreviewFixtures.library(.signedIn), session: session,
+                entries: [.agent(MCPAuthenticationPreviewFixtures.entry(.signedIn))])
+        }
+    }
+}
+#endif
+
 extension FocusedValues {
     /// The focused session's MCP list, for View ▸ Show MCP Servers (⌃⌘M).
     @Entry var mcpServersPopover: Binding<Bool>?
@@ -196,7 +209,10 @@ struct MCPSessionPanel: View {
                 .padding(.vertical, DS.Space.sm)
             }
         }
-        .task { await library.probeStale(entries, in: session.context) }
+        .task {
+            await library.readConfigurationsIfStale()
+            await library.probeStale(library.entries(forSession: session.clientID), in: session.context)
+        }
         .sheet(item: $pendingCommand) { command in
             MCPCommandSheet(library: library, command: command)
         }

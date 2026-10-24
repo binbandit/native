@@ -1,4 +1,5 @@
 import AppAppearance
+import NativePolicy
 
 /// Native's own celebrations (Halloween, Día de Muertos) and their icon sets. Off until the user
 /// turns it on (Native starts minimal), and every celebration in it starts off too; turning it on
@@ -13,6 +14,8 @@ struct CelebrationsPlugin: NativePlugin {
         iconSets: IconSetContributions(FirstPartyCelebrations.iconSets),
         celebrations: CelebrationContributions(FirstPartyCelebrations.celebrations)
     )
+
+    func isAllowed(by policy: NativePolicy) -> Bool { policy.celebrationsEnabled }
 
     var isEnabledByDefault: Bool { false }
 }

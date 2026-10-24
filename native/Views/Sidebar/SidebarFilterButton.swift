@@ -11,6 +11,7 @@ struct SidebarFilterButton: View {
     @Binding var filter: TaskFilter
     @Binding var isSelecting: Bool
 
+    @AppStorage("sidebar.showAgentIcons") private var showAgentIcons = true
     @State private var isShowingPanel = false
 
     var body: some View {
@@ -54,6 +55,8 @@ struct SidebarFilterButton: View {
                     }
                 }
                 .pickerStyle(.inline)
+                Divider()
+                Toggle("Show agent icons", isOn: $showAgentIcons)
                 Divider()
                 Button("Clear All Filters") { filter.clearFilters() }
                     .disabled(filter.chips.isEmpty)
@@ -164,6 +167,7 @@ extension TaskFilter.Status {
 /// The filters on touch, where a menu would close after each one: rows that toggle, the sort, and
 /// Select to pick tasks.
 private struct SidebarFilterPanel: View {
+    @AppStorage("sidebar.showAgentIcons") private var showAgentIcons = true
     @Binding var filter: TaskFilter
     @Binding var isSelecting: Bool
     let options: [SidebarFilterOption]
@@ -193,6 +197,10 @@ private struct SidebarFilterPanel: View {
                         filter.sort = sort
                     }
                 }
+                SeparatorLine()
+                Toggle("Show agent icons", isOn: $showAgentIcons)
+                    .font(.dsCallout)
+                    .frame(minHeight: DS.Size.minimumHitTarget)
                 SeparatorLine()
                 HStack {
                     Button(isSelecting ? "Done Selecting" : "Select Tasks") { isSelecting.toggle() }

@@ -3,20 +3,15 @@ import SwiftUI
 
 /// Where an MCP server stands. Every MCP view shows status through this, so a server reads the
 /// same in Settings, the session's list and the status bar.
-enum MCPHealth: Hashable {
-    /// Not probed yet this launch.
-    case unchecked
-    case checking
-    case connected(tools: Int)
-    case needsAuth(MCPAuthChallenge)
-    case failed(MCPProbeFailure)
-    /// Configured but not loaded: turned off, awaiting approval, or not handed to this agent.
-    case inactive(String)
+typealias MCPHealth = MCPServerHealth
 
+extension MCPServerHealth {
     var label: String {
         switch self {
         case .unchecked: "Not checked"
         case .checking: "Checking…"
+        case .signedIn: "Signed in"
+        case .authenticationUnknown: "Sign-in not checked"
         case .connected(let tools): tools == 1 ? "1 tool" : "\(tools) tools"
         case .needsAuth: "Needs sign-in"
         case .failed: "Failed"
@@ -26,10 +21,10 @@ enum MCPHealth: Hashable {
 
     var color: Color {
         switch self {
-        case .connected: .dsSuccess
+        case .connected, .signedIn: .dsSuccess
         case .needsAuth: .dsWarning
         case .failed: .dsDanger
-        case .unchecked, .checking, .inactive: .dsTextTertiary
+        case .unchecked, .checking, .inactive, .authenticationUnknown: .dsTextTertiary
         }
     }
 

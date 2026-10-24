@@ -21,7 +21,7 @@ struct ProjectProblemRow: View {
                 HStack(alignment: .top, spacing: DS.Space.sm) {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.dsCaption)
-                        .foregroundStyle(.dsWarning)
+                        .foregroundStyle(problem.work == .refresh ? .dsDanger : .dsWarning)
                         .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
                         .padding(.top, DS.Space.xxs)
                         .padding(.trailing, DS.Space.xxs)
@@ -122,6 +122,21 @@ struct ProjectProblemRow: View {
         if let project = app.previewProject(1) {
             ProjectProblemRow(problem: SidebarPreviewFixtures.listingProblem(in: project))
                 .frame(width: DS.Size.sidebarWidth)
+        }
+    }
+    .sidebarPreviewEnvironment(app)
+}
+#Preview("Project problem - Refresh failed") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        if let project = app.previewProject() {
+            ProjectProblemRow(
+                problem: ProjectProblem(
+                    project: project.id, work: .refresh, title: "Couldn't refresh task state",
+                    recovery: "The last known state is still shown.",
+                    suggestion: "Check your connection, then Retry.")
+            )
+            .frame(width: DS.Size.sidebarWidth)
         }
     }
     .sidebarPreviewEnvironment(app)

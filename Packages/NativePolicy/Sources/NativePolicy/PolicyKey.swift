@@ -21,6 +21,8 @@ public enum PolicyKey: String, CaseIterable, Hashable, Sendable {
     case worktreeFetch = "policy.git.worktreeFetch"
     case taskScriptsUser = "policy.taskScripts.userScripts"
     case taskScriptsRepository = "policy.taskScripts.repositoryScripts"
+    case celebrationsEnabled = "policy.celebrations.enabled"
+    case organizationName = "policy.organization.name"
     case labsEnabled = "policy.labs.enabled"
     case companionEnabled = "policy.companion.enabled"
     case remoteHostsEnabled = "policy.remoteHosts.enabled"

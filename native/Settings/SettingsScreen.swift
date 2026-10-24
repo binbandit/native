@@ -14,7 +14,9 @@ struct SettingsScreen: View {
     @Binding var pane: SettingsPane.ID?
     var additionalPanes: [SettingsPane] = []
 
-    @Environment(SettingsPresentation.self) private var presentation: SettingsPresentation?
+    @Environment(SettingsPresentation.self) private var presentation
+    @State private var scrollPosition = ScrollPosition()
+
     @Environment(PluginRegistry.self) private var registry
     @Environment(\.experimentStore) private var experiments
     private var plainly: Bool { SettingsPageMap.isEnabled(in: experiments ?? .shared) }
@@ -103,28 +105,45 @@ struct SettingsScreen: View {
                 query = ""
             }
         }
+        // Page replacement can deliver the old page's disappearance after the new one's
+        // appearance. Keep the callback on the screen so that cannot unregister its successor.
+        .onAppear {
+            presentation.scrollPage = { offset in
+                Task { @MainActor in
+                    await Task.yield()
+                    scrollPosition.scrollTo(y: offset)
+                }
+            }
+        }
+        .onDisappear { presentation.scrollPage = nil }
     }
 
     private var content: some View {
         ScrollViewReader { proxy in
             ScrollView {
                 selectedPane?.makeContent()
+                    .environment(
+                        \.settingsScrollTo, SettingsScrollAction { id, anchor in proxy.scrollTo(id, anchor: anchor) }
+                    )
                     .padding(.horizontal, SettingsMetrics.pageInset)
                     .padding(.top, plainly ? DS.Settings.pageTopInset : SettingsMetrics.pageTopInset)
                     .padding(.bottom, SettingsMetrics.pageBottomInset)
             }
-            .onScrollGeometryChange(for: Bool.self) { geometry in
-                geometry.contentOffset.y + geometry.contentInsets.top > 0
-            } action: { _, isScrolled in
-                self.isScrolled = isScrolled
+            .scrollPosition($scrollPosition)
+            .onScrollGeometryChange(for: Double.self) { geometry in
+                Double(geometry.contentOffset.y + geometry.contentInsets.top)
+            } action: { _, offset in
+                presentation.pageOffset = offset
+                isScrolled = offset > 0
             }
             .task(id: reveal) {
                 guard let reveal else { return }
+                presentation.dismissDetail()
                 // A destination can change scope or open a disclosure before its target lays out.
-                if plainly { flash = reveal }
+                flash = reveal
                 try? await Task.sleep(for: .milliseconds(50))
+                guard !Task.isCancelled else { return }
                 proxy.scrollTo(reveal.rowID, anchor: .center)
-                if !plainly { flash = reveal }
             }
         }
         // A page's undo toasts show over the visible pane, not at the bottom of a long page; and leave
@@ -137,14 +156,17 @@ struct SettingsScreen: View {
         .background(.dsBackground)
         .dsToolbarBand(showsDivider: isScrolled)
         // Each page starts at the top, with its own scroller.
-        .onChange(of: selectedPane?.id) { isScrolled = false }
+        .onChange(of: selectedPane?.id) {
+            isScrolled = false
+            scrollPosition = ScrollPosition()
+        }
         .task(id: pane) {
-            if presentation?.requestedRow == nil, plainly, let pane, SettingsPageMap.destination(pane) != pane {
+            if presentation.requestedRow == nil, plainly, let pane, SettingsPageMap.destination(pane) != pane {
                 reveal = SettingsReveal(rowID: SettingsPageMap.sectionID(pane))
             }
         }
-        .task(id: presentation?.requestedRow) {
-            guard let pane, presentation?.pane == pane, let request = presentation?.takeRequestedRow() else { return }
+        .task(id: presentation.requestedRow) {
+            guard let pane, presentation.pane == pane, let request = presentation.takeRequestedRow() else { return }
             reveal = request
         }
     }
@@ -158,7 +180,7 @@ struct SettingsScreen: View {
     }
 
     private func close() {
-        pane = nil
+        presentation.goBack()
     }
 }
 

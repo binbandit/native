@@ -42,6 +42,8 @@ struct MCPServersPlugin: NativePlugin {
     /// A turn ending may leave an agent idle with a launch policy to pick up.
     func handle(_ event: SessionEvent) async {
         if case .turnEnded = event {
+            // A task can finish an MCP sign-in that every other task shares.
+            Task { await library.readConfigurations() }
             await library.host?.mcpApplyLaunchPolicies(force: false)
         }
     }
@@ -70,7 +72,7 @@ extension MCPServersPlugin {
         _ = NotificationCenter.default.addObserver(
             forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main
         ) { _ in
-            Task { @MainActor in await library.readConfigurationsIfStale() }
+            Task { @MainActor in await library.readConfigurations() }
         }
         #endif
     }
