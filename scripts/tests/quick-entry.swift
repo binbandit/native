@@ -209,7 +209,7 @@ private struct QuickEntryRegression {
         app.expandQuickEntry()
         try require(app.composeTask.editor?.draft == "Expand without sending", "Reopening Compose lost the draft")
         guard let editor = app.composeTask.editor else { throw CheckFailure("No Compose editor") }
-        let draftContext = CommandContext(composeDraft: editor)
+        let draftContext = CommandContext(composeDraft: app.composeTask.commandDraft)
         for id in [CommandID.composerAttachFiles, .composerFocus, .sessionChooseModel] {
             guard let command = NativeCommand.composer.first(where: { $0.id == id }) else {
                 throw CheckFailure("Missing draft command")
@@ -233,6 +233,11 @@ private struct QuickEntryRegression {
         editor.attachments = []
         app.startComposeTask()
         guard let composed = app.composeTask.starting else { throw CheckFailure("Compose did not create a task") }
+        let startingContext = CommandContext(composeDraft: app.composeTask.commandDraft)
+        for command in NativeCommand.composer
+        where [CommandID.composerAttachFiles, .composerFocus, .sessionChooseModel].contains(command.id) {
+            try require(!command.isAvailable(startingContext), "A starting letter still exposed editing commands")
+        }
         try require(composed.draft == "Expand without sending", "Start did not snapshot the draft")
         app.startComposeTask()
         try require(app.startingTasks.count == 1, "A second Start duplicated the task")
@@ -301,6 +306,11 @@ private struct QuickEntryRegression {
         ]
         app.holdComposeTask()
         try require(app.composeTask.isHeld, "Hold did not retain the offline task")
+        let heldContext = CommandContext(composeDraft: app.composeTask.commandDraft)
+        for command in NativeCommand.composer
+        where [CommandID.composerAttachFiles, .composerFocus, .sessionChooseModel].contains(command.id) {
+            try require(!command.isAvailable(heldContext), "A held letter still exposed editing commands")
+        }
         let restoredHold = ComposeTaskModel(defaults: defaults)
         try require(restoredHold.heldDraft?.text == "Keep while unavailable", "Hold was not durable")
         try require(restoredHold.heldDraft?.device == heldDevice, "Hold changed the destination")
@@ -308,6 +318,7 @@ private struct QuickEntryRegression {
         app.expandQuickEntry()
         try require(app.composeTask.editor?.draft == "Keep while unavailable", "Opening Hold lost its draft")
         app.composeTask.cancelHold()
+        try require(app.composeTask.commandDraft != nil, "Cancel Hold did not restore draft commands")
         try require(ComposeTaskModel(defaults: defaults).heldDraft == nil, "Cancel Hold did not clear persistence")
         app.closeComposeTask()
         entry.previewDeviceOptions = nil

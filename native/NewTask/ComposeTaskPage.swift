@@ -114,7 +114,7 @@ struct ComposeTaskPage: View {
                     )
                     .id(editor.id)
                     .environment(drops)
-                    .focusedSceneValue(\.composeDraft, editor)
+                    .focusedSceneValue(\.composeDraft, compose.commandDraft)
                     .disabled(compose.isHeld || compose.stage != .writing)
                 }
                 if let failure = entry.failure {

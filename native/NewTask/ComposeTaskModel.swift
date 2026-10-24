@@ -56,6 +56,10 @@ final class ComposeTaskModel {
         return !editor.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !editor.attachments.isEmpty
     }
 
+    var commandDraft: SessionModel? {
+        isPresented && !isHeld && stage == .writing ? editor : nil
+    }
+
     func choose(_ setting: SelectSetting, value: String) {
         guard !isHeld, stage == .writing, setting.choices.contains(where: { $0.value == value }),
             !PolicyPermissionModes.forbids(setting.option, value: value),
