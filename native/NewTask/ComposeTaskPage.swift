@@ -107,6 +107,7 @@ struct ComposeTaskPage: View {
                         session: editor,
                         page: .init(
                             allowsFileMentions: entry.project != nil && entry.device == .thisMac,
+                            needsFolder: entry.project == nil,
                             start: { model.submitComposeTask() },
                             attachmentsPending: { compose.pendingAttachments = $0 })
                     )

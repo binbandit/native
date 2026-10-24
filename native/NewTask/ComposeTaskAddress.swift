@@ -46,7 +46,12 @@ struct ComposeTaskAddress: View {
                                 .foregroundStyle(.dsTextSecondary)
                             Text(deviceName)
                             if model.composeDeviceOption?.canStart == false {
-                                Text("Offline").foregroundStyle(.dsAttention)
+                                if let offlineSince {
+                                    Text("Offline since \(offlineSince, format: .dateTime.hour().minute())")
+                                        .foregroundStyle(.dsAttention)
+                                } else {
+                                    Text("Offline").foregroundStyle(.dsAttention)
+                                }
                             }
                         }
                     }
@@ -63,21 +68,26 @@ struct ComposeTaskAddress: View {
                 }
             }
             line("From") {
-                Button {
-                    compose.showsWorkspaces = true
-                } label: {
-                    HStack(spacing: DS.Space.sm) {
-                        Text(workspaceBranch).font(.dsMono).foregroundStyle(.dsTextSecondary)
-                        if compose.workspace == .newWorktree {
-                            Text("→").font(.dsMono).foregroundStyle(.dsTextTertiary)
-                            Text("new branch").font(.dsMono)
+                if entry.project == nil {
+                    Text("A branch of its own, made from the folder's current branch")
+                        .foregroundStyle(.dsTextTertiary)
+                } else {
+                    Button {
+                        compose.showsWorkspaces = true
+                    } label: {
+                        HStack(spacing: DS.Space.sm) {
+                            Text(workspaceBranch).font(.dsMono).foregroundStyle(.dsTextSecondary)
+                            if compose.workspace == .newWorktree {
+                                Text("→").font(.dsMono).foregroundStyle(.dsTextTertiary)
+                                Text("new branch").font(.dsMono)
+                            }
+                            Text(workspaceDetail).foregroundStyle(.dsTextTertiary)
                         }
-                        Text(workspaceDetail).foregroundStyle(.dsTextTertiary)
                     }
+                    .buttonStyle(.plain).dsHitTarget(DS.ComposeTask.rowHeight)
+                    .disabled(entry.project == nil || compose.isHeld)
+                    .accessibilityLabel("Choose task workspace")
                 }
-                .buttonStyle(.plain).dsHitTarget(DS.ComposeTask.rowHeight)
-                .disabled(entry.project == nil || compose.isHeld)
-                .accessibilityLabel("Choose task workspace")
             }
         }
         .font(.dsCallout)
@@ -124,6 +134,13 @@ struct ComposeTaskAddress: View {
     }
 
     private var deviceName: String { model.composeDeviceOption?.name ?? model.deviceName(entry.device) }
+    private var offlineSince: Date? {
+        #if DEBUG
+        if let date = compose.previewOfflineSince { return date }
+        #endif
+        guard case .remote(let id) = entry.device else { return nil }
+        return model.hosts.host(id)?.lastConnected
+    }
     private var workspaceBranch: String {
         if entry.project == nil { return "Choose a folder first" }
         return switch compose.workspace {

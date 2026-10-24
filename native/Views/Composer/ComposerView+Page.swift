@@ -5,7 +5,9 @@ extension ComposerView {
         VStack(alignment: .leading, spacing: DS.Space.xl) {
             ComposerEditor(
                 text: $session.draft, selection: $selection,
-                placeholder: "Describe the task. @ mentions a file, / runs a command.",
+                placeholder: page?.needsFolder == true
+                    ? "Describe the task. You can write it first, and choose the folder after. @ mentions a file, / runs a command."
+                    : "Describe the task. @ mentions a file, / runs a command.",
                 isFocused: $isFocused, hidesCaret: selectedAttachmentIndex != nil,
                 font: DS.ComposeTask.editorFont, lineSpacing: DS.ComposeTask.editorLineSpacing,
                 insets: DS.ComposeTask.editorInsets, maximumHeight: DS.ComposeTask.editorMaxHeight

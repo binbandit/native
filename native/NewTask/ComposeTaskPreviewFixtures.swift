@@ -43,12 +43,17 @@ enum ComposeTaskPreviewFixtures {
         if state == "consequences", let setting = ComposerSettings(compose.options).effort {
             compose.choose(setting, value: "high")
         }
-        if state == "firstLaunch" { entry.project = nil }
+        if state == "firstLaunch" {
+            entry.project = nil
+            compose.workspace = nil
+            compose.previewBranch = nil
+        }
         if state == "failure" {
             entry.failure = "The folder is unavailable. Restore it or choose another folder. Your draft is kept."
         }
         if state == "agents" { entry.picker = .agent }
         if state == "devices" || state == "offline" || state == "held" {
+            compose.previewOfflineSince = Calendar.current.date(bySettingHour: 14, minute: 14, second: 0, of: .now)
             let remote = SessionDevice.remote(RemoteHostID())
             entry.previewDeviceOptions = [
                 .init(device: .thisMac, name: "This Mac", availability: .online, checkout: .present(path: "native")),
