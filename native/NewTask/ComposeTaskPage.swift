@@ -138,6 +138,7 @@ struct ComposeTaskPage: View {
                         .padding(.leading, -DSTypography.displayIndent(of: projectName))
                     Image(systemName: "chevron.up.chevron.down").font(.dsCallout).foregroundStyle(.dsTextTertiary)
                 }
+                .frame(height: DS.ComposeTask.titleHeight)
             }
             .buttonStyle(.plain).disabled(compose.isHeld || compose.stage != .writing)
             .accessibilityLabel("Choose task project")

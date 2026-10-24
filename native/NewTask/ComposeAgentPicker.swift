@@ -36,7 +36,7 @@ struct ComposeAgentPicker: View {
                 }
                 let settings = ComposerSettings(model.composeTask.options)
                 if let setting = settings.model { choices(setting, title: "Model") }
-                if let setting = settings.effort { choices(setting, title: "Effort") }
+                if let setting = settings.effort { effort(setting) }
                 if let setting = settings.autonomy {
                     choices(setting, title: "When \(model.composeTask.editor?.agentName ?? "the agent") asks you")
                 }
@@ -89,6 +89,25 @@ struct ComposeAgentPicker: View {
     private func heading(_ text: String) -> some View {
         Text(text).font(.dsCaption).foregroundStyle(.dsTextTertiary)
             .padding(.horizontal, DS.Space.md).padding(.top, DS.Space.sm)
+    }
+
+    private func effort(_ setting: SelectSetting) -> some View {
+        VStack(alignment: .leading, spacing: DS.Space.sm) {
+            SeparatorLine()
+            heading("Effort")
+            Picker(
+                "Effort",
+                selection: Binding(get: { setting.value }, set: { model.composeTask.choose(setting, value: $0) })
+            ) {
+                ForEach(setting.choices) { choice in Text(choice.name).tag(choice.value) }
+            }
+            .pickerStyle(.segmented).labelsHidden()
+            .padding(.horizontal, DS.Space.md)
+            if let choice = setting.current, let note = setting.effortNote(for: choice) {
+                Text(note).font(.dsCaption).foregroundStyle(.dsTextTertiary)
+                    .padding(.horizontal, DS.Space.md)
+            }
+        }
     }
 }
 

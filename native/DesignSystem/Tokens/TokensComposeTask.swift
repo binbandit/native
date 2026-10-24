@@ -7,6 +7,7 @@ extension DS {
         static let labelGap: CGFloat = 18
         static let topInset: CGFloat = 40
         static let titleGap: CGFloat = 18
+        static let titleHeight: CGFloat = 48
         static let rowHeight: CGFloat = 30
         static let ruleGap: CGFloat = 14
         static let editorGap: CGFloat = 24
