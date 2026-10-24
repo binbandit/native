@@ -138,10 +138,10 @@ public nonisolated enum DSFormat {
         ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
     }
 
-    /// CPU as a percent of one core, as ps and Activity Monitor report it, so it can pass 100%.
-    /// One decimal below 10%, so idle processes don't all read 0%: "0.4%", "12%", "225%".
-    public static func cpu(_ percentOfCore: Double) -> String {
-        (percentOfCore / 100).formatted(.percent.precision(.fractionLength(percentOfCore < 10 ? 1 : 0)))
+    /// CPU as a percent of the sampling machine's total capacity, already normalized by the sampler.
+    /// One decimal below 10%, so idle processes don't all read 0%: "0.4%", "12%", "100%".
+    public static func cpu(_ percentOfMachine: Double) -> String {
+        (percentOfMachine / 100).formatted(.percent.precision(.fractionLength(percentOfMachine < 10 ? 1 : 0)))
     }
 
     private static func oneDecimal(_ value: Double) -> String {

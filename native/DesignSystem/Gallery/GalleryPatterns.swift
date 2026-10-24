@@ -76,7 +76,7 @@ private struct GalleryFormats: View {
         ("diffStat", DSFormat.diffStat(added: 12, removed: 3)),
         ("duration", "\(DSFormat.duration(8)), \(DSFormat.duration(72)), \(DSFormat.duration(3840))"),
         ("cost", "\(DSFormat.cost(0.42)), \(DSFormat.cost(1234.5)), \(DSFormat.cost(0.004))"),
-        ("memory / cpu", "\(DSFormat.memory(1_525_000_000)), \(DSFormat.cpu(0.4)), \(DSFormat.cpu(225))"),
+        ("memory / cpu", "\(DSFormat.memory(1_525_000_000)), \(DSFormat.cpu(0.4)), \(DSFormat.cpu(49.375))"),
     ]
 
     var body: some View {
