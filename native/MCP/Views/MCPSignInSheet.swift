@@ -72,6 +72,7 @@ private struct MCPSignInContent: View {
             if phase == .starting {
                 HStack(spacing: DS.Space.md) {
                     DotGridLoader(pattern: .settingUp)
+                        .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
                     Text("Getting the sign-in link…").settingsText(.body)
                 }
             }
