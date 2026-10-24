@@ -440,10 +440,12 @@ extension HostTasks: TaskRuntime {
     }
 
     func deliver(_ message: TaskMessage) async throws -> TaskMessage.Delivery {
-        guard let sender = session(holding: message.sender), let recipient = session(holding: message.recipient),
-            let senderID = sender.record.agentSessionID, let recipientID = recipient.record.agentSessionID
+        guard let sender = session(holding: message.sender), let recipient = session(holding: message.recipient)
         else { throw HostTaskError.closed }
         try await core.load(recipient)
+        guard let senderID = sender.record.agentSessionID, let recipientID = recipient.record.agentSessionID else {
+            throw HostTaskError.closed
+        }
         let delivery = try await core.prompt(
             PromptParams(
                 sessionID: recipient.id, requestID: UUID(), text: message.prompt, behavior: .steer, echo: false,
