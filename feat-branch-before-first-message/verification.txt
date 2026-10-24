@@ -1,5 +1,5 @@
 PR #110 visual verification
-Revision: 117e54d2d06c8b7d6bb79df679dd6a8df4eb34cc
+Revision: f4c1aa2ecc22405112791a0dbdc28511eab993dc
 Build: isolated Debug, instance vc-110, macOS, Codex gpt-6.1-sol at low effort
 Viewports: 1200x840 and 760x700 points, light and dark
 
@@ -8,7 +8,7 @@ Verified through the running app:
 - Local branches, an existing checkout, a detached worktree, the project folder, and a new worktree.
 - Search results, no matches, long branch names, and narrow layout.
 - Removing a branch after opening the picker shows a recovery message and retains the draft.
-- Changing workspace keeps the draft and selected model; Plan mode preservation was also checked on f7e0f89d, before the unrelated main merge.
+- Changing workspace keeps the draft and selected model; Plan mode preservation was also checked on f7e0f89d, before the unrelated main merges.
 - Untouched task worktrees are removed, while fixture-owned checkouts remain.
 - First submission hides the workspace action, including after relaunch.
 - No crashes. No visual defects requiring code changes.
