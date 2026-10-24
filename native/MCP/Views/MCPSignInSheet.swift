@@ -131,18 +131,19 @@ private struct MCPSignInContent: View {
 }
 
 #if DEBUG
-#Preview("MCP sign-in - Ready, waiting, failure and success") {
+#Preview("MCP sign-in - All states") {
     DSPreviewPair {
         VStack {
             ForEach(
                 Array(
                     [
-                        MCPLoginFlow.Phase.ready, .waiting, .failed("The host disconnected. Try again when it's back."),
-                        .succeeded,
+                        MCPLoginFlow.Phase.ready, .starting, .waiting,
+                        .failed("The host disconnected. Try again when it's back."), .cancelled, .succeeded,
                     ].enumerated()), id: \.offset
             ) { _, phase in
                 MCPSignInContent(
-                    serverName: "Team documents", phase: phase, hasLink: phase == .waiting,
+                    serverName: "Team documentation and engineering handbooks", phase: phase,
+                    hasLink: phase == .waiting,
                     problem: phase == .waiting ? "Paste the full redirect address for this sign-in." : nil,
                     redirect: .constant(""), start: {}, openBrowser: {}, submit: {}, close: {})
             }
