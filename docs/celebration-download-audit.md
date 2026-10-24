@@ -80,7 +80,8 @@ The files below all failed for that same reason. Links pin the audited release i
   artwork under disabled policy, offline fallback, and suppression of automatic retry loops.
 - Regenerating the full catalogue with a throwaway signer produced 44 packs containing 352 PNGs;
   every generated pack matched its index hash and size.
-- Visual check pending on the main Mac: enable a celebration, test successful, offline and
-  policy-disabled downloads in light and dark. elara has no Accessibility or Screen Recording
-  permission. Use the isolated Debug override recipe in `celebrations-artwork.md` so repository
-  artwork does not bypass the downloader. No screenshots were captured on elara.
+- Visual verification uses the isolated Debug override recipe in `celebrations-artwork.md` so
+  repository artwork does not bypass the downloader. Check successful, offline and policy-disabled
+  downloads in light and dark, including Retry, cached icons and bundled Home artwork. A policy-blocked
+  icon switch appears off and disabled without clearing the saved choice; the status card names the
+  policy reason. Screenshots and the tested revision are recorded in PR #109.
