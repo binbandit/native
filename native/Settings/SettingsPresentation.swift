@@ -17,9 +17,13 @@ final class SettingsPresentation {
     /// when a project's settings link there. The page takes it once it appears.
     private(set) var projectScope: ProjectScope?
 
+    /// A specific row requested by a feature outside Settings, including repeated visits.
+    private(set) var rowReveal: SettingsReveal?
+
     /// The page shown; nil while Settings is closed.
     var pane: SettingsPane.ID? {
         didSet {
+            if oldValue != pane { rowReveal = nil }
             if let projectScope, projectScope.pane != pane { self.projectScope = nil }
             if pane != oldValue { dismissDetail() }
             if oldValue == nil, pane != nil {
@@ -68,13 +72,15 @@ final class SettingsPresentation {
 
     var isShown: Bool { pane != nil }
 
-    func open(_ pane: SettingsPane.ID = .general) {
+    func open(_ pane: SettingsPane.ID = .general, revealing row: SettingsRowID? = nil) {
         projectScope = nil
         self.pane = pane
+        rowReveal = row.map { SettingsReveal(rowID: $0) }
     }
 
     /// Opens `pane` on `project`'s switches.
     func open(_ pane: SettingsPane.ID, scopedTo project: URL) {
+        rowReveal = nil
         projectScope = ProjectScope(pane: pane, project: project)
         self.pane = pane
     }

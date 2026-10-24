@@ -105,6 +105,16 @@ struct SettingsScreen: View {
                 query = ""
             }
         }
+        .onChange(of: presentation.rowReveal, initial: true) { previous, request in
+            if let request {
+                reveal = request
+                query = ""
+                focus = nil
+                compactColumn = .detail
+            } else if reveal == previous {
+                reveal = nil
+            }
+        }
         // Page replacement can deliver the old page's disappearance after the new one's
         // appearance. Keep the callback on the screen so that cannot unregister its successor.
         .onAppear {

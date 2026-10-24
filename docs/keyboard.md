@@ -307,11 +307,12 @@ Other file types use the platform's Quick Look preview, with its native navigati
 | ⌃⌘S | Show or hide the sidebar | View | `view.toggleSidebar` |
 | ⌥⌘↑ / ⌥⌘↓ | Move the selected project or task up / down (a queued message instead, while one is open in the composer) | Task | `sidebar.moveUp` / `sidebar.moveDown` |
 | ⌘Z / ⇧⌘Z | Undo / redo the window's latest change, newest first: typing, or archiving, renaming, pinning or deleting a task or project (a deletion until it's carried out). The undo toast's Undo takes back the same change, once | Edit | |
+| ⌘Z after removing a host | Restore the removed host's pairing, also offered by the toast's Undo | Edit | |
 | ⇧⌘A | Archive the selected task and open the next task in the sidebar's current filter and sort order (or the previous task at the end). ⌘Z or the toast's Undo restores and reopens it. Unarchive an archived task; with several tasks picked, archive them all | Task | `session.archive` |
 | ⌥⌘J | Turn the sidebar's Needs you filter on or off (its filter menu has the rest) | View | `view.needsYouFilter` |
 | ⌘⇧P | Pull requests | Go | `go.pullRequests` |
-| | GitHub Account: open the sidebar account menu (Mac only) | Go | `github.accounts` |
-| Tab, then Space on the sidebar account | Open the account menu; arrow keys select, Return chooses, Escape closes | | |
+| | GitHub Account: open Settings > General at Accounts (Mac only) | Go | `github.accounts` |
+| Tab, then Space on the sidebar account | Open Settings > General at Accounts; Tab and Space choose an account | | |
 | ⌘⇧X | Expeditions | Go | `go.expeditions` |
 | ⇧⌘F | Search every task (`docs/search.md`) | Go | `search.show` |
 | ⌥⌘I | Show or hide the subagent inspector | View | `view.toggleSubagentInspector` |
@@ -319,6 +320,11 @@ Other file types use the platform's Quick Look preview, with its native navigati
 | ⌃⌘M | Show the task's MCP servers (the server chip beside the composer's context ring) | View | `view.mcpServers` |
 | ⌃⌘A | Keep Mac awake: cycle Off → While agents work → On (View ▸ Keep Mac Awake) | View | `keepAwake.nextMode` |
 | | Show or hide the status bar along the window's bottom edge (on by default) | View | `statusBar.toggle` |
+
+Undo toasts show ⌘Z only while the window's next Undo takes back that offer. Tab reaches Undo and
+the corner Dismiss button; VoiceOver exposes both as actions on the announced message. Hover or
+keyboard focus holds the toast open. Escape keeps its task behavior and never dismisses a toast.
+On iPad, the corner Dismiss button is always visible and swiping down dismisses the toast.
 
 ## Home Next (Labs)
 

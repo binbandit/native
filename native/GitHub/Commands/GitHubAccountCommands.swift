@@ -6,14 +6,12 @@ extension CommandID {
 }
 
 extension NativeCommand {
-    static func gitHubAccounts(_ model: GitHubModel, settings: SettingsPresentation) -> NativeCommand {
+    static func gitHubAccounts(settings: SettingsPresentation) -> NativeCommand {
         NativeCommand(
             .gitHubAccounts, title: "GitHub Account…", category: .navigation,
             systemImage: "person.crop.circle", keywords: ["github", "account", "switch", "sign in"]
-        ) { context in
-            if settings.isShown { settings.open(.gitHub) }
-            context.sidebarVisibility?.wrappedValue = .all
-            model.accounts.showMenu()
+        ) { _ in
+            settings.open(.general, revealing: GitHubAccountsSettingsSection.accountsRow)
         }
     }
 }

@@ -164,10 +164,10 @@ struct MCPAgentServerRow: View {
             parts.append("Also set up in Native")
         }
         let signIn = group.entries.filter {
-            library.configuration(of: $0.format)?.signInRequired.contains($0.name) == true
+            if case .needsAuth = library.health(of: .agent($0.id)) { true } else { false }
         }
         if !signIn.isEmpty {
-            parts.append(signIn.map { "\($0.format.displayName) says it needs sign-in" }.joined(separator: ", "))
+            parts.append(signIn.map { "Sign-in needed with \($0.format.displayName)" }.joined(separator: ", "))
         }
         parts += Array(Set(group.entries.flatMap(\.notes))).sorted()
         return parts.joined(separator: " · ")
@@ -267,3 +267,9 @@ struct MCPExpandButton: View {
         .accessibilityLabel(isExpanded ? "Hide details for \(name)" : "Show details for \(name)")
     }
 }
+
+#if DEBUG
+#Preview("MCP servers - Shared sign-in states") {
+    DSPreviewPair { MCPAuthenticationPreview() }
+}
+#endif

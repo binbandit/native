@@ -1,50 +1,50 @@
+import GitHub
 import SwiftUI
 
+/// A quiet identity that leads to the account controls in General.
 struct GitHubAccountButton: View {
     @Environment(GitHubModel.self) private var gitHub
+    @Environment(SettingsPresentation.self) private var settings
     @State private var isHovered = false
 
     var body: some View {
-        @Bindable var accounts = gitHub.accounts
-        Button {
-            accounts.showMenu()
-        } label: {
-            HStack(spacing: DS.Space.md) {
-                if let account = accounts.current {
+        let accounts = gitHub.accounts
+        if let account = accounts.current {
+            Button {
+                settings.open(.general, revealing: GitHubAccountsSettingsSection.accountsRow)
+            } label: {
+                HStack(spacing: DS.Space.md) {
                     GitHubAccountAvatar(name: accounts.name(account), data: accounts.avatar(account))
-                } else {
-                    Image(systemName: "person.crop.circle")
-                        .font(.dsCallout)
-                        .frame(width: DS.Size.controlXS, height: DS.Size.controlXS)
+                    Text(displayName)
+                        .font(.dsCalloutBook)
+                        .tracking(DS.Account.nameTracking)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                Text(accounts.title)
-                    .font(.dsCaptionMedium)
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                if accounts.accounts.count > 1 {
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.dsMicro)
-                        .foregroundStyle(.dsTextTertiary)
-                }
-                if accounts.guidance != nil, accounts.current != nil {
-                    Image(systemName: "exclamationmark.circle")
-                        .font(.dsCaption)
-                        .foregroundStyle(.dsTextSecondary)
-                }
+                .foregroundStyle(isHovered ? .dsTextPrimary : .dsTextSecondary)
+                .padding(.leading, DS.Space.sm)
+                .padding(.trailing, DS.Space.md)
+                .frame(height: DS.Size.controlSM)
+                .background(isHovered ? Color.dsHover : .clear, in: .rect(cornerRadius: DS.Radius.row))
+                .contentShape(.rect)
+                .dsHitTarget(DS.Size.controlSM)
             }
-            .foregroundStyle(isHovered ? .dsTextPrimary : .dsTextSecondary)
-            .contentShape(.rect)
-            .dsHitTarget(DS.Size.controlXS)
+            .buttonStyle(SidebarRowButtonStyle())
+            .trackHover($isHovered)
+            .accessibilityLabel("GitHub Account")
+            .accessibilityValue("\(accounts.name(account)), @\(account.login)")
+            .accessibilityHint("Open Accounts in General settings")
+            .help("GitHub Account: @\(account.login)")
         }
-        .buttonStyle(.plain)
-        .trackHover($isHovered)
-        .accessibilityLabel("GitHub Account")
-        .accessibilityValue(accounts.title)
-        .accessibilityHint(accounts.guidance ?? "Choose the GitHub account Native uses")
-        .help(accounts.guidance ?? "GitHub Account: \(accounts.title)")
-        .dsPopover(isPresented: $accounts.isMenuPresented, arrowEdge: .top) {
-            GitHubAccountMenu()
-        }
+    }
+
+    private var displayName: String {
+        let accounts = gitHub.accounts
+        guard let current = accounts.current else { return "" }
+        let name = accounts.name(current)
+        let matches = accounts.accounts.filter { accounts.name($0) == name }
+        return matches.count > 1 ? "@\(current.login)" : name
     }
 }
 
@@ -60,5 +60,6 @@ struct GitHubAccountButton: View {
         .frame(width: DS.Size.sidebarWidth)
         .padding(DS.Space.lg)
     }
+    .environment(SettingsPresentation())
 }
 #endif
