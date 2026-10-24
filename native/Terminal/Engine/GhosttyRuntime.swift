@@ -20,6 +20,7 @@ final class GhosttyRuntime: TerminalEngine {
     private var style: TerminalStyle
     private let surfaces = NSHashTable<GhosttySurfaceView>.weakObjects()
     private var observers: [NSObjectProtocol] = []
+    private var activityMonitor: Task<Void, Never>?
 
     /// Starts libghostty once per process; later calls return the same runtime.
     static func start() -> Result<GhosttyRuntime, TerminalEngineError> {
@@ -90,6 +91,7 @@ final class GhosttyRuntime: TerminalEngine {
             throw .engineFailed
         }
         surfaces.add(view)
+        monitorActivity()
         return view
     }
 
@@ -111,6 +113,29 @@ final class GhosttyRuntime: TerminalEngine {
 
     private func tick() {
         ghostty_app_tick(app)
+        reportActivity()
+    }
+
+    @discardableResult
+    private func reportActivity() -> Bool {
+        let live = surfaces.allObjects.filter { $0.surface != nil }
+        for surface in live { surface.reportCommandActivity() }
+        return !live.isEmpty
+    }
+
+    private func monitorActivity() {
+        guard activityMonitor == nil else { return }
+        // Quiet programs and hidden panels still need activity updates. One monitor serves every
+        // surface, stops after the last closes, and publishes only changes.
+        activityMonitor = Task { [weak self] in
+            while let self {
+                guard reportActivity() else {
+                    activityMonitor = nil
+                    return
+                }
+                do { try await Task.sleep(for: .seconds(1)) } catch { return }
+            }
+        }
     }
 
     private static func colorScheme(_ appearance: TerminalAppearance) -> ghostty_color_scheme_e {

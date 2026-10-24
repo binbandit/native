@@ -19,6 +19,8 @@ protocol TerminalSurface: AnyObject {
 protocol TerminalSurfaceEvents: AnyObject {
     func surface(_ id: UUID, didSetTitle title: String?)
     func surface(_ id: UUID, didChangeStatus status: TerminalStatus)
+    /// Shell integration reports foreground work independently of the surface's visibility.
+    func surface(_ id: UUID, didChangeCommandRunning isRunning: Bool)
     /// A command marked with OSC 133 ended with `status` (`133;D;<status>`). A job's frame reports
     /// its exit status this way, since the login wrapper hides the shell's own on the Mac.
     func surface(_ id: UUID, didFinishCommandWith status: Int32, after duration: Duration)
