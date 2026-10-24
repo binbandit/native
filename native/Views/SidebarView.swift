@@ -63,6 +63,7 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
                     select: select
                 )
                 .environment(\.sidebarAllInView, usesSidebarNext)
+                .environment(\.oldestTaskAskID, usesSidebarNext ? model.oldestTaskAsk?.id : nil)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, usesSidebarNext ? DS.Sidebar.inset : DS.Space.sm)
                 .padding(.vertical, usesSidebarNext ? 0 : DS.Space.md)
@@ -77,6 +78,11 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
             }
             .onKeyPress(.downArrow) {
                 model.selectSession(offset: 1)
+                return .handled
+            }
+            .onKeyPress(.space) {
+                guard usesSidebarNext, model.renaming == nil, let key = model.selection else { return .ignored }
+                model.peekTask(key)
                 return .handled
             }
             .onKeyPress(.return) {

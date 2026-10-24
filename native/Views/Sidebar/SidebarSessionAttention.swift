@@ -1,28 +1,16 @@
 import ACP
 import Foundation
 
-/// The exact request shown by a row, including its host-recorded arrival. Child asks keep their
-/// own timestamps; opening or rebuilding a row never starts its clock again.
+/// A row and the global shortcut read the same request, even when it belongs to a child task.
 struct SidebarSessionAttention {
     let sentence: String
     let since: Date
     let answersShortcut: Bool
 
-    init?(session: SessionModel, isVisibleTask: Bool) {
-        if let question = session.pendingQuestion {
-            sentence = question.request.message
-            since = question.requestedAt
-            answersShortcut = false
-        } else if let call = session.permissionRequests.first, let permission = call.permission {
-            sentence = call.askSummary
-            since = permission.requestedAt
-            answersShortcut = isVisibleTask && permission.options.contains { $0.kind == .allowOnce }
-        } else if let child = session.children.values.compactMap({
-            SidebarSessionAttention(session: $0, isVisibleTask: false)
-        }).first {
-            self = child
-        } else {
-            return nil
-        }
+    init?(session: SessionModel, task: SessionKey, oldest: TaskPeekAsk.ID?) {
+        guard let ask = TaskPeekAsk.requests(in: session, task: task).first else { return nil }
+        sentence = ask.sentence
+        since = ask.since
+        answersShortcut = ask.id == oldest
     }
 }

@@ -60,13 +60,10 @@ public final class UndoableAction: Identifiable {
     }
 
     private func removeFromStack() {
-        guard let undoManager else { return }
-        undoManager.removeAllActions(withTarget: self)
-        // Removing a target sends no UndoManager notification, so menus need an explicit invalidation.
-        NotificationCenter.default.post(name: .undoableActionDidRemove, object: undoManager)
+        undoManager?.removeActions(withTarget: self)
     }
 
-    private static let identity = UndoManager.UserInfoKey("dev.binbandit.native.undoable-action")
+    static let identity = UndoManager.UserInfoKey("dev.binbandit.native.undoable-action")
 
     func isNextUndo(on undoManager: UndoManager) -> Bool {
         guard canUndo, self.undoManager === undoManager else { return false }
@@ -102,8 +99,4 @@ public final class UndoableAction: Identifiable {
         canUndo = false
         undoChange(self)
     }
-}
-
-extension Notification.Name {
-    static let undoableActionDidRemove = Notification.Name("dev.binbandit.native.undoable-action-removed")
 }

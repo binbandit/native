@@ -188,6 +188,12 @@ extension AppModel {
 
     private func carryOutDeletion(of key: SessionKey, in projectID: Project.ID) async {
         guard pendingDeletions.removeValue(forKey: key) != nil else { return }
+        do {
+            try await releaseCoordinatorAssignments(beforeDeleting: key)
+        } catch {
+            actionFailure = ActionFailure("Couldn't Delete Coordinator", error.localizedDescription)
+            return
+        }
         let title = titleOfSession(key)
         let folder =
             sessions.session(key)?.cwd

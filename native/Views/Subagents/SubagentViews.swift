@@ -143,6 +143,14 @@ extension SessionMessageView {
     /// from outgoing.
     init(message: SessionMessage, sessionID: SessionID, name: (SessionID?) -> String) {
         let isOutgoing = message.sender == sessionID
+        if let frame = TaskPromptFrame(parsing: message.text), case .coordinator = frame.sender {
+            if isOutgoing {
+                self.init(title: "To \(name(message.recipient))", isOutgoing: true, text: frame.body)
+            } else {
+                self.init(frame: frame)
+            }
+            return
+        }
         self.init(
             title: isOutgoing ? "To \(name(message.recipient))" : "From \(name(message.sender))",
             isOutgoing: isOutgoing,
@@ -154,6 +162,8 @@ extension SessionMessageView {
     init(frame: TaskPromptFrame) {
         let sender =
             switch frame.sender {
+            case .coordinator(let title):
+                "coordinator: \(title)"
             case .parent:
                 "the parent task"
             case .task(let id, let label), .sibling(let id, let label):
@@ -183,7 +193,7 @@ extension SessionMessageView {
                 title: "To Explore", isOutgoing: true,
                 text: "Find where the composer queues follow-ups and how Send Now reorders them.")
             SessionMessageView(
-                title: "From Explore", isOutgoing: false,
+                title: "From coordinator: Align docs", isOutgoing: false,
                 text: "Follow-ups queue in SessionModel+Turns.swift. Send Now steers when the agent can.")
         }
         .frame(width: 560)

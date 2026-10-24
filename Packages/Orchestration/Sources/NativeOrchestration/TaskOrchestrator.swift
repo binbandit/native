@@ -17,6 +17,7 @@ public struct TaskOrchestrator: Sendable {
     struct Peer {
         enum Relation: String {
             case parent
+            case assigned
             /// A task the caller started.
             case child
             /// Another task of the caller's parent.
@@ -61,9 +62,11 @@ public struct TaskOrchestrator: Sendable {
         /// The task the caller is, when it's one.
         let own: OrchestrationTask?
         let tasks: [OrchestrationTask]
+        let coordinator: CoordinatorScope?
 
         /// The sessions the caller can reach: its parent, its own tasks, then its siblings.
         var peers: [Peer] {
+            if let coordinator { return coordinator.tasks.map { Peer($0, relation: .assigned) } }
             guard let session else { return [] }
             var peers: [Peer] = []
             if let own {
@@ -102,6 +105,10 @@ public struct TaskOrchestrator: Sendable {
         agent id: String, prompt: String, title: String?, for caller: OrchestrationCaller
     ) async throws -> MCPToolResult {
         try await requireReady()
+        guard await runtime.coordinatorScope(of: caller.clientID) == nil else {
+            throw MCPToolError(
+                "Coordinators can only read and message their assigned tasks. Ask the user to edit assignments.")
+        }
         let agents = await runtime.taskAgents()
         guard let agent = agents.first(where: { $0.id == id }) else {
             throw MCPToolError(
@@ -143,7 +150,10 @@ public struct TaskOrchestrator: Sendable {
             lines.append("You are \(own.label), started by your parent task.")
         }
         if peers.isEmpty {
-            lines.append("You haven't started any tasks.")
+            lines.append(
+                place.coordinator == nil
+                    ? "You haven't started any tasks."
+                    : "No tasks are assigned. Ask the user to edit assigned tasks in Native.")
         } else {
             lines.append(
                 "Tasks you can reach (pass the id to send_message, wait_for_task or get_task; a closed one reopens):"
@@ -151,6 +161,7 @@ public struct TaskOrchestrator: Sendable {
             for peer in peers {
                 let role =
                     switch peer.relation {
+                    case .assigned: "\(peer.label), assigned by the user"
                     case .parent: "parent: \(peer.label)"
                     case .child: "\(peer.label), a task you started"
                     case .sibling: "\(peer.label), a sibling task your parent started"
@@ -180,13 +191,27 @@ public struct TaskOrchestrator: Sendable {
         try await requireReady()
         let peer = try await openPeer(id, of: caller)
         await runtime.settle(peer.session, timeout: timeout)
-        return report(peer, await runtime.snapshot(of: peer.session), waited: true)
+        _ = try self.peer(id, in: await place(of: caller))
+        var snapshot = await runtime.snapshot(of: peer.session)
+        if peer.relation == .assigned {
+            snapshot?.reply = await runtime.recentTranscript(of: peer.session)
+            let detail = snapshot?.detail.map { String($0.prefix(1200)) }
+            snapshot?.detail = detail
+        }
+        return report(peer, snapshot, waited: true)
     }
 
     public func getTask(_ id: String, for caller: OrchestrationCaller) async throws -> MCPToolResult {
         try await requireReady()
         let peer = try await openPeer(id, of: caller)
-        return report(peer, await runtime.snapshot(of: peer.session))
+        var snapshot = await runtime.snapshot(of: peer.session)
+        if peer.relation == .assigned {
+            _ = try self.peer(id, in: await place(of: caller))
+            snapshot?.reply = await runtime.recentTranscript(of: peer.session)
+            let detail = snapshot?.detail.map { String($0.prefix(1200)) }
+            snapshot?.detail = detail
+        }
+        return report(peer, snapshot)
     }
 
     public func sendMessage(
@@ -255,6 +280,7 @@ public struct TaskOrchestrator: Sendable {
     )
         -> TaskPromptFrame.Sender
     {
+        if let coordinator = place.coordinator { return .coordinator(title: coordinator.title) }
         if recipient.relation == .child {
             return .parent(agent: recipient.task?.parentAgentName ?? caller.agent)
         }
@@ -322,7 +348,9 @@ public struct TaskOrchestrator: Sendable {
     private func place(of caller: OrchestrationCaller) async -> Place {
         let session = await runtime.session(of: caller.clientID)
         let tasks = await runtime.tasks()
-        return Place(session: session, own: session.flatMap { key in tasks.first { $0.session == key } }, tasks: tasks)
+        return Place(
+            session: session, own: session.flatMap { key in tasks.first { $0.session == key } }, tasks: tasks,
+            coordinator: await runtime.coordinatorScope(of: caller.clientID))
     }
 
     private func peer(_ id: String, in place: Place) throws -> Peer {
@@ -345,6 +373,10 @@ public struct TaskOrchestrator: Sendable {
     /// The peer, reopened first if it's a task that isn't open (after a restart).
     private func openPeer(_ id: String, in place: Place) async throws -> Peer {
         let peer = try peer(id, in: place)
+        if peer.relation == .assigned {
+            try await runtime.openCoordinatedTask(peer.session)
+            return peer
+        }
         if let task = peer.task, await runtime.snapshot(of: peer.session) == nil {
             do {
                 try await runtime.openTask(task)
