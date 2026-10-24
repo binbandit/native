@@ -3,6 +3,7 @@ import Experiments
 import Foundation
 import NativeHostClient
 import NativeHostProtocol
+import NativeOrchestration
 import NativePolicy
 
 extension AppModel {
@@ -60,6 +61,21 @@ extension AppModel {
             try await client.setCoordinator(record)
             coordinators.removeAll { $0.task == record.task }
             coordinators.append(record)
+            if let previous = editor.record {
+                offerUndo("Assigned tasks updated", name: "Edit Assigned Tasks", undoManager: undoHistory.manager) {
+                    model in
+                    Task {
+                        do {
+                            try await client.setCoordinator(previous)
+                            model.coordinators.removeAll { $0.task == previous.task }
+                            model.coordinators.append(previous)
+                        } catch {
+                            model.actionFailure = ActionFailure(
+                                "Couldn't Restore Assignments", error.localizedDescription)
+                        }
+                    }
+                }
+            }
         } else {
             guard let agent = editor.agentID, let runtime = await ensureRunning(agent), runtime.host === client else {
                 throw CoordinatorTaskFailure("Choose an available agent running on this Mac.")
@@ -90,6 +106,24 @@ extension AppModel {
         }
         // Older hosts have no coordinator endpoint. Creation still reports that failure explicitly.
         if let records = try? await client.coordinators() { coordinators = records }
+    }
+
+    /// Shared by the sidebar and keyboard navigation, including pinned tasks.
+    func groupCoordinatorTasks(_ lists: [[SessionSummary]]) -> [[SessionSummary]] {
+        guard offersCoordinatorTasks else { return lists }
+        let lookup = Dictionary(lists.flatMap { $0 }.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let assignments = Dictionary(
+            uniqueKeysWithValues: coordinators.map { record in
+                (
+                    SessionKey(
+                        agent: AgentDefinition.ID(rawValue: record.task.agentID), id: record.task.agentSessionID),
+                    record.assignments.map {
+                        SessionKey(agent: AgentDefinition.ID(rawValue: $0.agentID), id: $0.agentSessionID)
+                    }
+                )
+            })
+        return CoordinatorOrdering.grouped(lists.map { $0.map(\.id) }, assignments: assignments)
+            .map { $0.compactMap { lookup[$0] } }
     }
 
     func isCoordinatorChild(_ key: SessionKey, among visible: [SessionSummary]) -> Bool {

@@ -26,7 +26,7 @@ public struct CoordinatorScope: Sendable {
 
     /// A local excerpt, never reasoning or raw tool output, with a fixed upper bound.
     public static func summary(of state: SessionState) -> String {
-        let messages = state.items.compactMap { item -> String? in
+        let messages = state.items.reversed().lazy.compactMap { item -> String? in
             switch item {
             case .message(let message) where message.role != .thought:
                 return "\(message.role == .user ? "User" : "Agent"): " + String(message.text.prefix(1200))
@@ -35,6 +35,6 @@ public struct CoordinatorScope: Sendable {
             default: return nil
             }
         }
-        return messages.suffix(4).joined(separator: "\n\n")
+        return messages.prefix(4).reversed().joined(separator: "\n\n")
     }
 }

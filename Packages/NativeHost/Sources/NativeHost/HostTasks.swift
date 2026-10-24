@@ -444,21 +444,24 @@ extension HostTasks: TaskRuntime {
             let senderID = sender.record.agentSessionID, let recipientID = recipient.record.agentSessionID
         else { throw HostTaskError.closed }
         try await core.load(recipient)
-        if let identity = HostTaskIdentity(sender),
-            let record = core.coordinators.first(where: { $0.task == identity || $0.hostSessionID == sender.id })
-        {
-            guard let target = HostTaskIdentity(recipient), record.assignments.contains(target) else {
-                throw CoordinatorFailure("That task is no longer assigned to this coordinator.")
-            }
-        }
-        let transcriptText =
-            core.coordinators.contains { $0.task == HostTaskIdentity(sender) } ? message.prompt : message.text
-        core.append(.update(TaskTranscript.message(transcriptText, from: senderID, to: recipientID)), to: sender)
-        core.append(.update(TaskTranscript.message(transcriptText, from: senderID, to: recipientID)), to: recipient)
         let delivery = try await core.prompt(
             PromptParams(
                 sessionID: recipient.id, requestID: UUID(), text: message.prompt, behavior: .steer, echo: false,
-                origin: .task))
+                origin: .task),
+            checking: { [self] in
+                // Run inside the prompt transaction's task, after its last scheduling boundary.
+                let coordinator = core.coordinators.first {
+                    $0.task == HostTaskIdentity(sender) || $0.hostSessionID == sender.id
+                }
+                if let coordinator {
+                    guard let target = HostTaskIdentity(recipient), coordinator.assignments.contains(target) else {
+                        throw CoordinatorFailure("That task is no longer assigned to this coordinator.")
+                    }
+                }
+                let text = coordinator == nil ? message.text : message.prompt
+                core.append(.update(TaskTranscript.message(text, from: senderID, to: recipientID)), to: sender)
+                core.append(.update(TaskTranscript.message(text, from: senderID, to: recipientID)), to: recipient)
+            })
         return switch delivery {
         case .prompted: .prompted
         case .steered: .steered

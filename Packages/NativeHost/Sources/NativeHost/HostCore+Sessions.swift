@@ -34,29 +34,35 @@ extension HostCore {
             return existing.summary
         }
         let initialOptions: JSONValue?
-        if coordinator != nil {
-            initialOptions = try await coordinatorReadOnly(response, on: peer)
-        } else {
-            initialOptions = response.configOptions
-        }
-        let record = StoredSession(
-            id: sessionID, agentID: params.agentID, agentSessionID: response.sessionId,
-            cwd: params.cwd, parentID: params.parentID, origin: params.origin, mcpServers: params.mcpServers,
-            meta: params.meta,
-            configChoices: initialOptions.map { Self.configValues(Self.configOptions($0)) } ?? [:])
-        try store.transaction {
-            if let coordinator {
-                let identity = HostTaskIdentity(agentID: params.agentID, agentSessionID: response.sessionId)
-                try validateAssignments(coordinator.assignments, coordinator: identity)
-                let assignment = HostCoordinator(
-                    task: identity, projectPath: params.cwd, assignments: coordinator.assignments,
-                    hostSessionID: sessionID)
-                var updated = coordinators
-                updated.append(assignment)
-                try store.setMeta(
-                    Self.coordinatorsKey, String(decoding: try JSONEncoder().encode(updated), as: UTF8.self))
+        let record: StoredSession
+        do {
+            if coordinator != nil {
+                initialOptions = try await coordinatorReadOnly(response, on: peer)
+            } else {
+                initialOptions = response.configOptions
             }
-            try store.insertSession(record)
+            record = StoredSession(
+                id: sessionID, agentID: params.agentID, agentSessionID: response.sessionId,
+                cwd: params.cwd, parentID: params.parentID, origin: params.origin, mcpServers: params.mcpServers,
+                meta: params.meta,
+                configChoices: initialOptions.map { Self.configValues(Self.configOptions($0)) } ?? [:])
+            try store.transaction {
+                if let coordinator {
+                    let identity = HostTaskIdentity(agentID: params.agentID, agentSessionID: response.sessionId)
+                    try validateAssignments(coordinator.assignments, coordinator: identity)
+                    let assignment = HostCoordinator(
+                        task: identity, projectPath: params.cwd, assignments: coordinator.assignments,
+                        hostSessionID: sessionID)
+                    var updated = coordinators
+                    updated.append(assignment)
+                    try store.setMeta(
+                        Self.coordinatorsKey, String(decoding: try JSONEncoder().encode(updated), as: UTF8.self))
+                }
+                try store.insertSession(record)
+            }
+        } catch {
+            if coordinator != nil { await discardCoordinatorCandidate(response.sessionId, on: link, peer: peer) }
+            throw error
         }
         if let coordinator {
             coordinators.append(

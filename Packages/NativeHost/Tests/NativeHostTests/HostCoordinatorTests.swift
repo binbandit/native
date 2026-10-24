@@ -24,6 +24,7 @@ struct HostCoordinatorTests {
         }
         #expect(try await recorder.client.coordinators().isEmpty)
         #expect(try await recorder.client.sessions().isEmpty)
+        #expect(harness.received.contains { $0.hasPrefix("delete\t") })
         await recorder.stop()
     }
 
@@ -48,6 +49,10 @@ struct HostCoordinatorTests {
         #expect(coordinator.parentID == nil)
         _ = try await client.prompt(PromptParams(sessionID: coordinator.id, text: "config?"))
         try await recorder.wait("coordinator config") { await $0.agentText(coordinator.id).contains("mode=read-only") }
+        _ = try await client.prompt(PromptParams(sessionID: coordinator.id, text: "tool list_tasks {}"))
+        try await recorder.wait("scoped MCP listing from the agent") {
+            await $0.agentText(coordinator.id).contains(assigned.toolID)
+        }
         let listed = try await client.callTool(
             CallToolParams(sessionID: coordinator.id, tool: "list_tasks", arguments: .object([:])))
         #expect(listed.text.contains(assigned.toolID))

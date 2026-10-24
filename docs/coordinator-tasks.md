@@ -44,7 +44,7 @@ access to one another or to the coordinator's other work.
 Assigned tasks appear indented immediately below their coordinator, using the existing task row
 and status language. Filtering, pinned tasks and archived coordinators must not hide an assigned
 task. The picker keeps selected assignments and explains unavailable choices, empty projects and
-save failures. Cancel leaves assignments unchanged; saving an empty selection releases all tasks.
+save failures. Cancel leaves assignments unchanged; saving an empty selection releases all tasks. Editing assignments offers Undo, with a visible error if another coordinator has since claimed one.
 No automatic prompt is sent when a coordinator is created: the user writes its objective. New-task autonomy defaults and mode hooks are skipped so they cannot override read-only creation. Clear Conversation and Change Agent are unavailable on coordinators in this slice; create a new coordinator and reassign tasks instead.
 
 Membership survives app and host restarts. Native's usual host transcript and prompt persistence

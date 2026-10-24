@@ -104,6 +104,20 @@ extension HostCore {
         return options
     }
 
+    /// The agent session has never received a prompt and must not appear as an ordinary task.
+    func discardCoordinatorCandidate(_ id: SessionID, on link: AgentLink, peer: JSONRPCPeer) async {
+        let method: String
+        if link.capabilities?.deleteSessions == true {
+            method = "session/delete"
+        } else if link.capabilities?.closeSessions == true {
+            method = "session/close"
+        } else {
+            return
+        }
+        _ = try? await peer.request(method, RawSessionIDRequest(sessionId: id), as: JSONValue.self)
+        link.buffered[id] = nil
+    }
+
     static let coordinatorsKey = "coordinator_tasks_v1"
 }
 

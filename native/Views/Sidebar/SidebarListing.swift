@@ -1,5 +1,4 @@
 import ACP
-import NativeOrchestration
 import TaskList
 
 /// The sidebar's tasks as the window's filter shows them, worked out once per update: the pinned
@@ -32,27 +31,10 @@ struct SidebarListing {
                 project: project, all: all,
                 visible: filter.isActive ? filter.apply(to: candidates, facts: facts) : all)
         }
-        if model.offersCoordinatorTasks {
-            let lists = [filteredPinned] + raw.map(\.visible)
-            let lookup = Dictionary(lists.flatMap { $0 }.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-            let assignments = Dictionary(
-                uniqueKeysWithValues: model.coordinators.map { record in
-                    (
-                        SessionKey(
-                            agent: AgentDefinition.ID(rawValue: record.task.agentID), id: record.task.agentSessionID),
-                        record.assignments.map {
-                            SessionKey(agent: AgentDefinition.ID(rawValue: $0.agentID), id: $0.agentSessionID)
-                        }
-                    )
-                })
-            let grouped = CoordinatorOrdering.grouped(lists.map { $0.map(\.id) }, assignments: assignments)
-            pinned = grouped[0].compactMap { lookup[$0] }
-            groups = raw.enumerated().map { index, group in
-                Group(project: group.project, all: group.all, visible: grouped[index + 1].compactMap { lookup[$0] })
-            }
-        } else {
-            pinned = filteredPinned
-            groups = raw
+        let grouped = model.groupCoordinatorTasks([filteredPinned] + raw.map(\.visible))
+        pinned = grouped[0]
+        groups = raw.enumerated().map { index, group in
+            Group(project: group.project, all: group.all, visible: grouped[index + 1])
         }
     }
 
