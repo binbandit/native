@@ -82,6 +82,18 @@ What follows from that:
   are points on one range: the sidebar and inspector become overlays at narrow widths, and the
   iPhone's compact width is the companion layout.
 
+### Resource percentages
+
+The status bar, its tooltip, and the resource panel's process rows and totals show CPU as a
+percentage of the sampling machine's total CPU capacity, from 0 to 100. `ProcessSampler` normalizes
+CPU time by elapsed time and that machine's active logical processor count using `Exec.ProcessCPUUsage`.
+Clients format the normalized value without dividing by their own processor count. Group and overall
+totals are capped at 100 to account for skew between sequential process reads. For example, 395% of
+one core is 49.375% of an eight-core machine, displayed as 49%.
+
+Memory stays in bytes of physical footprint, as in Activity Monitor; its tooltip compares the total
+footprint with physical RAM. It has no per-core scaling.
+
 ### GitHub account selection
 
 The Mac sidebar footer shows the GitHub account used by Native. `GitHubAccountsModel` lists all
