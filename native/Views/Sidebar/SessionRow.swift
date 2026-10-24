@@ -14,6 +14,7 @@ struct SessionRow<Accessory: View>: View {
     @Environment(\.sidebarTaskInsights) private var insights
     @AppStorage("sidebar.showAgentIcons") private var showAgentIcons = true
     @Environment(\.sidebarAllInView) private var isAllInView
+    @Environment(\.oldestTaskAskID) private var oldestAskID
     let summary: SessionSummary
     /// Grouped under a project header, or flush in the Pinned section.
     var indent: TaskRowIndent = .grouped
@@ -68,6 +69,8 @@ struct SessionRow<Accessory: View>: View {
             SessionTitleField(summary: summary, status: TaskStatus(session))
         } else {
             taskRow
+                .taskPeekAnchor(summary.id)
+                .onTaskForceClick(enabled: isAllInView) { model.peekTask(summary.id) }
                 .help(tooltip)
                 // Double-clicking renames, like a file in the Finder.
                 .simultaneousGesture(TapGesture(count: 2).onEnded(rename))
@@ -82,6 +85,7 @@ struct SessionRow<Accessory: View>: View {
                 .accessibilityLabel(accessibilityLabel)
                 .accessibilityHint("\(summary.agent.displayName) task. Return renames it.")
                 .accessibilityActions {
+                    if isAllInView { Button("Peek") { model.peekTask(summary.id) } }
                     Button("Rename", action: rename)
                     Button(isUnread ? "Mark as Read" : "Mark as Unread", action: toggleUnread)
                     Button(isPinned ? "Unpin" : "Pin", action: togglePinned)
@@ -100,14 +104,17 @@ struct SessionRow<Accessory: View>: View {
     @ViewBuilder private var taskRow: some View {
         if isAllInView {
             let attention = session.flatMap {
-                SidebarSessionAttention(session: $0, isVisibleTask: model.selection == summary.id)
+                SidebarSessionAttention(session: $0, task: summary.id, oldest: oldestAskID)
             }
             AllInViewTaskRow(
-                title: title, status: TaskStatus(session), isSelected: isSelected, isUnread: isUnread,
+                title: title, status: TaskStatus(session), isSelected: isSelected,
+                isPeeking: model.taskPeek.request?.task == summary.id, isUnread: isUnread,
                 ask: attention?.sentence ?? recoverySentence, attentionSince: attention?.since,
                 answersShortcut: attention?.answersShortcut == true,
+                askShortcut: CommandRegistry.shared.keyboardShortcut(for: .taskAnswerOldestAsk),
                 unavailable: unavailableSentence,
-                hostName: remoteHost?.name, action: select)
+                hostName: remoteHost?.name, peek: { model.peekTask(summary.id) },
+                action: { if model.taskPeek.request?.task != summary.id { select() } })
         } else {
             TaskRow(
                 title: title, status: TaskStatus(session), isSelected: isSelected, isUnread: isUnread,
@@ -147,6 +154,10 @@ struct SessionRow<Accessory: View>: View {
     }
 
     @ViewBuilder private var menu: some View {
+        if isAllInView {
+            Button("Peek") { model.peekTask(summary.id) }
+            Divider()
+        }
         if model.offersAgentChange, let session {
             Button("Change Agent…") { model.requestAgentChange(session) }
         }

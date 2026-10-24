@@ -505,14 +505,18 @@ actor FakeAgent {
     }
 
     private func options(_ session: SessionID) -> JSONValue {
+        let readOnly: [JSONValue] =
+            ProcessInfo.processInfo.environment["FAKE_AGENT_READ_ONLY"] == "1"
+            ? [.object(["value": .string("read-only"), "name": .string("Read-only")])] : []
         let options: [JSONValue] = [
             .object([
                 "id": .string("mode"), "name": .string("Mode"), "category": .string("mode"), "type": .string("select"),
                 "currentValue": .string(modes[session] ?? "default"),
-                "options": .array([
-                    .object(["value": .string("default"), "name": .string("Default")]),
-                    .object(["value": .string("plan"), "name": .string("Plan")]),
-                ]),
+                "options": .array(
+                    [
+                        .object(["value": .string("default"), "name": .string("Default")]),
+                        .object(["value": .string("plan"), "name": .string("Plan")]),
+                    ] + readOnly),
             ]),
             Self.select(
                 "effort", category: "thought_level", current: efforts[session] ?? "medium",

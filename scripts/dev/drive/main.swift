@@ -29,6 +29,7 @@ let help = """
       set <text> <value> [--nth N] [--role R]         write a text field, the composer or a switch; - reads stdin
       type <text>                                     type characters into the focused element (\\n is Shift-Return)
       key <combo> [<combo> ...]                       e.g. cmd+n, return, escape, shift+cmd+a, opt+cmd+up
+      key <combo> --hold <seconds>                   hold before release, from 0 to 3 seconds
       menu <Menu> <Item> [<Item> ...]                 press a menu bar item (a submenu path goes deeper)
       action <text> <name> [--nth N] [--item <text>]  perform an action; AXShowMenu lists or picks from a context menu
       scroll <text> <up|down|top|bottom|reveal>       page the scroll area at or around a match, or reveal it
@@ -52,7 +53,7 @@ let specs: [String: (options: Set<String>, flags: Set<String>)] = [
     "find": (["role"], []), "text": (["nth", "role"], []), "focused": ([], []),
     "wait": (["timeout", "role"], ["gone"]), "windows": ([], []), "menu": ([], []),
     "actions": (["nth", "role"], []), "pid": ([], []), "press": (["nth", "role", "item"], []),
-    "set": (["nth", "role"], []), "type": ([], []), "key": ([], []), "action": (["nth", "role", "item"], []),
+    "set": (["nth", "role"], []), "type": ([], []), "key": (["hold"], []), "action": (["nth", "role", "item"], []),
     "scroll": (["nth", "role"], []), "shot": (["window"], []), "frame": ([], []), "screen": ([], []),
 ]
 
@@ -145,10 +146,10 @@ let specs: [String: (options: Set<String>, flags: Set<String>)] = [
         try arguments.expect(1...1, "type <text>")
         try Keyboard(pid: instance.pid).type(positional[0])
     case "key":
-        try arguments.expect(1...32, "key <combo> [<combo> ...]")
+        try arguments.expect(1...32, "key <combo> [<combo> ...] [--hold seconds]")
         let keyboard = Keyboard(pid: instance.pid)
         for combo in positional {
-            try keyboard.press(combo)
+            try keyboard.press(combo, hold: arguments.number("hold") ?? 0.012)
         }
     case "action":
         try arguments.expect(2...2, "action <text> <name> [--nth N]")

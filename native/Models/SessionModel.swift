@@ -120,6 +120,10 @@ final class SessionModel {
     private(set) var title: String?
     private(set) var configOptions: [ConfigOption] = []
     private(set) var plan: [PlanEntry] = []
+    /// Mirrored independently of text chunks, so the toolbar doesn't render for each token.
+    private(set) var taskActivity = TaskActivityNarration(verb: "Working")
+    /// Kept with the task when its screen is left and reopened, so an already reviewed outcome rests.
+    var reviewedTaskWellTurnID: String?
     private(set) var availableCommands: [AvailableCommand] = []
     private(set) var usage: Usage?
     /// Tool calls waiting for the user's permission, oldest first.
@@ -181,6 +185,7 @@ final class SessionModel {
     /// Questions the agent is waiting on (`elicitation/create`), oldest first; see
     /// SessionModel+Questions.
     var questions: [PendingQuestion] = []
+    @ObservationIgnored var questionsBeingAnswered: Set<RequestID> = []
     /// While a hidden command runs: the session takes no new turn, but its phase stays idle.
     var isRunningHiddenCommand = false
     @ObservationIgnored var hiddenCommand: HiddenCommandCapture?
@@ -461,6 +466,8 @@ final class SessionModel {
             services.titles.updateConfigChoices(for: titleKey) { $0.follow(configOptions, from: report) }
         }
         if plan != transcript.plan { plan = transcript.plan }
+        let activity = transcript.taskActivity
+        if taskActivity != activity { taskActivity = activity }
         if availableCommands != transcript.availableCommands { availableCommands = transcript.availableCommands }
         if usage != transcript.usage { usage = transcript.usage }
         let requests = transcript.permissionRequests

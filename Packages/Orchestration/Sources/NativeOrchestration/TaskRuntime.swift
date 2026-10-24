@@ -16,6 +16,11 @@ public protocol TaskRuntime: Sendable {
     /// The lasting name of the session with this id, once the agent has given it an id.
     func session(of clientID: UUID) async -> TaskSessionRef?
 
+    /// Nil for ordinary tasks; an empty scope still restricts a coordinator.
+    func coordinatorScope(of clientID: UUID) async -> CoordinatorScope?
+    func openCoordinatedTask(_ session: TaskSessionRef) async throws
+    func recentTranscript(of session: TaskSessionRef) async -> String?
+
     /// Every task sessions handed each other, in the order they started.
     func tasks() async -> [OrchestrationTask]
 
@@ -50,4 +55,10 @@ public protocol TaskRuntime: Sendable {
     /// Names of Native's skills switched off for the session with this id (Settings ▸ Skills),
     /// which the skill tools leave out for it.
     func disabledSkills(of clientID: UUID) async -> Set<String>
+}
+
+public extension TaskRuntime {
+    func openCoordinatedTask(_ session: TaskSessionRef) async throws {}
+    func coordinatorScope(of clientID: UUID) async -> CoordinatorScope? { nil }
+    func recentTranscript(of session: TaskSessionRef) async -> String? { nil }
 }

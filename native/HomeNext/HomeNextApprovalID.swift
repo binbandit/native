@@ -1,7 +1,7 @@
 import ACP
 
 /// Tool call IDs and JSON-RPC request IDs are only unique within their owning session.
-struct HomeNextApprovalID: Equatable {
+struct HomeNextApprovalID: Hashable {
     let session: SessionKey
     let call: String
     let request: RequestID
