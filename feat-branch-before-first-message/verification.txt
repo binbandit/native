@@ -1,5 +1,7 @@
 PR #110 visual verification
-Revision: f4c1aa2ecc22405112791a0dbdc28511eab993dc
+Visual revision: f4c1aa2ecc22405112791a0dbdc28511eab993dc
+Final integration revision: 4828c8c3891fcc9524f87cb5fb8f18f6690c209c
+The workspace picker, New Task views and workspace design tokens are unchanged between these revisions.
 Build: isolated Debug, instance vc-110, macOS, Codex gpt-6.1-sol at low effort
 Viewports: 1200x840 and 760x700 points, light and dark
 
@@ -13,7 +15,7 @@ Verified through the running app:
 - First submission hides the workspace action, including after relaunch.
 - No crashes. No visual defects requiring code changes.
 
-Passed local checks on the revision above:
+Passed local checks on the final integration revision:
 scripts/dev/run-isolated.sh vc-110 --build
 scripts/check-warnings.sh /tmp/native-dd/vc-110/build.log
 scripts/tests/task-workspace.sh vc-110
