@@ -7,6 +7,8 @@ public enum PolicyKey: String, CaseIterable, Hashable, Sendable {
     case mcpBlocked = "policy.mcp.blocked"
     case mcpRequired = "policy.mcp.required"
     case pluginsAllowed = "policy.plugins.allowed"
+    case celebrationDownloadsEnabled = "policy.celebrations.downloadsEnabled"
+    case celebrationAssetsBaseURL = "policy.celebrations.baseURL"
     case catalogEnabled = "policy.catalog.enabled"
     case catalogIndexURL = "policy.catalog.indexURL"
     case skillsBlocked = "policy.skills.blocked"

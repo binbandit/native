@@ -103,6 +103,11 @@ final class TerminalStore {
         }
     }
 
+    /// An open shell or log still belongs to this task's folder, even while its panel is hidden.
+    func hasOpenTerminals(for key: SessionKey) -> Bool {
+        panels[key]?.tabs.isEmpty == false
+    }
+
     /// Ends a task's shells, for when the task is closed or archived.
     func closeTerminals(for key: SessionKey) {
         panels.removeValue(forKey: key)?.closeAll()

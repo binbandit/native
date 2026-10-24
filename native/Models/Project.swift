@@ -74,4 +74,6 @@ nonisolated struct ProjectCheckout: Hashable, Codable, Sendable {
     let host: RemoteHostID
     /// The folder on that host, as its agents take it.
     var path: String
+    /// Explicitly selected task worktrees outside the host's managed worktree folder.
+    var taskFolders: [String]?
 }

@@ -175,6 +175,7 @@ private struct SessionCommands: Commands {
             CommandMenuItem(.sessionNextPermissionMode, in: menu)
             ModeMenuItems(menu: menu)
             CommandMenuItem(.sessionChooseModel, in: menu)
+            CommandMenuItem(.sessionChangeWorkspace, in: menu)
 
             Divider()
 
