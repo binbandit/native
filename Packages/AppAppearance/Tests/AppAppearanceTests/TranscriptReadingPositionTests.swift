@@ -52,6 +52,7 @@ struct TranscriptReadingPositionTests {
 
     @Test func measuredBottomStillFollowsNewOutputAfterRecreation() {
         var position = reading()
+        position.userDidScroll()
         position.update(layout(width: 400, height: 600, top: 4400, rowTop: 4500, rowHeight: 100))
         #expect(position.place == nil)
         position.detach()
@@ -96,6 +97,18 @@ struct TranscriptReadingPositionTests {
         #expect(position.place?.id == "pass-8")
     }
 
+    @Test func staleOffsetBeforeResizeCannotReplaceTheLatestAnchor() {
+        var position = Position()
+        position.update(layout(width: 640, height: 771, top: 822, rowTop: 1400, rowHeight: 100, contentHeight: 1593))
+        position.finishRestoration()
+        // Duo first replays its pre-scroll offset, before reporting any new dimensions.
+        position.update(layout(width: 640, height: 771, top: 617, rowTop: 670, rowHeight: 37, contentHeight: 1593))
+        #expect(position.place == nil)
+        position.update(layout(width: 585, height: 771, top: 821, rowTop: 774, rowHeight: 37, contentHeight: 1592))
+        #expect(position.isRestoring)
+        #expect(position.place == nil)
+    }
+
     @Test func transientBottomBeforeReflowDoesNotReplaceTheLatestAnchor() {
         var position = Position()
         position.update(layout(width: 640, height: 771, top: 822, rowTop: 1400, rowHeight: 100, contentHeight: 1593))
@@ -130,7 +143,7 @@ struct TranscriptReadingPositionTests {
         position.finishRestoration()
         #expect(!position.isRestoring)
         #expect(position.place != nil)
-        // Accessibility can scroll instantly, without an interacting or animating phase.
+        position.userDidScroll()
         position.update(layout(width: 800, height: 900, top: 4100, rowTop: 4500, rowHeight: 150))
         #expect(position.place == nil)
         position.detach()
@@ -158,6 +171,7 @@ struct TranscriptReadingPositionTests {
             var position = Position()
             position.update(layout(width: 400, height: 600, top: 4400, rowTop: 4500, rowHeight: 100))
             position.finishRestoration()
+            position.userDidScroll()
             position.update(layout(width: 400, height: 600, top: 2000, rowTop: 1800, rowHeight: rowHeight))
             let place = try #require(position.place)
             #expect(place.anchorY.isFinite)
@@ -186,7 +200,9 @@ struct TranscriptReadingPositionTests {
         var position = Position()
         position.update(layout(width: 400, height: 600, top: 4400, rowTop: 4500, rowHeight: 100))
         position.finishRestoration()
+        position.userDidScroll()
         position.update(layout(width: 400, height: 600, top: 2000, rowTop: 2100, rowHeight: 100))
+        position.userDidEndScrolling()
         return position
     }
 

@@ -47,7 +47,9 @@ struct CompanionTranscriptScrollView<Content: View>: View {
             }
             .defaultScrollAnchor(.bottom)
             .onScrollPhaseChange { _, phase in
-                if phase != .idle {
+                if phase == .idle {
+                    tracker.userDidEndScrolling()
+                } else {
                     tracker.userDidScroll()
                 }
             }
@@ -89,6 +91,10 @@ private final class CompanionTranscriptPositionTracker {
         restoration?.cancel()
         restoration = nil
         position.userDidScroll()
+    }
+
+    func userDidEndScrolling() {
+        position.userDidEndScrolling()
     }
 
     func observe(_ layout: TranscriptReadingPosition.Layout, with proxy: ScrollViewProxy) {
