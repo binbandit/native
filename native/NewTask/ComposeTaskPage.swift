@@ -177,6 +177,12 @@ struct ComposeTaskPage: View {
         if compose.stage != .writing { return .init(status: .starting, agent: agent, verb: "Starting") }
         if entry.project == nil { return .init(status: .idle, agent: agent, verb: "· Needs a folder") }
         if model.composeDeviceOption?.canStart == false {
+            if model.composeDeviceOption?.availability == .connecting {
+                return .init(status: .starting, agent: "", verb: "Connecting to \(model.deviceName(entry.device))")
+            }
+            if model.composeDeviceOption?.availability == .online {
+                return .init(status: .needsInput, agent: "", verb: "Needs a checkout")
+            }
             return .init(
                 status: .needsInput, agent: "",
                 verb: "Waiting for \(model.composeDeviceOption?.name ?? model.deviceName(entry.device))")

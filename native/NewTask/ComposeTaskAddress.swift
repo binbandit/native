@@ -45,7 +45,13 @@ struct ComposeTaskAddress: View {
                             Image(systemName: entry.device == .thisMac ? "laptopcomputer" : "desktopcomputer")
                                 .foregroundStyle(.dsTextSecondary)
                             Text(deviceName)
-                            if model.composeDeviceOption?.canStart == false {
+                            if model.composeDeviceOption?.availability == .connecting {
+                                Text("Connecting…").foregroundStyle(.dsTextTertiary)
+                            } else if model.composeDeviceOption?.availability == .online,
+                                model.composeDeviceOption?.canStart == false
+                            {
+                                Text("Needs a checkout").foregroundStyle(.dsAttention)
+                            } else if model.composeDeviceOption?.canStart == false {
                                 if let offlineSince {
                                     Text("Offline since \(offlineSince, format: .dateTime.hour().minute())")
                                         .foregroundStyle(.dsAttention)
