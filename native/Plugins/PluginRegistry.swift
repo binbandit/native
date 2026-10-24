@@ -1,4 +1,5 @@
 import ACP
+import ApprovalAnalysis
 import Experiments
 import Foundation
 import NativePolicy
@@ -147,6 +148,9 @@ final class PluginRegistry {
         contributions.enabledPlugins
     }
 
+    /// Validated descriptions from shipped data, policy and enabled plugins.
+    var commandKnowledge: CommandKnowledge { contributions.commandKnowledge }
+
     /// Agents of enabled plugins that the organization allows, with any environment it adds.
     var agents: [AgentDefinition] {
         contributions.agents
@@ -232,6 +236,7 @@ final class PluginRegistry {
         let plugins: [LoadedPlugin]
         let enabledPlugins: [any NativePlugin]
         let agents: [AgentDefinition]
+        let commandKnowledge: CommandKnowledge
     }
 
     /// Views, the agents and the idle loop read the lists many times over, and working them out
@@ -279,7 +284,14 @@ final class PluginRegistry {
                 return AgentDefinition(agent, pluginID: manifest.id)
             }
         }
-        return Contributions(plugins: plugins, enabledPlugins: enabled, agents: agents)
+        var knowledge = CommandKnowledge.bundled.adding(
+            PolicyCenter.shared.policy.commandKnowledge, source: "Organization policy")
+        for plugin in enabled {
+            if let document = plugin.manifest.commandKnowledge, let data = try? JSONEncoder().encode(document) {
+                knowledge = knowledge.adding(.load(data), source: "Plugin \(plugin.manifest.id)")
+            }
+        }
+        return Contributions(plugins: plugins, enabledPlugins: enabled, agents: agents, commandKnowledge: knowledge)
     }
 
     // MARK: - Validation

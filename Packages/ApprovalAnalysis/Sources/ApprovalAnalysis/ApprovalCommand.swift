@@ -1,11 +1,9 @@
 import Foundation
 
-/// A conservative description, never an authorization or a shell interpreter. No filesystem or
-/// network access: observations about files and remote commits must come from a separate inspector.
+/// A conservative description, never an authorization or a shell interpreter. All tool-specific
+/// claims come from reviewed data. Lexical paths are not observations of files or symbolic links.
 public struct ApprovalCommand: Equatable, Sendable {
-    public enum Risk: Equatable, Sendable {
-        case routine, irreversible, unknown
-    }
+    public enum Risk: Equatable, Sendable { case routine, irreversible, unknown }
 
     public struct Part: Equatable, Sendable, Identifiable {
         public let range: Range<Int>
@@ -21,173 +19,90 @@ public struct ApprovalCommand: Equatable, Sendable {
     public let consequence: String
     public let parts: [Part]
     public let suggestedCommand: String?
+    public let suggestedExplanation: String?
+    /// Only a literal, unrecognized executable name. No arguments, paths, or shell fragments.
+    public let unknownProgram: String?
 
     public init(
-        command: String, workingDirectory: String, worktreeDirectory: String? = nil, homeDirectory: String? = nil
-    ) {
-        let directory = URL(filePath: workingDirectory).standardizedFileURL.path
-        let worktree = URL(filePath: worktreeDirectory ?? workingDirectory).standardizedFileURL.path
-        let startsInside = directory == worktree || directory.hasPrefix(worktree + "/")
-        let words = ApprovalCommandWords(command)
-        let executable = words?.tokens.first.map { URL(filePath: $0.value).lastPathComponent }
-        let unknown = Self(
-            command: command, risk: .unknown, action: executable.map { "run \($0)" } ?? "run this command",
-            reason: startsInside
-                ? "Requested from this task's worktree." : "Requested from a folder outside the worktree.",
-            consequence:
-                "Native can't describe this command, so it makes no claims about its effects or whether they can be undone.",
-            parts: [], suggestedCommand: nil)
-        guard let words, let program = words.tokens.first else {
-            self = unknown
-            return
-        }
-        switch program.value {
-        case "git", "/usr/bin/git":
-            self = Self.push(words, command: command) ?? unknown
-        case "rm", "/bin/rm":
-            self =
-                Self.remove(
-                    words, command: command, cwd: workingDirectory, worktree: worktreeDirectory ?? workingDirectory,
-                    home: homeDirectory) ?? unknown
-        default:
-            self = unknown
-        }
-    }
-
-    private init(
-        command: String, risk: Risk, action: String, reason: String, consequence: String,
-        parts: [Part], suggestedCommand: String?
+        command: String, workingDirectory: String, worktreeDirectory: String? = nil, homeDirectory: String? = nil,
+        knowledge: CommandKnowledge = .bundled
     ) {
         self.command = command
-        self.risk = risk
-        self.action = action
-        self.reason = reason
-        self.consequence = consequence
-        self.parts = parts
-        self.suggestedCommand = suggestedCommand
-    }
-
-    private static func push(_ words: ApprovalCommandWords, command: String) -> Self? {
-        let tokens = words.tokens
-        guard tokens.count >= 4, tokens[1].value == "push" else { return nil }
-        let flags = tokens.dropFirst(2).filter { $0.value.hasPrefix("-") }
-        guard flags.allSatisfy({ ["--force", "-f", "--force-with-lease"].contains($0.value) }) else { return nil }
-        let destinations = tokens.dropFirst(2).filter { !$0.value.hasPrefix("-") }
-        guard destinations.count == 2 else { return nil }
-        let remote = destinations[destinations.startIndex]
-        let branch = destinations[destinations.startIndex + 1]
-        guard !remote.value.hasPrefix("-"), !branch.value.hasPrefix("-"),
-            !branch.value.contains(":"), !branch.value.hasPrefix("+")
-        else { return nil }
-        let force = flags.filter { $0.value == "--force" || $0.value == "-f" }
-        let lease = flags.contains { $0.value == "--force-with-lease" }
-        // A lease can still replace history. It only checks the expected remote tip.
-        let rewrites = !force.isEmpty || lease
-        var parts = [
-            Part(
-                range: tokens[0].range.lowerBound..<tokens[1].range.upperBound,
-                explanation: "send your commits", destructive: false)
-        ]
-        parts += flags.map {
-            part(
-                $0,
-                $0.value == "--force-with-lease"
-                    ? "replace history only if the remote tip matches the expected commit"
-                    : "replace the branch there, even where it has commits yours doesn't", destructive: true)
+        let root = worktreeDirectory ?? workingDirectory
+        let startsInside = CommandKnowledgeMatch.isInside(workingDirectory, root: root)
+        let words = ApprovalCommandWords(command)
+        let executable = words?.tokens.first?.value
+        let name = executable.map { URL(filePath: $0).lastPathComponent }
+        unknownProgram = executable.flatMap {
+            !knowledge.recognizes($0) && CommandKnowledgeValidation.identifier($0) && $0.count <= 64
+                && !$0.hasPrefix("-") && !$0.hasPrefix(".") ? $0 : nil
         }
-        let between = String(Array(command)[remote.range.upperBound..<branch.range.lowerBound])
-        if between.allSatisfy(\.isWhitespace) {
-            parts.append(
-                Part(
-                    range: remote.range.lowerBound..<branch.range.upperBound,
-                    explanation:
-                        "\(branch.value) on \(remote.value) · outside the worktree · remote commits not inspected",
-                    destructive: false))
-        } else {
-            parts.append(part(remote, "remote: \(remote.value) · outside the worktree"))
-            parts.append(part(branch, "branch: \(branch.value) · remote commits not inspected"))
+        guard let words,
+            let match = CommandKnowledgeMatch(words: words, knowledge: knowledge)
+        else {
+            risk = .unknown
+            action = name.map { "run \($0)" } ?? "run this command"
+            reason =
+                startsInside
+                ? "Requested from this task's worktree." : "Requested from a folder outside the worktree."
+            consequence =
+                "Native can't describe this command, so it makes no claims about its effects or whether they can be undone."
+            parts = []
+            suggestedCommand = nil
+            suggestedExplanation = nil
+            return
         }
-        var suggested: String?
-        if !force.isEmpty {
-            var characters = Array(command)
-            // A remaining force flag overrides the lease, even if the command already has one.
-            for flag in force.reversed() {
-                characters.replaceSubrange(flag.range, with: Array("--force-with-lease"))
-            }
-            suggested = String(characters)
+        let rule = match.rule
+        risk = rule.destructive || match.options.contains(where: { $0.option.destructive }) ? .irreversible : .routine
+        action = rule.summary.replacingOccurrences(of: "{count}", with: String(match.operands.count))
+        reason =
+            startsInside
+            ? "Requested from this task's worktree. Effects are described from known command syntax."
+            : "Requested from outside the worktree. Effects are described from known command syntax."
+        consequence = rule.consequence
+        var annotations = [Part(range: match.prefix, explanation: action, destructive: rule.destructive)]
+        annotations += match.options.map {
+            .init(range: $0.range, explanation: $0.option.summary, destructive: $0.option.destructive)
         }
-        return Self(
-            command: command, risk: rewrites ? .irreversible : .routine,
-            action: "\(rewrites ? "overwrite" : "push") \(branch.value) on \(remote.value)",
-            reason: "It reaches a remote outside the worktree.",
-            consequence: rewrites
-                ? "Can't be undone from here. Recovery may need other clones or reflogs."
-                : "Publishes commits to the remote. Native can't undo this push from here.",
-            parts: parts.sorted { $0.range.lowerBound < $1.range.lowerBound }, suggestedCommand: suggested)
-    }
-
-    private static func remove(
-        _ words: ApprovalCommandWords, command: String, cwd: String, worktree: String, home: String?
-    ) -> Self? {
-        let tokens = words.tokens
-        let flags = tokens.dropFirst().prefix { $0.value.hasPrefix("-") }
-        guard flags.allSatisfy({ ["-r", "-R", "-f", "-rf", "-fr", "-Rf", "-fR", "--"].contains($0.value) }),
-            flags.filter({ $0.value == "--" }).count <= 1,
-            !flags.contains(where: { $0.value == "--" }) || flags.last?.value == "--"
-        else { return nil }
-        let paths = tokens.dropFirst(1 + flags.count)
-        guard !paths.isEmpty, !paths.contains(where: { $0.value.hasPrefix("-") }) else { return nil }
-        var allCaches = true
-        var outside = false
-        var parts = [part(tokens[0], "delete")]
-        parts += flags.map {
-            part(
-                $0,
-                $0.value == "--"
-                    ? "the remaining arguments are paths"
-                    : "\($0.value.contains("r") || $0.value.contains("R") ? "include folders and their contents" : "delete files")\($0.value.contains("f") ? ", without asking per file" : "")"
-            )
+        if let terminator = match.terminator {
+            annotations.append(
+                .init(range: terminator, explanation: "the remaining arguments are operands", destructive: false))
         }
-        let root = URL(filePath: worktree).standardizedFileURL.path
-        let directory = URL(filePath: cwd).standardizedFileURL.path
-        for path in paths {
-            let expanded: String
-            if path.value.hasPrefix("~/"), path.expandsHome, let home {
-                expanded = home + String(path.value.dropFirst())
-            } else if path.value.hasPrefix("~") {
-                return nil
+        annotations += match.operands.map { operand in
+            var text = rule.operands.summary
+            if rule.operands.paths {
+                let facts = CommandKnowledgeMatch.pathFacts(
+                    operand, cwd: workingDirectory, root: root, home: homeDirectory, knowledge: knowledge)
+                text = text.replacingOccurrences(of: "{scope}", with: facts.scope)
+                    .replacingOccurrences(of: "{location}", with: facts.location)
             } else {
-                expanded = path.value.hasPrefix("/") ? path.value : directory + "/" + path.value
+                text = text.replacingOccurrences(of: "{scope}", with: "location not inspected")
+                    .replacingOccurrences(of: "{location}", with: "operand")
             }
-            let normalized = URL(filePath: expanded).standardizedFileURL.path
-            let isOutside = normalized != root && !normalized.hasPrefix(root + "/")
-            outside = outside || isOutside
-            let cacheRoot = home.map {
-                URL(filePath: $0 + "/Library/Developer/Xcode/DerivedData").standardizedFileURL.path
-            }
-            let isCache = cacheRoot.map { normalized.hasPrefix($0 + "/") && normalized != $0 } ?? false
-            allCaches = allCaches && isCache
-            parts.append(
-                part(
-                    path,
-                    "\(isCache ? "Xcode build cache path" : "path to delete") · \(isOutside ? "outside" : "inside") the worktree",
-                    destructive: !isCache))
+            // Substitute user text last, so its braces can never become template instructions.
+            text = text.replacingOccurrences(of: "{value}", with: operand.value)
+            return Part(range: operand.range, explanation: text, destructive: rule.destructive)
         }
-        return Self(
-            command: command, risk: allCaches ? .routine : .irreversible,
-            action: allCaches
-                ? "delete Xcode's build cache" : "delete \(paths.count == 1 ? "this path" : "these paths")",
-            reason: outside
-                ? "The command names a path outside the worktree." : "The command names paths inside the worktree.",
-            consequence: allCaches
-                ? "Rebuilt on the next build. Contents and symbolic links have not been inspected."
-                : "Can't be undone from here. Files are deleted directly, without moving them to Trash. Contents and symbolic links have not been inspected.",
-            parts: parts, suggestedCommand: nil)
-    }
-
-    private static func part(
-        _ token: ApprovalCommandWords.Token, _ explanation: String, destructive: Bool = false
-    ) -> Part {
-        Part(range: token.range, explanation: explanation, destructive: destructive)
+        parts = annotations.sorted { $0.range.lowerBound < $1.range.lowerBound }
+        let replacements = match.options.filter { $0.option.replacement != nil }
+        let blockedOption = match.options.contains { matched in
+            (rule.noSuggestionWithOptions ?? []).contains { matched.option.names.contains($0) }
+        }
+        let blockedOperand = match.operands.contains { operand in
+            (rule.noSuggestionWithOperandPrefixes ?? []).contains { operand.value.hasPrefix($0) }
+        }
+        if !replacements.isEmpty && !blockedOption && !blockedOperand {
+            var characters = Array(command)
+            for replacement in replacements.reversed() {
+                if let value = replacement.option.replacement {
+                    characters.replaceSubrange(replacement.range, with: Array(value))
+                }
+            }
+            suggestedCommand = String(characters)
+            suggestedExplanation = replacements.first?.option.alternative
+        } else {
+            suggestedCommand = nil
+            suggestedExplanation = nil
+        }
     }
 }

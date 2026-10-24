@@ -1,0 +1,2530 @@
+{
+  "version": 1,
+  "programs": [
+    {
+      "executables": ["git", "/usr/bin/git"],
+      "commands": [
+        {
+          "words": ["status"],
+          "summary": "show working tree changes",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["-s", "--short"], "summary": "show a short status", "destructive": false, "value": "none"},
+            {"names": ["-b", "--branch"], "summary": "include branch status", "destructive": false, "value": "none"},
+            {"names": ["--porcelain"], "summary": "show machine-readable status", "destructive": false, "value": "none"},
+            {"names": ["--ignored"], "summary": "include ignored paths", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["diff"],
+          "summary": "compare changes",
+          "consequence": "Diff drivers and text conversion may run configured programs. Git configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["--cached", "--staged"], "summary": "compare staged changes", "destructive": false, "value": "none"},
+            {"names": ["--stat"], "summary": "show change totals", "destructive": false, "value": "none"},
+            {"names": ["--name-only"], "summary": "show changed path names", "destructive": false, "value": "none"},
+            {"names": ["--no-ext-diff"], "summary": "disable external diff drivers", "destructive": false, "value": "none"},
+            {"names": ["--color"], "summary": "choose color output", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["log"],
+          "summary": "show commit history",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["--oneline"], "summary": "show one line per commit", "destructive": false, "value": "none"},
+            {"names": ["-n", "--max-count"], "summary": "limit the commit count", "destructive": false, "value": "attached"},
+            {"names": ["--all"], "summary": "include all refs", "destructive": false, "value": "none"},
+            {"names": ["--graph"], "summary": "draw the commit graph", "destructive": false, "value": "none"},
+            {"names": ["--decorate"], "summary": "show ref names", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["show"],
+          "summary": "show a Git object",
+          "consequence": "Git may use configured diff drivers or a pager. Configuration and object contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["--stat"], "summary": "show change totals", "destructive": false, "value": "none"},
+            {"names": ["--format"], "summary": "choose the output format", "destructive": false, "value": "attached"},
+            {"names": ["--name-only"], "summary": "show changed path names", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["add"],
+          "summary": "stage paths for a commit",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-A", "--all"], "summary": "stage additions, changes and removals", "destructive": false, "value": "none"},
+            {"names": ["-u", "--update"], "summary": "stage changes to tracked paths", "destructive": false, "value": "none"},
+            {"names": ["-f", "--force"], "summary": "force this operation", "destructive": true, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "{location} \u00b7 {scope}", "paths": true}
+        },
+        {
+          "words": ["commit"],
+          "summary": "record staged changes",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-m", "--message"], "summary": "use this commit message", "destructive": false, "value": "attached"},
+            {"names": ["-a", "--all"], "summary": "stage tracked changes before committing", "destructive": false, "value": "none"},
+            {"names": ["--amend"], "summary": "replace the tip commit", "destructive": true, "value": "none"},
+            {"names": ["--no-verify"], "summary": "skip commit hooks", "destructive": false, "value": "none"},
+            {"names": ["--allow-empty"], "summary": "allow an empty commit", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["push"],
+          "summary": "send commits or refs to a remote",
+          "consequence": "May publish, replace, or delete remote refs. Remote commits have not been inspected. Native cannot undo this push.",
+          "destructive": true,
+          "options": [
+            {"names": ["-f", "--force"], "summary": "allow replacing remote history", "destructive": true, "value": "none", "replacement": "--force-with-lease", "alternative": "--force-with-lease refuses if the remote tip differs from the expected commit."},
+            {"names": ["--force-with-lease"], "summary": "replace history only if the remote tip matches the expected commit", "destructive": true, "value": "none"},
+            {"names": ["-u", "--set-upstream"], "summary": "record the upstream branch", "destructive": false, "value": "none"},
+            {"names": ["--delete"], "summary": "delete the named remote refs", "destructive": true, "value": "none"},
+            {"names": ["--tags"], "summary": "push all tags", "destructive": false, "value": "none"},
+            {"names": ["--all"], "summary": "push all branches", "destructive": false, "value": "none"},
+            {"names": ["--mirror"], "summary": "mirror refs, including deletions", "destructive": true, "value": "none"},
+            {"names": ["--dry-run"], "summary": "report what would be pushed", "destructive": false, "value": "none"},
+            {"names": ["--atomic"], "summary": "request all-or-nothing ref updates", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "remote or ref argument: {value}; remote state not inspected", "paths": false},
+          "noSuggestionWithOptions": ["--mirror", "--delete"],
+          "noSuggestionWithOperandPrefixes": ["+", ":"]
+        },
+        {
+          "words": ["pull"],
+          "summary": "fetch and integrate remote changes",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--rebase"], "summary": "reapply local commits after fetching", "destructive": true, "value": "none"},
+            {"names": ["--ff-only"], "summary": "stop if a fast-forward is not possible", "destructive": false, "value": "none"},
+            {"names": ["--no-rebase"], "summary": "merge after fetching", "destructive": false, "value": "none"},
+            {"names": ["--autostash"], "summary": "stash local changes temporarily", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["fetch"],
+          "summary": "download Git objects and update remote refs",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--prune"], "summary": "remove stale remote-tracking refs", "destructive": true, "value": "none"},
+            {"names": ["--tags"], "summary": "fetch tags", "destructive": false, "value": "none"},
+            {"names": ["--all"], "summary": "fetch all configured remotes", "destructive": false, "value": "none"},
+            {"names": ["--depth"], "summary": "limit history depth", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["clone"],
+          "summary": "copy a repository into a local folder",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--depth"], "summary": "limit history depth", "destructive": false, "value": "attached"},
+            {"names": ["-b", "--branch"], "summary": "check out this branch or tag", "destructive": false, "value": "attached"},
+            {"names": ["--recurse-submodules"], "summary": "initialize and clone submodules", "destructive": false, "value": "none"},
+            {"names": ["--bare"], "summary": "create a bare repository", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 1, "maximum": 2, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["init"],
+          "summary": "initialize a Git repository",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--bare"], "summary": "create a bare repository", "destructive": false, "value": "none"},
+            {"names": ["-b", "--initial-branch"], "summary": "name the initial branch", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": 1, "summary": "{location} \u00b7 {scope}", "paths": true}
+        },
+        {
+          "words": ["checkout"],
+          "summary": "switch branches or restore paths",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-b"], "summary": "create and switch to a branch", "destructive": false, "value": "next"},
+            {"names": ["-B"], "summary": "create or reset and switch to a branch", "destructive": true, "value": "next"},
+            {"names": ["-f", "--force"], "summary": "force this operation", "destructive": true, "value": "none"},
+            {"names": ["--detach"], "summary": "detach HEAD", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["switch"],
+          "summary": "switch the current branch",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-c", "--create"], "summary": "create and switch to a branch", "destructive": false, "value": "next"},
+            {"names": ["-C", "--force-create"], "summary": "create or reset and switch to a branch", "destructive": true, "value": "next"},
+            {"names": ["--detach"], "summary": "detach HEAD", "destructive": false, "value": "none"},
+            {"names": ["--discard-changes"], "summary": "discard local changes", "destructive": true, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["restore"],
+          "summary": "restore working tree or staged paths",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--staged"], "summary": "restore the index", "destructive": false, "value": "none"},
+            {"names": ["--worktree"], "summary": "restore working tree files", "destructive": true, "value": "none"},
+            {"names": ["-s", "--source"], "summary": "restore from this tree", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 1, "maximum": null, "summary": "{location} \u00b7 {scope}", "paths": true}
+        },
+        {
+          "words": ["reset"],
+          "summary": "reset Git state",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--hard"], "summary": "replace index and working tree content", "destructive": true, "value": "none"},
+            {"names": ["--soft"], "summary": "move HEAD without changing index or working tree", "destructive": false, "value": "none"},
+            {"names": ["--mixed"], "summary": "reset the index", "destructive": false, "value": "none"},
+            {"names": ["--keep"], "summary": "abort if local changes would be overwritten", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["clean"],
+          "summary": "remove untracked files",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-f", "--force"], "summary": "force this operation", "destructive": true, "value": "none"},
+            {"names": ["-d"], "summary": "include untracked directories", "destructive": true, "value": "none"},
+            {"names": ["-x"], "summary": "include ignored files", "destructive": true, "value": "none"},
+            {"names": ["-X"], "summary": "remove only ignored files", "destructive": true, "value": "none"},
+            {"names": ["-n", "--dry-run"], "summary": "list what would be removed", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "{location} \u00b7 {scope}", "paths": true},
+          "shortClusters": true
+        },
+        {
+          "words": ["branch"],
+          "summary": "list or change branch refs",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-d", "--delete"], "summary": "delete merged branches", "destructive": true, "value": "none"},
+            {"names": ["-D"], "summary": "delete branches without a merge check", "destructive": true, "value": "none"},
+            {"names": ["-m", "--move"], "summary": "rename a branch", "destructive": true, "value": "none"},
+            {"names": ["-a", "--all"], "summary": "include remote-tracking branches", "destructive": false, "value": "none"},
+            {"names": ["-v"], "summary": "show branch tip commits", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["merge"],
+          "summary": "merge commits into the current branch",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--no-ff"], "summary": "create a merge commit", "destructive": false, "value": "none"},
+            {"names": ["--ff-only"], "summary": "stop if a fast-forward is not possible", "destructive": false, "value": "none"},
+            {"names": ["--squash"], "summary": "prepare a squashed change", "destructive": false, "value": "none"},
+            {"names": ["--abort"], "summary": "abort the current merge", "destructive": false, "value": "none"},
+            {"names": ["--continue"], "summary": "continue the current merge", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["rebase"],
+          "summary": "reapply commits on a new base",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--onto"], "summary": "choose a new base", "destructive": false, "value": "next"},
+            {"names": ["--abort"], "summary": "abort the current rebase", "destructive": false, "value": "none"},
+            {"names": ["--continue"], "summary": "continue the current rebase", "destructive": false, "value": "none"},
+            {"names": ["--skip"], "summary": "skip the current patch", "destructive": true, "value": "none"},
+            {"names": ["-i", "--interactive"], "summary": "edit the rebase plan interactively", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["revert"],
+          "summary": "create changes that reverse commits",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--no-commit"], "summary": "apply changes without committing", "destructive": false, "value": "none"},
+            {"names": ["--abort"], "summary": "abort the operation", "destructive": false, "value": "none"},
+            {"names": ["--continue"], "summary": "continue the operation", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["cherry-pick"],
+          "summary": "apply changes from selected commits",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--no-commit"], "summary": "apply changes without committing", "destructive": false, "value": "none"},
+            {"names": ["--abort"], "summary": "abort the operation", "destructive": false, "value": "none"},
+            {"names": ["--continue"], "summary": "continue the operation", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["stash", "push"],
+          "summary": "save local changes in a stash",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-m", "--message"], "summary": "name the stash", "destructive": false, "value": "attached"},
+            {"names": ["-u", "--include-untracked"], "summary": "include untracked files", "destructive": false, "value": "none"},
+            {"names": ["-a", "--all"], "summary": "include ignored and untracked files", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["stash", "pop"],
+          "summary": "apply and remove a stash",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["stash", "apply"],
+          "summary": "apply a stash",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["stash", "drop"],
+          "summary": "remove a stash",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["stash", "clear"],
+          "summary": "remove all stashes",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["stash", "list"],
+          "summary": "list stashes",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["worktree", "add"],
+          "summary": "add a Git worktree",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-f", "--force"], "summary": "force this operation", "destructive": true, "value": "none"},
+            {"names": ["-b"], "summary": "create a branch for the worktree", "destructive": false, "value": "next"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["worktree", "remove"],
+          "summary": "remove a Git worktree",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-f", "--force"], "summary": "force this operation", "destructive": true, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["worktree", "prune"],
+          "summary": "prune stale worktree records",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["worktree", "list"],
+          "summary": "list Git worktrees",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["remote", "add"],
+          "summary": "add a Git remote",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 1, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["remote", "remove"],
+          "summary": "remove a Git remote",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 1, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["remote", "set-url"],
+          "summary": "change a Git remote URL",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 1, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["remote"],
+          "summary": "list Git remotes",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["-v", "--verbose"], "summary": "show more detail", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": 0, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["tag"],
+          "summary": "list or change tags",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-d", "--delete"], "summary": "delete local tags", "destructive": true, "value": "none"},
+            {"names": ["-a", "--annotate"], "summary": "create an annotated tag", "destructive": false, "value": "none"},
+            {"names": ["-m", "--message"], "summary": "use this tag message", "destructive": false, "value": "attached"},
+            {"names": ["-f", "--force"], "summary": "force this operation", "destructive": true, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["config"],
+          "summary": "read or change Git configuration",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--get"], "summary": "read one value", "destructive": false, "value": "none"},
+            {"names": ["--list"], "summary": "list values", "destructive": false, "value": "none"},
+            {"names": ["--global"], "summary": "use user-wide configuration", "destructive": false, "value": "none"},
+            {"names": ["--local"], "summary": "use repository configuration", "destructive": false, "value": "none"},
+            {"names": ["--unset"], "summary": "remove a value", "destructive": true, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["rm"],
+          "summary": "remove paths from Git and the working tree",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--cached"], "summary": "remove only from the index", "destructive": false, "value": "none"},
+            {"names": ["-r"], "summary": "include directories", "destructive": false, "value": "none"},
+            {"names": ["-f", "--force"], "summary": "force this operation", "destructive": true, "value": "none"}
+          ],
+          "operands": {"minimum": 1, "maximum": null, "summary": "{location} \u00b7 {scope}", "paths": true}
+        },
+        {
+          "words": ["mv"],
+          "summary": "move tracked paths",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-f", "--force"], "summary": "force this operation", "destructive": true, "value": "none"},
+            {"names": ["-n", "--dry-run"], "summary": "show what would be moved", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 2, "maximum": null, "summary": "{location} \u00b7 {scope}", "paths": true}
+        },
+        {
+          "words": ["ls-files"],
+          "summary": "list paths in the index",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["--cached"], "summary": "show indexed paths", "destructive": false, "value": "none"},
+            {"names": ["--others"], "summary": "show untracked paths", "destructive": false, "value": "none"},
+            {"names": ["--exclude-standard"], "summary": "use standard ignore rules", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["rev-parse"],
+          "summary": "resolve revisions or repository paths",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["--show-toplevel"], "summary": "show the working tree root", "destructive": false, "value": "none"},
+            {"names": ["--abbrev-ref"], "summary": "show abbreviated ref names", "destructive": false, "value": "none"},
+            {"names": ["--verify"], "summary": "verify a revision", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["reflog"],
+          "summary": "show ref update history",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": 0, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["submodule", "update"],
+          "summary": "update submodule checkouts",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--init"], "summary": "initialize uninitialized submodules", "destructive": false, "value": "none"},
+            {"names": ["--recursive"], "summary": "recurse into nested submodules", "destructive": false, "value": "none"},
+            {"names": ["--remote"], "summary": "use remote-tracking branches", "destructive": true, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["bisect", "start"],
+          "summary": "start a binary search through commits",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["stash"],
+          "summary": "save local changes in a stash",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": 0, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["ls-tree"],
+          "summary": "list a Git tree",
+          "consequence": "Configuration and object contents have not been inspected.",
+          "destructive": false,
+          "options": [],
+          "operands": {"minimum": 1, "maximum": 1, "summary": "revision: {value}", "paths": false}
+        },
+        {
+          "words": ["describe"],
+          "summary": "describe a commit using nearby tags",
+          "consequence": "Configuration and object contents have not been inspected.",
+          "destructive": false,
+          "options": [],
+          "operands": {"minimum": 1, "maximum": 1, "summary": "revision: {value}", "paths": false}
+        },
+        {
+          "words": ["apply"],
+          "summary": "apply a patch",
+          "consequence": "May change repository files or refs. Configuration and contents have not been inspected; Native cannot undo this command.",
+          "destructive": true,
+          "options": [
+            {"names": ["--check"], "summary": "check whether the patch applies", "value": "none", "destructive": false},
+            {"names": ["--index"], "summary": "also update the index", "value": "none", "destructive": false},
+            {"names": ["--reverse", "-R"], "summary": "apply the patch in reverse", "value": "none", "destructive": false}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["archive"],
+          "summary": "create an archive of a Git tree",
+          "consequence": "May change repository files or refs. Configuration and contents have not been inspected; Native cannot undo this command.",
+          "destructive": true,
+          "options": [
+            {"names": ["--format"], "summary": "choose the archive format", "value": "attached", "destructive": false},
+            {"names": ["--output", "-o"], "summary": "write to this file", "value": "attached", "destructive": true}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["blame"],
+          "summary": "show which commits last changed lines",
+          "consequence": "Git configuration, hooks and object contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["-L"], "summary": "limit the line range", "value": "attached", "destructive": false}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["grep"],
+          "summary": "search tracked content",
+          "consequence": "Git configuration, hooks and object contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["-n"], "summary": "include line numbers", "value": "none", "destructive": false},
+            {"names": ["-i"], "summary": "ignore case", "value": "none", "destructive": false},
+            {"names": ["-e"], "summary": "use this pattern", "value": "next", "destructive": false}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["rev-list"],
+          "summary": "list commits reachable from refs",
+          "consequence": "Git configuration, hooks and object contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["--count"], "summary": "show a count", "value": "none", "destructive": false},
+            {"names": ["--all"], "summary": "include all refs", "value": "none", "destructive": false}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["merge-base"],
+          "summary": "find common ancestors",
+          "consequence": "Git configuration, hooks and object contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["--is-ancestor"], "summary": "test whether the first commit is an ancestor", "value": "none", "destructive": false}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["cat-file"],
+          "summary": "inspect a Git object",
+          "consequence": "Git configuration, hooks and object contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["-p"], "summary": "print object content", "value": "none", "destructive": false},
+            {"names": ["-t"], "summary": "show object type", "value": "none", "destructive": false},
+            {"names": ["-s"], "summary": "show object size", "value": "none", "destructive": false}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["check-ignore"],
+          "summary": "check ignore rules for paths",
+          "consequence": "Git configuration, hooks and object contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["-v"], "summary": "show the matching rule", "value": "none", "destructive": false}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["remote", "get-url"],
+          "summary": "show a remote URL",
+          "consequence": "Git configuration, hooks and object contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["--push"], "summary": "show the push URL", "value": "none", "destructive": false},
+            {"names": ["--all"], "summary": "show all URLs", "value": "none", "destructive": false}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["remote", "show"],
+          "summary": "inspect a Git remote",
+          "consequence": "Git configuration, hooks and object contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["-n"], "summary": "use cached information without contacting the remote", "value": "none", "destructive": false}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["stash", "show"],
+          "summary": "show changes in a stash",
+          "consequence": "Git configuration, hooks and object contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["-p"], "summary": "show a patch", "value": "none", "destructive": false},
+            {"names": ["--stat"], "summary": "show change totals", "value": "none", "destructive": false}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["worktree", "move"],
+          "summary": "move a linked worktree",
+          "consequence": "May change repository files or refs. Configuration and contents have not been inspected; Native cannot undo this command.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["submodule", "status"],
+          "summary": "show submodule state",
+          "consequence": "Git configuration, hooks and object contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["--recursive"], "summary": "include nested submodules", "value": "none", "destructive": false}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["submodule", "add"],
+          "summary": "add a submodule",
+          "consequence": "May change repository files or refs. Configuration and contents have not been inspected; Native cannot undo this command.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["gc"],
+          "summary": "clean up and compress Git objects",
+          "consequence": "May change repository files or refs. Configuration and contents have not been inspected; Native cannot undo this command.",
+          "destructive": true,
+          "options": [
+            {"names": ["--prune"], "summary": "remove unreachable objects according to Git expiry rules", "value": "none", "destructive": true}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["reflog", "show"],
+          "summary": "show ref update history",
+          "consequence": "Reflog contents and Git configuration have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["-n", "--max-count"], "summary": "limit the entry count", "value": "attached", "destructive": false}
+          ],
+          "operands": {"minimum": 0, "maximum": 1, "summary": "reflog argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["reflog", "exists"],
+          "summary": "check whether a reflog exists",
+          "consequence": "Reflog contents and Git configuration have not been inspected.",
+          "destructive": false,
+          "options": [],
+          "operands": {"minimum": 1, "maximum": 1, "summary": "reflog argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["reflog", "delete"],
+          "summary": "delete selected reflog entries",
+          "consequence": "Changes recovery records for Git refs. Reflog contents have not been inspected; Native cannot undo this command.",
+          "destructive": true,
+          "options": [
+            {"names": ["--dry-run", "-n"], "summary": "report changes without applying them", "value": "none", "destructive": false},
+            {"names": ["--rewrite"], "summary": "adjust old object ids in remaining entries", "value": "none", "destructive": false},
+            {"names": ["--updateref"], "summary": "update the ref to the newest remaining entry", "value": "none", "destructive": false}
+          ],
+          "operands": {"minimum": 1, "maximum": null, "summary": "reflog argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["reflog", "expire"],
+          "summary": "remove expired reflog entries",
+          "consequence": "Changes recovery records for Git refs. Reflog contents have not been inspected; Native cannot undo this command.",
+          "destructive": true,
+          "options": [
+            {"names": ["--dry-run", "-n"], "summary": "report changes without applying them", "value": "none", "destructive": false},
+            {"names": ["--rewrite"], "summary": "adjust old object ids in remaining entries", "value": "none", "destructive": false},
+            {"names": ["--updateref"], "summary": "update the ref to the newest remaining entry", "value": "none", "destructive": false},
+            {"names": ["--expire"], "summary": "expire entries older than this time", "value": "attached", "destructive": false},
+            {"names": ["--expire-unreachable"], "summary": "expire unreachable entries older than this time", "value": "attached", "destructive": false},
+            {"names": ["--all"], "summary": "process all reflogs", "value": "none", "destructive": false},
+            {"names": ["--single-worktree"], "summary": "limit processing to this worktree", "value": "none", "destructive": false}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "reflog argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["reflog", "drop"],
+          "summary": "remove entire reflogs",
+          "consequence": "Changes recovery records for Git refs. Reflog contents have not been inspected; Native cannot undo this command.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 1, "maximum": null, "summary": "reflog argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["reflog", "write"],
+          "summary": "append a reflog entry",
+          "consequence": "Changes recovery records for Git refs. Reflog contents have not been inspected; Native cannot undo this command.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 4, "maximum": null, "summary": "reflog argument: {value}; contents not inspected", "paths": false}
+        }
+      ]
+    },
+    {
+      "executables": ["rm", "/bin/rm"],
+      "commands": [
+        {
+          "words": [],
+          "summary": "delete files or folders",
+          "consequence": "Files are deleted directly, without moving them to Trash. Contents and symbolic links have not been inspected; Native cannot undo this.",
+          "destructive": true,
+          "options": [
+            {"names": ["-r", "-R", "--recursive"], "summary": "include folders and their contents", "destructive": false, "value": "none"},
+            {"names": ["-f", "--force"], "summary": "do not ask per file", "destructive": false, "value": "none"},
+            {"names": ["-i"], "summary": "ask before each removal", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 1, "maximum": null, "summary": "{location} \u00b7 {scope}", "paths": true},
+          "shortClusters": true
+        }
+      ]
+    },
+    {
+      "executables": ["mv", "/bin/mv"],
+      "commands": [
+        {
+          "words": [],
+          "summary": "move or rename paths",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-f"], "summary": "replace destinations when permitted", "destructive": true, "value": "none"},
+            {"names": ["-i"], "summary": "ask before overwriting", "destructive": false, "value": "none"},
+            {"names": ["-n"], "summary": "do not overwrite existing paths", "destructive": false, "value": "none"},
+            {"names": ["-v", "--verbose"], "summary": "show more detail", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 2, "maximum": null, "summary": "{location} \u00b7 {scope}", "paths": true},
+          "shortClusters": true
+        }
+      ]
+    },
+    {
+      "executables": ["cp", "/bin/cp"],
+      "commands": [
+        {
+          "words": [],
+          "summary": "copy paths",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-f"], "summary": "replace destinations when permitted", "destructive": true, "value": "none"},
+            {"names": ["-i"], "summary": "ask before overwriting", "destructive": false, "value": "none"},
+            {"names": ["-n"], "summary": "do not overwrite existing paths", "destructive": false, "value": "none"},
+            {"names": ["-R", "-r"], "summary": "include directory contents", "destructive": false, "value": "none"},
+            {"names": ["-p"], "summary": "preserve file metadata", "destructive": false, "value": "none"},
+            {"names": ["-v", "--verbose"], "summary": "show more detail", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 2, "maximum": null, "summary": "{location} \u00b7 {scope}", "paths": true},
+          "shortClusters": true
+        }
+      ]
+    },
+    {
+      "executables": ["chmod", "/bin/chmod", "/usr/sbin/chmod"],
+      "commands": [
+        {
+          "words": [],
+          "summary": "change file permissions",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-R"], "summary": "apply recursively", "destructive": true, "value": "none"},
+            {"names": ["-h"], "summary": "change a symbolic link itself", "destructive": false, "value": "none"},
+            {"names": ["-v", "--verbose"], "summary": "show more detail", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 2, "maximum": null, "summary": "mode, owner, or path: {value}; contents not inspected", "paths": false},
+          "shortClusters": true
+        }
+      ]
+    },
+    {
+      "executables": ["chown", "/bin/chown", "/usr/sbin/chown"],
+      "commands": [
+        {
+          "words": [],
+          "summary": "change file ownership",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-R"], "summary": "apply recursively", "destructive": true, "value": "none"},
+            {"names": ["-h"], "summary": "change a symbolic link itself", "destructive": false, "value": "none"},
+            {"names": ["-v", "--verbose"], "summary": "show more detail", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 2, "maximum": null, "summary": "mode, owner, or path: {value}; contents not inspected", "paths": false},
+          "shortClusters": true
+        }
+      ]
+    },
+    {
+      "executables": ["ln", "/bin/ln"],
+      "commands": [
+        {
+          "words": [],
+          "summary": "create file links",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-s"], "summary": "create symbolic links", "destructive": false, "value": "none"},
+            {"names": ["-f"], "summary": "remove an existing destination", "destructive": true, "value": "none"},
+            {"names": ["-n", "-h"], "summary": "do not follow a destination symbolic link", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 1, "maximum": 2, "summary": "{location} \u00b7 {scope}", "paths": true},
+          "shortClusters": true
+        }
+      ]
+    },
+    {
+      "executables": ["find", "/usr/bin/find"],
+      "commands": [
+        {
+          "words": [],
+          "summary": "find paths matching an expression",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["-name"], "summary": "match this file name pattern", "destructive": false, "value": "next"},
+            {"names": ["-type"], "summary": "match this file type", "destructive": false, "value": "next"},
+            {"names": ["-mtime"], "summary": "match modification age", "destructive": false, "value": "next"},
+            {"names": ["-maxdepth"], "summary": "limit descent depth", "destructive": false, "value": "next"},
+            {"names": ["-delete"], "summary": "delete matching paths", "destructive": true, "value": "none"},
+            {"names": ["-print"], "summary": "print matching paths", "destructive": false, "value": "none"},
+            {"names": ["-print0"], "summary": "print null-separated paths", "destructive": false, "value": "none"},
+            {"names": ["-depth"], "summary": "visit directory contents first", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 1, "maximum": null, "summary": "{location} \u00b7 {scope}", "paths": true},
+          "allowsTerminator": false
+        }
+      ]
+    },
+    {
+      "executables": ["sed", "/usr/bin/sed"],
+      "commands": [
+        {
+          "words": [],
+          "summary": "transform text using a sed script",
+          "consequence": "The script can write files or run commands on some sed implementations. Native has not interpreted the script or inspected files.",
+          "destructive": true,
+          "options": [
+            {"names": ["-i"], "summary": "edit files in place; the next word is the backup suffix on BSD sed", "destructive": true, "value": "next"},
+            {"names": ["--in-place"], "summary": "edit files in place", "destructive": true, "value": "none"},
+            {"names": ["-e"], "summary": "use this script", "destructive": false, "value": "next"},
+            {"names": ["-f"], "summary": "read a script from this file", "destructive": false, "value": "next"},
+            {"names": ["-n"], "summary": "suppress automatic printing", "destructive": false, "value": "none"},
+            {"names": ["-E", "-r"], "summary": "use extended regular expressions", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 1, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        }
+      ]
+    },
+    {
+      "executables": ["curl", "/usr/bin/curl"],
+      "commands": [
+        {
+          "words": [],
+          "summary": "transfer data with curl",
+          "consequence": "Contacts the named destination and may change local or remote state. Response, redirects and server behavior have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-f", "--fail"], "summary": "fail on HTTP error status", "destructive": false, "value": "none"},
+            {"names": ["-s", "--silent"], "summary": "suppress progress and errors", "destructive": false, "value": "none"},
+            {"names": ["-S", "--show-error"], "summary": "show errors in silent mode", "destructive": false, "value": "none"},
+            {"names": ["-L", "--location"], "summary": "follow redirects", "destructive": false, "value": "none"},
+            {"names": ["-o", "--output"], "summary": "write response to this path", "destructive": true, "value": "attached"},
+            {"names": ["-O", "--remote-name"], "summary": "write using the remote file name", "destructive": true, "value": "none"},
+            {"names": ["-X", "--request"], "summary": "use this request method", "destructive": true, "value": "attached"},
+            {"names": ["-H", "--header"], "summary": "add this request header", "destructive": false, "value": "attached"},
+            {"names": ["-d", "--data", "--data-raw"], "summary": "send request data", "destructive": true, "value": "attached"},
+            {"names": ["-I", "--head"], "summary": "request headers only", "destructive": false, "value": "none"},
+            {"names": ["-k", "--insecure"], "summary": "skip TLS certificate verification", "destructive": false, "value": "none"},
+            {"names": ["--upload-file", "-T"], "summary": "upload a file", "destructive": true, "value": "attached"}
+          ],
+          "operands": {"minimum": 1, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "shortClusters": true
+        }
+      ]
+    },
+    {
+      "executables": ["wget"],
+      "commands": [
+        {
+          "words": [],
+          "summary": "download resources with wget",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-O", "--output-document"], "summary": "write to this file", "destructive": true, "value": "attached"},
+            {"names": ["-q", "--quiet"], "summary": "reduce output", "destructive": false, "value": "none"},
+            {"names": ["-r", "--recursive"], "summary": "follow links recursively", "destructive": false, "value": "none"},
+            {"names": ["-c", "--continue"], "summary": "resume a partial download", "destructive": false, "value": "none"},
+            {"names": ["--no-check-certificate"], "summary": "skip certificate verification", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 1, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        }
+      ]
+    },
+    {
+      "executables": ["ssh", "/usr/bin/ssh"],
+      "commands": [
+        {
+          "words": [],
+          "summary": "connect to an SSH host",
+          "consequence": "May run a remote command or forward connections. SSH configuration and remote commands have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-p"], "summary": "connect to this port", "destructive": false, "value": "attached"},
+            {"names": ["-i"], "summary": "use this identity file", "destructive": false, "value": "attached"},
+            {"names": ["-o"], "summary": "set this SSH option", "destructive": false, "value": "attached"},
+            {"names": ["-L", "-R", "-D"], "summary": "configure port forwarding", "destructive": false, "value": "attached"},
+            {"names": ["-t"], "summary": "request a terminal", "destructive": false, "value": "none"},
+            {"names": ["-N"], "summary": "do not run a remote command", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 1, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": true
+        }
+      ]
+    },
+    {
+      "executables": ["scp", "/usr/bin/scp"],
+      "commands": [
+        {
+          "words": [],
+          "summary": "copy files over SSH",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-r"], "summary": "copy directories recursively", "destructive": false, "value": "none"},
+            {"names": ["-P"], "summary": "connect to this port", "destructive": false, "value": "attached"},
+            {"names": ["-i"], "summary": "use this identity file", "destructive": false, "value": "attached"},
+            {"names": ["-p"], "summary": "preserve times and modes", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 2, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        }
+      ]
+    },
+    {
+      "executables": ["rsync", "/usr/bin/rsync"],
+      "commands": [
+        {
+          "words": [],
+          "summary": "synchronize files",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-a", "--archive"], "summary": "copy recursively and preserve common metadata", "destructive": false, "value": "none"},
+            {"names": ["-v", "--verbose"], "summary": "show more detail", "destructive": false, "value": "none"},
+            {"names": ["-z", "--compress"], "summary": "compress transfers", "destructive": false, "value": "none"},
+            {"names": ["-r", "--recursive"], "summary": "copy directories recursively", "destructive": false, "value": "none"},
+            {"names": ["--delete"], "summary": "delete extra destination files", "destructive": true, "value": "none"},
+            {"names": ["-n", "--dry-run"], "summary": "report changes without applying them", "destructive": false, "value": "none"},
+            {"names": ["--exclude"], "summary": "exclude this pattern", "destructive": false, "value": "attached"},
+            {"names": ["-e"], "summary": "use this remote shell command", "destructive": false, "value": "next"}
+          ],
+          "operands": {"minimum": 2, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "shortClusters": true
+        }
+      ]
+    },
+    {
+      "executables": ["npm"],
+      "commands": [
+        {
+          "words": ["install"],
+          "summary": "install project dependencies",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-g", "--global"], "summary": "use a global installation", "destructive": false, "value": "none"},
+            {"names": ["-D", "--save-dev"], "summary": "save as a development dependency", "destructive": false, "value": "none"},
+            {"names": ["--ignore-scripts"], "summary": "skip package lifecycle scripts", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "request cached packages only", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["run"],
+          "summary": "run a package script",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": true
+        },
+        {
+          "words": ["test"],
+          "summary": "run package tests",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["publish"],
+          "summary": "publish a package",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["update"],
+          "summary": "update dependencies",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-g", "--global"], "summary": "use a global installation", "destructive": false, "value": "none"},
+            {"names": ["-D", "--save-dev"], "summary": "save as a development dependency", "destructive": false, "value": "none"},
+            {"names": ["--ignore-scripts"], "summary": "skip package lifecycle scripts", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "request cached packages only", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["ci"],
+          "summary": "install dependencies from the lockfile",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--ignore-scripts"], "summary": "skip lifecycle scripts", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        }
+      ]
+    },
+    {
+      "executables": ["pnpm"],
+      "commands": [
+        {
+          "words": ["install"],
+          "summary": "install project dependencies",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-g", "--global"], "summary": "use a global installation", "destructive": false, "value": "none"},
+            {"names": ["-D", "--save-dev"], "summary": "save as a development dependency", "destructive": false, "value": "none"},
+            {"names": ["--frozen-lockfile"], "summary": "require the existing lockfile", "destructive": false, "value": "none"},
+            {"names": ["--ignore-scripts"], "summary": "skip package lifecycle scripts", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "request cached packages only", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["add"],
+          "summary": "add dependencies",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-g", "--global"], "summary": "use a global installation", "destructive": false, "value": "none"},
+            {"names": ["-D", "--save-dev"], "summary": "save as a development dependency", "destructive": false, "value": "none"},
+            {"names": ["--frozen-lockfile"], "summary": "require the existing lockfile", "destructive": false, "value": "none"},
+            {"names": ["--ignore-scripts"], "summary": "skip package lifecycle scripts", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "request cached packages only", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["remove"],
+          "summary": "remove dependencies",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-g", "--global"], "summary": "use a global installation", "destructive": false, "value": "none"},
+            {"names": ["-D", "--save-dev"], "summary": "save as a development dependency", "destructive": false, "value": "none"},
+            {"names": ["--frozen-lockfile"], "summary": "require the existing lockfile", "destructive": false, "value": "none"},
+            {"names": ["--ignore-scripts"], "summary": "skip package lifecycle scripts", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "request cached packages only", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["run"],
+          "summary": "run a package script",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": true
+        },
+        {
+          "words": ["test"],
+          "summary": "run package tests",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["build"],
+          "summary": "run a package build",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["publish"],
+          "summary": "publish a package",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["update"],
+          "summary": "update dependencies",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-g", "--global"], "summary": "use a global installation", "destructive": false, "value": "none"},
+            {"names": ["-D", "--save-dev"], "summary": "save as a development dependency", "destructive": false, "value": "none"},
+            {"names": ["--frozen-lockfile"], "summary": "require the existing lockfile", "destructive": false, "value": "none"},
+            {"names": ["--ignore-scripts"], "summary": "skip package lifecycle scripts", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "request cached packages only", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        }
+      ]
+    },
+    {
+      "executables": ["yarn"],
+      "commands": [
+        {
+          "words": ["install"],
+          "summary": "install project dependencies",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-D", "--save-dev"], "summary": "save as a development dependency", "destructive": false, "value": "none"},
+            {"names": ["--frozen-lockfile"], "summary": "require the existing lockfile", "destructive": false, "value": "none"},
+            {"names": ["--ignore-scripts"], "summary": "skip package lifecycle scripts", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "request cached packages only", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["add"],
+          "summary": "add dependencies",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-D", "--save-dev"], "summary": "save as a development dependency", "destructive": false, "value": "none"},
+            {"names": ["--frozen-lockfile"], "summary": "require the existing lockfile", "destructive": false, "value": "none"},
+            {"names": ["--ignore-scripts"], "summary": "skip package lifecycle scripts", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "request cached packages only", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["remove"],
+          "summary": "remove dependencies",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-D", "--save-dev"], "summary": "save as a development dependency", "destructive": false, "value": "none"},
+            {"names": ["--frozen-lockfile"], "summary": "require the existing lockfile", "destructive": false, "value": "none"},
+            {"names": ["--ignore-scripts"], "summary": "skip package lifecycle scripts", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "request cached packages only", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["run"],
+          "summary": "run a package script",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": true
+        },
+        {
+          "words": ["test"],
+          "summary": "run package tests",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["build"],
+          "summary": "run a package build",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["publish"],
+          "summary": "publish a package",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["update"],
+          "summary": "update dependencies",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-D", "--save-dev"], "summary": "save as a development dependency", "destructive": false, "value": "none"},
+            {"names": ["--frozen-lockfile"], "summary": "require the existing lockfile", "destructive": false, "value": "none"},
+            {"names": ["--ignore-scripts"], "summary": "skip package lifecycle scripts", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "request cached packages only", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        }
+      ]
+    },
+    {
+      "executables": ["bun"],
+      "commands": [
+        {
+          "words": ["install"],
+          "summary": "install project dependencies",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-g", "--global"], "summary": "use a global installation", "destructive": false, "value": "none"},
+            {"names": ["-D", "--save-dev"], "summary": "save as a development dependency", "destructive": false, "value": "none"},
+            {"names": ["--frozen-lockfile"], "summary": "require the existing lockfile", "destructive": false, "value": "none"},
+            {"names": ["--ignore-scripts"], "summary": "skip package lifecycle scripts", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "request cached packages only", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["add"],
+          "summary": "add dependencies",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-g", "--global"], "summary": "use a global installation", "destructive": false, "value": "none"},
+            {"names": ["-D", "--save-dev"], "summary": "save as a development dependency", "destructive": false, "value": "none"},
+            {"names": ["--frozen-lockfile"], "summary": "require the existing lockfile", "destructive": false, "value": "none"},
+            {"names": ["--ignore-scripts"], "summary": "skip package lifecycle scripts", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "request cached packages only", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["remove"],
+          "summary": "remove dependencies",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-g", "--global"], "summary": "use a global installation", "destructive": false, "value": "none"},
+            {"names": ["-D", "--save-dev"], "summary": "save as a development dependency", "destructive": false, "value": "none"},
+            {"names": ["--frozen-lockfile"], "summary": "require the existing lockfile", "destructive": false, "value": "none"},
+            {"names": ["--ignore-scripts"], "summary": "skip package lifecycle scripts", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "request cached packages only", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["run"],
+          "summary": "run a package script",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": true
+        },
+        {
+          "words": ["test"],
+          "summary": "run package tests",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["build"],
+          "summary": "run a package build",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["publish"],
+          "summary": "publish a package",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["update"],
+          "summary": "update dependencies",
+          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-g", "--global"], "summary": "use a global installation", "destructive": false, "value": "none"},
+            {"names": ["-D", "--save-dev"], "summary": "save as a development dependency", "destructive": false, "value": "none"},
+            {"names": ["--frozen-lockfile"], "summary": "require the existing lockfile", "destructive": false, "value": "none"},
+            {"names": ["--ignore-scripts"], "summary": "skip package lifecycle scripts", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "request cached packages only", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        }
+      ]
+    },
+    {
+      "executables": ["npx"],
+      "commands": [
+        {
+          "words": [],
+          "summary": "run a package executable",
+          "consequence": "May download and execute package code. The package and its arguments have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-y", "--yes"], "summary": "skip the installation prompt", "destructive": false, "value": "none"},
+            {"names": ["--no-install"], "summary": "refuse to install a missing package", "destructive": false, "value": "none"},
+            {"names": ["-p", "--package"], "summary": "use this package", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 1, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": true
+        }
+      ]
+    },
+    {
+      "executables": ["pip", "pip3"],
+      "commands": [
+        {
+          "words": ["install"],
+          "summary": "install Python packages",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-r", "--requirement"], "summary": "read packages from this requirements file", "destructive": false, "value": "attached"},
+            {"names": ["-U", "--upgrade"], "summary": "upgrade packages", "destructive": false, "value": "none"},
+            {"names": ["-y", "--yes"], "summary": "skip confirmation", "destructive": false, "value": "none"},
+            {"names": ["--user"], "summary": "install for the current user", "destructive": false, "value": "none"},
+            {"names": ["--no-deps"], "summary": "do not install dependencies", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["uninstall"],
+          "summary": "uninstall Python packages",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-y", "--yes"], "summary": "skip confirmation", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["list"],
+          "summary": "list Python packages",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["freeze"],
+          "summary": "list installed package versions",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        }
+      ]
+    },
+    {
+      "executables": ["uv"],
+      "commands": [
+        {
+          "words": ["pip", "install"],
+          "summary": "install Python packages",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-r", "--requirement"], "summary": "read packages from this requirements file", "destructive": false, "value": "attached"},
+            {"names": ["-U", "--upgrade"], "summary": "upgrade packages", "destructive": false, "value": "none"},
+            {"names": ["-y", "--yes"], "summary": "skip confirmation", "destructive": false, "value": "none"},
+            {"names": ["--no-deps"], "summary": "do not install dependencies", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["pip", "uninstall"],
+          "summary": "uninstall Python packages",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["pip", "list"],
+          "summary": "list Python packages",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["pip", "freeze"],
+          "summary": "list installed package versions",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["sync"],
+          "summary": "synchronize Python dependencies",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--frozen"], "summary": "do not update the lockfile", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "disable uv network access", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["run"],
+          "summary": "run a command in the project environment",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--frozen"], "summary": "do not update the lockfile", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "disable uv network access", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": true
+        },
+        {
+          "words": ["add"],
+          "summary": "add Python dependencies",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--frozen"], "summary": "do not update the lockfile", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "disable uv network access", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["venv"],
+          "summary": "create a Python environment",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--frozen"], "summary": "do not update the lockfile", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "disable uv network access", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        }
+      ]
+    },
+    {
+      "executables": ["cargo"],
+      "commands": [
+        {
+          "words": ["build"],
+          "summary": "build Rust targets",
+          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--release"], "summary": "use the release profile", "destructive": false, "value": "none"},
+            {"names": ["--workspace"], "summary": "include workspace members", "destructive": false, "value": "none"},
+            {"names": ["--locked"], "summary": "require the lockfile", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "disable network access", "destructive": false, "value": "none"},
+            {"names": ["-p", "--package"], "summary": "choose this package", "destructive": false, "value": "attached"},
+            {"names": ["--manifest-path"], "summary": "use this manifest", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["test"],
+          "summary": "run Rust tests",
+          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--release"], "summary": "use the release profile", "destructive": false, "value": "none"},
+            {"names": ["--workspace"], "summary": "include workspace members", "destructive": false, "value": "none"},
+            {"names": ["--locked"], "summary": "require the lockfile", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "disable network access", "destructive": false, "value": "none"},
+            {"names": ["-p", "--package"], "summary": "choose this package", "destructive": false, "value": "attached"},
+            {"names": ["--manifest-path"], "summary": "use this manifest", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["check"],
+          "summary": "check Rust targets",
+          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--release"], "summary": "use the release profile", "destructive": false, "value": "none"},
+            {"names": ["--workspace"], "summary": "include workspace members", "destructive": false, "value": "none"},
+            {"names": ["--locked"], "summary": "require the lockfile", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "disable network access", "destructive": false, "value": "none"},
+            {"names": ["-p", "--package"], "summary": "choose this package", "destructive": false, "value": "attached"},
+            {"names": ["--manifest-path"], "summary": "use this manifest", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["run"],
+          "summary": "run a Rust target",
+          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--release"], "summary": "use the release profile", "destructive": false, "value": "none"},
+            {"names": ["--locked"], "summary": "require the lockfile", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "disable network access", "destructive": false, "value": "none"},
+            {"names": ["-p", "--package"], "summary": "choose this package", "destructive": false, "value": "attached"},
+            {"names": ["--manifest-path"], "summary": "use this manifest", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["clean"],
+          "summary": "remove Rust build outputs",
+          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--release"], "summary": "use the release profile", "destructive": false, "value": "none"},
+            {"names": ["-p", "--package"], "summary": "choose this package", "destructive": false, "value": "attached"},
+            {"names": ["--manifest-path"], "summary": "use this manifest", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["install"],
+          "summary": "install a Rust executable",
+          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--locked"], "summary": "require the lockfile", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "disable network access", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["update"],
+          "summary": "update dependency versions",
+          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--workspace"], "summary": "include workspace members", "destructive": false, "value": "none"},
+            {"names": ["--locked"], "summary": "require the lockfile", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "disable network access", "destructive": false, "value": "none"},
+            {"names": ["-p", "--package"], "summary": "choose this package", "destructive": false, "value": "attached"},
+            {"names": ["--manifest-path"], "summary": "use this manifest", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["publish"],
+          "summary": "publish a Rust package",
+          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--locked"], "summary": "require the lockfile", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "disable network access", "destructive": false, "value": "none"},
+            {"names": ["-p", "--package"], "summary": "choose this package", "destructive": false, "value": "attached"},
+            {"names": ["--manifest-path"], "summary": "use this manifest", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["fmt"],
+          "summary": "format Rust source",
+          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-p", "--package"], "summary": "choose this package", "destructive": false, "value": "attached"},
+            {"names": ["--manifest-path"], "summary": "use this manifest", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["clippy"],
+          "summary": "check Rust code with Clippy",
+          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--release"], "summary": "use the release profile", "destructive": false, "value": "none"},
+            {"names": ["--workspace"], "summary": "include workspace members", "destructive": false, "value": "none"},
+            {"names": ["--locked"], "summary": "require the lockfile", "destructive": false, "value": "none"},
+            {"names": ["--offline"], "summary": "disable network access", "destructive": false, "value": "none"},
+            {"names": ["-p", "--package"], "summary": "choose this package", "destructive": false, "value": "attached"},
+            {"names": ["--manifest-path"], "summary": "use this manifest", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        }
+      ]
+    },
+    {
+      "executables": ["swift", "/usr/bin/swift"],
+      "commands": [
+        {
+          "words": ["build"],
+          "summary": "build Swift targets",
+          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-c", "--configuration"], "summary": "use this build configuration", "destructive": false, "value": "attached"},
+            {"names": ["-j", "--jobs"], "summary": "limit build jobs", "destructive": false, "value": "attached"},
+            {"names": ["--package-path"], "summary": "use this package directory", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["test"],
+          "summary": "run Swift tests",
+          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-c", "--configuration"], "summary": "use this build configuration", "destructive": false, "value": "attached"},
+            {"names": ["--filter"], "summary": "run matching tests", "destructive": false, "value": "attached"},
+            {"names": ["-j", "--jobs"], "summary": "limit build jobs", "destructive": false, "value": "attached"},
+            {"names": ["--package-path"], "summary": "use this package directory", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["run"],
+          "summary": "run a Swift executable",
+          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-c", "--configuration"], "summary": "use this build configuration", "destructive": false, "value": "attached"},
+            {"names": ["-j", "--jobs"], "summary": "limit build jobs", "destructive": false, "value": "attached"},
+            {"names": ["--package-path"], "summary": "use this package directory", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["package", "resolve"],
+          "summary": "resolve Swift dependencies",
+          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--package-path"], "summary": "use this package directory", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["package", "update"],
+          "summary": "update Swift dependencies",
+          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--package-path"], "summary": "use this package directory", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["package", "clean"],
+          "summary": "remove Swift build outputs",
+          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--package-path"], "summary": "use this package directory", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["package", "reset"],
+          "summary": "reset Swift package caches",
+          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--package-path"], "summary": "use this package directory", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        }
+      ]
+    },
+    {
+      "executables": ["xcodebuild", "/usr/bin/xcodebuild"],
+      "commands": [
+        {
+          "words": [],
+          "summary": "run an Xcode build action",
+          "consequence": "Build phases can run scripts, change files, and resolve dependencies. Project settings and scripts have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-project"], "summary": "use this Xcode project", "destructive": false, "value": "next"},
+            {"names": ["-workspace"], "summary": "use this Xcode workspace", "destructive": false, "value": "next"},
+            {"names": ["-scheme"], "summary": "use this scheme", "destructive": false, "value": "next"},
+            {"names": ["-configuration"], "summary": "use this build configuration", "destructive": false, "value": "next"},
+            {"names": ["-destination"], "summary": "use this build destination", "destructive": false, "value": "next"},
+            {"names": ["-derivedDataPath"], "summary": "write build output to this folder", "destructive": false, "value": "next"},
+            {"names": ["-quiet"], "summary": "reduce output", "destructive": false, "value": "none"},
+            {"names": ["-jobs"], "summary": "limit concurrent jobs", "destructive": false, "value": "next"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        }
+      ]
+    },
+    {
+      "executables": ["make", "/usr/bin/make"],
+      "commands": [
+        {
+          "words": [],
+          "summary": "run make targets",
+          "consequence": "Recipes can run commands and change files. Makefiles and environment have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-j", "--jobs"], "summary": "limit concurrent jobs", "destructive": false, "value": "attached"},
+            {"names": ["-f", "--file"], "summary": "use this makefile", "destructive": false, "value": "attached"},
+            {"names": ["-C", "--directory"], "summary": "run in this directory", "destructive": false, "value": "attached"},
+            {"names": ["-n", "--just-print"], "summary": "print most recipes; recursive make recipes can still run", "destructive": false, "value": "none"},
+            {"names": ["-k", "--keep-going"], "summary": "continue independent targets after errors", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        }
+      ]
+    },
+    {
+      "executables": ["docker"],
+      "commands": [
+        {
+          "words": ["build"],
+          "summary": "build a container image",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-t", "--tag"], "summary": "name the built image", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["run"],
+          "summary": "create and run a container",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--rm"], "summary": "remove the container when it exits", "destructive": false, "value": "none"},
+            {"names": ["-d", "--detach"], "summary": "run in the background", "destructive": false, "value": "none"},
+            {"names": ["-p", "--publish"], "summary": "publish this port mapping", "destructive": false, "value": "attached"},
+            {"names": ["-v", "--volume"], "summary": "mount this volume", "destructive": false, "value": "attached"},
+            {"names": ["-e", "--env"], "summary": "set this environment variable", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": true
+        },
+        {
+          "words": ["exec"],
+          "summary": "run a command in a container",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-e", "--env"], "summary": "set this environment variable", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": true
+        },
+        {
+          "words": ["ps"],
+          "summary": "list containers",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["images"],
+          "summary": "list container images",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["pull"],
+          "summary": "download a container image",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["push"],
+          "summary": "upload a container image",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["stop"],
+          "summary": "stop containers",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["rm"],
+          "summary": "remove containers",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-f", "--force"], "summary": "force removal", "destructive": true, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["rmi"],
+          "summary": "remove container images",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-f", "--force"], "summary": "force removal", "destructive": true, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["system", "prune"],
+          "summary": "remove unused Docker data",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-f", "--force"], "summary": "force removal", "destructive": true, "value": "none"},
+            {"names": ["--volumes"], "summary": "remove unused volumes", "destructive": true, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["compose", "up"],
+          "summary": "create and start compose services",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-d", "--detach"], "summary": "run in the background", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["compose", "down"],
+          "summary": "stop and remove compose services",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        }
+      ]
+    },
+    {
+      "executables": ["kubectl"],
+      "commands": [
+        {
+          "words": ["get"],
+          "summary": "list Kubernetes resources",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["-n", "--namespace"], "summary": "use this namespace", "destructive": false, "value": "attached"},
+            {"names": ["-o", "--output"], "summary": "choose the output format", "destructive": false, "value": "attached"},
+            {"names": ["--context"], "summary": "use this context", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["describe"],
+          "summary": "describe Kubernetes resources",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["-n", "--namespace"], "summary": "use this namespace", "destructive": false, "value": "attached"},
+            {"names": ["--context"], "summary": "use this context", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["logs"],
+          "summary": "read container logs",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["-n", "--namespace"], "summary": "use this namespace", "destructive": false, "value": "attached"},
+            {"names": ["--context"], "summary": "use this context", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["apply"],
+          "summary": "apply Kubernetes resource definitions",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-n", "--namespace"], "summary": "use this namespace", "destructive": false, "value": "attached"},
+            {"names": ["-f", "--filename"], "summary": "read resources from this file", "destructive": false, "value": "attached"},
+            {"names": ["--context"], "summary": "use this context", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["delete"],
+          "summary": "delete Kubernetes resources",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-n", "--namespace"], "summary": "use this namespace", "destructive": false, "value": "attached"},
+            {"names": ["-f", "--filename"], "summary": "read resources from this file", "destructive": false, "value": "attached"},
+            {"names": ["--context"], "summary": "use this context", "destructive": false, "value": "attached"},
+            {"names": ["--all"], "summary": "select all matching resources", "destructive": false, "value": "none"},
+            {"names": ["--force"], "summary": "force deletion", "destructive": true, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["exec"],
+          "summary": "run a command in a pod",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-n", "--namespace"], "summary": "use this namespace", "destructive": false, "value": "attached"},
+            {"names": ["--context"], "summary": "use this context", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["rollout", "restart"],
+          "summary": "restart a workload",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-n", "--namespace"], "summary": "use this namespace", "destructive": false, "value": "attached"},
+            {"names": ["--context"], "summary": "use this context", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["scale"],
+          "summary": "scale a workload",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-n", "--namespace"], "summary": "use this namespace", "destructive": false, "value": "attached"},
+            {"names": ["--replicas"], "summary": "set this replica count", "destructive": false, "value": "attached"},
+            {"names": ["--context"], "summary": "use this context", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["config", "current-context"],
+          "summary": "show the current Kubernetes context",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        }
+      ]
+    },
+    {
+      "executables": ["gh"],
+      "commands": [
+        {
+          "words": ["pr", "list"],
+          "summary": "list pull requests",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["--state"], "summary": "filter by this state", "destructive": false, "value": "attached"},
+            {"names": ["--repo", "-R"], "summary": "use this repository", "destructive": false, "value": "attached"},
+            {"names": ["--json"], "summary": "select these output fields", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["pr", "view"],
+          "summary": "show a pull request",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["--repo", "-R"], "summary": "use this repository", "destructive": false, "value": "attached"},
+            {"names": ["--json"], "summary": "select these output fields", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["pr", "create"],
+          "summary": "create a pull request",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--title", "-t"], "summary": "use this title", "destructive": false, "value": "attached"},
+            {"names": ["--body", "-b"], "summary": "use this body", "destructive": false, "value": "attached"},
+            {"names": ["--repo", "-R"], "summary": "use this repository", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["pr", "merge"],
+          "summary": "merge a pull request",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--squash"], "summary": "merge by squashing commits", "destructive": false, "value": "none"},
+            {"names": ["--delete-branch"], "summary": "delete the branch after merging", "destructive": true, "value": "none"},
+            {"names": ["--admin"], "summary": "bypass merge requirements where permitted", "destructive": true, "value": "none"},
+            {"names": ["--repo", "-R"], "summary": "use this repository", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["pr", "checkout"],
+          "summary": "check out a pull request",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--repo", "-R"], "summary": "use this repository", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["issue", "list"],
+          "summary": "list issues",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["--state"], "summary": "filter by this state", "destructive": false, "value": "attached"},
+            {"names": ["--repo", "-R"], "summary": "use this repository", "destructive": false, "value": "attached"},
+            {"names": ["--json"], "summary": "select these output fields", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["issue", "create"],
+          "summary": "create an issue",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--title", "-t"], "summary": "use this title", "destructive": false, "value": "attached"},
+            {"names": ["--body", "-b"], "summary": "use this body", "destructive": false, "value": "attached"},
+            {"names": ["--repo", "-R"], "summary": "use this repository", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["run", "list"],
+          "summary": "list workflow runs",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["--repo", "-R"], "summary": "use this repository", "destructive": false, "value": "attached"},
+            {"names": ["--json"], "summary": "select these output fields", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["run", "view"],
+          "summary": "show a workflow run",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["--repo", "-R"], "summary": "use this repository", "destructive": false, "value": "attached"},
+            {"names": ["--json"], "summary": "select these output fields", "destructive": false, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["workflow", "run"],
+          "summary": "start a workflow",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--repo", "-R"], "summary": "use this repository", "destructive": false, "value": "attached"},
+            {"names": ["--field", "-F"], "summary": "send this request field", "destructive": true, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["repo", "clone"],
+          "summary": "clone a GitHub repository",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["api"],
+          "summary": "call the GitHub API",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--method", "-X"], "summary": "use this HTTP method", "destructive": true, "value": "attached"},
+            {"names": ["--field", "-F"], "summary": "send this request field", "destructive": true, "value": "attached"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["auth", "status"],
+          "summary": "show GitHub authentication status",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        }
+      ]
+    },
+    {
+      "executables": ["brew"],
+      "commands": [
+        {
+          "words": ["install"],
+          "summary": "install Homebrew packages",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--cask"], "summary": "use a cask", "destructive": false, "value": "none"},
+            {"names": ["--force", "-f"], "summary": "force this operation", "destructive": true, "value": "none"},
+            {"names": ["--formula"], "summary": "use a formula", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["uninstall"],
+          "summary": "uninstall Homebrew packages",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--cask"], "summary": "use a cask", "destructive": false, "value": "none"},
+            {"names": ["--force", "-f"], "summary": "force this operation", "destructive": true, "value": "none"},
+            {"names": ["--formula"], "summary": "use a formula", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["upgrade"],
+          "summary": "upgrade Homebrew packages",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--cask"], "summary": "use a cask", "destructive": false, "value": "none"},
+            {"names": ["--dry-run"], "summary": "show intended changes", "destructive": false, "value": "none"},
+            {"names": ["--formula"], "summary": "use a formula", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["update"],
+          "summary": "update Homebrew metadata",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["cleanup"],
+          "summary": "remove old Homebrew files",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["--dry-run"], "summary": "show intended changes", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["list"],
+          "summary": "list installed Homebrew packages",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["--cask"], "summary": "use a cask", "destructive": false, "value": "none"},
+            {"names": ["--formula"], "summary": "use a formula", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["info"],
+          "summary": "show Homebrew package information",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [
+            {"names": ["--cask"], "summary": "use a cask", "destructive": false, "value": "none"},
+            {"names": ["--formula"], "summary": "use a formula", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["services", "start"],
+          "summary": "start a Homebrew service",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        },
+        {
+          "words": ["services", "stop"],
+          "summary": "stop a Homebrew service",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": false
+        }
+      ]
+    },
+    {
+      "executables": ["sudo", "/usr/bin/sudo"],
+      "commands": [
+        {
+          "words": [],
+          "summary": "run a command as another user",
+          "consequence": "Usually runs as root unless another user is selected. The nested command and sudo policy have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-u", "--user"], "summary": "run as this user", "destructive": false, "value": "attached"},
+            {"names": ["-g", "--group"], "summary": "run with this group", "destructive": false, "value": "attached"},
+            {"names": ["-n", "--non-interactive"], "summary": "fail instead of prompting", "destructive": false, "value": "none"},
+            {"names": ["-E", "--preserve-env"], "summary": "request preservation of environment variables", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 1, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "optionsBeforeOperands": true
+        }
+      ]
+    },
+    {
+      "executables": ["kill", "/bin/kill", "/usr/bin/kill"],
+      "commands": [
+        {
+          "words": [],
+          "summary": "send a signal to processes",
+          "consequence": "Matching processes may stop, losing unsaved work. Process identities and signal handlers have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-TERM", "-15"], "summary": "request termination", "destructive": false, "value": "none"},
+            {"names": ["-KILL", "-9"], "summary": "terminate without cleanup", "destructive": true, "value": "none"},
+            {"names": ["-0"], "summary": "check whether a process can be signalled", "destructive": false, "value": "none"},
+            {"names": ["-s"], "summary": "send this signal", "destructive": false, "value": "next"}
+          ],
+          "operands": {"minimum": 1, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        }
+      ]
+    },
+    {
+      "executables": ["pkill", "/bin/pkill", "/usr/bin/pkill"],
+      "commands": [
+        {
+          "words": [],
+          "summary": "signal processes matching a pattern",
+          "consequence": "Matching processes may stop, losing unsaved work. Process identities and signal handlers have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-f"], "summary": "match the full command line", "destructive": false, "value": "none"},
+            {"names": ["-x"], "summary": "require an exact match", "destructive": false, "value": "none"},
+            {"names": ["-TERM", "-15"], "summary": "request termination", "destructive": false, "value": "none"},
+            {"names": ["-KILL", "-9"], "summary": "terminate without cleanup", "destructive": true, "value": "none"},
+            {"names": ["-u"], "summary": "match this user", "destructive": false, "value": "next"}
+          ],
+          "operands": {"minimum": 1, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        }
+      ]
+    },
+    {
+      "executables": ["launchctl", "/bin/launchctl"],
+      "commands": [
+        {
+          "words": ["list"],
+          "summary": "list launchd jobs",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["print"],
+          "summary": "show launchd state",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["bootstrap"],
+          "summary": "load launchd services",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["bootout"],
+          "summary": "remove launchd services",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["kickstart"],
+          "summary": "start a launchd service",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-k"], "summary": "kill a running service before restarting it", "destructive": true, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["enable"],
+          "summary": "enable a launchd service",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["disable"],
+          "summary": "disable a launchd service",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        }
+      ]
+    },
+    {
+      "executables": ["defaults", "/usr/bin/defaults"],
+      "commands": [
+        {
+          "words": ["read"],
+          "summary": "read preference values",
+          "consequence": "Describes the requested operation, not its result. Configuration and contents have not been inspected.",
+          "destructive": false,
+          "options": [],
+          "operands": {"minimum": 1, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["write"],
+          "summary": "write preference values",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [
+            {"names": ["-bool"], "summary": "write a Boolean value", "destructive": false, "value": "next"},
+            {"names": ["-int"], "summary": "write an integer value", "destructive": false, "value": "next"},
+            {"names": ["-string"], "summary": "write a string value", "destructive": false, "value": "next"},
+            {"names": ["-array"], "summary": "write an array", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 1, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        },
+        {
+          "words": ["delete"],
+          "summary": "delete preference values",
+          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
+          "destructive": true,
+          "options": [],
+          "operands": {"minimum": 1, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        }
+      ]
+    },
+    {
+      "executables": ["tar", "/usr/bin/tar"],
+      "commands": [
+        {
+          "words": [],
+          "summary": "process a tar archive",
+          "consequence": "Archive paths, links and contents have not been inspected. Creation or extraction may overwrite files.",
+          "destructive": true,
+          "options": [
+            {"names": ["-c", "--create"], "summary": "create an archive", "destructive": true, "value": "none"},
+            {"names": ["-x", "--extract"], "summary": "extract files; existing paths may be overwritten", "destructive": true, "value": "none"},
+            {"names": ["-t", "--list"], "summary": "list archive contents", "destructive": false, "value": "none"},
+            {"names": ["-z", "--gzip"], "summary": "use gzip compression", "destructive": false, "value": "none"},
+            {"names": ["-j", "--bzip2"], "summary": "use bzip2 compression", "destructive": false, "value": "none"},
+            {"names": ["-f", "--file"], "summary": "use this archive file", "destructive": false, "value": "attached"},
+            {"names": ["-C", "--directory"], "summary": "change to this directory", "destructive": false, "value": "attached"},
+            {"names": ["-v", "--verbose"], "summary": "show more detail", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "shortClusters": true
+        }
+      ]
+    },
+    {
+      "executables": ["unzip", "/usr/bin/unzip"],
+      "commands": [
+        {
+          "words": [],
+          "summary": "extract or inspect a ZIP archive",
+          "consequence": "Archive paths, links and contents have not been inspected. Extraction may overwrite files.",
+          "destructive": true,
+          "options": [
+            {"names": ["-o"], "summary": "overwrite without asking", "destructive": true, "value": "none"},
+            {"names": ["-n"], "summary": "never overwrite existing files", "destructive": false, "value": "none"},
+            {"names": ["-l"], "summary": "list archive contents", "destructive": false, "value": "none"},
+            {"names": ["-t"], "summary": "test archive data", "destructive": false, "value": "none"},
+            {"names": ["-d"], "summary": "extract into this directory", "destructive": false, "value": "attached"},
+            {"names": ["-q"], "summary": "reduce output", "destructive": false, "value": "none"}
+          ],
+          "operands": {"minimum": 1, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+        }
+      ]
+    }
+  ],
+  "locations": [
+    {"kind": "homePrefix", "path": "Library/Developer/Xcode/DerivedData", "summary": "conventional Xcode build cache; contents not inspected"},
+    {"kind": "component", "path": "node_modules", "summary": "conventional installed dependencies; local edits not inspected"},
+    {"kind": "component", "path": ".build", "summary": "conventional Swift build cache; contents not inspected"}
+  ]
+}

@@ -111,3 +111,12 @@ the local commit and say so on the task. This key does not change user-authored 
 `policy.taskScripts.userScripts` and `policy.taskScripts.repositoryScripts` govern those.
 The fetch uses only the repository-configured remote URL, has a 15-second deadline and falls
 back to the local commit when offline.
+
+## Command explanations and local coverage
+
+`policy.approvals.knowledge` accepts a string containing a version 1 command knowledge JSON document.
+The policy package validates each entry, reports bad values, and contributes only additive internal
+tools. `policy.approvals.countUnknownPrograms = false` disables local unknown-program counts even
+when the user enabled them. True permits the user choice; neither policy enables Fine print itself.
+Counts never enter telemetry or exports and can be purged from Settings > Privacy. See
+[command knowledge](command-knowledge.md) for the format, limits, and privacy contract.

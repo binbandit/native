@@ -477,7 +477,10 @@ final class SessionModel {
         if availableCommands != transcript.availableCommands { availableCommands = transcript.availableCommands }
         if usage != transcript.usage { usage = transcript.usage }
         let requests = transcript.permissionRequests
-        if permissionRequests != requests { permissionRequests = requests }
+        if permissionRequests != requests {
+            permissionRequests = requests
+            services.hooks.approvalsChanged(self, requests)
+        }
         if hasSubagents != transcript.hasSubagents { hasSubagents = transcript.hasSubagents }
         if isTranscriptEmpty != transcript.items.isEmpty { isTranscriptEmpty = transcript.items.isEmpty }
         if completedWriteCount != transcript.completedWriteCount {

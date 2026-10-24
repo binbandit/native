@@ -458,3 +458,11 @@ device shows on every other. A titler is asked once per task; one that fails isn
 
 If you're an agent writing a plugin for the user, tell them which file you wrote and that they need
 to reload, and don't edit plugins you didn't write unless they ask.
+
+## Command knowledge
+
+A plugin may embed a `commandKnowledge` JSON object to describe internal command-line tools in
+Fine print approvals. The versioned [command knowledge schema](command-knowledge.md) is the same
+format as the bundled package resource and managed policy. Invalid entries appear in Command
+Diagnostics without breaking approvals. Contributions disappear when the plugin is disabled or
+blocked by policy, and cannot replace shipped tools. This extension is declarative and local only.

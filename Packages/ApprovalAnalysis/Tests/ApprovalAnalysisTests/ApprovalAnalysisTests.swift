@@ -10,12 +10,12 @@ import Testing
         ApprovalCommand(command: command, workingDirectory: cwd, homeDirectory: home)
     }
 
-    @Test func derivedDataIsRoutine() {
+    @Test func derivedDataNameDoesNotProveSafeDeletion() {
         let analysis = describe("rm -rf ~/Library/Developer/Xcode/DerivedData/native-bfhqjzxkdyowmrtglcaevpsnui")
-        #expect(analysis.risk == .routine)
+        #expect(analysis.risk == .irreversible)
         #expect(analysis.parts.count == 3)
         #expect(analysis.parts.last?.explanation.contains("outside") == true)
-        #expect(analysis.consequence.hasPrefix("Rebuilt on the next build."))
+        #expect(analysis.consequence.contains("not been inspected"))
     }
 
     @Test(arguments: [
@@ -35,8 +35,8 @@ import Testing
         #expect(analysis.command == command)
         #expect(analysis.suggestedCommand == "git  push --force-with-lease origin main")
         #expect(
-            analysis.parts.map { String(Array(command)[$0.range]) } == ["git  push", "--force", "origin main"])
-        #expect(describe("git push origin main").risk == .routine)
+            analysis.parts.map { String(Array(command)[$0.range]) } == ["git  push", "--force", "origin", "main"])
+        #expect(describe("git push origin main").risk == .irreversible)
     }
 
     @Test(arguments: [
@@ -53,11 +53,11 @@ import Testing
         "./tools/acp-schema-gen --lang swift --strict --out Packages/ACP/Sources/ACP/Generated schema/v2.json",
         "git push --force origin main && rm -rf ~/Developer/native",
         "git push --force origin main; echo done", "git push --force origin main\nrm -rf /tmp/stuff",
-        "sudo rm -rf /tmp/stuff", "rm Packages/ACP -rf", "rm -rf $(pwd)",
+        "rm -rf $(pwd)",
         "rm -rf ~/Library/Developer/Xcode/DerivedData/*",
         "rm -rf \"$HOME/Library/Developer/Xcode/DerivedData/native\"", "git -C other push -f origin main",
-        "git push origin +main", "git push --mirror origin", "git push --force origin HEAD:main",
-        "rm -rf 'unclosed", "rm -rf '~/Library/Developer/Xcode/DerivedData/native'",
+        "git push --unknown origin",
+        "rm -rf 'unclosed",
     ])
     func unknownMakesNoClaims(_ command: String) {
         let analysis = describe(command)
