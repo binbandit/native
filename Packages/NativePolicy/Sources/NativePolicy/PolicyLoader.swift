@@ -1,3 +1,4 @@
+import CodeThemes
 import Foundation
 
 /// Reads and validates every policy key from a source.
@@ -5,6 +6,13 @@ public enum PolicyLoader {
     public static func load(from source: any PolicySource) -> NativePolicy {
         var resolver = PolicyResolver(source: source)
         var policy = NativePolicy()
+        policy.organizationName = resolver.resolve(.organizationName, expecting: "a non-empty string", PolicyParse.text)
+        policy.organizationContact = resolver.resolve(
+            .organizationContact, expecting: "a non-empty string", PolicyParse.text)
+        policy.appearanceCodeTheme = resolver.resolve(
+            .appearanceCodeTheme, expecting: "a built-in code theme id", PolicyParse.codeTheme)
+        policy.appearanceCodeThemeReason = resolver.resolve(
+            .appearanceCodeThemeReason, expecting: "a non-empty string", PolicyParse.text)
         policy.agents.allowed = resolver.resolve(
             .agentsAllowed, expecting: "an array of agent ids", PolicyParse.stringSet)
         policy.agents.environment =
@@ -121,6 +129,18 @@ struct PolicyResolver {
 /// Parsers for property-list values. Each returns nil when the value as a whole is unusable, and
 /// reports entries it skipped in `problems`.
 enum PolicyParse {
+    static func text(_ raw: Any, _ problems: inout [String]) -> String? {
+        guard let text = raw as? String, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        return text
+    }
+
+    static func codeTheme(_ raw: Any, _ problems: inout [String]) -> String? {
+        guard let id = raw as? String, CodeTheme.theme(id: .init(rawValue: id)) != nil else { return nil }
+        return id
+    }
+
     static func bool(_ raw: Any, _ problems: inout [String]) -> Bool? {
         guard let number = raw as? NSNumber, CFGetTypeID(number) == CFBooleanGetTypeID() else { return raw as? Bool }
         return number.boolValue

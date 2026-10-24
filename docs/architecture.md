@@ -455,3 +455,16 @@ the card keeps the agent's reported edits rather than attributing a whole branch
 agent-created subagents, and `TaskOrchestrator` checks that scope on each tool call. Creation uses
 the project folder and an advertised read-only setting, bypassing workspace preparation. See
 `docs/coordinator-tasks.md` for scope, message attribution, lifecycle and deferred work.
+
+### Appearance code theme card
+
+Appearance uses one-line window choices and a single code card in the effective theme. The selectors
+write the existing light and dark preferences, with one undo action for both-mode changes. Managed
+`policy.appearance.codeTheme` overrides rendering while retaining those preferences.
+
+On entering the page, `AppearanceSpecimenSource` asks the Changes model for a bounded copy of the
+latest completed task's changes. It reads an already available local repository or captured edit diffs;
+it never opens a task or contacts a paired host. Search-excluded projects are skipped. `SpecimenLine`
+in `Packages/CodeThemes` scores highlighted added lines, filters every displayed line and metadata for
+secret patterns, and falls back to a language sample. The excerpt stays in memory and is not logged or
+persisted. The terminal line is always a sample. Try On's task preview is a later change.

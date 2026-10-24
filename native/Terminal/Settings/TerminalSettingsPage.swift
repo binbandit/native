@@ -20,6 +20,7 @@ struct TerminalSettingsPage: View {
 
     let store: TerminalStore
 
+    @AppStorage(AppearancePreferences.terminalUsesCodeFontKey) private var terminalUsesCodeFont = false
     @State private var families: [String] = []
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dsAccentPalette) private var palette
@@ -45,6 +46,11 @@ struct TerminalSettingsPage: View {
                     note: usesGhostty ? "Not in use while your Ghostty settings are on." : nil)
                 TerminalSettingsPreview(settings: preferences.settings, colors: colors)
                 SettingsRowGroup {
+                    SettingsRow(
+                        "Use the same font as code", description: Text("Use the font and size from Appearance.")
+                    ) {
+                        SettingsSwitch("Use the same font as code", isOn: $terminalUsesCodeFont)
+                    }
                     SettingsRow(id: Self.fontRow, "Font", description: Text("Any monospaced font on this Mac.")) {
                         SettingsSelect(
                             label: "Font",

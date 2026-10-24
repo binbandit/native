@@ -93,6 +93,12 @@ final class GitStore {
         return model
     }
 
+    /// Already loaded local state for passive previews. This never starts a watcher or a host request.
+    func availableLocalRepository(for folder: URL) -> Repository? {
+        guard isLocal else { return nil }
+        return models[folder.standardizedFileURL]?.repository
+    }
+
     /// Re-reads a folder's status, e.g. after an agent finished a turn there. Folders nobody has
     /// asked about yet are skipped.
     func refresh(folder: URL, session: SessionKey? = nil) {
