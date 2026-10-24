@@ -48,7 +48,7 @@ final class ComposeTaskModel {
     #if DEBUG
     var previewBranch: String?
     var previewState: String?
-    var previewOfflineSince: Date?
+    var previewLastConnected: Date?
     #endif
 
     var hasContent: Bool {

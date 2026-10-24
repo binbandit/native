@@ -52,8 +52,8 @@ struct ComposeTaskAddress: View {
                             {
                                 Text("Needs a checkout").foregroundStyle(.dsAttention)
                             } else if model.composeDeviceOption?.canStart == false {
-                                if let offlineSince {
-                                    Text("Offline since \(offlineSince, format: .dateTime.hour().minute())")
+                                if let lastConnected {
+                                    Text("Offline · last connected \(lastConnected, format: .dateTime.hour().minute())")
                                         .foregroundStyle(.dsAttention)
                                 } else {
                                     Text("Offline").foregroundStyle(.dsAttention)
@@ -140,9 +140,9 @@ struct ComposeTaskAddress: View {
     }
 
     private var deviceName: String { model.composeDeviceOption?.name ?? model.deviceName(entry.device) }
-    private var offlineSince: Date? {
+    private var lastConnected: Date? {
         #if DEBUG
-        if let date = compose.previewOfflineSince { return date }
+        if let date = compose.previewLastConnected { return date }
         #endif
         guard case .remote(let id) = entry.device else { return nil }
         return model.hosts.host(id)?.lastConnected
