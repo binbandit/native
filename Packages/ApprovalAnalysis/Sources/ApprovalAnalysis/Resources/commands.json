@@ -759,7 +759,7 @@
       "commands": [
         {
           "words": [],
-          "summary": "delete {count} paths",
+          "summary": "delete files or folders",
           "consequence": "Files are deleted directly, without moving them to Trash. Contents and symbolic links have not been inspected; Native cannot undo this.",
           "destructive": true,
           "options": [
