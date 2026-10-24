@@ -61,6 +61,11 @@ final class SessionModel {
     /// What the agent takes in a prompt besides text: images, embedded files.
     let promptCapabilities: PromptCapabilities
     var isChangingAgent = false
+    var isChangingWorkspace = false
+    var isWorkspaceReplaced = false
+    var isWorkspacePickerRequested = false
+    /// Locks the folder before the first send suspends, including a queued or hidden prompt.
+    var hasSubmittedPrompt = false
     var draft = ""
     /// Files and images going out with the draft (SessionModel+Attachments.swift).
     var attachments: [PromptAttachment] = []
@@ -353,6 +358,7 @@ final class SessionModel {
     /// is kept to read.
     var acceptsPrompts: Bool {
         origin != .announced && !isEarlierConversation && !isChangingAgent
+            && !isChangingWorkspace && !isWorkspaceReplaced
     }
 
     /// What the session's turns wait for outside it, such as "the worktree's setup script". Messages
@@ -363,7 +369,7 @@ final class SessionModel {
 
     /// Whether the user's draft can go out now.
     var canSend: Bool {
-        origin == .user && phase == .idle && !isRunningHiddenCommand && turnHold == nil
+        origin == .user && acceptsPrompts && phase == .idle && !isRunningHiddenCommand && turnHold == nil
             && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 

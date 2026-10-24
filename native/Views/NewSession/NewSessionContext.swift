@@ -21,6 +21,7 @@ struct NewSessionContext {
     var editActions: () -> Void
     /// Where the task runs, while paired hosts are on (`RemoteHosts.isEnabled`) and one is paired.
     var device: Device? = nil
+    var changeWorkspace: (() -> Void)? = nil
 
     /// The device picker's rows, the device the task is on, and moving it to another.
     struct Device {

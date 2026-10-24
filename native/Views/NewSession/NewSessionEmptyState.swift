@@ -94,3 +94,16 @@ private struct NewSessionScreen: View {
         return names
     }
 }
+
+#if DEBUG
+#Preview("New task - No conversation") {
+    let app = AppModel.preview(.empty)
+    DSPreviewPair {
+        if let session = SessionModel.preview(in: app) {
+            NewSessionEmptyState(session: session)
+                .environment(\.isPrimaryTranscript, false)
+                .frame(width: DS.Size.popoverWidth)
+        }
+    }
+}
+#endif
