@@ -163,9 +163,11 @@ struct CodeThemeSettingsRow: View {
                 SettingsFooter(
                     "\(theme.name) is from \(loaded.plugin.manifest.name), which is off. Native is in use until it's back."
                 )
-                Button("Turn On \(loaded.plugin.manifest.name)") { settings?.open(.extensions) }
-                    .buttonStyle(.settings)
-                    .padding(.leading, DS.Settings.rowInset)
+                Button("Turn On \(loaded.plugin.manifest.name)") {
+                    settings?.open(.extensions, revealing: ExtensionsSettingsPage.rowID(loaded.id))
+                }
+                .buttonStyle(.settings)
+                .padding(.leading, DS.Settings.rowInset)
             }
         }
     }

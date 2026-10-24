@@ -14,6 +14,7 @@ struct SettingsScreen: View {
     @Binding var pane: SettingsPane.ID?
     var additionalPanes: [SettingsPane] = []
 
+    @Environment(SettingsPresentation.self) private var presentation: SettingsPresentation?
     @Environment(PluginRegistry.self) private var registry
     @Environment(\.experimentStore) private var experiments
     private var plainly: Bool { SettingsPageMap.isEnabled(in: experiments ?? .shared) }
@@ -138,9 +139,13 @@ struct SettingsScreen: View {
         // Each page starts at the top, with its own scroller.
         .onChange(of: selectedPane?.id) { isScrolled = false }
         .task(id: pane) {
-            if plainly, let pane, SettingsPageMap.destination(pane) != pane {
+            if presentation?.requestedRow == nil, plainly, let pane, SettingsPageMap.destination(pane) != pane {
                 reveal = SettingsReveal(rowID: SettingsPageMap.sectionID(pane))
             }
+        }
+        .task(id: presentation?.requestedRow) {
+            guard let pane, presentation?.pane == pane, let request = presentation?.takeRequestedRow() else { return }
+            reveal = request
         }
     }
 

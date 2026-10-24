@@ -16,9 +16,12 @@ final class SettingsPresentation {
     /// when a project's settings link there. The page takes it once it appears.
     private(set) var projectScope: ProjectScope?
 
+    private(set) var requestedRow: SettingsReveal?
+
     /// The page shown; nil while Settings is closed.
     var pane: SettingsPane.ID? {
         didSet {
+            if oldValue != pane { requestedRow = nil }
             if let projectScope, projectScope.pane != pane { self.projectScope = nil }
             if oldValue == nil, pane != nil {
                 Telemetry.record(.featureUsed(.settings))
@@ -29,8 +32,20 @@ final class SettingsPresentation {
     var isShown: Bool { pane != nil }
 
     func open(_ pane: SettingsPane.ID = .general) {
+        requestedRow = nil
         projectScope = nil
         self.pane = pane
+    }
+
+    /// Opens a setting by the same reveal target search uses.
+    func open(_ pane: SettingsPane.ID, revealing row: SettingsRowID) {
+        open(pane)
+        requestedRow = SettingsReveal(rowID: row)
+    }
+
+    func takeRequestedRow() -> SettingsReveal? {
+        defer { requestedRow = nil }
+        return requestedRow
     }
 
     /// Opens `pane` on `project`'s switches.
