@@ -4,6 +4,11 @@ import Foundation
 /// (a worktree or branch per task, set up from the project's settings); without one, tasks run in
 /// the project folder and nothing is removed.
 protocol TaskWorkspaceProvider: AnyObject {
+    func workspaceOptions(in project: Project, current: URL) async throws -> [TaskWorkspaceOption]
+    func workspace(for choice: TaskWorkspaceChoice, in project: Project) async throws -> URL
+    /// Removes only an untouched checkout created for a task, never a user-owned folder.
+    func removeUnusedWorkspace(at folder: URL, in project: Project) async throws -> Bool
+
     /// The folder a new task in `project` should run in: the project itself, or one made for it.
     func workspace(forNewTaskIn project: Project, title: String?) async throws -> URL
 

@@ -28,6 +28,14 @@ struct NewSessionHeader: View {
             }
             VStack(alignment: .leading, spacing: DS.Space.xs) {
                 NewSessionWorkspaceLine(workspace: context.workspace, projectName: context.projectName)
+                if let changeWorkspace = context.changeWorkspace {
+                    Button("Change Workspace…", action: changeWorkspace)
+                        .buttonStyle(.plain)
+                        .font(.dsCallout)
+                        .foregroundStyle(.dsAccent)
+                        .dsHitTarget(DS.Size.controlMD)
+                        .help("Choose a branch, new worktree or project folder before the first message")
+                }
                 NewSessionChangesNote(
                     count: context.checkoutChanges, workspace: context.workspace, projectName: context.projectName)
                 if let device = context.device {
@@ -38,6 +46,24 @@ struct NewSessionHeader: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
+
+#if DEBUG
+#Preview("New task - Choose workspace") {
+    DSPreviewPair {
+        NewSessionHeader(context: TaskWorkspacePreviewFixtures.context(editable: true))
+            .padding(DS.Space.xxl)
+            .frame(width: DS.Size.popoverWidth)
+    }
+}
+
+#Preview("New task - Workspace locked") {
+    DSPreviewPair {
+        NewSessionHeader(context: TaskWorkspacePreviewFixtures.context(editable: false))
+            .padding(DS.Space.xxl)
+            .frame(width: DS.Size.popoverWidth)
+    }
+}
+#endif
 
 extension ProjectIcon {
     /// Just the name's first letter, which the large name already says.

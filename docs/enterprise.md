@@ -44,6 +44,7 @@ shipped as a sample `.mobileconfig` in `docs/enterprise/`.
 | `policy.labs.enabled` | Labs and experiments, including plugin experiments. |
 | `policy.companion.enabled` / `policy.remoteHosts.enabled` | Pairing devices; connecting to hosts other than this Mac. |
 | `policy.updates.feedURL` / `policy.updates.enabled` / `policy.updates.channels` | An internal update feed, or updates off; which channels are allowed. |
+| `policy.celebrations.downloadsEnabled` / `policy.celebrations.baseURL` | Disable celebration artwork downloads (including index and signature), or mirror Native-signed packs internally. Cached and bundled icons remain available. See [celebration artwork](celebrations-artwork.md). |
 | `policy.search.retentionDays` | How long the search index keeps tasks. |
 | `policy.shortcuts.bindings` | Keyboard shortcuts by command id, as Settings ▸ Keyboard Shortcuts exports them (`docs/commands.md`); they replace the user's changes and lock the page. |
 | `policy.ai.instructions` | Instructions added to what Native writes with AI (titles, branch names, commit messages, pull request drafts, the prompts behind "Ask an Agent"), by purpose id: `title`, `branchName`, `commitMessage`, `commitGrouping`, `pullRequest`, `reviewRequest`, `pullRequestQuestions`. Native's format rules still come first. They replace the user's own instructions and lock Settings ▸ AI Instructions; a purpose it doesn't name gets none. |

@@ -7,11 +7,18 @@ extension CommandID {
     static let sessionStop: Self = "session.stop"
     static let sessionNextPermissionMode: Self = "session.nextPermissionMode"
     static let sessionChooseModel: Self = "session.chooseModel"
+    static let sessionChangeWorkspace: Self = "session.changeWorkspace"
 }
 
 extension NativeCommand {
     /// The visible task's composer and its agent's settings.
     static let composer: [NativeCommand] = [
+        NativeCommand(
+            .sessionChangeWorkspace, title: "Change Workspace…", category: .tasks, systemImage: "arrow.triangle.branch",
+            keywords: ["branch", "worktree", "folder"]
+        ) { $0.session?.requestWorkspaceChange() }
+        .available { $0.session?.canChangeWorkspace == true },
+
         NativeCommand(.composerFocus, title: "Focus Composer", category: .composer, systemImage: "text.cursor") {
             $0.session?.wantsComposerFocus = true
         }

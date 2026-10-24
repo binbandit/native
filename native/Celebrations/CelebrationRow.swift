@@ -118,4 +118,14 @@ struct CelebrationRow: View {
 #Preview("Celebrations - On, off, showing, flash, alias and not ready") {
     DSPreviewPair { CelebrationPreviewGallery(.rows).settingsPreviewPage() }.environment(SettingsPresentation())
 }
+#Preview("Celebration row - Downloads disabled") {
+    let center = CelebrationPreviewFixtures.downloadsDisabled()
+    DSPreviewPair {
+        if let center, let event = center.catalog.celebration(FirstPartyCelebrations.diaDeMuertosID) {
+            CelebrationRow(event: event)
+                .environment(center)
+                .settingsPreviewPage()
+        }
+    }
+}
 #endif

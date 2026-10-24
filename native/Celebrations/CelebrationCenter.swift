@@ -71,6 +71,23 @@ final class CelebrationCenter {
         refresh()
     }
 
+    #if DEBUG
+    /// Resolves fixture state without scheduling boundaries, fetching artwork or writing defaults.
+    static func preview(
+        catalog: AppearanceCatalog, preferences: CelebrationPreferences, today: CivilDate
+    ) -> CelebrationCenter {
+        let center = CelebrationCenter(
+            defaults: PreviewUserDefaults(), assets: CelebrationAssetStore(source: nil),
+            now: { today.start(in: .gmt) }, timeZone: { .gmt })
+        center.catalog = catalog
+        center.preferences = preferences
+        center.resolution = CelebrationPolicy.resolve(
+            catalog.celebrations, preferences: preferences, on: today,
+            canApplyAppIcon: PlatformAppIcon.canApplyAnyImage)
+        return center
+    }
+    #endif
+
     /// The enabled plugins' icon sets and celebrations changed.
     func update(catalog: AppearanceCatalog) {
         guard catalog != self.catalog else { return }
@@ -104,7 +121,9 @@ final class CelebrationCenter {
         onIconChange?(icon)
         // Packs for celebrations coming up this week, if a choice made earlier hasn't fetched them.
         for pack in CelebrationAssets.packsDue(catalog.celebrations, preferences: preferences, on: today) {
-            assets.fetch(pack)
+            // Publishing a failure rebuilds the catalogue too. Only an explicit Retry should
+            // repeat it, otherwise an offline launch loops between downloading and failed.
+            assets.fetch(pack, retryFailed: false)
         }
     }
 

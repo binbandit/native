@@ -7,6 +7,8 @@ let package = Package(
     products: [.library(name: "AppAppearance", targets: ["AppAppearance"])],
     targets: [
         .target(name: "AppAppearance"),
-        .testTarget(name: "AppAppearanceTests", dependencies: ["AppAppearance"]),
+        .testTarget(
+            name: "AppAppearanceTests", dependencies: ["AppAppearance"],
+            resources: [.copy("Fixtures/celebration-valentines-day.json")]),
     ]
 )

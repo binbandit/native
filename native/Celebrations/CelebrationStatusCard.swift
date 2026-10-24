@@ -63,8 +63,8 @@ struct CelebrationStatusCard: View {
             if let event = center.activeEvent, !active.appliesToAppIcon,
                 center.preferences.selection(for: event.id).appIcon
             {
-                if case .downloadable(.unavailable) = event.appIcon {
-                    return "\(until) Its icon needs a download this install can't make."
+                if case .downloadable(.unavailable(let reason)) = event.appIcon {
+                    return "\(until) \(reason)"
                 }
                 if case .downloadable(.failed(let reason)) = event.appIcon { return "\(until) \(reason)" }
                 if case .downloadable = event.appIcon { return "\(until) Its icon is downloading." }
@@ -119,5 +119,15 @@ struct CelebrationStatusCard: View {
 }
 #Preview("Celebrations - Nothing chosen") {
     DSPreviewPair { CelebrationPreviewGallery(.empty).settingsPreviewPage() }.environment(SettingsPresentation())
+}
+#Preview("Celebration status - Downloads disabled, Home available") {
+    let center = CelebrationPreviewFixtures.downloadsDisabled()
+    DSPreviewPair {
+        if let center {
+            CelebrationStatusCard()
+                .environment(center)
+                .settingsPreviewPage()
+        }
+    }
 }
 #endif
