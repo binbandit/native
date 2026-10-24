@@ -26,6 +26,11 @@ struct TaskAttentionToolbarButton: View {
             .dsHitTarget(DS.Size.toolbarButton)
         }
         .buttonStyle(.plain)
+        .frame(
+            width: DS.Sidebar.attentionCountWidth + CGFloat(max(0, String(items.count).count - 1))
+                * DS.Sidebar.attentionDigitWidth,
+            height: DS.Size.toolbarButton
+        )
         .accessibilityLabel("\(items.count) \(items.count == 1 ? "task needs" : "tasks need") you")
         .accessibilityIdentifier("sidebar-attention")
         .help("Tasks Needing You")

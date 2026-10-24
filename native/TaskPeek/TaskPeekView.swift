@@ -22,8 +22,8 @@ struct TaskPeekView: View {
             HeightCappedScrollView(maxHeight: maxBodyHeight) {
                 moment
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, DS.Peek.bodyHorizontal)
-                    .padding(.vertical, DS.Peek.bodyVertical)
+                    .padding(.horizontal, showsAnnotatedApproval ? 0 : DS.Peek.bodyHorizontal)
+                    .padding(.vertical, showsAnnotatedApproval ? 0 : DS.Peek.bodyVertical)
             }
         }
         .background(.dsOverlay)
@@ -50,6 +50,15 @@ struct TaskPeekView: View {
 
     private func open() {
         if let openTask { openTask(request.task) } else { model.openPeekedTask(request.task) }
+    }
+
+    /// The shared approval already owns its insets, including the instruction field's full-width rule.
+    private var showsAnnotatedApproval: Bool {
+        guard model.taskIsAvailable(request.task), model.taskIsReachable(request.task),
+            let ask, ask.isCurrent, model.session(ask.session.key) === ask.session,
+            case .permission = ask.content
+        else { return false }
+        return true
     }
 
     private var header: some View {

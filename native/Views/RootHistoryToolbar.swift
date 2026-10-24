@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Keep the signal with history as one toolbar group so the system cannot overflow it separately.
 struct RootHistoryToolbar: View {
-    let sidebarHidden: Bool
+    let showsAttention: Bool
     let contentSize: CGSize
     @Environment(AppModel.self) private var model
 
@@ -11,7 +11,7 @@ struct RootHistoryToolbar: View {
             HistoryNavigationButtons(
                 canGoBack: model.canGoBack, canGoForward: model.canGoForward,
                 onBack: model.goBack, onForward: model.goForward)
-            if sidebarHidden, model.offersTaskPeek, !model.tasksNeedingAttention.isEmpty {
+            if showsAttention, !model.tasksNeedingAttention.isEmpty {
                 TaskAttentionToolbarButton(
                     maxWidth: max(0, contentSize.width - DS.Peek.windowInset * 2),
                     maxBodyHeight: max(
@@ -29,7 +29,7 @@ struct RootHistoryToolbar: View {
         VStack(spacing: DS.Space.lg) {
             ForEach(["collapsed", "collapsed-single", "collapsed-failure", "collapsed-empty"], id: \.self) { state in
                 let app = SidebarDesignFixture.makeApp(state)
-                RootHistoryToolbar(sidebarHidden: true, contentSize: CGSize(width: 1440, height: 900))
+                RootHistoryToolbar(showsAttention: true, contentSize: CGSize(width: 1440, height: 900))
                     .environment(app)
             }
         }

@@ -260,10 +260,11 @@ struct RootView: View {
                         }
                         .sharedBackgroundVisibility(.hidden)
                     }
-                    // All in view keeps navigation beside search when the platform hides the column.
-                    if columnVisibility != .detailOnly || model.offersTaskPeek {
+                    if columnVisibility != .detailOnly {
                         ToolbarItem {
-                            RootHistoryToolbar(sidebarHidden: columnVisibility == .detailOnly, contentSize: contentSize)
+                            HistoryNavigationButtons(
+                                canGoBack: model.canGoBack, canGoForward: model.canGoForward,
+                                onBack: model.goBack, onForward: model.goForward)
                         }
                         .sharedBackgroundVisibility(.hidden)
                     }
@@ -285,6 +286,15 @@ struct RootView: View {
             .environment(\.inspectorRoom, inspectorRoom.room(sidebar: $columnVisibility))
             .environment(\.sessionTranscriptMemory, transcriptMemory)
             .modifier(QuickEntryPresentation(model: model, git: git))
+            // A popover needs an anchor in the visible column, not the sidebar's hidden hosting view.
+            .toolbar {
+                if columnVisibility == .detailOnly, model.offersTaskPeek {
+                    ToolbarItem(placement: .navigation) {
+                        RootHistoryToolbar(showsAttention: true, contentSize: contentSize)
+                    }
+                    .sharedBackgroundVisibility(.hidden)
+                }
+            }
         }
         .toolbar(removing: .sidebarToggle)
         .tracksWindowRoom(inspectorRoom.window)

@@ -33,6 +33,8 @@ extension DS {
         public static let attentionCountLeading: CGFloat = 7
         public static let attentionCountTrailing: CGFloat = 8
         public static let attentionCountRadius: CGFloat = 11
+        public static let attentionCountWidth: CGFloat = 40
+        public static let attentionDigitWidth: CGFloat = 7
     }
 
     public nonisolated enum Signal {
