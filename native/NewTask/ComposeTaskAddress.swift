@@ -26,8 +26,9 @@ struct ComposeTaskAddress: View {
                 .buttonStyle(.plain)
                 .disabled(compose.isHeld)
                 .dsHitTarget(DS.ComposeTask.rowHeight)
+                .frame(minHeight: DS.ComposeTask.rowHeight)
                 .accessibilityLabel("Choose task agent and model")
-                .dsPopover(isPresented: picker(.agent), arrowEdge: .top) { ComposeAgentPicker(model: model) }
+                .dsPopover(isPresented: picker(.agent), arrowEdge: .bottom) { ComposeAgentPicker(model: model) }
                 ForEach(consequences, id: \.self) { consequence in
                     Text(consequence).font(.dsBody).foregroundStyle(.dsTextTertiary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -48,8 +49,9 @@ struct ComposeTaskAddress: View {
                         }
                     }
                     .buttonStyle(.plain).dsHitTarget(DS.ComposeTask.rowHeight).disabled(compose.isHeld)
+                    .frame(minHeight: DS.ComposeTask.rowHeight)
                     .accessibilityLabel("Choose task device")
-                    .dsPopover(isPresented: picker(.device), arrowEdge: .top) {
+                    .dsPopover(isPresented: picker(.device), arrowEdge: .bottom) {
                         QuickEntryPicker(model: model, entry: entry).frame(width: DS.ComposeTask.popoverWidth)
                     }
                     if entry.device.isRemote, model.composeDeviceOption?.canStart == false || compose.isHeld {
@@ -120,14 +122,16 @@ struct ComposeTaskAddress: View {
 
     private var deviceName: String { model.composeDeviceOption?.name ?? model.deviceName(entry.device) }
     private var workspaceBranch: String {
-        switch compose.workspace {
+        if entry.project == nil { return "Choose a folder first" }
+        return switch compose.workspace {
         case .branch(let name): name
         case .worktree(let folder): folder.lastPathComponent
         default: branch ?? (entry.project == nil ? "Choose a folder first" : "Current branch")
         }
     }
     private var workspaceDetail: String {
-        switch compose.workspace {
+        if entry.project == nil { return "" }
+        return switch compose.workspace {
         case .newWorktree: entry.device.isRemote ? "its own worktree on \(deviceName)" : "its own worktree"
         case .project: "in the project folder"
         case .branch, .worktree: "in its workspace"

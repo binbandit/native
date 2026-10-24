@@ -123,6 +123,14 @@ extension AppModel {
         }
     }
 
+    func submitComposeTask() {
+        if quickEntry.device.isRemote, composeDeviceOption?.canStart == false {
+            holdComposeTask()
+        } else {
+            startComposeTask()
+        }
+    }
+
     /// Validate at the action, then snapshot the draft once. Retries use that exact snapshot.
     func startComposeTask(revealing: Bool = true) {
         let compose = composeTask

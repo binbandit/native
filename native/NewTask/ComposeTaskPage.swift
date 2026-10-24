@@ -34,7 +34,7 @@ struct ComposeTaskPage: View {
             ToolbarItem(placement: .principal) { TaskWellLabel(content: readiness) }
                 .sharedBackgroundVisibility(.hidden)
             ToolbarItem {
-                if !entry.device.isRemote || model.composeDeviceOption?.canStart == true {
+                if compose.stage == .writing, !entry.device.isRemote || model.composeDeviceOption?.canStart == true {
                     Button {
                         model.startComposeTask()
                     } label: {
@@ -80,6 +80,10 @@ struct ComposeTaskPage: View {
         .onChange(of: compose.starting?.openedSession) { model.finishComposeTransition() }
         .onChange(of: compose.starting?.failure) { model.finishComposeTransition() }
         .onKeyPress(.escape) {
+            if compose.starting != nil, compose.starting?.openedSession == nil {
+                model.cancelComposeStart()
+                return .handled
+            }
             guard entry.picker != nil else { return .ignored }
             entry.picker = nil
             return .handled
@@ -103,7 +107,7 @@ struct ComposeTaskPage: View {
                         session: editor,
                         page: .init(
                             allowsFileMentions: entry.project != nil && entry.device == .thisMac,
-                            start: { model.startComposeTask() },
+                            start: { model.submitComposeTask() },
                             attachmentsPending: { compose.pendingAttachments = $0 })
                     )
                     .id(editor.id)
@@ -144,7 +148,7 @@ struct ComposeTaskPage: View {
             .accessibilityLabel("Choose task project")
             .dsPopover(
                 isPresented: Binding(get: { entry.picker == .project }, set: { if !$0 { entry.picker = nil } }),
-                arrowEdge: .top
+                arrowEdge: .bottom
             ) {
                 QuickEntryPicker(model: model, entry: entry).frame(width: DS.ComposeTask.popoverWidth)
             }

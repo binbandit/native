@@ -492,7 +492,8 @@ Expanding opens the Compose page without creating a task or worktree. The page k
 quoted context and attachments. Return starts the task; Shift-Return and Option-Return insert a
 new line. The toolbar's Start does the same. File > Attach Files (⌘U) attaches to the page;
 Option-Command-O opens its device picker. Escape closes a picker before returning to writing.
-An offline device offers Hold and Run on This Mac together; Cancel Hold keeps the draft editable.
+An offline device offers Hold and Run on This Mac together; Return holds the task for that device.
+Cancel Hold keeps the draft editable. Escape cancels a pending Start until its task has opened.
 After a background start, the confirmation's Open button opens that task. Quick Entry
 captures only a selection inside Native; global shortcuts and capture from other apps are not
 part of this experiment.
