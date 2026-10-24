@@ -105,6 +105,17 @@ struct SettingsScreen: View {
                 query = ""
             }
         }
+        // Page replacement can deliver the old page's disappearance after the new one's
+        // appearance. Keep the callback on the screen so that cannot unregister its successor.
+        .onAppear {
+            presentation.scrollPage = { offset in
+                Task { @MainActor in
+                    await Task.yield()
+                    scrollPosition.scrollTo(y: offset)
+                }
+            }
+        }
+        .onDisappear { presentation.scrollPage = nil }
     }
 
     private var content: some View {
@@ -123,20 +134,7 @@ struct SettingsScreen: View {
                 Double(geometry.contentOffset.y + geometry.contentInsets.top)
             } action: { _, offset in
                 presentation.pageOffset = offset
-            }
-            .onAppear {
-                presentation.scrollPage = { offset in
-                    Task { @MainActor in
-                        await Task.yield()
-                        scrollPosition.scrollTo(y: offset)
-                    }
-                }
-            }
-            .onDisappear { presentation.scrollPage = nil }
-            .onScrollGeometryChange(for: Bool.self) { geometry in
-                geometry.contentOffset.y + geometry.contentInsets.top > 0
-            } action: { _, isScrolled in
-                self.isScrolled = isScrolled
+                isScrolled = offset > 0
             }
             .task(id: reveal) {
                 guard let reveal else { return }

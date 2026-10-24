@@ -43,6 +43,9 @@ struct CelebrationsSettingsPage: View {
                     }
             } else {
                 list
+                    .onGeometryChange(for: CGSize.self, of: \.size) { _ in
+                        settings.detailListDidLayout()
+                    }
             }
         }
         .environment(\.settingsFlash, reveal ?? settingsFlash)
@@ -58,7 +61,7 @@ struct CelebrationsSettingsPage: View {
             if lastChange?.after != preferences { lastChange = nil }
         }
         .onDisappear {
-            settings.showDetail(nil); lastChange = nil
+            settings.dismissDetail(); lastChange = nil
         }
     }
 
