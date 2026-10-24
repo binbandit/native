@@ -12,6 +12,7 @@ struct SessionRow<Accessory: View>: View {
     @Environment(\.undoManager) private var undoManager
     @Environment(\.sidebarSelection) private var picking
     @Environment(\.sidebarTaskInsights) private var insights
+    @AppStorage("sidebar.showAgentIcons") private var showAgentIcons = true
     @Environment(\.sidebarAllInView) private var isAllInView
     @Environment(\.oldestTaskAskID) private var oldestAskID
     let summary: SessionSummary
@@ -118,7 +119,7 @@ struct SessionRow<Accessory: View>: View {
             TaskRow(
                 title: title, status: TaskStatus(session), isSelected: isSelected, isUnread: isUnread,
                 date: model.lastActivity(for: summary), badge: badge, indent: indent,
-                leading: AgentIcon(agent: summary.agent), accessory: accessory,
+                leading: AgentIcon(agent: summary.agent).opacity(showAgentIcons ? 1 : 0), accessory: accessory,
                 action: select, onArchive: archiveAction)
         }
     }
@@ -317,6 +318,20 @@ struct SessionContextUsage: View {
                 SessionRow(summary: summary, canMoveUp: true, canMoveDown: true, accessory: EmptyView()) {}
             }
         }
+        .frame(width: DS.Size.sidebarWidth - DS.Space.lg)
+    }
+    .sidebarPreviewEnvironment(app)
+}
+#Preview("Task rows - Agent icons hidden") {
+    let app = AppModel.preview()
+    let defaults = SidebarPreviewFixtures.defaults(showAgentIcons: false)
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xxs) {
+            ForEach(SidebarPreviewFixtures.sessions(in: app)) { summary in
+                SessionRow(summary: summary, canMoveUp: true, canMoveDown: true, accessory: EmptyView()) {}
+            }
+        }
+        .defaultAppStorage(defaults)
         .frame(width: DS.Size.sidebarWidth - DS.Space.lg)
     }
     .sidebarPreviewEnvironment(app)

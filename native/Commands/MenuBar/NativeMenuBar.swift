@@ -69,6 +69,7 @@ private struct FileCommands: Commands {
             CommandMenuItem(.expeditionNew, in: menu)
             CommandMenuItem(.projectOpen, in: menu)
             CommandMenuItem(.projectSettings, in: menu)
+            CommandMenuItem(.projectRefresh, in: menu)
             CommandMenuItem(.pullRequestOpenAsTask, in: menu)
             CommandMenuItem(.gitCleanUpMerged, in: menu)
             Divider()

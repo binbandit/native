@@ -20,6 +20,7 @@ public struct ProjectRow<MenuContent: View>: View {
     let icon: ProjectIcon
     let isExpanded: Bool
     let taskCount: Int?
+    let isRefreshing: Bool
     let activity: ProjectActivity
     let note: String?
     let onToggle: () -> Void
@@ -39,6 +40,7 @@ public struct ProjectRow<MenuContent: View>: View {
         isExpanded: Bool,
         taskCount: Int? = nil,
         activity: ProjectActivity = ProjectActivity(),
+        isRefreshing: Bool = false,
         note: String? = nil,
         onToggle: @escaping () -> Void,
         onNewTask: (() -> Void)? = nil,
@@ -49,6 +51,7 @@ public struct ProjectRow<MenuContent: View>: View {
         self.isExpanded = isExpanded
         self.taskCount = taskCount
         self.activity = activity
+        self.isRefreshing = isRefreshing
         self.note = note
         self.onToggle = onToggle
         self.onNewTask = onNewTask
@@ -76,6 +79,9 @@ public struct ProjectRow<MenuContent: View>: View {
                         .foregroundStyle(.dsTextSecondary)
                         .lineLimit(1)
 
+                    if isRefreshing {
+                        ProjectRefreshIndicator()
+                    }
                     if !isExpanded {
                         if let note {
                             Text(note)
@@ -142,6 +148,7 @@ public struct ProjectRow<MenuContent: View>: View {
 
     /// "Collapsed, 1 needs you, 2 working", so VoiceOver hears what the hidden tasks are doing.
     private var accessibilityValue: String {
+        if isRefreshing { return "Refreshing task state" }
         guard !isExpanded else { return "Expanded" }
         return ["Collapsed", note ?? activity.label].compactMap(\.self).joined(separator: ", ")
     }
@@ -217,6 +224,9 @@ public struct ProjectAvatar: View {
 #Preview("Project rows") {
     DSPreviewPair {
         VStack(spacing: DS.Space.xs) {
+            ProjectRow(name: "Refreshing project", isExpanded: true, isRefreshing: true, onToggle: {}) {
+                Button("Refresh") {}
+            }
             ProjectRow(name: "native", isExpanded: true, onToggle: {}, onNewTask: {}) {
                 Button("Reveal in Finder") {}
             }
