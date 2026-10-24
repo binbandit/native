@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import NativeCommands
 import NativeHostClient
 import NativeHostProtocol
 
