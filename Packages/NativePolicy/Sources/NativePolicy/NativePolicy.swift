@@ -66,6 +66,11 @@ public struct NativePolicy: Equatable, Sendable {
         public var repositoryScriptsEnabled = true
     }
 
+    public var organizationContact: String?
+    /// A validated built-in theme for both modes, applied without replacing personal preferences.
+    public var appearanceCodeTheme: String?
+    public var appearanceCodeThemeReason: String?
+
     public var agents = Agents()
     public var mcp = MCP()
     /// Ids of the plugins installed from manifests that may load; nil allows all. Built-in plugins

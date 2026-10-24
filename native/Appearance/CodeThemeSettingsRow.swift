@@ -1,125 +1,197 @@
 import CodeThemes
+import NativePolicy
 import SwiftUI
 
-/// Settings ▸ Appearance ▸ Code theme: the syntax colors for code blocks and diffs, chosen apart for
-/// light and dark mode, each with a preview drawn in its own appearance.
 struct CodeThemeSettingsRow: View {
     static let rowID = SettingsRowID("appearance.code-theme")
-
     static var searchEntry: SettingsSearchEntry {
         SettingsSearchEntry(
-            id: rowID,
-            title: "Code theme",
-            description: "Syntax colors for code blocks and diffs.",
-            keywords: ["syntax", "highlighting", "colors", "dracula", "nord", "solarized", "github", "catppuccin"]
-        )
+            id: rowID, title: "Code theme", description: "Colors for code blocks, diffs and the terminal.",
+            keywords: ["syntax", "highlighting", "colors", "dracula", "nord", "solarized", "github", "catppuccin"])
     }
 
-    @AppStorage(AppearancePreferences.lightCodeThemeKey) private var light = CodeTheme.native.id.rawValue
-    @AppStorage(AppearancePreferences.darkCodeThemeKey) private var dark = CodeTheme.native.id.rawValue
+    @AppStorage private var light: String
+    @AppStorage private var dark: String
+    @AppStorage private var source: String
+    @State private var selection: CodeThemeSelection
+    @State private var specimen = SpecimenLine.sample()
+    @State private var lock: CodeAppearance?
     @Environment(PluginRegistry.self) private var plugins
+    @Environment(PolicyCenter.self) private var policyCenter: PolicyCenter?
+    @Environment(AppModel.self) private var model: AppModel?
+    @Environment(SettingsPresentation.self) private var settings: SettingsPresentation?
+    @Environment(\.undoManager) private var undoManager
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let fixedSpecimen: SpecimenLine?
+    var ghosttyColors = false
 
-    var body: some View {
-        SettingsRow(
-            id: Self.rowID,
-            "Code theme",
-            description: Text("Syntax colors for code blocks and diffs, one for light mode and one for dark.")
-        ) {
-            HStack(alignment: .top, spacing: DS.Space.lg) {
-                let themes = PluginThemeCatalog(plugins).allCodeThemes
-                CodeThemePreview(appearance: .light, selection: $light, themes: themes)
-                CodeThemePreview(appearance: .dark, selection: $dark, themes: themes)
-            }
-        }
-        .settingsControlBelow()
+    init(
+        defaults: UserDefaults = .standard, fixedSpecimen: SpecimenLine? = nil, ghosttyColors: Bool = false,
+        initiallyShowsPolicyDetails: Bool = false
+    ) {
+        _light = AppStorage(wrappedValue: "native", AppearancePreferences.lightCodeThemeKey, store: defaults)
+        _dark = AppStorage(wrappedValue: "native", AppearancePreferences.darkCodeThemeKey, store: defaults)
+        _source = AppStorage(wrappedValue: "latest", AppearancePreferences.specimenKey, store: defaults)
+        _lock = State(initialValue: initiallyShowsPolicyDetails ? .light : nil)
+        _selection = State(initialValue: CodeThemeSelection(defaults: defaults))
+        self.fixedSpecimen = fixedSpecimen
+        self.ghosttyColors = ghosttyColors
     }
-}
 
-/// One appearance's choice: its picker, then a code block and a diff drawn in that theme.
-private struct CodeThemePreview: View {
-    let appearance: CodeAppearance
-    @Binding var selection: String
-
-    /// Built-in and plugin themes, labelled with their plugin's name.
-    let themes: [CodeTheme]
-
-    @Environment(\.dsCodeThemes) private var windowThemes
+    private var policy: NativePolicy { policyCenter?.policy ?? PolicyCenter.shared.policy }
+    private var catalog: PluginThemeCatalog { PluginThemeCatalog(plugins) }
+    private var excerpt: SpecimenLine {
+        source == "sample" ? .sample(language: specimen.language) : fixedSpecimen ?? specimen
+    }
+    private var themes: DSCodeThemes {
+        DSCodeThemes(light: chosen(.light), dark: chosen(.dark))
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.md) {
             HStack {
-                Text(appearance == .light ? "Light mode" : "Dark mode")
-                    .settingsText(.bodyMedium)
-                    .foregroundStyle(.dsTextSecondary)
-                Spacer(minLength: DS.Space.md)
-                SettingsSelect(
-                    label: appearance == .light ? "Light mode code theme" : "Dark mode code theme",
-                    selection: shownSelection,
-                    options: themes.filter { $0.palette(for: appearance) != nil }
-                        .map { .init(value: $0.id.rawValue, title: $0.name) },
-                    width: SettingsMetrics.selectWidth * 1.5
+                Text("Code theme").font(DS.Settings.groupTitle).accessibilityAddTraits(.isHeader)
+                Spacer()
+                Menu {
+                    Toggle(
+                        "Use Sample Code",
+                        isOn: Binding(get: { source == "sample" }, set: { source = $0 ? "sample" : "latest" }))
+                    if policy.appearanceCodeTheme == nil {
+                        let current = chosen(scheme == .dark ? .dark : .light)
+                        if current.light != nil && current.dark != nil {
+                            Button("Use for Both Modes") {
+                                selection.select(current.id.rawValue, for: nil, undoManager: undoManager)
+                            }
+                        }
+                        Button("Reset to Native") { selection.select("native", for: nil, undoManager: undoManager) }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                }
+                .menuIndicator(.hidden)
+                .buttonStyle(.plain)
+                .dsHitTarget(DS.Settings.controlHeight)
+                .accessibilityLabel("Code theme options")
+            }
+            .foregroundStyle(.dsTextPrimary)
+            VStack(spacing: 0) {
+                CodeThemeCardWell(specimen: excerpt)
+                    .dsCodeThemes(themes)
+                    .animation(reduceMotion ? nil : .dsQuick, value: themes)
+                themeRow(.dark)
+                SeparatorLine().padding(.leading, DS.Settings.rowInset)
+                themeRow(.light)
+            }
+            .background(.dsSurface)
+            .clipShape(.rect(cornerRadius: DS.Radius.panel))
+            .overlay {
+                RoundedRectangle(cornerRadius: DS.Radius.panel).strokeBorder(
+                    .dsSeparator, lineWidth: DS.Settings.hairline)
+            }
+            SettingsFooter(footer)
+            if policy.appearanceCodeTheme == nil {
+                unavailableChoice(dark)
+                if light != dark { unavailableChoice(light) }
+            }
+        }
+        .settingsRevealTarget(Self.rowID)
+        .task {
+            guard fixedSpecimen == nil, let model else { return }
+            let result = await AppearanceSpecimenSource.load(model: model)
+            if !Task.isCancelled { specimen = result }
+        }
+    }
+
+    private func chosen(_ appearance: CodeAppearance) -> CodeTheme {
+        let theme = catalog.codeTheme(id: policy.appearanceCodeTheme ?? (appearance == .dark ? dark : light)) ?? .native
+        return theme.palette(for: appearance) == nil ? .native : theme
+    }
+
+    private func themeRow(_ appearance: CodeAppearance) -> some View {
+        SettingsRow(appearance == .dark ? "Dark mode" : "Light mode") {
+            if policy.appearanceCodeTheme != nil {
+                Button {
+                    lock = appearance
+                } label: {
+                    Label(chosen(appearance).name, systemImage: "lock.fill")
+                        .font(.dsCallout)
+                        .foregroundStyle(.dsTextSecondary)
+                }
+                .buttonStyle(.plain)
+                .dsHitTarget(DS.Settings.controlHeight)
+                .accessibilityLabel(
+                    "\(appearance == .dark ? "Dark" : "Light") mode code theme, \(chosen(appearance).name), set by \(policy.organizationName ?? "your organization")"
                 )
+                .popover(isPresented: Binding(get: { lock == appearance }, set: { if !$0 { lock = nil } })) {
+                    AppearancePolicyDetails(policy: policy)
+                }
+            } else {
+                CodeThemeSelect(
+                    appearance: appearance, selected: chosen(appearance),
+                    entries: catalog.entries.filter { $0.theme.palette(for: appearance) != nil }
+                ) { theme in
+                    selection.select(theme.id.rawValue, for: appearance, undoManager: undoManager)
+                }
             }
-            VStack(alignment: .leading, spacing: DS.Space.sm) {
-                HighlightedCode(Self.sample, language: "ts")
-                    .codeTextStyle()
-                    .padding(DS.Space.lg)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.dsCodeBlockBackground, in: .rect(cornerRadius: DS.Radius.card))
-                DiffView(path: "user.ts", oldText: Self.before, newText: Self.after)
+        }
+        .padding(.horizontal, DS.Settings.rowInset)
+        .padding(.vertical, DS.Settings.rowVerticalInset)
+        .frame(minHeight: max(DS.Settings.rowHeight, DS.Size.minimumHitTarget))
+    }
+
+    private var footer: String {
+        var text =
+            policy.appearanceCodeTheme != nil
+            ? "Both modes. The rest of this page is yours."
+            : "Code blocks, diffs and the terminal use it. Try On shows each theme on your latest task, live."
+        if ghosttyColors { text += " The terminal uses your Ghostty colors." }
+        return text
+    }
+
+    @ViewBuilder private func unavailableChoice(_ id: String) -> some View {
+        if catalog.codeTheme(id: id) == nil,
+            let loaded = plugins.plugins.first(where: { loaded in
+                PluginThemeCatalog.check(loaded.plugin.manifest).codeThemes.contains { $0.id.rawValue == id }
+            }), plugins.isAllowed(loaded.id),
+            let theme = PluginThemeCatalog.check(loaded.plugin.manifest).codeThemes.first(where: {
+                $0.id.rawValue == id
+            })
+        {
+            VStack(alignment: .leading, spacing: DS.Space.md) {
+                SettingsFooter(
+                    "\(theme.name) is from \(loaded.plugin.manifest.name), which is off. Native is in use until it's back."
+                )
+                Button("Turn On \(loaded.plugin.manifest.name)") {
+                    settings?.open(.extensions, revealing: ExtensionsSettingsPage.rowID(loaded.id))
+                }
+                .buttonStyle(.settings)
+                .padding(.leading, DS.Settings.rowInset)
             }
-            .padding(DS.Space.md)
-            .background(.dsBackground, in: .rect(cornerRadius: DS.Radius.panel))
-            .overlay { RoundedRectangle(cornerRadius: DS.Radius.panel).strokeBorder(.dsSeparator, lineWidth: 1) }
-            .environment(\.colorScheme, appearance == .light ? .light : .dark)
-            .dsCodeThemes(previewThemes)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Preview of the \(appearance == .light ? "light" : "dark") mode code theme")
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    /// The choice, or Native while the chosen theme's plugin is off (the app falls back the same way).
-    private var shownSelection: Binding<String> {
-        Binding {
-            themes.contains { $0.id.rawValue == selection } ? selection : CodeTheme.native.id.rawValue
-        } set: {
-            selection = $0
         }
     }
-
-    /// The window's themes with this appearance's choice in place, so the preview follows the picker.
-    private var previewThemes: DSCodeThemes {
-        var preview = windowThemes
-        let theme = themes.first { $0.id.rawValue == selection } ?? .native
-        if appearance == .light {
-            preview.light = theme
-        } else {
-            preview.dark = theme
-        }
-        return preview
-    }
-
-    private static let sample = """
-        // Fetch user data
-        async function getUser(id: number): Promise<User> {
-            const response = await fetch(`/api/users/${id}`);
-            return { name: response.name, active: true };
-        }
-        """
-
-    private static let before = "const limit = 10;\nexport default getUser;\n"
-    private static let after = "const limit = 25; // per page\nexport default getUser;\n"
 }
 
-#if NATIVE_PREVIEWS_WIP
-#Preview("Code theme row") {
-    DSPreviewPair {
-        SettingsRowGroup {
-            CodeThemeSettingsRow()
-        }
-        .settingsPreviewPage()
+#if DEBUG
+#Preview("Appearance - Latest change") {
+    AppearancePreviewFixtures.card()
+}
+#Preview("Appearance - Sample source") {
+    AppearancePreviewFixtures.card(sample: true)
+}
+#Preview("Appearance - Plugin and plugin off") {
+    VStack {
+        AppearancePreviewFixtures.card(plugin: true)
+        AppearancePreviewFixtures.card(plugin: true, disabled: true)
     }
-    .environment(SettingsPreviewFixtures.registry())
+}
+#Preview("Appearance - Locked code theme") {
+    AppearancePreviewFixtures.card(locked: true)
+}
+#Preview("Appearance - Locked popover") {
+    AppearancePreviewFixtures.card(locked: true, showLock: true)
+}
+#Preview("Appearance - Narrow code theme") {
+    AppearancePreviewFixtures.card(width: 320)
 }
 #endif

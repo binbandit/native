@@ -1,4 +1,5 @@
 import CodeThemes
+import NativePolicy
 import SwiftUI
 
 /// The user's look-and-feel choices from Settings ▸ Appearance, stored in user defaults.
@@ -14,6 +15,7 @@ enum AppearancePreferences {
     /// The code themes for light and dark mode (`CodeTheme.ID` raw values).
     static let lightCodeThemeKey = "appearance.codeTheme.light"
     static let darkCodeThemeKey = "appearance.codeTheme.dark"
+    static let specimenKey = "appearance.codeTheme.specimen"
     /// A plugin accent palette's id, or empty to follow the app icon's theme.
     static let accentKey = "appearance.accent"
     /// The code font (`DSCodeFont`): an installed monospaced family (empty for Geist Mono), its size,
@@ -52,14 +54,15 @@ private struct AppearancePreferencesModifier: ViewModifier {
     func body(content: Content) -> some View {
         // A theme or accent whose plugin is off (or gone) falls back to the default at once.
         let catalog = PluginThemeCatalog(plugins)
+        let managed = PolicyCenter.shared.policy.appearanceCodeTheme
         content
             .dsTransparency(transparency)
             .dsLightTone(lightTone)
             .dsDarkTone(darkTone)
             .dsCodeThemes(
                 DSCodeThemes(
-                    light: catalog.codeTheme(id: lightCodeTheme) ?? .native,
-                    dark: catalog.codeTheme(id: darkCodeTheme) ?? .native)
+                    light: catalog.codeTheme(id: managed ?? lightCodeTheme) ?? .native,
+                    dark: catalog.codeTheme(id: managed ?? darkCodeTheme) ?? .native)
             )
             .dsCodeFont(
                 DSCodeFont(family: codeFamily, size: codeSize, lineHeight: codeLineHeight, ligatures: codeLigatures)

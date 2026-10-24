@@ -218,3 +218,19 @@ extension CodeColor {
     }
 }
 #endif
+
+/// An edge that stays visible on both a theme's own fill and Native's warm or neutral tones.
+nonisolated struct DSCodeWellEdge: ShapeStyle {
+    func resolve(in environment: EnvironmentValues) -> Color {
+        if environment.colorSchemeContrast == .increased { return .dsBorder }
+        if environment.colorScheme == .dark { return .white.opacity(0.06) }
+        if environment.dsLightTone == .wool {
+            return Color(red: 59 / 255, green: 43 / 255, blue: 20 / 255).opacity(0.08)
+        }
+        return .black.opacity(0.07)
+    }
+}
+
+extension ShapeStyle where Self == DSCodeWellEdge {
+    static var dsCodeWellEdge: DSCodeWellEdge { DSCodeWellEdge() }
+}
