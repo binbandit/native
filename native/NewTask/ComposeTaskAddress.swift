@@ -28,7 +28,9 @@ struct ComposeTaskAddress: View {
                 .dsHitTarget(DS.ComposeTask.rowHeight)
                 .frame(minHeight: DS.ComposeTask.rowHeight)
                 .accessibilityLabel("Choose task agent and model")
-                .dsPopover(isPresented: picker(.agent), arrowEdge: .bottom) { ComposeAgentPicker(model: model) }
+                .dsPopover(isPresented: picker(.agent), attachmentAnchor: .point(.bottomLeading), arrowEdge: .top) {
+                    ComposeAgentPicker(model: model)
+                }
                 ForEach(consequences, id: \.self) { consequence in
                     Text(consequence).font(.dsBody).foregroundStyle(.dsTextTertiary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -51,7 +53,8 @@ struct ComposeTaskAddress: View {
                     .buttonStyle(.plain).dsHitTarget(DS.ComposeTask.rowHeight).disabled(compose.isHeld)
                     .frame(minHeight: DS.ComposeTask.rowHeight)
                     .accessibilityLabel("Choose task device")
-                    .dsPopover(isPresented: picker(.device), arrowEdge: .bottom) {
+                    .dsPopover(isPresented: picker(.device), attachmentAnchor: .point(.bottomLeading), arrowEdge: .top)
+                    {
                         QuickEntryPicker(model: model, entry: entry).frame(width: DS.ComposeTask.popoverWidth)
                     }
                     if entry.device.isRemote, model.composeDeviceOption?.canStart == false || compose.isHeld {

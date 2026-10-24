@@ -13,7 +13,8 @@ struct ComposeAgentPicker: View {
                     let allowed = PolicyCenter.shared.policy.agents.allows(runtime.agent.id.rawValue)
                     ComposerPickerRow(
                         title: runtime.agent.displayName,
-                        detail: allowed
+                        detail: nil,
+                        status: allowed
                             ? runtime.needsSignIn
                                 ? "Needs sign-in" : runtime.status == .idle ? "Ready" : runtime.status.label
                             : "Not allowed",

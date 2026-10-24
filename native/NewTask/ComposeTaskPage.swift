@@ -148,7 +148,7 @@ struct ComposeTaskPage: View {
             .accessibilityLabel("Choose task project")
             .dsPopover(
                 isPresented: Binding(get: { entry.picker == .project }, set: { if !$0 { entry.picker = nil } }),
-                arrowEdge: .bottom
+                attachmentAnchor: .point(.bottomLeading), arrowEdge: .top
             ) {
                 QuickEntryPicker(model: model, entry: entry).frame(width: DS.ComposeTask.popoverWidth)
             }
