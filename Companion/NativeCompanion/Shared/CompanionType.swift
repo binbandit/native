@@ -25,6 +25,8 @@ enum CompanionMetrics {
     static let iconThumbnail: CGFloat = 36
     static let iconPreview: CGFloat = 60
     static let scannerHeight: CGFloat = 320
+    static let scannerCompactHeight: CGFloat = 160
+    static let approvalHeightFraction: CGFloat = 0.6
     static let pill: CGFloat = 50
     static let composerMaxLines = 6
     static let readableWidth: CGFloat = 640

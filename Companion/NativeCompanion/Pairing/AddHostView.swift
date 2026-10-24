@@ -8,6 +8,7 @@ import UIKit
 struct AddHostView: View {
     @Environment(CompanionStore.self) private var store
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @State private var flow = PairingFlow()
     @State private var isScanning = false
     @State private var codeHost: DiscoveredHost?
@@ -68,7 +69,10 @@ struct AddHostView: View {
                             isScanning = false
                             flow.pair(invite: invite, discovered: store.discovered, store: store)
                         }
-                        .frame(height: CompanionMetrics.scannerHeight)
+                        .frame(
+                            height: verticalSizeClass == .compact
+                                ? CompanionMetrics.scannerCompactHeight : CompanionMetrics.scannerHeight
+                        )
                         .clipShape(.rect(cornerRadius: DS.Radius.panel))
                     }
                     Button {
@@ -170,3 +174,14 @@ struct AddHostView: View {
         flow.pair(invite: invite, discovered: store.discovered, store: store)
     }
 }
+
+#if DEBUG
+#Preview("Add host - Compact height") {
+    DSPreviewPair {
+        AddHostView()
+            .environment(CompanionStore(previewHosts: []))
+            .environment(\.verticalSizeClass, .compact)
+            .frame(width: 760, height: 390)
+    }
+}
+#endif
