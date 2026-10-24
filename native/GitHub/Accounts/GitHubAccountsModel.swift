@@ -78,7 +78,7 @@ final class GitHubAccountsModel {
     var guidance: String? {
         if switchingTo != nil { return "Switching account…" }
         if let switchFailure { return switchFailure }
-        if let current, !current.active, current.state != .error {
+        if status != nil, let current, !current.active, current.state != .error {
             return
                 "GitHub CLI manages this account. Activate @\(current.login) with gh auth switch in a terminal, then check accounts."
         }
