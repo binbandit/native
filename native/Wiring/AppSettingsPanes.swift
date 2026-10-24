@@ -17,6 +17,7 @@ enum AppSettingsPanes {
         // Labs goes away when the organization turns experiments off; Hosts stays hidden until
         // paired hosts are on.
         .filter { $0.id != .labs || PolicyCenter.shared.policy.labsEnabled }
+        .filter { $0.id != .celebrations || PolicyCenter.shared.policy.celebrationsEnabled }
         .filter { $0.id != .hosts || SettingsPane.showsHosts }
             + SettingsPane.projects(projects)
     }

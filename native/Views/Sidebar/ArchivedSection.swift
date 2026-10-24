@@ -12,7 +12,8 @@ struct ArchivedSection: View {
 
     var body: some View {
         let projects = model.projects.archived
-        let tasks = (model.projects.all + projects).flatMap { model.archivedSessions(in: $0.id) }
+        let groups = model.archivedTaskGroups
+        let tasks = groups.flatMap(\.tasks)
         if !projects.isEmpty || !tasks.isEmpty {
             VStack(alignment: .leading, spacing: DS.Space.xs) {
                 Button {
@@ -37,11 +38,18 @@ struct ArchivedSection: View {
                 .padding(.top, DS.Space.md)
 
                 if isExpanded {
-                    ForEach(projects) { project in
-                        ArchivedProjectRow(project: project)
-                    }
-                    ForEach(tasks) { summary in
-                        ArchivedTaskRow(summary: summary) { select(summary.id) }
+                    ForEach(groups) { group in
+                        VStack(alignment: .leading, spacing: DS.Space.xxs) {
+                            if group.isArchivedProject {
+                                ArchivedProjectRow(project: group.project)
+                            } else {
+                                SectionHeader(group.project.name)
+                                    .accessibilityAddTraits(.isHeader)
+                            }
+                            ForEach(group.tasks) { summary in
+                                ArchivedTaskRow(summary: summary) { select(summary.id) }
+                            }
+                        }
                     }
                 }
             }
@@ -98,6 +106,7 @@ private struct ArchivedProjectRow: View {
 /// An archived task: opens to read on click, with Unarchive at its trailing edge and Delete in its
 /// menus.
 private struct ArchivedTaskRow: View {
+    @AppStorage("sidebar.showAgentIcons") private var showAgentIcons = true
     @Environment(\.sidebarAllInView) private var isAllInView
     @Environment(AppModel.self) private var model
     @Environment(\.undoManager) private var undoManager
@@ -117,8 +126,8 @@ private struct ArchivedTaskRow: View {
                     status: .idle,
                     isSelected: model.selection == summary.id,
                     date: model.lastActivity(for: summary),
-                    indent: .flat,
-                    leading: AgentIcon(agent: summary.agent),
+                    indent: .grouped,
+                    leading: AgentIcon(agent: summary.agent).opacity(showAgentIcons ? 1 : 0),
                     accessory: IconButton(
                         "Unarchive “\(title)”", systemImage: "arrow.uturn.backward", action: unarchive),
                     action: select
@@ -156,10 +165,24 @@ private struct ArchivedTaskRow: View {
 
 #if DEBUG
 #Preview("Archived section") {
+    let app = SidebarPreviewFixtures.archivedApp()
+    let defaults = SidebarPreviewFixtures.defaults(showsArchived: true)
     DSPreviewPair {
         ArchivedSection(select: { _ in })
+            .defaultAppStorage(defaults)
             .frame(width: DS.Size.sidebarWidth)
     }
-    .sidebarPreviewEnvironment(AppModel.preview())
+    .sidebarPreviewEnvironment(app)
+}
+#Preview("All in view - Archived by project") {
+    let app = SidebarPreviewFixtures.archivedApp()
+    let defaults = SidebarPreviewFixtures.defaults(showAgentIcons: false, showsArchived: true)
+    DSPreviewPair {
+        ArchivedSection(select: { _ in })
+            .environment(\.sidebarAllInView, true)
+            .defaultAppStorage(defaults)
+            .frame(width: DS.Size.sidebarWidth)
+    }
+    .sidebarPreviewEnvironment(app)
 }
 #endif

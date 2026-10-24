@@ -1,241 +1,305 @@
 import AppAppearance
+import Foundation
+import NativePolicy
 import SwiftUI
 import Undo
 
-/// Settings ▸ Celebrations, the chooser: what's showing and why, the overlap order, and the whole
-/// catalogue all year with each celebration off until the user picks it. Nothing is chosen from the
-/// user's locale or region.
+/// The catalogue stays compact: today's look, a year, genuine collisions, then months.
 struct CelebrationsSettingsPage: View {
+    var organizationName: String?
+
     @Environment(CelebrationCenter.self) private var center
     @Environment(PluginRegistry.self) private var plugins
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(SettingsPresentation.self) private var settings
+    @Environment(\.settingsScrollTo) private var scrollTo
+    @Environment(\.settingsFlash) private var settingsFlash
     @Environment(\.undoManager) private var undoManager
     @State private var query = ""
     @State private var showsLater = false
-    /// The last change to many celebrations at once, so its result and Undo show beside the controls.
-    @State private var lastChange: BulkChange?
+    @State private var detail: CelebrationID?
+    @State private var reveal: SettingsReveal?
+    @State private var lastChange: CelebrationBulkChange?
+    @State private var flashed: Set<CelebrationID> = []
 
-    private struct BulkChange: Equatable {
-        let summary: String
-        let before: CelebrationPreferences
+    init(organizationName: String? = nil, initialQuery: String = "") {
+        self.organizationName = organizationName
+        _query = State(initialValue: initialQuery)
     }
 
-    static func rowID(_ id: CelebrationID) -> SettingsRowID {
-        SettingsRowID("celebration.\(id.rawValue)")
-    }
-
-    private var isPluginEnabled: Bool { plugins.isEnabled(CelebrationsPlugin.id) }
-
-    private var matches: [CelebrationEvent] {
-        center.celebrations.filter { $0.contribution.matches(query) }
-    }
-
-    /// Ready to use, or already chosen.
-    private var available: [CelebrationEvent] {
-        matches.filter { $0.canBeChosen(on: center.today) || center.preferences.selection(for: $0.id).isEnabled }
-    }
-
-    /// Listed with their calendar (or artwork) still to come.
-    private var later: [CelebrationEvent] {
-        matches.filter { !$0.canBeChosen(on: center.today) && !center.preferences.selection(for: $0.id).isEnabled }
-    }
-
+    static func rowID(_ id: CelebrationID) -> SettingsRowID { SettingsRowID("celebration.\(id.rawValue)") }
+    private static let detailID = SettingsRowID("celebration.detail")
     private var isSearching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if let detail, let event = center.celebrations.first(where: { $0.id == detail }) {
+                CelebrationDetailPage(event: event) { settings.goBack() }
+                    .id(Self.detailID)
+                    .task(id: event.id) {
+                        // The feature can be below Appearance in a combined Settings page.
+                        try? await Task.sleep(for: .milliseconds(50))
+                        guard !Task.isCancelled else { return }
+                        scrollTo?(Self.detailID, .top)
+                    }
+            } else {
+                list
+                    .onGeometryChange(for: CGSize.self, of: \.size) { _ in
+                        settings.detailListDidLayout()
+                    }
+            }
+        }
+        .environment(\.settingsFlash, reveal ?? settingsFlash)
+        .onChange(of: settingsFlash) { _, flash in
+            reveal = nil
+            guard let flash,
+                let event = center.celebrations.first(where: { Self.rowID($0.id) == flash.rowID })
+            else { return }
+            query = ""
+            if !event.canBeChosen(on: center.today) { showsLater = true }
+        }
+        .onChange(of: center.preferences) { _, preferences in
+            if lastChange?.after != preferences { lastChange = nil }
+        }
+        .onDisappear {
+            settings.dismissDetail(); lastChange = nil
+        }
+    }
+
+    private static func monthID(_ month: CivilDate) -> SettingsRowID {
+        SettingsRowID("celebration-month.\(month.year)-\(month.month)")
+    }
+
+    private func open(_ id: CelebrationID) {
+        settings.showDetail(id.rawValue) { detail = nil }
+        lastChange = nil
+        detail = id
+    }
+
+    private var list: some View {
         SettingsPage {
             SettingsHeader(
                 "Celebrations",
                 description: Text(
-                    "Native dresses its icon and Home for the celebrations you choose, on their dates, then puts your usual look back. Every one starts off."
-                ))
-            if !isPluginEnabled {
-                turnOn
+                    "Native dresses its icon and Home on the days you choose, then puts your look back."))
+            if !plugins.isEnabled(CelebrationsPlugin.id) { turnOn }
+            if hasUnavailableIcons {
+                CelebrationOfflineNotice(
+                    organizationName: organizationName ?? PolicyCenter.shared.policy.organizationName)
             }
             if !center.catalog.celebrations.isEmpty {
-                CelebrationStatusCard()
-                if center.priority.count > 1 {
-                    CelebrationPriorityList()
-                }
+                CelebrationStatusCard(
+                    reveal: { id in
+                        query = ""
+                        Task { @MainActor in
+                            await Task.yield()
+                            scrollTo?(Self.rowID(id), .center)
+                            reveal = SettingsReveal(rowID: Self.rowID(id))
+                        }
+                    },
+                    revealMonth: { month in
+                        query = ""
+                        Task { @MainActor in
+                            await Task.yield()
+                            scrollTo?(Self.monthID(month), .top)
+                        }
+                    },
+                    chooseCountry: chooseCountry)
+                CelebrationOverlaps(overlaps: center.overlaps(within: 365))
                 catalogue
             }
-            if !center.catalog.problems.isEmpty {
-                problems
-            }
+            if !center.catalog.problems.isEmpty { problems }
         }
-        .animation(reduceMotion ? nil : .dsQuick, value: center.priority.map(\.id))
-        .animation(reduceMotion ? nil : .dsQuick, value: lastChange)
     }
 
     private var turnOn: some View {
         SettingsRow(
-            "Native's celebrations are off",
-            icon: "party.popper",
-            description: Text(
-                "Turn on the Celebrations extension for Halloween and Día de Muertos. Each one stays off until you choose it here."
-            )
+            "Native's celebrations are off", icon: "party.popper",
+            description: Text("Each celebration stays off until you choose it here.")
         ) {
-            Button("Turn On") { plugins.setEnabled(true, for: CelebrationsPlugin.id) }
-                .buttonStyle(.ds(.primary, size: .medium))
+            Button("Turn On") { plugins.setEnabled(true, for: CelebrationsPlugin.id) }.buttonStyle(.settings)
         }
     }
 
+    private var hasUnavailableIcons: Bool {
+        center.celebrations.contains { if case .downloadable(.unavailable) = $0.appIcon { true } else { false } }
+    }
+
     private var catalogue: some View {
-        VStack(alignment: .leading, spacing: DS.Space.lg) {
-            SettingsSubheading(
-                "Catalogue",
-                note: "Choose any time of year; each shows only on its dates. Nothing is turned on for you.")
-            HStack(spacing: DS.Space.sm) {
-                CelebrationCountryMenu(counts: CelebrationPreferences.publicHolidayCountries(in: center.celebrations)) {
-                    country in
-                    let name = CelebrationCountryMenu.name(country)
-                    changeUndoably("Turn On \(name) Holidays") {
-                        center.turnOnPublicHolidays(of: country)
-                    } summary: {
-                        "Turned on \($0) of \(name)'s public holidays."
-                    }
-                }
-                bulkControls
-                Spacer(minLength: DS.Space.xl)
+        let listing = CelebrationListing(
+            events: center.celebrations, preferences: center.preferences, today: center.today, query: query)
+        return VStack(alignment: .leading, spacing: DS.Space.lg) {
+            HStack {
+                SettingsSubheading("All celebrations")
+                Spacer()
+                Text(
+                    isSearching
+                        ? "\(listing.matchCount) \(listing.matchCount == 1 ? "match" : "matches")"
+                        : "\(center.priority.count) of \(center.celebrations.count) on"
+                )
+                .settingsText(.caption).foregroundStyle(.dsTextTertiary)
+            }
+            HStack(spacing: DS.Space.md) {
                 SearchField("Find a celebration", text: $query, font: SettingsTextStyle.body.font)
-                    .frame(width: CelebrationMetrics.searchWidth)
+                bulkMenu
             }
             if let lastChange {
-                // Settings' button, on the summary's baseline, so its label matches the text.
-                HStack(alignment: .firstTextBaseline, spacing: DS.Space.md) {
-                    Text(lastChange.summary)
-                        .settingsText(.body)
-                        .foregroundStyle(.dsTextSecondary)
-                    Button("Undo") { undo(lastChange) }
-                        .buttonStyle(.settings)
-                        .help("Put your choices back (⌘Z)")
-                }
-                .transition(.opacity)
+                CelebrationBulkConfirmation(summary: lastChange.summary) { undo(lastChange) }
             }
-            if matches.isEmpty {
+            if listing.matchCount == 0 {
                 SettingsRow(
                     "Nothing called “\(query.trimmingCharacters(in: .whitespaces))”", icon: "magnifyingglass",
                     description: Text("Search covers names, other names and spellings, and kinds of celebration.")
                 ) {
-                    Button("Clear Search") { query = "" }
-                        .buttonStyle(.ds(.secondary, size: .medium))
+                    Button("Clear Search") { query = "" }.buttonStyle(.settings)
                 }
-            } else {
-                if !available.isEmpty {
+            }
+            ForEach(listing.months) { section in
+                let month = section.id
+                let events = section.events
+                VStack(alignment: .leading, spacing: DS.Space.md) {
+                    HStack {
+                        Text(
+                            CelebrationDates.month(
+                                month, includeYear: month.year > center.today.year && month.month == center.today.month)
+                        )
+                        .settingsText(.bodyMedium).foregroundStyle(.dsTextPrimary)
+                        .accessibilityAddTraits(.isHeader)
+                        Spacer()
+                        Text("\(events.filter { center.preferences.selection(for: $0.id).isEnabled }.count) on")
+                            .settingsText(.caption).foregroundStyle(.dsTextTertiary)
+                    }
+                    .id(Self.monthID(month))
+                    // Compact rows own their 44pt height; the standard group supplies separators.
                     SettingsRowGroup {
-                        ForEach(available) { event in
-                            CelebrationRow(event: event)
+                        VStack(spacing: 0) {
+                            ForEach(events) { event in
+                                if event.id != events.first?.id { SeparatorLine().padding(.leading, DS.Space.xl) }
+                                CelebrationRow(event: event, query: query, flash: flashed.contains(event.id)) {
+                                    open(event.id)
+                                }
+                            }
                         }
                     }
                 }
-                if !later.isEmpty {
-                    comingLater
-                }
             }
+            if !listing.pending.isEmpty { comingLater(listing.pending) }
         }
     }
 
-    /// Every celebration on or off in one step, undoable.
-    @ViewBuilder private var bulkControls: some View {
-        let choosable = center.celebrations.filter { $0.canBeChosen(on: center.today) }
-        let enabled = center.celebrations.filter { center.preferences.selection(for: $0.id).isEnabled }
-        Button("Turn All On") {
-            changeUndoably("Turn All Celebrations On") {
-                center.setAllAutomatic(true)
-            } summary: {
-                "Turned on \($0) \($0 == 1 ? "celebration" : "celebrations"). Icons download a week before each one's dates."
-            }
+    private var bulkMenu: some View {
+        Menu {
+            CelebrationCountryMenu(
+                counts: CelebrationPreferences.publicHolidayCountries(in: center.celebrations), onPick: chooseCountry)
+            Divider()
+            Button("Turn All On") { changeUndoably("Turn All Celebrations On") { center.setAllAutomatic(true) } }
+                .disabled(
+                    center.celebrations.filter { $0.canBeChosen(on: center.today) }.allSatisfy {
+                        center.preferences.selection(for: $0.id).isEnabled
+                    })
+            Button("Turn All Off") { changeUndoably("Turn All Celebrations Off") { center.setAllAutomatic(false) } }
+                .disabled(center.priority.isEmpty)
+        } label: {
+            Image(systemName: "ellipsis").frame(width: CelebrationMetrics.menuSize, height: CelebrationMetrics.menuSize)
         }
-        .buttonStyle(.ds(.ghost, size: .medium))
-        .disabled(choosable.allSatisfy { center.preferences.selection(for: $0.id).isEnabled })
-        .help("Turn on every celebration. Icons download a week before each one's dates.")
-        Button("Turn All Off") {
-            changeUndoably("Turn All Celebrations Off") {
-                center.setAllAutomatic(false)
-            } summary: { _ in
-                "Turned every celebration off."
-            }
-        }
-        .buttonStyle(.ds(.ghost, size: .medium))
-        .disabled(enabled.isEmpty)
-        .help("Turn off every celebration. Undo puts your choices back.")
+        .menuStyle(.borderlessButton).menuIndicator(.hidden).fixedSize()
+        .buttonStyle(.settings).dsHitTarget(CelebrationMetrics.menuSize).accessibilityLabel("Celebration choices")
     }
 
-    /// Makes a change to many celebrations at once, says what changed, and lets Undo (the button or
-    /// ⌘Z) put it back. `summary` gets how many celebrations it turned on.
-    private func changeUndoably(_ name: String, _ change: () -> Void, summary: (Int) -> String) {
+    private func chooseCountry(_ country: String) {
+        let already = center.celebrations.filter {
+            $0.contribution.publicHolidays.contains(country) && center.preferences.selection(for: $0.id).isEnabled
+        }.map { $0.contribution.title.resolved() }
+        changeUndoably("Turn On \(CelebrationCountryMenu.name(country)) Holidays", already: already, nameEach: true) {
+            center.turnOnPublicHolidays(of: country)
+        }
+    }
+
+    private func changeUndoably(_ name: String, already: [String] = [], nameEach: Bool = false, _ change: () -> Void) {
         let before = center.preferences
         change()
         guard before != center.preferences else { return }
-        let enabled = { (preferences: CelebrationPreferences) in preferences.selections.values.filter(\.isEnabled).count
+        let enabled = center.celebrations.filter {
+            center.preferences.selection(for: $0.id).isEnabled && !before.selection(for: $0.id).isEnabled
         }
-        lastChange = BulkChange(summary: summary(max(enabled(center.preferences) - enabled(before), 0)), before: before)
-        guard let undoManager else { return }
-        Self.registerUndo(on: undoManager, center: center, restoring: before)
-        undoManager.setActionName(name)
+        flashed = Set(enabled.map(\.id))
+        let summary =
+            enabled.isEmpty
+            ? "Turned every celebration off."
+            : nameEach
+                ? "Turned on \(enabled.map { $0.contribution.title.resolved() }.formatted(.list(type: .and)))."
+                : "Turned on \(enabled.count) celebrations."
+        let suffix =
+            already.isEmpty
+            ? "" : " \(already.formatted(.list(type: .and))) \(already.count == 1 ? "was" : "were") already on."
+        let record = CelebrationBulkChange(summary: summary + suffix, before: before, after: center.preferences)
+        lastChange = record
+        if let undoManager {
+            Self.registerUndo(on: undoManager, center: center, restoring: before, target: record.undoTarget)
+            undoManager.setActionName(name)
+        }
     }
 
-    /// Puts back the choices from before the change, and drops its ⌘Z entry so it can't be undone twice.
-    private func undo(_ change: BulkChange) {
+    private func undo(_ change: CelebrationBulkChange) {
+        // Search-field edits can sit above this action in the window's undo stack. The link
+        // always restores this bulk change, and removes only its own history entry.
         center.restore(change.before)
-        undoManager?.removeActions(withTarget: center)
+        undoManager?.removeActions(withTarget: change.undoTarget)
         lastChange = nil
+        flashed = []
     }
 
-    /// Undo restores `earlier` and registers restoring what it replaced, so Redo works too.
     private static func registerUndo(
-        on undoManager: UndoManager, center: CelebrationCenter, restoring earlier: CelebrationPreferences
+        on undoManager: UndoManager, center: CelebrationCenter, restoring earlier: CelebrationPreferences,
+        target: NSObject
     ) {
         let replaced = center.preferences
-        undoManager.registerUndo(withTarget: center) { center in
+        undoManager.registerUndo(withTarget: target) { target in
             MainActor.assumeIsolated {
                 center.restore(earlier)
-                registerUndo(on: undoManager, center: center, restoring: replaced)
+                registerUndo(on: undoManager, center: center, restoring: replaced, target: target)
             }
         }
     }
 
-    private var comingLater: some View {
-        VStack(alignment: .leading, spacing: DS.Space.lg) {
-            HStack(spacing: DS.Space.xl) {
-                SettingsSubheading(
-                    "Coming soon",
-                    note:
-                        "Their dates are researched; their artwork, and some of their calendars, are still being made.")
-                Spacer(minLength: 0)
-                if !isSearching {
-                    Button(showsLater ? "Hide" : "Show \(later.count)") { showsLater.toggle() }
-                        .buttonStyle(.ds(.ghost, size: .medium))
+    private func comingLater(_ later: [CelebrationEvent]) -> some View {
+        VStack(alignment: .leading, spacing: DS.Space.md) {
+            Button {
+                showsLater.toggle()
+            } label: {
+                HStack(spacing: DS.Space.lg) {
+                    VStack(alignment: .leading, spacing: DS.Space.xs) {
+                        Text("\(later.count) more on the way").settingsText(.body)
+                        Text("Their artwork or dates are still being made.").settingsText(.caption).foregroundStyle(
+                            .dsTextSecondary)
+                    }
+                    Spacer()
+                    Image(systemName: showsLater ? "chevron.down" : "chevron.right")
+                        .font(.system(size: CelebrationMetrics.chevron)).foregroundStyle(.dsTextTertiary)
                 }
-            }
+            }.buttonStyle(.plain)
             if showsLater || isSearching {
-                SettingsRowGroup {
+                VStack(spacing: 0) {
                     ForEach(later) { event in
-                        CelebrationRow(event: event)
+                        CelebrationRow(event: event, query: query) { open(event.id) }
                     }
                 }
             }
         }
-        .padding(.top, available.isEmpty ? 0 : DS.Space.lg)
     }
 
     private var problems: some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             SettingsSubheading("Couldn't load", note: "Fix the plugin's plugin.json, then Reload in Extensions.")
             ForEach(center.catalog.problems, id: \.self) { problem in
-                NoticeBanner(
-                    tone: .danger, title: "\(problem.identifier) couldn't load", detail: problem.message,
-                    footnote: "\(problem.kind.rawValue) from \(pluginName(problem.pluginID))")
+                NoticeBanner(tone: .danger, title: "\(problem.identifier) couldn't load", detail: problem.message)
             }
         }
     }
-
-    private func pluginName(_ id: String?) -> String {
-        guard let id else { return "a plugin" }
-        return plugins.plugins.first { $0.id == id }?.plugin.manifest.name ?? id
-    }
 }
 
-extension CelebrationMetrics {
-    static let searchWidth: CGFloat = 220
+private struct CelebrationBulkChange {
+    let undoTarget = NSObject()
+    let summary: String
+    let before: CelebrationPreferences
+    let after: CelebrationPreferences
 }

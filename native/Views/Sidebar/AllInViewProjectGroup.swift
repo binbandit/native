@@ -12,6 +12,7 @@ struct AllInViewProjectGroup<MenuContent: View, Content: View>: View {
     var isFirst = false
     @Binding var isExpanded: Bool
     let taskCount: Int
+    var isRefreshing = false
     let activity: ProjectActivity
     let note: String?
     let onNewTask: (() -> Void)?
@@ -39,6 +40,9 @@ struct AllInViewProjectGroup<MenuContent: View, Content: View>: View {
                             .tracking(DS.Sidebar.headerTracking)
                             .foregroundStyle(.dsTextSecondary)
                             .lineLimit(1)
+                        if isRefreshing {
+                            ProjectRefreshIndicator()
+                        }
                         if !isExpanded {
                             if let note {
                                 Text(note)
@@ -67,7 +71,9 @@ struct AllInViewProjectGroup<MenuContent: View, Content: View>: View {
                 .focused($focusedControl, equals: .disclosure)
                 .accessibilityLabel(name)
                 .accessibilityValue(
-                    isExpanded ? "Expanded" : "Collapsed, \(note ?? activity.label ?? "\(taskCount) tasks")"
+                    isRefreshing
+                        ? "Refreshing task state"
+                        : isExpanded ? "Expanded" : "Collapsed, \(note ?? activity.label ?? "\(taskCount) tasks")"
                 )
                 .help(isExpanded ? "Hide tasks in \(name)" : "Show tasks in \(name)")
 
@@ -112,7 +118,7 @@ struct AllInViewProjectGroup<MenuContent: View, Content: View>: View {
     DSPreviewPair {
         VStack(spacing: DS.Space.md) {
             AllInViewProjectGroup(
-                name: "native", isExpanded: .constant(true), taskCount: 6,
+                name: "native", isExpanded: .constant(true), taskCount: 6, isRefreshing: true,
                 activity: ProjectActivity(), note: nil, onNewTask: {}
             ) {
                 Button("Project Settings…") {}

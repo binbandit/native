@@ -19,7 +19,7 @@ so growth gets noticed while there's still room to choose what to cut; lower the
 | Download, update archive | 47 MB | 42.7 MB |
 | Download, disk image | 48 MB | about 43.3 MB |
 | Installed app | 118 MB | 107.5 MB |
-| App binary (`Contents/MacOS/Native`) | 60 MB | 53.2 MB |
+| App binary (`Contents/MacOS/Native`) | 70 MB | 53.2 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
 `scripts/release/size-check.sh` holds the same numbers and fails when anything is over. It also
@@ -99,6 +99,12 @@ new Home questions, plan review and recovery code, with no added assets or depen
 binary budget is now 60 MB for this measured integration. Downloads remain 46.4/46.5 MB and
 installed apps 116.2/116.3 MB, within their unchanged limits. Remeasure when the gated redesign
 components replace their legacy presentations.
+
+2026-10-24: approved by Brayden, the app binary budget is now 70 MB to give a little room for
+growth. Growth since the budgets were set at a 53.2 MB binary is mostly the redesign compiling
+old and new versions of six areas behind switches. Reclaim that space by deleting each old
+version when its switch flips. An app-size job is cutting size now. The download, disk-image,
+installed-app and script-runtime budgets are unchanged.
 
 ## Measuring
 

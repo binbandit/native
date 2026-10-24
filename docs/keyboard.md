@@ -295,6 +295,7 @@ Other file types use the platform's Quick Look preview, with its native navigati
 | ⌥⌘E | New expedition (`docs/expeditions.md`) | File | `expedition.new` |
 | ⌘O | Open folder | File | `project.open` |
 | | The current project's settings (Settings ▸ Projects; also in the project's menu in the sidebar) | File | `project.settings` |
+| | Refresh git and pull-request state for every task in the current project (also Refresh in its sidebar menu) | File | `project.refresh` |
 | | Clean up the current project's merged task worktrees, branches and stale worktree records, after a review (also "Clean Up Merged…" in the project's menu in the sidebar) | File | `git.cleanUpMerged` |
 | ⇧⌘O | Open the task's folder in the default app (Open In) | Task | `session.openInDefaultApp` |
 | ⌥⌘P | Open the task's pull request, where clicking one goes (Settings ▸ GitHub); listed while its branch has one | Task | `pullRequest.openForTask` |
@@ -492,7 +493,7 @@ in Git, for example). No shortcuts change.
 | ↑ / ↓ | Move through the search results |
 | Return | Open the highlighted result |
 | Escape | Clear the search; with it empty, close Settings |
-| ⌘[ | Close Settings, back to where you were (Go menu) |
+| ⌘[ | Return from a celebration detail page first; otherwise close Settings (Go menu) |
 | ↑ / ↓ in the page list | Move to the previous / next page |
 
 ## Search
@@ -581,6 +582,10 @@ them. Composer keys in `native/Views/Composer*`; permission keys in
 | Keys | Action | Command |
 | --- | --- | --- |
 | ⌥⇧⌘H | Restore the usual icon and Home while a celebration shows (skips it until it next occurs), or bring a skipped one back (View menu) | `celebration.restore` |
+
+In Celebrations, Tab focuses a row, Space toggles it, and Return opens its detail page.
+Escape or ⌘[ in a celebration detail page returns to the list at its previous scroll position
+before closing Settings. The bulk-change confirmation also supports ⌘Z and Redo.
 
 ## Coordinator tasks (Labs)
 

@@ -97,6 +97,18 @@ struct SidebarDesignFixture: View {
                     "Six steps across authentication routes, their tests and the migration guide for existing clients.")
         }
         let agent = AgentDefinition.ID(rawValue: "codex")
+        if scenario == "trio" {
+            for id in ["native-6", "pier-2"] {
+                app.archivedSessions.set(SessionKey(agent: agent, id: SessionID(id)), archived: true)
+            }
+            // Exercise the real menu, progress and Retry without reading a checkout or GitHub.
+            var hasFailed = false
+            app.refreshProjectState = { _, _ in
+                try? await Task.sleep(for: .seconds(3))
+                defer { hasFailed = true }
+                return hasFailed ? [] : ["The fixture host is offline. Reconnect, then Retry."]
+            }
+        }
         for (project, prefix, count) in [(project, "native", rows.count), (pier, "pier", 3), (kite, "kite", 3)] {
             app.ordering.restore(
                 (0..<count).map { SessionKey(agent: agent, id: SessionID("\(prefix)-\($0)")) }, in: project.id)

@@ -23,6 +23,7 @@ final class CelebrationCenter {
     /// Native's own icons that download when chosen.
     @ObservationIgnored let assets: CelebrationAssetStore
     @ObservationIgnored let variant: AppIconVariant
+    @ObservationIgnored private let runsEffects: Bool
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let now: () -> Date
     @ObservationIgnored private let timeZone: () -> TimeZone
@@ -36,9 +37,10 @@ final class CelebrationCenter {
 
     init(
         defaults: UserDefaults = .standard, variant: AppIconVariant = .current,
-        assets: CelebrationAssetStore = CelebrationAssetStore(),
+        assets: CelebrationAssetStore = CelebrationAssetStore(), runsEffects: Bool = true,
         now: @escaping () -> Date = Date.init, timeZone: @escaping () -> TimeZone = { .current }
     ) {
+        self.runsEffects = runsEffects
         self.defaults = defaults
         self.assets = assets
         self.variant = variant
@@ -104,6 +106,7 @@ final class CelebrationCenter {
         resolution = CelebrationPolicy.resolve(
             catalog.celebrations, preferences: preferences, on: today, canApplyAppIcon: PlatformAppIcon.canApplyAnyImage
         )
+        guard runsEffects else { return }
         timer?.invalidate()
         timer = resolution.nextChange.map { boundary in
             // Relative to `now()`, which may be shifted by `-nativeDate`; the wake and clock events
@@ -185,6 +188,17 @@ final class CelebrationCenter {
         catalog.celebrations.map(preferences.styled)
     }
 
+    func overlaps(within days: Int) -> [CelebrationOverlap] {
+        CelebrationPolicy.overlaps(
+            catalog.celebrations, preferences: preferences, from: today,
+            days: days, canApplyAppIcon: PlatformAppIcon.canApplyAnyImage)
+    }
+
+    func prefer(_ id: CelebrationID, over other: CelebrationID) {
+        let events = catalog.celebrations
+        change { $0.prefer(id, over: other, in: events) }
+    }
+
     // MARK: - Changes
 
     /// Choosing a celebration fetches its icons right away, so they're here before its dates.
@@ -200,7 +214,7 @@ final class CelebrationCenter {
 
     /// Tries a celebration's icon download again.
     func fetchIcons(for id: CelebrationID) {
-        guard let pack = catalog.celebration(id).map(preferences.styled)?.iconPack,
+        guard runsEffects, let pack = catalog.celebration(id).map(preferences.styled)?.iconPack,
             preferences.selection(for: id).appIcon
         else { return }
         assets.fetch(pack)
@@ -288,7 +302,7 @@ final class CelebrationCenter {
     }
 
     private func save() {
-        guard let data = try? JSONEncoder().encode(preferences) else { return }
+        guard runsEffects, let data = try? JSONEncoder().encode(preferences) else { return }
         defaults.set(data, forKey: Self.preferencesKey)
     }
 

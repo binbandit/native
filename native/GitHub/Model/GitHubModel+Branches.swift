@@ -12,19 +12,44 @@ extension GitHubModel {
         branchPullRequests[branch]?.pullRequest
     }
 
-    /// Loads the branch's pull request unless a result younger than `maxAge` is cached.
-    func loadPullRequest(for branch: BranchReference, maxAge: TimeInterval = branchMaxAge) async {
-        if let cached = branchPullRequests[branch], Date.now.timeIntervalSince(cached.fetchedAt) < maxAge {
-            return
+    /// An explicit refresh (`maxAge: 0`) waits for older work, then bypasses the cache.
+    @discardableResult
+    func loadPullRequest(for branch: BranchReference, maxAge: TimeInterval = branchMaxAge) async -> GitHubError? {
+        if maxAge > 0, let cached = branchPullRequests[branch], Date.now.timeIntervalSince(cached.fetchedAt) < maxAge {
+            return cached.failure
         }
-        guard !branchLookupsInFlight.contains(branch) else { return }
-        // Without gh or a login there's nothing to show, and the list explains why.
-        if availability == .notInstalled || availability == .notAuthenticated { return }
-
+        var checkedAccounts = false
+        while true {
+            if let pending = branchLookupsInFlight[branch] {
+                let failure = await pending.value
+                if maxAge > 0 { return failure }
+                if Task.isCancelled { return .cancelled }
+                continue
+            }
+            if maxAge == 0, !checkedAccounts, availability == .notInstalled || availability == .notAuthenticated {
+                // Wait for older lookups before recovery; they can still report an expired login.
+                checkedAccounts = true
+                await checkAccounts()
+                continue
+            }
+            break
+        }
+        if availability == .notInstalled { return recordBranchFailure(.notInstalled, for: branch) }
+        if availability == .notAuthenticated { return recordBranchFailure(.notAuthenticated(""), for: branch) }
         let revision = accountRevision
-        branchLookupsInFlight.insert(branch)
-        defer { if revision == accountRevision { branchLookupsInFlight.remove(branch) } }
-        let cli = await cli()
+        let lookup = Task {
+            let failure = await fetchPullRequest(for: branch, revision: revision, reportsMissing: maxAge == 0)
+            if revision == accountRevision { branchLookupsInFlight[branch] = nil }
+            return failure
+        }
+        branchLookupsInFlight[branch] = lookup
+        return await lookup.value
+    }
+
+    private func fetchPullRequest(
+        for branch: BranchReference, revision: Int, reportsMissing: Bool
+    ) async -> GitHubError? {
+        let cli = await cli(rereadEnvironment: availability == .notInstalled)
         do {
             let found: BranchPullRequests?
             if let link = await linkedPullRequest?(branch) {
@@ -32,22 +57,30 @@ extension GitHubModel {
             } else {
                 found = try await cli.pullRequests(forBranch: branch.branch, in: .directory(branch.directory))
             }
-            guard revision == accountRevision else { return }
+            guard revision == accountRevision else { return .cancelled }
             branchPullRequests[branch] = BranchPullRequest(found, fetchedAt: .now)
-        } catch .notARepository, .notFound {
-            guard revision == accountRevision else { return }
+            return nil
+        } catch .notARepository {
+            guard revision == accountRevision else { return .cancelled }
             branchPullRequests[branch] = BranchPullRequest(pullRequest: nil, fetchedAt: .now)
+            return nil
         } catch {
-            guard revision == accountRevision else { return }
-            // A lost login anywhere means gh is signed out, which the list and every card then say.
-            if case .notAuthenticated = error { reportAuthenticationFailure() }
-            // Keep showing what was there, saying why it may be old; the next refresh tries again.
-            if var cached = branchPullRequests[branch] {
-                cached.fetchedAt = .now
-                cached.failure = error
-                branchPullRequests[branch] = cached
+            guard revision == accountRevision else { return .cancelled }
+            if case .notFound = error, !reportsMissing {
+                branchPullRequests[branch] = BranchPullRequest(pullRequest: nil, fetchedAt: .now)
+                return nil
             }
+            if case .notAuthenticated = error { reportAuthenticationFailure() }
+            return recordBranchFailure(error, for: branch)
         }
+    }
+
+    private func recordBranchFailure(_ error: GitHubError, for branch: BranchReference) -> GitHubError {
+        var cached = branchPullRequests[branch] ?? BranchPullRequest(pullRequest: nil, fetchedAt: .now)
+        cached.fetchedAt = .now
+        cached.failure = error
+        branchPullRequests[branch] = cached
+        return error
     }
 
     /// What the last lookup found for a branch, with how fresh it is.

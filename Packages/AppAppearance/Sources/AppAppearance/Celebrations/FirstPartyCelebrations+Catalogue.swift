@@ -170,6 +170,7 @@ extension FirstPartyCelebrations {
         return (
             CelebrationContribution(
                 id: CelebrationID("native.\(slug)"), title: title, aliases: aliases, tags: [tag],
+                publicHolidays: Set(publicHolidayCalendars.filter { $0.value.holidays.contains(slug) }.keys),
                 provenance: provenance,
                 calendar: calendar, iconSet: sets.first?.id, alternateIconSets: sets.dropFirst().map(\.id)),
             sets

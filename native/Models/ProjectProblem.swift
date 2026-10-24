@@ -9,6 +9,8 @@ struct ProjectProblem: Identifiable, Hashable {
     enum Work: Hashable {
         /// Finding the project's folder, which was moved or deleted. Retry looks again.
         case folder
+        /// Re-reading every task checkout and its pull request.
+        case refresh
         /// Listing the project's sessions from an agent.
         case listing(AgentDefinition.ID)
         /// Deleting the agent's own copy of a task Native deleted.

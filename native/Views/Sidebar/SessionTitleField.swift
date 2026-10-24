@@ -5,6 +5,7 @@ import SwiftUI
 /// empty title goes back to the automatic one.
 struct SessionTitleField: View {
     @Environment(AppModel.self) private var model
+    @AppStorage("sidebar.showAgentIcons") private var showAgentIcons = true
     @Environment(\.sidebarAllInView) private var isAllInView
     @Environment(\.undoManager) private var undoManager
     let summary: SessionSummary
@@ -16,14 +17,13 @@ struct SessionTitleField: View {
     var body: some View {
         // Mirrors `TaskRow`'s layout so the title doesn't jump when editing starts.
         HStack(alignment: .top, spacing: isAllInView ? DS.Space.md : DS.Space.sm) {
-            if !isAllInView {
-                AgentIcon(agent: summary.agent)
-                    .foregroundStyle(.dsTextTertiary)
-                    .padding(.top, DS.Space.xxs)
-            }
             Group {
                 if isAllInView {
-                    TaskSignal(status: status)
+                    TaskSignal(status: status, isUnread: model.isUnread(summary.id))
+                        .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
+                } else if status == .idle || status == .done || status == .cancelled {
+                    AgentIcon(agent: summary.agent)
+                        .opacity(showAgentIcons ? 1 : 0)
                         .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
                 } else {
                     StatusIndicator(status: status)
@@ -93,6 +93,19 @@ struct SessionTitleField: View {
     DSPreviewPair {
         if let summary = SidebarPreviewFixtures.sessions(in: app).last {
             SessionTitleField(summary: summary, status: .idle)
+                .environment(\.sidebarAllInView, true)
+                .frame(width: DS.Window.sidebarMinWidth)
+        }
+    }
+    .sidebarPreviewEnvironment(app)
+}
+#Preview("All in view - Renaming unread") {
+    let app = AppModel.preview()
+    let summary = SidebarPreviewFixtures.sessions(in: app).last
+    if let summary { app.unread.set(summary.id, unread: true) }
+    return DSPreviewPair {
+        if let summary {
+            SessionTitleField(summary: summary, status: .done)
                 .environment(\.sidebarAllInView, true)
                 .frame(width: DS.Window.sidebarMinWidth)
         }

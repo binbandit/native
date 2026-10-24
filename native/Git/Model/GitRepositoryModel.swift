@@ -49,6 +49,7 @@ final class GitRepositoryModel {
     /// Goes up after every rescan, whether or not the status changed: an edit can keep its line
     /// counts, so what's compared beyond the status (a turn's changes) checks again on it.
     private(set) var scanCount = 0
+    private(set) var refreshFailure: String?
 
     @ObservationIgnored let resolveGit: () async -> Git?
     /// Called after each successful push with the checkout it ran in and the branch.
@@ -218,11 +219,13 @@ final class GitRepositoryModel {
 
     private func load() async {
         if let unavailableReason {
+            refreshFailure = unavailableReason
             state = .failed(unavailableReason)
             return
         }
         do {
             guard let repository = try await currentRepository() else {
+                refreshFailure = nil
                 state = .notRepository
                 status = nil
                 return
@@ -240,11 +243,15 @@ final class GitRepositoryModel {
             let status = try await repository.lineStats(for: files)
             guard !Task.isCancelled else { return }
             apply(status)
+            refreshFailure = nil
             state = .ready
             recheckShownDiff()
         } catch {
             // A failed rescan keeps the last good status on screen; a cancelled one isn't a failure.
-            if status == nil, !Task.isCancelled { state = .failed(error.localizedDescription) }
+            if !Task.isCancelled {
+                refreshFailure = error.localizedDescription
+                if status == nil { state = .failed(error.localizedDescription) }
+            }
         }
     }
 
