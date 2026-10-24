@@ -377,7 +377,8 @@ private struct DroidTaskRoutingRegression {
 
         // A different remote project root is protected even though it differs from this Mac's.
         let rootProject = app.projects.add(URL(filePath: "/local/project-root"))
-        let rootTransport = RoutingHost(["remote-root", "remote-worktree"], folder: "/remote/project-root")
+        let rootTransport = RoutingHost(
+            ["remote-root", "remote-worktree", "no-provider-root"], folder: "/remote/project-root")
         let remoteWorktree = "/remote/worktrees/project-root/task"
         await rootTransport.move("remote-worktree", to: remoteWorktree)
         let rootClient = NativeHostClient(
@@ -408,6 +409,22 @@ private struct DroidTaskRoutingRegression {
         try require(second.calls.map(\.operation) == ["deleted"], "remote project root was treated as a worktree")
         try require(second.calls.first?.project == "/remote/project-root", "teardown used the local checkout")
         try require(local.calls.isEmpty && first.calls.isEmpty, "root cleanup touched another machine")
+        #if !BEFORE
+        secondHost.taskWorkspaces = nil
+        try require(!secondHost.paired.grants.runCommands, "fixture unexpectedly grants command execution")
+        await app.archiveSession(key("no-provider-root"))
+        await app.unarchiveSession(key("no-provider-root"))
+        try require(
+            !app.problems.all.contains {
+                $0.work == .workspaceArchive(key("no-provider-root"))
+                    || $0.work == .workspaceRestore(key("no-provider-root"))
+            }, "checkout-root task required a workspace provider")
+        guard let rootRoute = app.taskActionRoute(for: key("no-provider-root")) else {
+            throw RoutingFailure("Missing checkout-root route")
+        }
+        try await app.deleteWorkspace(using: rootRoute)
+        try require(local.calls.isEmpty && first.calls.isEmpty, "provider-free root cleanup reached another host")
+        #endif
         try require(await localTransport.deleted.isEmpty, "remote deletion reached local agent")
         await localClient.stop()
         await rootClient.stop()

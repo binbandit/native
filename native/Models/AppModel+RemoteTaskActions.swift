@@ -118,9 +118,13 @@ extension AppModel {
             return (taskWorkspaces as? DeviceTaskWorkspaces)?.local ?? taskWorkspaces
         case .remote(let id):
             guard route.hasCheckout else { throw TaskActionRoute.Failure.missingCheckout }
-            guard let host = hosts.host(id), host.client != nil, let provider = host.taskWorkspaces else {
+            guard let host = hosts.host(id), host.client != nil else {
                 throw TaskActionRoute.Failure.unavailable
             }
+            // Hosts without command execution can still run tasks in their project checkout.
+            // That root has no workspace to put away or remove and needs no workspace service.
+            if route.workspace == nil { return host.taskWorkspaces }
+            guard let provider = host.taskWorkspaces else { throw TaskActionRoute.Failure.unavailable }
             return provider
         case .unavailableRemote:
             throw TaskActionRoute.Failure.unavailable
