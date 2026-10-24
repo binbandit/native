@@ -1,7 +1,7 @@
 # Coordinator tasks (Labs, slice 1)
 
 A coordinator aligns tasks the user already has. It starts in the project's folder without
-creating a branch or worktree. Settings > Labs > Coordinator tasks defaults off. File > New
+creating or renaming a branch or creating a worktree. Settings > Labs > Coordinator tasks defaults off. File > New
 Coordinator Task opens a picker for an agent and active tasks in the current project. The user
 can change assignments later with File > Edit Assigned Tasks. No new keyboard shortcut is reserved.
 
