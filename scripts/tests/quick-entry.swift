@@ -226,6 +226,16 @@ private struct QuickEntryRegression {
         app.finishComposeTransition()
         try require(!app.composeTask.isPresented, "The transition did not reveal the task")
         try require(entry.draft.isEmpty, "Start retained a duplicate draft")
+        if let key = composed.openedSession, let session = app.session(key) {
+            let unavailable = StartingTask(
+                project: project.id, agent: editor.agent, isAgentPicked: true, workspaceLabel: "Fixture")
+            unavailable.isSendRequested = true
+            unavailable.configChoices = ["model": "no-longer-offered"]
+            await app.applyComposeChoices(of: unavailable, to: session)
+            try require(!unavailable.isSendRequested, "An unavailable setting allowed the prompt to send")
+        } else {
+            throw CheckFailure("The composed task was not registered")
+        }
 
         app.expandQuickEntry()
         app.composeTask.editor?.draft = "Cancel without sending"
