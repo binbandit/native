@@ -101,6 +101,7 @@ diff. Escape closes the overlay ahead of composer actions, or the docked panel w
 it. Opening and closing the inspector disables animation to avoid the prototype's split-view constraint loop. The threshold
 still needs a visual check on the main Mac in both appearances.
 
-This step registers only Changes, with Side, Fact and Off placements. The existing subagent
-card inspector remains available. The other tool facts and panes, workbench, Settings editor,
-and default-on transition belong to later PRs. The standard screen is unchanged while Labs is off.
+The original Task Tools gate registers only Changes, with Side, Fact and Off placements.
+The well adds the shared workbench and tool adapters described above. The placement editor,
+full tool contributions and default-on transition remain later slices. The standard screen is
+unchanged while both Labs switches are off.
