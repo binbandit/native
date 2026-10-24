@@ -24,12 +24,14 @@ class InstallUserServiceTests(unittest.TestCase):
         fake.write_text("#!" + sys.executable + "\nimport json, os, sys\n"
                         "with open(os.environ['CALLS'], 'a') as log:\n"
                         "    log.write(json.dumps(sys.argv[1:]) + '\\n')\n"
+                        "if 'show' in sys.argv: print(os.environ['FRAGMENT'])\n"
                         "sys.exit(9 if os.environ.get('FAIL') in sys.argv[1:] else 0)\n")
         fake.chmod(0o700)
         for name in ("install-user-service.py", "render-systemd-unit.py"):
             shutil.copyfile(Path(__file__).resolve().parents[1] / name, self.root / name)
         self.env = {"PATH": str(self.root), "HOME": str(self.root), "CALLS": str(self.calls),
-                    "XDG_CONFIG_HOME": str(self.config), "XDG_RUNTIME_DIR": str(self.root / "runtime")}
+                    "XDG_CONFIG_HOME": str(self.config), "XDG_RUNTIME_DIR": str(self.root / "runtime"),
+                    "FRAGMENT": str(self.target)}
         self.args = ["--executable", str(self.host), "--state-directory", str(self.state)]
         # Apple Python caches interpreter startup in HOME before running any script.
         subprocess.run([sys.executable, "-c", "pass"], env=self.env, check=True)
@@ -53,6 +55,7 @@ class InstallUserServiceTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout), {"target": str(self.target), "argv": [
             ["systemctl", "--user", "daemon-reload"],
+            ["systemctl", "--user", "show", "--property=FragmentPath", "--value", "native-host.service"],
             ["systemctl", "--user", "enable", "--now", "native-host.service"]]})
         self.assertEqual(self.snapshot(), before)
 
@@ -70,6 +73,7 @@ class InstallUserServiceTests(unittest.TestCase):
         self.assertEqual(self.target.stat().st_ino, original.st_ino)
         self.assertEqual(self.target.stat().st_mtime_ns, original.st_mtime_ns)
         self.assertEqual(self.commands()[1:], [["--user", "daemon-reload"],
+                                              ["--user", "show", "--property=FragmentPath", "--value", "native-host.service"],
                                               ["--user", "enable", "--now", "native-host.service"]])
         self.assertEqual(list(self.target.parent.iterdir()), [self.target])
         self.assertFalse(self.state.exists())
@@ -136,7 +140,8 @@ class InstallUserServiceTests(unittest.TestCase):
 
     def test_failed_reload_and_enable_retain_unit_for_retry(self):
         for failure, completed, count in (("daemon-reload", "daemon-reload not completed", 1),
-                                           ("enable", "daemon-reload completed", 2)):
+                                           ("show", "daemon-reload completed", 2),
+                                           ("enable", "daemon-reload completed", 3)):
             with self.subTest(failure=failure):
                 self.env["FAIL"] = failure
                 result = self.run_cli("--enable-now")
@@ -148,6 +153,24 @@ class InstallUserServiceTests(unittest.TestCase):
                 self.calls.unlink()
         del self.env["FAIL"]
         self.assertEqual(self.run_cli("--enable-now").returncode, 0)
+
+    def test_refuse_activation_of_shadowing_or_missing_fragment(self):
+        shadow = self.config / "systemd/user.control/native-host.service"
+        shadow.parent.mkdir(parents=True)
+        shadow.write_bytes(b"unrelated service\n")
+        for fragment in (str(shadow), "", str(self.root / "missing.service")):
+            with self.subTest(fragment=fragment):
+                self.env["FRAGMENT"] = fragment
+                before = self.snapshot()
+                self.assertEqual(self.run_cli("--dry-run", "--enable-now").returncode, 0)
+                self.assertEqual(self.snapshot(), before)
+                result = self.run_cli("--enable-now")
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("daemon-reload completed", result.stderr)
+                self.assertEqual([command[1] for command in self.commands()], ["daemon-reload", "show"])
+                self.assertEqual(shadow.read_bytes(), b"unrelated service\n")
+                self.assertTrue(self.target.is_file())
+                self.calls.unlink()
 
     def test_missing_systemctl_retains_unit(self):
         (self.root / "systemctl").unlink()

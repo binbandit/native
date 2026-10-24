@@ -15,6 +15,10 @@ only when ready to enable and start the host. Without it, the installer runs onl
 `systemctl --user daemon-reload`; it does not start the host. Dry-run validates
 the inputs and reports the target and command argv as JSON, without writes or
 subprocesses. The host executable is checked but never executed by the installer.
+With `--enable-now`, after reload a read-only `systemctl --user show` checks that
+the manager's `FragmentPath` names the installed file before enabling it. A missing
+or higher-priority conflicting unit prevents activation and is left untouched.
+Dry-run lists this query but cannot establish which file the manager will select.
 
 The destination is always `systemd/user/native-host.service` under an absolute
 `--config-home`, otherwise absolute `XDG_CONFIG_HOME`, otherwise `~/.config`.

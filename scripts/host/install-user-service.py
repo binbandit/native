@@ -105,6 +105,7 @@ def main(argv=None):
         target = base / "systemd/user/native-host.service"
         commands = [["systemctl", "--user", "daemon-reload"]]
         if args.enable_now:
+            commands.append(["systemctl", "--user", "show", "--property=FragmentPath", "--value", target.name])
             commands.append(["systemctl", "--user", "enable", "--now", target.name])
         with destination(target.parent, create=not args.dry_run) as descriptor:
             exists = descriptor is not None and identical(descriptor, target.name, unit)
@@ -115,6 +116,12 @@ def main(argv=None):
                 publish(descriptor, target.name, unit)
         stage = f"unit installed or identical at {target}; daemon-reload not completed"
         for command in commands:
+            if command[2] == "show":
+                fragment = subprocess.run(command, check=True, stdout=subprocess.PIPE, text=True).stdout.rstrip("\n")
+                if not fragment or not os.path.samefile(fragment, target):
+                    raise ValueError(f"refusing activation: manager selected {fragment!r}, expected {str(target)!r}")
+                stage += "; selected unit verified"
+                continue
             subprocess.run(command, check=True)
             stage = f"unit retained at {target}; {' '.join(command)} completed"
         print(stage)
