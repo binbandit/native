@@ -3,7 +3,11 @@ import Experiments
 import Foundation
 
 extension AppModel {
-    var offersTaskPeek: Bool { experiments.value(of: .sidebarNext) }
+    var offersTaskPeek: Bool { experiments.value(of: .sidebarNext) || experiments.value(of: .homeNext) }
+
+    var homeNextOwnsAskShortcut: Bool {
+        experiments.value(of: .homeNext) && taskPeek.homeIsVisible && taskPeek.request == nil
+    }
 
     var oldestTaskAsk: TaskPeekAsk? {
         sessionList.flatMap { taskAsks(for: $0.id) }.min { $0.since < $1.since }

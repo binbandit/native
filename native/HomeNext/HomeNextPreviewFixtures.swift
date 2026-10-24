@@ -1,12 +1,14 @@
 #if DEBUG
 import ACP
+import Experiments
 import NativeHostProtocol
 import SwiftUI
 
 /// Inert models for the canvas and isolated UI checks. No processes or filesystem writes.
 enum HomeNextPreviewFixtures {
     enum State: String {
-        case busy, quiet, first, empty, loading, recovery, narrow
+        case busy, calm, managed, quiet, first, empty, loading, recovery, narrow
+        case destructive, unknown, approvalFailure
         case question, questionText, questions, questionFailure, plan, planText, planRetained, failure, failurePaused
     }
 
@@ -23,7 +25,14 @@ enum HomeNextPreviewFixtures {
     ]
 
     static func model(_ state: State) -> AppModel {
-        let app = AppModel.preview(.empty)
+        let defaults = PreviewUserDefaults()
+        let app = AppModel(
+            plugins: PluginRegistry(
+                builtIns: [BuiltInPlugins.claudeCode, BuiltInPlugins.codex, BuiltInPlugins.cursor], defaults: defaults),
+            defaults: defaults, catalogURL: nil,
+            experiments: ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage()))
+        app.experiments.set(true, for: .homeNext)
+        _ = app.runtimes.sync()
         guard state != .first else { return app }
         let project = app.projects.add(URL(filePath: "/tmp/native-home-fixture", directoryHint: .isDirectory))
         app.focusProject(project.id)
@@ -34,7 +43,12 @@ enum HomeNextPreviewFixtures {
             "Dark mode for the marketing site", "Wrap diff lines at word boundaries",
             "Add setup steps to the README", "Compress originals before upload",
         ]
-        let count = state == .quiet ? 10 : (state == .empty || state == .loading) ? 0 : state == .recovery ? 1 : 5
+        let count =
+            state == .quiet
+            ? 10
+            : (state == .empty || state == .loading)
+                ? 0
+                : state == .recovery ? 1 : (state == .calm || state == .managed) ? 7 : 5
         for index in 0..<count {
             let titleIndex: Int
             switch fixtureKind(state, index: index) {
@@ -60,7 +74,7 @@ enum HomeNextPreviewFixtures {
             guard
                 let session = fixtureSession(
                     in: app, agent: agent, id: id, cwd: project.path, title: title,
-                    failsAnswer: kind == .questionFailure)
+                    failsAnswer: kind == .questionFailure || (state == .approvalFailure && index == 0))
             else { continue }
             if state == .quiet {
                 session.previewExchange(
@@ -97,7 +111,13 @@ enum HomeNextPreviewFixtures {
                 case .quiet:
                     break
                 default:
-                    permission(session, command: "swift test --filter PermissionRequestTests", date: date)
+                    let command =
+                        state == .destructive
+                        ? "git push --force origin main"
+                        : state == .unknown
+                            ? "internal-check --workspace ."
+                            : "swift test --package-path Packages/ACP --filter PermissionRequestTests"
+                    permission(session, command: command, date: date, always: state != .managed)
                 }
                 session.lastActivity = date
             }
@@ -196,13 +216,14 @@ enum HomeNextPreviewFixtures {
         session.state.requestPermission(request, id: .int(3))
     }
 
-    private static func permission(_ session: SessionModel, command: String, date: Date) {
+    private static func permission(_ session: SessionModel, command: String, date: Date, always: Bool = true) {
+        let persistent = always ? #"{"optionId":"always","name":"Always Allow","kind":"allow_always"},"# : ""
         let json = """
             {"sessionId":"\(session.id.rawValue)","toolCall":{
             "toolCallId":"approval-\(session.id.rawValue)","title":"\(command)","kind":"execute",
             "status":"pending","rawInput":{"command":["/bin/zsh","-lc","\(command)"]}},
             "options":[{"optionId":"reject","name":"Don't Allow","kind":"reject_once"},
-            {"optionId":"always","name":"Always Allow","kind":"allow_always"},
+            \(persistent)
             {"optionId":"allow","name":"Allow","kind":"allow_once"}]}
             """
         guard let request = SessionModel.previewDecode(RequestPermissionRequest.self, json) else { return }

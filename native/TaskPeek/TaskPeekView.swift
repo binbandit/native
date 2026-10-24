@@ -161,6 +161,8 @@ struct TaskPeekView: View {
                 homeDirectory: model.device(of: ask.task) == .thisMac ? NSHomeDirectory() : nil,
                 knowledge: model.plugins.commandKnowledge,
                 focusRequested: wantsInstructionFocus, didFocus: { wantsInstructionFocus = false },
+                planEntries: call.kind == .switchMode ? ask.session.state.currentTurnPlan : [],
+                planExpanded: true,
                 onChoose: { option in Task { await model.answerTaskAsk(ask, option: option) } },
                 onInstruct: { try await model.instructTaskAsk(ask, text: $0) })
         case .question(let question):

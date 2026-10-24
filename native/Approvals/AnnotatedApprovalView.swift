@@ -1,5 +1,6 @@
 import ACP
 import ApprovalAnalysis
+import NativePolicy
 import SwiftUI
 
 /// The approval shared by the composer, Peek and Home. Hosts supply the request and model actions;
@@ -14,9 +15,13 @@ struct AnnotatedApprovalView: View {
     var forceReducedMotion = false
     var focusRequested = false
     var didFocus: () -> Void = {}
+    var planEntries: [PlanEntry] = []
+    var showMorePlan: (() -> Void)?
+    @State var planExpanded = false
     let onChoose: (PermissionOption) -> Void
     let onInstruct: (String) async throws -> Void
 
+    @Environment(PolicyCenter.self) private var policy: PolicyCenter?
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.legacyAskShortcutEnabled) private var legacyShortcut
     @Environment(\.permissionShortcutsEnabled) private var shortcutsEnabled
@@ -41,15 +46,31 @@ struct AnnotatedApprovalView: View {
         options.first { $0.kind == .rejectOnce } ?? options.first { $0.isRejection }
     }
 
+    private var requestTitle: String {
+        if call.kind == .switchMode {
+            return planEntries.isEmpty
+                ? "\(agentName) has a plan" : "\(agentName) has a plan: \(planEntries.count) steps"
+        }
+        return "\(agentName) wants to \(analysis?.action ?? call.title)"
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HeightCappedScrollView(maxHeight: DS.Approval.maximumHeight) {
                 VStack(alignment: .leading, spacing: DS.Space.xl) {
                     VStack(alignment: .leading, spacing: DS.Space.xxs) {
-                        Text("\(agentName) wants to \(analysis?.action ?? call.title)")
+                        Text(requestTitle)
                             .font(DS.Approval.titleFont).foregroundStyle(.dsTextPrimary)
-                        Text(analysis?.reason ?? "The agent asked for permission.")
-                            .font(.dsBody).foregroundStyle(.dsTextTertiary)
+                        Text(
+                            analysis?.reason
+                                ?? (call.kind == .switchMode ? call.title : "The agent asked for permission.")
+                        )
+                        .font(.dsBody).foregroundStyle(.dsTextTertiary)
+                    }
+                    if !planEntries.isEmpty {
+                        ComposerPlanSection(
+                            plan: PlanProgress(entries: planEntries), isWorking: false,
+                            isExpanded: $planExpanded, presentation: .review, showMore: showMorePlan)
                     }
                     if let analysis {
                         VStack(spacing: 0) {
@@ -66,6 +87,14 @@ struct AnnotatedApprovalView: View {
                     if !isAvailable {
                         Text("Waiting for the task to reconnect before you can answer.")
                             .font(.dsBody).foregroundStyle(.dsTextSecondary)
+                    }
+                    if let policy = policy?.policy, policy.isManaged(.forbiddenPermissionModes) {
+                        Label(
+                            "Permission modes are managed by \(policy.organizationName ?? "your organization").",
+                            systemImage: "lock"
+                        )
+                        .font(.dsBody).foregroundStyle(.dsTextTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
                     }
                     footer
                     if sending {
@@ -249,7 +278,9 @@ struct AnnotatedApprovalView: View {
 
     private func optionTitle(_ option: PermissionOption, ordinary: String) -> String {
         // A kind is a lifetime, not a decision: strict review, decline and cancel can share it.
-        if option.kind == .rejectAlways || options.filter({ $0.kind == option.kind }).count > 1 {
+        if call.kind == .switchMode || option.kind == .rejectAlways
+            || options.filter({ $0.kind == option.kind }).count > 1
+        {
             return option.name
         }
         return ordinary

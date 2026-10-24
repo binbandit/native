@@ -9,6 +9,7 @@ final class TaskPeekPresentation {
         let ask: TaskPeekAsk?
     }
 
+    var homeIsVisible = false
     var request: Request?
     var showsAttentionList = false
     var isAnswering = false
