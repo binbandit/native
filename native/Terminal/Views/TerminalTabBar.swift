@@ -8,6 +8,8 @@ struct TerminalTabBar: View {
     /// False when the terminal isn't available, leaving just the hide button.
     let showsTabs: Bool
     var canAddTab = true
+    var isWorkbench = false
+    var workbenchActions: AnyView?
 
     var body: some View {
         HStack(spacing: DS.Space.xs) {
@@ -29,8 +31,26 @@ struct TerminalTabBar: View {
                 }
                 .scrollIndicators(.never)
                 .fixedSize(horizontal: false, vertical: true)
-                IconButton("New Terminal Tab", systemImage: "plus") { panel.newTab() }
-                    .disabled(!canAddTab)
+                if isWorkbench, let workbenchActions {
+                    Menu {
+                        Button("New Terminal Tab", systemImage: "terminal") { panel.newTab() }
+                            .disabled(!canAddTab)
+                        Divider()
+                        workbenchActions
+                    } label: {
+                        Image(systemName: "plus")
+                            .frame(width: DS.Size.controlXS, height: DS.Size.controlXS)
+                    }
+                    .menuStyle(.borderlessButton)
+                    .menuIndicator(.hidden)
+                    .fixedSize()
+                    .help("Add to workbench")
+                    .accessibilityLabel("Add to workbench")
+                    .dsHitTarget(DS.Size.controlXS)
+                } else {
+                    IconButton("New Terminal Tab", systemImage: "plus") { panel.newTab() }
+                        .disabled(!canAddTab)
+                }
             } else {
                 Text("Terminal")
                     .font(.dsBodyMedium)
@@ -44,7 +64,7 @@ struct TerminalTabBar: View {
             IconButton("Hide Terminal", systemImage: "chevron.down") { panel.hide() }
         }
         .padding(.horizontal, DS.Space.md)
-        .frame(height: DS.Size.controlMD)
+        .frame(height: isWorkbench ? DS.TaskWell.workbenchBarHeight : DS.Size.controlMD)
     }
 }
 

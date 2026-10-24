@@ -8,6 +8,7 @@ import SwiftUI
 struct ProjectActionsMenuContent: View {
     let target: ProjectActionTarget
     var showsRunLast = true
+    var showsManagedExplanation = true
     @Environment(ProjectActionRunner.self) private var runner
     @Environment(SettingsPresentation.self) private var settings
 
@@ -36,10 +37,13 @@ struct ProjectActionsMenuContent: View {
         Section {
             ForEach(list.yours) { item($0) }
         }
-        if !showsRunLast, list.isRepositoryOff, store.hasRepositoryFile(in: project) {
+        if (!showsRunLast || !showsManagedExplanation), list.isRepositoryOff, store.hasRepositoryFile(in: project) {
             Section("From the repo") {
-                Button("Off by your organization", systemImage: "lock") {}
-                    .disabled(true)
+                Button(
+                    showsManagedExplanation ? "Off by your organization" : "Repository actions unavailable",
+                    systemImage: "lock"
+                ) {}
+                .disabled(true)
             }
         } else if !list.fromRepository.isEmpty {
             Section("From the repo") {

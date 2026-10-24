@@ -202,6 +202,26 @@ final class ProjectActionRunner {
         store.list(for: target.project).all.filter { state(of: $0, in: target)?.isRunning == true }
     }
 
+    /// Reveals an existing run without starting it again. The well and output actions share it.
+    @discardableResult
+    func showOutput(of action: ProjectAction, in target: ProjectActionTarget) -> Bool {
+        let key = ProjectActionRunKey(action.id, in: target)
+        let background = backgroundRuns[key]
+        if let session = target.session {
+            let panel = terminals.panel(for: session)
+            if let tab = panel.tabs.tab(forJob: action.id.rawValue), let job = tab.job,
+                background == nil || job.startedAt > (background?.startedAt ?? .distantPast)
+            {
+                panel.show()
+                panel.select(tab.id)
+                return true
+            }
+        }
+        guard background != nil else { return false }
+        shownOutput = key
+        return true
+    }
+
     func output(of key: ProjectActionRunKey) -> ProjectActionBackgroundRun? {
         backgroundRuns[key]
     }

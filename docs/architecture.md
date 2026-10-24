@@ -388,8 +388,10 @@ receives an edited tool call, and the ordinary draft is kept.
 `NativeTaskWell` is an off-by-default Labs gate selecting the task-tools screen with a centered
 activity capsule instead of the facts header and tool buttons. `TaskActivityNarration` in ACP projects
 reported tool activity and counted plan steps; `TaskWellWiring` connects the existing tool models.
-Requests lead to the existing composer or child request surface, and turn outcomes reuse detected
-Changes. The shared `TaskSignal` supplies the status vocabulary and finite attention animation.
+The open well reads worker identity, managed policy and cached tool summaries. Shells and Dev
+runs share the existing terminal workbench; its add menu reuses project actions. Subagents use a
+roster before opening their existing inspector. Requests lead to the existing composer or child
+request surface, and turn outcomes reuse detected Changes. The shared `TaskSignal` supplies the status vocabulary and finite attention animation.
 The behavior, tool order and remaining slices are described in `docs/session-tools.md`.
 
 ### Changing a task's agent (Labs)
