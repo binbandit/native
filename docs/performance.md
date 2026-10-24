@@ -881,6 +881,40 @@ at `31c1bd74`, including the child-history fix. Completed direct and nested chil
 failing-before and passing-after host-protocol regression coverage. Elara cannot drive or capture the UI, so the visual check of quiet return remains for the
 main Mac.
 
+### Idle menu rebuild loop, 2026-10-24
+
+The window's Undo/Redo menu kept invalidating itself with no task running. Reading
+`UndoManager.canRedo` or `redoMenuItemTitle` posts an undo checkpoint; `UndoHistory` turned every
+checkpoint into an observable revision, so SwiftUI read the menu again and repeated the cycle.
+A ten-second `sample` of the idle app found its main thread continuously rebuilding the menu bar.
+History indexing had already completed.
+
+`UndoHistory` now publishes a menu snapshot only when its availability or titles change. It
+coalesces external checkpoints until registration and naming finish, ignores checkpoints raised
+by its own reads, and cancels pending refreshes when the window's undo manager changes. Redo
+queries run before sampling Undo because checkpoint listeners can commit pending edits.
+
+Measured on elara, macOS 27.0.1, normal Debug, in the isolated `idle-cpu` instance. Before:
+`acfbcccc`; after: `5f22d68b`. `scripts/dev/drive.sh idle-cpu seed` supplied two scratch projects;
+`scripts/perf/long-session-agent.py` supplied three listed tasks per project, with no active turn.
+Both runs left the window open, settled for 30-45 seconds, then sampled kernel counters with
+`scripts/perf/rusage.swift` for 300 seconds. Each interval also included a ten-second `sample`;
+`ps` and `top` corroborated the process readings. The Mac was running other builds.
+
+| Five-minute average | Before | After |
+| --- | ---: | ---: |
+| Native CPU (100% is one logical core) | 25.05% | 0.01% |
+| Instructions per second | 886.89 million | 0.11 million |
+| Idle wakeups per second | 0.0 | 0.0 |
+| Interrupt wakeups per second | 0.4 | 0.4 |
+
+The after profile found the main thread waiting for events throughout the sample. The idle-menu
+regression failed before the fix. The Undo package's tests also cover normal
+undo/redo, deletion expiry, deferred naming, pending edits committed by checkpoint listeners,
+and switching managers before a pending refresh. No Accessibility or Screen Recording permission
+is available on elara, so hidden/minimized measurements and interactive menu checks need the
+main Mac; these measurements cover the open-window process only.
+
 ## Still to do
 
 | What | Why | Owner |
