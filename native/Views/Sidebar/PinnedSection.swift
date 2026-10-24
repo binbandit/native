@@ -19,13 +19,14 @@ struct PinnedSection<TaskAccessory: View>: View {
                 let row = SidebarDragState.Item.pinned(summary.id)
                 let index = order[summary.id] ?? 0
                 SessionRow(
-                    summary: summary, indent: .flat, isPinned: true,
+                    summary: summary, indent: .flat, isPinned: model.ordering.isPinned(summary.id),
                     canMoveUp: index > 0, canMoveDown: index < order.count - 1,
                     accessory: taskAccessory(summary)
                 ) {
                     select(summary.id)
                 }
                 .equatable()
+                .padding(.leading, model.isCoordinatorChild(summary.id, among: sessions) ? DS.Space.xl : 0)
                 .sidebarDraggable(row, title: model.title(for: summary), state: drag)
                 .sidebarDropTarget(row, state: drag, onDrop: model.applySidebarDrop)
             }

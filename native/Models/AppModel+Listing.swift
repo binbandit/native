@@ -29,7 +29,7 @@ extension AppModel {
 
     /// Every session in the sidebar, in its order: pinned first, then each project's.
     var sessionList: [SessionSummary] {
-        pinnedSessions + projects.all.flatMap { sessions(in: $0.id) }
+        groupCoordinatorTasks([pinnedSessions] + projects.all.map { sessions(in: $0.id) }).flatMap { $0 }
     }
 
     func moveSessions(in project: Project.ID, fromOffsets source: IndexSet, toOffset destination: Int) {
@@ -151,7 +151,8 @@ extension AppModel {
                 && (!isStartingTask || known.contains(info.sessionId))
         }
         catalog.replace(agent, in: project.id, with: topLevel) {
-            sessions.session(SessionKey(agent: agent, id: $0)) != nil
+            let key = SessionKey(agent: agent, id: $0)
+            return sessions.session(key) != nil || coordinator(for: key) != nil
         }
         problems.resolve(.listing(agent), in: project.id)
         if let selection, selection.agent == agent, !catalog.contains(selection), startingTask(selection) == nil {
