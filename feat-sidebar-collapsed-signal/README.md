@@ -1,0 +1,1 @@
+Fixture-only checks of collapsed sidebar attention at a71fb32d. Light and dark captures use the isolated Debug instance rd-sidebar-3. The approved HTML mock uses fictional profile and repository labels. Native windows were covered by another app: static render and scoped AX behavior were checked; continuous motion was not observed.
