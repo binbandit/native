@@ -12,32 +12,53 @@ struct AgentStopProcessesTests {
         let folder = FileManager.default.temporaryDirectory.appending(path: "native-stop-escape-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
+        let gate = Pipe()
+        defer {
+            try? gate.fileHandleForReading.close()
+            try? gate.fileHandleForWriting.close()
+        }
         let parent = Process()
         parent.executableURL = URL(filePath: "/bin/sh")
         parent.arguments = [
             "-c",
-            "while [ ! -f fork ]; do sleep 0.02; done; /bin/sh -c 'while [ ! -f write ]; do sleep 0.02; done; printf survived > marker' & echo $! > child.pid",
+            "exec 3<&0; read -r fork; /bin/sh -c 'read -r write && printf survived > marker' <&3 & echo $! > child.pid",
         ]
         parent.currentDirectoryURL = folder
+        parent.standardInput = gate
         parent.standardOutput = FileHandle.nullDevice
         parent.standardError = FileHandle.nullDevice
         try parent.run()
+        // Builtin read gates each step without adding sleep children to the initial snapshot.
+        // FD 3 preserves the pipe for the background shell, whose default stdin is /dev/null.
         var tree = AgentStopProcesses(root: parent.processIdentifier)
         defer { Self.end(&tree) }
-        try Data().write(to: folder.appending(path: "fork"))
+        try #require(tree.hasRemainingProcesses)
+        try gate.fileHandleForWriting.write(contentsOf: Data("fork\n".utf8))
         let child = try await childPID(in: folder)
         var childCleanup = AgentStopProcesses(root: child)
         defer { Self.end(&childCleanup) }
         // Foundation can still report a zombie parent as running on Linux. The child's kernel
         // parent identifies reparenting without waiting for the child's inherited resources.
         let deadline = ContinuousClock.now + .seconds(5)
-        while Self.parent(of: child) == parent.processIdentifier, ContinuousClock.now < deadline {
+        while Self.parent(of: child).map({ $0 != parent.processIdentifier }) != true,
+            ContinuousClock.now < deadline
+        {
             try await Task.sleep(for: .milliseconds(10))
         }
-        try #require(Self.parent(of: child) != parent.processIdentifier)
+        try #require(Self.parent(of: child).map { $0 != parent.processIdentifier } == true)
+        // Reparenting can precede the parent's final exit. Wait for that exit before asserting
+        // an empty snapshot, without ever refreshing while the writer is still its child.
+        let exitDeadline = ContinuousClock.now + .seconds(5)
+        repeat {
+            tree.refresh()
+            if !tree.hasRemainingProcesses { break }
+            try await Task.sleep(for: .milliseconds(10))
+        } while ContinuousClock.now < exitDeadline
+        try #require(!tree.hasRemainingProcesses)
         tree.terminate()
         #expect(!tree.hasRemainingProcesses)
-        try Data().write(to: folder.appending(path: "write"))
+        #expect(!FileManager.default.fileExists(atPath: folder.appending(path: "marker").path))
+        try gate.fileHandleForWriting.write(contentsOf: Data("write\n".utf8))
         let writeDeadline = ContinuousClock.now + .seconds(5)
         while !FileManager.default.fileExists(atPath: folder.appending(path: "marker").path),
             ContinuousClock.now < writeDeadline
