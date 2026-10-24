@@ -20,6 +20,8 @@ struct SessionGoalEditor: View {
         } onCancel: {
             onDismiss()
         }
+        // Switching from MCP's shorter page must not compress the objective and its explanation.
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
 

@@ -168,6 +168,7 @@ struct ComposerSettingsPopover<Connections: View, Actions: View>: View {
                 .disabled(locked || isApplying)
                 .dsHitTarget(DS.ComposerSettings.controlHeight)
                 .accessibilityLabel(choice.askingTitle)
+                .accessibilityHint(AutonomySummary.summary(of: choice) ?? "")
                 .accessibilityValue(
                     locked ? "Not allowed by \(manager ?? "your organization")" : selected ? "Selected" : ""
                 )
