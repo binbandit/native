@@ -48,8 +48,13 @@
             <key>PayloadDisplayName</key>
             <string>Native settings</string>
 
-            <!-- Agents ids that may be listed or started (claude-code, codex, cursor, opencode, pi,
-                 copilot, or a plugin's own). Others show "Not allowed by your organization". -->
+            <!-- Local command knowledge and coverage diagnostics. No network or command execution. -->
+            <key>policy.approvals.knowledge</key>
+            <string>{"version":1,"programs":[],"locations":[]}</string>
+            <key>policy.approvals.countUnknownPrograms</key>
+            <false/>
+
+            <!-- Agent ids that may be listed or started. -->
             <key>policy.agents.allowed</key>
             <array>
                 <string>claude-code</string>

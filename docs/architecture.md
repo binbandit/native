@@ -340,12 +340,14 @@ Peek and Home hosts. `SessionApprovalView` connects it to model actions. Only th
 owns shortcuts; the primary transcript leaves its response controls to the composer while enabled.
 The ordinary composer and approvals are unchanged with the gate off.
 
-`Packages/ApprovalAnalysis` describes literal rm and git push commands without running them or
-reading files or the network. It preserves the exact command and source ranges, distinguishes
-regenerable DerivedData paths from destructive deletion and remote history rewrites, and makes no
-claims for unsupported commands or shell syntax. Reach is lexical, relative to the command's cwd
-and the task's worktree; contents, symlinks and remote commits are explicitly uninspected. Host-side
-measurements and additional command families are later slices, subject to managed network policy.
+`Packages/ApprovalAnalysis` matches literal commands against bundled, versioned JSON knowledge,
+with additive plugin and managed-policy contributions. It never executes commands or inspects files
+or the network. Unsupported syntax makes no claims. Conventional cache locations are lexical
+labels, never proof that deletion is safe. `native/CommandKnowledge` provides client-local unknown
+program counts and diagnostics, behind the same off-by-default Fine print gate. Policy can disable
+counting; Settings can purge it; nothing exports it. See [command knowledge](command-knowledge.md)
+for the schema, coverage, extension precedence, and storage contract. Host-side measurements remain
+a later slice, subject to managed network policy.
 
 Irreversible requests use the tested `ApprovalHold` state machine: 0.6 seconds, early release
 cancels, 0.4 seconds of acknowledgement, five-second accessibility confirmation, and no Always

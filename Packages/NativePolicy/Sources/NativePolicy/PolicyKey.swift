@@ -1,6 +1,8 @@
 /// Every managed setting Native reads, by the preference key an organization's configuration profile
 /// sets. See `docs/enterprise.md` and the package-only catalog inputs in `docs/catalog-policy.md`.
 public enum PolicyKey: String, CaseIterable, Hashable, Sendable {
+    case commandKnowledge = "policy.approvals.knowledge"
+    case unknownCommandCounts = "policy.approvals.countUnknownPrograms"
     case agentsAllowed = "policy.agents.allowed"
     case agentsEnvironment = "policy.agents.environment"
     case mcpAllowed = "policy.mcp.allowed"

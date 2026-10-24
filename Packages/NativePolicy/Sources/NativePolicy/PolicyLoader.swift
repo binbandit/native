@@ -1,3 +1,4 @@
+import ApprovalAnalysis
 import Foundation
 
 /// Reads and validates every policy key from a source.
@@ -5,6 +6,13 @@ public enum PolicyLoader {
     public static func load(from source: any PolicySource) -> NativePolicy {
         var resolver = PolicyResolver(source: source)
         var policy = NativePolicy()
+        policy.commandKnowledge =
+            resolver.resolve(
+                .commandKnowledge, expecting: "a command knowledge JSON document", PolicyParse.commandKnowledge)
+            ?? .init()
+        policy.unknownCommandCountsEnabled =
+            resolver.resolve(
+                .unknownCommandCounts, expecting: "a Boolean", PolicyParse.bool) ?? true
         policy.agents.allowed = resolver.resolve(
             .agentsAllowed, expecting: "an array of agent ids", PolicyParse.stringSet)
         policy.agents.environment =
@@ -121,6 +129,13 @@ struct PolicyResolver {
 /// Parsers for property-list values. Each returns nil when the value as a whole is unusable, and
 /// reports entries it skipped in `problems`.
 enum PolicyParse {
+    static func commandKnowledge(_ raw: Any, _ problems: inout [String]) -> CommandKnowledge? {
+        guard let json = raw as? String else { return nil }
+        let knowledge = CommandKnowledge.load(Data(json.utf8))
+        problems += knowledge.problems
+        return knowledge
+    }
+
     static func bool(_ raw: Any, _ problems: inout [String]) -> Bool? {
         guard let number = raw as? NSNumber, CFGetTypeID(number) == CFBooleanGetTypeID() else { return raw as? Bool }
         return number.boolValue

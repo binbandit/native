@@ -43,6 +43,8 @@ struct PrivacySettingsPage: View {
     static let logRow = SettingsRowID("privacy.log")
     static let idRow = SettingsRowID("privacy.id")
 
+    @Environment(AppModel.self) private var app
+    @Experiment(.composerNext) private var finePrint
     @Environment(TelemetryCenter.self) private var telemetry
     @Environment(\.settingsPlainly) private var plainly
     @State private var isShowingLog = false
@@ -76,6 +78,9 @@ struct PrivacySettingsPage: View {
                     && telemetry.organizationEndpoints.isEmpty ? "If a later version asks" : "Sent"
             )
             .settingsRevealTarget(Self.disclosureRow)
+            if finePrint {
+                CommandKnowledgeSettings(problems: app.plugins.commandKnowledge.problems)
+            }
             SettingsSubheading("On this Mac")
             SettingsRowGroup {
                 SettingsRow(id: Self.logRow, "What Native has sent", description: Text(logDescription)) {

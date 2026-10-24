@@ -87,6 +87,8 @@ struct PluginManifest: Codable, Hashable, Sendable, Identifiable {
     /// Gates and parameters for Settings ▸ Labs, and which contributions each gate switches. A broken
     /// experiment is listed with its problem rather than failing the plugin.
     var experiments = ExperimentContributions()
+    /// Versioned command descriptions. Invalid entries are reported in Command Diagnostics.
+    var commandKnowledge: JSONValue?
 
     init(
         id: String, name: String, version: String? = nil, description: String? = nil, agents: [AgentManifest] = [],
@@ -122,6 +124,7 @@ struct PluginManifest: Codable, Hashable, Sendable, Identifiable {
         iconSets = try container.decodeIfPresent(IconSetContributions.self, forKey: .iconSets) ?? .init()
         celebrations = try container.decodeIfPresent(CelebrationContributions.self, forKey: .celebrations) ?? .init()
         experiments = ExperimentContributions(manifest: decoder)
+        commandKnowledge = try container.decodeIfPresent(JSONValue.self, forKey: .commandKnowledge)
     }
 }
 
