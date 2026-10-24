@@ -18,3 +18,4 @@ nice -n 10 xcrun swiftc "${flags[@]}" "$root/scripts/tests/droid-task-routing.sw
     -Xlinker -rpath -Xlinker "$app/Contents/Frameworks" \
     -Xlinker -rpath -Xlinker "$app/Contents/MacOS" -o "$work/droid-task-routing"
 "$work/droid-task-routing" -NativeRemoteHosts YES
+"$work/droid-task-routing" -NativeRemoteHosts NO

@@ -474,8 +474,8 @@ reconnect or re-pairing. An unavailable remote host produces a recoverable proje
 never falls back to this Mac. Cleanup protects the owning host's project root, and failed deletion
 keeps its workspace recovery information without running teardown. Agent-copy deletion and
 `agentRuntime(for:)` use the same ownership boundary. The local removed-workspace scan skips
-remote tasks; folder-only title and discarded-startup operations still need their own task routes. What a host's sessions get from this Mac: its agent
-catalog (`_native/agents/sync` with the plugin-built specs, on each connection with `runCommands`,
+remote tasks; folder-only title and discarded-startup operations still need their own task routes.
+What a host's sessions get from this Mac: its agent catalog (`_native/agents/sync` with the plugin-built specs, on each connection with `runCommands`,
 never this Mac's worktrees folder or a command that's a path here), its organization policy as
 `_meta`, and only MCP servers the host can reach itself (`PairedHostServers`: HTTP to another
 machine); this Mac's loopback tools and stdio commands stay here. Task setup and teardown scripts

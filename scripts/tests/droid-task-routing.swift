@@ -182,6 +182,27 @@ private struct DroidTaskRoutingRegression {
         app.hosts.deviceWorkspaces = devices
         app.taskWorkspaces = devices
         func key(_ id: String) -> SessionKey { SessionKey(agent: .init(rawValue: "fixture"), id: SessionID(id)) }
+        if !app.offersRemoteHosts {
+            app.hosts.deviceWorkspaces = nil
+            app.taskWorkspaces = local
+            let task = key("local")
+            app.catalog.add(SessionInfo(sessionId: task.id, cwd: folder), for: task.agent, in: project.id)
+            await app.archiveSession(task)
+            await app.unarchiveSession(task)
+            app.deleteSession(task)
+            app.lastUndoable?.undo()
+            try require(app.pendingDeletionKeys.isEmpty, "local deletion undo failed")
+            let discarded = ProjectProblem(
+                project: project.id, work: .workspaceDeletion(key("discarded"), folder: URL(filePath: folder)),
+                title: "Fixture", recovery: "Fixture")
+            app.problems.report(discarded)
+            await app.retry(discarded)
+            try require(app.problems.all.isEmpty, "legacy local cleanup retry failed")
+            try require(
+                local.calls.map(\.operation) == ["archive", "restore", "delete"], "default-off local actions changed")
+            print("PASS: default-off local archive, restore, delete undo and discarded-workspace retry")
+            return
+        }
         func connect(
             _ ids: [String], provider: RecordingWorkspaces
         ) async throws -> (RemoteHost, RoutingHost, NativeHostClient) {
