@@ -50,7 +50,7 @@ struct ComposerSettingsControl: View {
         }
         .buttonStyle(.plain)
         .trackHover($isHovered)
-        .dsHitTarget()
+        .dsHitTarget(DS.ComposerSettings.controlHeight)
         .accessibilityLabel("Task Settings")
         .accessibilityValue(settings.model?.shortModelName ?? "Agent defaults")
         .accessibilityIdentifier("composer-settings")
@@ -90,7 +90,7 @@ struct ComposerSettingsControl: View {
                 .buttonStyle(.plain)
                 .font(.dsBody)
                 .padding(DS.Space.lg)
-                .dsHitTarget()
+                .dsHitTarget(DS.ComposerSettings.controlHeight)
                 MCPSessionPanel(
                     library: library, session: session, entries: library.entries(forSession: session.clientID),
                     onManage: {
@@ -111,7 +111,7 @@ struct ComposerSettingsControl: View {
                 connections
             } actions: {
                 actions
-                    .disabled(session.phase == .disconnected)
+                    .disabled(isApplying || session.phase == .disconnected)
             }
         }
     }
@@ -140,7 +140,7 @@ struct ComposerSettingsControl: View {
             }
             .buttonStyle(.plain)
             .disabled(library == nil)
-            .dsHitTarget()
+            .dsHitTarget(DS.ComposerSettings.controlHeight)
             .accessibilityLabel("MCP servers")
 
             // ACP has no universal web-search switch. Only an offered setting may change it.

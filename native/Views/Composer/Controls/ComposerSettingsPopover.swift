@@ -108,7 +108,7 @@ struct ComposerSettingsPopover<Connections: View, Actions: View>: View {
         .buttonStyle(.plain)
         .foregroundStyle(.dsTextPrimary)
         .disabled(isApplying)
-        .dsHitTarget()
+        .dsHitTarget(DS.ComposerSettings.controlHeight)
         .help(choice.description ?? choice.name)
         .accessibilityLabel(setting.displayName(of: choice))
         .accessibilityAddTraits(selected ? .isSelected : [])
@@ -165,7 +165,7 @@ struct ComposerSettingsPopover<Connections: View, Actions: View>: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(locked ? .dsTextTertiary : .dsTextPrimary)
                 .disabled(locked || isApplying)
-                .dsHitTarget()
+                .dsHitTarget(DS.ComposerSettings.controlHeight)
                 .accessibilityLabel(choice.askingTitle)
                 .accessibilityValue(
                     locked ? "Not allowed by \(manager ?? "your organization")" : selected ? "Selected" : ""
@@ -197,7 +197,7 @@ struct ComposerSettingsPopover<Connections: View, Actions: View>: View {
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
         .disabled(isApplying)
-        .dsHitTarget()
+        .dsHitTarget(DS.ComposerSettings.controlHeight)
         .help(setting.option.description ?? setting.option.name)
     }
 
