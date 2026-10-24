@@ -24,7 +24,7 @@ struct TaskView: View {
 
     private func content(_ session: HostSessionSummary, mirror: SessionMirror?) -> some View {
         GeometryReader { geometry in
-            ScrollView {
+            CompanionTranscriptScrollView(state: state) {
                 LazyVStack(alignment: .leading, spacing: DS.Space.lg) {
                     if mirror == nil || mirror?.isLoading == true {
                         HStack(spacing: DS.Space.md) {
@@ -36,14 +36,12 @@ struct TaskView: View {
                     }
                     ForEach(mirror?.state.items ?? []) { item in
                         CompanionTranscriptRow(item: item, answers: host.answers) { selectedCall = $0 }
+                            .companionTranscriptRow(item.id)
                     }
                 }
-                .scrollTargetLayout()
                 .padding(DS.Space.lg)
                 .frame(maxWidth: CompanionMetrics.readableWidth, alignment: .leading)
             }
-            .defaultScrollAnchor(.bottom)
-            .scrollPosition(id: $state.visibleItemID, anchor: .top)
             .background(.dsBackground)
             .safeAreaInset(edge: .top, spacing: 0) {
                 banner(session)

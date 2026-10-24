@@ -160,8 +160,13 @@ change the separate full iPad app. Navigation follows size classes, never device
 dimensions or orientation. The companion has no tab bar; Settings remains a sheet.
 
 `CompanionNavigation` owns the selection and each task's `CompanionTaskState`, keyed by host and
-session. The composer draft, delivery status and transcript item anchor survive column changes
-and visiting another task. The navigation tree is not replaced when a size class changes.
+session. The composer draft, delivery status and measured transcript passage survive column changes
+and visiting another task. `TranscriptReadingPosition` in AppAppearance keeps a row ID plus its
+fractional viewport anchor, using the same placement equation as the Mac transcript. The companion
+resolves row and viewport geometry together, freezes the last valid passage before a size change,
+and restores it with bounded, nonanimated scroll requests. Missing rows during teardown do not
+mean the user returned to the end; a measured end still follows the latest output. User scrolling
+cancels restoration. The navigation tree is not replaced when a size class changes.
 Landscape is supported on the outer display as well as on regular iPhones. Compact vertical
 size classes shorten the scanner and rearrange the welcome screen with `AnyLayout`; approval
 cards scroll within a fraction of the current task viewport so their actions remain reachable.
