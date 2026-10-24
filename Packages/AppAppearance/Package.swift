@@ -6,7 +6,10 @@ let package = Package(
     platforms: [.macOS(.v15), .iOS(.v18)],
     products: [.library(name: "AppAppearance", targets: ["AppAppearance"])],
     targets: [
-        .target(name: "AppAppearance"),
+        .target(
+            name: "AppAppearance",
+            // Optimize infrequent operations for size; the app and streaming path stay at -O.
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         .testTarget(
             name: "AppAppearanceTests", dependencies: ["AppAppearance"],
             resources: [.copy("Fixtures/celebration-valentines-day.json")]),

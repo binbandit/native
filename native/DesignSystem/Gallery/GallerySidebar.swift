@@ -1,3 +1,4 @@
+#if DEBUG
 import SwiftUI
 
 /// The sidebar over a busy backdrop, so the translucent material shows.
@@ -126,4 +127,5 @@ private struct GalleryBackdrop: View {
         GallerySidebar()
     }
 }
+#endif
 #endif

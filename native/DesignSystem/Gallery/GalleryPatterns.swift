@@ -1,3 +1,4 @@
+#if DEBUG
 import SwiftUI
 
 /// The shared patterns: notices, errors, usage limits, undo and empty states, plus the formatters.
@@ -102,4 +103,5 @@ private struct GalleryFormats: View {
             .frame(width: 640)
     }
 }
+#endif
 #endif
