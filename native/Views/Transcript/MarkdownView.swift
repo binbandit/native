@@ -48,6 +48,7 @@ struct MarkdownSectionView: View, Equatable {
             }
         }
         .textSelection(.enabled)
+        .composerQuoteSource(ComposerQuoteSource(name: "Transcript", text: source))
     }
 }
 

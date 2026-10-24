@@ -67,6 +67,8 @@ final class SessionModel {
     /// Locks the folder before the first send suspends, including a queued or hidden prompt.
     var hasSubmittedPrompt = false
     var draft = ""
+    var quoteSelection: [PromptQuote] = []
+    var quoteSelectionSource: UUID?
     /// Files and images going out with the draft (SessionModel+Attachments.swift).
     var attachments: [PromptAttachment] = []
     /// The transient image and file viewer shared by this task's transcript styles.

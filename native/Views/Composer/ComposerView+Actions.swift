@@ -6,7 +6,7 @@ import SwiftUI
 extension ComposerView {
     func draftChanged() {
         highlighted = 0
-        if SlashCommandQuery(draft: session.draft) == nil, mentionQuery == nil {
+        if SlashCommandQuery(draft: draftText) == nil, mentionQuery == nil {
             suggestionsDismissed = false
         }
         if session.draft.isEmpty {
@@ -79,8 +79,8 @@ extension ComposerView {
     }
 
     func insert(_ path: String, for query: FileMentionQuery) {
-        let (text, cursor) = query.draft(session.draft, inserting: path)
-        session.draft = text
+        let (text, cursor) = query.draft(draftText, inserting: path)
+        draftText = text
         selection = TextSelection(insertionPoint: cursor)
         mentionSource?.noteMentioned(path)
         isFocused = true
@@ -88,8 +88,8 @@ extension ComposerView {
 
     /// Tab, Return or a click on a listed command: the caret goes after it, ready for its argument.
     func insert(_ command: ComposerSlashCommand) {
-        let (text, cursor) = SlashCommandQuery.draft(session.draft, inserting: command)
-        session.draft = text
+        let (text, cursor) = SlashCommandQuery.draft(draftText, inserting: command)
+        draftText = text
         selection = TextSelection(insertionPoint: cursor)
         agentCommandDraft = command.isNative ? nil : session.draft
         isFocused = true

@@ -1,3 +1,4 @@
+import ACP
 import CodeThemes
 import SwiftUI
 
@@ -13,6 +14,7 @@ public struct DiffView: View {
     let isEmbedded: Bool
     let isLazy: Bool
 
+    @Environment(\.composerQuoteContext) private var quoteContext
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dsLightTone) private var lightTone
     @Environment(\.dsDarkTone) private var darkTone
@@ -61,7 +63,7 @@ public struct DiffView: View {
         )
         Group {
             if isEmbedded {
-                DiffLines(rows: rows, lines: lines, isLazy: isLazy)
+                DiffLines(path: path, rows: rows, lines: lines, isLazy: isLazy)
             } else {
                 framed(rows: rows, stats: stats, lines: lines)
             }
@@ -81,7 +83,7 @@ public struct DiffView: View {
             VStack(alignment: .leading, spacing: 0) {
                 header(stats)
                 SeparatorLine()
-                DiffLines(rows: rows, lines: lines, isLazy: isLazy)
+                DiffLines(path: path, rows: rows, lines: lines, isLazy: isLazy)
             }
             .background(.dsDiffBackground, in: shape)
             .clipShape(shape)
@@ -102,6 +104,10 @@ public struct DiffView: View {
             .truncationMode(.head)
             Spacer(minLength: DS.Space.md)
             DiffStatsText(stats: stats)
+            if quoteContext?.quotes.contains(where: { $0.source == path }) == true {
+                Label("Quoted below", systemImage: "text.quote")
+                    .foregroundStyle(.dsTextTertiary)
+            }
         }
         .font(.dsCaption)
         .padding(.horizontal, DS.Space.md)
@@ -124,6 +130,11 @@ private struct DiffHighlightedLines {
 }
 
 private struct DiffLines: View {
+    let path: String
+    @Environment(\.composerQuoteContext) private var quoteContext
+    @State private var sourceID = UUID()
+    @State private var selected: ClosedRange<Int>?
+    @State private var anchor: Int?
     let rows: [DiffRow]
     let lines: DiffHighlightedLines
     let isLazy: Bool
@@ -132,7 +143,19 @@ private struct DiffLines: View {
         // A hidden template reserves the gutter width for the longest line number.
         let largest = rows.compactMap(\.number).max() ?? 0
         let numberTemplate = String(repeating: "8", count: max(String(largest).count, 2))
-        Group {
+        VStack(alignment: .leading, spacing: 0) {
+            if quoteContext?.selectedSource == sourceID, selected != nil {
+                HStack {
+                    Button("Quote Selected Lines") {
+                        quoteContext?.quote(selectedQuotes); clearSelection()
+                    }
+                    .buttonStyle(.ds(.ghost))
+                    Spacer()
+                    Button("Clear Selection", action: clearSelection)
+                        .buttonStyle(.ds(.ghost))
+                }
+                .padding(.horizontal, DS.Space.sm)
+            }
             if isLazy {
                 LazyVStack(alignment: .leading, spacing: 0) { rowViews(numberTemplate) }
             } else {
@@ -145,11 +168,66 @@ private struct DiffLines: View {
         // A themed diff draws on its theme's background wherever it's embedded.
         .background(lines.colors.isNative ? AnyShapeStyle(.clear) : AnyShapeStyle(.dsDiffBackground))
         .textSelection(.enabled)
+        .onChange(of: quoteContext?.selectedSource) { _, source in
+            if source != sourceID { selected = nil; anchor = nil }
+        }
+        .onChange(of: rows) { clearSelection() }
+        .onChange(of: path) { clearSelection() }
+        .onDisappear { quoteContext?.clear(sourceID) }
+    }
+
+    private var selectedQuotes: [PromptQuote] {
+        guard let selected else { return [] }
+        var result: [PromptQuote] = []
+        var lines: [PromptQuote.Line] = []
+        var side = PromptQuote.Side.new
+        func flush() {
+            if !lines.isEmpty { result.append(PromptQuote(source: path, side: side, lines: lines)); lines = [] }
+        }
+        for index in selected where rows.indices.contains(index) {
+            let row = rows[index]
+            guard let number = row.number else { flush(); continue }
+            let nextSide = row.kind == .removed ? PromptQuote.Side.old : .new
+            if nextSide != side { flush(); side = nextSide }
+            lines.append(.init(number: number, text: row.text))
+        }
+        flush()
+        return result
+    }
+
+    private func select(_ index: Int) {
+        if let anchor {
+            selected = min(anchor, index)...max(anchor, index)
+        } else {
+            anchor = index; selected = index...index
+        }
+        quoteContext?.select(sourceID, selectedQuotes)
+    }
+
+    private func clearSelection() {
+        selected = nil
+        anchor = nil
+        quoteContext?.clear(sourceID)
+    }
+
+    private func isQuoted(_ row: DiffRow) -> Bool {
+        quoteContext?.quotes.contains { quote in
+            quote.source == path && quote.side == (row.kind == .removed ? .old : .new)
+                && quote.lines.contains { $0.number == row.number && $0.text == row.text }
+        } == true
     }
 
     private func rowViews(_ numberTemplate: String) -> some View {
         ForEach(rows.indices, id: \.self) { index in
-            DiffRowView(row: rows[index], numberTemplate: numberTemplate, lines: lines)
+            DiffRowView(
+                row: rows[index], numberTemplate: numberTemplate, lines: lines,
+                onSelect: quoteContext == nil || rows[index].number == nil ? nil : { select(index) }
+            )
+            .background(selected?.contains(index) == true || isQuoted(rows[index]) ? Color.dsAccentSubtle : .clear)
+            .composerQuoteSource(
+                ComposerQuoteSource(
+                    name: path, text: rows[index].text, firstLine: rows[index].number ?? 1,
+                    side: rows[index].kind == .removed ? .old : .new))
         }
     }
 }
@@ -159,6 +237,7 @@ private struct DiffRowView: View {
     let row: DiffRow
     let numberTemplate: String
     let lines: DiffHighlightedLines
+    var onSelect: (() -> Void)?
 
     /// Set by `DiffLines`' `.codeTextStyle(_:)`, around this row.
     @Environment(\.dsCodeStrongFont) private var strongFont
@@ -175,7 +254,14 @@ private struct DiffRowView: View {
                     if row.kind == .gap {
                         Image(systemName: "ellipsis")
                     } else if let number = row.number {
-                        Text(verbatim: String(number))
+                        if let onSelect {
+                            Button(action: onSelect) { Text(verbatim: String(number)) }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel("Select \(row.kind == .removed ? "old" : "new") line \(number)")
+                                .help("Select a line, then another to extend the range. Quote with ⌘L.")
+                        } else {
+                            Text(verbatim: String(number))
+                        }
                     }
                 }
                 .foregroundStyle(colors.isNative ? Color.dsTextTertiary : colors.color(.comment))
@@ -200,6 +286,7 @@ private struct DiffRowView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
+        .frame(minHeight: onSelect == nil ? nil : DS.Size.minimumHitTarget)
         .padding(.trailing, 10)
         .padding(.vertical, row.kind == .gap ? 3 : 1)
         .background(alignment: .leading) {

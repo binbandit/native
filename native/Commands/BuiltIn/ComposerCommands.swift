@@ -25,7 +25,14 @@ extension NativeCommand {
             if let instruction = $0.taskPeekInstructionFocus {
                 instruction.wrappedValue = true
             } else {
-                $0.session?.wantsComposerFocus = true
+                if let session = $0.session {
+                    if ExperimentStore.shared.value(of: .composerNext), session.permissionRequests.isEmpty {
+                        let quotes = PlatformQuoteSelection.capture(task: session.clientID) ?? session.quoteSelection
+                        session.quote(quotes)
+                        if let source = session.quoteSelectionSource { session.clearQuoteSelection(source: source) }
+                    }
+                    session.wantsComposerFocus = true
+                }
             }
         }
         .available { $0.taskPeekInstructionFocus != nil || ($0.session.map { !$0.isSubagent } ?? false) },

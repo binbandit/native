@@ -307,7 +307,7 @@ Other file types use the platform's Quick Look preview, with its native navigati
 | | Clean up the current project's merged task worktrees, branches and stale worktree records, after a review (also "Clean Up Merged…" in the project's menu in the sidebar) | File | `git.cleanUpMerged` |
 | ⇧⌘O | Open the task's folder in the default app (Open In) | Task | `session.openInDefaultApp` |
 | ⌥⌘P | Open the task's pull request, where clicking one goes (Settings ▸ GitHub); listed while its branch has one | Task | `pullRequest.openForTask` |
-| ⌘L | Focus the composer | Task | `composer.focus` |
+| ⌘L | Quote selected transcript or diff lines and focus the composer (Fine print); otherwise focus the composer | Task | `composer.focus` |
 | ⌘[ / ⌘] | Back / forward through the tasks you've viewed | Go | `go.back` / `go.forward` |
 | ⌘1 – ⌘9 | Go to the Nth task in the sidebar | Task | `session.select1` – `session.select9` |
 | ⌃Tab / ⌃⇧Tab | Next / previous task | Task | `session.next` / `session.previous` |
@@ -631,3 +631,10 @@ They appear only while Fine print is enabled.
 | | Command Diagnostics (opens Settings > Privacy) | `help.commandDiagnostics` |
 | | Count Unknown Programs Locally | `privacy.countUnknownPrograms` |
 | | Clear Unknown Program Counts | `privacy.clearUnknownPrograms` |
+
+With Fine print enabled, select transcript text and choose Task > Focus Composer (⌘L) to quote
+its source lines. In a diff, select a line number, then another to extend the range, and choose
+Quote Selected Lines or ⌘L. Line buttons and Quote Selected Lines also work with Tab and Space
+and touch. Remove Quote is beside each quoted source; ⌘Z restores a removed quote. Quotes are
+snapshots of the selected text, including old/new line identity. File references in the draft and
+@ list show the current known additions and removals; unknown counts stay absent.
