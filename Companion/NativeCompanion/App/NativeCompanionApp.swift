@@ -11,6 +11,17 @@ struct NativeCompanionApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-companionLayoutPreview") {
+            let store = CompanionStore(previewHosts: [])
+            _store = State(initialValue: store)
+            _icons = State(
+                initialValue: AppIconController(
+                    store: store, celebrations: CompanionCelebrations(defaults: CompanionPreviewDefaults()),
+                    defaults: CompanionPreviewDefaults()))
+            return
+        }
+        #endif
         let pairings = KeychainPairedHostStore(service: CompanionDevice.keychainService)
         // UI tests start from a phone that has never paired.
         if ProcessInfo.processInfo.arguments.contains("-companionForgetPairings") {
@@ -23,7 +34,7 @@ struct NativeCompanionApp: App {
 
     var body: some Scene {
         WindowGroup {
-            CompanionRootView()
+            root
                 .environment(store)
                 .environment(icons)
                 .preferredColorScheme(appearance.colorScheme)
@@ -37,5 +48,19 @@ struct NativeCompanionApp: App {
                 // next activation rather than interrupting with the system's alert.
                 .onChange(of: store.activeHostID) { icons.applyNow() }
         }
+    }
+
+    @ViewBuilder
+    private var root: some View {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-companionLayoutPreview") {
+            CompanionLayoutPreview(
+                selectedTask: !ProcessInfo.processInfo.arguments.contains("-companionPreviewHome"))
+        } else {
+            CompanionRootView()
+        }
+        #else
+        CompanionRootView()
+        #endif
     }
 }

@@ -10,7 +10,7 @@ struct NeedsYouRow: View {
     var body: some View {
         let mirror = host.mirrors[session.id]
         VStack(alignment: .leading, spacing: DS.Space.md) {
-            NavigationLink(value: TaskRoute(hostID: host.id, sessionID: session.id)) {
+            NavigationLink(value: CompanionDestination.task(TaskRoute(hostID: host.id, sessionID: session.id))) {
                 CompanionTaskRow(host: host, session: session)
             }
             .accessibilityIdentifier("task-\(host.name)")
@@ -28,3 +28,15 @@ struct NeedsYouRow: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Needs you - Loading request") {
+    let host = CompanionPreviewFixtures.host()
+    DSPreviewPair {
+        if let session = host.sessions.first {
+            NeedsYouRow(host: host, session: session)
+                .frame(width: 320)
+        }
+    }
+}
+#endif

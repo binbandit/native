@@ -83,7 +83,10 @@ What follows from that:
   touch targets are at least 44pt, and the shortcuts in `docs/keyboard.md` work on iPad keyboards.
 - **Layouts adapt to width, not to platform.** A Mac window, an iPad in Stage Manager and an iPhone
   are points on one range: the sidebar and inspector become overlays at narrow widths, and the
-  iPhone's compact width is the companion layout.
+  iPhone's compact width is the companion layout. The separate companion target uses a
+  `NavigationSplitView` to show Tasks beside the conversation at regular horizontal size classes,
+  including the iPhone Duo inner display. Folding does not replace the navigation tree; selection,
+  unsent messages and transcript anchors belong to window-owned task state (`docs/companion.md`).
 
 ### Resource percentages
 
