@@ -5,110 +5,61 @@ import SwiftUI
 struct ComposeAgentPicker: View {
     let model: AppModel
 
+    private var policy: NativePolicy { PolicyCenter.shared.policy }
+    private var isManaged: Bool { policy.isManaged(.agentsAllowed) || policy.isManaged(.forbiddenPermissionModes) }
+
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: DS.Space.sm) {
-                heading("Agent")
-                ForEach(model.quickEntryRuntimes, id: \.agent.id) { runtime in
-                    let allowed = PolicyCenter.shared.policy.agents.allows(runtime.agent.id.rawValue)
-                    ComposerPickerRow(
-                        title: runtime.agent.displayName,
-                        detail: nil,
-                        status: allowed
-                            ? runtime.needsSignIn
-                                ? "Needs sign-in" : runtime.status == .idle ? "Ready" : runtime.status.label
-                            : "Not allowed",
-                        trailing: !allowed
-                            ? .locked : model.quickEntry.agent == runtime.agent.id ? .checked(dimmed: false) : .none,
-                        isEnabled: allowed && runtime.isAvailable
-                    ) { model.chooseComposeAgent(runtime.agent.id) }
-                    if allowed, runtime.status.canRetry {
-                        Button("Retry \(runtime.agent.displayName)") { Task { await model.restart(runtime.agent.id) } }
-                            .buttonStyle(.ds(.secondary))
-                    }
-                }
-                if model.quickEntryRuntimes.isEmpty {
-                    Text("No agents are available on this device. Choose another device or add an agent.")
-                        .font(.dsBody).foregroundStyle(.dsTextSecondary).padding(DS.Space.md)
-                }
-                if model.quickEntry.device == .thisMac {
-                    Button("Add Agent…") { model.isAddingAgent = true }
-                        .buttonStyle(.ds(.ghost))
-                }
-                let settings = ComposerSettings(model.composeTask.options)
-                if let setting = settings.model { choices(setting, title: "Model") }
-                if let setting = settings.effort { effort(setting) }
-                if let setting = settings.autonomy {
-                    choices(setting, title: "When \(model.composeTask.editor?.agentName ?? "the agent") asks you")
-                }
-                if settings.model == nil {
-                    SeparatorLine()
-                    Text("Uses the project's defaults. More choices appear after this agent has reported its settings.")
-                        .font(.dsBody).foregroundStyle(.dsTextTertiary).padding(DS.Space.md)
-                }
-                if !PolicyCenter.shared.policy.managedKeys.isEmpty {
-                    SeparatorLine()
-                    Label {
-                        Text(
-                            "Managed by \(PolicyCenter.shared.policy.organizationName ?? "your organization"). Your organization chooses which agents and permissions you can use."
-                        )
-                    } icon: {
-                        Image(systemName: "lock")
-                    }
-                    .font(.dsCaption).foregroundStyle(.dsTextSecondary).padding(DS.Space.md)
-                }
-            }
-            .padding(DS.Space.sm)
-        }
-        .frame(width: DS.ComposeTask.popoverWidth)
-        .frame(maxHeight: DS.ComposeTask.popoverMaxHeight)
-        .fixedSize(horizontal: false, vertical: true)
+        ComposerSettingsPopover(
+            settings: ComposerSettings(
+                model.composeTask.options.filter { ["model", "thought_level", "mode"].contains($0.category ?? "") }),
+            agentName: model.composeTask.editor?.agentName ?? "The agent",
+            manager: isManaged ? policy.organizationName ?? "your organization" : nil,
+            forbiddenModes: policy.forbiddenPermissionModes,
+            leadingContent: AnyView(agentChoices), showsExtras: false,
+            managementExplanation: policy.isManaged(.agentsAllowed)
+                ? "Your organization chooses which agents and permissions you can use."
+                : "Your organization chooses which permissions you can use.",
+            showsLockedConsequences: false,
+            source: { _ in .user }, onSet: { model.composeTask.choose($0, value: $1) },
+            connections: { EmptyView() }, actions: { EmptyView() })
     }
 
-    private func choices(_ setting: SelectSetting, title: String) -> some View {
-        VStack(alignment: .leading, spacing: DS.Space.xxs) {
-            SeparatorLine()
-            heading(title)
-            ForEach(
-                setting.choices.filter { setting.option.category != "mode" || $0.value != ComposerSettings.planValue }
-            ) { choice in
-                let forbidden = PolicyPermissionModes.forbids(setting.option, value: choice.value)
+    private var agentChoices: some View {
+        VStack(alignment: .leading, spacing: DS.Space.sm) {
+            heading("Agent")
+            ForEach(model.quickEntryRuntimes, id: \.agent.id) { runtime in
+                let allowed = PolicyCenter.shared.policy.agents.allows(runtime.agent.id.rawValue)
                 ComposerPickerRow(
-                    title: choice.name,
-                    detail: forbidden
-                        ? "Not allowed"
-                        : setting.option.category == "mode"
-                            ? AutonomySummary.summary(of: choice)
-                            : choice.descriptionWithoutName,
-                    trailing: forbidden ? .locked : choice.value == setting.value ? .checked(dimmed: false) : .none,
-                    isEnabled: !forbidden
-                ) { model.composeTask.choose(setting, value: choice.value) }
+                    title: runtime.agent.displayName,
+                    detail: nil,
+                    status: allowed
+                        ? runtime.needsSignIn
+                            ? "Needs sign-in" : runtime.status == .idle ? "Ready" : runtime.status.label
+                        : "Not allowed",
+                    trailing: !allowed
+                        ? .locked : model.quickEntry.agent == runtime.agent.id ? .checked(dimmed: false) : .none,
+                    isEnabled: allowed && runtime.isAvailable
+                ) { model.chooseComposeAgent(runtime.agent.id) }
+                if allowed, runtime.status.canRetry {
+                    Button("Retry \(runtime.agent.displayName)") { Task { await model.restart(runtime.agent.id) } }
+                        .buttonStyle(.ds(.secondary))
+                }
             }
-        }
+            if model.quickEntryRuntimes.isEmpty {
+                Text("No agents are available on this device. Choose another device or add an agent.")
+                    .font(.dsBody).foregroundStyle(.dsTextSecondary).padding(DS.Space.md)
+            }
+            if model.quickEntry.device == .thisMac {
+                Button("Add Agent…") { model.isAddingAgent = true }
+                    .buttonStyle(.ds(.ghost))
+            }
+            SeparatorLine()
+        }.padding(DS.Space.sm)
     }
 
     private func heading(_ text: String) -> some View {
         Text(text).font(.dsCaption).foregroundStyle(.dsTextTertiary)
             .padding(.horizontal, DS.Space.md).padding(.top, DS.Space.sm)
-    }
-
-    private func effort(_ setting: SelectSetting) -> some View {
-        VStack(alignment: .leading, spacing: DS.Space.sm) {
-            SeparatorLine()
-            heading("Effort")
-            Picker(
-                "Effort",
-                selection: Binding(get: { setting.value }, set: { model.composeTask.choose(setting, value: $0) })
-            ) {
-                ForEach(setting.choices) { choice in Text(choice.name).tag(choice.value) }
-            }
-            .pickerStyle(.segmented).labelsHidden()
-            .padding(.horizontal, DS.Space.md)
-            if let choice = setting.current, let note = setting.effortNote(for: choice) {
-                Text(note).font(.dsCaption).foregroundStyle(.dsTextTertiary)
-                    .padding(.horizontal, DS.Space.md)
-            }
-        }
     }
 }
 

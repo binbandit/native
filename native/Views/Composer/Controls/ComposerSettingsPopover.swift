@@ -10,6 +10,11 @@ struct ComposerSettingsPopover<Connections: View, Actions: View>: View {
     var forbiddenModes: Set<String> = []
     var isApplying = false
     var failure: String?
+    /// Compose adds its agent address to this same scroller before a task exists.
+    var leadingContent: AnyView?
+    var showsExtras = true
+    var managementExplanation: String?
+    var showsLockedConsequences = true
     var source: (ConfigOption) -> SettingsSourceLabel.Source
     let onSet: (SelectSetting, String) -> Void
     @ViewBuilder let connections: () -> Connections
@@ -20,16 +25,19 @@ struct ComposerSettingsPopover<Connections: View, Actions: View>: View {
     var body: some View {
         CappedHeightScrollView(maxHeight: DS.ComposerSettings.popoverMaxHeight) {
             VStack(alignment: .leading, spacing: 0) {
+                leadingContent
                 modelSection
                 if let effort = settings.effort { effortSection(effort) }
                 if let autonomy = settings.autonomy { autonomySection(autonomy) }
-                section {
-                    connections()
-                    ForEach(settings.modelSwitches + settings.others, id: \.option.id) { setting in
-                        settingRow(setting)
+                if showsExtras {
+                    section {
+                        connections()
+                        ForEach(settings.modelSwitches + settings.others, id: \.option.id) { setting in
+                            settingRow(setting)
+                        }
                     }
+                    section { actions() }
                 }
-                section { actions() }
                 if let failure {
                     Text(failure)
                         .font(DS.ComposerSettings.detailFont)
@@ -39,11 +47,13 @@ struct ComposerSettingsPopover<Connections: View, Actions: View>: View {
                 }
                 if let manager {
                     SeparatorLine()
-                    Label("Managed by \(manager).", systemImage: "lock")
-                        .font(DS.ComposerSettings.detailFont)
-                        .foregroundStyle(.dsTextSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(DS.ComposerSettings.sectionInset)
+                    Label(
+                        "Managed by \(manager)." + (managementExplanation.map { " " + $0 } ?? ""), systemImage: "lock"
+                    )
+                    .font(DS.ComposerSettings.detailFont)
+                    .foregroundStyle(.dsTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(DS.ComposerSettings.sectionInset)
                 }
             }
             .padding(DS.ComposerSettings.popoverInset)
@@ -149,7 +159,9 @@ struct ComposerSettingsPopover<Connections: View, Actions: View>: View {
                             .padding(.top, DS.Space.xxs)
                         VStack(alignment: .leading, spacing: DS.Space.xxs) {
                             Text(choice.askingTitle).font(DS.ComposerSettings.rowFont)
-                            if let detail = AutonomySummary.summary(of: choice) {
+                            if let detail = locked && !showsLockedConsequences
+                                ? "Not allowed" : AutonomySummary.summary(of: choice)
+                            {
                                 Text(detail)
                                     .font(DS.ComposerSettings.detailFont)
                                     .foregroundStyle(.dsTextTertiary)
