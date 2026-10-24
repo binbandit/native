@@ -263,24 +263,7 @@ struct RootView: View {
                     // All in view keeps navigation beside search when the platform hides the column.
                     if columnVisibility != .detailOnly || model.offersTaskPeek {
                         ToolbarItem {
-                            HistoryNavigationButtons(
-                                canGoBack: model.canGoBack,
-                                canGoForward: model.canGoForward,
-                                onBack: model.goBack,
-                                onForward: model.goForward
-                            )
-                        }
-                        .sharedBackgroundVisibility(.hidden)
-                    }
-                    if columnVisibility == .detailOnly, model.offersTaskPeek, !model.tasksNeedingAttention.isEmpty {
-                        ToolbarItem {
-                            TaskAttentionToolbarButton(
-                                maxWidth: max(0, contentSize.width - DS.Peek.windowInset * 2),
-                                maxBodyHeight: max(
-                                    DS.Peek.headerHeight,
-                                    contentSize.height - DS.Peek.headerHeight - DS.Peek.windowInset * 2)
-                            )
-                            .fixedSize()
+                            RootHistoryToolbar(sidebarHidden: columnVisibility == .detailOnly, contentSize: contentSize)
                         }
                         .sharedBackgroundVisibility(.hidden)
                     }
