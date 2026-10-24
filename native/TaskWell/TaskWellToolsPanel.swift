@@ -41,8 +41,9 @@ struct TaskWellToolsPanel<Destination: View>: View {
         }
         .frame(width: DS.TaskWell.panelWidth)
         .dsPopoverBackground()
-        .onExitCommand {
+        .onKeyPress(.escape) {
             if tools.wellPage != nil { tools.showWellTools() } else { tools.showsWell = false }
+            return .handled
         }
     }
 
