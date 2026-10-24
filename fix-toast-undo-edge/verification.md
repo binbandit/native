@@ -1,6 +1,6 @@
 # PR 100 visual check
 
-Revision: c95501a49060947610b348830c2e09609adbac5c, clean working tree.
+Revision: 11b8abe94410cc6e4af930ac97e1c59148c25ea7, clean working tree. All screenshots and the archive/Hosts Cmd-Z checks were repeated after merging main at 004b345e. Package tests and lint passed again.
 Environment: macOS 27.2 (26B5091g), isolated Debug instance vc-100.
 Reference: supplied polish.html item 03 and polish-spec.md section 03. The self-contained mock-toast.html preserves the supplied toast CSS, tokens, state definitions and fixture content, with local font references embedded. It is a mock source artifact, not a screenshot of the app.
 
@@ -14,6 +14,8 @@ Reference: supplied polish.html item 03 and polish-spec.md section 03. The self-
 - Accessibility exposes one toast element with named Undo and Dismiss actions; both were exercised through drive.sh.
 - No instance crash reports. The screen was unlocked before every capture. Captures were checked against the live labels after animation settled; the driver reported covered windows, so immediate stale captures were discarded.
 
+One five-second Hosts confirmation wait timed out in the batch. Repeating the same actions from a fresh launch with a fifteen-second wait passed in both appearances. No app crash was reported.
+
 ## Scope limits
 
 The hover, pressed, keyboard focus and iPad appearances use the existing inert gallery. Physical pointer hover, keyboard focus retention, reduced-motion animation and iPad swipe dismissal were not driven: the permitted Mac driver has no pointer/touch gesture API, its background instance cannot prove active-app focus behavior, and no system accessibility settings were changed. The three lifetime tests cover holding, resumption and the three-second minimum. These are runtime coverage limits, not observed failures. No pre-PR application build was run; the visual regression found during this check was reproduced at f62c22f8 before the spacing correction.
@@ -26,6 +28,7 @@ All screenshots use source-defined fixture content. The /fixture/native label an
 - scripts/check-warnings.sh /tmp/native-dd/vc-100/build.log
 - nice -n 10 swift test -j 4 --package-path Packages/Undo --filter 'UndoHistoryTests|UndoableActionTests|UndoToastLifetimeTests' (22 tests passed)
 - swift format lint --strict on all 17 changed Swift files
+- scripts/check-ios.sh native/DesignSystem/Patterns/UndoToastBottomInset.swift (passed, including DesignSystem dependencies)
 - git diff --check
 - scripts/dev/run-isolated.sh vc-100 --no-build -- -nativeSidebarFixture undo-toast -nativeWindowFrame '50 50 900 1250' -appearance.mode dark
 - scripts/dev/run-isolated.sh vc-100 --no-build -- -nativeSidebarFixture busy -nativeWindowFrame '50 700 1440 900' -appearance.mode dark
