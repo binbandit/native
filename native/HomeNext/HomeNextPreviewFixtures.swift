@@ -43,7 +43,12 @@ enum HomeNextPreviewFixtures {
             "Dark mode for the marketing site", "Wrap diff lines at word boundaries",
             "Add setup steps to the README", "Compress originals before upload",
         ]
-        let count = state == .quiet ? 10 : (state == .empty || state == .loading) ? 0 : state == .recovery ? 1 : 5
+        let count =
+            state == .quiet
+            ? 10
+            : (state == .empty || state == .loading)
+                ? 0
+                : state == .recovery ? 1 : (state == .calm || state == .managed) ? 7 : 5
         for index in 0..<count {
             let titleIndex: Int
             switch fixtureKind(state, index: index) {

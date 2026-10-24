@@ -314,7 +314,8 @@ paused and limited states, amber requests, a red failure and an accent unread do
 working view accepts animation variants without duplicating the other states or Reduce Motion.
 Existing surfaces keep `StatusIndicator` until their gated redesign adopts `TaskSignal`.
 
-Requests show a two-line sentence and a mono waiting clock, using the request's arrival timestamp
+On Home, the sidebar's asks fold to their title; the page already presents their sentences.
+Elsewhere, requests show a two-line sentence and a mono waiting clock, using the request's arrival timestamp
 from ACP or the host event log. The grid breathes for its first 60 seconds and for four seconds
 when the scene becomes active, then holds still. Reduce Motion is always still. The keycap marks
 the oldest reachable ask across projects and child tasks, using the same request identity as ⌘Y.

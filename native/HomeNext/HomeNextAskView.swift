@@ -9,6 +9,7 @@ struct HomeNextAskView: View {
     @Environment(AppModel.self) private var model
     @State private var wantsInstructionFocus = false
     @State private var isAnswering = false
+    @State private var approvalAttempt = 0
     @State private var answerError: String?
 
     var body: some View {
@@ -61,7 +62,7 @@ struct HomeNextAskView: View {
                 call: call, agentName: request.session.agentName, workingDirectory: request.session.cwd.path,
                 homeDirectory: model.device(of: task.id) == .thisMac ? NSHomeDirectory() : nil,
                 knowledge: model.plugins.commandKnowledge,
-                isAvailable: request.session.phase == .prompting && model.taskIsReachable(task.id),
+                isAvailable: request.session.phase != .disconnected && model.taskIsReachable(task.id),
                 focusRequested: wantsInstructionFocus, didFocus: { wantsInstructionFocus = false },
                 planEntries: call.kind == .switchMode ? request.session.state.currentTurnPlan : [],
                 showMorePlan: { model.peekHomeNextTask(task) },
@@ -72,8 +73,12 @@ struct HomeNextAskView: View {
                         HomeNextReceipt(task: task.id, title: task.title, action: "Sent your instruction", date: .now))
                 }
             )
+            // A hold belongs to this exact command. Failed delivery must permit another attempt.
+            .id(call)
+            .id(approvalAttempt)
             .padding(.horizontal, -DS.Approval.inset)
             .padding(.top, -DS.Space.xl)
+            .clipped()
         } else if task.status == .failed, let session = task.session {
             let turnID = session.state.turns.last?.id
             HomeNextFailureView(session: session, openTask: openTask) {
@@ -104,6 +109,7 @@ struct HomeNextAskView: View {
                 onReceipt(HomeNextReceipt(task: task.id, title: task.title, action: action, date: .now))
             } catch {
                 answerError = error.localizedDescription
+                if task.request?.call != nil { approvalAttempt += 1 }
             }
         }
     }
@@ -112,6 +118,7 @@ struct HomeNextAskView: View {
 #if DEBUG
 #Preview("Next ask - Question") { HomeNextPreviewFixtures.page(.question) }
 #Preview("Next ask - Plan") { HomeNextPreviewFixtures.page(.plan) }
+#Preview("Next ask - Narrow plan") { HomeNextPreviewFixtures.page(.plan, narrow: true) }
 #Preview("Next ask - Failure") { HomeNextPreviewFixtures.page(.failure) }
 #Preview("Next ask - Plan without steps") { HomeNextPreviewFixtures.page(.planText) }
 #Preview("Next ask - Previous plan") { HomeNextPreviewFixtures.page(.planRetained) }

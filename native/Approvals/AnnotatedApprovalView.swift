@@ -1,5 +1,6 @@
 import ACP
 import ApprovalAnalysis
+import NativePolicy
 import SwiftUI
 
 /// The approval shared by the composer, Peek and Home. Hosts supply the request and model actions;
@@ -45,15 +46,26 @@ struct AnnotatedApprovalView: View {
         options.first { $0.kind == .rejectOnce } ?? options.first { $0.isRejection }
     }
 
+    private var requestTitle: String {
+        if call.kind == .switchMode {
+            return planEntries.isEmpty
+                ? "\(agentName) has a plan" : "\(agentName) has a plan: \(planEntries.count) steps"
+        }
+        return "\(agentName) wants to \(analysis?.action ?? call.title)"
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HeightCappedScrollView(maxHeight: DS.Approval.maximumHeight) {
                 VStack(alignment: .leading, spacing: DS.Space.xl) {
                     VStack(alignment: .leading, spacing: DS.Space.xxs) {
-                        Text("\(agentName) wants to \(analysis?.action ?? call.title)")
+                        Text(requestTitle)
                             .font(DS.Approval.titleFont).foregroundStyle(.dsTextPrimary)
-                        Text(analysis?.reason ?? "The agent asked for permission.")
-                            .font(.dsBody).foregroundStyle(.dsTextTertiary)
+                        Text(
+                            analysis?.reason
+                                ?? (call.kind == .switchMode ? call.title : "The agent asked for permission.")
+                        )
+                        .font(.dsBody).foregroundStyle(.dsTextTertiary)
                     }
                     if !planEntries.isEmpty {
                         ComposerPlanSection(

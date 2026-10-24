@@ -1,7 +1,10 @@
 import ACP
+import Experiments
 import Foundation
 import NativeCommands
+import NativeHostProtocol
 import SwiftUI
+import TaskList
 
 @testable import Native
 
@@ -54,6 +57,20 @@ private struct HomeNextChecks {
             require(false, "A stale Home ask must fail")
         } catch {}
         require(request.session.permissionRequests.count == 1, "A stale Home answer leaves the successor intact")
+        guard let beforeChange = request.session.permissionRequests.first,
+            let update = SessionModel.previewDecode(
+                ToolCallUpdate.self,
+                "{\"toolCallId\":\"\(beforeChange.id)\",\"rawInput\":{\"command\":\"git push --force origin main\"}}")
+        else { throw MissingFixture() }
+        request.session.state.apply(.toolCall(update))
+        do {
+            guard let choice = beforeChange.permission?.options.first(where: { $0.kind == .allowOnce }) else {
+                throw MissingFixture()
+            }
+            try await request.session.answerHomeNextPermission(choice, call: beforeChange)
+            require(false, "A changed command must not inherit the old approval")
+        } catch {}
+        require(request.session.permissionRequests.count == 1, "Changed command remains pending for fresh review")
 
         let child = request.session.addSubagent(SessionID("home-child"))
         app.sessions.register(child)

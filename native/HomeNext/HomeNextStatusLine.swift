@@ -1,3 +1,4 @@
+import NativePolicy
 import SwiftUI
 
 struct HomeNextStatusLine: View {

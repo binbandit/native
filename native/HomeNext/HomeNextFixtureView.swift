@@ -31,7 +31,7 @@ struct HomeNextFixtureView: View {
             // Creating a preview registry updates the experiment catalog. Do it once after layout,
             // never in init: a gate's redraw would otherwise create another registry indefinitely.
             guard model == nil else { return }
-            policy = PolicyCenter(source: DictionaryPolicySource(managed: managedValues))
+            policy = PolicyCenter(source: StaticPolicySource(managed: managedValues))
             model = HomeNextPreviewFixtures.model(state)
         }
     }
