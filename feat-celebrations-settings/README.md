@@ -64,3 +64,16 @@ Unavailable selected rows and detail switches can turn off, then remain disabled
 The initial review's popup and bulk Undo evidence remains at [80c9c297](https://github.com/binbandit/native/blob/80c9c297caeefde443c48bfa5c6f6823b7d017ec/feat-celebrations-settings/README.md).
 
 Validation: isolated Debug build and repository warning check passed; 70 targeted AppAppearance tests and 2 managed-policy tests passed; strict lint passed on all changed Swift files. The local iPad type-check is blocked by unchanged `native/KeepAwake/Engine/PowerState.swift` importing `IOKit.ps`.
+
+## Release blocker
+
+The final main merge is `09bd6390`; its `native/` and `Packages/` trees are unchanged from the verified `dd8d1f36` code.
+Release and Nightly compilation pass with no repository warnings, but the required size check fails:
+
+| Build | App binary | Update archive | Result |
+| --- | --- | --- | --- |
+| PR #104 Release | 60.2 MB | 46.9 MB | Binary exceeds 60 MB |
+| PR #104 Nightly | 60.2 MB | 47.0 MB | Binary exceeds 60 MB; archive exceeds 47 MB |
+| Main `74353da1` Nightly, same toolchain and settings | 60.0 MB | 46.9 MB | Pass |
+
+The main binary is 59,967,472 bytes. The PR's Release binary is 60,186,184 bytes. The displayed Nightly archive size is rounded to one decimal place; the unrounded check exceeds 47,000,000 bytes. The size budgets were not changed. This release-gate failure blocks merge independently of pending CI jobs and needs a separate size reduction or documented budget decision.
