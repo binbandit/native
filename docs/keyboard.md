@@ -575,3 +575,10 @@ them. Composer keys in `native/Views/Composer*`; permission keys in
 | Keys | Action | Command |
 | --- | --- | --- |
 | ⌥⇧⌘H | Restore the usual icon and Home while a celebration shows (skips it until it next occurs), or bring a skipped one back (View menu) | `celebration.restore` |
+
+## Coordinator tasks (Labs)
+
+With Settings > Labs > Coordinator tasks enabled, File > New Coordinator Task opens the assignment
+picker in the current project. File > Edit Assigned Tasks edits the selected coordinator. Both
+commands are also in the command palette. They have no default shortcut. Tab, Space and Return
+operate the picker; Escape cancels without changing assignments.

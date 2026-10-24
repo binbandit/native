@@ -25,6 +25,7 @@ extension AppModel {
     /// for AppModel.swift.
     func followHost() async {
         guard let host = runtimes.host else { return }
+        await followCoordinators(on: host)
         sessions.onAgentSessionReplaced = { [weak self] session, summary in
             self?.followReplacedAgentSession(session, summary)
         }

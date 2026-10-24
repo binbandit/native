@@ -433,3 +433,10 @@ the card keeps the agent's reported edits rather than attributing a whole branch
 - `docs/keyboard.md`: every shortcut.
 - `docs/decisions.md`: decisions and why they were made.
 - `docs/companion.md`: the iPhone companion layout, pairing and transport.
+
+### Coordinator tasks (Labs)
+
+`coordinator-tasks` defaults off. The local host persists explicit assignments separately from
+agent-created subagents, and `TaskOrchestrator` checks that scope on each tool call. Creation uses
+the project folder and an advertised read-only setting, bypassing workspace preparation. See
+`docs/coordinator-tasks.md` for scope, message attribution, lifecycle and deferred work.

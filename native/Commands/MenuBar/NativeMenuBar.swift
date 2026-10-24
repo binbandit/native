@@ -28,7 +28,7 @@ struct NativeMenuBar: Commands {
         #endif
         WhatsNewCommands(menu: menu)
         HelpCommands(menu: menu, model: model)
-        FileCommands(menu: menu, showsComposeTask: model.quickEntry.isEnabled)
+        FileCommands(menu: menu, showsComposeTask: model.quickEntry.isEnabled, model: model)
         ViewCommands(menu: menu)
         AppearanceCommands(menu: menu)
         SettingsCommands(settings: settings)
@@ -52,6 +52,7 @@ struct NativeMenuBar: Commands {
 private struct FileCommands: Commands {
     let menu: CommandMenuContext
     let showsComposeTask: Bool
+    let model: AppModel
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
@@ -61,6 +62,10 @@ private struct FileCommands: Commands {
                 CommandMenuItem(.taskChooseDevice, in: menu)
             }
             CommandMenuItem(.sessionNewWithAgent, in: menu)
+            if model.offersCoordinatorTasks {
+                CommandMenuItem(.coordinatorNew, in: menu)
+                CommandMenuItem(.coordinatorEdit, in: menu)
+            }
             CommandMenuItem(.expeditionNew, in: menu)
             CommandMenuItem(.projectOpen, in: menu)
             CommandMenuItem(.projectSettings, in: menu)
