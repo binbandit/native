@@ -421,6 +421,7 @@ effort, when the agent asks, MCP servers and the agent's extra settings from Mor
 each control, Return chooses a focused option, and Escape closes the popover. Show MCP Servers
 (⌃⌘M) opens its existing panel inside this popover; Back returns to the settings. Attach Files
 (⌘U), Mode and Set Goal keep their existing commands and are available inside the popover too.
+Goal commands open the shared editor even when Task Settings is closed or showing MCP servers.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |

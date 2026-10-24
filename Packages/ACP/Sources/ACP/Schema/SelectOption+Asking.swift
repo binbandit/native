@@ -5,7 +5,7 @@ extension ConfigOption.SelectOption {
         switch value {
         case "read-only", "default": "Before any change"
         case "workspace-write": "Before leaving the worktree"
-        case "acceptEdits": "Before running commands"
+        case "acceptEdits": "Beyond allowed edits and commands"
         case "agent", "auto": "When something looks risky"
         case "agent-full-access", "bypassPermissions": "Never"
         case "dontAsk": "Refuse anything not already allowed"

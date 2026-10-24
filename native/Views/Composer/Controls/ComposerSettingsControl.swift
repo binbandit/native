@@ -1,4 +1,5 @@
 import ACP
+import NativeAutomation
 import NativePolicy
 import SwiftUI
 import UniformTypeIdentifiers
@@ -13,9 +14,11 @@ struct ComposerSettingsControl: View {
     let onAttach: (IncomingAttachments) -> Void
 
     @Environment(AppModel.self) private var app
+    @Environment(AutomationCenter.self) private var automation
     @Environment(SettingsPresentation.self) private var presentation: SettingsPresentation?
     @Environment(\.mcpServersPopover) private var mcpPresentation
     @State private var showsMCP = false
+    @State private var showsGoalEditor = false
     @State private var isHovered = false
     @State private var isApplying = false
     @State private var failure: String?
@@ -66,20 +69,33 @@ struct ComposerSettingsControl: View {
         .task(id: session.clientID) { await library?.track(session.context) }
         .onChange(of: mcpPresentation?.wrappedValue, initial: true) { _, show in
             if show == true {
+                showsGoalEditor = false
                 showsMCP = true
                 isPresented = true
             }
         }
+        .onChange(of: automation.goal(for: session)?.isEditorRequested, initial: true) { _, requested in
+            guard requested == true else { return }
+            // Menu, goal-bar and slash-command requests need a presenter even while settings is closed.
+            showsMCP = false
+            mcpPresentation?.wrappedValue = false
+            showsGoalEditor = true
+            isPresented = true
+            automation.goal(for: session)?.isEditorRequested = false
+        }
         .onChange(of: isPresented) { _, open in
             if !open {
                 showsMCP = false
+                showsGoalEditor = false
                 mcpPresentation?.wrappedValue = false
             }
         }
     }
 
     @ViewBuilder private var content: some View {
-        if showsMCP, let library {
+        if showsGoalEditor, let controller = automation.goal(for: session) {
+            SessionGoalEditor(controller: controller, agentName: session.agentName) { isPresented = false }
+        } else if showsMCP, let library {
             VStack(alignment: .leading, spacing: 0) {
                 Button {
                     showsMCP = false
@@ -171,7 +187,9 @@ struct ComposerSettingsControl: View {
                 AttachButton(isPickingFiles: $isPickingFiles, onPick: onAttach, presentsFilePicker: false)
                 Text("Attach files").font(DS.ComposerSettings.rowFont)
                 Spacer(minLength: DS.Space.sm)
-                SessionGoalControl(session: session, showsIcon: false)
+                if let controller = automation.goal(for: session) {
+                    GoalPillButton(status: controller.goal?.status) { controller.isEditorRequested = true }
+                }
                 ContextIndicator(session: session, style: .labeled)
             }
         }
@@ -196,6 +214,9 @@ struct ComposerSettingsControl: View {
 #if DEBUG
 #Preview("Task settings control - Rest and narrow") {
     let app = AppModel.preview()
+    let automation = AutomationCenter(
+        goalStore: GoalStore(url: URL(filePath: "/native-preview-unused/goals.json")),
+        workflows: WorkflowRunner(store: nil), automations: AutomationEngine(store: nil))
     if let session = SessionModel.preview(in: app, configOptions: ComposerPreviewFixtures.configOptions) {
         DSPreviewPair {
             ComposerSettingsControl(
@@ -209,6 +230,7 @@ struct ComposerSettingsControl: View {
             .padding(DS.Space.lg)
         }
         .environment(app)
+        .environment(automation)
     }
 }
 #endif
