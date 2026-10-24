@@ -78,7 +78,7 @@ struct ManagedAdapterInstallerTests {
         var expected = environment
         expected["PATH"] = destination.appending(path: "node_modules/.bin").path + ":/usr/bin:/bin"
         #expect(command.environment == expected)
-        #expect(command.workingDirectory == root)
+        #expect(command.workingDirectory == destination.deletingLastPathComponent())
         #expect(try Data(contentsOf: destination.appending(path: "package.json")) == manifest)
         #expect(try Data(contentsOf: destination.appending(path: "package-lock.json")) == lock)
         #expect(try FileManager.default.contentsOfDirectory(atPath: root.path) == [destination.lastPathComponent])
