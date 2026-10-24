@@ -151,6 +151,38 @@ celebrations).
   authenticated `disabledByPolicy` (pairings kept), and the phone's Add Host says pairing is off.
   The host reads the policy from the app's managed domain (`LinkGateway.setAllowedByPolicy`).
 
+### Adaptive navigation
+
+The companion uses one `NavigationSplitView`: Tasks is the sidebar and the selected task or host
+is the detail. Compact widths collapse into the existing phone navigation; regular widths show
+the task list beside the conversation, including the iPhone Duo inner display. This does not
+change the separate full iPad app. Navigation follows size classes, never device idiom, screen
+dimensions or orientation. The companion has no tab bar; Settings remains a sheet.
+
+`CompanionNavigation` owns the selection and each task's `CompanionTaskState`, keyed by host and
+session. The composer draft, delivery status and transcript item anchor survive column changes
+and visiting another task. The navigation tree is not replaced when a size class changes.
+Landscape is supported on the outer display as well as on regular iPhones. Compact vertical
+size classes shorten the scanner and rearrange the welcome screen with `AnyLayout`; approval
+cards scroll within a fraction of the current task viewport so their actions remain reachable.
+
+System navigation owns its safe areas. The custom New Task button and composer/approval dock
+also query local iOS 27.1 `ReservedRegion` occlusions through `dsReservedRegionPadding`, with
+independent leading and trailing clearance. iOS 27.0 keeps the safe-area behavior. Content uses
+flexible widths with a reading-width cap; fixed glyph sizes and touch targets are design tokens.
+
+The guidance is Apple's [Prepare your app for iPhone Duo](https://developer.apple.com/videos/play/tech-talks/111461/)
+and [Strike a pose with adaptive layouts](https://developer.apple.com/videos/play/tech-talks/111463/).
+Verify closed portrait, closed landscape, open vertical and open horizontal in both appearances,
+including folding while a draft is focused and while reading above the end of a long transcript.
+Check task selection, the unsent draft and the visible transcript item after each transition.
+
+Debug's `-companionLayoutPreview` launch argument supplies an inert host and a long conversation
+with an unsent draft for screenshots; add `-companionPreviewHome` to start at the task list.
+Fixtures use memory-only preferences and do not discover or connect to hosts. Compact and regular
+`#Preview` variants exercise the same navigation. Screenshots of a simulated width are not a
+substitute for testing actual display transitions on Duo.
+
 ### Notifications and push
 
 The host already posts every notification as an event with a stable id, whether or not anyone is
