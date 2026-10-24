@@ -66,6 +66,12 @@ public struct TranscriptReadingPosition: Sendable {
         isRestoring = false
     }
 
+    /// A bounded restoration must release capture even when the scroll view clamps the target.
+    public mutating func finishRestoration() {
+        isRestoring = false
+        if let layout { record(layout) }
+    }
+
     public var isInPlace: Bool {
         guard let layout else { return false }
         guard let place else { return layout.isAtLatest }

@@ -133,6 +133,9 @@ private final class CompanionTranscriptPositionTracker {
                     return
                 }
             }
+            guard let self, !Task.isCancelled, isVisible else { return }
+            position.finishRestoration()
+            state.transcriptPlace = position.place
         }
     }
 }

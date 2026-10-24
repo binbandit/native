@@ -86,6 +86,33 @@ struct TranscriptReadingPositionTests {
         #expect(position.place?.id == "pass-8")
     }
 
+    @Test func restorationDeadlineAllowsLaterScrollsToReplaceTheOldPassage() {
+        var position = reading()
+        position.update(layout(width: 800, height: 900, top: 2200, rowTop: 1700, rowHeight: 150))
+        #expect(position.isRestoring)
+        position.finishRestoration()
+        #expect(!position.isRestoring)
+        #expect(position.place != nil)
+        // Accessibility can scroll instantly, without an interacting or animating phase.
+        position.update(layout(width: 800, height: 900, top: 4100, rowTop: 4500, rowHeight: 150))
+        #expect(position.place == nil)
+        position.detach()
+        #expect(position.place == nil)
+    }
+
+    @Test func restorationDeadlineWithoutRowsKeepsTheRememberedPassage() {
+        var position = reading()
+        let saved = position.place
+        position.detach()
+        position.update(
+            Position.Layout(
+                viewport: CGRect(x: 0, y: 4400, width: 400, height: 600),
+                contentHeight: 5000, rows: [:]))
+        position.finishRestoration()
+        #expect(!position.isRestoring)
+        #expect(position.place == saved)
+    }
+
     @Test func partialAndOversizedRowsHaveFiniteAnchors() throws {
         for rowHeight: CGFloat in [400, 1200] {
             var position = Position()
