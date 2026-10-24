@@ -111,6 +111,16 @@ public struct CelebrationPreferences: Codable, Hashable, Sendable {
         priority = order + priority.filter { !order.contains($0) }
     }
 
+    /// Places one enabled celebration directly before another without disturbing the others.
+    public mutating func prefer(_ id: CelebrationID, over other: CelebrationID, in events: [CelebrationEvent]) {
+        var ranked = order(in: events)
+        guard id != other, ranked.contains(id), ranked.contains(other) else { return }
+        ranked.removeAll { $0 == id }
+        guard let index = ranked.firstIndex(of: other) else { return }
+        ranked.insert(id, at: index)
+        priority = ranked + priority.filter { !ranked.contains($0) }
+    }
+
     /// Forgets skips and a choice for occurrences that started long enough ago to be over.
     public mutating func prune(before day: CivilDate) {
         let cutoff = day.adding(days: -CelebrationEvent.lookahead)

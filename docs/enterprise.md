@@ -39,6 +39,8 @@ shipped as a sample `.mobileconfig` in `docs/enterprise/`.
 | `policy.scripts.enabled` | The V8 script runtime and `run_script`. |
 | `policy.taskScripts.userScripts` | Task scripts written in Native, global and per project (`docs/scripts.md`): `false` stops them running and locks their settings. |
 | `policy.taskScripts.repositoryScripts` | Task scripts committed to repositories as `.native/<event>.sh`: `false` ignores them and locks each project's "Run scripts from the repo" off. |
+| `policy.celebrations.enabled` | `false` removes the Celebrations page and command, disables its plugin contributions, and restores the usual appearance. Personal choices are retained. Defaults to `true`. |
+| `policy.organization.name` | Optional display name for managed notices, such as "Northwind Federal IT". Without it, notices describe this install without inventing an organization. |
 | `policy.labs.enabled` | Labs and experiments, including plugin experiments. |
 | `policy.companion.enabled` / `policy.remoteHosts.enabled` | Pairing devices; connecting to hosts other than this Mac. |
 | `policy.updates.feedURL` / `policy.updates.enabled` / `policy.updates.channels` | An internal update feed, or updates off; which channels are allowed. |

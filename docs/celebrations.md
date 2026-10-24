@@ -165,6 +165,15 @@ Search should recognise common English names, local names and spelling variants.
 dates and language, but must not infer someone's religion, ethnicity or celebrations. No location access
 is needed for browsing or ordinary civil-date themes.
 
+The chooser shows today's look and a 365-day strip first, then only collisions that need a priority
+choice. The catalogue is grouped by the month of each next occurrence, starting this month. Each
+44pt row opens a detail page for dates, seasons, surfaces, styles and skipping the year; Space toggles
+the row and Return opens it. Escape and Go Back return to the saved list position. Search stays within
+months and shows matching aliases. Unfinished artwork and dates live in a separate disclosure.
+Bulk actions live in the ellipsis menu and leave a confirmation with Undo. The region shortcut never
+turns anything on until clicked. Core dates still outrank decorative seasons; equal-tier collisions
+use the existing priority, with one select per collision instead of a full reorder list.
+
 ## Overlapping events
 
 Use a deterministic selection policy and show why the active edition was chosen:

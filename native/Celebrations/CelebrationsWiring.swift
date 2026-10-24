@@ -1,5 +1,6 @@
 import AppAppearance
 import Foundation
+import NativePolicy
 import Observation
 
 /// Connects celebrations to the rest of the app: the enabled plugins' icon sets and celebrations in,
@@ -61,7 +62,9 @@ enum CelebrationsWiring {
                         pluginID: loaded.id, location: location, assetExists: PlatformAppIcon.hasAsset(named:),
                         homeMarks: HomeLandingEdition.drawableMarks, nativeVersion: version,
                         packState: { assets?.state($0) ?? .notDownloaded }),
-                    iconSets: loaded.plugin.manifest.iconSets, celebrations: loaded.plugin.manifest.celebrations)
+                    iconSets: loaded.plugin.manifest.iconSets,
+                    celebrations: PolicyCenter.shared.policy.celebrationsEnabled
+                        ? loaded.plugin.manifest.celebrations : CelebrationContributions())
             })
     }
 }
