@@ -11,6 +11,8 @@ struct TerminalPanel: View {
     let panel: TerminalPanelModel
     let store: TerminalStore
     let maxHeight: CGFloat
+    var isWorkbench = false
+    var workbenchActions: AnyView?
 
     var body: some View {
         @Bindable var preferences = store.preferences
@@ -19,9 +21,10 @@ struct TerminalPanel: View {
             TerminalResizeDivider(height: $preferences.panelHeight, range: Self.minHeight...maxHeight)
             TerminalTabBar(
                 panel: panel, showsTabs: store.availability == .available || !panel.logs.isEmpty,
-                canAddTab: store.availability == .available
+                canAddTab: store.availability == .available, isWorkbench: isWorkbench,
+                workbenchActions: workbenchActions
             )
-            .background(.dsSurfaceSunken.opacity(store.backgroundOpacity))
+            .background(isWorkbench ? .dsBackground : .dsSurfaceSunken.opacity(store.backgroundOpacity))
             if case .ghosttyInvalid(_, let diagnostics) = store.configStatus {
                 TerminalConfigNotice(diagnostics: diagnostics, reload: store.reloadGhosttyConfig)
             }

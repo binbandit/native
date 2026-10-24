@@ -35,6 +35,15 @@ build them, and such an app looks 12 to 40 MB smaller than what ships.
 
 Raise a budget only with the reason written here, in the same change.
 
+2026-10-24: the open task well integrated with main through `44feb957` at `e5acaa05`
+measures 47.1 MB for the Release update archive and 47.2 MB for Nightly, over the 47 MB
+allowance. The worker facts, tool adapters and subagent roster compile alongside the legacy
+task presentation behind `NativeTaskWell`; the terminal and action runtime are shared, and
+there are no added assets or dependencies. The update archive allowance is now 47.5 MB for
+this measured integration. Installed sizes are 117.0/117.1 MB and both app binaries are
+60.0 MB, within their unchanged budgets. These are integrated measurements, not an isolated
+feature delta. Remeasure when the well replaces the legacy task presentation.
+
 2026-10-24: the collapsed sidebar attention list integrated with main through `44feb957` at
 `a69f9095` measures 47.1 MB for the Release update archive and 47.2 MB for Nightly, over the
 47 MB download allowance. The shared rows, Peek and command focus routing add compiled code

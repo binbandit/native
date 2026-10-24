@@ -50,7 +50,10 @@ struct SessionToolsScreen: View {
             TaskScriptBanner(folder: session.cwd)
         }
         .composerDropTarget(drops, isEnabled: !session.isEarlierConversation)
-        .terminalPanel(for: session, showsToolbarButton: false, isEnabled: usesTaskWell)
+        .terminalPanel(
+            for: session, showsToolbarButton: false, isEnabled: usesTaskWell, isWorkbench: usesTaskWell,
+            workbenchActions: usesTaskWell ? AnyView(TaskWellWorkbenchActions(session: session)) : nil
+        )
         .overlay(alignment: .top) { shade }
         .overlay(alignment: .top) {
             if usesTaskWell { TaskWellLight(trigger: wellLightTrigger) }

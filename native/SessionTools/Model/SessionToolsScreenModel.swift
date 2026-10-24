@@ -8,23 +8,24 @@ import SwiftUI
 final class SessionToolsScreenModel {
     var hasWell = false
     var showsWell = false
-    var showsWellDev = false
+    var wellPage: TaskWellTool?
     @ObservationIgnored var wellToolAvailable: (TaskWellTool) -> Bool = { _ in false }
+    @ObservationIgnored var wellToolEnabled: (TaskWellTool) -> Bool = { _ in true }
     @ObservationIgnored var wellToolAction: (TaskWellTool) -> Void = { _ in }
 
     func toggleWell() {
-        showsWellDev = false
+        wellPage = nil
         showsWell.toggle()
     }
 
     func showWellTools() {
-        showsWellDev = false
+        wellPage = nil
     }
 
     func performWellTool(_ tool: TaskWellTool) {
-        guard hasWell, wellToolAvailable(tool) else { return }
-        showsWell = tool == .dev
-        showsWellDev = tool == .dev
+        guard hasWell, wellToolAvailable(tool), wellToolEnabled(tool) else { return }
+        wellPage = tool == .dev || tool == .subagents ? tool : nil
+        showsWell = wellPage != nil
         wellToolAction(tool)
     }
 
