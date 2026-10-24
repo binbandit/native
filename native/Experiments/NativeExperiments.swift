@@ -16,6 +16,7 @@ extension ExperimentCatalog {
         Gate.composerNext,
         Gate.composeTask,
         Gate.changeAgent,
+        Gate.coordinatorTasks,
         Gate.homeNext,
         Gate.settingsPlainly,
     ])
@@ -71,6 +72,13 @@ extension Gate {
         owner: "new-task",
         reviewBy: ReviewDate(year: 2026, month: 12, day: 15),
         default: false
+    )
+
+    static let coordinatorTasks = Gate(
+        id: "coordinator-tasks", title: "Coordinator tasks",
+        summary: "Align existing tasks with a coordinator that starts read-only in the project folder.",
+        site: "File > New Coordinator Task and sidebar", stage: .labs, owner: "orchestration",
+        reviewBy: ReviewDate(year: 2026, month: 12, day: 15), default: false
     )
 
     static let changeAgent = Gate(

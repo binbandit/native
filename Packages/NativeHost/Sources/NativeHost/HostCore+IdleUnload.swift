@@ -11,6 +11,13 @@ import NativeHostProtocol
 // loaded and nothing to do, its process ends too, which frees the rest; it starts again when
 // something needs it.
 extension HostCore {
+    func unloadIfIdle(_ session: HostSession) {
+        guard canUnload(session), let link = agents[session.record.agentID],
+            link.capabilities?.closeSessions == true, link.capabilities?.resumeSessions == true, let peer = link.peer
+        else { return }
+        unload(session, closingWith: peer)
+    }
+
     /// Checks for idle sessions and agents for as long as the host runs, a few times per timeout,
     /// starting over when agents' specs change.
     func unloadIdleSessionsPeriodically() {

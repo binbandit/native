@@ -112,6 +112,8 @@ public final class HostCore {
     var stoppingSessions: [HostSessionID: HostSession] = [:]
     /// Native's tools for agents and the tasks sessions hand each other (`HostTasks.swift`).
     lazy var tasks = HostTasks(core: self)
+    var coordinators: [HostCoordinator] = []
+    var coordinatorStarts: [HostSessionID: Task<HostSessionSummary, any Error>] = [:]
     var clients: [ClientLink.ID: ClientLink] = [:]
     /// Prompt requests being handled, so a repeat of one waits for its answer instead of sending again.
     var promptsInFlight: [UUID: Task<PromptDelivery, any Error>] = [:]
@@ -160,6 +162,9 @@ public final class HostCore {
         } else {
             hostID = HostID()
             try store.setMeta(MetaKey.hostID, hostID.description)
+        }
+        if let saved = try store.meta(Self.coordinatorsKey) {
+            coordinators = try JSONDecoder().decode([HostCoordinator].self, from: Data(saved.utf8))
         }
         let specs = try store.agents()
         agentOrder = specs.map(\.id)
