@@ -1,12 +1,12 @@
 # Celebration settings visual check
 
-Revision: fb30a626cb91bb6a8c5957b8d2656c72454484a1. Isolated Debug instance vc-104, 1440 by 900 points.
+Preview gallery: fb30a626cb91bb6a8c5957b8d2656c72454484a1. Final navigation reproduction and Plainly title fix: 8b2e27212163580bb40cc3bafdd226432fd501eb. Isolated Debug instance vc-104, 1440 by 900 points.
 
 All preview captures use inert fixtures. The current Settings primitives intentionally differ from the Plainly styling in the mock. Catalogue counts follow real data.
 
 ## Blocking finding
 
-From the page, choose December in the year strip, open Hanukkah, then use Back to Celebrations or Cmd-[. The catalogue returns to its top instead of December. Reproduced twice on the unchanged PR revision. The main scrollbar changes from 0.4275395 to 0.
+From the page, choose December in the year strip, open Hanukkah, then use Back to Celebrations or Cmd-[. The catalogue returns to its top instead of December. Reproduced repeatedly, including on the final PR revision after the title fix. The main scrollbar changes from 0.4275395 to 0.
 
 | Before opening details | Detail | After Back |
 | --- | --- | --- |
@@ -39,3 +39,27 @@ From the page, choose December in the year strip, open Hanukkah, then use Back t
 | unavailableDetail | ![unavailableDetail dark](app-unavailableDetail-dark.png) | ![unavailableDetail light](app-unavailableDetail-light.png) |
 
 The menu preview starts at its trigger. The pending preview initially shows the catalogue; unavailable rows are visible in the rows and unavailable-selection previews.
+
+## Additional checks
+
+Bulk menu choices, inline Undo, Cmd-Z/Redo, year-month navigation, unavailable opt-outs in rows and details, offline icon controls, and Settings search from Halloween to Diwali were exercised. Search also passed in Plainly in both appearances. The managed-off chooser is absent. Physical switch hit testing and row Space/Return are not claimed from this background accessibility run.
+
+| State | Dark | Light |
+| --- | --- | --- |
+| narrow-page | ![narrow-page dark](app-narrow-page-dark.png) | ![narrow-page light](app-narrow-page-light.png) |
+| narrow-detail | ![narrow-detail dark](app-narrow-detail-dark.png) | ![narrow-detail light](app-narrow-detail-light.png) |
+| pending-expanded | ![pending-expanded dark](app-pending-expanded-dark.png) | ![pending-expanded light](app-pending-expanded-light.png) |
+| menu-popup | ![menu-popup dark](app-menu-popup-dark.png) | ![menu-popup light](app-menu-popup-light.png) |
+| unavailable-disabled | ![unavailable-disabled dark](app-unavailable-disabled-dark.png) | ![unavailable-disabled light](app-unavailable-disabled-light.png) |
+| offline-detail | ![offline-detail dark](app-offline-detail-dark.png) | ![offline-detail light](app-offline-detail-light.png) |
+| plainly-search | ![plainly-search dark](app-plainly-search-dark.png) | ![plainly-search light](app-plainly-search-light.png) |
+
+## Plainly title correction
+
+The detail header inherited the combined section name and said Celebrations instead of Halloween. Clearing that local section override preserves the event title. Three consecutive light/dark runs passed, including opening the detail and revealing Diwali through Settings search.
+
+| Dark | Light |
+| --- | --- |
+| ![Corrected title](app-plainly-detail-fixed-dark.png) | ![Corrected title](app-plainly-detail-fixed-light.png) |
+
+Managed-off chooser navigation and search were also checked in both appearances; the celebration page is absent.
