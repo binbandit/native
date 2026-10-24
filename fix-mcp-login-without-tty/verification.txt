@@ -1,0 +1,35 @@
+PR #121 visual verification, 24 October 2026
+
+Product revision: ce0eb78cf8d51aeb6846e12435ad50baa49cd488 (one-line loader sizing fix on top of 9ec297ab).
+Instance: vc-121, isolated Debug. Captures: 1120 x 780, light and dark.
+Screen lock was checked before captures. No browser was opened.
+
+The settings status screenshots use the existing nativeMCPAuthenticationFixture.
+The sheet screenshots use the production MCPCommandSheet, MCPSignInSheet, MCPLoginFlow and MCPLibrary sign-in/refresh methods with a temporary local fixture replacing only their command runner, config filesystem and host. It supplies synthetic docs.example.com configuration and auth.example.com authorization URLs. The fake URL opener records calls instead of opening any app. No real credentials or account was used.
+
+The fixture and the local driver adjustment were removed. Only the standard status-glyph frame on DotGridLoader is committed. The final clean Debug build and changed-file lint pass, with no repository warnings.
+
+Observed:
+- Signed-in, needs-sign-in and agent-managed settings rows are readable in both appearances.
+- Ready, starting, waiting/paste, invalid redirect, failed and successful sheet states fit and are readable in both appearances.
+- The initial loading indicator stretched its row. Constraining it to the standard status glyph keeps the label adjacent; before/after screenshots included.
+- Automatic link opening and Open Browser both call the fake opener.
+- Empty input disables Continue. Invalid input and wrong state display the validation message. A matching pasted URL completes the private terminal command and clears the field.
+- The normal readConfigurations completion callback refreshes the row to Signed in.
+- A simulated loopback completion exits the command without pasted input and also refreshes status.
+- Failed sign-in can retry. Escape closes waiting sign-in and stops its command; no child command remains.
+- Return starts, submits the focused redirect field and closes success. No instance crash report was produced.
+
+Keyboard limitation: background Tab/Space traversal could not be verified without bringing the instance forward, which is prohibited. Return and Escape were exercised. AXValue alone did not update the SwiftUI binding while the field was unfocused, so a temporary driver adjustment focused only the text field, then used pid-scoped typing. No window was raised or made frontmost.
+
+Real browser sign-in remains a manual check: Settings > MCP Servers > Sign In for an OAuth server, finish the provider page, and verify Signed in. From a paired-host task, open its MCP server list and Sign In; if the localhost redirect cannot load on the client, paste its complete address in Native and press Continue.
+
+Focused checks:
+- Packages/Exec: nice -n 10 swift test -j 4 --filter 'InteractiveCommandTests|LocalCommandRunnerTests' (19 passed)
+- Packages/MCPClient: nice -n 10 swift test -j 4 --filter MCPClientTests (65 passed)
+- Packages/NativeHost: nice -n 10 swift test -j 4 --filter 'HostInteractiveCommandTests|HostExecTests' (11 passed)
+- scripts/dev/run-isolated.sh vc-121 --build
+- scripts/check-warnings.sh /tmp/native-dd/vc-121/build.log
+- swift format lint --strict on every changed Swift file
+
+Real CLI loopback and paired-host OAuth were already exercised by scripts/tests/mcp-login.py on the preceding PR revision. This visual pass did not repeat live provider authentication or a physical paired device.
