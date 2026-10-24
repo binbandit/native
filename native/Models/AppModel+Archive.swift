@@ -25,6 +25,7 @@ extension AppModel {
     /// for it. Undo (the toast or ⌘Z) brings both back, and Redo archives it again.
     func archiveSession(_ key: SessionKey, undoManager: UndoManager? = nil) async {
         guard let listed = catalog.lookup(key), !archivedSessions.contains(key) else { return }
+        _ = taskActionRoute(for: key)
         let title = titleOfSession(key)
         let selected = moveAfterArchiving([key])
         archivedSessions.set(key, archived: true)
@@ -68,13 +69,11 @@ extension AppModel {
 
     /// The visible state changes before any suspension, so an immediate Redo sees all restored tasks.
     func beginUnarchiving(_ key: SessionKey) -> Bool {
-        guard archivedSessions.contains(key), catalog.contains(key) else { return false }
+        guard archivedSessions.contains(key), let route = taskActionRoute(for: key) else { return false }
         archiveDatesAwaitingRestore[key] = archivedSessions.date(key)
         archivedSessions.set(key, archived: false)
-        if let project = catalog.lookup(key)?.project {
-            // A workspace that couldn't be put away is where it should be now.
-            problems.resolve(.workspaceArchive(key), in: project)
-        }
+        // A workspace that couldn't be put away is where it should be now.
+        problems.resolve(.workspaceArchive(key), in: route.project.id)
         return true
     }
 
@@ -90,14 +89,15 @@ extension AppModel {
     /// unarchived when its turn comes. What brings it back is kept with the project, so a failure
     /// can be retried. Internal only for AppModel+Problems.swift.
     func restoreWorkspace(of key: SessionKey) async throws {
-        guard let listed = catalog.lookup(key), let project = projects.project(listed.project),
-            let folder = taskFolder(of: key, in: project)
-        else { return }
-        let task = ArchivedTaskDetails(title: titleOfSession(key), archivedAt: archiveDatesAwaitingRestore[key])
-        try await inWorkspaceOrder(at: folder) {
+        guard let route = taskActionRoute(for: key) else { throw TaskActionRoute.Failure.missingRoute }
+        let task = ArchivedTaskDetails(title: route.title, archivedAt: archiveDatesAwaitingRestore[key])
+        try await inWorkspaceOrder(using: route) {
             // Archived again before its turn came: it stays put away.
-            guard !self.archivedSessions.contains(key) else { return }
-            try await self.taskWorkspaces?.restoreWorkspace(at: folder, in: project, task: task)
+            guard !self.archivedSessions.contains(key), !self.deletedSessions.contains(key) else { return }
+            let provider = try self.workspaceProvider(for: route)
+            if let folder = route.workspace {
+                try await provider?.restoreWorkspace(at: folder, in: route.project, task: task)
+            }
             self.archiveDatesAwaitingRestore[key] = nil
         }
     }
@@ -106,19 +106,25 @@ extension AppModel {
     /// once): each is in the sidebar, and what brings its workspace back is still kept with its
     /// project. Run once at launch.
     func resumeWorkspaceRestores() async {
-        guard let provider = taskWorkspaces else { return }
         for project in projects.all {
-            let folders = await provider.archivedWorkspaceFolders(of: project)
-            guard !folders.isEmpty else { continue }
-            let unarchived = allSessions(in: project.id).filter { summary in
-                !archivedSessions.contains(summary.id)
-                    && folders.contains { SessionFolder.isSame($0.folderPath, summary.info.cwd) }
-            }
-            for summary in unarchived {
-                do {
-                    try await restoreWorkspace(of: summary.id)
-                } catch {
-                    reportRestoreFailure(of: summary.id, error)
+            let routes = allSessions(in: project.id).filter { !archivedSessions.contains($0.id) }
+                .compactMap { taskActionRoute(for: $0.id) }
+            for owned in Dictionary(grouping: routes, by: \.owner).values {
+                guard let first = owned.first, let provider = try? workspaceProvider(for: first) else { continue }
+                let folders = await provider.archivedWorkspaceFolders(of: first.project)
+                for route in owned
+                where route.folder.map({ folder in
+                    folders.contains {
+                        route.owner == .local
+                            ? SessionFolder.isSame($0.folderPath, folder.folderPath)
+                            : RemoteHost.plain($0.folderPath) == RemoteHost.plain(folder.folderPath)
+                    }
+                }) == true {
+                    do {
+                        try await restoreWorkspace(of: route.key)
+                    } catch {
+                        reportRestoreFailure(of: route.key, error)
+                    }
                 }
             }
         }
@@ -126,7 +132,9 @@ extension AppModel {
 
     private func reportRestoreFailure(of key: SessionKey, _ error: any Error) {
         // Without a project, the task isn't in the sidebar to come back to either.
-        guard let project = catalog.lookup(key)?.project else { return }
+        let route = taskActionRoute(for: key)
+        guard let project = route?.project.id ?? catalog.lookup(key)?.project else { return }
+        let title = route?.title ?? titleOfSession(key)
         if let failure = error as? TaskWorkspaceRestoreFailure {
             // Nothing says how to rebuild it, so Retry alone wouldn't help: say what's missing, and
             // offer the project's folder instead.
@@ -134,7 +142,7 @@ extension AppModel {
             problems.report(
                 ProjectProblem(
                     project: project, work: .workspaceRestore(key),
-                    title: "Couldn't rebuild “\(titleOfSession(key))”'s worktree",
+                    title: "Couldn't rebuild “\(title)”'s worktree",
                     recovery: "The task is back with its conversation. " + (failure.errorDescription ?? "") + saved,
                     suggestion: failure.suggestion,
                     alternative: .startInProjectFolder(key)))
@@ -143,7 +151,7 @@ extension AppModel {
         problems.report(
             ProjectProblem(
                 project: project, work: .workspaceRestore(key),
-                title: "Couldn't restore “\(titleOfSession(key))”'s workspace",
+                title: "Couldn't restore “\(title)”'s workspace",
                 recovery: "The task is back, and the checkpoint of its work is still saved.",
                 details: error.localizedDescription))
     }
@@ -172,13 +180,15 @@ extension AppModel {
     /// Takes a task off the sidebar and deletes it once the undo window passes, unless the deletion
     /// is cancelled first. From then on `undo` can't bring it back, so it leaves the undo stack.
     func scheduleDeletion(of key: SessionKey, undo: UndoableAction) {
-        guard let listed = catalog.lookup(key), pendingDeletions[key] == nil else { return }
+        guard let listed = catalog.lookup(key), pendingDeletions[key] == nil,
+            let route = taskActionRoute(for: key)
+        else { return }
         leave(key, in: listed.project)
         pendingDeletions[key] = Task { [weak self] in
             try? await Task.sleep(for: Self.deletionGracePeriod)
             guard !Task.isCancelled else { return }
             undo.withdraw()
-            await self?.carryOutDeletion(of: key, in: listed.project)
+            await self?.carryOutDeletion(using: route)
         }
     }
 
@@ -186,7 +196,9 @@ extension AppModel {
         pendingDeletions.removeValue(forKey: key)?.cancel()
     }
 
-    private func carryOutDeletion(of key: SessionKey, in projectID: Project.ID) async {
+    private func carryOutDeletion(using route: TaskActionRoute) async {
+        let key = route.key
+        let projectID = route.project.id
         guard pendingDeletions.removeValue(forKey: key) != nil else { return }
         do {
             try await releaseCoordinatorAssignments(beforeDeleting: key)
@@ -194,10 +206,7 @@ extension AppModel {
             actionFailure = ActionFailure("Couldn't Delete Coordinator", error.localizedDescription)
             return
         }
-        let title = titleOfSession(key)
-        let folder =
-            sessions.session(key)?.cwd
-            ?? catalog.lookup(key).map { URL(filePath: $0.info.cwd, directoryHint: .isDirectory) }
+        let title = route.title
         deletedSessions.insert(key)
         archivedSessions.set(key, archived: false)
         unread.set(key, unread: false)
@@ -206,36 +215,25 @@ extension AppModel {
         // Putting its workspace away or bringing it back no longer matters: deleting removes it.
         problems.resolve(.workspaceArchive(key), in: projectID)
         problems.resolve(.workspaceRestore(key), in: projectID)
-        // The agent's copy goes too when it's running; a stopped agent isn't started just for this.
-        if let runtime = agentRuntime(for: key), let connection = runtime.connection,
-            runtime.capabilities?.deleteSessions == true
-        {
-            do {
-                _ = try await connection.send(DeleteSessionRequest(sessionId: key.id))
-            } catch {
-                problems.report(
-                    ProjectProblem(
-                        project: projectID, work: .agentCopyDeletion(key),
-                        title: "\(runtime.agent.displayName) couldn't delete “\(title)”",
-                        recovery: "The task is gone from Native, but \(runtime.agent.displayName) still has its copy.",
-                        details: error.localizedDescription))
-            }
+        do {
+            try await deleteAgentCopy(using: route, startingIfNeeded: false)
+        } catch {
+            problems.report(
+                ProjectProblem(
+                    project: projectID, work: .agentCopyDeletion(key),
+                    title: "Couldn't delete “\(title)” from its agent",
+                    recovery: "The task is gone from Native, but its agent still has its copy.",
+                    details: error.localizedDescription))
         }
-        if let folder, let project = projects.project(projectID), !SessionFolder.isSame(folder.folderPath, project.path)
-        {
-            do {
-                try await taskWorkspaces?.deleteWorkspace(at: folder, in: project)
-            } catch {
-                problems.report(
-                    ProjectProblem(
-                        project: projectID, work: .workspaceDeletion(key, folder: folder),
-                        title: "Couldn't remove “\(title)”'s workspace",
-                        recovery: "The task is deleted, but its workspace is still on disk.",
-                        details: error.localizedDescription))
-            }
-        }
-        if let project = projects.project(projectID) {
-            await taskWorkspaces?.taskWasDeleted(key, title: title, folder: folder ?? project.url, in: project)
+        do {
+            try await deleteWorkspace(using: route)
+        } catch {
+            problems.report(
+                ProjectProblem(
+                    project: projectID, work: .workspaceDeletion(key, folder: route.folder ?? route.project.url),
+                    title: "Couldn't remove “\(title)”'s workspace",
+                    recovery: "The task is deleted, but its workspace is still on disk.",
+                    details: error.localizedDescription))
         }
     }
 
@@ -335,17 +333,20 @@ extension AppModel {
     /// when its turn comes. Returns what was done, for the toast. Internal only for
     /// AppModel+Problems.swift.
     func archiveWorkspace(of key: SessionKey, in project: Project) async throws -> String? {
-        guard let folder = taskFolder(of: key, in: project) else { return nil }
-        return try await inWorkspaceOrder(at: folder) {
+        guard let route = taskActionRoute(for: key) else { throw TaskActionRoute.Failure.missingRoute }
+        return try await inWorkspaceOrder(using: route) {
             // Unarchived before its turn came (Undo while a bulk archive works): it stays.
-            guard self.archivedSessions.contains(key) else { return nil }
-            return try await self.taskWorkspaces?.archiveWorkspace(at: folder, in: project)
+            guard self.archivedSessions.contains(key), !self.deletedSessions.contains(key) else { return nil }
+            let provider = try self.workspaceProvider(for: route)
+            guard let folder = route.workspace else { return nil }
+            return try await provider?.archiveWorkspace(at: folder, in: route.project)
         }
     }
 
     /// The folder a task runs in, unless it's the project's own, which Native never puts away.
     /// Internal only for AppModel+RemovedWorkspaces.swift, as is `inWorkspaceOrder`.
     func taskFolder(of key: SessionKey, in project: Project) -> URL? {
+        guard taskActionOwner(for: key) == .local else { return nil }
         guard
             let folder = sessions.session(key)?.cwd
                 ?? catalog.lookup(key).map({ URL(filePath: $0.info.cwd, directoryHint: .isDirectory) }),
@@ -361,6 +362,12 @@ extension AppModel {
         at folder: URL, _ work: @escaping @MainActor () async throws -> Value
     ) async throws -> Value {
         let path = folder.standardizedFileURL.path(percentEncoded: false)
+        return try await inWorkspaceOrder(key: path, work)
+    }
+
+    func inWorkspaceOrder<Value: Sendable>(
+        key path: String, _ work: @escaping @MainActor () async throws -> Value
+    ) async throws -> Value {
         let previous = workspaceWork[path]
         let task = Task { @MainActor in
             await previous?.value
