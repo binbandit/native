@@ -15,18 +15,7 @@ struct SessionGoalControl: View {
         if let controller = center.goal(for: session) {
             GoalPillButton(status: controller.goal?.status, showsIcon: showsIcon) { isEditing = true }
                 .popover(isPresented: $isEditing, arrowEdge: .top) {
-                    GoalEditor(goal: controller.goal, agentName: session.agentName) { objective, budget in
-                        isEditing = false
-                        Task {
-                            if controller.goal == nil {
-                                await controller.set(objective: objective, budget: budget)
-                            } else {
-                                await controller.update(objective: objective, budget: budget)
-                            }
-                        }
-                    } onCancel: {
-                        isEditing = false
-                    }
+                    SessionGoalEditor(controller: controller, agentName: session.agentName) { isEditing = false }
                 }
                 .onChange(of: controller.isEditorRequested, initial: true) { _, isRequested in
                     guard isRequested else { return }

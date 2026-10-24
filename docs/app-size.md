@@ -43,6 +43,16 @@ without bundled assets or dependencies; fixtures remain Debug-only. The download
 both app binaries are 60.0 MB, within their unchanged budgets. These are integrated measurements,
 not an isolated feature delta. Remeasure when the gated redesign replaces its legacy views.
 
+2026-10-24: Fine print's resting field and merged settings popover keep the existing composer
+available behind the default-off switch. The integrated local build at `ffb4c380` measures
+47.1 MB downloaded for Release and 47.2 MB for Nightly, with installed sizes of 117.0 and
+117.1 MB and binaries of 60.0 and 60.1 MB. Main at `1262168a` measured 46.8 and 46.9 MB
+in [CI](https://github.com/binbandit/native/actions/runs/40082622708). These are integrated
+build measurements, not an isolated binary delta. This slice adds no bundled assets or
+dependencies. The update archive allowance is 47.5 MB for this integration; the installed,
+binary, runtime and disk-image limits stay unchanged. Remeasure when Fine print replaces
+the legacy composer and the temporary duplication can be removed.
+
 2026-10-23: the reviewed Change Agent flow adds about 0.1 MB to the app binary, taking Release
 from main's 57.9 MB to just over 58 MB. Its local handoff generation, review controls and task
 continuity add no dependencies or assets. The binary budget is now 58.5 MB to accommodate that

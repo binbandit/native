@@ -424,6 +424,14 @@ Controls ("…") menu. Each setting lists its choices with the current value che
 keys and Return to choose from the menu. Model, effort, autonomy and mode keep their dedicated
 controls, moving into More only as the row runs out of room.
 
+With Fine print (`NativeComposerNext`) enabled, the model name at the trailing edge of the
+field opens one Task Settings popover. Choose Model (⌘⇧E) opens the same popover, including
+effort, when the agent asks, MCP servers and the agent's extra settings from More. Tab reaches
+each control, Return chooses a focused option, and Escape closes the popover. Show MCP Servers
+(⌃⌘M) opens its existing panel inside this popover; Back returns to the settings. Attach Files
+(⌘U), Mode and Set Goal keep their existing commands and are available inside the popover too.
+Goal commands open the shared editor even when Task Settings is closed or showing MCP servers.
+
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
 | ⌘⇧M | Next permission mode | Task | `session.nextPermissionMode` |

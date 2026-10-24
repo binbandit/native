@@ -17,7 +17,8 @@ enum AutonomySummary {
         "agent-full-access": "Does everything without asking, anywhere on this Mac",
         // Claude Code
         "default": "Asks before edits and commands",
-        "acceptEdits": "Edits files, asks before commands",
+        "acceptEdits":
+            "Allows edits and common file commands in permitted folders. Other actions follow the agent's permission rules.",
         "auto": "Decides for itself, asks only when something looks risky",
         "dontAsk": "Does only what’s already allowed and refuses the rest, without asking",
         "bypassPermissions": "Does everything without asking",
