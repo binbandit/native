@@ -167,7 +167,8 @@ private struct CelebrationOptions: View {
     private func surface(
         _ title: String, isIcon: Bool, preview: AnyView, status: AppearanceSurfaceStatus, isOn: Binding<Bool>
     ) -> some View {
-        HStack(spacing: DS.Space.lg) {
+        let downloadsUnavailable: Bool = if case .downloadable(.unavailable) = status { true } else { false }
+        return HStack(spacing: DS.Space.lg) {
             preview
                 .frame(width: CelebrationMetrics.surfacePreview, height: CelebrationMetrics.surfacePreview)
                 .accessibilityHidden(true)
@@ -186,8 +187,13 @@ private struct CelebrationOptions: View {
                 Button("Retry") { center.fetchIcons(for: event.id) }
                     .buttonStyle(.ds(.secondary, size: .medium))
             }
-            SettingsSwitch("\(event.contribution.title.resolved()) \(title.lowercased())", isOn: isOn)
-                .disabled(!status.isReady && !status.isDownloadable)
+            // Keep the saved choice for when policy permits downloads again, while showing that
+            // this surface cannot currently be enabled.
+            SettingsSwitch(
+                "\(event.contribution.title.resolved()) \(title.lowercased())",
+                isOn: downloadsUnavailable ? .constant(false) : isOn
+            )
+            .disabled(downloadsUnavailable || (!status.isReady && !status.isDownloadable))
         }
     }
 
@@ -238,3 +244,16 @@ private struct CelebrationOptions: View {
 extension CelebrationMetrics {
     static let windowSelectWidth: CGFloat = 260
 }
+
+#if DEBUG
+#Preview("Celebration row - Downloads disabled") {
+    let center = CelebrationPreviewFixtures.downloadsDisabled()
+    DSPreviewPair {
+        if let center, let event = center.catalog.celebration(FirstPartyCelebrations.diaDeMuertosID) {
+            CelebrationRow(event: event)
+                .environment(center)
+                .settingsPreviewPage()
+        }
+    }
+}
+#endif

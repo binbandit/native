@@ -18,6 +18,11 @@ extension AppModel {
         var seen: Set<SessionKey> = []
         for checkout in project.checkouts {
             guard let host = hosts.host(checkout.host) else { continue }
+            func belongsToCheckout(_ folder: String) -> Bool {
+                host.isTaskFolder(folder, ofCheckoutAt: checkout.path)
+                    || checkout.taskFolders?.contains(where: { RemoteHost.plain($0) == RemoteHost.plain(folder) })
+                        == true
+            }
             // Sessions the host knows were delegated by another, or belong to one: never a task of
             // their own, though their agent lists them in the same folder.
             let notTasks = Set(
@@ -28,7 +33,7 @@ extension AppModel {
                 })
             for summary in host.sessions
             where summary.origin == .user && summary.parentID == nil
-                && host.isTaskFolder(summary.cwd, ofCheckoutAt: checkout.path)
+                && belongsToCheckout(summary.cwd)
             {
                 guard let agentSessionID = summary.agentSessionID,
                     let runtime = host.runtime(AgentDefinition.ID(rawValue: summary.agentID))
@@ -36,13 +41,13 @@ extension AppModel {
                 let info = SessionInfo(
                     sessionId: agentSessionID, cwd: summary.cwd, title: summary.title, updatedAt: summary.lastActivity)
                 let entry = SessionSummary(project: project.id, agent: runtime.agent, info: info)
-                if seen.insert(entry.id).inserted { summaries.append(entry) }
+                if !deletedSessions.contains(entry.id), seen.insert(entry.id).inserted { summaries.append(entry) }
             }
-            for (folder, listings) in host.history where host.isTaskFolder(folder, ofCheckoutAt: checkout.path) {
+            for (folder, listings) in host.history where belongsToCheckout(folder) {
                 for listed in listings where !notTasks.contains(listed.key) {
                     guard let runtime = host.runtime(listed.agent) else { continue }
                     let entry = SessionSummary(project: project.id, agent: runtime.agent, info: listed.info)
-                    if seen.insert(entry.id).inserted { summaries.append(entry) }
+                    if !deletedSessions.contains(entry.id), seen.insert(entry.id).inserted { summaries.append(entry) }
                 }
             }
         }
@@ -159,6 +164,7 @@ extension AppModel {
         for project in projects.all {
             guard let checkout = project.checkoutPath(on: .remote(host.id)) else { continue }
             folders.append(checkout)
+            folders += project.checkouts.first(where: { $0.host == host.id })?.taskFolders ?? []
             // Its task worktrees are named after the repository, not this checkout's folder.
             if let name = try? await git?.repository(at: URL(filePath: checkout, directoryHint: .isDirectory))?.name {
                 host.noteRepositoryName(name, ofCheckoutAt: checkout)

@@ -101,7 +101,7 @@ struct CelebrationStatusCard: View {
         if !PlatformAppIcon.canApplyAnyImage { return "The app icon can't change on this device." }
         switch event.appIcon {
         case .forthcoming: return "Its app icon is still being drawn, so the icon stays as it is."
-        case .downloadable(.unavailable): return "Icons can't download in this build, so the icon stays as it is."
+        case .downloadable(.unavailable(let reason)): return reason
         case .downloadable(.failed(let reason)): return reason
         case .downloadable: return "Its icon is downloading; the icon changes when it's here."
         default: return nil
@@ -185,3 +185,16 @@ private struct CelebrationTimeline: View {
 extension CelebrationMetrics {
     static let timelineDates: CGFloat = 150
 }
+
+#if DEBUG
+#Preview("Celebration status - Downloads disabled, Home available") {
+    let center = CelebrationPreviewFixtures.downloadsDisabled()
+    DSPreviewPair {
+        if let center {
+            CelebrationStatusCard()
+                .environment(center)
+                .settingsPreviewPage()
+        }
+    }
+}
+#endif

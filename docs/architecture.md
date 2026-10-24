@@ -401,6 +401,20 @@ Scroll positions remain per window in `SessionTranscriptMemory`.
 
 ### Task worktree preparation
 
+Before the first message, Change Workspace replaces the empty agent conversation in the chosen
+folder, retaining its draft, attachments, title, order and settings. The model blocks sends while
+the replacement is prepared. Once a message is submitted, including a queued message, the task
+keeps its workspace. Existing branches reuse their checkout when present; otherwise Native makes
+a worktree. Creation receipts in the repository's local config identify task worktrees that can
+be cleaned up, including after a draft is reopened. Cleanup requires that their original branch,
+commit and clean working tree remain unchanged. Ignored
+files, running setup commands, other tasks and user-owned worktrees prevent automatic removal.
+Open terminal tabs and project actions must finish or close before the task moves, so their work
+stays reachable in the original task.
+Paired-host replacements stay in the remote index, never the local catalog or local draft recovery.
+Explicitly chosen worktrees outside the host's managed folder are associated with the project's
+paired checkout, so reconnecting can list their tasks again.
+
 Git chooses an immutable task base with `Repository.taskWorktreeBase`, fetching the configured
 remote unless `policy.git.worktreeFetch` disables it. Failure falls back to the local commit;
 `GitStore` carries that explanation into the task's setup notice. Before-commands run through
