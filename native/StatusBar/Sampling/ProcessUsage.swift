@@ -1,3 +1,4 @@
+import Exec
 import Foundation
 
 /// One process's resource use at a sample.
@@ -9,8 +10,8 @@ nonisolated struct ProcessUsage: Identifiable, Hashable, Sendable {
     let depth: Int
     /// Physical footprint in bytes: what Activity Monitor's Memory column shows.
     let memory: UInt64
-    /// Percent of one core over the last interval (as `ps` and Activity Monitor count it, so a
-    /// busy multithreaded process can pass 100). Nil on a process's first sample.
+    /// Percent of the sampling machine's total CPU capacity (0 to 100) over the last interval.
+    /// Nil on a process's first sample.
     let cpu: Double?
 
     var id: Int32 { pid }
@@ -39,7 +40,7 @@ nonisolated struct ProcessGroup: Identifiable, Hashable, Sendable {
     }
 
     var cpu: Double {
-        processes.reduce(0) { $0 + ($1.cpu ?? 0) }
+        ProcessCPUUsage.total(processes.compactMap(\.cpu))
     }
 }
 
@@ -55,7 +56,7 @@ nonisolated struct ResourceSnapshot: Hashable, Sendable {
     }
 
     var cpu: Double {
-        groups.reduce(0) { $0 + $1.cpu }
+        ProcessCPUUsage.total(groups.map(\.cpu))
     }
 
     var processCount: Int {
