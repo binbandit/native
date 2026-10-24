@@ -64,7 +64,7 @@ struct ComposerSettingsControl: View {
         }
         .fileDialogDefaultDirectory(session.cwd)
         .task(id: session.clientID) { await library?.track(session.context) }
-        .onChange(of: mcpPresentation?.wrappedValue) { _, show in
+        .onChange(of: mcpPresentation?.wrappedValue, initial: true) { _, show in
             if show == true {
                 showsMCP = true
                 isPresented = true

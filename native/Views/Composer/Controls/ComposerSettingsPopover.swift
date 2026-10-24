@@ -122,6 +122,7 @@ struct ComposerSettingsPopover<Connections: View, Actions: View>: View {
                     ForEach(effort.choices) { choice in Text(choice.name).tag(choice.value) }
                 }
                 .pickerStyle(.segmented)
+                .labelsHidden()
                 .fixedSize(horizontal: true, vertical: false)
                 .controlSize(.small)
                 Picker("Effort", selection: binding(effort)) {
@@ -184,6 +185,8 @@ struct ComposerSettingsPopover<Connections: View, Actions: View>: View {
             }
         } label: {
             HStack(spacing: DS.Space.sm) {
+                Image(systemName: setting.option.category == "web_search" ? "globe" : "terminal")
+                    .foregroundStyle(.dsTextTertiary)
                 Text(setting.option.name)
                 Spacer(minLength: DS.Space.sm)
                 Text(setting.currentName).foregroundStyle(.dsTextSecondary)
@@ -194,10 +197,13 @@ struct ComposerSettingsPopover<Connections: View, Actions: View>: View {
             .frame(minHeight: DS.ComposerSettings.rowHeight)
             .contentShape(.rect)
         }
-        .menuStyle(.borderlessButton)
+        .menuStyle(.button)
+        .buttonStyle(.plain)
         .menuIndicator(.hidden)
         .disabled(isApplying)
         .dsHitTarget(DS.ComposerSettings.controlHeight)
+        .accessibilityLabel(setting.option.name)
+        .accessibilityValue(setting.currentName)
         .help(setting.option.description ?? setting.option.name)
     }
 
