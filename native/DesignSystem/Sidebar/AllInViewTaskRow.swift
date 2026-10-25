@@ -83,12 +83,7 @@ public struct AllInViewTaskRow: View {
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     }
                     if agentName != nil || branchName != nil {
-                        Text([agentName, branchName].compactMap(\.self).joined(separator: " · "))
-                            .font(DS.Sidebar.factFont)
-                            .foregroundStyle(.dsTextTertiary)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                            .help([agentName, branchName].compactMap(\.self).joined(separator: " · "))
+                        facts
                     }
                 }
             }
@@ -126,12 +121,31 @@ public struct AllInViewTaskRow: View {
         .accessibilityLabel(DSInlineCode.plain(title))
         .accessibilityValue(
             [
-                projectName, unavailable ?? status.label, isUnread ? "Unread" : nil, ask, agentName, branchName,
+                projectName, unavailable ?? status.label, isUnread ? "Unread" : nil, ask.map(DSInlineCode.plain),
+                agentName, branchName,
                 changes.map { DSFormat.spokenDiffStat(added: $0.added, removed: $0.removed) },
                 answersShortcut ? "Oldest ask" : nil,
             ].compactMap(\.self).joined(separator: ", ")
         )
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    /// The agent keeps its name; a long branch gives up its middle, so its prefix and its end
+    /// (where branches differ) both stay readable.
+    private var facts: some View {
+        HStack(spacing: 0) {
+            if let agentName {
+                Text(agentName).fixedSize()
+                if branchName != nil { Text(" · ").fixedSize() }
+            }
+            if let branchName {
+                Text(branchName).truncationMode(.middle)
+            }
+        }
+        .font(DS.Sidebar.factFont)
+        .foregroundStyle(.dsTextTertiary)
+        .lineLimit(1)
+        .help([agentName, branchName].compactMap(\.self).joined(separator: " · "))
     }
 
     private var signal: some View {

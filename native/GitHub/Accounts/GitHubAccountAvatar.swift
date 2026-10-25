@@ -3,6 +3,7 @@ import SwiftUI
 struct GitHubAccountAvatar: View {
     let name: String
     var data: Data?
+    var size = DS.Account.avatarSize
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
@@ -17,7 +18,7 @@ struct GitHubAccountAvatar: View {
                     .background(.dsSelected)
             }
         }
-        .frame(width: DS.Account.avatarSize, height: DS.Account.avatarSize)
+        .frame(width: size, height: size)
         .clipShape(.circle)
         .overlay {
             Circle().strokeBorder(DS.Account.avatarStroke(in: colorScheme), lineWidth: DS.Account.avatarBorder)

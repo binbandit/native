@@ -3,9 +3,9 @@ import SwiftUI
 /// A sidebar navigation row: icon, label, an optional shortcut hint that appears on hover and an
 /// optional trailing accessory such as a menu: 6pt padding, 10pt gap, 12pt icons, secondary text
 /// that turns primary on hover.
-public struct SidebarNavItem<Accessory: View>: View {
+public struct SidebarNavItem<Icon: View, Accessory: View>: View {
     let title: String
-    let systemImage: String
+    let icon: Icon
     let isSelected: Bool
     let shortcut: String?
     let action: () -> Void
@@ -14,17 +14,19 @@ public struct SidebarNavItem<Accessory: View>: View {
     @Environment(\.isEnabled) private var isEnabled
     @State private var isHovered = false
 
-    /// - Parameter shortcut: A hint such as "⌘N", shown at the trailing edge while hovered.
+    /// - Parameters:
+    ///   - icon: Drawn in the 12pt icon slot, for glyphs SF Symbols doesn't have.
+    ///   - shortcut: A hint such as "⌘N", shown at the trailing edge while hovered.
     public init(
         _ title: String,
-        systemImage: String,
         isSelected: Bool = false,
         shortcut: String? = nil,
         action: @escaping () -> Void,
+        @ViewBuilder icon: () -> Icon,
         @ViewBuilder accessory: () -> Accessory
     ) {
         self.title = title
-        self.systemImage = systemImage
+        self.icon = icon()
         self.isSelected = isSelected
         self.shortcut = shortcut
         self.action = action
@@ -36,7 +38,7 @@ public struct SidebarNavItem<Accessory: View>: View {
         HStack(spacing: 0) {
             Button(action: action) {
                 HStack(spacing: 10) {
-                    Image(systemName: systemImage)
+                    icon
                         .font(.system(size: 11, weight: .regular))
                         .frame(width: DS.Size.navIcon, height: DS.Size.navIcon)
                     Text(title)
@@ -74,7 +76,22 @@ public struct SidebarNavItem<Accessory: View>: View {
     }
 }
 
-extension SidebarNavItem where Accessory == EmptyView {
+extension SidebarNavItem where Icon == Image {
+    public init(
+        _ title: String,
+        systemImage: String,
+        isSelected: Bool = false,
+        shortcut: String? = nil,
+        action: @escaping () -> Void,
+        @ViewBuilder accessory: () -> Accessory
+    ) {
+        self.init(
+            title, isSelected: isSelected, shortcut: shortcut, action: action, icon: { Image(systemName: systemImage) },
+            accessory: accessory)
+    }
+}
+
+extension SidebarNavItem where Icon == Image, Accessory == EmptyView {
     public init(
         _ title: String,
         systemImage: String,

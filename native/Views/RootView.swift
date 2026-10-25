@@ -40,6 +40,10 @@ struct RootView: View {
     @Environment(DurableHost.self) private var durableHost: DurableHost?
     @Environment(UpdateController.self) private var updates: UpdateController?
     @Environment(WhatsNewCenter.self) private var whatsNew
+    #if DEBUG
+    /// The sidebar fixture's branches, which no checkout behind its tasks could report.
+    @Environment(\.sidebarFixtureInsights) private var sidebarFixtureInsights
+    #endif
 
     init(initialSidebarVisibility: NavigationSplitViewVisibility = .all) {
         _columnVisibility = State(initialValue: initialSidebarVisibility)
@@ -228,6 +232,8 @@ struct RootView: View {
     private var splitView: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebar
+                // A hidden sidebar is still laid out; its rows mustn't hold Peek beside nothing.
+                .environment(\.offersTaskPeekAnchors, columnVisibility != .detailOnly)
                 .modifier(
                     QuickEntryScrim(
                         isPresented: model.quickEntry.isEnabled && model.quickEntry.isPresented,
@@ -343,7 +349,14 @@ struct RootView: View {
             AppTaskRowAccessory(summary: summary)
         }
         .environment(\.homePresentedTaskNeeds, homeNeeds)
-        .environment(\.sidebarTaskInsights, AppSidebarTaskInsights.make(model: model, git: git, gitHub: gitHub))
+        .environment(\.sidebarTaskInsights, sidebarInsights)
+    }
+
+    private var sidebarInsights: SidebarTaskInsights {
+        #if DEBUG
+        if let fixture = sidebarFixtureInsights { return fixture }
+        #endif
+        return AppSidebarTaskInsights.make(model: model, git: git, gitHub: gitHub)
     }
 
     /// Turns Automations on and opens it, from the Workflows page; nil once it's in the sidebar.

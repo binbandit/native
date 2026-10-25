@@ -1,3 +1,4 @@
+import ACP
 import SwiftUI
 import TaskList
 
@@ -46,7 +47,7 @@ struct ProjectList<TaskAccessory: View>: View {
             if model.projects.all.isEmpty {
                 AddProjectPrompt()
             } else if isNarrowing, listing.isEmpty, model.startingTasks.isEmpty {
-                NothingMatches { filter.clearFilters() }
+                NothingMatches(isNeedsYouOnly: filter.chips == [.status(.needsYou)]) { filter.clearFilters() }
             }
             ForEach(Array(listing.groups.enumerated()), id: \.element.project.id) { index, group in
                 let project = group.project
@@ -63,6 +64,7 @@ struct ProjectList<TaskAccessory: View>: View {
                     position: (index, listing.groups.count),
                     isFiltered: isNarrowing,
                     hasNoMatches: hasNoMatches,
+                    followsPinned: !listing.pinned.isEmpty,
                     isExpanded: Binding(
                         get: { isNarrowing ? !hasNoMatches : !collapsed.contains(project.id) },
                         set: { collapsed.set(project.id, collapsed: !$0) }
@@ -142,21 +144,32 @@ private struct AddProjectPrompt: View {
     }
 }
 
-/// The filters match no task anywhere: say so, and offer the way back.
+/// The filters match no task anywhere: say so, and offer the way back. Needs You alone (⌥⌘J) is a
+/// question with a happy answer, so it gets one rather than talk of filters.
 private struct NothingMatches: View {
+    @Environment(\.sidebarAllInView) private var isAllInView
+    var isNeedsYouOnly = false
     let clear: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.sm) {
-            Text("No tasks match these filters. Tasks show up here as soon as they do.")
-                .font(.dsBody)
-                .foregroundStyle(.dsTextTertiary)
-                .fixedSize(horizontal: false, vertical: true)
+            Text(
+                isNeedsYouOnly
+                    ? "Nothing needs you right now."
+                    : "No tasks match these filters. Tasks show up here as soon as they do."
+            )
+            .font(.dsBody)
+            .foregroundStyle(.dsTextTertiary)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, isAllInView ? DS.Space.sm : 0)
             // Ghost, so nothing opaque sits on the translucent sidebar.
-            Button("Clear Filters", action: clear)
+            Button(isNeedsYouOnly ? "Show All Tasks" : "Clear Filters", action: clear)
                 .buttonStyle(.ds(.ghost))
         }
-        .padding(.horizontal, DS.Space.sm)
+        // All in view lines the sentence up with the task titles; the ghost button's label lands
+        // there too.
+        .padding(.leading, isAllInView ? DS.Sidebar.headerLeading - DS.Space.sm : DS.Space.sm)
+        .padding(.trailing, DS.Space.sm)
         .padding(.vertical, DS.Space.md)
     }
 }
@@ -182,6 +195,20 @@ private struct NothingMatches: View {
     let app = AppModel.preview()
     DSPreviewPair {
         ProjectListPreview(app: app, filter: TaskFilter(statuses: [.failed], agents: ["claude-code"]))
+    }
+    .sidebarPreviewEnvironment(app)
+}
+
+#Preview("Project list - Nothing needs you") {
+    let app = AppModel.preview()
+    for item in app.tasksNeedingAttention {
+        guard let session = app.session(item.id) else { continue }
+        for call in session.permissionRequests { session.state.resolvePermission(toolCallID: call.id) }
+        session.questions = []
+    }
+    return DSPreviewPair {
+        ProjectListPreview(app: app, filter: TaskFilter(statuses: [.needsYou]))
+            .environment(\.sidebarAllInView, true)
     }
     .sidebarPreviewEnvironment(app)
 }

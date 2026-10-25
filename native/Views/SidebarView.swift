@@ -26,6 +26,9 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
     @State private var folding = SidebarDayFolding()
     @State private var selection = SidebarSelectionModel()
     @Experiment(.sidebarNext) private var usesSidebarNext
+    /// The open task when Peek opened from the focused list, so closing Peek (Escape, a click
+    /// outside) gives the list its keys back, unless Peek opened another task.
+    @State private var peekReturn: SessionKey??
 
     private let navigationItems: NavigationItems
     private let accessories: Accessories
@@ -129,7 +132,7 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
                 SidebarSelectionBar(selection: selection)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
-            SidebarFooter()
+            SidebarFooter(isAllInView: usesSidebarNext)
         }
         .background(usesSidebarNext ? Color.dsSidebarSolid : Color.clear)
         .animation(.dsQuick, value: selection.isActive)
@@ -151,6 +154,14 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
                 let group = listing.groups.first(where: { $0.earlier.contains { $0.id == key } })
             else { return }
             folding.setExpanded(group.project.id, true)
+        }
+        .onChange(of: model.taskPeek.request == nil) { _, isClosed in
+            if !isClosed {
+                peekReturn = isListFocused ? .some(model.selection) : nil
+            } else if let selection = peekReturn {
+                if selection == model.selection { isListFocused = true }
+                peekReturn = nil
+            }
         }
         .onChange(of: listing.order, initial: true) { _, order in
             selection.update(order: order)
@@ -177,6 +188,15 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
                 "Their history goes from Native and, where the agent supports it, from the agent too. You can undo for a few seconds. To keep them out of sight instead, archive them."
             )
         }
+        #if DEBUG
+        // `-nativeSidebarFixtureNeedsYou YES` starts with Needs You on, for checks of its states:
+        // ⌥⌘J only reaches an app that's in front.
+        .task {
+            if UserDefaults.standard.bool(forKey: "nativeSidebarFixtureNeedsYou") {
+                needsYouBinding.wrappedValue = true
+            }
+        }
+        #endif
         .focusedSceneValue(\.sidebarReorder, reorder)
         .focusedSceneValue(\.sidebarNeedsYouFilter, needsYouBinding)
         .focusedSceneValue(\.sidebarSelection, selection)

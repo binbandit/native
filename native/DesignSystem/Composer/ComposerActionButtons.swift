@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Sends the draft: a 24pt accent square with a chevron. When sending
+/// Sends the draft: a 24pt accent square with an up arrow (a chevron reads as "expand"). When sending
 /// is blocked it stays in place, half transparent, and says why in its tooltip and accessibility
 /// hint, so the composer's 24pt send/stop slot never shifts.
 public struct ComposerSendButton: View {
@@ -21,7 +21,7 @@ public struct ComposerSendButton: View {
 
     public var body: some View {
         Button(action: action) {
-            Image(systemName: "chevron.up")
+            Image(systemName: "arrow.up")
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.dsTextOnAccent)
                 .frame(width: DS.Size.composerAction, height: DS.Size.composerAction)
