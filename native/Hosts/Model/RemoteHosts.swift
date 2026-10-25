@@ -265,6 +265,13 @@ final class RemoteHosts {
         retired.filter { $0.host == host.id && $0.hostKey == host.paired.hostKey }
     }
 
+    /// The paired host `client` is for: a host's client now, or one retired here whose open tasks
+    /// still follow it until they move. Tasks keep their host by it even while no client of the
+    /// host's is connected (the organization turned remote hosts off) or the host was removed.
+    func hostID(of client: NativeHostClient) -> RemoteHostID? {
+        all.first { $0.client === client }?.id ?? retired.first { $0.client === client }?.host
+    }
+
     /// Forgets retired clients whose tasks have moved on.
     func forget(_ clients: [RetiredClient]) {
         retired.removeAll { old in clients.contains { $0.client === old.client } }

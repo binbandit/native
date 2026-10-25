@@ -601,6 +601,9 @@ private struct DroidManagedPolicyRegression {
         let keys = fixture.hosts.all.map(\.paired.deviceKey) + (try fixture.store.hosts()).map(\.deviceKey)
         try require(keys == [paired.deviceKey, paired.deviceKey], "Changed or forgot the pairing")
         try require(app.sessions.session(key) === session && session.draft == "Keep this draft", "Lost the task")
+        // Still the host's task, so its files and tools never resolve on this Mac.
+        try require(app.device(of: key) == .remote(remote.id), "The open task passes for this Mac's while off")
+        try require(app.hosts.hostID(of: first) == remote.id, "The task's client lost its host while off")
 
         fixture.source.set(true)
         try await wait("connects again") { fixture.hosts.all.first?.isOnline == true }
@@ -613,6 +616,7 @@ private struct DroidManagedPolicyRegression {
         try require(fixture.reached.count("connect") == 2, "Connected more than once on again")
         try require(fixture.network.links.count == 2, "Made more than one new client")
         try require(session.draft == "Keep this draft", "Lost the draft")
+        try require(app.device(of: key) == .remote(remote.id), "The task changed device on again")
         fixture.stop()
         print("PASS: turning off closes the connection and leaves the task and pairing; on again reconnects once")
     }
