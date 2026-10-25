@@ -86,7 +86,12 @@ value shapes agent sessions (`policy.agents.environment`, `policy.permissions.fo
 `policy.skills.blocked`, `policy.mcp.required`), agents are denied until it's fixed, and an unusable
 `policy.mcp.blocked` blocks every server. Ordinary mode still keeps the usable entries of a list
 with a bad entry, and reports the rest; a restricted mode rejects the whole list. Strings, numbers
-and dates aren't Booleans: use `<true/>` and `<false/>`.
+and dates aren't Booleans: use `<true/>` and `<false/>`. Failing closed applies to the
+organization's input: on a Mac with no profile, a user preference Native can't use is reported and
+ignored, and never takes agents away. The exceptions are the network keys: an unusable
+`policy.network` preference still stops Native's own connections, and an unusable
+`policy.deployment.mode` preference means air-gapped ([network admission](enterprise/network-admission.md)).
+Neither is ever remembered, so deleting the preference restores ordinary mode.
 
 ### Restricted deployment
 

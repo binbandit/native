@@ -36,6 +36,28 @@ import Testing
         }
     }
 
+    @Test func theUsersOwnBadValuesNeverTakeAnythingAwayWithoutAProfile() {
+        let store = MemoryPolicyEnrollmentStore()
+        let policy = load(
+            user: [
+                "policy.network": "everything", "policy.scripts.enabled": "true", "policy.agents.environment": 42,
+                "policy.mcp.blocked": "github", "policy.updates.channels": "stable",
+            ],
+            enrollment: store)
+        #expect(!policy.isRestricted && policy.deployment.state == .absent && policy.deployment.lockdown == nil)
+        #expect(policy.scriptsEnabled && policy.agents.allowed == nil && policy.mcp.allowed == nil)
+        #expect(policy.updates.isEnabled && policy.keyStatus.values.allSatisfy { !$0.validity.isFailure })
+        // Native's own connections still refuse the unusable network setting; agents and servers run.
+        #expect(!policy.network.isValid)
+        #expect(policy.decision(for: .agentExecution) == .allowed)
+        #expect(policy.decision(for: .mcpExecution) == .allowed)
+        #expect(policy.admission(ofPlugin: "any", origin: .builtIn, capabilities: nil).isAdmitted)
+        #expect(store.load() == nil)
+        // The same setting from the organization denies what depends on it.
+        let managed = load(managed: ["policy.network": "everything"])
+        #expect(managed.decision(for: .agentExecution) == .disabled(.invalidValue(.network)))
+    }
+
     @Test func wrongManagedTypesNeverFallBackToUserOrDefault() throws {
         let cases: [(String, Any)] = [
             ("policy.scripts.enabled", "true"), ("policy.scripts.enabled", 1), ("policy.scripts.enabled", ["true"]),

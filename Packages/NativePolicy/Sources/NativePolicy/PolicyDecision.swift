@@ -90,7 +90,12 @@ extension NativePolicy {
         if let key = coverage.keys.first(where: { keyStatus[$0]?.validity.isFailure == true }) {
             return .disabled(.invalidValue(key))
         }
-        if !coverage.services.isEmpty && !network.isValid { return .disabled(.invalidValue(.network)) }
+        // In ordinary mode the user's own unusable network setting is ignored here like any other
+        // user value: it never takes agents away. Native's own connections still refuse it.
+        let networkFailed = isRestricted || keyStatus[.network]?.validity.isFailure == true
+        if !coverage.services.isEmpty && !network.isValid && networkFailed {
+            return .disabled(.invalidValue(.network))
+        }
         let isRequired = requires(capability)
         if let denial = denial(of: capability) { return .disabled(denial, conflict: isRequired) }
         // An agent session can't go without the servers the organization requires.
