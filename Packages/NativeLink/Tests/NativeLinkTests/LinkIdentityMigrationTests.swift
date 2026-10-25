@@ -217,6 +217,41 @@ import Testing
         #expect(fixture.secrets.state.withLock { $0.reads } == 0)
     }
 
+    /// "everyone" in ACL text: mode bits stay private while the ACL lets another user in.
+    static let everyone = "group:ABCDEFAB-CDEF-ABCD-EFAB-CDEF0000000C:everyone:12"
+
+    @Test func aclGrantsOnPrivateObjectsAreRefused() throws {
+        let fixture = try LinkIdentityMigrationFixture()
+        try fixture.legacy()
+        try LinkIdentityMigrationFixture.setACL(["\(Self.everyone):allow:read"], on: fixture.keyURL)
+        #expect(throws: LinkIdentityStorageFailure.unsafePath) { try fixture.store().identity() }
+        try LinkIdentityMigrationFixture.setACL(nil, on: fixture.keyURL)
+        let identity = try fixture.store().identity()
+
+        try LinkIdentityMigrationFixture.setACL(["\(Self.everyone):allow:write"], on: fixture.recordURL)
+        #expect(throws: LinkIdentityStorageFailure.unsafePath) { try fixture.store().identity() }
+        try LinkIdentityMigrationFixture.setACL(nil, on: fixture.recordURL)
+        // An inheritable grant on the Link folder would reach every receipt written into it.
+        try LinkIdentityMigrationFixture.setACL(
+            ["\(Self.everyone):allow,file_inherit:read,execute"], on: fixture.directory)
+        #expect(throws: LinkIdentityStorageFailure.unsafePath) { try fixture.store().identity() }
+        try LinkIdentityMigrationFixture.setACL(nil, on: fixture.directory)
+        #expect(try fixture.store().identity().publicKey == identity.publicKey)
+    }
+
+    @Test func ancestorAclsRefuseOnlyGrantsThatReplaceEntries() throws {
+        let fixture = try LinkIdentityMigrationFixture()
+        let link = fixture.directory.appending(path: "Link", directoryHint: .isDirectory)
+        // ACL text names directory rights by their file counterparts: append is add_subdirectory.
+        try LinkIdentityMigrationFixture.setACL(["\(Self.everyone):allow:append"], on: fixture.directory)
+        #expect(throws: LinkIdentityStorageFailure.unsafePath) { try fixture.store(directory: link).identity() }
+        // Like the defaults on a home folder: denials and read-only grants change nothing here.
+        try LinkIdentityMigrationFixture.setACL(
+            ["\(Self.everyone):deny:delete", "\(Self.everyone):allow:read,execute"], on: fixture.directory)
+        _ = try fixture.store(directory: link).identity()
+        #expect(fixture.secrets.state.withLock { $0.inserts } == 1)
+    }
+
     @Test func malformedOrForeignReceiptCannotChooseASecretOwner() throws {
         let fixture = try LinkIdentityMigrationFixture()
         try fixture.write(Data("not-json-canary".utf8), to: fixture.recordURL)
@@ -253,7 +288,10 @@ import Testing
 
     @Test func errorSerializationContainsOnlyCodes() throws {
         let fixture = try LinkIdentityMigrationFixture()
-        for status in [errSecInteractionNotAllowed, errSecAuthFailed, errSecNotAvailable] {
+        #expect(throws: LinkIdentityStorageFailure.keychainEntitlementMissing) {
+            try KeychainLinkKeyStore.check(errSecMissingEntitlement)
+        }
+        for status in [errSecInteractionNotAllowed, errSecAuthFailed, errSecMissingEntitlement, errSecNotAvailable] {
             do {
                 try KeychainLinkKeyStore.check(status)
                 Issue.record("Expected a blocked Keychain status")
@@ -272,9 +310,9 @@ import Testing
         #expect(query[kSecAttrService] as? String == "Native Host Link Identity (fixture)")
         #expect(query[kSecAttrAccount] as? String == host.description)
         #expect(query[kSecAttrSynchronizable] as? Bool == false)
+        // The login keychain ignores the context and can show a dialog nobody answers.
+        #expect(query[kSecUseDataProtectionKeychain] as? Bool == true)
         #expect((query[kSecUseAuthenticationContext] as? LAContext)?.interactionNotAllowed == true)
-        // The Data Protection keychain and access groups need entitlements the host doesn't have.
-        #expect(query[kSecUseDataProtectionKeychain] == nil)
         #expect(query[kSecAttrAccessGroup] == nil)
         #expect(query[kSecMatchLimit] == nil)
         #expect(KeychainLinkKeyStore.Reference(hostID: host, channel: "").service == "Native Host Link Identity")

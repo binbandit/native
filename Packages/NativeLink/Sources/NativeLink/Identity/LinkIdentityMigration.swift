@@ -3,7 +3,7 @@ import Foundation
 import NativeHostProtocol
 
 /// Where a host keeps its companion identity. An ordinary host keeps `identity.key` beside its
-/// paired devices (`FileKeyStore`). A restricted host moves it into the login keychain once,
+/// paired devices (`FileKeyStore`). A restricted host moves it into the Keychain once,
 /// crash-safely, and from then on a receipt (`identity-storage.json`, which holds no key material)
 /// keeps it there, whatever mode the host runs in later. It never updates or deletes a keychain
 /// item, and never falls back to a file or a new key when the keychain fails.
@@ -173,6 +173,8 @@ public enum LinkIdentityStorageFailure: String, Error, LocalizedError, Codable, 
     /// Locked, or access would have needed someone to answer a prompt.
     case keychainLocked
     case keychainDenied
+    /// The host isn't signed with the keychain access group the Data Protection keychain needs.
+    case keychainEntitlementMissing
     case keychainUnavailable
     case identityMissing
     case invalidKey

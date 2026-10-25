@@ -10,9 +10,9 @@ protocol LinkIdentitySecretStore: Sendable {
     func insert(_ data: Data) throws
 }
 
-/// The host's companion identity in the login keychain: one generic password, never synced, under
-/// a service of Native's own, like the host's agent keys (`HostKeychain`). Only
-/// `LinkIdentityMigration` reads it, so receipts and legacy files are always checked first.
+/// The host's companion identity in the Keychain: one generic password on this device only, under a
+/// service of Native's own. Only `LinkIdentityMigration` reads it, so receipts and legacy files are
+/// always checked first.
 struct KeychainLinkKeyStore: LinkIdentitySecretStore {
     /// The exact item, derived from the host's own ID and channel. A migration receipt stores a copy
     /// to check against, but a query is never built from what a receipt says.
@@ -41,23 +41,29 @@ struct KeychainLinkKeyStore: LinkIdentitySecretStore {
 
     func insert(_ data: Data) throws {
         _ = try Self.decode(data)
-        let status = SecItemAdd(query([kSecValueData: data]) as CFDictionary, nil)
+        let status = SecItemAdd(
+            query([
+                kSecValueData: data,
+                kSecAttrAccessible: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+            ]) as CFDictionary, nil)
         // Another writer may have inserted an identity first; the migration reads it back and compares.
         if status == errSecDuplicateItem { return }
         try Self.check(status)
     }
 
-    /// The login keychain, not the Data Protection one: that needs a keychain access group
-    /// entitlement, which the host doesn't have.
+    /// The Data Protection keychain, because it is the one that honors a context without interaction:
+    /// the login keychain can show an unlock or access dialog, and a host nobody sits at would wait on
+    /// it forever. It needs a keychain access group entitlement; without one every call fails with
+    /// `keychainEntitlementMissing`, and the gateway stays off.
     func query(_ extra: [CFString: Any]) -> [CFString: Any] {
         let context = LAContext()
-        // A host nobody sits at can't answer a prompt: fail once instead, and the gateway stays off.
         context.interactionNotAllowed = true
         return [
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: reference.service,
             kSecAttrAccount: reference.account,
             kSecAttrSynchronizable: false,
+            kSecUseDataProtectionKeychain: true,
             kSecUseAuthenticationContext: context,
         ].merging(extra) { $1 }
     }
@@ -71,6 +77,7 @@ struct KeychainLinkKeyStore: LinkIdentitySecretStore {
         case errSecSuccess: return
         case errSecInteractionNotAllowed: throw LinkIdentityStorageFailure.keychainLocked
         case errSecAuthFailed, errSecUserCanceled: throw LinkIdentityStorageFailure.keychainDenied
+        case errSecMissingEntitlement: throw LinkIdentityStorageFailure.keychainEntitlementMissing
         default: throw LinkIdentityStorageFailure.keychainUnavailable
         }
     }

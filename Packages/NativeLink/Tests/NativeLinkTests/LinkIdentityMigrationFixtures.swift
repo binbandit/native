@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import NativeHostProtocol
 import Synchronization
@@ -19,6 +20,7 @@ final class LinkIdentityMigrationFixture {
     }
 
     deinit {
+        try? Self.setACL(nil, on: directory)
         try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
         try? FileManager.default.removeItem(at: directory)
     }
@@ -41,6 +43,14 @@ final class LinkIdentityMigrationFixture {
     func write(_ data: Data, to url: URL) throws {
         try data.write(to: url)
         try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+    }
+
+    /// Replaces `url`'s ACL with `entries` (`acl_from_text` lines), or clears it when nil.
+    static func setACL(_ entries: [String]?, on url: URL) throws {
+        let text = "!#acl 1\n" + (entries ?? []).map { "\($0)\n" }.joined()
+        guard let acl = acl_from_text(text) else { throw CocoaError(.fileWriteUnknown) }
+        defer { acl_free(UnsafeMutableRawPointer(acl)) }
+        guard acl_set_file(url.path, ACL_TYPE_EXTENDED, acl) == 0 else { throw CocoaError(.fileWriteNoPermission) }
     }
 
     func record() throws -> LinkIdentityMigration.Record {
