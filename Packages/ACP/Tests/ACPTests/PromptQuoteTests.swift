@@ -4,6 +4,14 @@ import Testing
 @testable import ACP
 
 struct PromptQuoteTests {
+    @Test func windowsOutputKeepsItsLineNumbers() throws {
+        let text = "first\r\n\tsecond\r\n\r\nlast"
+        let range = try #require(text.range(of: "second\r\n\r\nlast"))
+        let quote = try #require(PromptQuote(source: "Output", text: text, selection: NSRange(range, in: text)))
+        #expect(quote.lines.map(\.number) == [2, 3, 4])
+        #expect(quote.lines.map(\.text) == ["\tsecond", "", "last"])
+    }
+
     @Test func selectionUsesSourceLinesAndUnicodeOffsets() throws {
         let text = "let emoji = \"👩🏽‍💻\"\n\tfirst()\n\n\tlast()\nend()"
         let selection = try #require(text.range(of: "first()\n\n\tlast"))

@@ -32,15 +32,17 @@ public struct PromptQuote: Equatable, Sendable {
     /// Expands a nonempty UTF-16 selection to whole source lines, preserving blank lines and tabs.
     public init?(source: String, text: String, selection: NSRange, firstLine: Int = 1, side: Side = .transcript) {
         guard selection.length > 0, let range = Range(selection, in: text) else { return nil }
-        let lower = text[..<range.lowerBound].lastIndex(of: "\n").map { text.index(after: $0) } ?? text.startIndex
+        let lower =
+            text[..<range.lowerBound].lastIndex(where: \.isNewline).map { text.index(after: $0) } ?? text.startIndex
         let last = text.index(before: range.upperBound)
-        let upper = text[last...].firstIndex(of: "\n") ?? text.endIndex
-        let number = firstLine + text[..<lower].filter { $0 == "\n" }.count
+        let upper = text[last...].firstIndex(where: \.isNewline) ?? text.endIndex
+        let number = firstLine + text[..<lower].filter(\.isNewline).count
         self.init(
             source: source, side: side,
-            lines: text[lower..<upper].split(separator: "\n", omittingEmptySubsequences: false).enumerated().map {
-                Line(number: number + $0.offset, text: String($0.element))
-            })
+            lines: text[lower..<upper].split(omittingEmptySubsequences: false, whereSeparator: \.isNewline).enumerated()
+                .map {
+                    Line(number: number + $0.offset, text: String($0.element))
+                })
     }
 
     /// The shared indentation belongs to the source, not the field's inset. Sending still uses
