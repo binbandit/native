@@ -14,6 +14,7 @@ struct ProjectList<TaskAccessory: View>: View {
     @Binding var filter: TaskFilter
     let selection: SidebarSelectionModel
     let select: (SessionKey) -> Void
+    var folding: SidebarDayFolding?
 
     @AppStorage(CollapsedProjects.storageKey) private var collapsed = CollapsedProjects()
     @State private var drag = SidebarDragState()
@@ -53,7 +54,11 @@ struct ProjectList<TaskAccessory: View>: View {
                     isNarrowing && group.visible.isEmpty && model.startingTasks(in: project.id).isEmpty
                 ProjectSection(
                     project: project,
-                    sessions: group.visible,
+                    sessions: group.current,
+                    earlier: group.earlier,
+                    isEarlierExpanded: Binding(
+                        get: { group.isEarlierExpanded },
+                        set: { folding?.setExpanded(project.id, $0) }),
                     order: Self.positions(group.all),
                     position: (index, listing.groups.count),
                     isFiltered: isNarrowing,
@@ -76,6 +81,8 @@ struct ProjectList<TaskAccessory: View>: View {
         .accessibilityLabel("Project tasks")
         .contextMenu {
             if isAllInView {
+                SidebarOptionsMenu(preferences: model.sidebarPreferences)
+                Divider()
                 Button("Add Project…") { model.isAddingProject = true }
                 Menu("Filter Tasks") {
                     ForEach(SidebarFilterOption.all(filter: $filter, agents: model.agents.map(\.agent))) { option in

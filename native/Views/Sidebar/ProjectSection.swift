@@ -16,6 +16,8 @@ struct ProjectSection<TaskAccessory: View>: View {
     let project: Project
     /// The sessions to show: all of them, or those the Needs You filter keeps.
     let sessions: [SessionSummary]
+    var earlier: [SessionSummary] = []
+    var isEarlierExpanded: Binding<Bool> = .constant(false)
     /// Every session's place in the project's order, filtered out or not.
     let order: [SessionKey: Int]
     /// The project's place among the projects, and how many there are.
@@ -48,23 +50,16 @@ struct ProjectSection<TaskAccessory: View>: View {
             ForEach(starting) { task in
                 StartingTaskRow(task: task)
             }
-            ForEach(sessions) { summary in
-                let row = SidebarDragState.Item.session(summary.id, in: project.id)
-                let index = order[summary.id] ?? 0
-                SessionRow(
-                    summary: summary, canMoveUp: index > 0, canMoveDown: index < order.count - 1,
-                    accessory: taskAccessory(summary)
-                ) {
-                    select(summary.id)
-                }
-                .equatable()
-                .padding(.leading, model.isCoordinatorChild(summary.id, among: sessions) ? DS.Space.xl : 0)
-                .sidebarDraggable(row, title: model.title(for: summary), state: drag)
-                .sidebarDropTarget(row, state: drag, isActive: drag.dragged.isSession, onDrop: model.applySidebarDrop)
+            taskRows(sessions)
+            if !earlier.isEmpty {
+                SidebarEarlierDisclosure(count: earlier.count, isExpanded: isEarlierExpanded)
+                if isEarlierExpanded.wrappedValue { taskRows(earlier) }
             }
             // A project whose folder is gone or whose listing failed isn't known to be empty; its
             // problem row says why.
-            if sessions.isEmpty, starting.isEmpty, !isFiltered, !problems.contains(where: \.leavesListUnknown) {
+            if sessions.isEmpty, earlier.isEmpty, starting.isEmpty, !isFiltered,
+                !problems.contains(where: \.leavesListUnknown)
+            {
                 if model.isFindingSessions(in: project.id) {
                     FindingSessionsRow()
                 } else {
@@ -98,6 +93,23 @@ struct ProjectSection<TaskAccessory: View>: View {
         }
     }
 
+    private func taskRows(_ rows: [SessionSummary]) -> some View {
+        ForEach(rows) { summary in
+            let row = SidebarDragState.Item.session(summary.id, in: project.id)
+            let index = order[summary.id] ?? 0
+            SessionRow(
+                summary: summary, canMoveUp: index > 0, canMoveDown: index < order.count - 1,
+                accessory: taskAccessory(summary)
+            ) {
+                select(summary.id)
+            }
+            .equatable()
+            .padding(.leading, model.isCoordinatorChild(summary.id, among: sessions + earlier) ? DS.Space.xl : 0)
+            .sidebarDraggable(row, title: model.title(for: summary), state: drag)
+            .sidebarDropTarget(row, state: drag, isActive: drag.dragged.isSession, onDrop: model.applySidebarDrop)
+        }
+    }
+
     @ViewBuilder private func projectGroup<Content: View>(
         starting: Int, @ViewBuilder content: @escaping () -> Content
     ) -> some View {
@@ -107,14 +119,15 @@ struct ProjectSection<TaskAccessory: View>: View {
         let activity = isExpanded.wrappedValue ? ProjectActivity() : activity(starting: starting)
         if isAllInView {
             AllInViewProjectGroup(
-                name: project.name, isFirst: position.index == 0, isExpanded: isExpanded, taskCount: sessions.count,
+                name: project.name, isFirst: position.index == 0, isExpanded: isExpanded,
+                taskCount: sessions.count + earlier.count,
                 isRefreshing: model.refreshingProjects.contains(project.id), activity: activity,
                 note: hasNoMatches ? "No matching tasks" : nil, onNewTask: onNewTask,
                 menu: { projectMenu }, content: content)
         } else {
             ProjectGroup(
                 name: project.name, icon: iconStore.icon(for: project), isExpanded: isExpanded,
-                taskCount: sessions.count, activity: activity,
+                taskCount: sessions.count + earlier.count, activity: activity,
                 isRefreshing: model.refreshingProjects.contains(project.id),
                 note: hasNoMatches ? "No matching tasks" : nil,
                 onNewTask: onNewTask, menu: { projectMenu }, content: content)

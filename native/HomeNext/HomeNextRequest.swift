@@ -37,4 +37,11 @@ struct HomeNextRequest {
         return call.kind == .switchMode ? "Review the plan: \(call.title)" : "Allow \(call.title)?"
     }
 
+    func taskPeekID(task: SessionKey) -> TaskPeekAsk.ID? {
+        if let call, let permission = call.permission {
+            return TaskPeekAsk.ID(task: task, session: session.key, request: permission.requestID, tool: call.id)
+        }
+        return question.map { TaskPeekAsk.ID(task: task, session: session.key, request: $0.id, tool: nil) }
+    }
+
 }

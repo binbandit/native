@@ -30,7 +30,7 @@ struct NativeMenuBar: Commands {
         WhatsNewCommands(menu: menu)
         HelpCommands(menu: menu, model: model)
         FileCommands(menu: menu, showsComposeTask: model.quickEntry.isEnabled, model: model)
-        ViewCommands(menu: menu)
+        ViewCommands(menu: menu, model: model)
         AppearanceCommands(menu: menu)
         SettingsCommands(settings: settings)
         GoCommands(menu: menu)
@@ -81,12 +81,16 @@ private struct FileCommands: Commands {
 
 private struct ViewCommands: Commands {
     let menu: CommandMenuContext
+    let model: AppModel
 
     var body: some Commands {
         CommandGroup(replacing: .sidebar) {
             CommandMenuItem(.paletteShow, in: menu)
             Divider()
             CommandMenuItem(.viewToggleSidebar, in: menu)
+            if model.offersTaskPeek {
+                Menu("Sidebar") { SidebarOptionsMenu(preferences: model.sidebarPreferences) }
+            }
             CommandMenuItem(.viewToggleSubagentInspector, in: menu)
             CommandMenuItem(.viewToggleChanges, in: menu)
             if menu.context.sessionTools != nil {

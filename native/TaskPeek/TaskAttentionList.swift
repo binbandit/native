@@ -74,7 +74,7 @@ struct TaskAttentionList: View {
             isSelected: highlighted == item.id,
             ask: item.ask?.sentence ?? "The task stopped unexpectedly. Peek to continue.",
             attentionSince: item.ask?.since,
-            answersShortcut: item.ask?.id == model.oldestTaskAsk?.id && item.ask != nil,
+            answersShortcut: item.ask != nil && item.ask?.id == model.answerShortcutAsk?.id,
             askShortcut: CommandRegistry.shared.keyboardShortcut(for: .taskAnswerOldestAsk),
             projectName: model.projects.project(item.summary.project)?.name,
             action: { model.peekTask(item.id, ask: item.ask) }

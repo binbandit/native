@@ -34,14 +34,20 @@ private struct HomeNextChecks {
         app.setHomeNextVisible(true)
         require(app.legacyAskShortcutEnabled(in: registry), "Home's visible ask owns Command-Y")
         require(!oldest.isAvailable(CommandContext()), "Global oldest ask cannot intercept Home's approval")
+        require(app.oldestTaskAsk != nil, "The fixture has an oldest ask for rows to advertise")
+        require(app.answerShortcutAsk == nil, "No row, on Home's page or past it, advertises Home's keystroke")
         app.peekHomeNextTask(task)
         require(app.selection == nil, "Peek leaves Home selected")
         require(app.taskPeek.request?.ask?.session === request.session, "Peek keeps the request's owner")
         require(oldest.isAvailable(CommandContext()), "Peek restores the shared global shortcut contract")
+        require(app.answerShortcutAsk?.id == app.oldestTaskAsk?.id, "Peek restores the oldest ask's keycap")
         app.closeTaskPeek()
         require(app.legacyAskShortcutEnabled(in: registry), "Dismissing Peek restores Home's shortcut")
         app.setHomeNextVisible(false)
         require(oldest.isAvailable(CommandContext()), "Leaving Home restores the global shortcut")
+        require(
+            app.answerShortcutAsk != nil && app.answerShortcutAsk?.id == app.oldestTaskAsk?.id,
+            "Leaving Home restores the oldest ask's keycap")
         app.setHomeNextVisible(true)
         guard let key = KeyShortcut("⌘Y") else { throw MissingFixture() }
         registry.assign(key, to: .sessionNew, resolving: .replace)

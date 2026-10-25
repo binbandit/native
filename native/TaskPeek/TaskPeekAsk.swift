@@ -4,7 +4,7 @@ import Foundation
 /// The request and its owner travel together. A child request is displayed at the parent's row,
 /// but is answered on the child. Capturing the request prevents a late click answering its successor.
 struct TaskPeekAsk: Identifiable {
-    struct ID: Hashable {
+    nonisolated struct ID: Hashable, Sendable {
         let task: SessionKey
         let session: SessionKey
         let request: RequestID

@@ -23,6 +23,7 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
     @Environment(\.sidebarTaskInsights) private var insights
     @FocusState private var isListFocused: Bool
     @SceneStorage("sidebar.taskFilter") private var storedFilter = ""
+    @State private var folding = SidebarDayFolding()
     @State private var selection = SidebarSelectionModel()
     @Experiment(.sidebarNext) private var usesSidebarNext
 
@@ -42,7 +43,9 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
 
     var body: some View {
         let filter = self.filter
-        let listing = SidebarListing(model: model, filter: filter, insights: insights)
+        let listing = SidebarListing(
+            model: model, filter: filter, insights: insights, folding: usesSidebarNext ? folding : nil,
+            now: DSMinuteClock.shared.now)
         VStack(alignment: .leading, spacing: 0) {
             // The primary nav group: 6pt insets, 2pt between rows.
             VStack(alignment: .leading, spacing: DS.Space.xxs) {
@@ -60,10 +63,10 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
             ScrollView {
                 ProjectList(
                     listing: listing, taskAccessory: taskAccessory, filter: filterBinding, selection: selection,
-                    select: select
+                    select: select, folding: folding
                 )
                 .environment(\.sidebarAllInView, usesSidebarNext)
-                .environment(\.oldestTaskAskID, usesSidebarNext ? model.oldestTaskAsk?.id : nil)
+                .environment(\.answerShortcutAskID, usesSidebarNext ? model.answerShortcutAsk?.id : nil)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, usesSidebarNext ? DS.Sidebar.inset : DS.Space.sm)
                 .padding(.vertical, usesSidebarNext ? 0 : DS.Space.md)
@@ -73,11 +76,11 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
             .focused($isListFocused)
             .focusEffectDisabled()
             .onKeyPress(.upArrow) {
-                model.selectSession(offset: -1)
+                model.selectSession(offset: -1, in: usesSidebarNext ? listing.order : nil)
                 return .handled
             }
             .onKeyPress(.downArrow) {
-                model.selectSession(offset: 1)
+                model.selectSession(offset: 1, in: usesSidebarNext ? listing.order : nil)
                 return .handled
             }
             .onKeyPress(.space) {
@@ -135,10 +138,23 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
         .onModifierKeysChanged(mask: [.command, .shift]) { _, modifiers in
             selection.modifiers = modifiers
         }
+        .onChange(of: model.selection, initial: true) { _, key in
+            guard usesSidebarNext, let key,
+                let group = listing.groups.first(where: { $0.earlier.contains { $0.id == key } })
+            else { return }
+            folding.setExpanded(group.project.id, true)
+        }
+        .onChange(of: listing.groups.flatMap(\.earlier).map(\.id)) {
+            guard usesSidebarNext, let key = model.selection,
+                let group = listing.groups.first(where: { $0.earlier.contains { $0.id == key } })
+            else { return }
+            folding.setExpanded(group.project.id, true)
+        }
         .onChange(of: listing.order, initial: true) { _, order in
             selection.update(order: order)
         }
         .onChange(of: filter, initial: true) { trackArchiveOrder() }
+        .onChange(of: usesSidebarNext) { trackArchiveOrder() }
         .onChange(of: insights) { trackArchiveOrder() }
         // Rows a filter hides never load their checkout, so look up what the checkout filters ask
         // about when they're turned on.
@@ -168,10 +184,11 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
         let model = model
         let filter = filter
         let insights = insights
+        let folding = usesSidebarNext ? folding : nil
         // Query live state: a rapid Undo/Redo can run before the sidebar redraws restored tasks.
         selection.setArchiveOrder { [weak model] in
             guard let model else { return [] }
-            return SidebarListing(model: model, filter: filter, insights: insights).order
+            return SidebarListing(model: model, filter: filter, insights: insights, folding: folding).order
         }
         model.setArchiveNavigationOrder(selection)
     }
