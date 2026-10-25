@@ -88,38 +88,57 @@ extension AppModel {
 
     /// Chooses one commit for every task of a brief still waiting for its worktree, so their
     /// versions differ only by the agents' work; the pair keeps it as the base to compare from.
-    /// When no commit can be chosen, every waiting task fails with the reason rather than starting
-    /// on its own, and Retry chooses again for both. Returns whether they can start.
+    /// Once a commit is chosen it stands: a later lookup (an overlapping Retry) uses it too. When
+    /// none can be chosen, every waiting task fails with the reason rather than starting on its own,
+    /// and Retry chooses again for both. Returns whether they can start.
     @discardableResult
     func pinSharedWorktreeStart(for tasks: [StartingTask]) async -> Bool {
-        let waiting = tasks.filter { $0.workspaceChoice == .newWorktree && $0.folder == nil }
-        guard let first = tasks.first, !waiting.isEmpty else { return true }
+        guard let first = tasks.first else { return true }
+        let waiting = { tasks.filter { $0.workspaceChoice == .newWorktree && $0.folder == nil } }
+        guard !waiting().isEmpty else { return true }
+        if let established = establishedStart(of: tasks) {
+            for task in waiting() { task.workspaceChoice = established }
+            return true
+        }
         do {
             guard let project = projects.project(first.project) else { throw TaskPairStartFailure.noProject }
-            let start: TaskWorkspaceChoice?
+            let looked: TaskWorkspaceChoice?
             switch first.device {
             case .thisMac:
-                start = try await taskWorkspaces?.newWorktreeStart(in: project)
+                looked = try await taskWorkspaces?.newWorktreeStart(in: project)
             case .remote(let id):
                 guard let host = hosts.host(id), let path = project.checkoutPath(on: first.device),
                     let provider = await taskWorkspaces(on: host)
                 else { throw TaskPairStartFailure.noCheckout }
-                start = try await provider.newWorktreeStart(in: project.onHost(at: path))
+                looked = try await provider.newWorktreeStart(in: project.onHost(at: path))
             }
+            // Another lookup may have settled it while this one waited; its commit is the one in use.
+            let start = establishedStart(of: tasks) ?? looked
             guard let start, case .newWorktreeFrom(let commit, _, _) = start else {
                 throw TaskPairStartFailure.noWorktrees
             }
-            for task in waiting { task.workspaceChoice = start }
+            for task in waiting() { task.workspaceChoice = start }
             taskPairs.setStart(commit, forPairContaining: first.id)
             return true
         } catch {
-            for task in waiting {
+            // A lookup that settled meanwhile already let them start.
+            if establishedStart(of: tasks) != nil { return true }
+            for task in waiting() {
                 fail(
                     task, "Couldn't choose one starting point for both tasks",
                     "\(error.localizedDescription.withoutTerminalEscapes) Retry chooses again for both.")
             }
             return false
         }
+    }
+
+    /// The commit a brief's tasks were already given, if any was.
+    private func establishedStart(of tasks: [StartingTask]) -> TaskWorkspaceChoice? {
+        for task in tasks {
+            if case .newWorktreeFrom? = task.workspaceChoice { return task.workspaceChoice }
+        }
+        return tasks.first.flatMap { taskPairs.pair(containing: $0.id)?.start }
+            .map { .newWorktreeFrom(commit: $0, branch: nil, notice: nil) }
     }
 
     /// Escape before the first task opened takes back both of the brief's tasks.

@@ -117,6 +117,29 @@ private struct TaskPairsRegression {
         try require(workspaces.lookups == 1, "The start was chosen \(workspaces.lookups) times")
         try require(
             app.taskPairs.pair(containing: pinnedFirst.id)?.start == "abc123", "The pair didn't keep its start")
+
+        // Two Retries looking up at once, answered with different commits: the first answer stands.
+        let racingFirst = StartingTask(
+            project: project.id, agent: agent, isAgentPicked: true, workspaceLabel: "Fixture")
+        let racingSecond = StartingTask(
+            project: project.id, agent: agent, isAgentPicked: false, workspaceLabel: "Fixture")
+        for task in [racingFirst, racingSecond] { task.workspaceChoice = .newWorktree }
+        app.startingTasks = [racingFirst, racingSecond]
+        app.taskPairs.add([racingFirst.id, racingSecond.id])
+        workspaces.holdsLookups = true
+        let earlier = Task { await app.pinSharedWorktreeStart(for: [racingFirst, racingSecond]) }
+        let later = Task { await app.pinSharedWorktreeStart(for: [racingSecond, racingFirst]) }
+        try await wait { workspaces.pending.count == 2 }
+        workspaces.answer(0, with: "aaa111")
+        _ = await earlier.value
+        workspaces.answer(0, with: "bbb222")
+        _ = await later.value
+        let racedStart = TaskWorkspaceChoice.newWorktreeFrom(commit: "aaa111", branch: "main", notice: nil)
+        try require(
+            racingFirst.workspaceChoice == racedStart && racingSecond.workspaceChoice == racedStart,
+            "A later lookup moved a task to another commit")
+        try require(
+            app.taskPairs.pair(containing: racingFirst.id)?.start == "aaa111", "A later lookup moved the pair's base")
     }
 
     @discardableResult
@@ -142,10 +165,18 @@ private struct TaskPairsRegression {
 @MainActor
 private final class PinningWorkspaces: TaskWorkspaceProvider {
     var lookups = 0
+    /// Held lookups wait for `answer`, oldest first.
+    var holdsLookups = false
+    var pending: [CheckedContinuation<String, Never>] = []
+
+    func answer(_ index: Int, with commit: String) {
+        pending.remove(at: index).resume(returning: commit)
+    }
 
     func newWorktreeStart(in project: Project) async throws -> TaskWorkspaceChoice? {
         lookups += 1
-        return .newWorktreeFrom(commit: "abc123", branch: "main", notice: nil)
+        let commit = holdsLookups ? await withCheckedContinuation { pending.append($0) } : "abc123"
+        return .newWorktreeFrom(commit: commit, branch: "main", notice: nil)
     }
     func workspaceOptions(in project: Project, current: URL) async throws -> [TaskWorkspaceOption] { [] }
     func workspace(for choice: TaskWorkspaceChoice, in project: Project) async throws -> URL { project.url }
