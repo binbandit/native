@@ -17,7 +17,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Same runner and Xcode defaults as check.yml, overridable with repository variables.
+  # Same Xcode default as check.yml, overridable with a repository variable. Every macOS runner, hosted
+  # or persistent, has it at this path.
   DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR || '/Applications/Xcode_27.1.app/Contents/Developer' }}
 
 jobs:
@@ -54,13 +55,14 @@ jobs:
           fi
 
   # Every package with a Tests folder, found by scripts/ci/test-packages.sh, which deals them into
-  # these shards by measured time (scripts/ci/package-test-times.txt). GitHub runs at most five macOS
-  # jobs at once, and this push also runs the Debug build and Check's two, so two shards finish
-  # sooner than more would: a third waits for a free runner. Each package's output is its own
-  # group, and a failure is annotated with the package's name.
+  # these shards by measured time (scripts/ci/package-test-times.txt). GitHub-hosted, like the iOS
+  # build: the persistent PR runners keep only the app and Release builds (docs/releasing.md, "Where
+  # CI runs"). GitHub runs at most five hosted macOS jobs at once, so a third shard would mostly wait
+  # for a free runner. Each package's output is its own group, and a failure is annotated with the
+  # package's name.
   packages:
     name: Test packages (${{ matrix.shard }}/${{ strategy.job-total }})
-    runs-on: ${{ vars.CI_MACOS_RUNNER || vars.MACOS_RUNNER || 'macos-26' }}
+    runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -68,24 +70,16 @@ jobs:
         shard: [1, 2]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Script runtime location
-        if: runner.environment == 'self-hosted'
-        run: |
-          echo "NATIVE_SCRIPT_RUNTIME_CACHE=$RUNNER_TEMP/ScriptRuntime" >> "$GITHUB_ENV"
-          echo "NATIVE_SCRIPT_RUNTIME=$RUNNER_TEMP/ScriptRuntime/native-script-runtime" >> "$GITHUB_ENV"
-      - name: Clean package build state
-        if: runner.environment == 'self-hosted'
-        run: rm -rf Packages/*/.build
+      - name: Xcode
+        run: xcodebuild -version
       - name: Cache package builds
-        if: runner.environment == 'github-hosted'
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: Packages/*/.build
           key: spm-v2-${{ runner.environment }}-${{ runner.os }}-${{ runner.arch }}-shard${{ matrix.shard }}of${{ strategy.job-total }}-${{ hashFiles('Packages/*/Package.swift', 'Packages/*/Package.resolved', 'scripts/ci/package-test-times.txt') }}
           restore-keys: spm-v2-${{ runner.environment }}-${{ runner.os }}-${{ runner.arch }}-shard${{ matrix.shard }}of${{ strategy.job-total }}-
-      # The Cargo cache Check and the release workflows save, for the ScriptRuntime package's helper.
+      # The Cargo cache Nightly and Release save, for the ScriptRuntime package's helper.
       - name: Restore the script runtime
-        if: runner.environment == 'github-hosted'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/Library/Caches/Native/ScriptRuntime
