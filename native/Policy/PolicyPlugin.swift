@@ -16,6 +16,10 @@ struct PolicyPlugin: NativePlugin {
         description: "Applies your organization's managed settings to every task."
     )
 
+    /// It only narrows sessions, or adds what the organization requires, which answers to the
+    /// MCP decision where servers are handed over (`PluginRegistry.mcpServers(for:)`).
+    var capabilities: Set<PolicyCapability>? { [] }
+
     func sessionPolicy(for session: SessionContext) -> SessionPolicy {
         launchPolicy(for: session.agent)
     }
