@@ -19,19 +19,20 @@ extension ComposerView {
     /// Sends the draft; while the agent works, queues or steers it, or saves the queued message
     /// being edited. Says what happened, or why nothing could.
     func submit(_ behavior: FollowUpBehavior) {
-        let text = session.draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = PromptQuote.trimmed(session.draft)
         let attachments = session.attachments
         guard !text.isEmpty || !attachments.isEmpty else { return }
         // `/clear` and `/goal …` are Native's own and never reach the agent, unless the user picked
-        // the agent's command of that name from the list.
-        let isAgentCommand = agentCommandDraft.map(session.draft.hasPrefix) ?? false
-        if !isAgentCommand, ClearConversationCommand.matches(session.draft) {
+        // the agent's command of that name from the list. They read the message the way the list
+        // offered them, without its quotes, and leave the quotes for the next message.
+        let message = draftText
+        let isAgentCommand = agentCommandDraft.map(message.hasPrefix) ?? false
+        if !isAgentCommand, ClearConversationCommand.matches(message) {
             clearConversation()
             return
         }
-        if !isAgentCommand, let command = GoalCommand(parsing: session.draft), let goal = automation.goal(for: session)
-        {
-            session.draft = ""
+        if !isAgentCommand, let command = GoalCommand(parsing: message), let goal = automation.goal(for: session) {
+            draftText = ""
             Task { await goal.perform(command) }
             return
         }
@@ -91,21 +92,21 @@ extension ComposerView {
         let (text, cursor) = SlashCommandQuery.draft(draftText, inserting: command)
         draftText = text
         selection = TextSelection(insertionPoint: cursor)
-        agentCommandDraft = command.isNative ? nil : session.draft
+        agentCommandDraft = command.isNative ? nil : draftText
         isFocused = true
     }
 
-    /// `/clear`: a fresh conversation in this task (AppModel+ClearConversation.swift). The draft
+    /// `/clear`: a fresh conversation in this task (AppModel+ClearConversation.swift). The message
     /// comes back if it can't start, with why.
     func clearConversation() {
-        let draft = session.draft
-        session.draft = ""
+        let message = draftText
+        draftText = ""
         Task {
             do {
                 try await app.clearConversation(of: session)
             } catch {
-                if session.draft.isEmpty {
-                    session.draft = draft
+                if draftText.isEmpty {
+                    draftText = message
                 }
                 feedback = .blocked(error.localizedDescription)
             }

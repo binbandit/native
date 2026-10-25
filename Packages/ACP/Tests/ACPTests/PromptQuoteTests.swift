@@ -52,11 +52,26 @@ struct PromptQuoteTests {
         #expect(quote.prompt.contains("45 |             send()"))
     }
 
-    @Test func quoteOnlySurvivesSubmissionWhitespaceTrimming() {
-        let quote = PromptQuote(source: "Output", lines: [.init(number: 2, text: "failure")])
-        let sent = quote.prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+    @Test(arguments: ["failure", "", "failure  "])
+    func quoteOnlySurvivesSubmissionTrimming(lastLine: String) {
+        let quote = PromptQuote(
+            source: "Output", lines: [.init(number: 1, text: "first"), .init(number: 2, text: lastLine)])
+        let sent = PromptQuote.trimmed(quote.prompt + " \n")
         #expect(PromptQuote.split(sent).quotes == [quote])
         #expect(PromptQuote.split(sent).message.isEmpty)
+        #expect(PromptQuote.trimmed(sent) == sent)
+    }
+
+    @Test func trimmingKeepsQuotesAndTrimsTheMessage() {
+        let quote = PromptQuote(source: "Output", lines: [.init(number: 2, text: "failure  ")])
+        #expect(PromptQuote.trimmed(quote.prompt + "\n Fix it. \n") == quote.prompt + "Fix it.")
+        #expect(PromptQuote.trimmed("  Fix it.\n") == "Fix it.")
+    }
+
+    @Test func emptyLastLineReadsBackAfterAPlainTrim() {
+        let quote = PromptQuote(source: "Output", lines: [.init(number: 2, text: "")])
+        let sent = quote.prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        #expect(PromptQuote.split(sent).quotes == [quote])
     }
 
     @Test func incompleteAndOrdinaryQuotesStayEditable() {

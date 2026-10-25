@@ -69,6 +69,16 @@ public struct PromptQuote: Equatable, Sendable {
         quotes.map(\.prompt).joined() + message
     }
 
+    /// Trims a prompt for sending like any other, except its leading quotes: their lines are source
+    /// text, so a quote-only prompt keeps a final blank line or trailing spaces and still reads back.
+    public static func trimmed(_ prompt: String) -> String {
+        let (quotes, message) = split(prompt)
+        let trimmedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !quotes.isEmpty else { return trimmedMessage }
+        guard trimmedMessage.isEmpty else { return draft(quotes: quotes, message: trimmedMessage) }
+        return String(quotes.map(\.prompt).joined().dropLast(2))
+    }
+
     /// Only our complete leading blocks are interpreted; incomplete or ordinary Markdown stays editable.
     public static func split(_ draft: String) -> (quotes: [Self], message: String) {
         var remaining = draft[...]
@@ -83,7 +93,9 @@ public struct PromptQuote: Equatable, Sendable {
             var lines: [Line] = []
             while rest.hasPrefix("> ") {
                 let lineEnd = rest.firstIndex(of: "\n") ?? rest.endIndex
-                let line = rest[..<lineEnd].dropFirst(2)
+                // A trim elsewhere may have taken the space after an empty last line's bar.
+                var line = rest[..<lineEnd].dropFirst(2)
+                if line.hasSuffix(" |"), !line.contains(" | ") { line += " " }
                 guard let separator = line.range(of: " | "), let number = Int(line[..<separator.lowerBound]), number > 0
                 else { break }
                 lines.append(Line(number: number, text: String(line[separator.upperBound...])))

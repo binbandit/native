@@ -107,6 +107,14 @@ public struct FileReferenceProjection: Equatable, Sendable {
         return offset + delta
     }
 
+    /// The editor's own selection in `typed`, in this draft's offsets, when the draft reads exactly as
+    /// `typed`. The editor knows where an edit happened; a text diff can't tell among repeated
+    /// characters, so `replacingDisplay`'s caret is only for edits that changed a token.
+    public func rawSelection(_ selection: Range<Int>, showing typed: String) -> Range<Int>? {
+        guard display == typed else { return nil }
+        return rawOffset(selection.lowerBound)..<rawOffset(selection.upperBound, end: !selection.isEmpty)
+    }
+
     public func replacingDisplay(with edited: String, restored: [RestoredToken] = []) -> (text: String, caret: Int) {
         let restored = restored.filter {
             $0.display.lowerBound >= 0 && $0.display.upperBound <= edited.utf8.count && !$0.display.isEmpty

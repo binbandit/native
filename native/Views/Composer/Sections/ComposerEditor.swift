@@ -152,10 +152,12 @@ struct ComposerEditor: View {
             let edit = projection.replacingDisplay(
                 with: typed, restored: ComposerFileReferenceAttribute.restoredTokens(in: styled))
             guard edit.text != text else { return }
+            let next = makeProjection(edit.text)
+            let caret = editorDisplaySelection.flatMap { next.rawSelection($0, showing: typed) }
             text = edit.text
-            projection = makeProjection(text)
+            projection = next
             styled = styledString(text)
-            select(edit.caret..<edit.caret)
+            select(caret ?? edit.caret..<edit.caret)
             editorSelectionChanged()
             return
         }
@@ -210,19 +212,23 @@ struct ComposerEditor: View {
         syncedSelection = offsets
     }
 
-    /// The editor's selection as UTF-8 offsets into its text.
+    /// The editor's selection as UTF-8 offsets into the draft.
     private var editorSelection: Range<Int>? {
+        editorDisplaySelection.map {
+            projection.rawOffset($0.lowerBound)..<projection.rawOffset($0.upperBound, end: !$0.isEmpty)
+        }
+    }
+
+    /// The editor's selection as UTF-8 offsets into the text it shows.
+    private var editorDisplaySelection: Range<Int>? {
         let offset = { (index: AttributedString.Index) in
             self.styled.utf8.distance(from: self.styled.startIndex, to: index)
         }
         switch styledSelection.indices(in: styled) {
         case .insertionPoint(let index):
-            let raw = projection.rawOffset(offset(index))
-            return raw..<raw
+            return offset(index)..<offset(index)
         case .ranges(let ranges):
-            return ranges.ranges.first.map {
-                projection.rawOffset(offset($0.lowerBound))..<projection.rawOffset(offset($0.upperBound), end: true)
-            }
+            return ranges.ranges.first.map { offset($0.lowerBound)..<offset($0.upperBound) }
         }
     }
 

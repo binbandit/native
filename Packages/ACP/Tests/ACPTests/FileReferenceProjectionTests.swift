@@ -3,6 +3,19 @@ import Testing
 @testable import ACP
 
 struct FileReferenceProjectionTests {
+    @Test func typingAmongRepeatedCharactersKeepsTheEditorCaret() throws {
+        let counts = ["a/File.swift": FileReferenceProjection.Counts(added: 6, removed: 2)]
+        let value = FileReferenceProjection("@a/File.swift     call()\n", counts: counts)
+        // A space typed right after the token's own space: the text diff puts the edit further on.
+        let typed = "File.swift +6 −2      call()\n"
+        let caret = "File.swift +6 −2  ".utf8.count
+        let edit = value.replacingDisplay(with: typed)
+        let next = FileReferenceProjection(edit.text, counts: counts)
+        #expect(edit.text == "@a/File.swift      call()\n")
+        #expect(next.rawSelection(caret..<caret, showing: typed) == 15..<15)
+        #expect(FileReferenceProjection(edit.text).rawSelection(caret..<caret, showing: typed) == nil)
+    }
+
     @Test func undoRestoresCanonicalTokenIdentity() {
         let raw = "Fix @folder/File.swift please"
         let original = FileReferenceProjection(raw, counts: ["folder/File.swift": .init(added: 6, removed: 2)])

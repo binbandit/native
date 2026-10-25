@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import NativeAutomation
 import SwiftUI
 
 @testable import Native
@@ -23,6 +24,16 @@ private struct ComposerQuoteChecks {
         session.composerMessage += " Add a test."
         require(
             session.draft == quote.prompt + "Keep it in place. Add a test.", "Message editing preserves source text")
+        let message = session.composerMessage
+        for (command, expected) in [("/clear", true), (" /goal pause ", true), ("/goals", false)] {
+            session.composerMessage = command
+            require(
+                (ClearConversationCommand.matches(session.composerMessage)
+                    || GoalCommand(parsing: session.composerMessage) == .pause) == expected,
+                "Native commands read the quote-free message: \(command)")
+            require(session.composerQuotes == [quote], "A command leaves the quotes in place: \(command)")
+        }
+        session.composerMessage = message
         let undo = UndoManager()
         undo.beginUndoGrouping()
         session.removeQuote(at: 0, undoManager: undo)
@@ -70,7 +81,7 @@ private struct ComposerQuoteChecks {
         session.quote([quote])
         require(
             session.draft == draftBeforeApproval, "Approval instructions do not hide new quotes in the ordinary draft")
-        print("PASS: quote, edit, remove, undo/redo, queue reopen, ACP payload and source ownership")
+        print("PASS: quote, edit, commands, remove, undo/redo, queue reopen, ACP payload and source ownership")
     }
 
     private static func require(_ value: @autoclosure () -> Bool, _ message: String) {
