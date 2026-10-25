@@ -76,7 +76,9 @@ public struct OfflineAdapterBundle: Codable, Equatable, Sendable {
             !bundle.adapterID.isEmpty, !bundle.adapterVersion.isEmpty,
             files["package.json"] == approval.packageJSON, files["package-lock.json"] == approval.packageLock
         else { throw Failure.invalidBundle }
-        guard bundle.os == platformOS, bundle.architecture == platformArchitecture else {
+        guard bundle.os == platformOS, bundle.architecture == platformArchitecture,
+            ["arm64", "x64"].contains(bundle.architecture)
+        else {
             throw Failure.unsupportedPlatform
         }
         guard bundle.nodeVersion == approval.nodeVersion, bundle.npmVersion == approval.npmVersion,

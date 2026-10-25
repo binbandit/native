@@ -47,7 +47,7 @@ public struct OfflineAdapterReceipt: Sendable {
                 files["package.json"] == approval.packageJSON, files["package-lock.json"] == approval.packageLock
             else { throw OfflineAdapterBundle.Failure.invalidReceipt }
             let bundle = try JSONDecoder().decode(OfflineAdapterBundle.self, from: manifest)
-            guard bundle.os == OfflineAdapterBundle.platformOS,
+            guard bundle.formatVersion == 1, bundle.os == OfflineAdapterBundle.platformOS,
                 bundle.architecture == OfflineAdapterBundle.platformArchitecture,
                 bundle.nodeVersion == approval.nodeVersion, bundle.npmVersion == approval.npmVersion,
                 bundle.agentVersion == approval.agentVersion
