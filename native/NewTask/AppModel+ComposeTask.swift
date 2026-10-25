@@ -208,12 +208,13 @@ extension AppModel {
         }
         ProjectDevicePreference.remember(task.device, for: project.id)
         Task {
+            // Both worktrees start from one commit, so the two versions differ only by their work.
+            var startsNow = true
             if let partner {
-                // Both worktrees start from one commit, so the two versions differ only by their work.
-                await pinSharedWorktreeStart(for: [task, partner])
-                Task { await start(partner) }
+                startsNow = await pinSharedWorktreeStart(for: [task, partner])
+                if startsNow { Task { await start(partner) } }
             }
-            await start(task)
+            if startsNow { await start(task) }
             if !compose.isPresented, compose.starting === task {
                 compose.editor = nil
                 compose.second = nil

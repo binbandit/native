@@ -84,6 +84,10 @@ extension AppModel {
             await restart(task.agent.id)
             guard !task.isDiscarded else { return }
         }
+        // One of a brief's tasks starts from the commit its partner does, chosen again if need be.
+        if let pair = taskPairs.pair(containing: task.id) {
+            guard await pinSharedWorktreeStart(for: pair.tasks.compactMap(startingTask)) else { return }
+        }
         await start(task)
     }
 

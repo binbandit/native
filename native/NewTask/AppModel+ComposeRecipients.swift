@@ -86,26 +86,40 @@ extension AppModel {
         return task
     }
 
-    /// Chooses one commit for every task of a brief and makes each worktree from it, so their
+    /// Chooses one commit for every task of a brief still waiting for its worktree, so their
     /// versions differ only by the agents' work; the pair keeps it as the base to compare from.
-    /// Without one (no worktrees there, or a host without the project yet), each starts on its own.
-    func pinSharedWorktreeStart(for tasks: [StartingTask]) async {
-        guard let first = tasks.first, let project = projects.project(first.project) else { return }
-        let start: TaskWorkspaceChoice?
-        switch first.device {
-        case .thisMac:
-            start = try? await taskWorkspaces?.newWorktreeStart(in: project)
-        case .remote(let id):
-            guard let host = hosts.host(id), let path = project.checkoutPath(on: first.device),
-                let provider = await taskWorkspaces(on: host)
-            else { return }
-            start = try? await provider.newWorktreeStart(in: project.onHost(at: path))
+    /// When no commit can be chosen, every waiting task fails with the reason rather than starting
+    /// on its own, and Retry chooses again for both. Returns whether they can start.
+    @discardableResult
+    func pinSharedWorktreeStart(for tasks: [StartingTask]) async -> Bool {
+        let waiting = tasks.filter { $0.workspaceChoice == .newWorktree && $0.folder == nil }
+        guard let first = tasks.first, !waiting.isEmpty else { return true }
+        do {
+            guard let project = projects.project(first.project) else { throw TaskPairStartFailure.noProject }
+            let start: TaskWorkspaceChoice?
+            switch first.device {
+            case .thisMac:
+                start = try await taskWorkspaces?.newWorktreeStart(in: project)
+            case .remote(let id):
+                guard let host = hosts.host(id), let path = project.checkoutPath(on: first.device),
+                    let provider = await taskWorkspaces(on: host)
+                else { throw TaskPairStartFailure.noCheckout }
+                start = try await provider.newWorktreeStart(in: project.onHost(at: path))
+            }
+            guard let start, case .newWorktreeFrom(let commit, _, _) = start else {
+                throw TaskPairStartFailure.noWorktrees
+            }
+            for task in waiting { task.workspaceChoice = start }
+            taskPairs.setStart(commit, forPairContaining: first.id)
+            return true
+        } catch {
+            for task in waiting {
+                fail(
+                    task, "Couldn't choose one starting point for both tasks",
+                    "\(error.localizedDescription.withoutTerminalEscapes) Retry chooses again for both.")
+            }
+            return false
         }
-        guard let start, case .newWorktreeFrom(let commit, _, _) = start else { return }
-        for task in tasks where task.workspaceChoice == .newWorktree && task.folder == nil {
-            task.workspaceChoice = start
-        }
-        taskPairs.setStart(commit, forPairContaining: first.id)
     }
 
     /// Escape before the first task opened takes back both of the brief's tasks.
@@ -114,5 +128,18 @@ extension AppModel {
             let partner = startingTask(other), partner.openedSession == nil
         else { return }
         discard(partner)
+    }
+}
+
+/// Why a brief's tasks couldn't be given one starting commit.
+enum TaskPairStartFailure: LocalizedError {
+    case noProject, noCheckout, noWorktrees
+
+    var errorDescription: String? {
+        switch self {
+        case .noProject: "The project isn't in Native any more."
+        case .noCheckout: "The device doesn't have the project checked out."
+        case .noWorktrees: "This folder can't make worktrees."
+        }
     }
 }

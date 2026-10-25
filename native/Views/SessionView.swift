@@ -61,7 +61,8 @@ struct SessionView: View {
                     task: session.clientID, quotes: session.composerQuotes,
                     selectedSource: session.quoteSelectionSource,
                     select: { session.selectQuote($1, source: $0) }, quote: session.quote,
-                    clear: { session.clearQuoteSelection(source: $0) }) : nil)
+                    clear: { session.clearQuoteSelection(source: $0) }) : nil
+        )
         .environment(\.transcriptTrailer, pairTrailer)
     }
 
