@@ -114,6 +114,7 @@ Launch arguments go after `--`: `scripts/dev/run-isolated.sh playtest --no-build
 | `-agentDefaults.claude-code.effort <id>` | Claude Code's effort; already `low` |
 | `-nativeOpenSession <agent>/<session id>` | Opens that session at launch (`docs/performance.md`) |
 | `-pluginsDirectory <folder>` | Loads plugins from there; `seed` already points it at its plugins |
+| `-experiment.<id> YES` | Turns a Labs switch on for this launch only (`NO` turns it off), e.g. `-experiment.NativeSidebarNext YES`; the id is the experiment's `id` in `native/Experiments/NativeExperiments.swift` |
 | `-nativeHostRefused YES` | Acts as if background running were refused, to see the fallback (`docs/durability.md`) |
 | `-quickEntryFixture selection` | With `NativeComposeTask` on, Cmd-N renders a Quick Entry preview state. Also accepts `empty`, `firstLaunch`, `failure`, `offline`, `narrow`, `devices`, `agents`, `projects`. Debug only; the device fixtures never connect to a paired host. Omit this argument for behavior checks. |
 | `-composeTaskFixture ready` | With `NativeComposeTask` on, Shift-Command-N renders the Compose page with inert fixture content. Also accepts `empty`, `firstLaunch`, `failure`, `offline`, `held`, `narrow`, `agents`, `devices`, `twoAgents`, `folding`, `message`, `settled`. Omit for behavior checks. |
