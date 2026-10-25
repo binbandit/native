@@ -155,58 +155,22 @@ struct MCPSessionPanel: View {
     let session: SessionModel
     let entries: [MCPSessionEntry]
     var onManage: (() -> Void)?
+    /// A page in Task Settings, whose first line already names it: no title bar, at its width.
+    var isPage = false
 
     @State private var pendingCommand: AgentCLICommand?
     @State private var note: String?
 
     var body: some View {
-        PopoverPanel(title: "MCP Servers", systemImage: "server.rack") {
-            Text(session.cwd.lastPathComponent)
-        } content: {
-            VStack(alignment: .leading, spacing: 0) {
-                if entries.isEmpty {
-                    EmptyStateView(
-                        "No MCP servers", systemImage: "server.rack",
-                        message: "\(session.agentName) loads none here, and none are set up in Native."
-                    ) {
-                        if let onManage {
-                            Button("Add a Server…", action: onManage)
-                                .buttonStyle(.ds(.secondary, size: .medium))
-                        }
-                    }
-                    .padding(DS.Space.lg)
-                } else {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 0) {
-                            ForEach(entries) { entry in
-                                row(entry)
-                            }
-                        }
-                        .padding(DS.Space.xs)
-                    }
-                    .frame(maxHeight: StatusBarMetrics.panelListHeight)
-                    .fixedSize(horizontal: false, vertical: true)
+        Group {
+            if isPage {
+                list.frame(width: DS.ComposerSettings.popoverWidth)
+            } else {
+                PopoverPanel(title: "MCP Servers", systemImage: "server.rack") {
+                    Text(session.cwd.lastPathComponent)
+                } content: {
+                    list
                 }
-                if let note {
-                    Text(note)
-                        .font(.dsCaption)
-                        .foregroundStyle(.dsTextSecondary)
-                        .padding(.horizontal, DS.Space.lg)
-                        .padding(.vertical, DS.Space.sm)
-                }
-                SeparatorLine()
-                HStack {
-                    Text("Switches apply to the next task in this folder.")
-                        .font(.dsCaption)
-                        .foregroundStyle(.dsTextTertiary)
-                    Spacer(minLength: DS.Space.md)
-                    if let onManage {
-                        Button("Manage…", action: onManage)
-                            .buttonStyle(.ds(.ghost, size: .small))
-                    }
-                }
-                .padding(.horizontal, DS.Space.lg)
-                .padding(.vertical, DS.Space.sm)
             }
         }
         .task {
@@ -215,6 +179,54 @@ struct MCPSessionPanel: View {
         }
         .sheet(item: $pendingCommand) { command in
             MCPCommandSheet(library: library, command: command, task: session)
+        }
+    }
+
+    private var list: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if entries.isEmpty {
+                EmptyStateView(
+                    "No MCP servers", systemImage: "server.rack",
+                    message: "\(session.agentName) loads none here, and none are set up in Native."
+                ) {
+                    if let onManage {
+                        Button("Add a Server…", action: onManage)
+                            .buttonStyle(.ds(.secondary, size: .medium))
+                    }
+                }
+                .padding(DS.Space.lg)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ForEach(entries) { entry in
+                            row(entry)
+                        }
+                    }
+                    .padding(DS.Space.xs)
+                }
+                .frame(maxHeight: StatusBarMetrics.panelListHeight)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            if let note {
+                Text(note)
+                    .font(.dsCaption)
+                    .foregroundStyle(.dsTextSecondary)
+                    .padding(.horizontal, DS.Space.lg)
+                    .padding(.vertical, DS.Space.sm)
+            }
+            SeparatorLine()
+            HStack {
+                Text("Switches apply to the next task in this folder.")
+                    .font(.dsCaption)
+                    .foregroundStyle(.dsTextTertiary)
+                Spacer(minLength: DS.Space.md)
+                if let onManage {
+                    Button("Manage…", action: onManage)
+                        .buttonStyle(.ds(.ghost, size: .small))
+                }
+            }
+            .padding(.horizontal, DS.Space.lg)
+            .padding(.vertical, DS.Space.sm)
         }
     }
 

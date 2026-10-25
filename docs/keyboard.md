@@ -344,7 +344,8 @@ Other file types use the platform's Quick Look preview, with its native navigati
 | ⇧⌘F | Search every task (`docs/search.md`) | Go | `search.show` |
 | ⌥⌘I | Show or hide the subagent inspector | View | `view.toggleSubagentInspector` |
 | ⌘⇧D | Show or hide the changes inspector (the task's uncommitted git changes) | View | `view.toggleChanges` |
-| ⌃⌘M | Show the task's MCP servers (the server chip beside the composer's context ring) | View | `view.mcpServers` |
+| ⌃⌘M | Show the task's MCP servers (the server chip beside the composer's context ring; with Fine print, the MCP servers page in Task Settings) | View | `view.mcpServers` |
+| | Show what fills the task's context window, even while Fine print's field hides its ring (under 70% full) | View | `view.contextUse` |
 | ⌃⌘A | Keep Mac awake: cycle Off → While agents work → On (View ▸ Keep Mac Awake) | View | `keepAwake.nextMode` |
 | | Show or hide the status bar along the window's bottom edge (on by default) | View | `statusBar.toggle` |
 
@@ -467,13 +468,26 @@ Controls ("…") menu. Each setting lists its choices with the current value che
 keys and Return to choose from the menu. Model, effort, autonomy and mode keep their dedicated
 controls, moving into More only as the row runs out of room.
 
-With Fine print (`NativeComposerNext`) enabled, the model name at the trailing edge of the
-field opens one Task Settings popover. Choose Model (⌘⇧E) opens the same popover, including
-effort, when the agent asks, MCP servers and the agent's extra settings from More. Tab reaches
-each control, Return chooses a focused option, and Escape closes the popover. Show MCP Servers
-(⌃⌘M) opens its existing panel inside this popover; Back returns to the settings. Attach Files
-(⌘U), Mode and Set Goal keep their existing commands and are available inside the popover too.
-Goal commands open the shared editor even when Task Settings is closed or showing MCP servers.
+With Fine print (`NativeComposerNext`) enabled, the field's trailing controls are, left to right:
+the context ring (only from 70% full), the Task Settings door (the model, led by the mode when it
+isn't Build), the paperclip (Attach Files, ⌘U) and Send or Stop. The door opens one Task Settings
+popover: the model and its effort, when the agent asks, then the task's rows (Mode, Goal, MCP
+servers, Web search when the agent offers it, and the agent's own settings). Choose Model (⌘⇧E)
+opens it with the current model highlighted; a click opens it with nothing highlighted until a key
+is pressed. Show MCP Servers (⌃⌘M) opens the MCP servers page in place, and goal commands open the
+goal page in place, even when Task Settings is closed. A page's first line goes back to Task
+Settings, as Escape does.
+
+| Keys in Task Settings | Action |
+| --- | --- |
+| ↑ / ↓ | Every row, top to bottom, across sections; skips headers and locked rows. The caption under a list describes the highlighted row |
+| ← / → | On Effort, change its level (applies at once). On Mode, Goal, MCP servers or the agent's own settings, → opens its page or its choices in place; ← comes back |
+| Tab / ⇧Tab | Next / previous section: Model, Effort, When it asks, the task's rows. A section lands on its current choice |
+| Letters | Up to 8 models: jump to the row whose name starts with what's typed (as in menus). 9 or more: type into the model filter, which matches names, then values |
+| Return | Choose and close. On a menu row, list its choices in place |
+| Space | Choose and keep the popover open |
+| Escape | Clear the filter; else leave a page; else close |
+| ⌘Z | Undo the last change made in the popover |
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |

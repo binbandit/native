@@ -12,8 +12,7 @@ extension SelectSetting {
 
     /// A choice's name without the agent's "(recommended)" aside, which the picker shows as a badge.
     func displayName(of choice: Choice) -> String {
-        let name = choice.name.replacing(/\s*\(recommended\)\s*$/.ignoresCase(), with: "")
-        return name.isEmpty ? choice.name : name
+        choice.displayName
     }
 
     /// A neutral note on an effort level: the agent's default is recommended, and the top level of
@@ -33,8 +32,6 @@ extension SelectSetting {
     /// A choice's one-line purpose, without the name the agent repeats at its start ("Opus 5.5 ·
     /// Best for everyday, complex tasks"); nil when it says nothing the name doesn't.
     func detail(of choice: Choice) -> String? {
-        guard let description = choice.description, description != choice.name else { return nil }
-        let prefix = "\(displayName(of: choice)) · "
-        return description.hasPrefix(prefix) ? String(description.dropFirst(prefix.count)) : description
+        choice.purpose
     }
 }

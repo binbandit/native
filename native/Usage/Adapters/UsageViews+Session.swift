@@ -5,8 +5,13 @@ import SwiftUI
 
 extension ContextIndicator where Source == SessionContextSource {
     /// The indicator for a session, reading its breakdown from the Usage plugin.
-    init(session: SessionModel, style: Style = .ring, arrowEdge: Edge = .top) {
-        self.init(source: SessionContextSource(session: session), style: style, arrowEdge: arrowEdge)
+    init(
+        session: SessionModel, style: Style = .ring, arrowEdge: Edge = .top, revealsAt: Double = 0,
+        breakdown: Binding<Bool>? = nil
+    ) {
+        self.init(
+            source: SessionContextSource(session: session), style: style, arrowEdge: arrowEdge, revealsAt: revealsAt,
+            breakdown: breakdown)
     }
 }
 
