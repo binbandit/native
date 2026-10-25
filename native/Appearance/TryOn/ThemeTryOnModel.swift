@@ -1,4 +1,3 @@
-import ACP
 import CodeThemes
 import NativePolicy
 import Observation
@@ -70,7 +69,17 @@ final class ThemeTryOnModel {
     }
 
     /// Whether Try On can open: not while an organization sets the code theme, and not twice.
-    var isAvailable: Bool { policy().appearanceCodeTheme == nil && !isActive }
+    var isAvailable: Bool { !isLockedByPolicy && !isActive }
+
+    /// Whether an organization sets the code theme, which then wins over anything tried.
+    var isLockedByPolicy: Bool { policy().appearanceCodeTheme != nil }
+
+    /// The code themes the window shows while trying; nil when Try On isn't running, and as soon as
+    /// an organization starts setting the code theme, so its theme shows before Try On has ended.
+    var previewThemes: DSCodeThemes? {
+        guard let trial, !isLockedByPolicy else { return nil }
+        return DSCodeThemes(light: trial.shown(.light), dark: trial.shown(.dark))
+    }
 
     /// Opens Try On on `task`, or on the latest task with changes when nil (from Settings), or on
     /// the sample when there's no task at all.
@@ -158,6 +167,13 @@ final class ThemeTryOnModel {
         app.selection = task
     }
 
+    /// An organization started setting the code theme mid-trial: there's nothing left to try, so Try
+    /// On ends as Cancel does, writing nothing.
+    func policyChanged() {
+        guard isActive, isLockedByPolicy else { return }
+        finish()
+    }
+
     /// Ends Try On where the user went instead (Settings, another task), writing nothing.
     func abandon() {
         guard isActive else { return }
@@ -221,15 +237,18 @@ final class ThemeTryOnModel {
             dark: defaults.string(forKey: AppearancePreferences.darkToneKey).flatMap(DSDarkTone.init) ?? .standard)
     }
 
-    /// The task whose turn ended last with changes, else the one used last; never a running one.
+    /// The latest open task with captured changes, else the latest task in the sidebar, which opens
+    /// as Try On selects it. Tasks wait unopened after a relaunch, so the sidebar's list is the source.
     private func latestTask() -> SessionKey? {
-        let tasks = app.sessions.loadedSessions
-            .filter { $0.parentID == nil && $0.origin == .user && $0.phase != .loading }
-            .sorted {
-                ($0.state.turns.last?.endedAt ?? $0.lastActivity ?? .distantPast)
-                    > ($1.state.turns.last?.endedAt ?? $1.lastActivity ?? .distantPast)
-            }
-        return (tasks.first { !GitChangesReview.previewDiffs(of: $0).isEmpty } ?? tasks.first)?.key
+        let tasks = app.sessionList
+            .map { (key: $0.id, activity: app.lastActivity(for: $0) ?? .distantPast) }
+            .sorted { $0.activity > $1.activity }
+            .map(\.key)
+        let withChanges = tasks.first { key in
+            guard let session = app.session(key), session.parentID == nil, session.origin == .user else { return false }
+            return !GitChangesReview.previewDiffs(of: session).isEmpty
+        }
+        return withChanges ?? tasks.first
     }
 
     private static func themes(_ appearance: CodeAppearance, in catalog: PluginThemeCatalog) -> [CodeTheme] {

@@ -6,7 +6,8 @@ import SwiftUI
 ///
 /// Keys (docs/keyboard.md), with focus in the list where it starts: ↑ and ↓ highlight and apply,
 /// ← and → switch between Dark mode and Light mode, typing selects by name, Return keeps and
-/// Escape cancels. Escape and ⌘. cancel from anywhere in the window.
+/// Escape cancels. Escape and ⌘. cancel from anywhere in the window (`windowCancelKeys`); on iPad,
+/// these shortcuts are how.
 struct ThemeTryOnPanel: View {
     let tryOn: ThemeTryOnModel
     @Environment(AppModel.self) private var app

@@ -51,9 +51,10 @@ private struct ThemeTryOnPreviewModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         let trial = tryOn.trial
+        let previewThemes = tryOn.previewThemes
         content
             .transformEnvironment(\.dsCodeThemes) { themes in
-                if let trial { themes = DSCodeThemes(light: trial.shown(.light), dark: trial.shown(.dark)) }
+                if let previewThemes { themes = previewThemes }
             }
             .transformEnvironment(\.dsLightTone) { tone in
                 if let trial { tone = trial.tried.backgrounds.light }

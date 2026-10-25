@@ -301,9 +301,33 @@ private struct SettingsRegression {
         tryOn.abandon()
         expect(saved() == kept && !tryOn.isActive, "Leaving for another task writes nothing")
 
+        settings.open(.appearance)
+        tryOn.start()
+        tryOn.show(.dark)
+        tryOn.highlight(CodeTheme.dracula.id)
+        expect(tryOn.previewThemes?.dark == .dracula, "The window shows the tried theme")
         policy = PolicyLoader.load(from: StaticPolicySource(managed: ["policy.appearance.codeTheme": "native"]))
+        expect(tryOn.previewThemes == nil, "A code theme policy wins over the tried theme at once")
+        tryOn.policyChanged()
+        expect(saved() == kept && !tryOn.isActive, "A code theme policy mid-trial ends Try On, writing nothing")
+        expect(settings.pane == .appearance, "Try On ended by policy returns to Appearance")
         tryOn.start()
         expect(!tryOn.isAvailable && !tryOn.isActive, "Try On stays shut while policy sets the code theme")
+
+        // After a relaunch the sidebar's tasks wait unopened; Try On still opens one, not the sample.
+        let populated = AppModel.preview(.populated)
+        let relaunched = ThemeTryOnModel(
+            app: populated, settings: SettingsPresentation(),
+            appearance: AppearanceModeController(defaults: PreviewUserDefaults()),
+            plugins: PluginRegistry(previewing: []), defaults: PreviewUserDefaults(), policy: { NativePolicy() })
+        let newest = populated.sessionList.max {
+            (populated.lastActivity(for: $0) ?? .distantPast) < (populated.lastActivity(for: $1) ?? .distantPast)
+        }
+        relaunched.start()
+        expect(
+            newest != nil && relaunched.stage == newest.map { .task($0.id) },
+            "Try On opens the latest task, opened or not: \(String(describing: relaunched.stage))")
+        expect(populated.selection == newest?.id, "Try On shows the task it opened on")
     }
 
     private static func soundChoices() async {

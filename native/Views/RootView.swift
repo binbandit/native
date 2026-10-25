@@ -42,9 +42,6 @@ struct RootView: View {
     @Environment(WhatsNewCenter.self) private var whatsNew
     /// Try On Themes, which takes the sidebar's column while it runs.
     @Environment(ThemeTryOnModel.self) private var tryOn: ThemeTryOnModel?
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// The sidebar as the user had it before Try On showed its panel there.
-    @State private var visibilityBeforeTryOn: NavigationSplitViewVisibility?
 
     init(initialSidebarVisibility: NavigationSplitViewVisibility = .all) {
         _columnVisibility = State(initialValue: initialSidebarVisibility)
@@ -71,6 +68,7 @@ struct RootView: View {
         .telemetryConsentPrompt(isTurnRunning: isAnyTurnRunning)
         .focusedSceneValue(\.sidebarVisibility, $columnVisibility)
         .focusedSceneValue(\.showsPullRequests, $showsPullRequests)
+        .themeTryOnRoot(sidebar: $columnVisibility, selection: model.selection, isSettingsShown: settings.isShown)
         // The pull requests page and a session take turns in the detail column.
         .onChange(of: showsPullRequests) { _, shows in
             if shows {
@@ -89,8 +87,6 @@ struct RootView: View {
             }
         }
         .onChange(of: model.selection) { _, key in
-            // Going to another task ends Try On there.
-            if let stage = tryOn?.stage, stage != key.map(ThemeTryOnModel.Stage.task) { tryOn?.abandon() }
             if key != model.composeTask.navigationSelection,
                 !(key != nil && key == model.composeTask.starting?.openedSession)
             {
@@ -108,18 +104,6 @@ struct RootView: View {
                 showsPullRequests = false
                 automationPage = nil
                 expeditions.isPageShown = false
-            }
-        }
-        .onChange(of: settings.isShown) { _, shown in
-            if shown { tryOn?.abandon() }
-        }
-        .onChange(of: isTryingOn) { _, trying in
-            if trying {
-                visibilityBeforeTryOn = columnVisibility
-                columnVisibility = .all
-            } else if let visibility = visibilityBeforeTryOn {
-                columnVisibility = visibility
-                visibilityBeforeTryOn = nil
             }
         }
         .onChange(of: expeditions.isPageShown) { _, shows in
@@ -246,7 +230,7 @@ struct RootView: View {
 
     private var splitView: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
-            sidebar
+            ThemeTryOnSidebar { sidebar }
                 .modifier(
                     QuickEntryScrim(
                         isPresented: model.quickEntry.isEnabled && model.quickEntry.isPresented,
@@ -267,8 +251,10 @@ struct RootView: View {
                 .navigationSplitViewColumnWidth(min: DS.Window.sidebarMinWidth, ideal: sidebarWidth.value, max: 380)
                 .toolbar {
                     // Try On's panel has the column to itself; Escape is its way out.
-                    if !isTryingOn {
-                        sidebarToolbar
+                    if tryOn?.isActive != true {
+                        RootSidebarToolbar(
+                            columnVisibility: $columnVisibility, model: model, updates: updates,
+                            isNightly: releaseChannel.isNightly)
                     }
                 }
         } detail: {
@@ -280,7 +266,7 @@ struct RootView: View {
                     HostNotices(host: durableHost, updates: updates)
                 }
             } content: {
-                detail
+                ThemeTryOnDetail { detail }
             }
             // Under every page, so the transcript and anything else without a background of its
             // own sits on the design system's background in the user's light tone, not the system's.
@@ -305,68 +291,7 @@ struct RootView: View {
         }
     }
 
-    private var isTryingOn: Bool { tryOn?.isActive == true }
-
-    @ToolbarContentBuilder
-    private var sidebarToolbar: some ToolbarContent {
-        ToolbarItem {
-            SidebarCollapseButton(isExpanded: columnVisibility != .detailOnly) {
-                withAnimation {
-                    columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
-                }
-            }
-        }
-        .sharedBackgroundVisibility(.hidden)
-        ToolbarItem {
-            TranscriptSearchToolbarButton()
-        }
-        .sharedBackgroundVisibility(.hidden)
-        if releaseChannel.isNightly {
-            ToolbarItem {
-                NightlyMark()
-                    .foregroundStyle(.dsTextTertiary)
-            }
-            .sharedBackgroundVisibility(.hidden)
-        }
-        // Pushes the toggle and search to the leading edge, next to the window controls, and
-        // back and forward to its trailing edge, by the content they navigate.
-        if columnVisibility != .detailOnly || !model.offersTaskPeek {
-            ToolbarSpacer(.flexible)
-        }
-        // The update button: right-aligned before back and forward, and still there when
-        // the sidebar is hidden. It shows only when an update needs the user.
-        if let updates, updates.showsToolbarButton {
-            ToolbarItem {
-                UpdateToolbarButton(controller: updates)
-            }
-            .sharedBackgroundVisibility(.hidden)
-        }
-        if columnVisibility != .detailOnly {
-            ToolbarItem {
-                HistoryNavigationButtons(
-                    canGoBack: model.canGoBack, canGoForward: model.canGoForward,
-                    onBack: model.goBack, onForward: model.goForward)
-            }
-            .sharedBackgroundVisibility(.hidden)
-        }
-    }
-
     private var sidebar: some View {
-        // The sidebar stays underneath, so its scroll position and picks are there afterwards.
-        ZStack {
-            taskSidebar
-                .opacity(isTryingOn ? 0 : 1)
-                .disabled(isTryingOn)
-                .accessibilityHidden(isTryingOn)
-            if let tryOn, tryOn.isActive {
-                ThemeTryOnPanel(tryOn: tryOn)
-                    .transition(.opacity)
-            }
-        }
-        .animation(reduceMotion ? nil : .dsPanel, value: isTryingOn)
-    }
-
-    private var taskSidebar: some View {
         SidebarView {
             PullRequestsNavItem(isSelected: showsPullRequests) { showsPullRequests = true }
             // Minimal by default: only when goals and workflows are on, or a run is there to see.
@@ -406,9 +331,7 @@ struct RootView: View {
 
     @ViewBuilder
     private var detail: some View {
-        if tryOn?.stage == .sample {
-            ThemeTryOnSampleTask()
-        } else if model.quickEntry.isEnabled, model.composeTask.isPresented {
+        if model.quickEntry.isEnabled, model.composeTask.isPresented {
             ComposeTaskPage(model: model, compose: model.composeTask, entry: model.quickEntry)
         } else if showsPullRequests {
             PullRequestsView()

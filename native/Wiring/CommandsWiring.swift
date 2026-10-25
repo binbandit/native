@@ -59,7 +59,11 @@ enum CommandsWiring {
         #if os(macOS)
         registry.register([.gitHubAccounts(settings: settings)])
         #endif
-        registry.register(NativeCommand.composer)
+        // Try On takes ⌘. while it runs (docs/keyboard.md), so Stop steps aside rather than ending the turn.
+        registry.register(
+            NativeCommand.composer.map { command in
+                command.id == .sessionStop ? command.stepsAside { _ in features.tryOn.isActive } : command
+            })
         registry.register(NativeCommand.clearConversation(model: model))
         registry.register([.changeAgent(model: model)])
         registry.register(NativeCommand.automation(BuiltInPlugins.automation.center))

@@ -632,7 +632,7 @@ in use. It's unavailable while an organization sets the code theme.
 | ← / → | List Dark mode's or Light mode's themes (the window shows that mode meanwhile) |
 | Typing a name | Highlight the first theme it starts ("to" for Tokyo Night) |
 | Return | Keep the highlighted themes and backgrounds, and go back |
-| Escape, ⌘. | Cancel: write nothing and go back (from anywhere in the window) |
+| Escape, ⌘. | Cancel: write nothing and go back, from anywhere in the window. The task's turn keeps running: Stop (⌘.) steps aside until Try On ends |
 
 ## Ownership
 
