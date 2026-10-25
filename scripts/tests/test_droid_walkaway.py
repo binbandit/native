@@ -140,6 +140,7 @@ def timeline(finish=1500.0, turn=1504.0, label=LABEL, connected_at_finish=False,
         {"t": 0, "type": "observer", "event": "start",
          "host": {"label": label, "channel": CHANNEL, "channelReported": CHANNEL, "build": "1"}},
         {"t": 1, "type": "link", "paired": 1, "connected": 1},
+        {"t": 899, "type": "session", "session": "s1", "run": "r1", "phase": "prompting"},
         {"t": 900, "type": "mark", "at": 900, "run": "r1", "event": "start"},
         {"t": 960, "type": "mark", "at": 960, "run": "r1", "event": "step", "step": 1},
         {"t": 1030, "type": "link", "paired": 1, "connected": 0},
@@ -216,6 +217,23 @@ class VerdictTests(unittest.TestCase):
     def test_refuses_a_timeline_from_the_installed_host(self):
         results = self.verdict(timeline(label="dev.binbandit.native.host"))
         self.assertFalse(results["development host"])
+
+    def test_refuses_another_tasks_turn_as_the_fixtures(self):
+        records = timeline()
+        for record in records:
+            if record.get("kind") == "turnFinished":
+                record["session"] = "other-task"
+        later = records + [{"t": 2200, "type": "activity", "at": 2200, "kind": "turnFinished", "session": "s1"}]
+        self.assertFalse(self.verdict(records)["turn ended while asleep"])
+        self.assertFalse(self.verdict(later)["turn ended while asleep"])
+
+    def test_refuses_a_reconnection_before_the_turn_ended(self):
+        records = timeline(turn=1520) + [
+            {"t": 1505, "type": "link", "paired": 1, "connected": 1},
+            {"t": 1515, "type": "link", "paired": 1, "connected": 0},
+        ]
+        records.sort(key=lambda record: record["t"])
+        self.assertFalse(self.verdict(records)["Mac back after the wake"])
 
     def test_refuses_when_the_mac_was_connected_at_the_finish(self):
         self.assertFalse(self.verdict(timeline(connected_at_finish=True))["Mac away at the finish"])
@@ -342,6 +360,8 @@ class ObserverTests(HomeTestCase):
         self.assertEqual([record["connected"] for record in records if record["type"] == "link"], [1, 0])
         session = next(record for record in records if record["type"] == "session")
         self.assertEqual(session["title"], "generated")
+        # The fixture names its run with the same hash of the folder it runs in.
+        self.assertEqual(session["run"], walkaway.short("/secret/path"))
         for private in ("/secret/path", "A private title", "Someone's Mac", "/private/path"):
             self.assertNotIn(private, text)
 

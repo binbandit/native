@@ -351,6 +351,10 @@ def host_command(args) -> int:
             return 1
     elif args.action == "stop":
         launchctl("bootout", host.domain_label)
+        for _ in range(25):
+            if launchctl("print", host.domain_label).returncode != 0:
+                break
+            time.sleep(0.2)
     listed = launchctl("print", host.domain_label)
     pid = re.search(r"^\s*pid = (\d+)", listed.stdout, re.MULTILINE)
     print(f"label {host.label}\nchannel {host.channel}\nfolder {host.directory}")
@@ -420,8 +424,12 @@ def title_source(summary: dict) -> str:
 
 
 def session_record(summary: dict) -> dict:
+    # The fixture names its run by the same hash of its folder, which is the session's: that's how
+    # the verdict tells the fixture's own session from any other task on the host.
+    folder = (summary.get("cwd") or "").rstrip("/")
     return {
         "session": short(summary.get("id")),
+        "run": short(folder),
         "agent": summary.get("agentID"),
         "phase": summary.get("phase"),
         "needsApproval": bool(summary.get("needsApproval")),
@@ -702,19 +710,23 @@ def assess(timeline: list, record: dict | None, run: str | None = None) -> list:
           f"the wake, margin {margin:.1f} s")
     check("fixture result", finished.get("result") == "pass", f"result {finished.get('result')}")
 
+    # Only the fixture's own session's turn counts, not another task's on the same host.
+    sessions = {entry.get("session") for entry in timeline
+                if entry.get("type") == "session" and entry.get("run") == run}
     turns = [entry for entry in timeline if entry.get("type") == "activity" and entry.get("kind") == "turnFinished"
-             and entry.get("at", 0) >= at - 1]
+             and entry.get("session") in sessions and entry.get("at", 0) >= at - 1]
     turn_at = turns[0]["at"] if turns else None
     check("turn ended while asleep", turn_at is not None and sleep_start < turn_at < sleep_end,
-          f"turnFinished {turn_at - at:.0f} s after the result" if turn_at else "no turnFinished after the result")
+          f"its session's turnFinished {turn_at - at:.0f} s after the result" if turn_at
+          else "no turnFinished from the fixture's session after the result")
 
     links = [entry for entry in timeline if entry.get("type") == "link"]
     before = [entry for entry in links if entry["t"] <= at]
     check("Mac away at the finish", bool(before) and before[-1].get("connected") == 0,
           f"{before[-1].get('connected')} devices connected" if before else "no connection record before the finish")
-    last_end = turn_at or at
-    reconnected = [entry for entry in links if entry["t"] > last_end and entry.get("connected", 0) > 0]
-    # A connection before the wake would mean the Mac talked to the host while it was meant to be asleep.
+    # From the result on, a connection before the wake means the Mac talked to the host while it was
+    # meant to be asleep (a maintenance wake), so the catch-up wasn't the wake's.
+    reconnected = [entry for entry in links if entry["t"] > at and entry.get("connected", 0) > 0]
     earliest = woke + clock["offset"] - clock.get("uncertainty", 0) - 1
     check("Mac back after the wake", bool(reconnected) and reconnected[0]["t"] >= earliest,
           f"reconnected {reconnected[0]['t'] - (woke + clock['offset']):+.0f} s from the wake" if reconnected

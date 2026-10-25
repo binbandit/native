@@ -95,8 +95,10 @@ uncertainty plus a second:
 - it's a real sleep: the laptop's heartbeat or kernel record, never a stand-in;
 - the fixture worked before the sleep and during it;
 - it finished strictly after the sleep began and before the wake, with `result=pass`;
-- the host's turn ended during the sleep too;
-- the laptop was disconnected at the finish, and came back only after the wake.
+- the fixture's own session's turn ended during the sleep too (sessions are matched to fixture runs
+  by a hash of their folder);
+- the laptop was disconnected at the finish, and from then on came back only after the wake.
+  Maintenance wakes before the finish are allowed.
 
 ## Runbook
 
@@ -211,6 +213,8 @@ test is over for good, also remove `~/droid-walkaway` and the host's channel fol
 ### Stand-ins, 2026-10-25, main at 94578452
 
 Each one rehearses the run; none is the acceptance run (`verify`'s "real sleep" fails for them by design).
+They were checked with `verify` before it matched turns to the fixture's session; their timelines
+predate that record, and each run's id matches its task's folder.
 
 | Case | Result |
 | --- | --- |
