@@ -12,8 +12,9 @@
 # gets its own defaults domain and its own Application Support folder, and its host its own launchd
 # label and channel (docs/durability.md, "Development builds"): instances never share a host, a
 # socket or a store. Its task worktrees go to ~/.native/worktrees-dev/<name> instead of the real
-# ~/.native/worktrees. Codex runs `gpt-6.1-sol` unless the app arguments say otherwise. Prints the
-# instance's pid, window id and host channel, for automation scoped to it.
+# ~/.native/worktrees. New tasks start on Claude Code with Haiku at low effort unless the app
+# arguments say otherwise. Prints the instance's pid, window id and host channel, for automation
+# scoped to it.
 set -euo pipefail
 
 usage() {
@@ -149,10 +150,14 @@ if ! defaults export "$(bundle_id)" - 2>/dev/null | plutil -extract pluginChoice
     defaults write "$(bundle_id)" pluginChoices -dict-add sounds -bool NO
 fi
 defaults_args=()
-# Test sessions run Codex's cheapest model at its lowest effort, and instances are dark, so a check
-# never flashes a bright window at the person using this Mac. App arguments override each.
-[[ " ${app_args[*]-} " == *" -agentDefaults.codex.model "* ]] || defaults_args=(-agentDefaults.codex.model gpt-6.1-sol)
-[[ " ${app_args[*]-} " == *" -agentDefaults.codex.effort "* ]] || defaults_args+=(-agentDefaults.codex.effort low)
+# Test sessions run on Claude Code with its cheapest model at its lowest effort, and instances are
+# dark, so a check never flashes a bright window at the person using this Mac. App arguments override
+# each. `defaultAgent` is the last-used agent, so as an argument it applies at every launch.
+[[ " ${app_args[*]-} " == *" -defaultAgent "* ]] || defaults_args=(-defaultAgent claude-code)
+[[ " ${app_args[*]-} " == *" -agentDefaults.claude-code.model "* ]] ||
+    defaults_args+=(-agentDefaults.claude-code.model haiku)
+[[ " ${app_args[*]-} " == *" -agentDefaults.claude-code.effort "* ]] ||
+    defaults_args+=(-agentDefaults.claude-code.effort low)
 [[ " ${app_args[*]-} " == *" -appearance.mode "* ]] || defaults_args+=(-appearance.mode dark)
 [[ " ${app_args[*]-} " == *" -gitWorktreesFolder "* ]] || defaults_args+=(-gitWorktreesFolder "$worktrees")
 # In the background (-g): the instance never takes focus from whoever is using this Mac.

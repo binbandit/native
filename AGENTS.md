@@ -124,9 +124,11 @@ Release build's host takes over Brayden's real host and sessions. For release-li
 with `SWIFT_OPTIMIZATION_LEVEL=-O SWIFT_COMPILATION_MODE=wholemodule ENABLE_DEBUG_DYLIB=NO
 ENABLE_TESTABILITY=NO` and say "optimized Debug".
 
-When a check needs a real agent session, use Codex with `gpt-6.1-sol` (it's the cheapest): launch with
-`-agentDefaults.codex.model gpt-6.1-sol`, or pick it in the composer's model picker. Use another
-agent only when the behavior under test belongs to that agent (Claude Code's questions, say).
+When a check needs a real agent session, use Claude Code on Haiku at the lowest effort, and keep prompts
+tiny. `run-isolated.sh` starts new tasks that way (`-defaultAgent claude-code
+-agentDefaults.claude-code.model haiku -agentDefaults.claude-code.effort low`); otherwise pick Haiku and
+Low in the composer's model picker. Use another agent only when the behavior under test belongs to that
+agent (Codex's sandbox modes, say).
 
 ## Working on a change
 
