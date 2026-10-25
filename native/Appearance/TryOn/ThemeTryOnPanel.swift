@@ -266,7 +266,8 @@ private struct ThemeTryOnPluginHeader: View {
             Text(" · plugin").font(.dsCaption).foregroundStyle(.dsTextQuaternary)
         }
         .lineLimit(1)
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("From \(name), plugin")
         .padding(.top, DS.Space.lg)
         .padding(.bottom, DS.Space.xs)
         .padding(.leading, DS.TryOn.headerLeading)

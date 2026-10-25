@@ -314,20 +314,28 @@ private struct SettingsRegression {
         tryOn.start()
         expect(!tryOn.isAvailable && !tryOn.isActive, "Try On stays shut while policy sets the code theme")
 
-        // After a relaunch the sidebar's tasks wait unopened; Try On still opens one, not the sample.
+        // Try On lands on code: with none to recolor, from Settings or the View menu, it opens the sample.
         let populated = AppModel.preview(.populated)
-        let relaunched = ThemeTryOnModel(
+        let onTasks = ThemeTryOnModel(
             app: populated, settings: SettingsPresentation(),
             appearance: AppearanceModeController(defaults: PreviewUserDefaults()),
             plugins: PluginRegistry(previewing: []), defaults: PreviewUserDefaults(), policy: { NativePolicy() })
-        let newest = populated.sessionList.max {
-            (populated.lastActivity(for: $0) ?? .distantPast) < (populated.lastActivity(for: $1) ?? .distantPast)
-        }
-        relaunched.start()
-        expect(
-            newest != nil && relaunched.stage == newest.map { .task($0.id) },
-            "Try On opens the latest task, opened or not: \(String(describing: relaunched.stage))")
-        expect(populated.selection == newest?.id, "Try On shows the task it opened on")
+        onTasks.start()
+        expect(onTasks.stage == .sample, "With no open task showing code, Settings opens the sample")
+        onTasks.cancel()
+        let tasks = populated.sessions.loadedSessions.filter { $0.parentID == nil && $0.origin == .user }
+        guard tasks.count >= 2 else { return expect(false, "The populated preview has open tasks") }
+        let (coded, plain) = (tasks[0], tasks[1])
+        onTasks.start(on: plain.key)
+        expect(onTasks.stage == .sample, "A task in view without code opens the sample")
+        onTasks.cancel()
+        coded.previewExchange("Show it", reply: "```swift\nlet answer = 42\n```", endedAgo: 0)
+        onTasks.start()
+        expect(onTasks.stage == .task(coded.key), "Settings opens the latest task with code")
+        expect(populated.selection == coded.key, "Try On shows the task it opened on")
+        onTasks.cancel()
+        onTasks.start(on: coded.key)
+        expect(onTasks.stage == .task(coded.key), "A task in view with code is where Try On opens")
     }
 
     private static func soundChoices() async {

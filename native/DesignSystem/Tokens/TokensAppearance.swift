@@ -33,5 +33,7 @@ extension DS {
         static let controlGap: CGFloat = 10
         static let sectionGap: CGFloat = 14
         static let footerBottom: CGFloat = 14
+        /// Below this window width, Changes stays closed while Try On runs.
+        static let narrowWindowWidth: CGFloat = 960
     }
 }

@@ -16,7 +16,9 @@ struct ThemeTryOnRow: View {
             HStack(spacing: DS.TryOn.rowGap) {
                 CodeThemeChip(theme: theme, appearance: appearance)
                 Text(theme.name)
-                    .font(isHighlighted ? .dsCalloutMedium : .dsCallout)
+                    // One weight either way, so names keep their width as the highlight moves; the
+                    // fill and the Return glyph mark the highlighted row.
+                    .font(.dsCallout)
                     .foregroundStyle(isHighlighted ? Color.dsTextPrimary : .dsTextSecondary)
                     .lineLimit(1)
                 Spacer(minLength: 0)

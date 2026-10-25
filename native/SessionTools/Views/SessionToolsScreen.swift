@@ -21,6 +21,9 @@ struct SessionToolsScreen: View {
     @State private var wellLightTrigger = 0
     @Environment(GitStore.self) private var git
     @Environment(\.inspectorRoom) private var inspectorRoom
+    @Environment(\.suspendsInspectors) private var suspendsInspectors
+    /// The side tool open when a mode suspended inspectors, which opens again afterwards.
+    @State private var reopensSideTool: SessionToolID?
     @Experiment(.transcriptWidth) private var columnWidth: TranscriptWidth
     @Environment(AppModel.self) private var app
 
@@ -123,6 +126,17 @@ struct SessionToolsScreen: View {
         }
         .onChange(of: tools.openByPlace[.side]) { _, id in
             if id != nil { openSubagent = nil }
+        }
+        // Closed and opened the way the user would, so the window makes room the same way.
+        .onChange(of: suspendsInspectors) { _, suspends in
+            if suspends {
+                reopensSideTool = tools.openByPlace[.side]
+                openSubagent = nil
+                tools.close(.side)
+            } else if let id = reopensSideTool {
+                reopensSideTool = nil
+                tools.open(id)
+            }
         }
         .onChange(of: session.phase) { previous, current in
             if current == .prompting || (previous == .prompting && current == .idle) {

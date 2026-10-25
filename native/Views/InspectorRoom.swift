@@ -14,6 +14,10 @@ struct InspectorRoom {
 
 extension EnvironmentValues {
     @Entry var inspectorRoom = InspectorRoom.none
+    /// While true (a mode that takes the sidebar's column in a window too narrow for an inspector
+    /// as well, such as Try On), session views close their inspectors, and open them again once it
+    /// turns false.
+    @Entry var suspendsInspectors = false
 }
 
 /// The window's side of `InspectorRoom`: opening an inspector never widens the window, so the

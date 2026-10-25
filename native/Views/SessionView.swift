@@ -18,6 +18,9 @@ struct SessionView: View {
     /// Files dropped on the transcript, for the composer to attach.
     @State private var drops = ComposerDropInbox()
     @Environment(\.inspectorRoom) private var inspectorRoom
+    @Environment(\.suspendsInspectors) private var suspendsInspectors
+    /// Changes was open when a mode suspended inspectors, so it opens again afterwards.
+    @State private var reopensChanges = false
     @Experiment(.sessionTools) private var usesSessionTools
     @Experiment(.taskWell) private var usesTaskWell
     @Experiment(.composeTask) private var usesComposeTask
@@ -134,6 +137,16 @@ struct SessionView: View {
         }
         .onChange(of: isInspectorPresented.wrappedValue) { _, isPresented in
             if !isPresented { inspectorRoom.release() }
+        }
+        // Closed and opened the way the user would, so the window makes room the same way.
+        .onChange(of: suspendsInspectors) { _, suspends in
+            if suspends {
+                reopensChanges = showsChanges
+                withTransaction(\.disablesAnimations, true) { isInspectorPresented.wrappedValue = false }
+            } else if reopensChanges {
+                reopensChanges = false
+                showsChangesBinding.wrappedValue = true
+            }
         }
         // Another task or page took the window; the inspector went with this view.
         .onDisappear { inspectorRoom.release() }

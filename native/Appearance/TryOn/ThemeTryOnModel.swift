@@ -1,3 +1,4 @@
+import ACP
 import CodeThemes
 import NativePolicy
 import Observation
@@ -83,8 +84,9 @@ final class ThemeTryOnModel {
         return DSCodeThemes(light: trial.shown(.light), dark: trial.shown(.dark))
     }
 
-    /// Opens Try On on `task`, or on the latest task with changes when nil (from Settings), or on
-    /// the sample when there's no task at all.
+    /// Opens Try On on `task` (from the View menu), or on the latest task with code when nil (from
+    /// Settings). Either way it opens the sample instead when that task shows no code to recolor,
+    /// since arrowing through themes there would change nothing visible.
     func start(on task: SessionKey? = nil) {
         guard isAvailable else { return }
         let scheme: CodeAppearance = appearance.effectiveScheme == .dark ? .dark : .light
@@ -95,7 +97,9 @@ final class ThemeTryOnModel {
             dark: CodeTheme.ID(rawValue: stored(AppearancePreferences.darkCodeThemeKey)),
             backgrounds: storedBackgrounds)
         keptNote = nil
-        let stage = task.map(Stage.task) ?? latestTask().map(Stage.task) ?? .sample
+        let shown: SessionKey? =
+            if let task { app.session(task).map(Self.showsCode) == true ? task : nil } else { latestTask() }
+        let stage = shown.map(Stage.task) ?? .sample
         settings.close()
         if case .task(let key) = stage { app.selection = key }
         self.stage = stage
@@ -243,18 +247,30 @@ final class ThemeTryOnModel {
             dark: defaults.string(forKey: AppearancePreferences.darkToneKey).flatMap(DSDarkTone.init) ?? .standard)
     }
 
-    /// The latest open task with captured changes, else the latest task in the sidebar, which opens
-    /// as Try On selects it. Tasks wait unopened after a relaunch, so the sidebar's list is the source.
+    /// The sidebar's most recently active task that shows code, among those open.
     private func latestTask() -> SessionKey? {
-        let tasks = app.sessionList
+        app.sessionList
             .map { (key: $0.id, activity: app.lastActivity(for: $0) ?? .distantPast) }
             .sorted { $0.activity > $1.activity }
-            .map(\.key)
-        let withChanges = tasks.first { key in
-            guard let session = app.session(key), session.parentID == nil, session.origin == .user else { return false }
-            return !GitChangesReview.previewDiffs(of: session).isEmpty
+            .first { candidate in
+                guard let session = app.session(candidate.key), session.parentID == nil, session.origin == .user
+                else { return false }
+                return Self.showsCode(session)
+            }?
+            .key
+    }
+
+    /// Whether the task shows code the themes recolor: captured changes, a diff in a tool call, or a
+    /// code block in a reply. A task that isn't open yet can't be known to, so it doesn't count.
+    private static func showsCode(_ session: SessionModel) -> Bool {
+        guard GitChangesReview.previewDiffs(of: session).isEmpty else { return true }
+        return session.state.items.contains { item in
+            switch item {
+            case .message(let message): message.role == .agent && message.text.contains("```")
+            case .toolCall(let call): call.content.contains { if case .diff = $0 { true } else { false } }
+            default: false
+            }
         }
-        return withChanges ?? tasks.first
     }
 
     private static func themes(_ appearance: CodeAppearance, in catalog: PluginThemeCatalog) -> [CodeTheme] {

@@ -18,9 +18,25 @@ private struct ThemeTryOnRootModifier: ViewModifier {
     @Environment(ThemeTryOnModel.self) private var tryOn: ThemeTryOnModel?
     /// The sidebar as the user had it before Try On showed its panel there.
     @State private var sidebarBeforeTryOn: NavigationSplitViewVisibility?
+    @State private var windowWidth: CGFloat = 0
+    /// Keeps Changes closed past the end of Try On until the sidebar has stepped aside again, so it
+    /// comes back into the room it had.
+    @State private var holdsInspectors = false
+    @State private var room = PlatformWindowRoom()
 
     func body(content: Content) -> some View {
+        let isTryingOn = tryOn?.isActive == true
         content
+            // A narrow window can't hold the panel, the conversation and Changes side by side, so
+            // Changes stays closed for the duration, from before the sidebar shows.
+            .environment(
+                \.suspendsInspectors, (isTryingOn && windowWidth < DS.TryOn.narrowWindowWidth) || holdsInspectors
+            )
+            // Read while Try On isn't running: the layout it changes mustn't feed back into whether
+            // Changes fits, or the two would keep flipping each other.
+            .onGeometryChange(for: CGFloat.self, of: \.size.width) { width in
+                if !isTryingOn, !holdsInspectors { windowWidth = width }
+            }
             .onChange(of: selection) { _, key in
                 // Going to another task ends Try On there.
                 if let stage = tryOn?.stage, stage != key.map(ThemeTryOnModel.Stage.task) { tryOn?.abandon() }
@@ -32,14 +48,31 @@ private struct ThemeTryOnRootModifier: ViewModifier {
                 if locked { tryOn?.policyChanged() }
             }
             // Escape and ⌘. end Try On from anywhere in the window, never stopping the task's turn.
-            .windowCancelKeys(enabled: tryOn?.isActive == true) { tryOn?.cancel() }
-            .onChange(of: tryOn?.isActive == true) { _, trying in
+            .windowCancelKeys(enabled: isTryingOn) { tryOn?.cancel() }
+            .tracksWindowRoom(room)
+            .onChange(of: isTryingOn) { _, trying in
                 if trying {
+                    holdsInspectors = windowWidth < DS.TryOn.narrowWindowWidth
                     sidebarBeforeTryOn = sidebar
-                    sidebar = .all
-                } else if let visibility = sidebarBeforeTryOn {
-                    sidebar = visibility
+                    // Once Changes has stepped aside (it counts toward the window's minimum until it
+                    // has), so the sidebar has its room.
+                    Task {
+                        await room.waitUntil { !room.wouldGrow(adding: DS.Window.sidebarMinWidth) }
+                        if tryOn?.isActive == true { sidebar = .all }
+                    }
+                } else {
+                    let withSidebar = room.minWidth
+                    let hidesSidebar = sidebarBeforeTryOn == .detailOnly
+                    if let visibility = sidebarBeforeTryOn { sidebar = visibility }
                     sidebarBeforeTryOn = nil
+                    // Once the sidebar has stepped aside again (it counts toward the window's minimum
+                    // until it has), so Changes comes back into the room it had.
+                    Task {
+                        if hidesSidebar {
+                            await room.waitUntil { room.minWidth <= withSidebar - DS.Window.sidebarMinWidth }
+                        }
+                        holdsInspectors = false
+                    }
                 }
             }
     }

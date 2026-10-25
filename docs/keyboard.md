@@ -652,7 +652,7 @@ them one in Settings ▸ Keyboard Shortcuts.
 | | Follow the system's light or dark appearance | View | `appearance.system` |
 | | Light | View | `appearance.light` |
 | | Dark | View | `appearance.dark` |
-| | Try on code themes on the task in view (from Settings or Home, the latest task with changes) | View | `appearance.tryOn` |
+| | Try on code themes on the task in view (from Settings or Home, the latest task with code; the sample task when there is no code to show) | View | `appearance.tryOn` |
 
 Try On (Settings ▸ Appearance ▸ Try On…, or View ▸ Appearance ▸ Try On Themes…) turns the sidebar into
 the theme list and recolors the window as the highlight moves. Focus starts in the list, on the theme
