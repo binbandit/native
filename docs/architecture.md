@@ -134,7 +134,9 @@ here and on two hosts are three lookups with three answers, cached and deduplica
 `RemoteHostsWiring` hands `GitHubModel` each pairing's command runner when it makes that host's
 task workspaces. gh runs there with an empty client environment, without this Mac's PATH, account
 choice or `GH_HOST`, so the host's login shell, signed-in account and GitHub hostname apply. Which
-pull request a branch was opened for is read with the host's git. Switching accounts here leaves
+pull request a branch was opened for is read with the host's git. A paired-host row has no pull
+request badge, so `AppTaskPullRequests` starts a branch's first lookup when its pull request is
+first asked for (the row's menu); `GitHubModel`'s refreshes follow. Switching accounts here leaves
 hosts' answers alone; pairing a host again forgets its answers and drops what the old pairing was
 still answering. An offline host, a missing `runCommands` grant or gh, or a signed-out gh there
 keeps the last answer with its failure. This Mac's gh is never asked instead. Lookups are refused,

@@ -32,7 +32,7 @@ struct AppTaskPullRequests {
     }
 
     func pullRequest(of summary: SessionSummary) -> PullRequestSummary? {
-        branch(of: summary).flatMap(gitHub.pullRequest(for:))
+        branch(of: summary).flatMap(knownPullRequest(of:))
     }
 
     /// The pull request of a task on this Mac by its key: the visible one, for the commands that open
@@ -44,7 +44,7 @@ struct AppTaskPullRequests {
 
     /// The row's "Pull Request" submenu: the hover card's actions.
     func menu(of summary: SessionSummary) -> SidebarTaskMenu? {
-        guard let branch = branch(of: summary), let pullRequest = gitHub.pullRequest(for: branch) else { return nil }
+        guard let branch = branch(of: summary), let pullRequest = knownPullRequest(of: branch) else { return nil }
         let isLocal = branch.host == nil
         var items: [SidebarTaskMenu.Item] = []
         if isLocal {
@@ -68,6 +68,19 @@ struct AppTaskPullRequests {
                 })
         }
         return SidebarTaskMenu(title: "Pull Request", spokenSummary: pullRequest.spokenSummary, items: items)
+    }
+
+    /// What gh last said about a branch. A paired host's row has no badge to start its lookup (the
+    /// badge's card offers this Mac's writes), so asking starts it while there's no answer, as
+    /// `GitStore.model(for:)` starts reading a checkout; `GitHubModel`'s refreshes take it from there.
+    private func knownPullRequest(of branch: BranchReference) -> PullRequestSummary? {
+        let found = gitHub.branchPullRequest(for: branch)
+        if branch.host != nil, found == nil || found?.fetchedAt == .distantPast,
+            gitHub.branchLookupsInFlight[branch] == nil
+        {
+            Task { await gitHub.loadPullRequest(for: branch) }
+        }
+        return found?.pullRequest
     }
 
     private func branch(of key: SessionKey, project: Project.ID, cwd: String) -> BranchReference? {

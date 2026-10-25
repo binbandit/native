@@ -318,22 +318,27 @@ private struct DroidPullRequestLookupRegression {
         let local = task("local-task")
         let taskA = task("task-a")
         let taskB = task("task-b")
-        for summary in [local, taskA, taskB] {
-            await git.model(for: folder, session: summary.id).refreshNow()
-        }
+
+        // This Mac's row badge looks its branch up.
+        await git.model(for: folder, session: local.id).refreshNow()
+        guard let localBranch = tasks.branch(of: local) else { throw LookupFailure("This Mac's task has no branch") }
+        try require(await gitHub.loadPullRequest(for: localBranch) == nil, "This Mac's lookup failed")
+        // A droid's row has no badge: the sidebar reading its menu, as every row render does, is
+        // what looks it up, starting from nothing cached for any droid.
+        let insights = AppSidebarTaskInsights.make(model: app, git: git, gitHub: gitHub)
+        try require(gitHub.branchPullRequests.keys.allSatisfy { $0.host == nil }, "A droid's answer was cached early")
+        try await wait("droid A's row finds its pull request") { insights.pullRequestMenu(taskA) != nil }
+        try await wait("droid B's row finds its pull request") { insights.pullRequestMenu(taskB) != nil }
+        try require(insights.hasPullRequest(taskA) && insights.hasPullRequest(taskB), "The pull request filter missed")
 
         // One path and branch on three machines: three references, each answered by its own gh.
-        guard let localBranch = tasks.branch(of: local), let branchA = tasks.branch(of: taskA),
-            let branchB = tasks.branch(of: taskB)
-        else { throw LookupFailure("A task has no branch") }
+        guard let branchA = tasks.branch(of: taskA), let branchB = tasks.branch(of: taskB) else {
+            throw LookupFailure("A droid's task has no branch")
+        }
         try require(localBranch.host == nil && branchA.host == a.id && branchB.host == b.id, "Branches lost their host")
         try require(
             Set([localBranch, branchA, branchB].map { "\($0.directory.path)|\($0.branch)" }).count == 1,
             "The fixture's machines don't share one path and branch")
-        for branch in [localBranch, branchA, branchB] {
-            let failure = await gitHub.loadPullRequest(for: branch)
-            try require(failure == nil, "Lookup failed: \(String(describing: failure))")
-        }
         try require(tasks.pullRequest(of: local)?.number == 1, "This Mac's task got another machine's pull request")
         try require(tasks.pullRequest(of: taskA)?.number == 2, "Droid A's task didn't get droid A's pull request")
         try require(tasks.pullRequest(of: taskB)?.number == 3, "Droid B's task didn't get droid B's pull request")
@@ -468,10 +473,10 @@ private struct DroidPullRequestLookupRegression {
             "Droid A", hostID: a.id, session: "task-a", machine: Machine(pullRequest: 20, title: "After pairing again"))
         _ = try await pair(linkA2, key: keyA)
         try require(gitHub.pullRequest(for: branchA) == nil, "Pairing again kept the old pairing's answer")
-        await git.model(for: folder, session: taskA.id).refreshNow()
+        // The row asks again through the new pairing's git and gh.
+        try await wait("the new pairing answers the row") { tasks.pullRequest(of: taskA)?.number == 20 }
         try require(tasks.branch(of: taskA) == branchA, "Pairing again changed the task's branch")
-        try require(await gitHub.loadPullRequest(for: branchA) == nil, "Lookup failed after pairing again")
-        try require(tasks.pullRequest(of: taskA)?.number == 20, "Pairing again didn't ask the new pairing")
+        try require(await linkA2.lookups.count == 1, "The new pairing was asked more than once")
         try require(await linkA.runs.count == runsOnOldA, "The replaced pairing still ran commands")
         print("PASS: pairing a droid again asks the new pairing")
     }
