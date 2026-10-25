@@ -126,8 +126,8 @@ extension AppModel {
     /// agents saved in its checkouts.
     func hostConnected(_ host: RemoteHost) async {
         if let client = host.client, hosts.wiredClients.insert(ObjectIdentifier(client)).inserted {
-            // Titles for its tasks, as for this Mac's host, before any session opens on it.
-            await HostTitlesWiring.connect(self, to: client)
+            // Its tasks' titles, which it writes while this Mac is away, before any session opens on it.
+            await HostTitlesWiring.connect(self, toPaired: host)
         }
         await reattachSessions(to: host)
         await syncAgents(to: host)

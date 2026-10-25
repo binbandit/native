@@ -106,6 +106,10 @@ struct HostTitleTests {
         }
     }
 
+    /// A Mac paired with this host and allowed to manage it, as a laptop that runs tasks on a Mac
+    /// mini is: it configures titles, but isn't the host's owner.
+    static let pairedMac = ClientGrants(managePlugins: false, manageHost: true, isLocal: false)
+
     private func eventually(
         _ what: String, timeout: Duration = .seconds(15), _ condition: () throws -> Bool
     ) async throws {
@@ -279,5 +283,71 @@ struct HostTitleTests {
         #expect(host.sessions[untitled]?.titleState.isEmpty == true)
         #expect(titler.requests.isEmpty)
         await client.stop()
+    }
+
+    @Test("A paired Mac's task keeps its fallback and request while the Mac is away and the host restarts")
+    func pairedTaskWhileAway() async throws {
+        let rig = try Rig()
+        let first = try rig.host(ScriptedTitler(answer: nil))
+        try await rig.connect(to: first).stop()
+        let laptop = try await rig.connect(to: first, grants: Self.pairedMac, syncingAgents: false)
+        try await laptop.configureTitles(ConfigureTitlesParams(provider: .onDevice))
+        let prompt = "summarize the open pull requests for this repo please"
+        let session = try await rig.startTask(prompt, on: laptop)
+        await laptop.stop()
+        try await eventually("the host to wait for a client") {
+            first.clients.isEmpty && first.sessions[session]?.titleState.progress == .waitingForClient
+        }
+        let fallback = "Summarize the open pull requests for this repo…"
+        #expect(try first.store.titles()[session]?.fallback == fallback)
+        for link in first.agents.values {
+            link.endNow()
+        }
+
+        // Back after a restart, configured again as the app does on every connection: the same
+        // request, its retry unspent, answered once.
+        let second = try rig.host(ScriptedTitler(answer: nil))
+        let back = try await rig.connect(to: second, grants: Self.pairedMac, syncingAgents: false)
+        try await back.configureTitles(ConfigureTitlesParams(provider: .onDevice))
+        let waiting = try #require(try await back.sessions().first { $0.id == session }?.titles)
+        #expect(waiting.fallback == fallback)
+        #expect(waiting.request == HostTitleRequest(projectName: "project-alpha", prompt: prompt, retry: 0))
+        try await back.setSessionTitle(
+            SetSessionTitleParams(sessionID: session, title: "Open pull request summary", source: .generated))
+        try await back.setSessionTitle(SetSessionTitleParams(sessionID: session, title: "Late", source: .generated))
+        await back.stop()
+        let later = try await rig.connect(to: second, grants: Self.pairedMac, syncingAgents: false)
+        let titled = try #require(try await later.sessions().first { $0.id == session })
+        #expect(titled.titles == HostSessionTitles(generated: "Open pull request summary"))
+        await later.stop()
+    }
+
+    @Test("A pairing that may not manage the host leaves its configuration, and its tasks are still titled")
+    func restrictedPairing() async throws {
+        let rig = try Rig()
+        let titler = ScriptedTitler(answer: "Tidy the readme")
+        let host = try rig.host(titler)
+        let owner = try await rig.connect(to: host)
+        let configured = ConfigureTitlesParams(
+            provider: .onDevice,
+            instructions: HostTitleInstructions(global: "Prefer British spelling", managed: "Lead with the ticket"))
+        try await owner.configureTitles(configured)
+        await owner.stop()
+        let phone = try await rig.connect(
+            to: host, grants: ClientGrants(managePlugins: false, manageHost: false, isLocal: false),
+            syncingAgents: false)
+        await #expect(throws: RPCError.self) {
+            try await phone.configureTitles(ConfigureTitlesParams(provider: .off))
+        }
+        #expect(host.titling.configuration == configured)
+        let stored = try #require(try host.store.meta(MetaKey.titleConfiguration))
+        #expect(try JSONDecoder().decode(ConfigureTitlesParams.self, from: Data(stored.utf8)) == configured)
+
+        let session = try await rig.startTask("tidy the readme", on: phone)
+        try await eventually("the title") { host.sessions[session]?.titleState.generated != nil }
+        #expect(titler.requests.first?.instructions?.text == "Lead with the ticket")
+        try await phone.setSessionTitle(SetSessionTitleParams(sessionID: session, title: "Readme", source: .user))
+        #expect(host.sessions[session]?.displayTitle == "Readme")
+        await phone.stop()
     }
 }
