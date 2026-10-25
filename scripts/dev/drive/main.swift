@@ -45,6 +45,9 @@ let help = """
     <text> matches an accessibility identifier, else a title or label exactly, else ignoring case,
     else as part of any label, value or help text. Ties go to reading order; `find` shows the order.
     --role narrows to a role: button, textarea, textfield, checkbox, row, menuitem, statictext...
+
+    Background instances may not expose a menu bar. Stop an instance and its host with
+    scripts/dev/run-isolated.sh <name> --quit. To test app-only quitting, use key cmd+q.
     """
 
 /// A command's arguments, its options and its flags, as `Arguments` takes them.
