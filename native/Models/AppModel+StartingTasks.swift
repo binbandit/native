@@ -242,13 +242,17 @@ extension AppModel {
         let previous = workspacePreparations[project.id]
         let cleanup = Task {
             await previous?.value
+            func mayShareDevice(_ key: SessionKey) -> Bool {
+                let owner = taskActionOwner(for: key)
+                return owner == route.owner || owner == .unavailableRemote
+            }
             guard
                 !catalog.hasTask(
                     in: project.id, at: folder,
                     excluding: {
-                        deletedSessions.contains($0) || taskActionOwner(for: $0) != route.owner
+                        deletedSessions.contains($0) || !mayShareDevice($0)
                     }),
-                !sessions.open(in: folder).contains(where: { taskActionOwner(for: $0.key) == route.owner }),
+                !sessions.open(in: folder).contains(where: { mayShareDevice($0.key) }),
                 !startingTasks.contains(where: {
                     $0.device == task.device
                         && $0.folder.map { SessionFolder.isSame($0.folderPath, folder.folderPath) } == true
