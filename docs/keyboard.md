@@ -394,6 +394,7 @@ out of reach, Task ▸ Export Patch… (no default keys) stands in for the pull 
 | ⌥⌘3 | Dev (project actions) | View ▸ Tools | `taskWell.dev` |
 | ⌥⌘4 | Subagents | View ▸ Tools | `taskWell.subagents` |
 | ⌥⌘5 | Pull request | View ▸ Tools | `taskWell.pullRequest` |
+| | A plugin's tool, listed after Pull request (no default key; assign one in Settings ▸ Keyboard Shortcuts) | View ▸ Tools | `sessionTools.<tool id>` |
 | | Export the branch as a patch, where GitHub is out of reach | Task | `taskWell.exportPatch` |
 | Escape | Close the well and return focus to the task | | |
 

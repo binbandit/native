@@ -16,18 +16,19 @@ extension SettingsPane {
         order: 35,
         keywords: ["well", "changes", "terminal", "dev", "subagents", "pull request", "placement", "workbench"],
         searchEntries: {
-            TaskWellTool.allCases.map { tool in
+            SessionToolRegistry.shared.wellTools.map { tool in
                 SettingsSearchEntry(
-                    id: TaskToolsSettingsPage.rowID(tool), title: tool.title,
-                    description: TaskToolsSettingsPage.summary(of: tool), keywords: ["task tools", "well"])
+                    id: TaskToolsSettingsPage.rowID(tool), title: tool.title, description: tool.summary,
+                    keywords: ["task tools", "well"] + [tool.pluginName].compactMap { $0 })
             }
         },
         content: { TaskToolsSettingsPage() }
     )
 }
 
-/// One row per tool, in key order: a switch for a tool with one place, a pop-up for Changes,
-/// which can open beside the conversation or over it. Off means it never reaches the well.
+/// One row per tool, in key order, then plugins' tools: a switch for a tool with one place, a
+/// pop-up for one that can open beside the conversation or over it. Off means it never reaches
+/// the well.
 struct TaskToolsSettingsPage: View {
     static func rowID(_ tool: TaskWellTool) -> SettingsRowID {
         SettingsRowID("taskTools.\(tool.spec.id.rawValue)")
@@ -50,7 +51,7 @@ struct TaskToolsSettingsPage: View {
                     .help("Put every tool back where it starts")
             }
             SettingsRowGroup {
-                ForEach(TaskWellTool.allCases) { tool in
+                ForEach(registry.wellTools) { tool in
                     row(tool)
                 }
             }
@@ -60,8 +61,8 @@ struct TaskToolsSettingsPage: View {
     private func row(_ tool: TaskWellTool) -> some View {
         let places = tool.spec.places.filter { $0 != .off }
         return SettingsRow(
-            id: Self.rowID(tool), title: Text(tool.title), description: Text(Self.summary(of: tool)),
-            detail: tool == .pullRequest ? (gitHubManagement ?? managedGitHub).map { Text($0) } : nil
+            id: Self.rowID(tool), title: Text(tool.title),
+            description: tool.summary.isEmpty ? nil : Text(tool.summary), detail: detail(tool).map { Text($0) }
         ) {
             if let shortcut = CommandRegistry.shared.shortcut(for: tool.command) {
                 Text(shortcut.displayString)
@@ -84,6 +85,12 @@ struct TaskToolsSettingsPage: View {
         }
     }
 
+    /// Who added a plugin's tool, and why the pull request gives way to Export Patch.
+    private func detail(_ tool: TaskWellTool) -> String? {
+        if let plugin = tool.pluginName { return "Added by the \(plugin) plugin." }
+        return tool == .pullRequest ? gitHubManagement ?? managedGitHub : nil
+    }
+
     private func place(of tool: TaskWellTool) -> Binding<SessionToolPlace> {
         Binding(get: { registry.place(for: tool.spec) }, set: { registry.setPlace($0, for: tool.spec) })
     }
@@ -93,16 +100,6 @@ struct TaskToolsSettingsPage: View {
         guard let policy, policy.isNetworkManaged, policy.isGitHubOutOfReach
         else { return nil }
         return "This install has no route to GitHub, so the well offers Export Patch instead. \(policy.managementLine)."
-    }
-
-    static func summary(of tool: TaskWellTool) -> String {
-        switch tool {
-        case .changes: "Review and commit what the task changed. In a narrow window it takes the conversation's place."
-        case .terminal: "A shell in the task's folder, under the composer."
-        case .dev: "Your project's actions, such as a dev server, under the composer."
-        case .subagents: "The task's workers, beside the conversation."
-        case .pullRequest: "The branch's pull request and its checks."
-        }
     }
 
     private static func title(of place: SessionToolPlace) -> String {
@@ -116,7 +113,7 @@ struct TaskToolsSettingsPage: View {
 }
 
 #if DEBUG
-#Preview("Task Tools - Defaults and managed GitHub") {
+#Preview("Task Tools - Defaults, managed GitHub and a plugin's tool") {
     DSPreviewPair {
         VStack(spacing: 0) {
             TaskToolsSettingsPage(registry: SessionToolRegistry(defaults: PreviewUserDefaults()))
@@ -125,6 +122,7 @@ struct TaskToolsSettingsPage: View {
                 gitHubManagement:
                     "This install has no route to GitHub, so the well offers Export Patch instead. Managed by Northwind Federal IT · #it-help."
             )
+            TaskToolsSettingsPage(registry: TaskWellPreviewFixtures.registryWithPluginTool())
         }
         .settingsPreviewPage()
     }

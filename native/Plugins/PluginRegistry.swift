@@ -5,6 +5,7 @@ import Foundation
 import NativePolicy
 import Observation
 import Search
+import SessionTools
 import os
 
 /// The plugins Native runs with: the built-in ones plus any manifests in `~/.native/plugins`, each on
@@ -172,6 +173,18 @@ final class PluginRegistry {
     /// Enabled plugins, plus the system plugins policy admits (`SystemPlugins`).
     var enabledPlugins: [any NativePlugin] {
         contributions.enabledPlugins
+    }
+
+    /// Enabled plugins' task tools, each named for its plugin. One that would take another's id or
+    /// the workbench is left out (`SessionToolSpec.isAllowed(fromPlugin:)`).
+    var sessionTools: [SessionToolContribution] {
+        enabledPlugins.flatMap { plugin in
+            plugin.sessionTools.filter { $0.spec.isAllowed(fromPlugin: plugin.manifest.id) }.map { tool in
+                var tool = tool
+                tool.pluginName = plugin.manifest.name
+                return tool
+            }
+        }
     }
 
     /// Validated descriptions from shipped data, policy and enabled plugins.

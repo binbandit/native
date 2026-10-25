@@ -8,8 +8,11 @@ import SessionTools
 final class SessionToolRegistry {
     static let shared = SessionToolRegistry()
 
-    /// In the order their facts show.
-    private(set) var tools: [SessionToolContribution] = []
+    /// In the order their facts show: Native's own, then enabled plugins'.
+    var tools: [SessionToolContribution] { registered + pluginTools }
+    /// Enabled plugins' tools (`NativePlugin.sessionTools`), kept in step as plugins come and go.
+    private(set) var pluginTools: [SessionToolContribution] = []
+    private var registered: [SessionToolContribution] = []
     private(set) var arrangement: SessionToolArrangement {
         didSet { save() }
     }
@@ -26,11 +29,15 @@ final class SessionToolRegistry {
 
     /// Adds a tool, or replaces the one registered with its id.
     func register(_ tool: SessionToolContribution) {
-        if let index = tools.firstIndex(where: { $0.id == tool.id }) {
-            tools[index] = tool
+        if let index = registered.firstIndex(where: { $0.id == tool.id }) {
+            registered[index] = tool
         } else {
-            tools.append(tool)
+            registered.append(tool)
         }
+    }
+
+    func setPluginTools(_ tools: [SessionToolContribution]) {
+        pluginTools = tools
     }
 
     func tool(_ id: SessionToolID) -> SessionToolContribution? {

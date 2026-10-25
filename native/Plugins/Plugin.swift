@@ -53,6 +53,11 @@ protocol NativePlugin: Sendable {
     /// search covers sessions Native never loaded (docs/search.md). Nil means they're indexed as
     /// Native loads them.
     func historyReader(for agent: AgentDefinition.ID) -> (any SessionHistoryReader)?
+    /// Tools for the task screen (docs/session-tools.md, "Adding a tool"), listed in the well and
+    /// on Settings ▸ Task Tools after Native's own, with the same on and off switch and an
+    /// assignable key. Ids start with the plugin's id (`acme.board`), and a tool lives beside the
+    /// conversation or over it; others are left out. They're gone while the plugin is off.
+    var sessionTools: [SessionToolContribution] { get }
 }
 
 extension NativePlugin {
@@ -68,6 +73,7 @@ extension NativePlugin {
     var policyTranslator: (any SessionPolicyTranslator)? { nil }
     var experiments: [any ExperimentDeclaration] { [] }
     func historyReader(for agent: AgentDefinition.ID) -> (any SessionHistoryReader)? { nil }
+    var sessionTools: [SessionToolContribution] { [] }
 }
 
 // MARK: - Manifest

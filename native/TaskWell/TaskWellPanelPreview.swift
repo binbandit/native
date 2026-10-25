@@ -5,7 +5,7 @@ struct TaskWellPanelPreview: View {
     var isManaged = false
     var isRemote = false
     var isEmpty = false
-    @State private var tools = SessionToolsScreenModel()
+    @State private var tools = SessionToolsScreenModel(registry: TaskWellPreviewFixtures.registryWithPluginTool())
 
     var body: some View {
         TaskWellToolsPanel(
@@ -47,6 +47,7 @@ struct TaskWellPanelPreview: View {
                 isManaged: isManaged)
         case .subagents: TaskWellToolDetail(text: "3 workers · 2 working")
         case .pullRequest: TaskWellToolDetail(text: "#128 Open · 3 checks passed")
+        default: TaskWellToolDetail(text: "ACME-142 · In review", isRunning: true)
         }
     }
 }

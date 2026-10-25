@@ -102,7 +102,7 @@ private struct ViewCommands: Commands {
                 Menu("Tools") {
                     CommandMenuItem(.sessionToolChanges, in: menu)
                     if menu.context.sessionTools?.hasWell == true {
-                        ForEach(TaskWellTool.allCases.filter { $0 != .changes }) { tool in
+                        ForEach(SessionToolRegistry.shared.wellTools.filter { $0 != .changes }) { tool in
                             CommandMenuItem(tool.command, in: menu)
                         }
                     }

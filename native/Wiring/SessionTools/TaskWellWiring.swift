@@ -119,6 +119,8 @@ struct TaskWellWiring: View {
         case .dev: target != nil
         case .subagents: session.hasSubagents
         case .pullRequest: offersPatch || pullRequest != nil
+        // A plugin's, while its plugin is on.
+        default: tools.registry.tool(tool.id) != nil
         }
     }
 
@@ -135,6 +137,14 @@ struct TaskWellWiring: View {
         case .subagents: break
         case .pullRequest:
             if !offersPatch, let pullRequest { gitHub.open(pullRequest) }
+        default:
+            // A plugin's tool opens its pane in its place, as Changes does, or does what its fact does.
+            guard let contribution = tools.registry.tool(tool.id) else { return }
+            if contribution.pane == nil {
+                contribution.perform(SessionToolContext(session: session, screen: tools, tool: tool.id))
+            } else {
+                tools.toggle(tool.id)
+            }
         }
     }
 
@@ -162,13 +172,7 @@ struct TaskWellWiring: View {
     private func detail(_ tool: TaskWellTool) -> TaskWellToolDetail {
         switch tool {
         case .changes:
-            let fact = tools.registry.tool(.changes)?.fact(
-                SessionToolContext(session: session, screen: tools, tool: .changes))
-            var detail = TaskWellToolDetail(text: fact?.text ?? "No changes", isSelected: tools.isOpen(.changes))
-            if case .diff(let added, let removed) = fact?.accessory {
-                detail.stats = DiffStats(added: added, removed: removed)
-            }
-            return detail
+            return factDetail(.changes, whenQuiet: "No changes")
         case .terminal:
             if app.device(of: session.key).isRemote {
                 return TaskWellToolDetail(
@@ -213,7 +217,22 @@ struct TaskWellWiring: View {
             let checks = pullRequest.state == .open ? pullRequest.checks.map(ChecksIndicator.summary) : nil
             return TaskWellToolDetail(
                 text: ["#\(pullRequest.number) \(state)", checks].compactMap { $0 }.joined(separator: " · "))
+        default:
+            return factDetail(tool.id, whenQuiet: "")
         }
+    }
+
+    /// A registered tool's row says what its fact says, as the facts header would.
+    private func factDetail(_ id: SessionToolID, whenQuiet quiet: String) -> TaskWellToolDetail {
+        let fact = tools.registry.tool(id)?.fact(SessionToolContext(session: session, screen: tools, tool: id))
+        var detail = TaskWellToolDetail(text: fact?.text ?? quiet, isSelected: tools.isOpen(id))
+        switch fact?.accessory {
+        case .diff(let added, let removed): detail.stats = DiffStats(added: added, removed: removed)
+        case .working: detail.isRunning = true
+        case .failed: detail.hasFailed = true
+        case .icon, nil: break
+        }
+        return detail
     }
 }
 
