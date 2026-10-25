@@ -199,6 +199,15 @@ private struct DroidTaskRoutingRegression {
             device: .remote(secondHost.id))
         try await DraftCleanupRegression.discardDuringPreparation(
             app: app, project: project, folder: draftFolder, host: secondHost, provider: second, others: [local, first])
+        try await DraftCleanupRegression.preserveOccupied(
+            app: app, project: project, folder: folder, device: .remote(secondHost.id),
+            providers: [local, first, second])
+        let uncertain = key("uncertain-owner")
+        app.catalog.add(SessionInfo(sessionId: uncertain.id, cwd: draftFolder), for: uncertain.agent, in: project.id)
+        devices.owners[uncertain] = .unavailableRemote
+        try await DraftCleanupRegression.preserveOccupied(
+            app: app, project: project, folder: draftFolder, device: .remote(secondHost.id),
+            providers: [local, first, second])
         app.catalog.add(SessionInfo(sessionId: key("local").id, cwd: folder), for: key("local").agent, in: project.id)
         await app.archiveSession(key("second"))
         try require(

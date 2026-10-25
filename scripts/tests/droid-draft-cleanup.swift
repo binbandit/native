@@ -4,6 +4,24 @@ import Foundation
 
 @MainActor
 enum DraftCleanupRegression {
+    static func preserveOccupied(
+        app: AppModel, project: Project, folder: String, device: SessionDevice,
+        providers: [RecordingWorkspaces]
+    ) async throws {
+        guard let agent = app.plugins.agents.first else { throw RoutingFailure("Missing draft agent") }
+        let task = StartingTask(project: project.id, agent: agent, isAgentPicked: false, workspaceLabel: "Fixture")
+        task.device = device
+        task.folder = URL(filePath: folder)
+        task.ownsWorkspace = true
+        app.startingTasks.append(task)
+        app.discard(task)
+        await app.workspacePreparations[project.id]?.value
+        guard providers.allSatisfy({ $0.calls.isEmpty }) else {
+            throw RoutingFailure("Discard removed a workspace with another possible owner")
+        }
+        print("PASS: discarded draft preserves a workspace with another possible owner")
+    }
+
     static func discardDuringPreparation(
         app: AppModel, project: Project, folder: String, host: RemoteHost,
         provider: RecordingWorkspaces, others: [RecordingWorkspaces]
