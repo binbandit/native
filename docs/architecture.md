@@ -328,7 +328,7 @@ The popover lists oldest asks first, then failures; a click or Space opens the s
 in place. Answering returns to the remaining list, and resolving the last task dismisses it.
 The current task and draft stay untouched until Open Task. No second approval or status view is used.
 Slice 4 completes All in view. Read tasks at rest before today's calendar boundary fold under
-"N earlier" in each project. Active, unread, paused, limited and failed tasks stay visible;
+"N earlier" in each project. Active, unread, paused, limited, offline and failed tasks stay visible;
 coordinator families stay together. The disclosure preserves saved order. Search and history
 reveal older selected tasks, filters expose every match, and sidebar arrow/bulk/archive navigation
 excludes folded earlier tasks. Pinned tasks stay in their existing user-chosen section.

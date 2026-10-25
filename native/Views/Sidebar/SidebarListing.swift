@@ -52,6 +52,7 @@ struct SidebarListing {
                     isAtRest: status == .done || status == .idle || status == .cancelled,
                     isUnread: model.isUnread(summary.id),
                     isProtected: model.removedWorkspaces[summary.id] != nil
+                        || model.remotePlace(of: summary.id)?.host.isOnline == false
                         || (!folding.isExpanded(group.project.id)
                             && (summary.id == model.renaming || summary.id == model.taskPeek.request?.task)),
                     interval: model.sidebarPreferences.foldAfter, now: now)
