@@ -14,14 +14,15 @@ struct TaskWellTitlePopover: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            // Full-width rules between the name, its facts and who manages them, as in the open well.
+            HStack(alignment: .firstTextBaseline, spacing: DS.Space.md) {
+                label("Name")
+                nameField
+            }
+            .padding(.horizontal, DS.Space.xl)
+            .padding(.vertical, DS.Space.lg)
+            SeparatorLine()
             Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: DS.Space.md, verticalSpacing: DS.Space.md) {
-                GridRow {
-                    label("Name")
-                    nameField
-                }
-                SeparatorLine()
-                    .gridCellColumns(2)
-                    .padding(.vertical, DS.Space.xxs)
                 fact("Project", Text(facts.project))
                 if let branch = facts.branch {
                     fact("Branch", Text(branch).font(DS.TaskWell.object))
@@ -33,11 +34,12 @@ struct TaskWellTitlePopover: View {
                         "\(facts.agent)\(Text(facts.model.map { " · \($0)" } ?? "").foregroundStyle(.dsTextTertiary))"),
                     isManaged: facts.isWorkerManaged)
             }
-            .padding(DS.Space.xl)
+            .padding(.horizontal, DS.Space.xl)
+            .padding(.vertical, DS.Space.lg)
             if let management = facts.management {
                 SeparatorLine()
                 Label(management, systemImage: "lock")
-                    .font(.dsCaption)
+                    .font(DS.TaskWell.caption)
                     .foregroundStyle(.dsTextTertiary)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, DS.Space.xl)
@@ -45,6 +47,8 @@ struct TaskWellTitlePopover: View {
             }
         }
         .frame(width: DS.TaskWell.titlePanelWidth)
+        // The open well's backdrop, so their rules read the same.
+        .dsPopoverBackground()
         .onAppear {
             draft = facts.title
             isFocused = true
@@ -117,7 +121,7 @@ struct TaskWellTitlePopover: View {
                 ],
                 id: \.title
             ) { facts in
-                TaskWellTitlePopover(facts: facts, rename: { _ in }, close: {}).dsPopoverBackground()
+                TaskWellTitlePopover(facts: facts, rename: { _ in }, close: {})
             }
         }
     }
