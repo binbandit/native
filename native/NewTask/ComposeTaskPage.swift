@@ -31,7 +31,7 @@ struct ComposeTaskPage: View {
                 }
             }
             .sharedBackgroundVisibility(.hidden)
-            ToolbarItem(placement: .principal) { TaskWellLabel(content: readiness) }
+            ToolbarItem(placement: .principal) { ComposeTaskWell(model: model, compose: compose, entry: entry) }
                 .sharedBackgroundVisibility(.hidden)
             ToolbarItem {
                 if compose.stage == .writing, !entry.device.isRemote || model.composeDeviceOption?.canStart == true {
@@ -170,35 +170,6 @@ struct ComposeTaskPage: View {
     private var subtitle: String {
         [projectName, branch, entry.device.isRemote ? model.composeDeviceOption?.name : nil].compactMap { $0 }.joined(
             separator: " · ")
-    }
-    private var readiness: TaskWellContent {
-        let agent = model.quickEntryRuntime?.agent.displayName ?? compose.editor?.agentName ?? "Choose agent"
-        if compose.stage != .writing { return .init(status: .starting, agent: agent, verb: "Starting") }
-        if entry.project == nil { return .init(status: .idle, agent: agent, verb: "· Needs a folder") }
-        if model.composeDeviceOption?.canStart == false {
-            if model.composeDeviceOption?.availability == .connecting {
-                return .init(status: .starting, agent: "", verb: "Connecting to \(model.deviceName(entry.device))")
-            }
-            if model.composeDeviceOption?.availability == .online {
-                return .init(status: .needsInput, agent: "", verb: "Needs a checkout")
-            }
-            return .init(
-                status: .needsInput, agent: "",
-                verb: "Waiting for \(model.composeDeviceOption?.name ?? model.deviceName(entry.device))")
-        }
-        if let runtime = model.quickEntryRuntime, runtime.needsSignIn {
-            return .init(status: .needsInput, agent: agent, verb: "Sign in to \(agent)")
-        }
-        if model.quickEntryRuntime?.status == .starting {
-            return .init(status: .starting, agent: agent, verb: "Starting")
-        }
-        if model.quickEntryRuntime == nil {
-            return .init(status: .needsInput, agent: "", verb: "Choose an available agent")
-        }
-        if model.quickEntryRuntime?.isAvailable == false {
-            return .init(status: .needsInput, agent: agent, verb: "Needs attention")
-        }
-        return .init(status: .idle, agent: agent, verb: "· Ready")
     }
     private func loadWorkspace() async {
         #if DEBUG
