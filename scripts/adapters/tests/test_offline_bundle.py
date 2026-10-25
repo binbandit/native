@@ -2,6 +2,7 @@ import base64
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import re
 import tempfile
@@ -89,6 +90,18 @@ class OfflineBundleTests(unittest.TestCase):
                 with self.assertRaises((OSError, ValueError)):
                     self.build()
                 self.assertFalse((self.root / "output").exists())
+
+    def test_permissive_umask_keeps_tree_importable(self):
+        previous = os.umask(0o002)
+        try:
+            self.build()
+        finally:
+            os.umask(previous)
+        output = self.root / "output"
+        for path in [output, *output.rglob("*")]:
+            with self.subTest(path=str(path.relative_to(self.root))):
+                # Mirrors OfflineAdapterBundle's walk, which refuses setuid/setgid and group/world-writable entries.
+                self.assertEqual(path.stat().st_mode & 0o6022, 0)
 
     def test_existing_output_is_preserved(self):
         (self.root / "output").mkdir()

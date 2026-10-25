@@ -96,7 +96,14 @@ def build(pair, archives, output, *, adapter, version, os_name, architecture,
     try:
         for path, data in payloads.items():
             target = output / path
-            target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+            # The importer rejects group- or world-writable directories, so set each level's
+            # mode explicitly: mkdir(parents=True) leaves intermediates to the ambient umask.
+            directory = output
+            for part in Path(path).parent.parts:
+                directory = directory / part
+                if not directory.is_dir():
+                    directory.mkdir(mode=0o700)
+                    directory.chmod(0o700)
             with target.open("xb") as stream:
                 stream.write(data)
             target.chmod(0o600)
