@@ -6,10 +6,11 @@ import SwiftUI
 enum TaskPeekPreviewFixtures {
     enum State: String, CaseIterable {
         case routine, destructive, question, failure, recovering, plan, finished, resolved, long, loading, missing
+        case answerFailure
 
         var taskID: String {
             switch self {
-            case .routine, .resolved, .long: "native-1"
+            case .routine, .resolved, .long, .answerFailure: "native-1"
             case .destructive: "native-4"
             case .question: "kite-1"
             case .failure, .recovering: "pier-1"
@@ -32,6 +33,7 @@ enum TaskPeekPreviewFixtures {
         }
         if state == .loading { app.session(key)?.phase = .loading }
         if state == .recovering { app.taskPeek.isRecovering = true }
+        if state == .answerFailure { app.taskPeek.answerFailure = "The connection closed before the answer was sent." }
         let request = TaskPeekPresentation.Request(task: key, ask: app.taskAsks(for: key).first)
         if let session = app.session(key), state == .resolved {
             for call in session.permissionRequests { session.state.resolvePermission(toolCallID: call.id) }

@@ -12,6 +12,8 @@ final class TaskPeekPresentation {
     var homeIsVisible = false
     var request: Request?
     var showsAttentionList = false
+    var answerFailure: String?
+    var approvalAttempt = 0
     var isAnswering = false
     var isRecovering = false
 }

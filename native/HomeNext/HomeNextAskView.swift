@@ -68,7 +68,7 @@ struct HomeNextAskView: View {
                 showMorePlan: { model.peekHomeNextTask(task) },
                 onChoose: { answer($0, request: request, call: call) },
                 onInstruct: { text in
-                    try await request.session.instructHomeNext(text, call: call)
+                    try await request.session.instructBeforeDecliningPermission(text, call: call)
                     onReceipt(
                         HomeNextReceipt(task: task.id, title: task.title, action: "Sent your instruction", date: .now))
                 }
@@ -95,7 +95,7 @@ struct HomeNextAskView: View {
             call.kind == .switchMode
             ? (option.isRejection ? "Requested a revised plan" : "Approved the plan")
             : "\(option.isRejection ? "Rejected" : "Allowed") \(call.shellCommand ?? call.title)"
-        perform(action) { try await request.session.answerHomeNextPermission(option, call: call) }
+        perform(action) { try await request.session.respondToPermission(option, call: call) }
     }
 
     private func perform(_ action: String, operation: @escaping @MainActor () async throws -> Void) {

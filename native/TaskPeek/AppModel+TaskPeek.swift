@@ -36,11 +36,16 @@ extension AppModel {
         {
             return
         }
+        taskPeek.answerFailure = nil
+        taskPeek.approvalAttempt = 0
         taskPeek.request = .init(task: key, ask: ask)
         Task { await loadSession(key) }
     }
 
-    func closeTaskPeek() { taskPeek.request = nil }
+    func closeTaskPeek() {
+        taskPeek.request = nil
+        taskPeek.answerFailure = nil
+    }
 
     func openPeekedTask(_ key: SessionKey) {
         closeTasksNeedingAttention()
@@ -66,9 +71,18 @@ extension AppModel {
         else { return }
         let presentation = peekPresenting(ask)
         taskPeek.isAnswering = true
-        await ask.session.choose(option, forToolCall: call.id)
-        if let presentation, taskPeek.request?.id == presentation { closeTaskPeek() }
-        taskPeek.isAnswering = false
+        taskPeek.answerFailure = nil
+        defer { taskPeek.isAnswering = false }
+        do {
+            try await ask.session.respondToPermission(option, call: call)
+            if let presentation, taskPeek.request?.id == presentation { closeTaskPeek() }
+        } catch {
+            // A failed shortcut also opens the exact ask for recovery, without replacing a newer Peek.
+            guard taskPeek.request?.id == presentation else { return }
+            if presentation == nil { peekTask(ask.task, ask: ask) }
+            taskPeek.answerFailure = error.localizedDescription
+            taskPeek.approvalAttempt += 1
+        }
     }
 
     func answerTaskQuestion(_ ask: TaskPeekAsk, content: [String: JSONValue]?) async {
@@ -90,7 +104,7 @@ extension AppModel {
         let presentation = peekPresenting(ask)
         taskPeek.isAnswering = true
         defer { taskPeek.isAnswering = false }
-        try await ask.session.instructInstead(text, for: call)
+        try await ask.session.instructBeforeDecliningPermission(text, call: call)
         if let presentation, taskPeek.request?.id == presentation { closeTaskPeek() }
     }
 

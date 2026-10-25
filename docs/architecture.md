@@ -222,7 +222,9 @@ cannot reach the host stays on screen with its error and no success receipt. Fin
 with a known successful turn completion today, five at a time; unknown history is not called done.
 On Home, the sidebar's asks fold to their title. Up next and finished rows open the shared Peek;
 its Open Task action enters the conversation. Home enables Peek independently of the sidebar
-experiment. Its visible ask owns the permission shortcuts while Peek is closed.
+experiment. Its visible ask owns the permission shortcuts while Peek is closed. Home and Peek share
+acknowledgement-based permission delivery: failed answers keep the exact request and Peek open,
+and failed instructions retain their text without duplicating queued follow-ups.
 
 With every optional module off, the ask, task rows and local working status remain complete.
 Managed permission modes are attributed inside the shared approval, and a managed remote-host
@@ -380,7 +382,7 @@ feature presets, agent detail pages and the shared overnight receipt belong to l
 with Settings > Labs > Fine print, or set `experiment.NativeComposerNext` as a boolean in the
 isolated app's defaults. The rejected quiet-settings-line experiment has been removed.
 
-`AnnotatedApprovalView` in `native/Approvals` is the shared approval for the composer and future
+`AnnotatedApprovalView` in `native/Approvals` is the shared approval for the composer,
 Peek and Home hosts. `SessionApprovalView` connects it to model actions. Only the oldest request
 owns shortcuts; the primary transcript leaves its response controls to the composer while enabled.
 The ordinary composer and approvals are unchanged with the gate off.

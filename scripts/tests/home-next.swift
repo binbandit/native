@@ -16,6 +16,7 @@ private struct HomeNextChecks {
         try await routing()
         try await instructions()
         try await failedDelivery()
+        try await failedPeekDelivery()
         print("PASS: Home Peek routing, shortcut ownership, exact requests, instructions and failed delivery")
     }
 
@@ -49,11 +50,11 @@ private struct HomeNextChecks {
         guard let allow = call.permission?.options.first(where: { $0.kind == .allowOnce }) else {
             throw MissingFixture()
         }
-        try await request.session.answerHomeNextPermission(allow, call: call)
+        try await request.session.respondToPermission(allow, call: call)
         require(request.session.permissionRequests.isEmpty, "Successful acknowledgement resolves the displayed ask")
         request.session.previewPermissionRequest(command: "swift build")
         do {
-            try await request.session.answerHomeNextPermission(allow, call: call)
+            try await request.session.respondToPermission(allow, call: call)
             require(false, "A stale Home ask must fail")
         } catch {}
         require(request.session.permissionRequests.count == 1, "A stale Home answer leaves the successor intact")
@@ -67,7 +68,7 @@ private struct HomeNextChecks {
             guard let choice = beforeChange.permission?.options.first(where: { $0.kind == .allowOnce }) else {
                 throw MissingFixture()
             }
-            try await request.session.answerHomeNextPermission(choice, call: beforeChange)
+            try await request.session.respondToPermission(choice, call: beforeChange)
             require(false, "A changed command must not inherit the old approval")
         } catch {}
         require(request.session.permissionRequests.count == 1, "Changed command remains pending for fresh review")
@@ -103,7 +104,7 @@ private struct HomeNextChecks {
         else { throw MissingFixture() }
         let session = request.session
         session.draft = "Keep my separate task draft"
-        try await session.instructHomeNext("Run only the focused tests", call: call)
+        try await session.instructBeforeDecliningPermission("Run only the focused tests", call: call)
         require(session.permissionRequests.isEmpty, "Instruction declines the captured request")
         require(session.queuedPrompts.map(\.text) == ["Run only the focused tests"], "Instruction queues exactly once")
         require(session.draft == "Keep my separate task draft", "Home's instruction preserves the task draft")
@@ -122,7 +123,7 @@ private struct HomeNextChecks {
         try await session.submit("An existing follow-up", .queue)
         for _ in 0..<2 {
             do {
-                try await session.instructHomeNext("Try the focused tests", call: call)
+                try await session.instructBeforeDecliningPermission("Try the focused tests", call: call)
                 require(false, "A failed instruction must not report success")
             } catch {}
             require(session.permissionRequests.contains(call), "Failed rejection keeps the exact ask")
@@ -130,11 +131,45 @@ private struct HomeNextChecks {
                 session.queuedPrompts.map(\.text) == ["An existing follow-up"], "Retry does not duplicate instructions")
         }
         do {
-            try await session.answerHomeNextPermission(allow, call: call)
+            try await session.respondToPermission(allow, call: call)
             require(false, "A failed answer must not report success")
         } catch {}
         require(session.permissionRequests.contains(call), "Failed answer keeps the request for retry")
         require(session.draft == "Keep this draft too", "Failed delivery preserves the task draft")
+    }
+
+    static func failedPeekDelivery() async throws {
+        for instruction in [false, true] {
+            let app = HomeNextPreviewFixtures.model(.approvalFailure)
+            guard let task = app.homeNextTasks(retaining: nil).first(where: { $0.request?.kind == .approval }),
+                let request = task.request, let call = request.call,
+                let allow = call.permission?.options.first(where: { $0.kind == .allowOnce })
+            else { throw MissingFixture() }
+            let session = request.session
+            session.draft = "Keep the task draft"
+            try await session.submit("An existing follow-up", .queue)
+            app.peekHomeNextTask(task)
+            guard let peek = app.taskPeek.request, let ask = peek.ask else { throw MissingFixture() }
+            for _ in 0..<2 {
+                if instruction {
+                    do {
+                        try await app.instructTaskAsk(ask, text: "Try the focused tests")
+                        require(false, "Peek must report an instruction delivery failure")
+                    } catch {}
+                } else {
+                    await app.answerTaskAsk(ask, option: allow)
+                }
+                require(session.permissionRequests.contains(call), "Failed Peek answer keeps the exact permission")
+                require(app.taskPeek.request?.id == peek.id, "Failed Peek answer leaves its presentation open")
+                require(!app.taskPeek.isAnswering, "Failed Peek answer permits retry")
+                if !instruction {
+                    require(app.taskPeek.answerFailure != nil, "Failed Peek approval exposes a recovery error")
+                }
+                require(
+                    session.queuedPrompts.map(\.text) == ["An existing follow-up"], "Peek retry leaves no duplicates")
+                require(session.draft == "Keep the task draft", "Peek failure preserves the task draft")
+            }
+        }
     }
 
     static func require(_ condition: Bool, _ message: String) {
