@@ -52,6 +52,24 @@ struct AgentStartDiagnosticTests {
         #expect(diagnostic.fixIt?.apply(to: files[0].contents, at: diagnostic)?.contains("\"on-request\"") == true)
     }
 
+    @Test func theAssignmentsValueIsChangedNotAComment() throws {
+        let contents = "approval_policy = 'on_request' # previously \"on_request\"\n"
+        let diagnostic = try #require(AgentStartDiagnostic(locating: Self.withoutFile, in: [("/a.toml", contents)]))
+        #expect(diagnostic.column == 19)
+        #expect(
+            diagnostic.fixIt?.apply(to: contents, at: diagnostic)
+                == "approval_policy = 'on-request' # previously \"on_request\"\n")
+        // A valid value with the rejected one only in its comment isn't the line.
+        let valid = "approval_policy = \"never\" # not \"on_request\"\n"
+        #expect(AgentStartDiagnostic(locating: Self.withoutFile, in: [("/a.toml", valid)]) == nil)
+    }
+
+    @Test func overlappingDeclarationsNameOneFile() {
+        let paths = AgentStartFile.settingsPaths(
+            Self.codexSettings, home: "/fixture", environment: ["CODEX_HOME": "/fixture/.codex"], folder: "/project")
+        #expect(paths == ["/fixture/.codex/config.toml", "/project/.codex/config.toml"])
+    }
+
     @Test func aKeySetInTwoPlacesIsNotGuessed() {
         let line = "approval_policy = \"on_request\"\n"
         #expect(AgentStartDiagnostic(locating: Self.withoutFile, in: [("/a.toml", line), ("/b.toml", line)]) == nil)

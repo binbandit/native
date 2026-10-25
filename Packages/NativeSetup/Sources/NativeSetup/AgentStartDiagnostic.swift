@@ -41,11 +41,14 @@ public struct AgentStartDiagnostic: Equatable, Sendable {
         for file in files {
             let lines = file.contents.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
             for (offset, line) in lines.enumerated() {
-                let trimmed = line.drop { $0 == " " || $0 == "\t" }
-                guard trimmed.hasPrefix(key), trimmed.dropFirst(key.count).drop(while: { $0 == " " }).first == "=",
-                    let quote = ["\"\(value)\"", "'\(value)'"].lazy.compactMap({ line.range(of: $0) }).first
-                else { continue }
-                let column = line.distance(from: line.startIndex, to: quote.lowerBound) + 1
+                // `key = "value"` or `key = 'value'`: the assignment's own value, never a comment after it.
+                let afterKey = line.drop { $0 == " " || $0 == "\t" }
+                guard afterKey.hasPrefix(key) else { continue }
+                let afterEquals = afterKey.dropFirst(key.count).drop { $0 == " " || $0 == "\t" }
+                guard afterEquals.first == "=" else { continue }
+                let literal = afterEquals.dropFirst().drop { $0 == " " || $0 == "\t" }
+                guard ["\"\(value)\"", "'\(value)'"].contains(where: { literal.hasPrefix($0) }) else { continue }
+                let column = line.distance(from: line.startIndex, to: literal.startIndex) + 1
                 found.append(AgentStartDiagnostic(path: file.path, line: offset + 1, column: column, message: message))
             }
         }

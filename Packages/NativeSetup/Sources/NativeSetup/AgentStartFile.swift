@@ -15,11 +15,13 @@ public enum AgentStartFile {
     }
 
     /// The files a plugin's settings patterns name: `~/…` in `home`, `$NAME/…` in that variable's
-    /// folder (none while it's unset), and anything else in the task's `folder`.
+    /// folder (none while it's unset), and anything else in the task's `folder`. Each file once, as
+    /// first named, though two patterns or a link reach it.
     public static func settingsPaths(
         _ patterns: [String], home: String, environment: [String: String], folder: String?
     ) -> [String] {
-        patterns.compactMap { pattern -> String? in
+        var seen: Set<String> = []
+        return patterns.compactMap { pattern -> String? in
             if pattern.hasPrefix("~/") { return home + pattern.dropFirst() }
             if pattern.hasPrefix("$") {
                 let name = pattern.dropFirst().prefix { $0 != "/" }
@@ -29,6 +31,7 @@ public enum AgentStartFile {
             if pattern.hasPrefix("/") { return pattern }
             return folder.map { URL(filePath: $0).appending(path: pattern).path }
         }
+        .filter { seen.insert(URL(filePath: $0).standardizedFileURL.resolvingSymlinksInPath().path).inserted }
     }
 
     /// Whether Native may open `path` to show or change it: it's one of the `allowed` settings
