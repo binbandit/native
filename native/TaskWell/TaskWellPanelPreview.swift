@@ -10,11 +10,12 @@ struct TaskWellPanelPreview: View {
     var body: some View {
         TaskWellToolsPanel(
             content: TaskWellPreviewFixtures.states[isEmpty ? 0 : 8],
-            location: isRemote ? "native · feature/a-long-branch-name-for-wrapping-the-diff" : "native · feature/diff",
             identity: TaskWellIdentity(
                 model: "6.1 Sol", machine: isRemote ? "On Build Mac" : "On this Mac",
                 timing: isEmpty ? nil : "last turn 2m 4s", contextFraction: isEmpty ? nil : 0.41,
-                isManaged: isManaged, management: isManaged ? "Managed by Northwind Federal IT" : nil),
+                isManaged: isManaged, management: isManaged ? "Managed by Northwind Federal IT" : nil,
+                project: "native",
+                branch: isRemote ? "feature/a-long-branch-name-for-wrapping-the-diff" : "feature/diff"),
             tools: tools, detail: detail
         ) { page in
             Text(page == .dev ? "No project actions yet" : "No subagents on this task")

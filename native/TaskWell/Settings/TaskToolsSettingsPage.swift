@@ -73,7 +73,7 @@ struct TaskToolsSettingsPage: View {
                 SettingsSelect(
                     label: tool.title, selection: place(of: tool),
                     options: tool.spec.places.map { .init(value: $0, title: Self.title(of: $0)) },
-                    isDefault: registry.place(for: tool.spec) == tool.spec.defaultPlace)
+                    width: DS.Settings.wideControl, isDefault: registry.place(for: tool.spec) == tool.spec.defaultPlace)
             } else {
                 SettingsSwitch(
                     tool.title,

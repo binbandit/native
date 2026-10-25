@@ -22,7 +22,6 @@ struct SessionToolsScreen: View {
     @Environment(GitStore.self) private var git
     @Environment(\.inspectorRoom) private var inspectorRoom
     @Experiment(.transcriptWidth) private var columnWidth: TranscriptWidth
-    @Environment(AppModel.self) private var app
 
     private var registry: SessionToolRegistry { tools.registry }
 
@@ -87,7 +86,7 @@ struct SessionToolsScreen: View {
             if usesTaskWell {
                 ToolbarItem(placement: .principal) {
                     TaskWellWiring(
-                        session: session, tools: tools, location: location, turnChanges: turnChanges,
+                        session: session, tools: tools, turnChanges: turnChanges,
                         isCompact: isWellCompact, openSubagents: toggleWellSubagents)
                 }
                 .sharedBackgroundVisibility(.hidden)
@@ -208,6 +207,7 @@ struct SessionToolsScreen: View {
     private func recordActions(_ actions: TurnChangesActions?) -> TurnChangesActions? {
         guard usesTaskWell, var actions else { return actions }
         actions.isRecordOnly = true
+        actions.isReviewing = tools.isOpen(.changes)
         actions.commitForm = nil
         return actions
     }
@@ -291,9 +291,9 @@ struct SessionToolsScreen: View {
     /// The task's branch, else its folder, at the head of the facts.
     private var location: String {
         guard case .branch(let name)? = git.model(for: session.cwd, session: session.key).branch?.head else {
-            return usesTaskWell ? app.projectName(of: session) : session.cwd.abbreviatedPath
+            return session.cwd.abbreviatedPath
         }
-        return usesTaskWell ? "\(app.projectName(of: session)) · \(name)" : name
+        return name
     }
 }
 

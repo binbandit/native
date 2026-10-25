@@ -18,7 +18,9 @@ struct TaskWellLabel: View {
             .accessibilityHidden(true)
             headline
                 .frame(maxWidth: .infinity, alignment: .leading)
-            if content.progress != nil || (content.showsReview && !isCompact) || content.exitKey != nil {
+            if content.progress != nil || ((content.showsReview || waitingSince != nil) && !isCompact)
+                || content.exitKey != nil
+            {
                 trailing
                     .dsTrailingSegment(inset: DS.TaskWell.dividerInset, dividerHeight: DS.TaskWell.signal)
                     .fixedSize()
@@ -37,8 +39,7 @@ struct TaskWellLabel: View {
     @ViewBuilder private var headline: some View {
         if let outcome = content.outcome {
             HStack(spacing: DS.TaskWell.textGap) {
-                let files = "\(outcome.changedFiles.count) \(outcome.changedFiles.count == 1 ? "file" : "files")"
-                Text(isCompact ? files : "Changed \(files)")
+                Text(content.changedFiles(of: outcome, includesVerb: !isCompact))
                     .lineLimit(1)
                 DiffStatsText(stats: DiffStats(added: outcome.linesAdded, removed: outcome.linesRemoved))
                     .font(DS.TaskWell.object)
@@ -58,6 +59,9 @@ struct TaskWellLabel: View {
             }
         }
     }
+
+    /// How long the ask has waited, as the sidebar's row and Peek show it.
+    private var waitingSince: Date? { content.isWaiting ? content.attentionSince : nil }
 
     private func narration(includesAgent: Bool) -> some View {
         HStack(spacing: DS.TaskWell.textGap) {
@@ -87,7 +91,11 @@ struct TaskWellLabel: View {
                     HStack(spacing: DS.TaskWell.tickGap) {
                         ForEach(0..<progress.total, id: \.self) { index in
                             RoundedRectangle(cornerRadius: DS.TaskWell.tickRadius)
-                                .fill(index < progress.completed ? .dsTextSecondary : .dsTextQuaternary)
+                                .fill(
+                                    index < progress.completed
+                                        ? .dsTextSecondary
+                                        : .dsTextQuaternary.opacity(DS.TaskWell.tickPendingOpacity)
+                                )
                                 .frame(width: DS.TaskWell.tickWidth, height: DS.TaskWell.tickHeight)
                         }
                     }
@@ -98,6 +106,8 @@ struct TaskWellLabel: View {
                     .foregroundStyle(.dsTextSecondary)
                     .help("Plan steps completed")
             }
+        } else if let waitingSince {
+            TaskAttentionClock(since: waitingSince)
         } else if content.showsReview {
             Text("Review")
                 .font(.dsBodyMedium)

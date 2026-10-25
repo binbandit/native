@@ -4,7 +4,6 @@ import SwiftUI
 
 struct TaskWellToolsPanel<Destination: View>: View {
     let content: TaskWellContent
-    let location: String
     let identity: TaskWellIdentity
     @Bindable var tools: SessionToolsScreenModel
     let detail: (TaskWellTool) -> TaskWellToolDetail
@@ -75,7 +74,7 @@ struct TaskWellToolsPanel<Destination: View>: View {
                 .fixedSize()
             }
         }
-        .font(DS.TaskWell.object)
+        .font(DS.TaskWell.caption)
         .foregroundStyle(.dsTextTertiary)
         .padding(.vertical, DS.Space.lg)
         .padding(.horizontal, DS.Space.xl)
@@ -93,17 +92,25 @@ struct TaskWellToolsPanel<Destination: View>: View {
                 management
             }
         }
-        .font(DS.TaskWell.object)
+        .font(DS.TaskWell.caption)
         .foregroundStyle(.dsTextTertiary)
         .padding(.horizontal, DS.Space.xl)
         .padding(.vertical, DS.Space.md)
         .frame(minHeight: DS.TaskWell.footerHeight)
     }
 
+    /// The project, then its branch, as the title names them.
     private var checkout: some View {
-        Label(location, systemImage: "arrow.triangle.branch")
-            .lineLimit(1).truncationMode(.middle)
-            .help(location)
+        HStack(spacing: DS.Space.sm) {
+            Image(systemName: "arrow.triangle.branch").foregroundStyle(.dsTextQuaternary)
+            Text(identity.project)
+            if let branch = identity.branch {
+                Text("/").foregroundStyle(.dsTextQuaternary)
+                Text(branch).truncationMode(.middle)
+            }
+        }
+        .lineLimit(1)
+        .help([identity.project, identity.branch].compactMap { $0 }.joined(separator: " / "))
     }
 
     @ViewBuilder private var management: some View {
@@ -135,7 +142,7 @@ struct TaskWellToolsPanel<Destination: View>: View {
                         if let stats = detail.stats { DiffStatsText(stats: stats).fixedSize() }
                     }
                     .font(DS.TaskWell.rowDetail)
-                    .foregroundStyle(.dsTextSecondary)
+                    .foregroundStyle(detail.unavailableReason == nil ? .dsTextSecondary : .dsTextTertiary)
                     Spacer(minLength: DS.Space.sm)
                     if detail.isManaged {
                         Image(systemName: "lock").foregroundStyle(.dsTextTertiary)
@@ -187,7 +194,7 @@ struct TaskWellToolsPanel<Destination: View>: View {
             )
             .frame(width: DS.TaskWell.signal, height: DS.TaskWell.signal)
             if let outcome = content.outcome {
-                Text("Changed \(outcome.changedFiles.count) \(outcome.changedFiles.count == 1 ? "file" : "files")")
+                Text(content.changedFiles(of: outcome))
                 DiffStatsText(stats: DiffStats(added: outcome.linesAdded, removed: outcome.linesRemoved))
                     .font(DS.TaskWell.object)
             } else {
@@ -199,7 +206,7 @@ struct TaskWellToolsPanel<Destination: View>: View {
                 }
             }
             Spacer(minLength: DS.Space.sm)
-            Text("esc").font(.dsMonoMicro).foregroundStyle(.dsTextTertiary)
+            Kbd("esc", compact: true)
         }
         .font(DS.TaskWell.body)
         .padding(.leading, DS.TaskWell.panelHeaderLeading)
