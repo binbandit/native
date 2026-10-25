@@ -155,7 +155,9 @@ extension DataStoreInventory {
             "Searchable copies of transcripts: titles, folders, message text, and how far each agent history file"
                 + " has been read.",
             owners: [
-                "Packages/Search/Sources/Search/SearchStore.swift", "native/Search/TranscriptSearchBackfill.swift",
+                "Packages/Search/Sources/Search/SearchStore.swift",
+                "Packages/Search/Sources/Search/SearchStore+Retention.swift",
+                "native/Search/TranscriptSearchBackfill.swift",
             ],
             ownership: .native, content: [.userContent, .paths, .commands], records: .session,
             copies: [
@@ -166,9 +168,9 @@ extension DataStoreInventory {
                 DataCopySpec(.sharedMemory, .file(.appSupport, ["search-index.sqlite-shm"]), .sqlite(tables: [])),
             ],
             retention: .policy(.searchRetentionDays),
-            today: "Retention deletes sessions last active before the cutoff (one without a time counts as oldest)"
-                + " but keeps their `sources` rows and doesn't vacuum. Excluding a folder removes its sessions;"
-                + " clearing the index drops and vacuums it.",
+            today: "Retention deletes sessions last active before the cutoff (one without a time is kept) with"
+                + " their `sources` rows, then compacts and vacuums the file, at most once a day. Excluding a"
+                + " folder removes its sessions without vacuuming; clearing the index drops and vacuums it.",
             support: .pendingPruned, reimportedFrom: [.agentHistories, .sessionCatalog], followUp: .search),
         DataStoreEntry(
             .automation,

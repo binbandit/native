@@ -124,7 +124,7 @@ struct SearchIndexTests {
     @Test func retentionForgetsOldSessions() async throws {
         let index = try await makeIndex()
         try await seed(index)
-        try await index.removeSessions(updatedBefore: now.addingTimeInterval(-60 * 86_400))
+        try await index.removeSessions(lastActiveBefore: now.addingTimeInterval(-60 * 86_400))
         let results = try await index.search(SearchQuery("login is:archived"), now: now)
         #expect(results.groups.map(\.session.key.session) == ["s1"])
         #expect(try await index.statistics().sessions == 2)
@@ -159,7 +159,8 @@ struct SearchIndexTests {
         // A file that shrank was rewritten: read it from the start.
         #expect(stored.resume(for: HistorySource(url: URL(filePath: "/h/a.jsonl"), size: 4, modifiedAt: now)) == nil)
 
-        try await index.removeSessions(updatedBefore: now.addingTimeInterval(86_400))
+        // Excluding its folder drops the session and keeps the checkpoint, so the file isn't opened.
+        try await index.removeSessions(under: "/code/native")
         #expect(try await index.checkpoints()["/h/a.jsonl"]?.isSessionIndexed == false)
         #expect(try await index.isFilled() == false)
         try await index.markFilled()

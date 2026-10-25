@@ -30,8 +30,8 @@ nonisolated struct TranscriptSearchBackfill: Sendable {
     /// Native's project folders, for placing sessions it doesn't list.
     let projects: [String]
     let excluded: [String]
-    /// Sessions last active before this are kept out of the index (an organization's retention
-    /// policy), and dropped from it first.
+    /// Sessions last active before this are kept out of the index (a retention policy), and dropped
+    /// from it first. One with no time is kept, as the index keeps it.
     let retainedSince: Date?
 
     /// Limits per write: small enough that a batch's memory stays bounded and a search never
@@ -50,8 +50,14 @@ nonisolated struct TranscriptSearchBackfill: Sendable {
 
     /// Returns whether the pass finished (rather than being cancelled).
     @concurrent func run(report: @escaping @Sendable (TranscriptSearchIndexing) async -> Void) async -> Bool {
-        if let retainedSince {
-            try? await index.removeSessions(updatedBefore: retainedSince)
+        do {
+            if let retainedSince {
+                try await index.removeSessions(lastActiveBefore: retainedSince)
+            }
+            // Due once retention removed something, even if the policy has gone since.
+            try await index.compactIfDue()
+        } catch {
+            Self.logger.error("Couldn't apply search retention: \(error, privacy: .public)")
         }
         let checkpoints = (try? await index.checkpoints()) ?? [:]
         let work = pending(checkpoints: checkpoints)
@@ -118,13 +124,15 @@ nonisolated struct TranscriptSearchBackfill: Sendable {
         }
         let session = read.session
         let key = session.map { SearchSessionKey(agent: work.reader.agent, session: $0.sessionID) }
+        let isExcluded = session.map { Self.isExcluded($0.cwd, by: excluded) } ?? false
+        let isExpired = session.map(hasExpired) ?? false
+        // The checkpoint saves reading the file again. For a session retention leaves out it keeps
+        // nothing that names it, only an excluded project's folder, so that file still isn't opened.
         batch.checkpoints.append(
             HistoryCheckpoint(
                 path: work.source.path, size: work.source.size, modifiedAt: work.source.modifiedAt, offset: read.offset,
-                session: key, cwd: session?.cwd))
-        guard let session, let key, !Self.isExcluded(session.cwd, by: excluded),
-            (session.updatedAt ?? work.source.modifiedAt) >= retainedSince ?? .distantPast
-        else { return }
+                session: isExpired ? nil : key, cwd: isExpired && !isExcluded ? nil : session?.cwd))
+        guard let session, let key, !isExcluded, !isExpired else { return }
         let known = await known(key)
         let record = SearchSessionRecord(
             key: key, title: known?.title ?? session.title, cwd: session.cwd,
@@ -136,6 +144,13 @@ nonisolated struct TranscriptSearchBackfill: Sendable {
         } else {
             batch.appending.append(entry)
         }
+    }
+
+    /// Whether retention leaves `session` out: its newest time is before the cutoff. One with no
+    /// time is kept, as the index keeps it.
+    private func hasExpired(_ session: HistorySession) -> Bool {
+        guard let retainedSince, let lastActive = session.lastActive else { return false }
+        return lastActive < retainedSince
     }
 
     private func write(_ batch: inout SearchIndexBatch) async {

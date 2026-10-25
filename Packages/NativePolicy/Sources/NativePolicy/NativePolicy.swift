@@ -103,7 +103,8 @@ public struct NativePolicy: Equatable, Sendable {
     public var companionEnabled = true
     public var remoteHostsEnabled = true
     public var updates = Updates()
-    /// How long search keeps sessions; nil keeps them as long as the user chooses.
+    /// How long search keeps sessions; nil keeps them as long as the user chooses. An unusable
+    /// value is nil too, never a shorter period: `keyStatus` says when the organization's failed.
     public var searchRetentionDays: Int?
     /// Keyboard shortcuts by command id ("session.archive": "opt+cmd+a", "" for none), as Settings ▸
     /// Keyboard Shortcuts exports them; nil keeps Native's defaults. The organization's set replaces
