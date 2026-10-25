@@ -3,7 +3,10 @@ import SwiftUI
 extension DS {
     /// The approved toolbar well: 340 by 30 points, with a reserved trailing progress column.
     public nonisolated enum TaskWell {
+        public static let changesHeaderHeight: CGFloat = 44
         public static let width: CGFloat = 340
+        /// The narrow window's well: the count without "Changed", progress without the agent.
+        public static let compactWidth: CGFloat = 180
         public static let height: CGFloat = 30
         public static let leading: CGFloat = 11
         public static let trailing: CGFloat = 12

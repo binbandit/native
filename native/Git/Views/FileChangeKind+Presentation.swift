@@ -51,14 +51,34 @@ extension FileChange.Area {
 /// The 12pt status square at the end of a file row.
 struct GitStatusGlyph: View {
     let kind: FileChange.Kind
+    @Environment(\.gitChangesNeutralMarkers) private var neutral
+
+    private var marker: String {
+        switch kind {
+        case .added: "A"
+        case .modified: "M"
+        case .deleted: "D"
+        case .renamed: "R"
+        case .copied: "C"
+        case .typeChanged: "T"
+        case .untracked: "?"
+        case .conflicted: "!"
+        }
+    }
 
     var body: some View {
-        Image(systemName: kind.symbolName)
-            .font(.system(size: GitMetrics.statusGlyph, weight: .medium))
-            .foregroundStyle(kind.tint)
-            .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
-            .help(kind.label)
-            .accessibilityLabel(kind.label)
+        Group {
+            if neutral {
+                Text(marker).font(DS.TaskWell.shortcut)
+            } else {
+                Image(systemName: kind.symbolName)
+            }
+        }
+        .font(.system(size: GitMetrics.statusGlyph, weight: .medium))
+        .foregroundStyle(neutral ? Color.dsTextTertiary : kind.tint)
+        .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
+        .help(kind.label)
+        .accessibilityLabel(kind.label)
     }
 }
 

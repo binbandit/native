@@ -54,8 +54,8 @@ The old Task Tools gate and standard task screen remain available.
 The well uses the sidebar's shared `TaskSignal` at its well placement, with the actual request
 arrival driving its finite attention breath. The composer owns the annotated approval and the
 well only routes attention to it.
-Later slices cover the title identity editor, full tool contribution and placement settings,
-narrow full-width Changes, and diff quoting with the composer. The mock's GitHub network restriction
+Later slices cover the title identity editor and full tool contribution and placement settings.
+Narrow Changes is described below. The mock's GitHub network restriction
 and Export Patch recovery need a managed GitHub capability and patch-export action; neither is
 invented by this presentation slice. Existing managed agent, host, shortcut and repository-action
 policies are reflected here.
@@ -105,3 +105,18 @@ The original Task Tools gate registers only Changes, with Side, Fact and Off pla
 The well adds the shared workbench and tool adapters described above. The placement editor,
 full tool contributions and default-on transition remain later slices. The standard screen is
 unchanged while both Labs switches are off.
+
+## Narrow Changes
+
+With `NativeTaskWell`, a Changes pane that cannot fit beside the conversation takes its place.
+The composer remains underneath, and Escape or Close Changes returns to the same conversation.
+The 44pt header holds one file pop-up, its position and line totals, and the existing Commit action.
+The pop-up includes This Turn, Uncommitted and Branch; partly staged files remain separate entries
+under their staging areas. Loading, missing-repository, clean, comparison fallback, binary, large
+and failed-diff states reuse the existing Changes views. Other tools and the original Task Tools
+switch keep their existing overlay behavior.
+
+File markers use neutral tertiary letters in both well layouts: amber means "yours", and the
+letter is enough. The diff is the shared `DiffView`, so selecting its lines quotes them into the
+composer through the composer's own point-and-say (`NativeComposerNext`); Changes adds no
+selection model of its own.

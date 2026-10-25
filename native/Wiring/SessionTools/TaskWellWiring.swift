@@ -14,6 +14,7 @@ struct TaskWellWiring: View {
     let tools: SessionToolsScreenModel
     let location: String
     let turnChanges: TurnChangesActions?
+    var isCompact = false
     let openSubagents: (SessionID?) -> Void
     @Environment(AppModel.self) private var app
     @Environment(TerminalStore.self) private var terminal
@@ -25,7 +26,7 @@ struct TaskWellWiring: View {
     var body: some View {
         TaskWellToolbar(
             session: session, tools: tools, location: location, identity: identity,
-            turnChanges: turnChanges, detail: detail, openSubagent: { openSubagents($0) }
+            turnChanges: turnChanges, detail: detail, isCompact: isCompact, openSubagent: { openSubagents($0) }
         ) { page in
             if page == .dev, let target {
                 ProjectActionsMenuContent(target: target, showsManagedExplanation: false)

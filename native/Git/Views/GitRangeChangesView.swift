@@ -9,6 +9,7 @@ struct GitRangeChangesView: View {
     let review: GitChangesReview
     let request: GitRangeRequest
 
+    @Environment(\.gitChangesCompact) private var compact
     @State private var model: GitRangeModel
 
     /// The review retains `model` across container changes; previews pass one frozen at a comparison.
@@ -60,10 +61,14 @@ struct GitRangeChangesView: View {
                 .padding(DS.Space.md)
             SeparatorLine()
         }
-        summary(comparison)
-        SeparatorLine()
+        if !compact {
+            summary(comparison)
+            SeparatorLine()
+        }
         if comparison.changes.isEmpty {
             emptyState(comparison)
+        } else if compact {
+            GitRangeDiffPane(model: model)
         } else {
             // The list takes what it needs, up to a share of the column, and the diff the rest.
             GeometryReader { proxy in

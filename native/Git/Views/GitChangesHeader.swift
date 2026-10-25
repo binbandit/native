@@ -6,12 +6,16 @@ import SwiftUI
 struct GitChangesHeader: View {
     let model: GitRepositoryModel
     @Binding var isCommitting: Bool
+    var fileMenu: AnyView? = nil
+    @Environment(\.gitChangesClose) private var close
     @State private var isSmartCommitting = false
     let onCreatePullRequest: (() -> Void)?
 
     var body: some View {
         HStack(spacing: DS.Space.sm) {
-            if let branch = model.branch {
+            if let fileMenu {
+                fileMenu
+            } else if let branch = model.branch {
                 GitBranchBadge(branch: branch, font: .dsBodyMedium)
             }
             Spacer(minLength: DS.Space.md)
@@ -21,19 +25,29 @@ struct GitChangesHeader: View {
                     .frame(width: GitMetrics.loaderSmall, height: GitMetrics.loaderSmall)
                     .help("Working…")
             }
-            IconButton("Refresh", systemImage: "arrow.clockwise") {
-                Task { await model.refreshNow() }
+            if fileMenu == nil {
+                IconButton("Refresh", systemImage: "arrow.clockwise") {
+                    Task { await model.refreshNow() }
+                }
+                .dsHitTarget(DS.Size.controlXS)
             }
-            .dsHitTarget(DS.Size.controlXS)
             primaryAction
+            if let close {
+                // The key it teaches is also the button, so touch has the same way back.
+                Button(action: close.close) { Kbd("esc", compact: true) }
+                    .buttonStyle(.plain)
+                    .dsHitTarget(DS.Size.controlXS)
+                    .accessibilityLabel("Close Changes")
+                    .help("Return to the conversation (Escape)")
+            }
         }
         .padding(.horizontal, DS.Space.md)
-        .frame(height: GitMetrics.headerHeight)
+        .frame(height: fileMenu == nil ? GitMetrics.headerHeight : DS.TaskWell.changesHeaderHeight)
     }
 
     @ViewBuilder private var primaryAction: some View {
         if let status = model.status, let branch = model.branch {
-            if status.changedFileCount > 1, status.conflicted.isEmpty {
+            if fileMenu == nil, status.changedFileCount > 1, status.conflicted.isEmpty {
                 IconButton("Smart Commit…", systemImage: "square.stack.3d.up") { isSmartCommitting = true }
                     .dsHitTarget(DS.Size.controlXS)
                     .sheet(isPresented: $isSmartCommitting) {
@@ -49,7 +63,7 @@ struct GitChangesHeader: View {
                         GitCommitPopover(
                             model: model, isPresented: $isCommitting, onCreatePullRequest: onCreatePullRequest)
                     }
-            } else if model.canPush {
+            } else if fileMenu == nil, model.canPush {
                 Button(branch.upstream == nil ? "Publish" : "Push \(branch.ahead)", systemImage: "arrow.up") {
                     Task { await model.push() }
                 }
@@ -57,7 +71,7 @@ struct GitChangesHeader: View {
                 .help(
                     branch.upstream == nil
                         ? "Push the branch and track it" : "Push commits to \(branch.upstream ?? "the upstream")")
-            } else if let onCreatePullRequest, !branch.isDetached {
+            } else if fileMenu == nil, let onCreatePullRequest, !branch.isDetached {
                 Button("Create PR", systemImage: "arrow.triangle.pull", action: onCreatePullRequest)
                     .buttonStyle(.ds(.secondary))
             }

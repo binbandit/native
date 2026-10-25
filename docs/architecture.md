@@ -424,6 +424,9 @@ The open well reads worker identity, managed policy and cached tool summaries. S
 runs share the existing terminal workbench; its add menu reuses project actions. Subagents use a
 roster before opening their existing inspector. Requests lead to the existing composer or child
 request surface, and turn outcomes reuse detected Changes. The shared `TaskSignal` supplies the status vocabulary and finite attention animation.
+Narrow Changes replaces only the conversation, retaining the composer and the review's file/scope
+state across resizing. Its file pop-up reuses the repository and range models, and its diff is the
+shared `DiffView`, so the composer's quoting works there without a second selection model.
 The behavior, tool order and remaining slices are described in `docs/session-tools.md`.
 
 ### Changing a task's agent (Labs)
