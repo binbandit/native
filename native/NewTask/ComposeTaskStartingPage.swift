@@ -6,6 +6,7 @@ struct ComposeTaskStartingPage: View {
     let model: AppModel
     let compose: ComposeTaskModel
     @Experiment(.transcriptWidth) private var columnWidth: TranscriptWidth
+    @Experiment(.composerNext) private var composerNext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isSettled = false
 
@@ -14,7 +15,6 @@ struct ComposeTaskStartingPage: View {
             ScrollView {
                 if let message {
                     MessageView(message: message)
-                        .font(.dsCallout)
                         .frame(maxWidth: columnWidth.maxWidth)
                         .padding(.horizontal, DS.Space.xxl)
                         .padding(.top, DS.Space.xl)
@@ -38,7 +38,9 @@ struct ComposeTaskStartingPage: View {
                         }
                     }.padding(DS.Space.lg)
                 }
-                .frame(maxWidth: columnWidth.maxWidth)
+                .frame(
+                    maxWidth: composerNext ? max(columnWidth.maxWidth, DS.ComposerSettings.width) : columnWidth.maxWidth
+                )
                 .padding(.horizontal, DS.Space.xxl)
                 .padding(.top, DS.Space.md)
                 .padding(.bottom, DS.Space.xl)

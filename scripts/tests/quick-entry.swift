@@ -66,7 +66,13 @@ private actor QuickEntryHost: HostTransport {
         case HostProtocol.Method.newSession:
             pending = (id, try message.params(as: NewSessionParams.self))
         case HostProtocol.Method.prompt:
-            prompts.append(try message.params(as: PromptParams.self).text)
+            let prompt = try message.params(as: PromptParams.self)
+            prompts.append(prompt.text)
+            try peer.notify(
+                HostProtocol.Method.sessionEvent,
+                SessionEventNotification(
+                    sessionID: prompt.sessionID,
+                    event: HostEvent(seq: 1, payload: .prompt(PromptEcho(text: prompt.text, steered: false)))))
             try peer.respond(to: id, with: PromptResult(delivery: .prompted))
         default:
             try peer.respond(to: id, error: .methodNotFound(message.method))
@@ -264,6 +270,7 @@ private struct QuickEntryRegression {
         try await host.complete()
         try await wait { await host.prompts.count == 3 }
         app.composeTask.stage = .settled
+        try await wait { app.composeCanRevealTask }
         app.finishComposeTransition()
         try require(!app.composeTask.isPresented, "The transition did not reveal the task")
         try require(entry.draft.isEmpty, "Start retained a duplicate draft")
@@ -277,6 +284,26 @@ private struct QuickEntryRegression {
         } else {
             throw CheckFailure("The composed task was not registered")
         }
+
+        let empty = SessionModel(
+            agent: editor.agent, id: SessionID("compose-handoff-fixture"), cwd: folder,
+            connection: nil, services: app.sessions.services, supportsSteering: false,
+            promptCapabilities: PromptCapabilities(), phase: .idle)
+        app.sessions.register(empty)
+        let handoff = StartingTask(
+            project: project.id, agent: editor.agent, isAgentPicked: true, workspaceLabel: "Fixture")
+        handoff.openedSession = empty.key
+        handoff.isSendRequested = true
+        handoff.composeSubmission = .sent
+        app.composeTask.starting = handoff
+        app.composeTask.stage = .settled
+        app.composeTask.isPresented = true
+        app.finishComposeTransition()
+        try require(app.composeTask.isPresented, "Handoff exposed the empty welcome page")
+        empty.state.appendUserMessage("Keep the first message visible")
+        app.finishComposeTransition()
+        try require(!app.composeTask.isPresented, "Handoff did not reveal the real message")
+        app.sessions.remove(empty)
 
         app.expandQuickEntry()
         app.composeTask.editor?.draft = "Cancel without sending"

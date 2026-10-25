@@ -252,16 +252,6 @@ extension AppModel {
         }
     }
 
-    func finishComposeTransition() {
-        guard let task = composeTask.starting,
-            task.failure != nil || task.openedSession != nil,
-            composeTask.stage == .settled
-        else { return }
-        composeTask.isPresented = false
-        composeTask.editor = nil
-        composeTask.starting = nil
-    }
-
     var composeDeviceOption: SessionDeviceOption? {
         #if DEBUG
         if let options = quickEntry.previewDeviceOptions { return options.first { $0.device == quickEntry.device } }

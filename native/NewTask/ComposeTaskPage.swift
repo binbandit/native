@@ -77,8 +77,7 @@ struct ComposeTaskPage: View {
             compose.stage = .settled
             model.finishComposeTransition()
         }
-        .onChange(of: compose.starting?.openedSession) { model.finishComposeTransition() }
-        .onChange(of: compose.starting?.failure) { model.finishComposeTransition() }
+        .onChange(of: model.composeCanRevealTask) { model.finishComposeTransition() }
         .onKeyPress(.escape) {
             if compose.starting != nil, compose.starting?.openedSession == nil {
                 model.cancelComposeStart()

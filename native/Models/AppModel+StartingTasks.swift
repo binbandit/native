@@ -212,7 +212,13 @@ extension AppModel {
             rememberLastUsed(task.agent.id)
         }
         if task.isSendRequested {
-            Task { await session.submit(.queue) }
+            Task {
+                if task.usesComposePresentation {
+                    await sendComposeFirstMessage(task, to: session)
+                } else {
+                    await session.submit(.queue)
+                }
+            }
         }
     }
 
