@@ -17,6 +17,8 @@ struct ComposerView: View {
     @Environment(\.undoManager) var undoManager
     @Environment(\.composerNextSteps) var nextSteps
     @Environment(\.composerOverlayDismissal) var overlayDismissal
+    /// A mode such as Try On owns Escape for now, so the editor's Escape doesn't stop the turn.
+    @Environment(\.windowClaimsCancelKeys) var windowClaimsCancelKeys
     @Environment(\.transcriptColumnMaxWidth) var columnWidth
     @Environment(AutomationCenter.self) var automation
     @Environment(AppModel.self) var app

@@ -10,15 +10,23 @@ extension View {
     /// owns the window for a moment, such as Try On Themes.
     ///
     /// On the Mac a key monitor takes the keys before the window or the menus see them. On iPad the
-    /// mode's own shortcuts handle them (a focused view's `onKeyPress` and a `keyboardShortcut`), and
-    /// commands that use the same keys step aside while it runs.
+    /// mode's own shortcuts handle them (a focused view's `onKeyPress` and a `keyboardShortcut`):
+    /// views inside read `windowClaimsCancelKeys` and leave Escape alone, and commands that use the
+    /// same keys step aside while it runs.
     func windowCancelKeys(enabled: Bool, cancel: @escaping () -> Void) -> some View {
         #if canImport(AppKit)
-        background(WindowCancelKeyMonitor(enabled: enabled, cancel: cancel))
+        environment(\.windowClaimsCancelKeys, enabled)
+            .background(WindowCancelKeyMonitor(enabled: enabled, cancel: cancel))
         #else
-        self
+        environment(\.windowClaimsCancelKeys, enabled)
         #endif
     }
+}
+
+extension EnvironmentValues {
+    /// Whether a mode owns Escape and ⌘. in this window (`windowCancelKeys`), so views that
+    /// otherwise act on them, such as the composer's Stop, leave them alone.
+    @Entry var windowClaimsCancelKeys = false
 }
 
 #if canImport(AppKit)
