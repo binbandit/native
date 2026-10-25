@@ -8,7 +8,10 @@ let package = Package(
         .library(name: "Undo", targets: ["Undo"])
     ],
     targets: [
-        .target(name: "Undo"),
+        .target(
+            name: "Undo",
+            // Optimize infrequent operations for size; the app and streaming path stay at -O.
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         .testTarget(name: "UndoTests", dependencies: ["Undo"]),
     ]
 )

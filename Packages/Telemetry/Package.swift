@@ -8,7 +8,10 @@ let package = Package(
         .library(name: "NativeTelemetry", targets: ["NativeTelemetry"])
     ],
     targets: [
-        .target(name: "NativeTelemetry"),
+        .target(
+            name: "NativeTelemetry",
+            // Optimize infrequent operations for size; the app and streaming path stay at -O.
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         .testTarget(name: "NativeTelemetryTests", dependencies: ["NativeTelemetry"]),
     ]
 )
