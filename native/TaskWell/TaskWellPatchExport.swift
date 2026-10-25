@@ -11,6 +11,7 @@ final class TaskWellPatchExport {
     enum Outcome: Equatable {
         case saved(file: String, commits: Int, leftOutChanges: Bool)
         case noCommits
+        case merges
         case noBase
         case failed(String)
     }
@@ -34,6 +35,9 @@ final class TaskWellPatchExport {
             let left = leftOutChanges ? " Uncommitted changes aren't in it." : ""
             return
                 "Saved \(file) with \(count).\(left) On a connected machine, apply it with git am and open the pull request there."
+        case .merges:
+            return
+                "This branch has merge commits, which a patch can't carry. Rebase it onto its base branch, then export it again."
         case .noCommits:
             return "This branch has no commits of its own yet. Commit its changes in Changes, then export them."
         case .noBase:
@@ -55,6 +59,10 @@ final class TaskWellPatchExport {
         do {
             guard let patch = try await git.branchPatch() else {
                 outcome = .noBase
+                return
+            }
+            guard patch.merges == 0 else {
+                outcome = .merges
                 return
             }
             guard patch.commits > 0 else {

@@ -18,6 +18,7 @@ import Testing
 
         let patch = try #require(try await test.repository.branchPatch())
         #expect(patch.commits == 2)
+        #expect(patch.merges == 0)
         #expect(patch.base == "main")
         let text = String(decoding: patch.data, as: UTF8.self)
         #expect(text.contains("Subject: [PATCH 1/2] Round half-even"))
@@ -33,6 +34,31 @@ import Testing
         #expect(subjects == "Document rounding\nRound half-even\n")
         let applied = try String(contentsOf: clone.appending(path: "Sources/Rounding.swift"), encoding: .utf8)
         #expect(applied == "let mode = \"half-even\"\n")
+        // Every committed change arrived: the trees match.
+        #expect(try await test.git("rev-parse", "HEAD^{tree}", in: clone) == test.git("rev-parse", "HEAD^{tree}"))
+    }
+
+    @Test func aBranchWithAMergeGetsNoPatchRatherThanAnIncompleteOne() async throws {
+        let test = try await TestRepository.make()
+        defer { test.remove() }
+        try await test.git("switch", "--quiet", "--create", "side")
+        try test.write("Side.txt", "side\n")
+        try await test.git("add", "Side.txt")
+        try await test.git("commit", "--quiet", "-m", "Side")
+        try await test.git("switch", "--quiet", "--create", "feature", "main")
+        try test.write("Feature.txt", "feature\n")
+        try await test.git("add", "Feature.txt")
+        try await test.git("commit", "--quiet", "-m", "Feature")
+        // The merge carries a change of its own, which format-patch would drop.
+        try await test.git("merge", "--quiet", "--no-ff", "--no-commit", "side")
+        try test.write("Merged.txt", "merged\n")
+        try await test.git("add", "Merged.txt")
+        try await test.git("commit", "--quiet", "-m", "Merge side")
+
+        let patch = try #require(try await test.repository.branchPatch())
+        #expect(patch.merges == 1)
+        #expect(patch.commits == 2)
+        #expect(patch.data.isEmpty)
     }
 
     @Test func aBranchWithNoCommitsOfItsOwnGivesAnEmptyPatch() async throws {

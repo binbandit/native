@@ -37,7 +37,9 @@ struct TaskWellTitleWiring: View {
 extension AppModel {
     /// The project a task belongs to, by its own name rather than its worktree's folder.
     func projectName(of session: SessionModel) -> String {
-        (catalog.lookup(session.key)?.project).flatMap { projects.project($0) }?.name ?? session.cwd.lastPathComponent
+        guard let id = catalog.lookup(session.key)?.project else { return session.cwd.lastPathComponent }
+        // A task of an archived project can still be opened from the archive.
+        return (projects.project(id) ?? projects.archived.first { $0.id == id })?.name ?? session.cwd.lastPathComponent
     }
 }
 

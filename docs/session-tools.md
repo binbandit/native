@@ -85,7 +85,8 @@ row, dimmed with "Not available here", says why, and offers the one thing to do 
 Patch… (also Task ▸ Export Patch…). It saves the branch's commits since it left the default branch
 as one `git format-patch` mailbox, binary files included, for `git am` on a connected machine
 (`Repository.branchPatch`). The row then says what was saved, how many commits, and that
-uncommitted changes aren't in it; a branch with no commits of its own yet is told to commit first.
+uncommitted changes aren't in it; a branch with no commits of its own yet is told to commit first,
+and one with merge commits (which a mailbox can't carry) to rebase first, never given a partial patch.
 A managed network setting puts a lock in the row's key slot and names the administrator in the
 footer. Export Patch makes no network request.
 
