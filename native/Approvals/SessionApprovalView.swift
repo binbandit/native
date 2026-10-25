@@ -13,6 +13,7 @@ struct SessionApprovalView: View {
             homeDirectory: approvalHome, knowledge: app.plugins.commandKnowledge, isAvailable: isAvailable,
             forceReducedMotion: forceReducedMotion,
             focusRequested: session.wantsComposerFocus, didFocus: { session.wantsComposerFocus = false },
+            planEntries: call.kind == .switchMode ? session.state.currentTurnPlan : [],
             onChoose: { option in Task { await session.chooseApproval(option, for: call) } },
             onInstruct: instruct
         )

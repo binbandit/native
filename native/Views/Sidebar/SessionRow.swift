@@ -359,4 +359,21 @@ struct SessionContextUsage: View {
     }
     .sidebarPreviewEnvironment(app)
 }
+#Preview("Task rows - Asks folded on Home") {
+    let app = HomeNextPreviewFixtures.model(.busy)
+    let _ = app.setHomeNextVisible(true)
+    let homeNeeds = Set(
+        app.sessionList.flatMap { app.taskAsks(for: $0.id) }.map { HomePresentedTaskNeed.request($0.id) })
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xxs) {
+            ForEach(app.sessionList) { summary in
+                SessionRow(summary: summary, canMoveUp: true, canMoveDown: true, accessory: EmptyView()) {}
+            }
+        }
+        .environment(\.sidebarAllInView, true)
+        .environment(\.homePresentedTaskNeeds, homeNeeds)
+        .frame(width: DS.Size.sidebarWidth - DS.Space.lg)
+    }
+    .sidebarPreviewEnvironment(app)
+}
 #endif

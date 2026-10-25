@@ -118,7 +118,15 @@ struct TaskPeekView: View {
             notice("This host is offline", detail: "The task and its ask are kept. Reconnect the host to answer.")
         } else if let ask {
             if ask.isCurrent, model.session(ask.session.key) === ask.session {
-                answer(ask).id(ask.id).disabled(model.taskPeek.isAnswering)
+                VStack(alignment: .leading, spacing: DS.Space.lg) {
+                    answer(ask).id(ask.id).disabled(model.taskPeek.isAnswering)
+                    if let failure = model.taskPeek.answerFailure {
+                        ErrorState(
+                            "Couldn't send your answer", recovery: "Your ask is kept. Try again.", details: failure
+                        )
+                        .padding(DS.Peek.bodyHorizontal)
+                    }
+                }
             } else {
                 notice("This ask changed or was resolved", detail: "Open the task to see what happened next.")
                 if !model.taskAsks(for: request.task).isEmpty {
@@ -160,9 +168,14 @@ struct TaskPeekView: View {
                 call: call, agentName: ask.session.agentName, workingDirectory: ask.session.cwd.path,
                 homeDirectory: model.device(of: ask.task) == .thisMac ? NSHomeDirectory() : nil,
                 knowledge: model.plugins.commandKnowledge,
+                responseAttempt: model.taskPeek.approvalAttempt,
                 focusRequested: wantsInstructionFocus, didFocus: { wantsInstructionFocus = false },
+                planEntries: call.kind == .switchMode ? ask.session.state.currentTurnPlan : [],
+                planExpanded: true,
                 onChoose: { option in Task { await model.answerTaskAsk(ask, option: option) } },
-                onInstruct: { try await model.instructTaskAsk(ask, text: $0) })
+                onInstruct: { try await model.instructTaskAsk(ask, text: $0) }
+            )
+            .id(call)
         case .question(let question):
             if let schema = question.request.requestedSchema,
                 let questionnaire = AgentQuestionnaire(message: question.request.message, schema: schema)
@@ -204,6 +217,7 @@ extension FocusedValues {
 #Preview("Peek - Routine approval") { TaskPeekPreviewFixtures.view(.routine) }
 #Preview("Peek - Destructive approval") { TaskPeekPreviewFixtures.view(.destructive) }
 #Preview("Peek - Question") { TaskPeekPreviewFixtures.view(.question) }
+#Preview("Peek - Answer delivery failed") { TaskPeekPreviewFixtures.view(.answerFailure) }
 #Preview("Peek - Failure") { TaskPeekPreviewFixtures.view(.failure) }
 #Preview("Peek - Recovering") { TaskPeekPreviewFixtures.view(.recovering) }
 #Preview("Peek - Plan") { TaskPeekPreviewFixtures.view(.plan) }

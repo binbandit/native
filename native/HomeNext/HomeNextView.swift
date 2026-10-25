@@ -79,6 +79,8 @@ struct HomeNextView: View {
                     return task.status == .failed ? .failure(task.id) : nil
                 })
         )
+        .onAppear { model.setHomeNextVisible(true) }
+        .onDisappear { model.setHomeNextVisible(false) }
         .scrollBounceBehavior(.basedOnSize)
         .background(.dsBackground)
         .safeAreaInset(edge: .bottom) {
@@ -173,7 +175,12 @@ struct HomeNextView: View {
             .padding(.bottom, DS.Space.md)
             .accessibilityAddTraits(.isHeader)
             ForEach(tasks.prefix(visibleCount)) { task in
-                HomeNextTaskRow(task: task, finished: finished) { model.openHomeNextTask(task.id) }
+                HomeNextTaskRow(task: task, finished: finished) { model.peekHomeNextTask(task) }
+                    .taskPeekAnchor(task.id)
+                    .contextMenu {
+                        Button("Peek") { model.peekHomeNextTask(task) }
+                        Button("Open Task") { model.openHomeNextTask(task.id) }
+                    }
             }
             if tasks.count > visibleCount {
                 Button("Show \(min(DS.HomeNext.pageSize, tasks.count - visibleCount)) more") {
@@ -234,6 +241,8 @@ struct HomeNextView: View {
 
 #if DEBUG
 #Preview("Next - Busy") { HomeNextPreviewFixtures.page(.busy) }
+#Preview("Next - Every module off") { HomeNextPreviewFixtures.page(.calm) }
+#Preview("Next - Managed") { HomeNextPreviewFixtures.page(.managed) }
 #Preview("Next - Quiet") { HomeNextPreviewFixtures.page(.quiet) }
 #Preview("Next - First launch") { HomeNextPreviewFixtures.page(.first) }
 #Preview("Next - Loading") { HomeNextPreviewFixtures.page(.loading) }

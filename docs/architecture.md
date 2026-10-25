@@ -197,9 +197,9 @@ full New Task view. Compose's page and the shared well's pre-start presentation 
 ### Home Next
 
 `NativeHomeNext` (Settings > Labs > Next) defaults to off. `HomeDetail` switches to
-`native/HomeNext/`: one centered reading column with a task title, the existing shared
-`ToolCallView` approval, Up next, and a quiet working-status line. The composer owns the
-annotated approval replacement; Home must embed that component when it lands, never copy it.
+`native/HomeNext/`: one centered reading column with a task title, the composer-owned
+`AnnotatedApprovalView`, Up next, and a quiet working-status line. Home supplies the exact request
+and model actions; command explanations, holds, answer controls and the instruction field stay shared.
 The sidebar owns the shared `TaskSignal`; Home uses it for the current ask and Up next rows.
 
 `HomeAskOrder` in `Packages/TaskList` puts approvals before questions, plans, and failures,
@@ -208,8 +208,8 @@ exact `SessionModel` and tool-call request displayed, including subagent request
 a receipt and advances when the model acknowledges an answer. Questions embed the composer's
 `AgentQuestionSection`, with the same digit keys, multiple-question paging and free text. Plan
 permissions embed `ComposerPlanSection` in its numbered review presentation (first five steps,
-then Show more), using only the current turn's checklist. The exact permission proposal always
-stays visible in the shared `ToolCallView`, with Approve Plan and Revise from its permission buttons.
+then Show more in Peek), using only the current turn's checklist. The exact permission proposal always
+stays visible in the shared annotated approval, with the agent's Approve Plan and Revise choices.
 Session-wide progress from earlier turns cannot replace the proposal being approved.
 
 Failures use `ErrorState` in its reading layout: what happened, recorded recovery from the current
@@ -221,13 +221,25 @@ Home retains the exact question or permission on screen, including subagent asks
 cannot reach the host stays on screen with its error and no success receipt. Finished today includes tasks
 with a known successful turn completion today, five at a time; unknown history is not called done.
 Home publishes the exact requests it renders, including visible Up next rows, to the window.
-All in view folds matching sidebar asks to their title and signal; leaving Home restores the sentence and shortcut.
+All in view folds matching sidebar asks to their title and signal; leaving Home restores the sentence
+and shortcut. Up next and finished rows open the shared Peek; its Open Task action enters the conversation. Home enables Peek independently of the sidebar
+experiment. Its visible ask owns the permission shortcuts while Peek is closed. Home and Peek share
+acknowledgement-based permission delivery: failed answers keep the exact request and Peek open,
+and failed instructions retain their text without duplicating queued follow-ups.
+
+With every optional module off, the ask, task rows and local working status remain complete.
+Managed permission modes are attributed inside the shared approval, and a managed remote-host
+restriction is explained below the task list. The copy describes the existing policy precisely:
+forbidden modes do not guarantee that every agent command requests approval. Always Allow is
+shown only when offered by the agent and permitted by the shared command risk analysis.
+GitHub availability policy and universal per-command approval enforcement remain separate work.
 
 For isolated Debug checks, enable the gate with Settings > Labs > Next or
 `defaults write dev.binbandit.native.dev.<name> experiment.NativeHomeNext -bool YES`, then launch
-with `-nativeHomeNextFixture busy` for inert preview models. Other fixture values are `quiet`,
+with `-nativeHomeNextFixture busy` for inert preview models. Other fixture values are `calm` (no optional modules), `managed`, `destructive`, `unknown`,
+`approvalFailure`, `quiet`,
 `first`, `empty`, `loading`, `recovery`, `narrow`, `question`, `questionText`, `questions`,
-`plan`, `planText`, `planRetained`, `failure`, `failurePaused`, and `questionFailure` (a read-only sink
+`plan`, `planFailure`, `planText`, `planRetained`, `failure`, `failurePaused`, and `questionFailure` (a read-only sink
 exercises answer delivery failure).
 The fixture is absent from Release and Nightly and never opens an agent or writes project data.
 
@@ -305,7 +317,8 @@ paused and limited states, amber requests, a red failure and an accent unread do
 working view accepts animation variants without duplicating the other states or Reduce Motion.
 Existing surfaces keep `StatusIndicator` until their gated redesign adopts `TaskSignal`.
 
-Requests show a two-line sentence and a mono waiting clock, using the request's arrival timestamp
+On Home, the sidebar's asks fold to their title; the page already presents their sentences.
+Elsewhere, requests show a two-line sentence and a mono waiting clock, using the request's arrival timestamp
 from ACP or the host event log. The grid breathes for its first 60 seconds and for four seconds
 when the scene becomes active, then holds still. Reduce Motion is always still. The keycap marks
 the oldest reachable ask across projects and child tasks, using the same request identity as ⌘Y.
@@ -382,7 +395,7 @@ feature presets, agent detail pages and the shared overnight receipt belong to l
 with Settings > Labs > Fine print, or set `experiment.NativeComposerNext` as a boolean in the
 isolated app's defaults. The rejected quiet-settings-line experiment has been removed.
 
-`AnnotatedApprovalView` in `native/Approvals` is the shared approval for the composer and future
+`AnnotatedApprovalView` in `native/Approvals` is the shared approval for the composer,
 Peek and Home hosts. `SessionApprovalView` connects it to model actions. Only the oldest request
 owns shortcuts; the primary transcript leaves its response controls to the composer while enabled.
 The ordinary composer and approvals are unchanged with the gate off.
