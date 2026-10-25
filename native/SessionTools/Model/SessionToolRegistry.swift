@@ -46,6 +46,16 @@ final class SessionToolRegistry {
         arrangement.move(tool.spec, to: place)
     }
 
+    /// Where the user put a tool that opens an existing feature (the well's Terminal or Dev)
+    /// instead of registering a pane.
+    func place(for spec: SessionToolSpec) -> SessionToolPlace {
+        arrangement.place(of: spec)
+    }
+
+    func setPlace(_ place: SessionToolPlace, for spec: SessionToolSpec) {
+        arrangement.move(spec, to: place)
+    }
+
     func resetArrangement() {
         arrangement.reset()
     }

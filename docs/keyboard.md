@@ -358,7 +358,10 @@ Clicking a waiting well focuses the composer, where the full request can be answ
 Dev reveals the latest project action in the workbench, or its action chooser before the first run.
 Subagents opens a roster; Return or Space on a row opens that worker. Escape returns from a
 chooser to the tool list, then closes the well. Terminal and Dev keep their existing run, stop,
-new-tab and hide commands in the workbench under the composer.
+new-tab and hide commands in the workbench under the composer. A tool turned off in Settings ▸
+Task Tools has no row and its key does nothing. Task ▸ Rename Task… (no default keys) opens the
+title's popover for the task in view: Return keeps the name, Escape puts it back. Where GitHub is
+out of reach, Task ▸ Export Patch… (no default keys) stands in for the pull request.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
@@ -368,6 +371,7 @@ new-tab and hide commands in the workbench under the composer.
 | ⌥⌘3 | Dev (project actions) | View ▸ Tools | `taskWell.dev` |
 | ⌥⌘4 | Subagents | View ▸ Tools | `taskWell.subagents` |
 | ⌥⌘5 | Pull request | View ▸ Tools | `taskWell.pullRequest` |
+| | Export the branch as a patch, where GitHub is out of reach | Task | `taskWell.exportPatch` |
 | Escape | Close the well and return focus to the task | | |
 
 With The well enabled, narrow Changes replaces the conversation and keeps the composer below.
