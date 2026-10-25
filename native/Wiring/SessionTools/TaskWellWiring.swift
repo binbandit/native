@@ -12,7 +12,6 @@ import Terminal
 struct TaskWellWiring: View {
     let session: SessionModel
     let tools: SessionToolsScreenModel
-    let location: String
     let turnChanges: TurnChangesActions?
     var isCompact = false
     let openSubagents: (SessionID?) -> Void
@@ -26,7 +25,7 @@ struct TaskWellWiring: View {
 
     var body: some View {
         TaskWellToolbar(
-            session: session, tools: tools, location: location, identity: identity,
+            session: session, tools: tools, identity: identity,
             turnChanges: turnChanges, detail: detail, isCompact: isCompact, openSubagent: { openSubagents($0) }
         ) { page in
             if page == .dev, let target {
@@ -105,7 +104,8 @@ struct TaskWellWiring: View {
             model: ComposerSettings(session.configOptions).model?.shortModelName,
             machine: device.isRemote ? "On \(app.deviceName(device))" : "On this Mac",
             timing: timing, contextFraction: session.usage.flatMap { $0.size > 0 ? $0.fractionUsed : nil },
-            isManaged: !managed.isDisjoint(with: workerKeys), management: management)
+            isManaged: !managed.isDisjoint(with: workerKeys), management: management,
+            project: app.projectName(of: session), branch: repository.branchName)
     }
 
     /// A tool that's off in Settings ▸ Task Tools never reaches the well, nor does its key.

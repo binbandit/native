@@ -4,7 +4,6 @@ import SwiftUI
 struct TaskWellToolbar<Destination: View>: View {
     let session: SessionModel
     @Bindable var tools: SessionToolsScreenModel
-    let location: String
     let identity: TaskWellIdentity
     let turnChanges: TurnChangesActions?
     let detail: (TaskWellTool) -> TaskWellToolDetail
@@ -31,9 +30,11 @@ struct TaskWellToolbar<Destination: View>: View {
         .buttonStyle(.plain)
         .dsHitTarget(DS.TaskWell.height)
         .help(help)
+        // On the button, so it stays current and survives the label hiding while the well is open.
+        .accessibilityLabel(content.accessibilityText)
         .dsPopover(isPresented: $tools.showsWell, attachmentAnchor: .point(.top), arrowEdge: .bottom) {
             TaskWellToolsPanel(
-                content: content, location: location, identity: identity, tools: tools, detail: detail,
+                content: content, identity: identity, tools: tools, detail: detail,
                 destination: destination)
         }
         .onChange(of: session.phase) { previous, phase in
@@ -120,8 +121,8 @@ struct TaskWellToolbar<Destination: View>: View {
     return DSPreviewPair {
         if let session = SessionModel.preview(in: app) {
             TaskWellToolbar(
-                session: session, tools: SessionToolsScreenModel(), location: "native · main",
-                identity: .init(machine: "On this Mac"), turnChanges: nil
+                session: session, tools: SessionToolsScreenModel(),
+                identity: .init(machine: "On this Mac", project: "native", branch: "main"), turnChanges: nil
             ) {
                 _ in
                 TaskWellToolDetail()

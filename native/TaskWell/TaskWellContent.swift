@@ -18,11 +18,17 @@ struct TaskWellContent: Equatable {
     var accessibilityText: String {
         var parts = [agent, verb, object].compactMap { $0 }.filter { !$0.isEmpty }
         if let outcome {
-            parts.append(
-                "Changed \(outcome.changedFiles.count) files, +\(outcome.linesAdded), -\(outcome.linesRemoved)")
+            parts.append("\(changedFiles(of: outcome)), +\(outcome.linesAdded), -\(outcome.linesRemoved)")
         }
         if let progress { parts.append("\(progress.completed) of \(progress.total) plan steps") }
         if showsReview { parts.append("Review") }
         return parts.joined(separator: ", ")
+    }
+
+    /// "Changed 1 file", "Changed 3 files", or without the verb where the well is compact.
+    func changedFiles(of outcome: TurnSummary, includesVerb: Bool = true) -> String {
+        let count = outcome.changedFiles.count
+        let files = "\(count) \(count == 1 ? "file" : "files")"
+        return includesVerb ? "Changed \(files)" : files
     }
 }
