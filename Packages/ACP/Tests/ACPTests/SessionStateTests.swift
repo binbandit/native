@@ -188,6 +188,7 @@ struct SessionStateTests {
         let state = folded(try [Wire.usageWithCost, Wire.usageWithoutCost].map(Wire.update))
         #expect(state.usage?.used == 234_117)
         #expect(state.usage?.cost == Usage.Cost(amount: 0.19107000000000002, currency: "USD"))
+        #expect(state.usage?.model == "claude-opus-5-5")
     }
 }
 

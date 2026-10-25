@@ -45,7 +45,7 @@ struct ComposerSettingsControl: View {
         } label: {
             ComposerSettingsDoorLabel(
                 mode: mode.current.id == .build ? nil : mode.current.name,
-                model: settings.model?.shortModelName ?? "Task Settings",
+                model: doorModel,
                 isFast: settings.modelSwitches.first?.isOn == true,
                 isOpen: isPresented, isHovered: isHovered)
         }
@@ -54,7 +54,7 @@ struct ComposerSettingsControl: View {
         .dsHitTarget(DS.ComposerSettings.controlHeight)
         .accessibilityLabel("Task Settings")
         .accessibilityValue(
-            [mode.current.id == .build ? nil : "\(mode.current.name) mode", settings.model?.shortModelName]
+            [mode.current.id == .build ? nil : "\(mode.current.name) mode", doorModel]
                 .compactMap { $0 }.joined(separator: ", ")
         )
         .accessibilityHint("Model, effort and when \(session.agentName) asks")
@@ -94,7 +94,9 @@ struct ComposerSettingsControl: View {
     @ViewBuilder private var content: some View {
         if showsGoalEditor, let controller = automation.goal(for: session) {
             ComposerSettingsPageFrame(title: controller.goal == nil ? "Set a Goal" : "Goal", onBack: backFromPage) {
-                SessionGoalEditor(controller: controller, agentName: session.agentName) { isPresented = false }
+                // Saving or cancelling comes back to Task Settings, as Escape does.
+                SessionGoalEditor(
+                    controller: controller, agentName: session.agentName, isPage: true, onDismiss: backFromPage)
             }
         } else if showsMCP, let library {
             ComposerSettingsPageFrame(title: "MCP Servers", onBack: backFromPage) {
@@ -118,6 +120,12 @@ struct ComposerSettingsControl: View {
                 onUndo: undo,
                 onSet: set)
         }
+    }
+
+    /// The model the door names: the agent's model setting, else the model it reports running (an
+    /// agent with no model setting picks its own), else just what the door opens.
+    private var doorModel: String {
+        settings.model?.shortModelName ?? session.usage?.model ?? "Settings"
     }
 
     /// The task's branch, which the captions name as where the agent works freely.
@@ -240,3 +248,18 @@ struct ComposerSettingsPageFrame<Content: View>: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Task settings door - Model, mode, Fast and no model setting") {
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            ComposerSettingsDoorLabel(mode: nil, model: "Haiku 5.5", isOpen: false)
+            ComposerSettingsDoorLabel(mode: "Plan", model: "Haiku 5.5", isOpen: true)
+            ComposerSettingsDoorLabel(mode: nil, model: "6.1 Sol", isFast: true, isOpen: false, isHovered: true)
+            ComposerSettingsDoorLabel(mode: nil, model: "claude-opus-5-5", isOpen: false)
+            ComposerSettingsDoorLabel(mode: nil, model: "Settings", isOpen: false)
+        }
+        .padding(DS.Space.lg)
+    }
+}
+#endif

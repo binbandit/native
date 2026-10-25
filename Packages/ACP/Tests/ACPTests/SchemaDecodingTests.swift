@@ -190,10 +190,15 @@ struct SchemaDecodingTests {
         }
         #expect(
             withCost
-                == Usage(used: 234_506, size: 1_000_000, cost: Usage.Cost(amount: 0.19107000000000002, currency: "USD"))
-        )
+                == Usage(
+                    used: 234_506, size: 1_000_000, cost: Usage.Cost(amount: 0.19107000000000002, currency: "USD"),
+                    _meta: UsageMeta(model: "claude-opus-5-5")))
         #expect(withCost.fractionUsed == 0.234506)
-        #expect(withoutCost == Usage(used: 234_117, size: 1_000_000, cost: nil))
+        #expect(
+            withoutCost
+                == Usage(used: 234_117, size: 1_000_000, cost: nil, _meta: UsageMeta(model: "claude-opus-5-5")))
+        #expect(withoutCost.model == "claude-opus-5-5")
+        #expect(withCost.model == "claude-opus-5-5")
     }
 
     @Test func unknownUpdateKindIsUnsupported() throws {
