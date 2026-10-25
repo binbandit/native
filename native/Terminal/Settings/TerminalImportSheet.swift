@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 import Terminal
 
@@ -67,7 +66,7 @@ struct TerminalImportSheet: View {
     /// The imported family, or why it isn't one Native can use.
     private var font: String? {
         guard let family = ghosttyImport.fontFamily else { return nil }
-        return NSFontManager.shared.availableFontFamilies.contains(family) ? family : "\(family) (not installed)"
+        return DSCodeFont.isInstalled(family) ? family : "\(family) (not installed)"
     }
 
     @ViewBuilder private var colorsRow: some View {

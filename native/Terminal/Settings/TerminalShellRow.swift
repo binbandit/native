@@ -1,6 +1,9 @@
-import AppKit
 import SwiftUI
 import Terminal
+
+#if canImport(AppKit)
+import AppKit
+#endif
 
 /// Settings › Terminal › Shell: the user's login shell by default, a shell from `/etc/shells`, or
 /// any program they pick. New tabs use it; a Ghostty config's own `command` wins while it's in use.
@@ -35,7 +38,10 @@ struct TerminalShellRow: View {
         if case .path(let custom) = store.preferences.settings.shell, !listed.contains(custom) {
             shells.append(.init(value: .shell(.path(custom)), title: custom))
         }
-        return shells + [.init(value: .other, title: "Other…")]
+        #if canImport(AppKit)
+        shells.append(.init(value: .other, title: "Other…"))
+        #endif
+        return shells
     }
 
     private var selection: Binding<Choice> {
@@ -63,7 +69,10 @@ struct TerminalShellRow: View {
         return Text("Your Ghostty config's command runs instead: \(command)")
     }
 
+    /// Picks any program with an open panel. iPadOS has no picker for a host's files, so it offers
+    /// only the listed shells.
     private func chooseProgram() {
+        #if canImport(AppKit)
         let panel = NSOpenPanel()
         panel.message = "Choose the shell new terminal tabs run."
         panel.prompt = "Use Shell"
@@ -71,6 +80,7 @@ struct TerminalShellRow: View {
         panel.canChooseDirectories = false
         guard panel.runModal() == .OK, let url = panel.url else { return }
         store.preferences.settings.shell = .path(url.path(percentEncoded: false))
+        #endif
     }
 
     /// The shells registered on this Mac, from `/etc/shells`.
