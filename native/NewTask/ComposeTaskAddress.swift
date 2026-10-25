@@ -220,7 +220,8 @@ struct ComposeTaskAddress: View {
     private var workspaceDetail: String {
         if entry.project == nil { return "" }
         return switch compose.workspace {
-        case .newWorktree: entry.device.isRemote ? "its own worktree on \(deviceName)" : "its own worktree"
+        case .newWorktree, .newWorktreeFrom:
+            entry.device.isRemote ? "its own worktree on \(deviceName)" : "its own worktree"
         case .project: "in the project folder"
         case .branch, .worktree: "in its workspace"
         case nil: compose.isReadingWorkspaces ? "Reading workspaces…" : "project default"

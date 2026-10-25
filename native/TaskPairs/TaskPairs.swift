@@ -10,6 +10,8 @@ struct TaskPair: Codable, Hashable, Identifiable {
     var tasks: [SessionKey]
     /// The task the user kept; the pair is one task again from then on.
     var kept: SessionKey?
+    /// The commit both worktrees were made from, to compare their work from.
+    var start: String?
 
     func other(than key: SessionKey) -> SessionKey? {
         tasks.first { $0 != key }
@@ -46,10 +48,18 @@ final class TaskPairs {
         save()
     }
 
-    /// A starting task opened as a session.
+    /// A task's conversation was replaced (it opened from starting, `/clear`, Change Agent, a new
+    /// workspace): the pair follows the task, not the conversation it left.
     func replace(_ old: SessionKey, with new: SessionKey) {
         guard let index = all.firstIndex(where: { $0.tasks.contains(old) }) else { return }
         all[index].tasks = all[index].tasks.map { $0 == old ? new : $0 }
+        if all[index].kept == old { all[index].kept = new }
+        save()
+    }
+
+    func setStart(_ commit: String, forPairContaining key: SessionKey) {
+        guard let index = all.firstIndex(where: { $0.tasks.contains(key) }) else { return }
+        all[index].start = commit
         save()
     }
 

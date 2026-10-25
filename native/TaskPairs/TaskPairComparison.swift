@@ -95,9 +95,20 @@ final class TaskPairComparison {
                 } else { nil }
             sides.append((key, branch, head, try await repository.snapshot().tree, repository))
         }
-        guard sides.count == 2, let first = sides.first, let last = sides.last,
-            let base = try await first.repository.mergeBase(first.head, last.head)
-        else { throw Failure("These two versions don't start from the same commit, so they can't be compared.") }
+        // The commit both worktrees were made from; for a pair started without one, where their
+        // histories meet.
+        guard sides.count == 2, let first = sides.first, let last = sides.last else {
+            throw Failure("These two versions can't be compared.")
+        }
+        let base: String?
+        if let start = pair.start, try await first.repository.hasObject(start) {
+            base = start
+        } else {
+            base = try await first.repository.mergeBase(first.head, last.head)
+        }
+        guard let base else {
+            throw Failure("These two versions don't start from the same commit, so they can't be compared.")
+        }
         var versions: [Version] = []
         for side in sides {
             let (repository, target) = (side.repository, side.target)

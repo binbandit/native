@@ -119,7 +119,8 @@ struct ProjectSection<TaskAccessory: View>: View {
             .padding(
                 .leading,
                 model.isCoordinatorChild(summary.id, among: sessions + earlier)
-                    ? DS.Space.xl : placement != nil ? DS.TaskPair.memberIndent : 0)
+                    ? DS.Space.xl : placement != nil ? DS.TaskPair.memberIndent : 0
+            )
             .sidebarDraggable(row, title: model.title(for: summary), state: drag)
             .sidebarDropTarget(row, state: drag, isActive: drag.dragged.isSession, onDrop: model.applySidebarDrop)
         }

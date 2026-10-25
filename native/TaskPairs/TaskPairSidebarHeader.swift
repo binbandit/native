@@ -57,10 +57,13 @@ struct TaskPairSidebarHeader: View {
         let app = fixtures.app()
         VStack(spacing: 0) {
             TaskPairSidebarHeader(pair: fixtures.pair(in: app)) { _ in }
-            AllInViewTaskRow(title: "Codex", status: .done, isUnread: true, branchName: "binbandit/offline-time-pill-2") {}
-                .padding(.leading, DS.TaskPair.memberIndent)
-            AllInViewTaskRow(title: "Claude Code", status: .idle, isSelected: true, branchName: "binbandit/offline-time-pill") {}
-                .padding(.leading, DS.TaskPair.memberIndent)
+            AllInViewTaskRow(title: "Codex", status: .done, isUnread: true, branchName: "binbandit/offline-time-pill-2")
+            {}
+            .padding(.leading, DS.TaskPair.memberIndent)
+            AllInViewTaskRow(
+                title: "Claude Code", status: .idle, isSelected: true, branchName: "binbandit/offline-time-pill"
+            ) {}
+            .padding(.leading, DS.TaskPair.memberIndent)
             AllInViewTaskRow(title: "Queue follow-ups while a turn runs", status: .working) {}
         }
         .environment(app)

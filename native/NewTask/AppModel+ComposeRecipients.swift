@@ -67,10 +67,10 @@ extension AppModel {
         return nil
     }
 
-    /// Starts the brief's second task beside `first`, with the same message and attachments, and
-    /// groups the two.
-    func startComposeSecondTask(beside first: StartingTask) {
-        guard let second = composeTask.second, let runtime = composeSecondRuntime else { return }
+    /// Lists the brief's second task beside `first`, with the same message and attachments, and
+    /// groups the two. Starting it is the caller's, once both share a starting commit.
+    func listComposeSecondTask(beside first: StartingTask) -> StartingTask? {
+        guard let second = composeTask.second, let runtime = composeSecondRuntime else { return nil }
         let task = StartingTask(
             project: first.project, agent: runtime.agent, isAgentPicked: false, workspaceLabel: "Creating a worktree")
         task.device = first.device
@@ -83,7 +83,29 @@ extension AppModel {
         task.wantsComposerFocus = false
         startingTasks.insert(task, at: min(1, startingTasks.count))
         taskPairs.add([first.id, task.id])
-        Task { await start(task) }
+        return task
+    }
+
+    /// Chooses one commit for every task of a brief and makes each worktree from it, so their
+    /// versions differ only by the agents' work; the pair keeps it as the base to compare from.
+    /// Without one (no worktrees there, or a host without the project yet), each starts on its own.
+    func pinSharedWorktreeStart(for tasks: [StartingTask]) async {
+        guard let first = tasks.first, let project = projects.project(first.project) else { return }
+        let start: TaskWorkspaceChoice?
+        switch first.device {
+        case .thisMac:
+            start = try? await taskWorkspaces?.newWorktreeStart(in: project)
+        case .remote(let id):
+            guard let host = hosts.host(id), let path = project.checkoutPath(on: first.device),
+                let provider = await taskWorkspaces(on: host)
+            else { return }
+            start = try? await provider.newWorktreeStart(in: project.onHost(at: path))
+        }
+        guard let start, case .newWorktreeFrom(let commit, _, _) = start else { return }
+        for task in tasks where task.workspaceChoice == .newWorktree && task.folder == nil {
+            task.workspaceChoice = start
+        }
+        taskPairs.setStart(commit, forPairContaining: first.id)
     }
 
     /// Escape before the first task opened takes back both of the brief's tasks.

@@ -7,8 +7,23 @@ extension GitStore {
     /// Makes the checkout a new task runs in, following `settings`. A worktree gets the project's
     /// ignored env files before this returns, so the agent sees them from its first turn, and its
     /// setup scripts start in the background. `nil` when the project isn't a git repository.
+    /// A commit chosen ahead for a new worktree (`taskWorktreeStart`), with what to tell the task.
+    struct PinnedStart {
+        let commit: String
+        let branch: String?
+        let notice: String?
+    }
+
+    /// Where a new task worktree in `project` would start now, fetching first as policy allows; nil
+    /// outside a repository or before its first commit.
+    func taskWorktreeStart(in project: URL) async throws -> TaskWorktreeBase? {
+        guard let repository = try await resolveGit().repository(at: project), try await repository.hasCommits()
+        else { return nil }
+        return try await repository.taskWorktreeBase(fetchRemote: allowsWorktreeFetch())
+    }
+
     func prepareTaskCheckout(
-        in project: URL, prefix: String, forceWorktree: Bool = false
+        in project: URL, prefix: String, forceWorktree: Bool = false, startingAt pinned: PinnedStart? = nil
     ) async throws -> GitTaskCheckout? {
         guard let repository = try await resolveGit().repository(at: project) else { return nil }
         let (branch, code) = try await provisionalBranch(in: repository, prefix: prefix)
@@ -24,7 +39,13 @@ extension GitStore {
             let folder = taskLocation(of: repository).appending(path: code, directoryHint: .isDirectory)
             let main = try await repository.worktrees().first(where: \.isMain)?.path ?? repository.root
             try await beforeCreatingTaskWorktree?(GitTaskWorktree(folder: folder, projectRoot: main, branch: branch))
-            let base = try await repository.taskWorktreeBase(fetchRemote: allowsWorktreeFetch())
+            let base: PinnedStart
+            if let pinned {
+                base = pinned
+            } else {
+                let resolved = try await repository.taskWorktreeBase(fetchRemote: allowsWorktreeFetch())
+                base = PinnedStart(commit: resolved.commit, branch: resolved.branch, notice: resolved.localNotice)
+            }
             let worktree: Worktree
             do {
                 worktree = try await repository.addWorktree(at: folder, newBranch: branch, startPoint: base.commit)
@@ -37,7 +58,7 @@ extension GitStore {
             try await repository.markProvisional(branch)
             try await repository.recordUnusedTaskWorktree(worktree)
             return try await setUp(
-                worktree, of: repository, branch: branch, baseBranch: base.branch, baseNotice: base.localNotice)
+                worktree, of: repository, branch: branch, baseBranch: base.branch, baseNotice: base.notice)
         }
     }
 

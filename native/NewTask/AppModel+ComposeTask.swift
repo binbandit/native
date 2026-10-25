@@ -199,7 +199,7 @@ extension AppModel {
         compose.stage = .folding
         quickEntry.clearAfterStarting()
         startingTasks.insert(task, at: 0)
-        startComposeSecondTask(beside: task)
+        let partner = listComposeSecondTask(beside: task)
         if revealing {
             compose.navigationSelection = task.id
             selection = task.id
@@ -208,6 +208,11 @@ extension AppModel {
         }
         ProjectDevicePreference.remember(task.device, for: project.id)
         Task {
+            if let partner {
+                // Both worktrees start from one commit, so the two versions differ only by their work.
+                await pinSharedWorktreeStart(for: [task, partner])
+                Task { await start(partner) }
+            }
             await start(task)
             if !compose.isPresented, compose.starting === task {
                 compose.editor = nil
@@ -218,8 +223,16 @@ extension AppModel {
         }
     }
 
+    /// Escape takes the brief back only while no task of it has opened: once one has, the agent has
+    /// the brief, and the task stays.
+    var composeCanCancelStart: Bool {
+        guard let task = composeTask.starting, task.openedSession == nil else { return false }
+        guard let partner = taskPairs.pair(containing: task.id)?.other(than: task.id) else { return true }
+        return startingTask(partner)?.openedSession == nil && startingTask(partner) != nil
+    }
+
     func cancelComposeStart() {
-        guard let task = composeTask.starting, task.openedSession == nil else { return }
+        guard composeCanCancelStart, let task = composeTask.starting else { return }
         discardComposePartner(of: task)
         discard(task)
         composeTask.navigationSelection = selection
