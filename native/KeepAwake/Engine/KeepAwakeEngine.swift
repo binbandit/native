@@ -13,7 +13,9 @@ protocol KeepAwakeEngine: AnyObject {
     func stop()
 }
 
+#if os(macOS)
 extension KeepAwake: KeepAwakeEngine {}
+#endif
 
 /// What the app is doing that keeping awake depends on, when agents run in it.
 nonisolated struct KeepAwakeActivity: Hashable, Sendable {
