@@ -63,6 +63,21 @@ import Testing
         #expect(sensitiveKey.diagnostics.allSatisfy { !$0.description.contains("secret") })
     }
 
+    /// Profiles can't be installed in tests, so simulated keys stand in for forced ones: both reach the
+    /// loader through the macOS source's key list, while unforced user keys never poison the snapshot.
+    @Test func macSourceReportsMisspelledManagedDeploymentKey() throws {
+        let suite = "NetworkPolicyTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set("airGapped", forKey: "policy.deployment.mdoe")
+        let user = PolicyLoader.load(from: UserDefaultsPolicySource(defaults: defaults))
+        #expect(user.network.isValid && user.network.mode == .ordinary)
+        let managed = PolicyLoader.load(
+            from: UserDefaultsPolicySource(defaults: defaults, simulatedManagedKeys: ["policy.deployment.mdoe"]))
+        #expect(!managed.network.isValid)
+        #expect(managed.diagnostics.allSatisfy { !$0.description.contains("mdoe") })
+    }
+
     @Test func configuredMirrorAndExplicitLocalPermission() throws {
         let policy = PolicyLoader.load(
             from: StaticPolicySource(managed: [
