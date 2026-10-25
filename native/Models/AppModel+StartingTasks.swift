@@ -161,7 +161,7 @@ extension AppModel {
             } else {
                 fail(
                     task, "Couldn't start a \(task.agent.displayName) task",
-                    error.localizedDescription.withoutTerminalEscapes)
+                    ((error as? RPCError)?.detail ?? error.localizedDescription).withoutTerminalEscapes)
             }
         }
     }
