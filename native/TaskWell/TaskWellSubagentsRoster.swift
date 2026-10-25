@@ -21,7 +21,7 @@ struct TaskWellSubagentsRoster: View {
                         TaskSignal(
                             status: subagent.workState == nil ? child?.taskStatus ?? .idle : status(subagent),
                             placement: .well,
-                            attentionSince: child?.taskWellAttentionSince
+                            attentionSince: child?.taskWellAsk?.since
                         )
                         .frame(width: DS.TaskWell.signal, height: DS.TaskWell.signal)
                         VStack(alignment: .leading, spacing: DS.Space.xxs) {

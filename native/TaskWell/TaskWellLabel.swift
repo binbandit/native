@@ -20,11 +20,7 @@ struct TaskWellLabel: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             if content.progress != nil || (content.showsReview && !isCompact) {
                 trailing
-                    .padding(.leading, DS.TaskWell.dividerInset)
-                    .overlay(alignment: .leading) {
-                        SeparatorLine(axis: .vertical)
-                            .frame(height: DS.TaskWell.signal)
-                    }
+                    .dsTrailingSegment(inset: DS.TaskWell.dividerInset, dividerHeight: DS.TaskWell.signal)
                     .fixedSize()
             }
         }
