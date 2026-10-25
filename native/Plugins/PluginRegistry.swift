@@ -101,6 +101,7 @@ final class PluginRegistry {
     init(previewing plugins: [any NativePlugin], disabled: Set<String> = []) {
         builtIns = plugins
         defaults = PreviewUserDefaults()
+        policyCenter = .shared
         choices = Dictionary(uniqueKeysWithValues: disabled.map { ($0, false) })
         loadedPlugins = plugins.map { LoadedPlugin(plugin: $0, source: .builtIn) }
     }
