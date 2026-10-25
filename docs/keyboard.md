@@ -296,7 +296,7 @@ Other file types use the platform's Quick Look preview, with its native navigati
 | --- | --- | --- | --- |
 | ⌘K | Command palette: run any command, or jump to a task, project or Settings page | View | `palette.show` |
 | ⌘/ | Keyboard shortcuts (also the "?" at the status bar's trailing end) | Help | `help.keyboardShortcuts` |
-| ⌘N | New task with the last-used agent; with Compose Task on, open Quick Entry over the current task | File | `session.new` |
+| ⌘N | New task with the last-used agent; with Compose Task on, open Quick Entry over the current task; on Home Next, focus its start field | File | `session.new` |
 | ⇧⌘N | With Compose Task on, expand Quick Entry into New Task, keeping the draft and context | File | `task.compose` |
 | ⌥⌘O | With Quick Entry open, choose the device the task runs on | File | `task.chooseDevice` |
 | ⌥⌘N | New task with… (agent picker) | File | `session.newWithAgent` |
@@ -342,7 +342,11 @@ the usual permission keys: Cmd-Y allows once, Option-Cmd-Y always allows when of
 Shift-Cmd-Delete rejects. Tab and Space reach Up next, Open Task, the ordering menu, and Show
 more. Up next opens Peek; its Open Task action enters the conversation. Cmd-Return opens the
 current ask's task; Shift-Cmd-Down shows the next five rows.
-Cmd-N starts a task and Cmd-O opens a folder, including before the first project exists.
+Cmd-N focuses the start field at the bottom of Home; Cmd-O opens a folder, including before the
+first project exists. The start field writes Quick Entry's draft to Quick Entry's address: Return
+starts the task and stays on Home, Cmd-Return starts it and opens it, Shift-Return and
+Option-Return insert a new line, and Escape leaves the field. Shift-Cmd-N (with Compose Task on)
+moves the draft onto the New Task page.
 The current question uses the composer's question keys: 1-9 pick an offered choice, Return
 sends, and typing in the answer field keeps digits as text. Plans use Cmd-Y to approve,
 Shift-Cmd-Delete to request a revised plan.

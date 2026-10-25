@@ -230,6 +230,18 @@ experiment. Its visible ask owns the permission shortcuts while Peek is closed. 
 acknowledgement-based permission delivery: failed answers keep the exact request and Peek open,
 and failed instructions retain their text without duplicating queued follow-ups.
 
+Home's start field is Quick Entry's draft and address at the composer's resting size, not a
+separate editor: it starts through Quick Entry's validation and policy checks, and Shift-Cmd-N
+carries the same draft to the Compose page. Return starts and stays with a receipt; Cmd-Return
+opens the task. Without Compose Task, the field still starts tasks; only the page is unavailable.
+
+Three summaries are the user's to add in Settings > General > Home, all off by default: review
+requests (one Up next row from the GitHub inbox, counted with the asks), usage limits (one row per
+paused agent from Usage, standing in for the tasks it stopped), and while you were away (one
+line under the status, counted on the device when the user comes back after 15 minutes or more of
+Native not being frontmost or the display sleeping). None adds a network call; each reads a model
+the app already keeps.
+
 With every optional module off, the ask, task rows and local working status remain complete.
 Managed permission modes are attributed inside the shared approval, and a managed remote-host
 restriction is explained below the task list. The copy describes the existing policy precisely:
@@ -239,7 +251,8 @@ GitHub availability policy and universal per-command approval enforcement remain
 
 For isolated Debug checks, enable the gate with Settings > Labs > Next or
 `defaults write dev.binbandit.native.dev.<name> experiment.NativeHomeNext -bool YES`, then launch
-with `-nativeHomeNextFixture busy` for inert preview models. Other fixture values are `calm` (no optional modules), `managed`, `destructive`, `unknown`,
+with `-nativeHomeNextFixture busy` for inert preview models. Other fixture values are `calm` (no optional modules), `summaries` (every summary on), `typed`
+and `startFailure` (the start field), `managed`, `destructive`, `unknown`,
 `approvalFailure`, `quiet`,
 `first`, `empty`, `loading`, `recovery`, `narrow`, `question`, `questionText`, `questions`,
 `plan`, `planFailure`, `planText`, `planRetained`, `failure`, `failurePaused`, and `questionFailure` (a read-only sink

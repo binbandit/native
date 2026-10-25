@@ -1,4 +1,5 @@
 import ACP
+import Experiments
 import Foundation
 import TaskList
 
@@ -36,6 +37,79 @@ extension AppModel {
     }
 
     func setHomeNextVisible(_ visible: Bool) { taskPeek.homeIsVisible = visible }
+
+    /// ⌘N writes in Home's start field while Home shows it, rather than opening another surface.
+    var homeNextOwnsNewTask: Bool {
+        experiments.value(of: .homeNext) && taskPeek.homeIsVisible && selection == nil && !projects.all.isEmpty
+    }
+
+    /// What finished, asked or failed between `start` and `end`, as the user finds it on return.
+    func homeNextAway(from start: Date, to end: Date) -> HomeNextAway {
+        var away = HomeNextAway(start: start, end: end)
+        for task in homeNextTasks(retaining: nil) {
+            if away.contains(task.finishedAt) {
+                away.finished += 1
+            } else if task.status == .failed, away.contains(task.date) {
+                away.failed += 1
+            } else if task.needsYou, task.status != .limited, away.contains(task.date) {
+                away.asked += 1
+            }
+        }
+        return away
+    }
+
+    /// Agents paused at a usage limit, with the tasks each one stopped. Empty while Usage is off.
+    var homeNextLimits: [HomeNextLimit] {
+        #if DEBUG
+        if let limits = homeNext.fixtureLimits { return limits }
+        #endif
+        guard plugins.isEnabled(BuiltInPlugins.usage.manifest.id) else { return [] }
+        let limits = BuiltInPlugins.usage.limits
+        return limits.providers.values
+            .filter { $0.status == .reached && limits.limitStatus(for: $0.agent) != nil }
+            .sorted { $0.updatedAt < $1.updatedAt }
+            .map { limit in
+                let stopped = limits.sessions.values
+                    .filter { $0.target.agent == limit.agent && $0.target.isPromptable }
+                    .sorted { $0.target.session.rawValue < $1.target.session.rawValue }
+                let keys = stopped.map { SessionKey(agent: $0.target.agent, id: $0.target.session) }
+                return HomeNextLimit(
+                    agent: limit.agent, agentName: limit.agentName, window: limit.window?.label,
+                    resetsAt: limit.resetsAt, since: limit.updatedAt, tasks: keys,
+                    titles: zip(keys, stopped).map { key, session in
+                        sessionList.first { $0.id == key }.map(title(for:)) ?? session.target.title ?? "A task"
+                    },
+                    resumes: stopped.contains { $0.resumeAt != nil })
+            }
+    }
+
+    /// The limit row opens the first task it stopped in Peek.
+    func peekHomeNextLimit(_ limit: HomeNextLimit) {
+        guard let key = limit.tasks.first else { return }
+        peekTask(key)
+    }
+
+    /// Starts the start field's draft. Return stays on Home with a receipt; ⌘Return opens the task.
+    func startHomeNextTask(open: Bool) -> StartingTask? {
+        guard experiments.value(of: .homeNext), quickEntry.hasMessage else { return nil }
+        #if DEBUG
+        // Fixtures are inert: they never start an agent or make a worktree.
+        guard HomeNextPreviewFixtures.requested == nil else { return nil }
+        #endif
+        return startQuickEntryDraft(open: open, confirms: false)
+    }
+
+    /// An empty draft follows the project Home is showing; a draft keeps the address it was written to.
+    func prepareHomeNextStart() {
+        guard !quickEntry.isPresented, !composeTask.isPresented, quickEntry.draft.isEmpty, quickEntry.context == nil,
+            quickEntry.attachments.isEmpty
+        else {
+            reconcileQuickEntryAgent()
+            return
+        }
+        prepareQuickEntryAddress()
+        reconcileQuickEntryAgent()
+    }
 
     func peekHomeNextTask(_ task: HomeNextTask) {
         let ask = taskAsks(for: task.id).first { ask in

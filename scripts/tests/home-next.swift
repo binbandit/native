@@ -17,7 +17,11 @@ private struct HomeNextChecks {
         try await instructions()
         try await failedDelivery()
         try await failedPeekDelivery()
-        print("PASS: Home Peek routing, shortcut ownership, exact requests, instructions and failed delivery")
+        startField()
+        summaries()
+        print(
+            "PASS: Home Peek routing, shortcut ownership, exact requests, instructions, failed delivery, "
+                + "the start field and summaries")
     }
 
     static func routing() async throws {
@@ -169,6 +173,64 @@ private struct HomeNextChecks {
                     session.queuedPrompts.map(\.text) == ["An existing follow-up"], "Peek retry leaves no duplicates")
                 require(session.draft == "Keep the task draft", "Peek failure preserves the task draft")
             }
+        }
+    }
+
+    static func startField() {
+        let app = HomeNextPreviewFixtures.model(.busy)
+        require(!app.homeNextOwnsNewTask, "Cmd-N keeps its usual meaning while Home is hidden")
+        app.setHomeNextVisible(true)
+        require(app.homeNextOwnsNewTask, "Cmd-N writes in the start field while Home shows it")
+        app.prepareHomeNextStart()
+        require(app.quickEntry.project == app.currentProject?.id, "The start field addresses Home's project")
+        require(app.quickEntry.agent != nil, "The start field addresses an agent")
+        require(app.startHomeNextTask(open: false) == nil, "An empty draft starts nothing")
+        app.quickEntry.draft = "Add a retry button to the failed upload toast"
+        let before = app.startingTasks.count
+        require(app.startHomeNextTask(open: false) == nil, "A missing folder is caught before anything starts")
+        require(app.quickEntry.failure != nil, "The start field says why it couldn't start")
+        require(
+            app.quickEntry.draft == "Add a retry button to the failed upload toast", "A refused start keeps the draft")
+        require(app.startingTasks.count == before, "A refused start creates no task")
+        app.prepareHomeNextStart()
+        require(app.quickEntry.draft.isEmpty == false, "Coming back to Home keeps a draft and its address")
+        app.experiments.set(false, for: .homeNext)
+        require(!app.homeNextOwnsNewTask, "With Next off, Cmd-N is unchanged")
+    }
+
+    static func summaries() {
+        let app = HomeNextPreviewFixtures.model(.busy)
+        let away = app.homeNextAway(from: .now.addingTimeInterval(-2 * 3_600), to: .now)
+        require(away.asked == 3 && away.failed == 1 && away.finished == 0, "Away counts what waits on the user")
+        require(away.isNews, "Waiting asks are news")
+        require(
+            !app.homeNextAway(from: .now.addingTimeInterval(-10 * 3_600), to: .now.addingTimeInterval(-9 * 3_600))
+                .isNews, "Nothing from before the absence is counted")
+
+        var clock = Date(timeIntervalSince1970: 1_800_000_000)
+        let home = HomeNextModel { clock }
+        home.countAway = { HomeNextAway(start: $0, end: $1, finished: 1) }
+        home.left()
+        clock += 5 * 60
+        home.returned()
+        require(home.away == nil, "Switching apps briefly is not an absence")
+        home.left()
+        clock += 20 * 60
+        home.left()
+        clock += 20 * 60
+        home.returned()
+        require(home.away?.end.timeIntervalSince(home.away?.start ?? clock) == 40 * 60, "Absence starts at first leave")
+
+        let limit = HomeNextLimit(
+            agent: .init(rawValue: "claude-code"), agentName: "Claude Code", window: "5-hour", resetsAt: nil,
+            since: .now, titles: ["Regenerate the schema types"])
+        require(limit.title == "Claude Code reached its usage limit", "A limit without a reset says so")
+        require(
+            limit.detail == "Its 5-hour limit. Regenerate the schema types stopped at it.",
+            "A limit names the task it stopped")
+        require(HomeNextReviews([]) == nil, "No review requests, no row")
+        for summary in HomeNextSummary.allCases {
+            require(!summary.isShown(in: PreviewUserDefaults()), "\(summary.title) is off in the calm default")
         }
     }
 

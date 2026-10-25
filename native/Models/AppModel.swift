@@ -25,6 +25,7 @@ final class AppModel {
     let ordering: SessionOrdering
     let sessions: SessionStore
     let taskPeek = TaskPeekPresentation()
+    let homeNext = HomeNextModel()
     let unread: UnreadSessions
     /// New sessions that haven't had a message yet, so an empty one doesn't outlive the run.
     let unsentSessions: UnsentSessions
@@ -241,6 +242,7 @@ final class AppModel {
         _ = runtimes.sync { [catalog, installations] in
             catalog.hasSessions(of: $0) || installations.wasInstalledLastLaunch($0)
         }
+        homeNext.countAway = { [weak self] in self?.homeNextAway(from: $0, to: $1) }
     }
 
     /// Ends every agent's process, for when the app quits.

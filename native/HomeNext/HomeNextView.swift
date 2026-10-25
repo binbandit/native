@@ -1,4 +1,5 @@
 import ACP
+import GitHub
 import SwiftUI
 import TaskList
 
@@ -10,6 +11,11 @@ struct HomeNextView: View {
     @Environment(AppModel.self) private var model
     @Environment(SettingsPresentation.self) private var settings
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(GitHubModel.self) private var gitHub: GitHubModel?
+    @FocusedValue(\.showsPullRequests) private var showsPullRequests
+    @AppStorage(HomeNextSummary.reviews.storageKey) private var showsReviews = false
+    @AppStorage(HomeNextSummary.usageLimits.storageKey) private var showsLimits = false
+    @AppStorage(HomeNextSummary.away.storageKey) private var showsAway = false
     @State private var order = HomeAskOrder.quickest
     @State private var current: SessionKey?
     @State private var currentRequest: HomeNextRequest.ID?
@@ -19,7 +25,13 @@ struct HomeNextView: View {
 
     var body: some View {
         let tasks = model.homeNextTasks(retaining: currentRequest)
-        let asks = order.sorted(tasks.filter(\.needsYou), retaining: current, id: \.id, kind: \.kind, date: \.date)
+        let limits = showsLimits ? model.homeNextLimits : []
+        // A task a limit stopped is told once, by its limit's row, rather than as a failure to retry.
+        let limited = Set(limits.flatMap(\.tasks))
+        let asks = order.sorted(
+            tasks.filter { $0.needsYou && !($0.status == .failed && limited.contains($0.id)) },
+            retaining: current, id: \.id, kind: \.kind, date: \.date)
+        let reviews = showsReviews ? HomeNextReviews(gitHub?.inbox?.reviewRequested ?? []) : nil
         let finished = tasks.filter {
             $0.finishedAt.map { Calendar.current.isDateInToday($0) } == true
         }.sorted { ($0.finishedAt ?? .distantPast) > ($1.finishedAt ?? .distantPast) }
@@ -28,10 +40,12 @@ struct HomeNextView: View {
                 if model.projects.all.isEmpty {
                     firstLaunch
                 } else {
-                    header(count: asks.count)
+                    header(asks: asks.count, total: asks.count + (reviews == nil ? 0 : 1))
                     if let receipt {
-                        HomeNextReceiptView(receipt: receipt) { model.openHomeNextTask(receipt.task) }
-                            .padding(.top, DS.HomeNext.statusTop)
+                        HomeNextReceiptView(receipt: receipt) {
+                            model.openHomeNextTask(receipt.starting?.openedSession ?? receipt.task)
+                        }
+                        .padding(.top, DS.HomeNext.statusTop)
                     }
                     Group {
                         if let task = asks.first {
@@ -52,12 +66,13 @@ struct HomeNextView: View {
                             : .asymmetric(
                                 insertion: .offset(y: DS.HomeNext.rise).combined(with: .opacity), removal: .opacity))
                     SeparatorLine()
-                    if asks.count > 1 {
-                        rows(Array(asks.dropFirst()), title: "Up next", finished: false)
-                    } else if asks.isEmpty, !finished.isEmpty {
+                    if asks.count > 1 || reviews != nil || !limits.isEmpty {
+                        upNext(Array(asks.dropFirst()), reviews: reviews, limits: limits)
+                    }
+                    if asks.isEmpty, !finished.isEmpty {
                         rows(finished, title: "Finished today", finished: true)
                     }
-                    HomeNextStatusLine(tasks: tasks)
+                    HomeNextStatusLine(tasks: tasks, away: showsAway ? awaySentence : nil)
                         .padding(.top, DS.HomeNext.statusTop)
                     if model.agentStartupFailure != nil {
                         HomeNextAgentReadiness(agents: agents) { settings.open(.agents) }
@@ -77,18 +92,11 @@ struct HomeNextView: View {
         .background(.dsBackground)
         .safeAreaInset(edge: .bottom) {
             if !model.projects.all.isEmpty {
-                Button {
-                    Task { await model.newSession() }
-                } label: {
-                    HStack(spacing: DS.Space.md) {
-                        Text("New Task")
-                        if let shortcut = CommandRegistry.shared.keyboardShortcut(for: .sessionNew) {
-                            Kbd(shortcut)
-                        }
-                    }
+                HomeNextStartField { task in
+                    receipt = HomeNextReceipt(
+                        task: task.id, title: model.projects.project(task.project)?.name ?? "the project",
+                        action: "Started a \(task.agent.displayName) task", date: .now, starting: task)
                 }
-                .buttonStyle(.ds(.secondary))
-                .padding(.bottom, DS.Space.xl)
             }
         }
         .dsToolbarBand(showsDivider: false)
@@ -109,14 +117,15 @@ struct HomeNextView: View {
         .animation(reduceMotion ? nil : .dsDisclosure, value: receipt?.date)
     }
 
-    private func header(count: Int) -> some View {
+    /// While an ask is on the page, "1 of 5"; otherwise how many rows still want the user.
+    private func header(asks: Int, total: Int) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: DS.Space.md) {
             Text("Needs you").font(.dsCalloutMedium).foregroundStyle(.dsTextPrimary)
-            Text(count == 0 ? "0" : "1 of \(count)")
+            Text(asks == 0 ? "\(total)" : "1 of \(total)")
                 .font(.dsCallout).foregroundStyle(.dsTextTertiary).monospacedDigit()
                 .accessibilityIdentifier("home-next-count")
             Spacer()
-            if count > 0 {
+            if asks > 0 {
                 Menu {
                     Picker("Order asks", selection: $order) {
                         Text("Quickest first").tag(HomeAskOrder.quickest)
@@ -139,8 +148,9 @@ struct HomeNextView: View {
             Text(
                 isLoading
                     ? "Checking your projects"
-                    : receipt.map { "Your last answer was at \($0.date.formatted(date: .omitted, time: .shortened))" }
-                        ?? "Nothing needs you now"
+                    : receipt.flatMap { $0.starting == nil ? $0 : nil }.map {
+                        "Your last answer was at \($0.date.formatted(date: .omitted, time: .shortened))"
+                    } ?? "Nothing needs you now"
             )
             .font(.dsBody).foregroundStyle(.dsTextTertiary)
             title(isLoading ? "Finding your tasks…" : "You’re clear.").padding(.top, DS.HomeNext.titleTop)
@@ -185,6 +195,49 @@ struct HomeNextView: View {
             }
         }
         .padding(.top, DS.HomeNext.sectionTop)
+    }
+
+    /// The asks after the current one, then the summaries the user chose to add.
+    private func upNext(_ asks: [HomeNextTask], reviews: HomeNextReviews?, limits: [HomeNextLimit]) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            rows(asks, title: "Up next", finished: false)
+            if let reviews {
+                HomeNextRow(
+                    status: .needsInput, title: reviews.title, detail: reviews.detail, date: reviews.since,
+                    describesStatus: false
+                ) { openReviews(reviews) }
+                .accessibilityHint("Opens your review requests")
+            }
+            ForEach(limits) { limit in
+                let row = HomeNextRow(
+                    status: .limited, title: limit.title, detail: limit.detail, date: limit.since,
+                    describesStatus: false
+                ) {
+                    if limit.tasks.isEmpty { settings.open(.usage) } else { model.peekHomeNextLimit(limit) }
+                }
+                if let task = limit.tasks.first {
+                    row.taskPeekAnchor(task).accessibilityHint("Opens Peek without leaving Home")
+                } else {
+                    row.accessibilityHint("Opens Usage settings")
+                }
+            }
+        }
+    }
+
+    /// One request opens its page; several open the list, filtered to them.
+    private func openReviews(_ reviews: HomeNextReviews) {
+        guard let gitHub else { return }
+        if reviews.pullRequests.count > 1, let showsPullRequests {
+            gitHub.filter.scope = .reviewRequested
+            showsPullRequests.wrappedValue = true
+        } else if let first = reviews.pullRequests.first {
+            gitHub.open(first)
+        }
+    }
+
+    private var awaySentence: String? {
+        guard let away = model.homeNext.away, away.isNews, Calendar.current.isDateInToday(away.end) else { return nil }
+        return away.sentence
     }
 
     private func title(_ text: String) -> some View {
@@ -241,4 +294,6 @@ struct HomeNextView: View {
 #Preview("Next - No tasks") { HomeNextPreviewFixtures.page(.empty) }
 #Preview("Next - Recovery") { HomeNextPreviewFixtures.page(.recovery) }
 #Preview("Next - Narrow and long title") { HomeNextPreviewFixtures.page(.narrow) }
+#Preview("Next - Every summary on") { HomeNextPreviewFixtures.page(.summaries) }
+#Preview("Next - Draft in the start field") { HomeNextPreviewFixtures.page(.typed) }
 #endif
