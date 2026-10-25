@@ -220,7 +220,7 @@ final class AppModel {
         self.sendGate = sendGate
         services = SessionServices(
             plugins: plugins, titles: titles, sendGate: sendGate, earlierConversations: earlierConversations,
-            workingSpinners: workingSpinners
+            workingSpinners: workingSpinners, drafts: ComposerDrafts(defaults: defaults)
         ) {
             continuation.yield($0)
         } titleLanded: { key, folder, title in

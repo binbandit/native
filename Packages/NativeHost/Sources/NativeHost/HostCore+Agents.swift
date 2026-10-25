@@ -151,6 +151,9 @@ extension HostCore {
             return
         }
         let hadTitle = session.record.title
+        // Only a subagent's own updates change whether it works in the background.
+        let tracksBackground = update.kind?.hasPrefix("subagent_") == true
+        let wasWorkingInBackground = tracksBackground && session.isWorkingInBackground
         append(update, to: session)
         if update.kind == "config_option_update", session.record.origin != .announced, session.loading == nil,
             !session.needsLoad, case .configOptions(let options)? = update.decoded
@@ -161,6 +164,11 @@ extension HostCore {
         if session.record.title != hadTitle {
             try? store.updateSession(session.record)
             publish(session)
+        }
+        if tracksBackground, session.isWorkingInBackground != wasWorkingInBackground {
+            publish(session)
+            // The last background work may be what an update was waiting for.
+            exitIfIdleForRestart()
         }
     }
 

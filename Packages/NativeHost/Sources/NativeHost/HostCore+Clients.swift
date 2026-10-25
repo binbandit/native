@@ -212,6 +212,8 @@ extension HostCore {
             try reply(EmptyMessage())
         case Method.runHidden:
             try reply(RunHiddenResult(output: try await runHidden(try message.params(as: RunHiddenParams.self))))
+            // Not before the reply: an update waiting on the command would exit without sending it.
+            exitIfIdleForRestart()
         case Method.setConfigOption:
             try await setConfigOption(try message.params(as: SetConfigOptionParams.self))
             try reply(EmptyMessage())

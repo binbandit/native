@@ -141,7 +141,7 @@ public struct ShutdownParams: Codable, Sendable {
     /// Stop agents now, cancelling their turns ("Quit Native and Stop Agents"). Otherwise the host
     /// restarts, and launchd brings the new binary up (an update).
     public var stopAgents: Bool
-    /// For a restart: exit now instead of once nothing is running ("Restart Host Now"). Interrupted
+    /// For a restart: exit now instead of once nothing is running ("Restart Now…"). Interrupted
     /// turns resume on the new binary like after any interruption.
     public var immediately: Bool
 

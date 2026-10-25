@@ -3,8 +3,8 @@ import SwiftUI
 
 // `HostVersionStatus` lives in NativeHostClient, where its comparison is tested.
 
-/// The banner for a mismatched host. `onRestartHost` asks the host to restart now (its interrupted
-/// turns resume like after any interruption); `onCheckForUpdates` updates this app.
+/// The banner for a mismatched host. `onRestartHost` asks to restart the host now, which confirms
+/// first while tasks work (`hostRestartConfirmation`); `onCheckForUpdates` updates this app.
 struct HostVersionNotice: View {
     let status: HostVersionStatus
     let appVersion: String
@@ -19,13 +19,15 @@ struct HostVersionNotice: View {
             NoticeBanner(
                 tone: .info,
                 systemImage: "arrow.triangle.2.circlepath",
-                title: "Native updated to \(appVersion). Its background host switches over when your tasks finish.",
+                title: "Native updated to \(appVersion). The update finishes when your tasks are idle.",
                 detail: workingTasks == 1
                     ? "A task is still running on \(hostVersion) and keeps working until it's done."
                     : "\(workingTasks) tasks are still running on \(hostVersion) and keep working until they're done.",
-                footnote: "Restarting the host now interrupts them; Native resumes them right after."
+                footnote: workingTasks == 1
+                    ? "Restarting now interrupts it; its turn resumes right after."
+                    : "Restarting now interrupts them; their turns resume right after."
             ) {
-                Button("Restart Host Now", action: onRestartHost)
+                Button("Restart Now…", action: onRestartHost)
                     .buttonStyle(.ds(.secondary))
             }
         case .hostRestartPending:

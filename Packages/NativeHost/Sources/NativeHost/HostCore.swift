@@ -224,6 +224,7 @@ public final class HostCore {
     private func beat() {
         try? store.setMeta(MetaKey.heartbeat, String(Date.now.timeIntervalSince1970))
         restartIfReplacedOnDisk()
+        exitIfIdleForRestart()
         guard let idleExit = configuration.idleExit else { return }
         let isBusy =
             !clients.isEmpty || hasPairedDevices || !stoppingSessions.isEmpty

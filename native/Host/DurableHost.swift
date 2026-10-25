@@ -104,8 +104,12 @@ final class DurableHost {
             if let client = await connect(within: Self.quickConnect) {
                 return use(client, placement: .background)
             }
-            // A login item that was stopped on purpose only starts again when registered afresh.
-            try await registrar.restart()
+            // A login item that was stopped on purpose only starts again when registered afresh. One
+            // that holds its lock is running, just slow to answer (busy, or still starting):
+            // registering it afresh would stop it and its agents, so it gets longer instead.
+            if !location.isHostRunning {
+                try await registrar.restart()
+            }
             if let client = await connect(within: Self.startTimeout) {
                 return use(client, placement: .background)
             }
