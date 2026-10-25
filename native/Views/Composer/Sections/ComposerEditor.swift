@@ -44,6 +44,7 @@ struct ComposerEditor: View {
     /// can tell whether a new selection came with it.
     @State private var syncedSelection: Range<Int>?
     @Environment(\.dsCodeFont) private var codeFont
+    @Environment(\.undoManager) private var undoManager
 
     var body: some View {
         // TextEditor doesn't size to its content, so a hidden copy of the text sets the height and the
@@ -61,6 +62,7 @@ struct ComposerEditor: View {
                 Group {
                     if showsCode {
                         TextEditor(text: $styled, selection: $styledSelection)
+                            .attributedTextFormattingDefinition(ComposerFileReferenceAttribute.Scope.self)
                             .onAppear {
                                 if refocusRichEditor {
                                     refocusRichEditor = false
@@ -147,8 +149,9 @@ struct ComposerEditor: View {
     private func editorChanged() {
         let typed = String(styled.characters)
         if referencesEnabled {
-            guard typed != projection.display else { return }
-            let edit = projection.replacingDisplay(with: typed)
+            let edit = projection.replacingDisplay(
+                with: typed, restored: ComposerFileReferenceAttribute.restoredTokens(in: styled))
+            guard edit.text != text else { return }
             text = edit.text
             projection = makeProjection(text)
             styled = styledString(text)
@@ -246,6 +249,10 @@ struct ComposerEditor: View {
         for token in projected.tokens {
             let lower = styled.utf8.index(styled.startIndex, offsetBy: token.display.lowerBound)
             let upper = styled.utf8.index(styled.startIndex, offsetBy: token.display.upperBound)
+            let rawStart = text.utf8.index(text.startIndex, offsetBy: token.raw.lowerBound)
+            let rawEnd = text.utf8.index(text.startIndex, offsetBy: token.raw.upperBound)
+            styled[lower..<upper][ComposerFileReferenceAttribute.self] = .init(
+                raw: String(text[rawStart..<rawEnd]), display: String(styled[lower..<upper].characters))
             styled[lower..<upper].font = DS.ComposerQuote.codeFont
             styled[lower..<upper].backgroundColor = .dsFill
             styled[lower..<upper].foregroundColor = .dsTextSecondary
@@ -288,6 +295,7 @@ struct ComposerEditor: View {
         let upper = text.utf8.index(text.startIndex, offsetBy: offsets.upperBound)
         let result = String(text[lower..<upper])
         if cutting {
+            ComposerEditorUndo.record($text, using: undoManager)
             text.removeSubrange(lower..<upper)
             projection = makeProjection(text)
             styled = styledString(text)

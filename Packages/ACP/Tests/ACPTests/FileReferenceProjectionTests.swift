@@ -3,6 +3,39 @@ import Testing
 @testable import ACP
 
 struct FileReferenceProjectionTests {
+    @Test func undoRestoresCanonicalTokenIdentity() {
+        let raw = "Fix @folder/File.swift please"
+        let original = FileReferenceProjection(raw, counts: ["folder/File.swift": .init(added: 6, removed: 2)])
+        let removed = FileReferenceProjection("Fix  please")
+        let restored = original.tokens.map {
+            FileReferenceProjection.RestoredToken(display: $0.display, raw: "@" + $0.path)
+        }
+        #expect(removed.replacingDisplay(with: original.display, restored: restored).text == raw)
+    }
+
+    @Test func undoKeepsPathsWhenDisplayPrefixesAndSuffixesMatch() {
+        let value = FileReferenceProjection("Fix File.swift please")
+        let restored = FileReferenceProjection.RestoredToken(display: 4..<14, raw: "@folder/File.swift")
+        #expect(
+            value.replacingDisplay(with: "Fix File.swift please", restored: [restored]).text
+                == "Fix @folder/File.swift please")
+        let partlyTyped = FileReferenceProjection("Fix File.swift +6 please")
+        let full = FileReferenceProjection.RestoredToken(
+            display: 4..<(4 + "File.swift +6 −2".utf8.count), raw: "@folder/File.swift")
+        #expect(
+            partlyTyped.replacingDisplay(with: "Fix File.swift +6 −2 please", restored: [full]).text
+                == "Fix @folder/File.swift please")
+    }
+
+    @Test func undoOfLiveCountUpdateKeepsThePath() {
+        let value = FileReferenceProjection(
+            "@folder/File.swift ", counts: ["folder/File.swift": .init(added: 7, removed: 2)])
+        let old = FileReferenceProjection(
+            "@folder/File.swift ", counts: ["folder/File.swift": .init(added: 6, removed: 2)])
+        let restored = old.tokens.map { FileReferenceProjection.RestoredToken(display: $0.display, raw: "@" + $0.path) }
+        #expect(value.replacingDisplay(with: old.display, restored: restored).text == value.raw)
+    }
+
     @Test func tokenKeepsPathAndCountsOutOfPrompt() {
         let raw = "Fix @Packages/ACP/Prompt.swift and @\"a b.swift\" please"
         let value = FileReferenceProjection(raw, counts: ["Packages/ACP/Prompt.swift": .init(added: 6, removed: 2)])

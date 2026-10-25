@@ -34,7 +34,7 @@ extension SessionModel {
         guard current.quotes.indices.contains(index) else { return }
         let removed = current.quotes.remove(at: index)
         draft = PromptQuote.draft(quotes: current.quotes, message: current.message)
-        undoManager?.registerUndo(withTarget: self) { session in
+        undoManager?.registerUndo(withTarget: self) { [weak undoManager] session in
             MainActor.assumeIsolated {
                 session.restoreQuote(removed, at: index, undoManager: undoManager)
             }
@@ -47,7 +47,7 @@ extension SessionModel {
         let index = min(index, current.quotes.count)
         current.quotes.insert(quote, at: index)
         draft = PromptQuote.draft(quotes: current.quotes, message: current.message)
-        undoManager?.registerUndo(withTarget: self) { session in
+        undoManager?.registerUndo(withTarget: self) { [weak undoManager] session in
             MainActor.assumeIsolated { session.removeQuote(at: index, undoManager: undoManager) }
         }
         undoManager?.setActionName("Remove Quote")

@@ -33,6 +33,23 @@ private struct ComposerQuoteChecks {
         undo.redo()
         require(session.composerQuotes.isEmpty, "Redo removes the quote again")
         undo.undo()
+        let cutUndo = UndoManager()
+        cutUndo.beginUndoGrouping()
+        ComposerEditorUndo.record(
+            Binding(get: { session.composerMessage }, set: { session.composerMessage = $0 }), using: cutUndo)
+        session.composerMessage = "After cutting"
+        cutUndo.endUndoGrouping()
+        cutUndo.undo()
+        require(session.composerMessage == "Keep it in place. Add a test.", "Cut undo restores canonical text")
+        cutUndo.redo()
+        require(session.composerMessage == "After cutting", "Cut redo repeats the edit")
+        cutUndo.undo()
+        var token = AttributedString("PromptQueue.swift +6 −2")
+        token[ComposerFileReferenceAttribute.self] = .init(
+            raw: "@Packages/ACP/PromptQueue.swift", display: String(token.characters))
+        require(
+            ComposerFileReferenceAttribute.restoredTokens(in: token).first?.raw == "@Packages/ACP/PromptQueue.swift",
+            "Editor attributes carry full paths through undo")
         session.queue.append(session.draft)
         session.draft = ""
         guard let queued = session.queuedPrompts.first else { throw MissingFixture() }

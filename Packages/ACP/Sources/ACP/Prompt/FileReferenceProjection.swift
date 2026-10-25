@@ -14,6 +14,14 @@ public struct FileReferenceProjection: Equatable, Sendable {
         public let display: Range<Int>
         public let counts: Counts?
     }
+    /// Native editor undo restores attributes along with visible text. The full path travels
+    /// with that text so restoring a deleted token never turns its basename/counts into prose.
+    public struct RestoredToken: Equatable, Sendable {
+        public let display: Range<Int>
+        public let raw: String
+
+        public init(display: Range<Int>, raw: String) { self.display = display; self.raw = raw }
+    }
     public let raw: String
     public let display: String
     public let tokens: [Token]
@@ -99,8 +107,29 @@ public struct FileReferenceProjection: Equatable, Sendable {
         return offset + delta
     }
 
-    public func replacingDisplay(with edited: String) -> (text: String, caret: Int) {
-        guard edited != display else { return (raw, raw.utf8.count) }
+    public func replacingDisplay(with edited: String, restored: [RestoredToken] = []) -> (text: String, caret: Int) {
+        let restored = restored.filter {
+            $0.display.lowerBound >= 0 && $0.display.upperBound <= edited.utf8.count && !$0.display.isEmpty
+        }.sorted { $0.display.lowerBound < $1.display.lowerBound }
+        func canonical(_ range: Range<Int>) -> String {
+            var text = ""
+            var cursor = range.lowerBound
+            func slice(_ bounds: Range<Int>) -> Substring {
+                let a = edited.utf8.index(edited.startIndex, offsetBy: bounds.lowerBound)
+                let b = edited.utf8.index(edited.startIndex, offsetBy: bounds.upperBound)
+                return edited[a..<b]
+            }
+            for token in restored
+            where token.display.lowerBound >= cursor && token.display.upperBound <= range.upperBound {
+                text += slice(cursor..<token.display.lowerBound) + token.raw
+                cursor = token.display.upperBound
+            }
+            return text + slice(cursor..<range.upperBound)
+        }
+        guard edited != display else {
+            let text = restored.isEmpty ? raw : canonical(0..<edited.utf8.count)
+            return (text, text.utf8.count)
+        }
         var oldStart = display.startIndex, newStart = edited.startIndex
         while oldStart < display.endIndex, newStart < edited.endIndex, display[oldStart] == edited[newStart] {
             oldStart = display.index(after: oldStart); newStart = edited.index(after: newStart)
@@ -111,11 +140,25 @@ public struct FileReferenceProjection: Equatable, Sendable {
         {
             oldEnd = display.index(before: oldEnd); newEnd = edited.index(before: newEnd)
         }
-        let lower = rawOffset(display.utf8.distance(from: display.startIndex, to: oldStart))
-        let upper = rawOffset(display.utf8.distance(from: display.startIndex, to: oldEnd), end: true)
+        var start = edited.utf8.distance(from: edited.startIndex, to: newStart)
+        var end = edited.utf8.distance(from: edited.startIndex, to: newEnd)
+        var oldLower = display.utf8.distance(from: display.startIndex, to: oldStart)
+        var oldUpper = display.utf8.distance(from: display.startIndex, to: oldEnd)
+        for token in restored {
+            if token.display.lowerBound < start, start < token.display.upperBound {
+                oldLower -= start - token.display.lowerBound
+                start = token.display.lowerBound
+            }
+            if token.display.lowerBound < end, end < token.display.upperBound {
+                oldUpper += token.display.upperBound - end
+                end = token.display.upperBound
+            }
+        }
+        let lower = rawOffset(oldLower)
+        let upper = rawOffset(oldUpper, end: true)
         let a = raw.utf8.index(raw.startIndex, offsetBy: lower)
         let b = raw.utf8.index(raw.startIndex, offsetBy: upper)
-        let inserted = String(edited[newStart..<newEnd])
+        let inserted = canonical(start..<end)
         return (String(raw[..<a]) + inserted + raw[b...], lower + inserted.utf8.count)
     }
 }
