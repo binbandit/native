@@ -80,6 +80,7 @@ public enum PolicyLoader {
                 PolicyParse.endpoints) ?? []
         policy.managedKeys = resolver.managedKeys
         policy.diagnostics = resolver.diagnostics + unknownKeys(in: source)
+        loadNetwork(from: source, into: &policy)
         return policy
     }
 

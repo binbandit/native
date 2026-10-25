@@ -1,5 +1,7 @@
+import CryptoKit
 import Foundation
-import os
+import NativeNetwork
+import NativePolicy
 
 /// Agent icons from the official ACP registry, fetched at runtime and cached in Application
 /// Support, so Native ships no other product's artwork and works offline once it has seen them.
@@ -8,7 +10,7 @@ import os
 /// A cached icon is used as is and refreshed in the background once it's a week old; the index is
 /// fetched only when an icon isn't cached, at most once a day.
 actor AgentIconRegistry {
-    static let indexURL = URL(string: "https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json")
+    static let indexURL = NetworkInventory.iconIndexURL
 
     private struct Index: Decodable {
         struct Agent: Decodable {
@@ -20,9 +22,9 @@ actor AgentIconRegistry {
     }
 
     private let directory: URL
-    private let session: URLSession
-    private let logger = Logger(subsystem: "Native", category: "AgentIcons")
+    private let network: NetworkClient
     private var index: Task<Index?, Never>?
+    private var indexRevision: UInt64?
 
     private static let iconLifetime: TimeInterval = 7 * 24 * 60 * 60
     private static let indexLifetime: TimeInterval = 24 * 60 * 60
@@ -34,9 +36,22 @@ actor AgentIconRegistry {
         return URL.applicationSupportDirectory.appending(path: "\(folder)/AgentIcons", directoryHint: .isDirectory)
     }
 
-    init(directory: URL = AgentIconRegistry.defaultDirectory, session: URLSession = .shared) {
+    init(directory: URL = AgentIconRegistry.defaultDirectory, network: NetworkClient? = nil) {
         self.directory = directory
-        self.session = session
+        let source = PolicyCenter.platformSource()
+        self.network =
+            network
+            ?? NetworkClient(
+                policy: { PolicyLoader.load(from: source) }, updates: PolicyLoader.updates(from: source))
+    }
+
+    /// Preserve inert preview protocol configuration, while still prohibiting automatic redirects.
+    init(directory: URL = AgentIconRegistry.defaultDirectory, session: URLSession) {
+        self.directory = directory
+        let source = PolicyCenter.platformSource()
+        self.network = NetworkClient(
+            policy: { PolicyLoader.load(from: source) }, updates: PolicyLoader.updates(from: source),
+            transport: URLSessionNetworkTransport(configuration: session.configuration))
     }
 
     /// The SVG for the agent with this registry id: cached if there is a copy, fetched if not. Nil
@@ -55,22 +70,29 @@ actor AgentIconRegistry {
     /// Fetches the icon again and replaces the cached copy if the new one is valid.
     @discardableResult
     private func refresh(_ id: String) async -> Data? {
-        guard let url = await iconURL(for: id) else { return nil }
         do {
-            let (data, response) = try await session.data(from: url)
-            guard (response as? HTTPURLResponse)?.statusCode == 200, data.count < Self.maximumIconSize,
+            try network.checkService(.iconAssets)
+            let revision = network.policyRevision
+            guard let url = await iconURL(for: id), revision == network.policyRevision else { return nil }
+            let receipt = try await network.get(service: .iconAssets, url: url)
+            let data = receipt.response.data
+            guard receipt.response.status == 200, data.count < Self.maximumIconSize,
                 AgentIconGlyph(svg: data) != nil
             else { return nil }
-            try write(data, to: iconFile(for: id))
-            return data
+            return try network.publish(receipt) {
+                try write(data, to: iconFile(for: id))
+                return data
+            }
         } catch {
-            logger.info("Couldn't fetch the registry icon for \(id, privacy: .public): \(error)")
             return nil
         }
     }
 
     private func iconURL(for id: String) async -> URL? {
-        if index == nil {
+        let revision = network.policyRevision
+        if index == nil || indexRevision != revision {
+            index?.cancel()
+            indexRevision = revision
             index = Task { await loadIndex() }
         }
         return await index?.value?.agents.first { $0.id == id }?.icon
@@ -79,18 +101,28 @@ actor AgentIconRegistry {
     /// The cached index while it's fresh, otherwise a new one (kept for the next launch), falling
     /// back to the stale copy when offline.
     private func loadIndex() async -> Index? {
-        let file = directory.appending(path: "registry.json")
+        guard let url = network.endpoint(for: .iconIndex, default: Self.indexURL) else { return nil }
+        // A new mirror must never fall back to URLs retained from a different index source.
+        let filename: String
+        if url == Self.indexURL {
+            filename = "registry.json"
+        } else {
+            let digest = SHA256.hash(data: Data(url.absoluteString.utf8)).map { String(format: "%02x", $0) }.joined()
+            filename = "registry-\(digest).json"
+        }
+        let file = directory.appending(path: filename)
         let cached = (try? Data(contentsOf: file)).flatMap { try? JSONDecoder().decode(Index.self, from: $0) }
         if let cached, Self.age(of: file) < Self.indexLifetime { return cached }
-        guard let url = Self.indexURL else { return cached }
         do {
-            let (data, response) = try await session.data(from: url)
-            guard (response as? HTTPURLResponse)?.statusCode == 200 else { return cached }
+            let receipt = try await network.get(service: .iconIndex, url: url)
+            let data = receipt.response.data
+            guard receipt.response.status == 200 else { return cached }
             let index = try JSONDecoder().decode(Index.self, from: data)
-            try write(data, to: file)
-            return index
+            return try network.publish(receipt) {
+                try write(data, to: file)
+                return index
+            }
         } catch {
-            logger.info("Couldn't fetch the ACP registry: \(error)")
             return cached
         }
     }
