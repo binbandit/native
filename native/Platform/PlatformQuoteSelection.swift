@@ -41,14 +41,14 @@ enum PlatformQuoteSelection {
             selectedText = (view.string as NSString).substring(with: range)
             frame = window.convertToScreen(view.convert(view.bounds, to: nil))
         } else if let focused = selectedElement(in: window, task: task, source: source),
-            let selected = focused.accessibilitySelectedText(), !selected.isEmpty
+            let selected = focused.accessibilitySelectedText?() ?? nil, !selected.isEmpty
         {
-            text =
-                (focused.accessibilityValue() as? String)
-                ?? (focused.accessibilityValue() as? NSAttributedString)?.string
+            let readValue: (() -> Any?)? = focused.accessibilityValue
+            let value = readValue?()
+            text = (value as? String) ?? (value as? NSAttributedString)?.string
             selectedText = selected
-            range = focused.accessibilitySelectedTextRange()
-            frame = focused.accessibilityFrame()
+            range = focused.accessibilitySelectedTextRange?() ?? NSRange(location: NSNotFound, length: 0)
+            frame = focused.accessibilityFrame?() ?? .zero
         } else {
             return nil
         }
@@ -103,8 +103,8 @@ enum PlatformQuoteSelection {
     #if canImport(AppKit)
     private static func selectedElement(
         in window: NSWindow, task: UUID, source: ComposerQuoteSource?
-    ) -> (any NSAccessibilityProtocol)? {
-        guard let source else { return window.accessibilityFocusedUIElement as? any NSAccessibilityProtocol }
+    ) -> AnyObject? {
+        guard let source else { return window.accessibilityFocusedUIElement as AnyObject? }
         let frames = entries.values.compactMap { entry -> CGRect? in
             guard entry.task == task, entry.source == source, let view = entry.view, view.window === window else {
                 return nil
@@ -113,20 +113,18 @@ enum PlatformQuoteSelection {
         }
         // A context menu can take focus away from selected SwiftUI text. Read only selected text
         // inside the source that opened it, through this window's own accessibility hierarchy.
-        func selected(in element: any NSAccessibilityProtocol, depth: Int) -> (any NSAccessibilityProtocol)? {
+        // SwiftUI nodes implement these public selectors without necessarily declaring the full
+        // NSAccessibility protocol. Optional dispatch also traverses those nodes.
+        func selected(in element: AnyObject, depth: Int) -> AnyObject? {
             guard depth < 64 else { return nil }
-            let frame = element.accessibilityFrame()
-            if frames.contains(where: { $0.contains(CGPoint(x: frame.midX, y: frame.midY)) }),
-                let text = element.accessibilitySelectedText(), !text.isEmpty
+            if let frame = element.accessibilityFrame?(),
+                frames.contains(where: { $0.contains(CGPoint(x: frame.midX, y: frame.midY)) }),
+                let text = element.accessibilitySelectedText?() ?? nil, !text.isEmpty
             {
                 return element
             }
-            for child in element.accessibilityChildren() ?? [] {
-                if let child = child as? any NSAccessibilityProtocol,
-                    let match = selected(in: child, depth: depth + 1)
-                {
-                    return match
-                }
+            for child in element.accessibilityChildren?() ?? [] {
+                if let match = selected(in: child as AnyObject, depth: depth + 1) { return match }
             }
             return nil
         }

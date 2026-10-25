@@ -10,7 +10,8 @@ final class ComposerEditorUndo {
 
     static func record(_ text: Binding<String>, using manager: UndoManager?) {
         guard let manager else { return }
-        manager.registerUndo(withTarget: ComposerEditorUndo(text: text)) { [weak manager] target in
+        let target = ComposerEditorUndo(text: text)
+        manager.registerUndo(withTarget: target) { [target, weak manager] _ in
             MainActor.assumeIsolated {
                 record(target.text, using: manager)
                 target.text.wrappedValue = target.value

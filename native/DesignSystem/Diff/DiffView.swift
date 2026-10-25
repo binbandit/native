@@ -221,7 +221,8 @@ private struct DiffLines: View {
             .background(selectedIndices.contains(index) || isQuoted(rows[index]) ? Color.dsAccentSubtle : .clear)
             .composerQuoteSource(
                 ComposerQuoteSource(
-                    name: path, text: rows[index].text, firstLine: rows[index].number ?? 1,
+                    name: path, text: rows[index].number == nil ? nil : rows[index].text,
+                    firstLine: rows[index].number ?? 1,
                     side: rows[index].kind == .removed ? .old : .new))
         }
     }

@@ -38,15 +38,21 @@ private struct ComposerQuoteSourceModifier: ViewModifier {
     @Environment(\.composerQuoteContext) private var context
 
     func body(content: Content) -> some View {
-        if let context {
+        if let context, let text = source.text {
             content
                 .background { PlatformQuoteSelectionAnchor(task: context.task, source: source).allowsHitTesting(false) }
                 .contextMenu {
-                    Button("Quote Selected Lines") {
+                    Button("Quote") {
                         if let quotes = PlatformQuoteSelection.capture(task: context.task, source: source) {
                             context.quote(quotes)
+                        } else if let quote = PromptQuote(
+                            source: source.name, text: text, selection: NSRange(location: 0, length: text.utf16.count),
+                            firstLine: source.firstLine, side: source.side)
+                        {
+                            context.quote([quote])
                         }
                     }
+                    .disabled(text.isEmpty)
                 }
         } else {
             content
