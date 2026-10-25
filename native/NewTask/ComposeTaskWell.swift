@@ -1,14 +1,17 @@
 import SwiftUI
 
-/// The toolbar well before Start: the agent and whether the task can start. A view of its own so the
-/// toolbar item observes the runtime itself; a value computed by the page reached the screen but left
-/// the item's accessibility label stale.
+/// The toolbar well before Start: the agent and whether the task can start. It observes the runtime in
+/// its own body, and speaks through a plain text representation: in a toolbar item, the glass label's
+/// own accessibility element keeps the first label it had ("Starting") after it redraws as Ready.
 struct ComposeTaskWell: View {
     let model: AppModel
     let compose: ComposeTaskModel
     let entry: QuickEntryModel
 
-    var body: some View { TaskWellLabel(content: readiness) }
+    var body: some View {
+        TaskWellLabel(content: readiness)
+            .accessibilityRepresentation { Text(readiness.accessibilityText) }
+    }
 
     private var readiness: TaskWellContent {
         let agent = model.quickEntryRuntime?.agent.displayName ?? compose.editor?.agentName ?? "Choose agent"
@@ -40,3 +43,17 @@ struct ComposeTaskWell: View {
         return .init(status: .idle, agent: agent, verb: "· Ready")
     }
 }
+
+#if DEBUG
+#Preview("Compose well - Before Start") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.md) {
+            ForEach(["ready", "firstLaunch", "offline"], id: \.self) { state in
+                let model = ComposeTaskPreviewFixtures.model(state)
+                ComposeTaskWell(model: model, compose: model.composeTask, entry: model.quickEntry)
+            }
+        }
+        .padding(DS.Space.xxl)
+    }
+}
+#endif
