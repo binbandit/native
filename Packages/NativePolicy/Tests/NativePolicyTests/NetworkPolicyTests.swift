@@ -132,6 +132,15 @@ import Testing
         #expect(stdioOff.decision(for: .mcpExecution) == .disabled(.serviceDisabled(.mcpStdio), conflict: true))
         #expect(stdioOff.decision(for: .agentExecution) == .disabled(.requiredButDenied(.mcpExecution)))
 
+        // A URL server goes over streamable HTTP, so SSE alone can't carry it.
+        let url = PolicyLoader.load(
+            from: StaticPolicySource(managed: [
+                "policy.mcp.required": [["name": "audit", "url": "https://audit.example.com/mcp"]],
+                "policy.network": ["services": ["mcp.http": ["enabled": false]]],
+            ]))
+        #expect(url.decision(for: .mcpExecution) == .disabled(.serviceDisabled(.mcpHTTP), conflict: true))
+        #expect(url.decision(for: .agentExecution) == .disabled(.requiredButDenied(.mcpExecution)))
+
         let allOff = load(off: ["mcp.stdio", "mcp.http", "mcp.sse"])
         #expect(allOff.decision(for: .mcpExecution).state == .disabled)
     }

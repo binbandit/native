@@ -158,18 +158,16 @@ extension NativePolicy {
         return rule?.enabled == false || (isRestricted && rule?.enabled != true)
     }
 
-    /// A transport the organization requires a server over, when every way to reach it is denied.
+    /// The transport of a server the organization requires, when it is denied. Native hands a URL
+    /// server over as streamable HTTP (`PolicyPlugin`), never SSE.
     private func deniedRequiredTransport() -> NetworkService? {
-        for server in mcp.required {
-            // An agent takes a URL server over streamable HTTP or SSE, whichever it supports.
-            let transports: [NetworkService] =
-                switch server.transport {
-                case .stdio: [.mcpStdio]
-                case .http: [.mcpHTTP, .mcpSSE]
-                }
-            if transports.allSatisfy(isDenied) { return transports.first }
+        mcp.required.lazy.map { server -> NetworkService in
+            switch server.transport {
+            case .stdio: .mcpStdio
+            case .http: .mcpHTTP
+            }
         }
-        return nil
+        .first(where: isDenied)
     }
 
     /// The keys that switch a capability off as a whole. Finer rules (which agents, which servers)
