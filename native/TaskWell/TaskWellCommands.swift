@@ -2,6 +2,7 @@ import NativeCommands
 
 extension CommandID {
     static let taskWellToggle: Self = "taskWell.toggle"
+    static let taskWellExportPatch: Self = "taskWell.exportPatch"
 }
 
 extension NativeCommand {
@@ -10,7 +11,15 @@ extension NativeCommand {
             NativeCommand(.taskWellToggle, title: "Show or Hide Task Tools", category: .view) {
                 $0.sessionTools?.toggleWell()
             }
-            .available { $0.sessionTools?.hasWell == true }
+            .available { $0.sessionTools?.hasWell == true },
+            // Listed only where the well offers it in place of the pull request.
+            NativeCommand(
+                .taskWellExportPatch, title: "Export Patch…", category: .tasks, systemImage: "square.and.arrow.up",
+                keywords: ["git am", "format-patch", "offline", "air-gapped"]
+            ) {
+                $0.sessionTools?.wellExportPatch?()
+            }
+            .available { $0.sessionTools?.wellExportPatch != nil },
         ]
         + TaskWellTool.allCases.filter { $0 != .changes }.map { tool in
             NativeCommand(tool.command, title: "Show \(tool.title)", category: .view, systemImage: tool.symbol) {

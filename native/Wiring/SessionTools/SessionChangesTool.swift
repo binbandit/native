@@ -9,7 +9,7 @@ import SwiftUI
 enum SessionChangesTool {
     static func contribution(git: GitStore, gitHub: GitHubModel) -> SessionToolContribution {
         SessionToolContribution(
-            spec: SessionToolSpec(id: .changes, places: [.side, .fact, .off], defaultPlace: .side),
+            spec: .changes,
             title: "Changes", systemImage: "plus.forwardslash.minus",
             fact: { context in
                 let repository = git.model(for: context.session.cwd, session: context.session.key)

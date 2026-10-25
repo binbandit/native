@@ -162,12 +162,19 @@ struct TaskWellToolsPanel<Destination: View>: View {
             .dsHitTarget(DS.TaskWell.rowHeight)
             .accessibilityIdentifier("taskWell.\(tool.title)")
             if let reason = detail.unavailableReason ?? detail.note {
-                Text(reason)
-                    .font(DS.TaskWell.body).foregroundStyle(.dsTextTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.leading, DS.Space.md + DS.TaskWell.rowIconWidth)
-                    .padding(.trailing, DS.Space.md)
-                    .padding(.bottom, DS.Space.md)
+                VStack(alignment: .leading, spacing: DS.Space.md) {
+                    Text(reason)
+                        .font(DS.TaskWell.body).foregroundStyle(.dsTextTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let recovery = detail.recovery {
+                        Button(recovery.title, action: recovery.action)
+                            .buttonStyle(.ds(.secondary, size: .small))
+                            .accessibilityIdentifier("taskWell.\(tool.title).recovery")
+                    }
+                }
+                .padding(.leading, DS.Space.md + DS.TaskWell.rowIconWidth)
+                .padding(.trailing, DS.Space.md)
+                .padding(.bottom, DS.Space.md)
             }
         }
     }

@@ -22,6 +22,7 @@ struct SessionToolsScreen: View {
     @Environment(GitStore.self) private var git
     @Environment(\.inspectorRoom) private var inspectorRoom
     @Experiment(.transcriptWidth) private var columnWidth: TranscriptWidth
+    @Environment(AppModel.self) private var app
 
     private var registry: SessionToolRegistry { tools.registry }
 
@@ -66,19 +67,21 @@ struct SessionToolsScreen: View {
         .toolbar(removing: .title)
         .toolbar {
             ToolbarItem(placement: .navigation) {
-                SessionToolsTitle(
-                    title: session.displayTitle, location: location,
-                    facts: usesTaskWell
-                        ? []
-                        : layout.facts.compactMap { id in
+                if usesTaskWell {
+                    TaskWellTitleWiring(session: session, tools: tools)
+                        .frame(maxWidth: wellTitleWidth, alignment: .leading)
+                } else {
+                    SessionToolsTitle(
+                        title: session.displayTitle, location: location,
+                        facts: layout.facts.compactMap { id in
                             registry.tool(id).flatMap { tool in tool.fact(context(tool)).map { (tool, $0) } }
                         },
-                    isOpen: { tools.isOpen($0.id) },
-                    action: { tool in
-                        if tool.pane == nil { tool.perform(context(tool)) } else { tools.toggle(tool.id) }
-                    }
-                )
-                .frame(maxWidth: usesTaskWell ? wellTitleWidth : nil, alignment: .leading)
+                        isOpen: { tools.isOpen($0.id) },
+                        action: { tool in
+                            if tool.pane == nil { tool.perform(context(tool)) } else { tools.toggle(tool.id) }
+                        }
+                    )
+                }
             }
             .sharedBackgroundVisibility(.hidden)
             if usesTaskWell {
@@ -288,9 +291,9 @@ struct SessionToolsScreen: View {
     /// The task's branch, else its folder, at the head of the facts.
     private var location: String {
         guard case .branch(let name)? = git.model(for: session.cwd, session: session.key).branch?.head else {
-            return usesTaskWell ? session.cwd.lastPathComponent : session.cwd.abbreviatedPath
+            return usesTaskWell ? app.projectName(of: session) : session.cwd.abbreviatedPath
         }
-        return usesTaskWell ? "\(session.cwd.lastPathComponent) · \(name)" : name
+        return usesTaskWell ? "\(app.projectName(of: session)) · \(name)" : name
     }
 }
 

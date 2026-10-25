@@ -57,8 +57,13 @@ extension NativeCommand {
     /// What to do with the selected task, and moving between tasks.
     static func taskActions(model: AppModel) -> [NativeCommand] {
         [
-            NativeCommand(.sessionRename, title: "Rename Task…", category: .tasks, systemImage: "pencil") { _ in
-                model.renaming = model.selection
+            NativeCommand(.sessionRename, title: "Rename Task…", category: .tasks, systemImage: "pencil") { context in
+                // With the well, the task in view renames from its title's popover, as a document does.
+                if let tools = context.sessionTools, tools.hasWell, context.session?.key == model.selection {
+                    tools.showTitle()
+                } else {
+                    model.renaming = model.selection
+                }
             }
             .available { _ in model.selection != nil },
 
