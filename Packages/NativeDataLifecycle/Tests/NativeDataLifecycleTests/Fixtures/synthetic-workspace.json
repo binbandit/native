@@ -1,0 +1,406 @@
+{
+  "roots": [
+    {
+      "kind": "appSupport",
+      "path": "/synthetic-approved-root/AppSupport"
+    },
+    {
+      "kind": "hostData",
+      "path": "/synthetic-approved-root/HostDir"
+    },
+    {
+      "kind": "nativeHome",
+      "path": "/synthetic-approved-root/native-home"
+    },
+    {
+      "kind": "caches",
+      "path": "/synthetic-approved-root/Caches"
+    },
+    {
+      "kind": "temporary",
+      "path": "/synthetic-approved-root/tmp"
+    },
+    {
+      "kind": "repository",
+      "instance": "repo-one",
+      "path": "/synthetic-approved-root/repositories/repo-one"
+    }
+  ],
+  "stores": {
+    "host.database": [
+      {
+        "key": {
+          "scope": "session",
+          "id": "task-alpha"
+        },
+        "parents": [
+          {
+            "scope": "project",
+            "id": "project-one"
+          }
+        ],
+        "timestamps": [
+          "2027-01-10T09:30:00Z"
+        ],
+        "copies": [
+          {
+            "kind": "primary",
+            "ownership": "native",
+            "link": "regular",
+            "availability": "local",
+            "sharedWith": [],
+            "location": {
+              "root": {
+                "kind": "hostData"
+              },
+              "components": [
+                "host.sqlite"
+              ]
+            }
+          },
+          {
+            "kind": "writeAheadLog",
+            "ownership": "native",
+            "link": "regular",
+            "availability": "local",
+            "sharedWith": [],
+            "location": {
+              "root": {
+                "kind": "hostData"
+              },
+              "components": [
+                "host.sqlite-wal"
+              ]
+            }
+          },
+          {
+            "kind": "sharedMemory",
+            "ownership": "native",
+            "link": "regular",
+            "availability": "local",
+            "sharedWith": [],
+            "location": {
+              "root": {
+                "kind": "hostData"
+              },
+              "components": [
+                "host.sqlite-shm"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "search.index": [
+      {
+        "key": {
+          "scope": "session",
+          "id": "task-alpha"
+        },
+        "parents": [
+          {
+            "scope": "project",
+            "id": "project-one"
+          }
+        ],
+        "timestamps": [
+          "2027-01-10T09:30:00Z"
+        ],
+        "copies": [
+          {
+            "kind": "primary",
+            "ownership": "native",
+            "link": "regular",
+            "availability": "local",
+            "sharedWith": [],
+            "location": {
+              "root": {
+                "kind": "appSupport"
+              },
+              "components": [
+                "search-index.sqlite"
+              ]
+            }
+          },
+          {
+            "kind": "writeAheadLog",
+            "ownership": "native",
+            "link": "regular",
+            "availability": "local",
+            "sharedWith": [],
+            "location": {
+              "root": {
+                "kind": "appSupport"
+              },
+              "components": [
+                "search-index.sqlite-wal"
+              ]
+            }
+          },
+          {
+            "kind": "sharedMemory",
+            "ownership": "native",
+            "link": "regular",
+            "availability": "local",
+            "sharedWith": [],
+            "location": {
+              "root": {
+                "kind": "appSupport"
+              },
+              "components": [
+                "search-index.sqlite-shm"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "key": {
+          "scope": "session",
+          "id": "task-beta"
+        },
+        "parents": [
+          {
+            "scope": "project",
+            "id": "project-one"
+          }
+        ],
+        "timestamps": [
+          "2027-01-10T09:30:00Z"
+        ],
+        "copies": [
+          {
+            "kind": "primary",
+            "ownership": "native",
+            "link": "regular",
+            "availability": "local",
+            "sharedWith": [],
+            "location": {
+              "root": {
+                "kind": "appSupport"
+              },
+              "components": [
+                "search-index.sqlite"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "app.sessionCatalog": [
+      {
+        "key": {
+          "scope": "session",
+          "id": "task-alpha"
+        },
+        "parents": [
+          {
+            "scope": "project",
+            "id": "project-one"
+          }
+        ],
+        "timestamps": [
+          "2027-01-10T09:30:00Z"
+        ],
+        "copies": [
+          {
+            "kind": "primary",
+            "ownership": "native",
+            "link": "regular",
+            "availability": "local",
+            "sharedWith": [],
+            "location": {
+              "root": {
+                "kind": "appSupport"
+              },
+              "components": [
+                "session-catalog.json"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "app.drafts": [
+      {
+        "key": {
+          "scope": "session",
+          "id": "task-alpha"
+        },
+        "parents": [
+          {
+            "scope": "project",
+            "id": "project-one"
+          }
+        ],
+        "timestamps": [
+          "2027-01-10T09:30:00Z"
+        ],
+        "copies": [
+          {
+            "kind": "primary",
+            "ownership": "native",
+            "link": "regular",
+            "availability": "local",
+            "sharedWith": []
+          }
+        ]
+      }
+    ],
+    "app.usage": [],
+    "git.taskWorktrees": [
+      {
+        "key": {
+          "scope": "session",
+          "id": "task-alpha"
+        },
+        "parents": [
+          {
+            "scope": "project",
+            "id": "project-one"
+          }
+        ],
+        "timestamps": [
+          "2027-01-10T09:30:00Z"
+        ],
+        "copies": [
+          {
+            "kind": "primary",
+            "ownership": "native",
+            "link": "regular",
+            "availability": "local",
+            "sharedWith": [],
+            "location": {
+              "root": {
+                "kind": "nativeHome"
+              },
+              "components": [
+                "worktrees",
+                "repo-one",
+                "task-alpha"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "git.nativeRefs": [
+      {
+        "key": {
+          "scope": "session",
+          "id": "task-alpha"
+        },
+        "parents": [
+          {
+            "scope": "project",
+            "id": "project-one"
+          }
+        ],
+        "timestamps": [
+          "2027-01-10T09:30:00Z"
+        ],
+        "copies": [
+          {
+            "kind": "primary",
+            "ownership": "native",
+            "link": "regular",
+            "availability": "local",
+            "sharedWith": []
+          }
+        ]
+      }
+    ],
+    "temp.attachments": [
+      {
+        "key": {
+          "scope": "session",
+          "id": "task-alpha"
+        },
+        "parents": [
+          {
+            "scope": "project",
+            "id": "project-one"
+          }
+        ],
+        "timestamps": [
+          "2027-01-10T09:30:00Z"
+        ],
+        "copies": [
+          {
+            "kind": "temporary",
+            "ownership": "native",
+            "link": "regular",
+            "availability": "local",
+            "sharedWith": [
+              {
+                "scope": "session",
+                "id": "task-beta"
+              }
+            ],
+            "location": {
+              "root": {
+                "kind": "temporary"
+              },
+              "components": [
+                "Native Attachments",
+                "attachment-1"
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "remote.hostCopies": [
+      {
+        "key": {
+          "scope": "session",
+          "id": "task-alpha"
+        },
+        "parents": [
+          {
+            "scope": "project",
+            "id": "project-one"
+          }
+        ],
+        "timestamps": [
+          "2027-01-10T09:30:00Z"
+        ],
+        "copies": [
+          {
+            "kind": "primary",
+            "ownership": "native",
+            "link": "regular",
+            "availability": "remoteOffline",
+            "sharedWith": []
+          }
+        ]
+      }
+    ],
+    "agents.histories": [
+      {
+        "key": {
+          "scope": "session",
+          "id": "task-alpha"
+        },
+        "parents": [
+          {
+            "scope": "project",
+            "id": "project-one"
+          }
+        ],
+        "timestamps": [
+          "2027-01-10T09:30:00Z"
+        ],
+        "copies": [
+          {
+            "kind": "primary",
+            "ownership": "externalAgent",
+            "link": "regular",
+            "availability": "local",
+            "sharedWith": []
+          }
+        ]
+      }
+    ]
+  }
+}

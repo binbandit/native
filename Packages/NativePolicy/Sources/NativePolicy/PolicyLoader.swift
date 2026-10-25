@@ -1,5 +1,5 @@
 import ApprovalAnalysis
-import CodeThemes
+import CodeThemeCatalog
 import Foundation
 
 /// Reads and validates every policy key from a source.

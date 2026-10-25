@@ -369,7 +369,7 @@ final class MCPLibrary {
 
     private func home(in environment: [String: String]) -> URL {
         environment["HOME"].map { URL(filePath: $0, directoryHint: .isDirectory) }
-            ?? FileManager.default.homeDirectoryForCurrentUser
+            ?? .homeDirectory
     }
 }
 
