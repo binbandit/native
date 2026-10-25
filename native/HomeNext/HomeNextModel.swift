@@ -17,18 +17,26 @@ final class HomeNextModel {
     @ObservationIgnored var countAway: @MainActor (_ start: Date, _ end: Date) -> HomeNextAway? = { _, _ in nil }
 
     @ObservationIgnored private var awaySince: Date?
+    @ObservationIgnored private var isInBackground = false
+    @ObservationIgnored private var isDisplayAsleep = false
     @ObservationIgnored private var observers: [(NotificationCenter, any NSObjectProtocol)] = []
     @ObservationIgnored private let now: () -> Date
 
     init(now: @escaping () -> Date = Date.init) {
         self.now = now
-        let starts = PlatformApplication.awayStartNotifications.map { ($0, true) }
-        let ends = PlatformApplication.awayEndNotifications.map { ($0, false) }
-        observers = (starts + ends).map { source, leaving in
+        var sources: [(NotificationCenter, Notification.Name, @MainActor (HomeNextModel) -> Void)] = [
+            (.default, PlatformApplication.willResignActiveNotification, { $0.setInBackground(true) }),
+            (.default, PlatformApplication.didBecomeActiveNotification, { $0.setInBackground(false) }),
+        ]
+        if let display = PlatformApplication.displaySleepNotifications {
+            sources.append((display.center, display.sleep, { $0.setDisplayAsleep(true) }))
+            sources.append((display.center, display.wake, { $0.setDisplayAsleep(false) }))
+        }
+        observers = sources.map { center, name, change in
             (
-                source.center,
-                source.center.addObserver(forName: source.name, object: nil, queue: .main) { [weak self] _ in
-                    MainActor.assumeIsolated { leaving ? self?.left() : self?.returned() }
+                center,
+                center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                    MainActor.assumeIsolated { if let self { change(self) } }
                 }
             )
         }
@@ -38,13 +46,23 @@ final class HomeNextModel {
         for (center, observer) in observers { center.removeObserver(observer) }
     }
 
-    /// The first sign of leaving starts the absence; a display sleeping after the app went to the
-    /// background doesn't move it later.
-    func left() {
-        if awaySince == nil { awaySince = now() }
+    func setInBackground(_ value: Bool) {
+        isInBackground = value
+        update()
     }
 
-    func returned() {
+    func setDisplayAsleep(_ value: Bool) {
+        isDisplayAsleep = value
+        update()
+    }
+
+    /// Away from the first sign of leaving until the user is back at Native: in front, display awake.
+    private func update() {
+        let isAway = isInBackground || isDisplayAsleep
+        if isAway {
+            if awaySince == nil { awaySince = now() }
+            return
+        }
         guard let since = awaySince else { return }
         awaySince = nil
         let end = now()

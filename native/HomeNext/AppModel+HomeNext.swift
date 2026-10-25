@@ -69,8 +69,10 @@ extension AppModel {
             .filter { $0.status == .reached && limits.limitStatus(for: $0.agent) != nil }
             .sorted { $0.updatedAt < $1.updatedAt }
             .map { limit in
+                // Usage keeps references across deletions; only tasks that still exist can be shown.
                 let stopped = limits.sessions.values
                     .filter { $0.target.agent == limit.agent && $0.target.isPromptable }
+                    .filter { taskIsAvailable(SessionKey(agent: $0.target.agent, id: $0.target.session)) }
                     .sorted { $0.target.session.rawValue < $1.target.session.rawValue }
                 let keys = stopped.map { SessionKey(agent: $0.target.agent, id: $0.target.session) }
                 return HomeNextLimit(

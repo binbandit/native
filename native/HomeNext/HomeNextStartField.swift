@@ -65,6 +65,7 @@ struct HomeNextStartField: View {
         .onAppear(perform: model.prepareHomeNextStart)
         .onChange(of: model.homeNext.startFieldFocusRequests) { isFocused = true }
         .onChange(of: model.projects.all.map(\.id)) { model.prepareHomeNextStart() }
+        .onChange(of: model.currentProject?.id) { model.prepareHomeNextStart() }
         .onChange(of: model.quickEntryRuntimes.map(\.agent.id)) { model.reconcileQuickEntryAgent() }
         // Validation names the part of the address to fix; Home opens it where the address lives.
         .onChange(of: entry.picker) { _, picker in
@@ -75,7 +76,7 @@ struct HomeNextStartField: View {
                 get: { entry.isChoosingFolder && ownsAddress }, set: { entry.isChoosingFolder = $0 }),
             allowedContentTypes: [.folder]
         ) { result in
-            if case .success(let url) = result { Task { await model.addQuickEntryProject(url) } }
+            if case .success(let url) = result { Task { await model.addQuickEntryProject(url, choosing: true) } }
         }
         .fileImporter(isPresented: $isPickingFiles, allowedContentTypes: [.item], allowsMultipleSelection: true) {
             if case .success(let urls) = $0 { attach(urls) }

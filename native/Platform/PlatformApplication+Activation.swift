@@ -16,28 +16,27 @@ extension PlatformApplication {
         #endif
     }
 
-    /// When the user may have stepped away: Native stops being frontmost, or the display sleeps
-    /// (a Mac left with Native in front stays active through a lock).
-    static var awayStartNotifications: [(center: NotificationCenter, name: Notification.Name)] {
+    /// Posted when Native stops being frontmost, or its device locks.
+    static var willResignActiveNotification: Notification.Name {
         #if canImport(AppKit)
-        [
-            (.default, NSApplication.willResignActiveNotification),
-            (NSWorkspace.shared.notificationCenter, NSWorkspace.screensDidSleepNotification),
-        ]
+        NSApplication.willResignActiveNotification
         #else
-        [(.default, UIApplication.willResignActiveNotification)]
+        UIApplication.willResignActiveNotification
         #endif
     }
 
-    /// When the user is back at Native.
-    static var awayEndNotifications: [(center: NotificationCenter, name: Notification.Name)] {
+    /// The display going to sleep and waking, where a Mac left with Native in front stays active
+    /// through a lock. iPad apps resign active instead, so there's nothing extra to watch there.
+    static var displaySleepNotifications:
+        (center: NotificationCenter, sleep: Notification.Name, wake: Notification.Name)?
+    {
         #if canImport(AppKit)
-        [
-            (.default, NSApplication.didBecomeActiveNotification),
-            (NSWorkspace.shared.notificationCenter, NSWorkspace.screensDidWakeNotification),
-        ]
+        (
+            NSWorkspace.shared.notificationCenter, NSWorkspace.screensDidSleepNotification,
+            NSWorkspace.screensDidWakeNotification
+        )
         #else
-        [(.default, UIApplication.didBecomeActiveNotification)]
+        nil
         #endif
     }
 }

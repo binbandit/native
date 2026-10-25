@@ -58,9 +58,11 @@ extension AppModel {
         if composeTask.isPresented { prepareComposeEditor() }
     }
 
-    func addQuickEntryProject(_ url: URL) async {
+    /// - Parameter choosing: The caller's draft takes the folder even while the panel and page are closed
+    ///   (Home's start field).
+    func addQuickEntryProject(_ url: URL, choosing: Bool = false) async {
         let project = projects.add(url)
-        if quickEntry.isPresented || composeTask.isPresented { chooseQuickEntryProject(project.id) }
+        if choosing || quickEntry.isPresented || composeTask.isPresented { chooseQuickEntryProject(project.id) }
         // Listing can take time. The address must change before the user can press Start again.
         _ = await addProject(url, focus: false)
     }

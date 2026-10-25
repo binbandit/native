@@ -185,6 +185,17 @@ private struct HomeNextChecks {
         require(app.quickEntry.project == app.currentProject?.id, "The start field addresses Home's project")
         require(app.quickEntry.agent != nil, "The start field addresses an agent")
         require(app.startHomeNextTask(open: false) == nil, "An empty draft starts nothing")
+        let home = app.quickEntry.project
+        let other = app.projects.add(URL(filePath: "/tmp/native-home-fixture/pier", directoryHint: .isDirectory))
+        app.focusProject(other.id)
+        app.prepareHomeNextStart()
+        require(app.quickEntry.project == other.id, "An empty draft follows the project Home shows")
+        app.quickEntry.draft = "Keep this address"
+        if let home { app.focusProject(home) }
+        app.prepareHomeNextStart()
+        require(app.quickEntry.project == other.id, "A written draft keeps the address it was written to")
+        if let home { app.chooseQuickEntryProject(home) }
+        app.quickEntry.draft = ""
         app.quickEntry.draft = "Add a retry button to the failed upload toast"
         let before = app.startingTasks.count
         require(app.startHomeNextTask(open: false) == nil, "A missing folder is caught before anything starts")
@@ -210,16 +221,19 @@ private struct HomeNextChecks {
         var clock = Date(timeIntervalSince1970: 1_800_000_000)
         let home = HomeNextModel { clock }
         home.countAway = { HomeNextAway(start: $0, end: $1, finished: 1) }
-        home.left()
+        home.setInBackground(true)
         clock += 5 * 60
-        home.returned()
+        home.setInBackground(false)
         require(home.away == nil, "Switching apps briefly is not an absence")
-        home.left()
-        clock += 20 * 60
-        home.left()
-        clock += 20 * 60
-        home.returned()
-        require(home.away?.end.timeIntervalSince(home.away?.start ?? clock) == 40 * 60, "Absence starts at first leave")
+        home.setInBackground(true)
+        clock += 30 * 60
+        home.setDisplayAsleep(true)
+        clock += 30 * 60
+        home.setDisplayAsleep(false)
+        require(home.away == nil, "Waking the display while another app is in front is not a return")
+        clock += 30 * 60
+        home.setInBackground(false)
+        require(home.away?.end.timeIntervalSince(home.away?.start ?? clock) == 90 * 60, "The whole absence counts")
 
         let limit = HomeNextLimit(
             agent: .init(rawValue: "claude-code"), agentName: "Claude Code", window: "5-hour", resetsAt: nil,

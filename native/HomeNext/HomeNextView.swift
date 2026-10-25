@@ -228,6 +228,7 @@ struct HomeNextView: View {
     private func openReviews(_ reviews: HomeNextReviews) {
         guard let gitHub else { return }
         if reviews.pullRequests.count > 1, let showsPullRequests {
+            gitHub.closePullRequestPage()
             gitHub.filter.scope = .reviewRequested
             showsPullRequests.wrappedValue = true
         } else if let first = reviews.pullRequests.first {
