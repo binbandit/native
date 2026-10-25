@@ -73,6 +73,9 @@ public actor NativeHostClient {
     private var running: Task<Void, Never>?
     /// Sessions this client follows, with the last event seen, to re-attach without gaps.
     var attachments: [HostSessionID: Int?] = [:]
+    /// Sessions whose summary the host has sent on the current connection. Nothing newer than
+    /// that comes from re-attaching, so its answer isn't passed on for these.
+    private var summariesHeard: Set<HostSessionID> = []
     private(set) var epoch: UUID?
     /// Notifications that aren't `Event`s (a remote command's output), by method, in order with
     /// everything else. See `HostNotificationRoute`.
@@ -178,6 +181,7 @@ public actor NativeHostClient {
         let stream = try await transport.connect()
         generation += 1
         let generation = generation
+        summariesHeard = []
         let peer = JSONRPCPeer(channel: stream, label: "host") { [weak self] event in
             await self?.receive(event, generation: generation)
         }
@@ -206,9 +210,17 @@ public actor NativeHostClient {
         epoch = info.epoch
         await setState(.connected(info))
         for (session, seen) in attachments {
-            _ = try? await peer.request(
-                HostProtocol.Method.attach, AttachParams(sessionID: session, epoch: epoch, afterSeq: seen),
-                as: AttachResult.self)
+            guard
+                let attached = try? await peer.request(
+                    HostProtocol.Method.attach, AttachParams(sessionID: session, epoch: epoch, afterSeq: seen),
+                    as: AttachResult.self)
+            else { continue }
+            // The host told only the clients it had when the session last changed (a turn ended, an
+            // approval came up), so while this one was away it missed that: the answer says where
+            // the session is now. A summary heard on this connection is at least as new.
+            if !summariesHeard.contains(session) {
+                await deliver(.sessionChanged(attached.summary))
+            }
         }
     }
 
@@ -219,11 +231,15 @@ public actor NativeHostClient {
             return
         }
         guard let event = Self.event(from: message) else { return }
-        if case .sessionEvent(let session, let step) = event, attachments.keys.contains(session) {
+        switch event {
+        case .sessionEvent(let session, let step) where attachments.keys.contains(session):
             attachments[session] = step.event.seq
-        }
-        if case .sessionClosed(let session) = event {
+        case .sessionChanged(let summary):
+            summariesHeard.insert(summary.id)
+        case .sessionClosed(let session):
             attachments[session] = nil
+        default:
+            break
         }
         await deliver(event)
     }
