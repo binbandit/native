@@ -242,7 +242,7 @@ extension AppModel {
         let previous = workspacePreparations[project.id]
         let cleanup = Task {
             await previous?.value
-            func mayShareDevice(_ key: SessionKey) -> Bool {
+            @MainActor func mayShareDevice(_ key: SessionKey) -> Bool {
                 let owner = taskActionOwner(for: key)
                 return owner == route.owner || owner == .unavailableRemote
             }
