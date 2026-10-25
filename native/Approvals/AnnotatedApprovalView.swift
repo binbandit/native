@@ -12,6 +12,7 @@ struct AnnotatedApprovalView: View {
     var homeDirectory: String? = nil
     var knowledge: CommandKnowledge = .bundled
     var isAvailable = true
+    var responseAttempt = 0
     var forceReducedMotion = false
     var focusRequested = false
     var didFocus: () -> Void = {}
@@ -155,6 +156,11 @@ struct AnnotatedApprovalView: View {
         .onChange(of: focusRequested, initial: true) { _, requested in
             if requested { instructionFocused = true; didFocus() }
         }
+        .onChange(of: responseAttempt) {
+            // Retrying a choice resets only its hold, never the user's instruction draft.
+            committed = false
+            keyboardHeld = false
+        }
         .approvalHoldKeys(
             enabled: shortcutsEnabled && legacyShortcut && isAvailable && !sending && !committed
                 && analysis?.risk == .irreversible
@@ -291,6 +297,7 @@ struct AnnotatedApprovalView: View {
                     forceReducedMotion: forceReducedMotion,
                     didCommit: { committed = true }
                 ) { onChoose(allow) }
+                .id(responseAttempt)
             } else {
                 Button {
                     onChoose(allow)

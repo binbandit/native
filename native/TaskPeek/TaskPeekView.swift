@@ -168,6 +168,7 @@ struct TaskPeekView: View {
                 call: call, agentName: ask.session.agentName, workingDirectory: ask.session.cwd.path,
                 homeDirectory: model.device(of: ask.task) == .thisMac ? NSHomeDirectory() : nil,
                 knowledge: model.plugins.commandKnowledge,
+                responseAttempt: model.taskPeek.approvalAttempt,
                 focusRequested: wantsInstructionFocus, didFocus: { wantsInstructionFocus = false },
                 planEntries: call.kind == .switchMode ? ask.session.state.currentTurnPlan : [],
                 planExpanded: true,
@@ -175,7 +176,6 @@ struct TaskPeekView: View {
                 onInstruct: { try await model.instructTaskAsk(ask, text: $0) }
             )
             .id(call)
-            .id(model.taskPeek.approvalAttempt)
         case .question(let question):
             if let schema = question.request.requestedSchema,
                 let questionnaire = AgentQuestionnaire(message: question.request.message, schema: schema)

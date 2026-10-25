@@ -63,6 +63,7 @@ struct HomeNextAskView: View {
                 homeDirectory: model.device(of: task.id) == .thisMac ? NSHomeDirectory() : nil,
                 knowledge: model.plugins.commandKnowledge,
                 isAvailable: request.session.phase != .disconnected && model.taskIsReachable(task.id),
+                responseAttempt: approvalAttempt,
                 focusRequested: wantsInstructionFocus, didFocus: { wantsInstructionFocus = false },
                 planEntries: call.kind == .switchMode ? request.session.state.currentTurnPlan : [],
                 showMorePlan: { model.peekHomeNextTask(task) }, openTask: openTask,
@@ -75,7 +76,6 @@ struct HomeNextAskView: View {
             )
             // A hold belongs to this exact command. Failed delivery must permit another attempt.
             .id(call)
-            .id(approvalAttempt)
             .padding(.horizontal, -DS.Approval.inset)
             .padding(.top, -DS.Space.xl)
             .clipped()
@@ -124,5 +124,6 @@ struct HomeNextAskView: View {
 #Preview("Next ask - Previous plan") { HomeNextPreviewFixtures.page(.planRetained) }
 #Preview("Next ask - Destructive hold") { HomeNextPreviewFixtures.page(.destructive) }
 #Preview("Next ask - Unknown command") { HomeNextPreviewFixtures.page(.unknown) }
+#Preview("Next ask - Plan delivery failure") { HomeNextPreviewFixtures.page(.planFailure) }
 #Preview("Next ask - Delivery failure") { HomeNextPreviewFixtures.page(.approvalFailure) }
 #endif

@@ -9,7 +9,8 @@ enum HomeNextPreviewFixtures {
     enum State: String {
         case busy, calm, managed, quiet, first, empty, loading, recovery, narrow
         case destructive, unknown, approvalFailure
-        case question, questionText, questions, questionFailure, plan, planText, planRetained, failure, failurePaused
+        case question, questionText, questions, questionFailure, plan, planFailure, planText, planRetained, failure,
+            failurePaused
     }
 
     static var requested: State? {
@@ -53,7 +54,7 @@ enum HomeNextPreviewFixtures {
             let titleIndex: Int
             switch fixtureKind(state, index: index) {
             case .question, .questionText, .questions, .questionFailure: titleIndex = 1
-            case .plan, .planText, .planRetained: titleIndex = 2
+            case .plan, .planFailure, .planText, .planRetained: titleIndex = 2
             case .failure, .failurePaused: titleIndex = 3
             default: titleIndex = index
             }
@@ -63,7 +64,10 @@ enum HomeNextPreviewFixtures {
                 : titles[titleIndex]
             let kind = fixtureKind(state, index: index)
             let agent =
-                [State.question, .questionText, .questions, .questionFailure, .plan, .planText, .planRetained].contains(
+                [
+                    State.question, .questionText, .questions, .questionFailure, .plan, .planFailure, .planText,
+                    .planRetained,
+                ].contains(
                     kind)
                 ? "claude-code" : "codex"
             let id = "home-next-\(index)"
@@ -74,7 +78,8 @@ enum HomeNextPreviewFixtures {
             guard
                 let session = fixtureSession(
                     in: app, agent: agent, id: id, cwd: project.path, title: title,
-                    failsAnswer: kind == .questionFailure || (state == .approvalFailure && index == 0))
+                    failsAnswer: kind == .questionFailure
+                        || ([.approvalFailure, .planFailure].contains(state) && index == 0))
             else { continue }
             if state == .quiet {
                 session.previewExchange(
@@ -86,7 +91,7 @@ enum HomeNextPreviewFixtures {
                 switch kind {
                 case .question, .questionText, .questions, .questionFailure:
                     question(session, kind: kind)
-                case .plan, .planText, .planRetained:
+                case .plan, .planFailure, .planText, .planRetained:
                     plan(session, includesSteps: kind != .planText, date: date, retainsOlderPlan: kind == .planRetained)
                 case .failure:
                     session.state.endTurn(.error)
@@ -146,7 +151,7 @@ enum HomeNextPreviewFixtures {
         let start: Int
         switch state {
         case .question, .questionText, .questions, .questionFailure: start = 1
-        case .plan, .planText, .planRetained: start = 2
+        case .plan, .planFailure, .planText, .planRetained: start = 2
         case .failure, .failurePaused: start = 3
         default: start = 0
         }

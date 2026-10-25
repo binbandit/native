@@ -238,7 +238,7 @@ For isolated Debug checks, enable the gate with Settings > Labs > Next or
 with `-nativeHomeNextFixture busy` for inert preview models. Other fixture values are `calm` (no optional modules), `managed`, `destructive`, `unknown`,
 `approvalFailure`, `quiet`,
 `first`, `empty`, `loading`, `recovery`, `narrow`, `question`, `questionText`, `questions`,
-`plan`, `planText`, `planRetained`, `failure`, `failurePaused`, and `questionFailure` (a read-only sink
+`plan`, `planFailure`, `planText`, `planRetained`, `failure`, `failurePaused`, and `questionFailure` (a read-only sink
 exercises answer delivery failure).
 The fixture is absent from Release and Nightly and never opens an agent or writes project data.
 
