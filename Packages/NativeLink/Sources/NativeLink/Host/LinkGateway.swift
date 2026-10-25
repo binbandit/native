@@ -71,9 +71,10 @@ public actor LinkGateway {
     var connections: [UUID: [ObjectIdentifier: SecureChannel]] = [:]
     var listener: LinkListener?
     var listenerStatus = LinkListenerStatus(state: .off)
-    /// The organization's `policy.companion.enabled`. Off: nothing listens, no window opens, and
-    /// paired devices are turned away (told why), but their pairings stay for when it's back on.
-    var isAllowedByPolicy = true
+    /// The organization's `policy.companion.enabled`, as the host's own policy has it. Off: nothing
+    /// listens, no window opens, and paired devices are turned away (told why), but their pairings
+    /// and the host's key stay for when it's back on.
+    var isAllowedByPolicy: Bool
     /// MagicDNS names of the host's Tailscale addresses, looked up when a window opens.
     private var tailnetNames: [String: String] = [:]
     private var observers: [UUID: @Sendable (LinkStatus) -> Void] = [:]
@@ -84,8 +85,11 @@ public actor LinkGateway {
 
     /// `accept` gets each admitted device's stream and grants; the host serves it like a local
     /// client with those grants. `paired` hears every new pairing, for the host's activity journal.
+    /// `allowedByPolicy` is the policy the gateway starts under, so a denied host never listens,
+    /// advertises or opens a window, not even for devices paired before (`setAllowedByPolicy`
+    /// follows changes).
     public init(
-        configuration: Configuration, keyStore: (any LinkKeyStore)? = nil,
+        configuration: Configuration, keyStore: (any LinkKeyStore)? = nil, allowedByPolicy: Bool = true,
         accept: @escaping @Sendable (any ByteStream, LinkGrants) -> Void,
         paired: @escaping @Sendable (LinkPairingRecord) -> Void = { _ in }
     ) throws {
@@ -94,6 +98,7 @@ public actor LinkGateway {
         self.configuration = configuration
         identity = try (keyStore ?? FileKeyStore(url: configuration.keyURL)).identity()
         registry = LinkDeviceRegistry.load(from: configuration.registryURL)
+        isAllowedByPolicy = allowedByPolicy
         self.accept = accept
         self.paired = paired
     }
@@ -171,6 +176,8 @@ public actor LinkGateway {
     {
         guard isAllowedByPolicy else { return status }
         await lookUpTailnetNames()
+        // Revoked while the names were looked up.
+        guard isAllowedByPolicy else { return status }
         resolveDecision(.rejected)
         window = PairingWindow(
             lifetime: configuration.pairingLifetime, now: configuration.now(), preapprovedGrants: preapprovedGrants)
@@ -256,13 +263,15 @@ public actor LinkGateway {
         publish()
     }
 
-    /// Follows the organization's policy; call whenever it changes.
+    /// Follows the organization's policy; call whenever it changes. Revoking it turns away a device
+    /// waiting to pair, closes the window and every paired connection, and stops listening.
     public func setAllowedByPolicy(_ allowed: Bool) {
         guard allowed != isAllowedByPolicy else { return }
         isAllowedByPolicy = allowed
         if !allowed {
             resolveDecision(.rejected)
             window = nil
+            windowOwner = nil
             for channel in connections.values.flatMap(\.values) { channel.close() }
             connections = [:]
         }
