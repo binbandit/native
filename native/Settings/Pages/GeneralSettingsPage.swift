@@ -1,3 +1,4 @@
+import Experiments
 import SwiftUI
 
 extension SettingsPane.ID {
@@ -20,6 +21,9 @@ extension SettingsPane {
                     keywords: ["queue", "steer", "return", "send", "message"], plainly: .followUp
                 )
             ]
+            if ExperimentStore.shared.value(of: .homeNext) {
+                entries += HomeNextSettingsSection.searchEntries
+            }
             #if os(macOS)
             entries.append(GitHubAccountsSettingsSection.searchEntry)
             #endif
@@ -34,6 +38,7 @@ struct GeneralSettingsPage: View {
     @Environment(SettingsPresentation.self) private var presentation
     @Environment(DockBadgePreference.self) private var injectedBadge: DockBadgePreference?
     @Environment(GitHubModel.self) private var gitHub: GitHubModel?
+    @Experiment(.homeNext) private var homeNext
     private let badgePreference: DockBadgePreference
 
     init(dockBadge: DockBadgePreference = .shared) {
@@ -86,6 +91,9 @@ struct GeneralSettingsPage: View {
                 }
             } else {
                 SettingsRowGroup { followUpControl }
+            }
+            if homeNext {
+                HomeNextSettingsSection()
             }
             #if os(macOS)
             if let gitHub {

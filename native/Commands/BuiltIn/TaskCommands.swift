@@ -27,7 +27,9 @@ extension NativeCommand {
     static func newTasks(model: AppModel) -> [NativeCommand] {
         [
             NativeCommand(.sessionNew, title: "New Task", category: .tasks, systemImage: "square.and.pencil") { _ in
-                if model.quickEntry.isEnabled {
+                if model.homeNextOwnsNewTask {
+                    model.homeNext.startFieldFocusRequests &+= 1
+                } else if model.quickEntry.isEnabled {
                     model.showQuickEntry(selection: PlatformTextSelection.capture())
                 } else {
                     Task { await model.newSession() }
