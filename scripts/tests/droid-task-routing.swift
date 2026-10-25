@@ -6,7 +6,7 @@ import NativeHostProtocol
 @testable import Native
 @testable import NativeLink
 
-private struct RoutingFailure: Error, CustomStringConvertible {
+struct RoutingFailure: Error, CustomStringConvertible {
     let description: String
     init(_ description: String) { self.description = description }
 }
@@ -89,54 +89,6 @@ private actor RoutingHost: HostTransport {
     }
 }
 
-@MainActor
-private final class RecordingWorkspaces: TaskWorkspaceProvider {
-    struct Call: Equatable {
-        let operation: String
-        let folder: String
-        let project: String
-    }
-    var calls: [Call] = []
-    var failsDeletion = false
-    var holdArchive = false
-    var pendingArchive: CheckedContinuation<Void, Never>?
-
-    func record(_ operation: String, _ folder: URL, _ project: Project) {
-        calls.append(Call(operation: operation, folder: folder.folderPath, project: project.path))
-    }
-    func workspaceOptions(in project: Project, current: URL) async throws -> [TaskWorkspaceOption] { [] }
-    func workspace(for choice: TaskWorkspaceChoice, in project: Project) async throws -> URL { project.url }
-    func removeUnusedWorkspace(at folder: URL, in project: Project) async throws -> Bool { false }
-    func workspace(forNewTaskIn project: Project, title: String?) async throws -> URL { project.url }
-    func newTaskWorkspaceLabel(in project: Project) -> String { "Fixture" }
-    func archiveWorkspace(at folder: URL, in project: Project) async throws -> String? {
-        record("archive", folder, project)
-        if holdArchive { await withCheckedContinuation { pendingArchive = $0 } }
-        return "Saved fixture checkpoint."
-    }
-    func restoreWorkspace(at folder: URL, in project: Project, task: ArchivedTaskDetails?) async throws -> Bool {
-        record("restore", folder, project)
-        return true
-    }
-    func restoreRemovedWorkspace(at folder: URL, branch: String, in project: Project) async throws {
-        record("restoreRemoved", folder, project)
-    }
-    func deleteWorkspace(at folder: URL, in project: Project) async throws {
-        record("delete", folder, project)
-        if failsDeletion { throw RoutingFailure("Fixture workspace is still on disk") }
-    }
-    func taskWasDeleted(_ task: SessionKey, title: String, folder: URL, in project: Project) async {
-        record("deleted", folder, project)
-    }
-    func taskDidGetTitle(_ title: String, request: String?, workspace: URL, in project: Project) async {}
-    func archivedWorkspaceFolders(of project: Project) async -> [URL] { [] }
-    func removedWorkspaces(
-        among tasks: [(folder: URL, title: String)], in project: Project
-    ) async -> [URL: RemovedWorkspace.Fate] { [:] }
-    func deleteWorkspaces(of project: Project) async throws {}
-    func taskFolders(of project: Project) async -> [URL] { [] }
-}
-
 @main
 @MainActor
 private struct DroidTaskRoutingRegression {
@@ -182,6 +134,8 @@ private struct DroidTaskRoutingRegression {
         app.hosts.deviceWorkspaces = devices
         app.taskWorkspaces = devices
         func key(_ id: String) -> SessionKey { SessionKey(agent: .init(rawValue: "fixture"), id: SessionID(id)) }
+        try await DraftCleanupRegression.retryDiscard(
+            app: app, project: project, folder: folder, provider: local, others: [first, second])
         if !app.offersRemoteHosts {
             app.hosts.deviceWorkspaces = nil
             app.taskWorkspaces = local
@@ -237,6 +191,13 @@ private struct DroidTaskRoutingRegression {
         await app.followHost()
         _ = await app.checkForAgents()
         app.indexRemoteSessions()
+        try await DraftCleanupRegression.retryDiscard(
+            app: app, project: project, folder: folder, provider: local, others: [first, second])
+        try await DraftCleanupRegression.retryDiscard(
+            app: app, project: project, folder: folder, provider: second, others: [local, first],
+            device: .remote(secondHost.id))
+        try await DraftCleanupRegression.discardDuringPreparation(
+            app: app, project: project, folder: folder, host: secondHost, provider: second, others: [local, first])
         app.catalog.add(SessionInfo(sessionId: key("local").id, cwd: folder), for: key("local").agent, in: project.id)
         await app.archiveSession(key("second"))
         try require(
@@ -394,6 +355,9 @@ private struct DroidTaskRoutingRegression {
         app.setCheckout("/remote/project-root", of: rootProject.id, on: secondHost.id)
         app.indexRemoteSessions()
         second.calls = []
+        try await DraftCleanupRegression.retryDiscard(
+            app: app, project: rootProject, folder: remoteWorktree, provider: second, others: [local, first],
+            device: .remote(secondHost.id))
         await app.archiveSession(key("remote-worktree"))
         await app.unarchiveSession(key("remote-worktree"))
         try require(

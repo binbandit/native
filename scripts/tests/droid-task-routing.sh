@@ -14,6 +14,8 @@ for map in "$derived"/Build/Intermediates.noindex/GeneratedModuleMaps*/*.modulem
 done
 if [ "${2:-}" = --before ]; then flags+=(-D BEFORE); fi
 nice -n 10 xcrun swiftc "${flags[@]}" "$root/scripts/tests/droid-task-routing.swift" \
+    "$root/scripts/tests/droid-draft-cleanup.swift" \
+    "$root/scripts/tests/droid-routing-workspaces.swift" \
     "$app/Contents/MacOS/Native.debug.dylib" \
     -Xlinker -rpath -Xlinker "$app/Contents/Frameworks" \
     -Xlinker -rpath -Xlinker "$app/Contents/MacOS" -o "$work/droid-task-routing"

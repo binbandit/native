@@ -33,6 +33,8 @@ struct TaskActionRoute {
     let folder: URL?
     let title: String
     let hasCheckout: Bool
+    /// Draft cleanup removes a workspace, but no agent session ever existed to run teardown for.
+    var isDiscardedDraft = false
 
     var workspace: URL? {
         guard let folder else { return nil }
@@ -66,7 +68,7 @@ extension AppModel {
             // one of the tasks that the current SessionKey cannot distinguish.
             let unavailable = TaskActionRoute(
                 key: saved.key, owner: .unavailableRemote, project: saved.project, folder: saved.folder,
-                title: saved.title, hasCheckout: false)
+                title: saved.title, hasCheckout: false, isDiscardedDraft: saved.isDiscardedDraft)
             hosts.deviceWorkspaces?.routes[key] = unavailable
             return unavailable
         }
@@ -83,12 +85,33 @@ extension AppModel {
             project: owner == .local ? project : checkout.map { project.onHost(at: $0) } ?? project,
             folder: sessions.session(key)?.cwd ?? URL(filePath: listed.info.cwd, directoryHint: .isDirectory),
             title: titleOfSession(key), hasCheckout: checkout != nil)
+        return rememberTaskActionRoute(route)
+    }
+
+    /// Starting tasks have no catalog entry. Retain their explicit device before discard clears
+    /// the folder, including when workspace preparation finishes after the user discarded it.
+    func taskActionRoute(for task: StartingTask) -> TaskActionRoute? {
+        guard let folder = task.folder, let project = projects.project(task.project) else { return nil }
+        let owner: TaskActionRoute.Owner
+        switch task.device {
+        case .thisMac: owner = .local
+        case .remote(let host): owner = .remote(host)
+        }
+        let checkout = project.checkoutPath(on: task.device)
+        return rememberTaskActionRoute(
+            TaskActionRoute(
+                key: task.id, owner: owner,
+                project: owner == .local ? project : checkout.map { project.onHost(at: $0) } ?? project,
+                folder: folder, title: "New Task", hasCheckout: checkout != nil, isDiscardedDraft: true))
+    }
+
+    private func rememberTaskActionRoute(_ route: TaskActionRoute) -> TaskActionRoute {
         // The local provider is normally wired before any actions. Keep the route even with the
         // feature off, so a deleted local task's retries retain their original workspace too.
         if hosts.deviceWorkspaces == nil, let provider = taskWorkspaces {
             hosts.deviceWorkspaces = DeviceTaskWorkspaces(local: provider, model: self)
         }
-        hosts.deviceWorkspaces?.routes[key] = route
+        hosts.deviceWorkspaces?.routes[route.key] = route
         return route
     }
 
@@ -191,6 +214,7 @@ extension AppModel {
             if let folder = route.workspace {
                 try await provider?.deleteWorkspace(at: folder, in: route.project)
             }
+            guard !route.isDiscardedDraft else { return }
             // Teardown only follows successful cleanup, including on retry. A failed deletion
             // must leave the workspace and its recovery material available.
             await provider?.taskWasDeleted(
