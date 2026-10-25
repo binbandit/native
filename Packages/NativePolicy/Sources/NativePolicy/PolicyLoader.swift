@@ -80,6 +80,7 @@ public enum PolicyLoader {
                 PolicyParse.endpoints) ?? []
         policy.managedKeys = resolver.managedKeys
         policy.diagnostics = resolver.diagnostics + unknownKeys(in: source)
+        loadNetwork(from: source, into: &policy)
         return policy
     }
 
@@ -88,6 +89,8 @@ public enum PolicyLoader {
         let known = Set(PolicyKey.allCases.map(\.rawValue))
         return (source.managedKeys ?? [])
             .filter { $0.hasPrefix(PolicyKey.prefix) && !known.contains($0) }
+            // Network parsing reports these without echoing untrusted configuration keys.
+            .filter { !$0.hasPrefix("policy.network.") && !$0.hasPrefix("policy.deployment.") }
             .sorted()
             .map { PolicyDiagnostic(key: $0, origin: .organization, problem: "isn't a Native policy key") }
     }
