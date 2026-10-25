@@ -21,9 +21,11 @@ struct SessionToolsScreen: View {
     @State private var wellLightTrigger = 0
     @Environment(GitStore.self) private var git
     @Environment(\.inspectorRoom) private var inspectorRoom
-    @Environment(\.suspendsInspectors) private var suspendsInspectors
+    @Environment(\.inspectorSuspension) private var inspectorSuspension
     /// The side tool open when a mode suspended inspectors, which opens again afterwards.
     @State private var reopensSideTool: SessionToolID?
+    /// A subagent asked for while inspectors were suspended, which opens once they aren't.
+    @State private var reopensSubagent: SessionID?
     @Experiment(.transcriptWidth) private var columnWidth: TranscriptWidth
     @Environment(AppModel.self) private var app
 
@@ -128,11 +130,16 @@ struct SessionToolsScreen: View {
             if id != nil { openSubagent = nil }
         }
         // Closed and opened the way the user would, so the window makes room the same way.
-        .onChange(of: suspendsInspectors) { _, suspends in
+        .onChange(of: inspectorSuspension != nil) { _, suspends in
             if suspends {
                 reopensSideTool = tools.openByPlace[.side]
+                reopensSubagent = openSubagent
                 openSubagent = nil
                 tools.close(.side)
+            } else if let id = reopensSubagent {
+                reopensSubagent = nil
+                reopensSideTool = nil
+                openSubagentInspector(id)
             } else if let id = reopensSideTool {
                 reopensSideTool = nil
                 tools.open(id)
@@ -178,18 +185,24 @@ struct SessionToolsScreen: View {
     }
 
     private var conversation: some View {
-        TranscriptView(session: session) { id in
-            let show: @MainActor () -> Void = {
-                withTransaction(\.disablesAnimations, true) {
-                    tools.close(.side)
-                    openSubagent = id
-                }
+        TranscriptView(session: session) { id in openSubagentInspector(id) }
+    }
+
+    private func openSubagentInspector(_ id: SessionID) {
+        if let inspectorSuspension {
+            reopensSubagent = id
+            return inspectorSuspension.end()
+        }
+        let show: @MainActor () -> Void = {
+            withTransaction(\.disablesAnimations, true) {
+                tools.close(.side)
+                openSubagent = id
             }
-            if isSidePanelDocked.wrappedValue {
-                show()
-            } else {
-                inspectorRoom.open(DS.SessionTools.sidePanelIdealWidth, show)
-            }
+        }
+        if isSidePanelDocked.wrappedValue {
+            show()
+        } else {
+            inspectorRoom.open(DS.SessionTools.sidePanelIdealWidth, show)
         }
     }
 

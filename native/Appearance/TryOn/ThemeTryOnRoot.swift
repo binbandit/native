@@ -29,8 +29,11 @@ private struct ThemeTryOnRootModifier: ViewModifier {
         content
             // A narrow window can't hold the panel, the conversation and Changes side by side, so
             // Changes stays closed for the duration, from before the sidebar shows.
+            // Asking for an inspector meanwhile ends Try On where the user is, writing nothing.
             .environment(
-                \.suspendsInspectors, (isTryingOn && windowWidth < DS.TryOn.narrowWindowWidth) || holdsInspectors
+                \.inspectorSuspension,
+                (isTryingOn && windowWidth < DS.TryOn.narrowWindowWidth) || holdsInspectors
+                    ? InspectorSuspension { tryOn?.abandon() } : nil
             )
             // Read while Try On isn't running: the layout it changes mustn't feed back into whether
             // Changes fits, or the two would keep flipping each other.
@@ -57,6 +60,7 @@ private struct ThemeTryOnRootModifier: ViewModifier {
                     // Once Changes has stepped aside (it counts toward the window's minimum until it
                     // has), so the sidebar has its room.
                     Task {
+                        if holdsInspectors { await room.waitUntilSettled() }
                         await room.waitUntil { !room.wouldGrow(adding: DS.Window.sidebarMinWidth) }
                         if tryOn?.isActive == true { sidebar = .all }
                     }
