@@ -14,12 +14,9 @@ extension AppModel {
             return
         }
         if !quickEntry.isPresented, quickEntry.draft.isEmpty, quickEntry.context == nil {
-            let project = currentProject
-            quickEntry.project = project?.id
-            quickEntry.device = selection.map(device(of:)) ?? project.map { preferredDevice(for: $0.id) } ?? .thisMac
-            quickEntry.agent = defaultAgent(in: project)?.id
+            prepareQuickEntryAddress()
             if let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                let source = selection.flatMap(session)?.displayTitle ?? project?.name ?? "Native"
+                let source = selection.flatMap(session)?.displayTitle ?? currentProject?.name ?? "Native"
                 quickEntry.context = .init(source: source, text: text)
             }
         }
@@ -28,6 +25,15 @@ extension AppModel {
         #if DEBUG
         QuickEntryPreviewFixtures.applyLaunchState(to: self)
         #endif
+    }
+
+    /// Addresses an empty draft to where the user is: the current project, its device and agent.
+    func prepareQuickEntryAddress() {
+        let project = currentProject
+        quickEntry.project = project?.id
+        quickEntry.device = selection.map(device(of:)) ?? project.map { preferredDevice(for: $0.id) } ?? .thisMac
+        quickEntry.agent = defaultAgent(in: project)?.id
+        quickEntry.failure = nil
     }
 
     var quickEntryRuntimes: [AgentRuntime] {
@@ -52,9 +58,11 @@ extension AppModel {
         if composeTask.isPresented { prepareComposeEditor() }
     }
 
-    func addQuickEntryProject(_ url: URL) async {
+    /// - Parameter choosing: The caller's draft takes the folder even while the panel and page are closed
+    ///   (Home's start field).
+    func addQuickEntryProject(_ url: URL, choosing: Bool = false) async {
         let project = projects.add(url)
-        if quickEntry.isPresented || composeTask.isPresented { chooseQuickEntryProject(project.id) }
+        if choosing || quickEntry.isPresented || composeTask.isPresented { chooseQuickEntryProject(project.id) }
         // Listing can take time. The address must change before the user can press Start again.
         _ = await addProject(url, focus: false)
     }
@@ -82,33 +90,41 @@ extension AppModel {
     /// completion must never restore an old selection over navigation the user made meanwhile.
     func startQuickEntry(open: Bool, send: Bool = true) {
         guard quickEntry.isEnabled, quickEntry.isPresented, !send || quickEntry.hasMessage else { return }
+        startQuickEntryDraft(open: open, send: send, confirms: !open)
+    }
+
+    /// Quick Entry's draft and address become one task. Every surface that writes this draft
+    /// (the panel, Home's start field) starts through here, so validation and policy stay in one place.
+    /// - Parameter confirms: Quick Entry's own toast confirms a start that stays put; Home shows its receipt.
+    @discardableResult
+    func startQuickEntryDraft(open: Bool, send: Bool = true, confirms: Bool) -> StartingTask? {
         guard let project = quickEntry.project.flatMap(projects.project) else {
             quickEntry.failure = "Choose a project before starting the task."
             quickEntry.picker = .project
-            return
+            return nil
         }
         guard let option = deviceOptions(for: project.id).first(where: { $0.device == quickEntry.device }),
             option.canStart
         else {
             quickEntry.failure = "\(deviceName(quickEntry.device)) can't take a task right now. Choose another device."
             quickEntry.picker = .device
-            return
+            return nil
         }
         guard let runtime = quickEntryRuntime else {
             quickEntry.failure = "Choose an available agent on this device."
             quickEntry.picker = .agent
-            return
+            return nil
         }
         guard PolicyCenter.shared.policy.agents.allows(runtime.agent.id.rawValue) else {
             quickEntry.failure = "Your organization doesn't allow this agent. Choose another agent."
             quickEntry.picker = .agent
-            return
+            return nil
         }
         if quickEntry.device == .thisMac {
             checkFolder(of: project)
             if missingFolder(of: project.id) != nil {
                 quickEntry.failure = "The project folder is unavailable. Choose another project or restore the folder."
-                return
+                return nil
             }
         }
         let task = StartingTask(
@@ -121,13 +137,14 @@ extension AppModel {
         task.wantsComposerFocus = open && !send
         startingTasks.insert(task, at: 0)
         ProjectDevicePreference.remember(task.device, for: project.id)
-        quickEntry.lastStartedTask = open ? nil : task
+        quickEntry.lastStartedTask = confirms ? task : nil
         quickEntry.clearAfterStarting()
         if open {
             selection = task.id
             quickEntry.taskOpenRequests &+= 1
         }
         Task { await start(task) }
+        return task
     }
 
     func expandQuickEntry(selection: String? = nil) {

@@ -34,5 +34,19 @@ enum TaskWellPreviewFixtures {
         ]
         return summary
     }
+
+    static let title = TaskWellTitleFacts(
+        title: "Wrap diff lines at word boundaries", project: "native", branch: "wrap-diff-lines", agent: "Codex",
+        model: "6.1 Sol")
+    static let remoteTitle = TaskWellTitleFacts(
+        title: "Retry uploads when the network drops", project: "pier", branch: "retry-uploads", machine: "elara",
+        agent: "Claude Code", model: "Opus 5.5")
+    static let longTitle = TaskWellTitleFacts(
+        title: "Landing page hero loads blurry first on slow connections", project: "pier",
+        branch: "binbandit/landing-hero-progressive-images", machine: "Build Mac", agent: "Claude Code",
+        model: "Sonnet 5.5")
+    static let managedTitle = TaskWellTitleFacts(
+        title: "Round half-even in quarterly totals", project: "ledger-core", branch: "rounding-half-even",
+        agent: "Codex", model: "gpt-6.1-sol", isWorkerManaged: true, management: "Managed by Northwind Federal IT")
 }
 #endif

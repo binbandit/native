@@ -1,4 +1,5 @@
 import NativeCommands
+import SessionTools
 
 enum TaskWellTool: CaseIterable, Identifiable {
     case changes, terminal, dev, subagents, pullRequest
@@ -29,6 +30,16 @@ enum TaskWellTool: CaseIterable, Identifiable {
         case .dev: "taskWell.dev"
         case .subagents: "taskWell.subagents"
         case .pullRequest: "taskWell.pullRequest"
+        }
+    }
+    /// Where it can open, saved with the rest of the arrangement (Settings ▸ Task Tools).
+    var spec: SessionToolSpec {
+        switch self {
+        case .changes: .changes
+        case .terminal: .terminal
+        case .dev: .dev
+        case .subagents: .subagents
+        case .pullRequest: .pullRequest
         }
     }
 }

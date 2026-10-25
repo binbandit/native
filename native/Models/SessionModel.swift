@@ -67,7 +67,10 @@ final class SessionModel {
     var isWorkspacePickerRequested = false
     /// Locks the folder before the first send suspends, including a queued or hidden prompt.
     var hasSubmittedPrompt = false
-    var draft = ""
+    /// What the composer holds. Saved as it changes, so it outlives the app (`ComposerDrafts`).
+    var draft = "" {
+        didSet { services.drafts.keep(draft, for: key) }
+    }
     var quoteSelection: [PromptQuote] = []
     var quoteSelectionSource: UUID?
     /// Files and images going out with the draft (SessionModel+Attachments.swift).

@@ -164,7 +164,12 @@ extension HostCore {
             try await performLoad(session)
         }
         session.loading = task
-        defer { session.loading = nil }
+        // Clients count a load as work a restart would cut off, quiet ones too (`holdsRestart`).
+        publish(session)
+        defer {
+            session.loading = nil
+            publish(session)
+        }
         try await task.value
     }
 

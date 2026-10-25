@@ -1,6 +1,7 @@
 #if DEBUG
 import ACP
 import Experiments
+import GitHub
 import NativeHostProtocol
 import SwiftUI
 
@@ -8,6 +9,10 @@ import SwiftUI
 enum HomeNextPreviewFixtures {
     enum State: String {
         case busy, calm, managed, quiet, first, empty, loading, recovery, narrow
+        /// Busy, with every summary on: review requests, a usage limit and while you were away.
+        case summaries
+        /// Busy, with a draft in the start field, and with an address that can't start.
+        case typed, startFailure
         case destructive, unknown, approvalFailure
         case question, questionText, questions, questionFailure, plan, planFailure, planText, planRetained, failure,
             failurePaused
@@ -35,7 +40,7 @@ enum HomeNextPreviewFixtures {
         app.experiments.set(true, for: .homeNext)
         _ = app.runtimes.sync()
         guard state != .first else { return app }
-        let project = app.projects.add(URL(filePath: "/tmp/native-home-fixture", directoryHint: .isDirectory))
+        let project = app.projects.add(URL(filePath: "/tmp/native-home-fixture/native", directoryHint: .isDirectory))
         app.focusProject(project.id)
         let titles = [
             "Fix flaky PermissionRequestTests", "AVIF thumbnails for the gallery",
@@ -127,7 +132,58 @@ enum HomeNextPreviewFixtures {
                 session.lastActivity = date
             }
         }
+        summaries(state, in: app)
         return app
+    }
+
+    /// Each summary shows only when the user turns it on (`summaryDefaults`); these are its data.
+    private static func summaries(_ state: State, in app: AppModel) {
+        switch state {
+        case .summaries:
+            let stopped = SessionKey(agent: .init(rawValue: "codex"), id: SessionID("home-next-4"))
+            app.homeNext.fixtureLimits = [
+                HomeNextLimit(
+                    agent: .init(rawValue: "claude-code"), agentName: "Claude Code", window: "5-hour",
+                    resetsAt: .now.addingTimeInterval(41 * 60), since: .now.addingTimeInterval(-42 * 60),
+                    tasks: [stopped], titles: ["Regenerate the schema types"], resumes: true)
+            ]
+            app.homeNext.away = HomeNextAway(
+                start: .now.addingTimeInterval(-138 * 60), end: .now.addingTimeInterval(-2 * 60), finished: 2,
+                asked: 3, failed: 1)
+        case .typed:
+            app.quickEntry.draft = "Add a retry button to the failed upload toast, and cover it with a UI test"
+        case .startFailure:
+            app.quickEntry.draft = "Add a retry button to the failed upload toast"
+            app.quickEntry.failure = "The project folder is unavailable. Choose another project or restore the folder."
+        default:
+            break
+        }
+    }
+
+    /// Defaults with the summaries on for `.summaries`, and every one off otherwise (the calm default).
+    static func summaryDefaults(_ state: State) -> UserDefaults {
+        let defaults = PreviewUserDefaults()
+        for summary in HomeNextSummary.allCases {
+            defaults.set(state == .summaries, forKey: summary.storageKey)
+        }
+        return defaults
+    }
+
+    /// Review requests as gh returns them, for `.summaries`.
+    @MainActor static func gitHub(_ state: State) -> GitHubModel? {
+        guard state == .summaries else { return nil }
+        return GitHubModel.preview(
+            inbox: PullRequestInbox(
+                authored: [],
+                reviewRequested: [
+                    PullRequestPreviewFixtures.summary(
+                        "binbandit/native", 61, "perf(transcript): reuse row heights while streaming",
+                        branch: "row-heights", minutesAgo: 60, author: "tessaro"),
+                    PullRequestPreviewFixtures.summary(
+                        "binbandit/pier", 212, "fix(uploads): resume multipart after a 413", branch: "multipart",
+                        minutesAgo: 300, author: "okafor"),
+                ],
+                assigned: [], fetchedAt: .now))
     }
 
     private static func fixtureSession(
@@ -236,6 +292,19 @@ enum HomeNextPreviewFixtures {
         guard let request = SessionModel.previewDecode(RequestPermissionRequest.self, json) else { return }
         session.state.apply(.toolCall(request.toolCall), at: date)
         session.state.requestPermission(request, id: .int(1))
+    }
+
+    /// The start field alone: at rest, with a draft, and with an address that can't start.
+    static func startField() -> some View {
+        DSPreviewPair {
+            VStack(spacing: DS.Space.xl) {
+                ForEach([State.busy, .typed, .startFailure], id: \.self) { state in
+                    HomeNextFixtureView(state: state, showsPage: false)
+                }
+            }
+            .environment(SettingsPresentation())
+            .frame(width: DS.HomeNext.column + DS.Space.xxl * 2)
+        }
     }
 
     static func page(_ state: State, narrow: Bool = false) -> some View {

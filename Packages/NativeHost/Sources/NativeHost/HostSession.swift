@@ -155,6 +155,21 @@ final class HostSession {
             || (!queue.isEmpty && !record.isQueuePaused)
     }
 
+    /// Whether restarting the host for an update would cut something off: a turn (with its
+    /// approvals), its recovery, a retry waiting to go out, a hidden command, a load, or background
+    /// work. Queued messages don't hold it: they're stored, and the new host sends them.
+    var holdsRestart: Bool {
+        turn != nil || phase == .recovering || retryAt != nil || hiddenCommand != nil || loading != nil
+            || isWorkingInBackground
+    }
+
+    /// A subagent it started still works after its turn ended (a background agent). Only while the
+    /// session is loaded: once its agent's process is gone, the transcript's last word on the
+    /// subagent is history, not work.
+    var isWorkingInBackground: Bool {
+        !needsLoad && mirror.state.subagents.contains { $0.workState?.isWorking == true }
+    }
+
     /// Whether the running turn produced anything: an answer, a tool call, a subagent.
     var turnMadeProgress: Bool {
         mirror.state.items.dropFirst(turnItemsStart).contains { item in
@@ -175,7 +190,7 @@ final class HostSession {
             queue: queue.map(\.prompt.queued), isQueuePaused: record.isQueuePaused, supportsSteering: supportsSteering,
             lastActivity: record.lastActivity, lastStopReason: record.lastStopReason, problem: problem,
             isStopping: isStopping, isRunningHiddenCommand: hiddenCommand != nil, retryAt: retryAt,
-            titles: titleState.hostTitles
+            titles: titleState.hostTitles, isHoldingRestart: holdsRestart
         )
     }
 

@@ -195,6 +195,9 @@ private struct SessionCommands: Commands {
                 },
                 menu: menu)
             CommandMenuItem(.pullRequestOpenForTask, in: menu)
+            if menu.context.sessionTools?.wellExportPatch != nil {
+                CommandMenuItem(.taskWellExportPatch, in: menu)
+            }
 
             Divider()
 

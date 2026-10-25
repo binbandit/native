@@ -54,11 +54,41 @@ The old Task Tools gate and standard task screen remain available.
 The well uses the sidebar's shared `TaskSignal` at its well placement, with the actual request
 arrival driving its finite attention breath. The composer owns the annotated approval and the
 well only routes attention to it.
-Later slices cover the title identity editor and full tool contribution and placement settings.
-Narrow Changes is described below. The mock's GitHub network restriction
-and Export Patch recovery need a managed GitHub capability and patch-export action; neither is
-invented by this presentation slice. Existing managed agent, host, shortcut and repository-action
+Narrow Changes is described below. Existing managed agent, host, shortcut and repository-action
 policies are reflected here.
+
+### The title
+
+With the well, the toolbar's leading edge is the task's identity, where a Mac document window has
+its title: the name, then the project and branch, and the machine when it isn't this Mac. The
+project is the task's project by name, never its worktree folder. Clicking the title, or Task ▸
+Rename Task… while the task is in view, opens the title popover: the name to edit, then Project,
+Branch, Runs on and Agent with its model. Return keeps the name, Escape puts it back, and
+clicking away keeps it, as renaming in the sidebar does; an empty name goes back to the automatic
+title, and ⌘Z undoes it (`AppModel.rename`). Managed worker settings carry a lock on the Agent row
+and the popover's footer names the administrator once, as the open well's does.
+
+### Placement
+
+Settings ▸ Task Tools, listed while the well is on, holds one row per tool in key order. Changes
+opens beside the conversation (taking its place in a narrow window) or over it, or is off;
+Terminal, Dev, Subagents and the pull request are each on or off. A tool that's off never reaches
+the well: it has no row there and its key does nothing. The choices are the same saved
+`SessionToolArrangement` as the original Task Tools gate's, under each tool's stable id
+(`changes`, `terminal`, `dev`, `subagents`, `pullRequest`), and Restore Defaults clears them.
+
+### When GitHub is out of reach
+
+When the network policy keeps GitHub out of reach (an air-gapped or internal-only install, or the
+`github.cli` service turned off; `docs/enterprise/network-admission.md`), a task on a branch keeps its Pull request
+row, dimmed with "Not available here", says why, and offers the one thing to do instead: Export
+Patch… (also Task ▸ Export Patch…). It saves the branch's commits since it left the default branch
+as one `git format-patch` mailbox, binary files included, for `git am` on a connected machine
+(`Repository.branchPatch`). The row then says what was saved, how many commits, and that
+uncommitted changes aren't in it; a branch with no commits of its own yet is told to commit first,
+and one with merge commits (which a mailbox can't carry) to rebase first, never given a partial patch.
+A managed network setting puts a lock in the row's key slot and names the administrator in the
+footer. Export Patch makes no network request.
 
 ## Places
 
@@ -102,9 +132,9 @@ it. Opening and closing the inspector disables animation to avoid the prototype'
 still needs a visual check on the main Mac in both appearances.
 
 The original Task Tools gate registers only Changes, with Side, Fact and Off placements.
-The well adds the shared workbench and tool adapters described above. The placement editor,
-full tool contributions and default-on transition remain later slices. The standard screen is
-unchanged while both Labs switches are off.
+The well adds the shared workbench and tool adapters described above, and Settings ▸ Task Tools
+to place them. Plugin-contributed well tools and the default-on transition remain later slices.
+The standard screen is unchanged while both Labs switches are off.
 
 ## Narrow Changes
 

@@ -45,5 +45,8 @@ extension DS {
         public static let row = DSTypography.font(size: 12.5, weight: .book)
         public static let rowDetail = DSTypography.font(size: 12.5)
         public static let shortcut = DSTypography.font(size: 10.5, design: .mono)
+        /// The title's popover: the task's name, then who and where it runs.
+        public static let titlePanelWidth: CGFloat = 340
+        public static let titleLabelWidth: CGFloat = 58
     }
 }

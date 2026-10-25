@@ -12,10 +12,20 @@ final class SessionToolsScreenModel {
     @ObservationIgnored var wellToolAvailable: (TaskWellTool) -> Bool = { _ in false }
     @ObservationIgnored var wellToolEnabled: (TaskWellTool) -> Bool = { _ in true }
     @ObservationIgnored var wellToolAction: (TaskWellTool) -> Void = { _ in }
+    /// The title's popover, where the task is renamed (Task ▸ Rename Task… opens it too).
+    var showsTitle = false
+    /// Exports the branch as a patch, while the well offers that in place of the pull request.
+    var wellExportPatch: (() -> Void)?
 
     func toggleWell() {
         wellPage = nil
+        showsTitle = false
         showsWell.toggle()
+    }
+
+    func showTitle() {
+        showsWell = false
+        showsTitle = true
     }
 
     func showWellTools() {

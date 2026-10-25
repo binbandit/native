@@ -3,6 +3,8 @@ import SwiftUI
 
 struct HomeNextStatusLine: View {
     let tasks: [HomeNextTask]
+    /// "While you were away, …", when the user chose to see it and something happened.
+    var away: String?
     @Environment(PolicyCenter.self) private var policy: PolicyCenter?
 
     var body: some View {
@@ -12,6 +14,9 @@ struct HomeNextStatusLine: View {
         VStack(alignment: .leading, spacing: DS.Space.xxs) {
             Text(status(working: working.count, local: local, remote: remote))
                 .foregroundStyle(.dsTextSecondary)
+            if let away {
+                Text(away).foregroundStyle(.dsTextTertiary).accessibilityIdentifier("home-next-away")
+            }
             if let policy = policy?.policy, !policy.remoteHostsEnabled, policy.isManaged(.remoteHostsEnabled) {
                 Text("Other Macs are turned off by \(policy.organizationName ?? "your organization").")
                     .foregroundStyle(.dsTextTertiary)
@@ -42,6 +47,18 @@ struct HomeNextStatusLine: View {
 #if DEBUG
 #Preview("Next status - No work") {
     DSPreviewPair { HomeNextStatusLine(tasks: []).padding(DS.Space.xxl) }
+}
+#Preview("Next status - While you were away") {
+    DSPreviewPair {
+        HomeNextStatusLine(
+            tasks: [],
+            away: HomeNextAway(
+                start: .now.addingTimeInterval(-8_160), end: .now.addingTimeInterval(-120), finished: 2, asked: 3,
+                failed: 1
+            ).sentence
+        )
+        .padding(DS.Space.xxl)
+    }
 }
 #Preview("Next status - Managed") { HomeNextPreviewFixtures.page(.managed) }
 #endif

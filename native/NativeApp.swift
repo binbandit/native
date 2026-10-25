@@ -69,13 +69,13 @@ struct NativeApp: App {
         // A paired host's tasks get theirs there; this Mac's are unchanged.
         RemoteHostsWiring.connect(model: model, local: taskWorkspaces, git: git, gitHub: gitHub)
         ProjectRefreshWiring.connect(model: model, git: git, gitHub: gitHub)
-        // Agents are child processes; ending them with the app keeps them from outliving it. New
-        // sessions still without a message keep their drafts for the next launch.
+        // Agents are child processes; ending them with the app keeps them from outliving it. Drafts
+        // still waiting for a pause in typing are saved for the next launch.
         NotificationCenter.default.addObserver(
             forName: NSApplication.willTerminateNotification, object: nil, queue: .main
         ) { _ in
             MainActor.assumeIsolated {
-                model.keepUnsentDrafts()
+                model.keepDrafts()
                 model.stopAgents()
             }
         }

@@ -22,6 +22,7 @@ struct TaskWellWiring: View {
     @Environment(GitStore.self) private var git
     @Environment(GitHubModel.self) private var gitHub
     @Environment(PolicyCenter.self) private var policy
+    @State private var patchExport = TaskWellPatchExport()
 
     var body: some View {
         TaskWellToolbar(
@@ -49,6 +50,7 @@ struct TaskWellWiring: View {
             tools.wellToolAvailable = { _ in false }
             tools.wellToolEnabled = { _ in false }
             tools.wellToolAction = { _ in }
+            tools.wellExportPatch = nil
         }
         .onChange(of: terminal.panel(for: session).tabs.selected?.job?.startedAt) { _, _ in
             if tools.wellPage == .dev { tools.showsWell = false }
@@ -58,6 +60,15 @@ struct TaskWellWiring: View {
         }
         .task(id: session.key) {
             if let target { actions.store.refresh(target.project) }
+        }
+        // What was exported belongs to the task it came from.
+        .onChange(of: session.key) { patchExport = TaskWellPatchExport() }
+        .onChange(of: offersPatch, initial: true) { _, offers in
+            tools.wellExportPatch = offers ? { exportPatch() } : nil
+        }
+        .taskWellPatchExporter(patchExport) {
+            // Back where Export Patch was chosen, to say what was saved and what to do with it.
+            tools.showsWell = true
         }
     }
 
@@ -70,14 +81,20 @@ struct TaskWellWiring: View {
         AppTaskPullRequests(model: app, git: git, gitHub: gitHub).pullRequest(for: session.key)
     }
 
+    private var repository: GitRepositoryModel { git.model(for: session.cwd, session: session.key) }
+
+    /// Export Patch stands in for the pull request on a branch that can't reach GitHub.
+    private var offersPatch: Bool {
+        policy.isGitHubOutOfReach && repository.branchName != nil && tools.registry.place(for: .pullRequest) != .off
+    }
+
     private var identity: TaskWellIdentity {
         let device = app.device(of: session.key)
         let managed = policy.policy.managedKeys
-        let workerKeys: Set<PolicyKey> = [.agentsAllowed, .agentsEnvironment, .remoteHostsEnabled]
-        let panelKeys = workerKeys.union([.taskScriptsRepository, .shortcutBindings, .forbiddenPermissionModes])
-        let management =
-            managed.isDisjoint(with: panelKeys)
-            ? nil : policy.policy.organizationName.map { "Managed by \($0)" } ?? PolicyCenter.managedExplanation
+        let workerKeys = PolicyCenter.taskWorkerKeys
+        var panelKeys = workerKeys.union([.taskScriptsRepository, .shortcutBindings, .forbiddenPermissionModes])
+        if offersPatch { panelKeys.formUnion([.network, .deploymentMode]) }
+        let management = managed.isDisjoint(with: panelKeys) ? nil : policy.managementLine
         let turn = session.state.turns.last(where: { !$0.isLateOutput })
         let timing = turn?.duration.map { duration in
             let idle =
@@ -91,13 +108,15 @@ struct TaskWellWiring: View {
             isManaged: !managed.isDisjoint(with: workerKeys), management: management)
     }
 
+    /// A tool that's off in Settings ▸ Task Tools never reaches the well, nor does its key.
     private func available(_ tool: TaskWellTool) -> Bool {
-        switch tool {
-        case .changes: tools.registry.place(of: .changes) != .off
+        guard tools.registry.place(for: tool.spec) != .off else { return false }
+        return switch tool {
+        case .changes: tools.registry.tool(.changes) != nil
         case .terminal: true
         case .dev: target != nil
         case .subagents: session.hasSubagents
-        case .pullRequest: pullRequest != nil
+        case .pullRequest: offersPatch || pullRequest != nil
         }
     }
 
@@ -113,7 +132,16 @@ struct TaskWellWiring: View {
             }
         case .subagents: break
         case .pullRequest:
-            if let pullRequest { gitHub.open(pullRequest) }
+            if !offersPatch, let pullRequest { gitHub.open(pullRequest) }
+        }
+    }
+
+    private func exportPatch() {
+        guard let branch = repository.branchName else { return }
+        Task {
+            await patchExport.prepare(from: repository, branch: branch)
+            // The save panel takes over from the well; without one, the well says why.
+            tools.showsWell = patchExport.document == nil
         }
     }
 
@@ -161,6 +189,11 @@ struct TaskWellWiring: View {
             let working = subagents.filter { $0.workState?.isWorking == true }.count
             return TaskWellToolDetail(text: "\(subagents.count) workers · \(working) working")
         case .pullRequest:
+            if offersPatch {
+                return TaskWellToolDetail(
+                    text: "Not available here", unavailableReason: patchExport.note, isManaged: policy.isNetworkManaged,
+                    recovery: patchExport.isPreparing ? nil : .init(title: "Export Patch…", action: exportPatch))
+            }
             guard let pullRequest else { return TaskWellToolDetail() }
             let state = PullRequestStateIcon(state: pullRequest.state, isDraft: pullRequest.isDraft).label
             let checks = pullRequest.state == .open ? pullRequest.checks.map(ChecksIndicator.summary) : nil

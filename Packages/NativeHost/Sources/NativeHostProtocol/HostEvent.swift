@@ -64,7 +64,7 @@ public struct RecoveryNote: Codable, Hashable, Sendable {
         case agentRestarted
         /// The host process itself stopped (crashed or was killed) and launchd restarted it.
         case hostStopped
-        /// The host restarted onto a newer Native ("Restart Host Now" after an update).
+        /// The host restarted onto a newer Native ("Restart Now…" after an update).
         case hostUpdated
         /// The Mac restarted or the user logged out.
         case systemRestarted

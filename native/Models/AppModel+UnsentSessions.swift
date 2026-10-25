@@ -17,8 +17,10 @@ extension AppModel {
         }
     }
 
-    /// Notes the drafts of sessions still waiting for their first message, for when Native quits.
-    func keepUnsentDrafts() {
+    /// Saves every composer's draft at once, for when Native quits, and notes those of sessions still
+    /// waiting for their first message.
+    func keepDrafts() {
+        sessions.services.drafts.save()
         unsentSessions.keepDrafts { sessions.session($0)?.draft }
     }
 

@@ -118,11 +118,12 @@ keeps executing its old binary, so agents never notice the app restarting. Then:
 1. The new app launches and connects. The host reports its build in `HostInfo.hostInfo.build`;
    the app compares it with its own `CFBundleVersion` (`HostVersionStatus.compare`, the same build
    number for the app and its embedded host because one `CURRENT_PROJECT_VERSION` builds both).
-2. **Host older:** the app sends `_native/host/shutdown {stopAgents: false}`. The host takes no new
-   turns, exits with 75 once nothing is running, and launchd starts the new binary from the updated
-   bundle. Meanwhile `HostVersionNotice` says "Native updated to 1.4.0. Its background host switches
-   over when your tasks finish", with Restart Host Now (the interrupted turns resume, as after any
-   interruption).
+2. **Host older:** the app sends `_native/host/shutdown {stopAgents: false}`. The host keeps working
+   and taking messages, exits with 75 the first moment nothing is running (docs/durability.md, "The
+   guarantee"), and launchd starts the new binary from the updated bundle. Meanwhile
+   `HostVersionNotice` says "Native updated to 1.4.0. The update finishes when your tasks are idle",
+   with Restart Now…, which names the tasks it would interrupt before it does (they resume, as after
+   any interruption).
 3. **Host newer** (an older copy of Native was opened): the notice says this copy is older than its
    host and offers Check for Updates.
 4. **Protocol versions differ:** the `initialize` handshake and `_native/host/shutdown` are frozen
@@ -130,7 +131,7 @@ keeps executing its old binary, so agents never notice the app restarting. Then:
    can't talk to it otherwise. A newer host facing an older app is `incompatible` and shows
    "Update Native".
 
-The host side of this (the frozen handshake, `ShutdownParams.immediately` for Restart Host Now,
+The host side of this (the frozen handshake, `ShutdownParams.immediately` for Restart Now…,
 `DurableHost.versionStatus`, and Nightly's own host channel) lives in `Packages/NativeHost` and
 `native/Host`.
 

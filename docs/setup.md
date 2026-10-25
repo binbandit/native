@@ -418,7 +418,8 @@ Go through `setup_status` in its order, fixing the first problem before the next
    or `unreachable`: Settings ▸ Background shows the reason, and Restart Host (there, in the notice
    above the window's content, or in the status bar's Background Host item) starts it again;
    turning the setting off and relaunching runs agents inside Native. After an update, a host
-   running the older build switches over once its tasks finish, or at once with Restart Host Now.
+   running the older build switches over once its tasks are idle, or at once with Restart Now… in the
+   notice, which first names the tasks it would interrupt.
 7. **The phone can't pair or connect.** The durable host must be on, Allow paired devices to connect
    on, and the gateway listening; the phone and Mac on the same network (or both on Tailscale); a
    code is single use and lasts five minutes, so open Pair iPhone… again for a fresh one. "Removed on
