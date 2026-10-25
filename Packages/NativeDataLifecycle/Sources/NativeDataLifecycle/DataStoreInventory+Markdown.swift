@@ -43,6 +43,8 @@ extension DataLocation {
     var markdown: String {
         switch self {
         case .file(let root, let components): "`" + ([root.label] + components).joined(separator: "/") + "`"
+        case .chosenFolder(let setting, let components):
+            "`" + (["<\(setting)>"] + components).joined(separator: "/") + "` when the `\(setting)` default moves it"
         case .defaults(let keys): "defaults " + keys.map { "`\($0)`" }.joined(separator: ", ")
         case .keychain(let service): "Keychain service `\(service)`"
         case .gitRefs(let patterns): "repository " + patterns.map { "`\($0)`" }.joined(separator: ", ")

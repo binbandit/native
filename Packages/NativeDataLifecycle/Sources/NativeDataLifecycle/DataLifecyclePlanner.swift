@@ -56,15 +56,7 @@ public struct DataLifecyclePlanner: Sendable {
         let verdicts = listed.map { item in
             item.records.map { verdict(for: $0, entry: item.entry, request: request, clock: clock) }
         }
-        // Only a record that is listed, due and not held can let a shared copy go: a user that's
-        // missing from the listings, or held through a parent another record doesn't know about,
-        // keeps it.
-        var going: Set<DataRecordKey> = []
-        for (item, itemVerdicts) in zip(listed, verdicts) {
-            for (record, verdict) in zip(item.records, itemVerdicts) {
-                if case .due = verdict, !holds.isHolding(record, in: item.entry.id) { going.insert(record.key) }
-            }
-        }
+        let context = Context(listed: listed, verdicts: verdicts, holds: holds)
 
         var outcomes: [DataCopyOutcome] = []
         for (item, itemVerdicts) in zip(listed, verdicts) {
@@ -72,7 +64,8 @@ public struct DataLifecyclePlanner: Sendable {
                 for copy in record.copies {
                     outcomes.append(
                         outcome(
-                            for: copy, of: record, entry: item.entry, verdict: verdict, going: going, request: request))
+                            for: copy, of: record, entry: item.entry, verdict: verdict, context: context,
+                            request: request))
                 }
             }
         }
@@ -96,6 +89,42 @@ public struct DataLifecyclePlanner: Sendable {
     }
 
     // MARK: - Records
+
+    /// What the plan learns across every listing before it decides any copy.
+    struct Context {
+        /// What every listing says each record belongs to: one store may know a held parent
+        /// another doesn't, and the hold has to win in both.
+        private let lineage: [DataRecordKey: Set<DataRecordKey>]
+        /// By store, the records that are due and not held. A shared copy goes only when every
+        /// record using it is among them: one missing from the listing, kept there or held anywhere
+        /// keeps it.
+        let going: [DataStoreID: Set<DataRecordKey>]
+
+        init(
+            listed: [(entry: DataStoreEntry, records: [DataRecord])], verdicts: [[Verdict]], holds: LegalHoldAuthority
+        ) {
+            var lineage: [DataRecordKey: Set<DataRecordKey>] = [:]
+            for record in listed.flatMap(\.records) {
+                lineage[record.key, default: []].formUnion(record.keys)
+            }
+            self.lineage = lineage
+            var going: [DataStoreID: Set<DataRecordKey>] = [:]
+            for (item, itemVerdicts) in zip(listed, verdicts) {
+                for (record, verdict) in zip(item.records, itemVerdicts) {
+                    if case .due = verdict, holds.holds(keeping: lineage[record.key] ?? [], in: item.entry.id).isEmpty {
+                        going[item.entry.id, default: []].insert(record.key)
+                    }
+                }
+            }
+            self.going = going
+        }
+
+        /// Every key a hold could name a copy by: its record's and those of the records sharing it,
+        /// with what any listing said they belong to.
+        func keys(of record: DataRecord, sharedWith: Set<DataRecordKey>) -> Set<DataRecordKey> {
+            sharedWith.union([record.key]).reduce(record.keys) { $0.union(lineage[$1] ?? [$1]) }
+        }
+    }
 
     enum Verdict: Equatable {
         /// An erasure that doesn't name it: no outcome.
@@ -134,12 +163,12 @@ public struct DataLifecyclePlanner: Sendable {
     // MARK: - Copies
 
     private func outcome(
-        for copy: DataRecordCopy, of record: DataRecord, entry: DataStoreEntry, verdict: Verdict,
-        going: Set<DataRecordKey>, request: DataLifecycleRequest
+        for copy: DataRecordCopy, of record: DataRecord, entry: DataStoreEntry, verdict: Verdict, context: Context,
+        request: DataLifecycleRequest
     ) -> DataCopyOutcome {
         let store = entry.id
         let required = copy.kind.requiredCapabilities(tombstones: entry.needsTombstones)
-        let held = holds.holds(covering: record, copy: copy, in: store)
+        let held = holds.holds(keeping: context.keys(of: record, sharedWith: copy.sharedWith), in: store)
         let reasons: [DataLifecycleReason] =
             if !held.isEmpty {
                 held.map(DataLifecycleReason.legalHold)
@@ -149,7 +178,8 @@ public struct DataLifecyclePlanner: Sendable {
                 case .kept(let reason), .undetermined(let reason): [reason]
                 case .due(let reason):
                     [reason]
-                        + Set(obstacles(for: copy, entry: entry, going: going, required: required)).sorted()
+                        + Set(obstacles(for: copy, entry: entry, going: context.going[store] ?? [], required: required))
+                        .sorted()
                 }
             }
         let blocking = reasons.map(\.disposition).filter { $0 != .planned }
@@ -193,7 +223,7 @@ public struct DataLifecyclePlanner: Sendable {
             case .symbolicLink: obstacles.append(.symbolicLink)
             case .unknown: obstacles.append(.linkStateUnknown)
             }
-        } else if !specs.isEmpty, specs.allSatisfy({ if case .file = $0.location { true } else { false } }) {
+        } else if !specs.isEmpty, specs.allSatisfy({ $0.location.template != nil }) {
             obstacles.append(.locationUnknown)
         }
 

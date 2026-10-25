@@ -39,6 +39,27 @@ extension DataLifecyclePlanTests {
         #expect(plan.status == .blocked)
     }
 
+    @Test func aStoreASettingMovedIsFoundOnlyInThatSettingsFolder() throws {
+        let moved = DataRoot(.userChosen, instance: "automationDataDirectory")
+        let other = DataRoot(.userChosen, instance: "gitWorktreesFolder")
+        let roots = DataApprovedRoots([
+            moved: "\(W.base)/automation-data", other: "\(W.base)/worktrees",
+            DataRoot(.appSupport): "\(W.base)/AppSupport",
+        ])
+        let goal = DataRecordKey(.automation, "goal-one")
+        func record(_ root: DataRoot) -> DataRecord {
+            DataRecord(goal, copies: [DataRecordCopy(.primary, at: DataRelativePath(root, ["goals.json"]))])
+        }
+        let request = try #require(DataLifecycleRequest(id: "e", purpose: .erasure([goal]), stores: [.automation]))
+        for (root, expected) in [
+            (DataRoot(.appSupport), DataCopyOutcome.Disposition.planned), (moved, .planned), (other, .unknown),
+        ] {
+            let plan = W.planner(roots: roots).plan(
+                request, reports: [.automation: .listed([record(root)])], clock: W.clock)
+            #expect(plan.dispositions(goal)[.primary] == expected, "\(root)")
+        }
+    }
+
     @Test func onlyApprovedPlainRootsResolve() throws {
         let roots = DataApprovedRoots([
             DataRoot(.appSupport): "relative/AppSupport",
@@ -99,7 +120,7 @@ extension DataLifecyclePlanTests {
         #expect(both.operations.count == 2)
         #expect(both.status == .complete)
 
-        // A user held through a parent the other record's listing doesn't know about still keeps it.
+        // A user held through a parent only its own listing names still keeps it.
         let betaElsewhere = DataRecord(
             W.beta, parents: [DataRecordKey(.project, "project-two")],
             copies: [
@@ -111,9 +132,21 @@ extension DataLifecyclePlanTests {
         let throughParent = W.planner(holds: projectTwoHeld).plan(
             try W.erasure([W.alpha, W.beta], stores: [.attachments]),
             reports: [.attachments: .listed([records[0], betaElsewhere])], clock: W.clock)
-        #expect(throughParent.reasons(W.alpha, .temporary) == [.requested, .sharedWithKeptRecord])
+        #expect(throughParent.reasons(W.alpha, .temporary) == [.legalHold("p2")])
         #expect(throughParent.reasons(W.beta, .temporary) == [.legalHold("p2")])
         #expect(throughParent.operations.isEmpty)
+
+        // Another store listing the held user without that parent doesn't release it: what any listing
+        // says a record belongs to counts everywhere, for the shared copy and the user's own rows.
+        let acrossStores = W.planner(holds: projectTwoHeld).plan(
+            try W.erasure([W.alpha, W.beta], stores: [.attachments, .searchIndex]),
+            reports: [
+                .attachments: .listed([records[0], betaElsewhere]),
+                .searchIndex: .listed([W.searchRecord(W.beta, lastActive: W.now, parents: [])]),
+            ], clock: W.clock)
+        #expect(acrossStores.reasons(W.alpha, .temporary) == [.legalHold("p2")])
+        #expect(acrossStores.outcomes(for: W.beta).allSatisfy { $0.disposition == .held })
+        #expect(acrossStores.operations.isEmpty)
 
         // A hold on either user keeps the shared copy for both.
         let betaHeld = LegalHoldAuthority.confirmed(

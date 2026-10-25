@@ -37,7 +37,9 @@ doesn't read them to inventory them, and never reads another app's secrets.
 - a `DataLifecyclePolicy` built from a validated `NativePolicy`, with its revision;
 - a `LegalHoldAuthority`: a confirmed set of holds (possibly empty), or unavailable;
 - the roots the caller approves (`DataApprovedRoots`), as absolute plain paths for file-backed
-  kinds only;
+  kinds only. A store a setting has moved (`automationDataDirectory`, `pluginsDirectory`,
+  `gitWorktreesFolder`, `pullRequestTasks.cloneFolder`) is approved as a `userChosen` root named
+  by that setting, and only its own copies match there;
 - which adapters exist and what they can do (`DataAdapterSupport`, empty today);
 - the tombstones kept so far;
 - what each store's owner listed (`DataStoreReport`): records by opaque id, with their parents,
@@ -56,6 +58,8 @@ For each copy of each record in scope:
 
 1. **A confirmed legal hold wins.** A hold names everything, some stores, or records; a hold on a
    record also covers the records that belong to it (a project's tasks) and any copy it shares.
+   What any listing says a record belongs to counts in every store, so one store that doesn't know
+   a held parent can't release the record or a copy it shares.
    Held copies are reported held whatever retention or a request says.
 2. **Otherwise a record is due** because an erasure names it or one of its parents, its tombstone
    says it was removed before and it has come back, or a policy retention period has expired.
@@ -433,7 +437,7 @@ Searchable copies of transcripts: titles, folders, message text, and how far eac
 Goals, automations and workflows with their runs and the tasks they started: objectives, prompts, outputs and folders.
 
 - **Owner:** Native (verified in source). **Records:** automation. **Holds:** user content, paths, identifiers.
-- **Copies:** primary `AppSupport/goals.json`, JSON; primary `AppSupport/automations.json`, JSON; primary `AppSupport/workflow-runs.json`, JSON; primary `AppSupport/workflow-tasks.json`, JSON.
+- **Copies:** primary `AppSupport/goals.json`, JSON; primary `<automationDataDirectory>/goals.json` when the `automationDataDirectory` default moves it, JSON; primary `AppSupport/automations.json`, JSON; primary `<automationDataDirectory>/automations.json` when the `automationDataDirectory` default moves it, JSON; primary `AppSupport/workflow-runs.json`, JSON; primary `<automationDataDirectory>/workflow-runs.json` when the `automationDataDirectory` default moves it, JSON; primary `AppSupport/workflow-tasks.json`, JSON; primary `<automationDataDirectory>/workflow-tasks.json` when the `automationDataDirectory` default moves it, JSON.
 - **Retention:** 50 runs per automation, 100 workflow runs, step-task records cut to 500 past 1,000; goals unbounded. **Today:** Old runs drop past those limits; deleting an automation or a goal removes it.
 - **Export:** adapter pending. **Delete:** adapter pending. **Hold:** pruned automatically, ignoring holds.
 - **Follow-up:** `lifecycle-automation`. **Code:** `Packages/Automation/Sources/NativeAutomation/AutomationStorage.swift`, `native/Automation/Integration/StepTaskRecords.swift`.
@@ -443,7 +447,7 @@ Goals, automations and workflows with their runs and the tasks they started: obj
 Expeditions and the tasks their crews ran.
 
 - **Owner:** Native (verified in source). **Records:** expedition. **Holds:** user content, paths, identifiers.
-- **Copies:** primary `AppSupport/expeditions.json`, JSON; primary `AppSupport/expedition-tasks.json`, JSON.
+- **Copies:** primary `AppSupport/expeditions.json`, JSON; primary `<automationDataDirectory>/expeditions.json` when the `automationDataDirectory` default moves it, JSON; primary `AppSupport/expedition-tasks.json`, JSON; primary `<automationDataDirectory>/expedition-tasks.json` when the `automationDataDirectory` default moves it, JSON.
 - **Retention:** until the user removes it. **Today:** No limit; nothing prunes them.
 - **Export:** adapter pending. **Delete:** adapter pending. **Hold:** user deletes ignore holds.
 - **Follow-up:** `lifecycle-automation`. **Code:** `Packages/Automation/Sources/NativeAutomation/AutomationStorage.swift`, `native/Expeditions/Integration/ExpeditionCrewRecords.swift`.
@@ -490,10 +494,10 @@ Pull request context written for questions about it: its description and diffs.
 
 ### `github.pullRequestClones`
 
-Repositories cloned to start pull request tasks, in the clone folder. Native made them, but they are ordinary checkouts the user may work in, so their owner isn't established.
+Repositories cloned to start pull request tasks, in the clone folder (by default the user's developer folder). Native made them, but they are ordinary checkouts the user may work in, so their owner isn't established.
 
 - **Owner:** unknown (verified in source). **Records:** repository. **Holds:** user content, paths.
-- **Copies:** primary `<chosen folder>/<repository>`, git worktree.
+- **Copies:** primary `<pullRequestTasks.cloneFolder>/<repository>` when the `pullRequestTasks.cloneFolder` default moves it, git worktree.
 - **Retention:** until the user removes it. **Today:** Native never removes them.
 - **Export:** outside Native. **Delete:** outside Native. **Hold:** owner outside Native.
 - **Follow-up:** none. **Code:** `native/PullRequestTasks/Model/PullRequestTaskCheckout.swift`.
@@ -503,7 +507,7 @@ Repositories cloned to start pull request tasks, in the clone folder. Native mad
 Worktrees made for tasks, with everything the agent and the user changed in them.
 
 - **Owner:** Native (verified in source). **Records:** session. **Holds:** user content, paths.
-- **Copies:** primary `~/.native/worktrees/<repository>/<task>`, git worktree; primary `<chosen folder>/<repository>/<task>`, git worktree.
+- **Copies:** primary `~/.native/worktrees/<repository>/<task>`, git worktree; primary `<gitWorktreesFolder>/<repository>/<task>` when the `gitWorktreesFolder` default moves it, git worktree.
 - **Retention:** with its session. **Today:** Removing a task's worktree takes a checkpoint first; Git Cleanup moves leftover folders to the Trash.
 - **Export:** adapter pending. **Delete:** adapter pending. **Hold:** user deletes ignore holds.
 - **Follow-up:** `lifecycle-git`. **Code:** `native/Git/Model/GitStore+TaskWorkspaces.swift`, `native/Git/Cleanup/GitCleanupModel+Run.swift`.
@@ -533,7 +537,7 @@ Git objects and reflogs in the user's repositories that still hold snapshots Nat
 Plugins the user installed from manifests, with their assets.
 
 - **Owner:** customer (verified in source). **Records:** plugin. **Holds:** commands, configuration.
-- **Copies:** primary `~/.native/plugins/<plugin>`, files.
+- **Copies:** primary `~/.native/plugins/<plugin>`, files; primary `<pluginsDirectory>/<plugin>` when the `pluginsDirectory` default moves it, files.
 - **Retention:** until the user removes it. **Today:** The user adds and removes them.
 - **Export:** outside Native. **Delete:** outside Native. **Hold:** owner outside Native.
 - **Follow-up:** none. **Code:** `native/Plugins/PluginRegistry.swift`.

@@ -46,11 +46,15 @@ extension DataStoreInventory {
             support: .pending, followUp: .appRecords),
         DataStoreEntry(
             .pullRequestClones,
-            "Repositories cloned to start pull request tasks, in the clone folder. Native made them, but they are"
+            "Repositories cloned to start pull request tasks, in the clone folder (by default the user's developer"
+                + " folder). Native made them, but they are"
                 + " ordinary checkouts the user may work in, so their owner isn't established.",
             owners: ["native/PullRequestTasks/Model/PullRequestTaskCheckout.swift"], ownership: .unknown,
             content: [.userContent, .paths], records: .repository,
-            copies: [DataCopySpec(.primary, .file(.userChosen, ["<repository>"]), .gitWorktree)],
+            copies: [
+                DataCopySpec(
+                    .primary, .chosenFolder(setting: "pullRequestTasks.cloneFolder", ["<repository>"]), .gitWorktree)
+            ],
             retention: .userManaged, today: "Native never removes them.", support: .outside, followUp: nil),
         DataStoreEntry(
             .taskWorktrees, "Worktrees made for tasks, with everything the agent and the user changed in them.",
@@ -58,8 +62,8 @@ extension DataStoreInventory {
             ownership: .native, content: [.userContent, .paths], records: .session,
             copies: [
                 DataCopySpec(.primary, .file(.nativeHome, ["worktrees", "<repository>", "<task>"]), .gitWorktree),
-                // The worktrees folder setting moves them.
-                DataCopySpec(.primary, .file(.userChosen, ["<repository>", "<task>"]), .gitWorktree),
+                DataCopySpec(
+                    .primary, .chosenFolder(setting: "gitWorktreesFolder", ["<repository>", "<task>"]), .gitWorktree),
             ],
             retention: .followsRecord(.session),
             today: "Removing a task's worktree takes a checkpoint first; Git Cleanup moves leftover folders to the"
@@ -107,7 +111,11 @@ extension DataStoreInventory {
             .plugins, "Plugins the user installed from manifests, with their assets.",
             owners: ["native/Plugins/PluginRegistry.swift"], ownership: .customer,
             content: [.commands, .configuration],
-            records: .plugin, copies: [DataCopySpec(.primary, .file(.nativeHome, ["plugins", "<plugin>"]), .files)],
+            records: .plugin,
+            copies: [
+                DataCopySpec(.primary, .file(.nativeHome, ["plugins", "<plugin>"]), .files),
+                DataCopySpec(.primary, .chosenFolder(setting: "pluginsDirectory", ["<plugin>"]), .files),
+            ],
             retention: .userManaged, today: "The user adds and removes them.", support: .outside, followUp: nil),
         DataStoreEntry(
             .componentCaches,

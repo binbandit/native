@@ -179,9 +179,7 @@ extension DataStoreInventory {
                 "native/Automation/Integration/StepTaskRecords.swift",
             ],
             ownership: .native, content: [.userContent, .paths, .identifiers], records: .automation,
-            copies: ["goals.json", "automations.json", "workflow-runs.json", "workflow-tasks.json"].map {
-                DataCopySpec(.primary, .file(.appSupport, [$0]), .json)
-            },
+            copies: automationFiles(["goals.json", "automations.json", "workflow-runs.json", "workflow-tasks.json"]),
             retention: .ownerRule(
                 "50 runs per automation, 100 workflow runs, step-task records cut to 500 past 1,000; goals unbounded"),
             today: "Old runs drop past those limits; deleting an automation or a goal removes it.",
@@ -193,9 +191,7 @@ extension DataStoreInventory {
                 "native/Expeditions/Integration/ExpeditionCrewRecords.swift",
             ],
             ownership: .native, content: [.userContent, .paths, .identifiers], records: .expedition,
-            copies: ["expeditions.json", "expedition-tasks.json"].map {
-                DataCopySpec(.primary, .file(.appSupport, [$0]), .json)
-            },
+            copies: automationFiles(["expeditions.json", "expedition-tasks.json"]),
             retention: .userManaged, today: "No limit; nothing prunes them.", support: .pending,
             followUp: .automation),
         DataStoreEntry(
@@ -206,4 +202,14 @@ extension DataStoreInventory {
             retention: .userManaged, today: "Nothing deletes them; checkpoints are written read-only.",
             support: .pending, followUp: .automation),
     ]
+
+    /// Automation keeps its files in Application Support, or wherever `automationDataDirectory` says.
+    private static func automationFiles(_ names: [String]) -> [DataCopySpec] {
+        names.flatMap { name in
+            [
+                DataCopySpec(.primary, .file(.appSupport, [name]), .json),
+                DataCopySpec(.primary, .chosenFolder(setting: "automationDataDirectory", [name]), .json),
+            ]
+        }
+    }
 }

@@ -68,6 +68,9 @@ public struct DataRoot: Hashable, Codable, Sendable {
 /// caller-supplied part, which may sit inside a component (`registry-<hash>.json`).
 public enum DataLocation: Equatable, Sendable {
     case file(DataRootKind, [String])
+    /// Under the folder a setting names when it moves a store out of its usual root. The caller
+    /// approves that folder as a `userChosen` root whose instance is the setting's name.
+    case chosenFolder(setting: String, [String])
     case defaults([String])
     case keychain(service: String)
     /// Refs and config sections inside a repository, which git may pack into one file.
@@ -77,13 +80,23 @@ public enum DataLocation: Equatable, Sendable {
     /// Not known yet (a store whose schema hasn't landed).
     case undetermined
 
-    /// Whether `path` lies inside this file location. Only file templates match, and only paths in
-    /// a root of the same kind.
+    /// The root and path template, for a location that's a path.
+    var template: (root: DataRoot?, kind: DataRootKind, components: [String])? {
+        switch self {
+        case .file(let kind, let components): (nil, kind, components)
+        case .chosenFolder(let setting, let components):
+            (DataRoot(.userChosen, instance: setting), .userChosen, components)
+        case .defaults, .keychain, .gitRefs, .elsewhere, .undetermined: nil
+        }
+    }
+
+    /// Whether `path` lies inside this location: a path in a root of the same kind (the setting's
+    /// own folder, for a chosen one) that matches the template.
     func contains(_ path: DataRelativePath) -> Bool {
-        guard case .file(let kind, let template) = self, path.root.kind == kind,
-            path.components.count >= template.count
+        guard let template, path.root.kind == template.kind, template.root.map({ $0 == path.root }) ?? true,
+            path.components.count >= template.components.count
         else { return false }
-        return zip(template, path.components).allSatisfy { DataPathPattern.matches($0, $1) }
+        return zip(template.components, path.components).allSatisfy { DataPathPattern.matches($0, $1) }
     }
 }
 

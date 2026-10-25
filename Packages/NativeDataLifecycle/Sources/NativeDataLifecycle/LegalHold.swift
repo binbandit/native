@@ -15,13 +15,13 @@ public struct LegalHold: Equatable, Sendable {
         self.scope = scope
     }
 
-    /// Whether the hold keeps `record` in `store`, and with it any copy shared with the records in
-    /// `sharedWith`: a copy several records use is kept when any of them is held.
-    func keeps(_ record: DataRecord, in store: DataStoreID, sharedWith: Set<DataRecordKey> = []) -> Bool {
+    /// Whether the hold keeps something in `store` known by any of `keys`: a record, the records it
+    /// belongs to, and the other records sharing the copy.
+    func keeps(_ keys: Set<DataRecordKey>, in store: DataStoreID) -> Bool {
         switch scope {
         case .everything: true
         case .stores(let stores): stores.contains(store)
-        case .records(let keys): !keys.isDisjoint(with: record.keys.union(sharedWith))
+        case .records(let held): !held.isDisjoint(with: keys)
         }
     }
 
@@ -72,14 +72,9 @@ public struct LegalHoldAuthority: Equatable, Sendable {
 
     public static let unavailable = LegalHoldAuthority(state: .unavailable, revision: nil, holds: [])
 
-    /// The confirmed holds that keep this copy, by id.
-    func holds(covering record: DataRecord, copy: DataRecordCopy, in store: DataStoreID) -> [String] {
+    /// The confirmed holds that keep something known by any of `keys` in `store`, by id.
+    func holds(keeping keys: Set<DataRecordKey>, in store: DataStoreID) -> [String] {
         guard state == .confirmed else { return [] }
-        return holds.filter { $0.keeps(record, in: store, sharedWith: copy.sharedWith) }.map(\.id).sorted()
-    }
-
-    /// Whether a confirmed hold keeps the record itself, whatever its copies.
-    func isHolding(_ record: DataRecord, in store: DataStoreID) -> Bool {
-        state == .confirmed && holds.contains { $0.keeps(record, in: store) }
+        return holds.filter { $0.keeps(keys, in: store) }.map(\.id).sorted()
     }
 }

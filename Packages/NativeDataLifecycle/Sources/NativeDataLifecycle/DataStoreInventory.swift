@@ -33,9 +33,15 @@ public struct DataStoreInventory: Sendable {
         for entry in entries {
             let name = entry.id.rawValue
             if entry.copies.isEmpty { problems.append("\(name) has no copies") }
-            for case .file(let root, let template) in entry.copies.map(\.location) {
-                if !root.isFileBacked { problems.append("\(name) has a file copy under \(root.rawValue)") }
-                if template.isEmpty || template.contains(where: { !DataPathPattern.isPlainComponent($0) }) {
+            for template in entry.copies.compactMap(\.location.template) {
+                if !template.kind.isFileBacked { problems.append("\(name) has a path under \(template.kind.rawValue)") }
+                // A chosen folder is only unambiguous with the setting that names it.
+                if template.kind == .userChosen, template.root == nil {
+                    problems.append("\(name) has a chosen folder without its setting")
+                }
+                if template.components.isEmpty
+                    || template.components.contains(where: { !DataPathPattern.isPlainComponent($0) })
+                {
                     problems.append("\(name) has a path template that could leave its root")
                 }
             }
