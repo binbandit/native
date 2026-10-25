@@ -112,8 +112,13 @@ private final class ByteChannelEngine: Sendable {
         var discardsWrites = false
         /// The thread has closed every descriptor, the wake pipe's included.
         var isFinished = false
-        /// Where reads go, from `incoming()` until the channel closes.
+        /// `incoming()` was called: the thread reads until the channel closes, even with nobody left
+        /// listening, so the other end never backs up and its hanging up is noticed.
+        var isReading = false
+        /// Where reads go, until the channel closes or whoever was reading stops.
         var reader: AsyncStream<Data>.Continuation?
+        /// The `ByteChannel` is gone: the channel closes once nobody is reading either.
+        var isReleased = false
         /// Bytes queued and not yet taken by the thread.
         var pending = Data()
         /// Bytes accepted and not yet written: `pending` and the rest of the thread's batch.
@@ -177,13 +182,24 @@ private final class ByteChannelEngine: Sendable {
     }
 
     func startReading(into reader: AsyncStream<Data>.Continuation) {
+        reader.onTermination = { [weak self] _ in self?.readerStopped() }
         let started = state.withLock { state in
             guard !state.isClosed else { return false }
+            state.isReading = true
             state.reader = reader
             wakeThread(unlessFinished: state.isFinished)
             return true
         }
         if !started { reader.finish() }
+    }
+
+    /// Whoever read `incoming()` stopped (or the channel ended it).
+    private func readerStopped() {
+        let isOrphaned = state.withLock { state in
+            state.reader = nil
+            return state.isReleased
+        }
+        if isOrphaned { end(discardingPendingWrites: false) }
     }
 
     /// False when the channel is closed or `data` would take the backlog past `limit`.
@@ -200,9 +216,11 @@ private final class ByteChannelEngine: Sendable {
     }
 
     func release() {
-        if !state.withLock({ $0.reader != nil }) {
-            end(discardingPendingWrites: false)
+        let isOrphaned = state.withLock { state in
+            state.isReleased = true
+            return state.reader == nil
         }
+        if isOrphaned { end(discardingPendingWrites: false) }
     }
 
     func end(discardingPendingWrites: Bool) {
@@ -264,7 +282,8 @@ private final class ByteChannelEngine: Sendable {
                     state.backlog = 0
                     batch = Data()
                     written = 0
-                } else if written == batch.count, !state.pending.isEmpty {
+                } else if written == batch.count {
+                    // Whatever is pending, possibly nothing: a finished batch isn't kept around.
                     batch = state.pending
                     written = 0
                     state.pending = Data()
@@ -273,7 +292,7 @@ private final class ByteChannelEngine: Sendable {
                 if state.backlog == 0 { swap(&flushed, &state.flushWaiters) }
                 let writes = written < batch.count
                 if state.isClosed, !writes { return (.finish, flushed) }
-                return (.wait(reads: state.reader != nil, writes: writes), flushed)
+                return (.wait(reads: state.isReading && !state.isClosed, writes: writes), flushed)
             }
             for waiter in flushed { waiter.resume() }
             guard case .wait(let reads, let writes) = step else { break }

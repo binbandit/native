@@ -71,9 +71,10 @@ struct StderrTailTests {
         try #require(tail?.text.isEmpty == true)
 
         tail = nil
-        // The writer's end reads as ended once the tail's end is closed.
+        // The writer's end reads as ended once the tail's end is closed. Without that the read below
+        // would block, so a timed-out wait ends the test.
         var descriptor = pollfd(fd: writer, events: Int16(POLLIN), revents: 0)
-        #expect(poll(&descriptor, 1, 5_000) == 1)
+        try #require(poll(&descriptor, 1, 5_000) == 1)
         var byte: UInt8 = 0
         #expect(read(writer, &byte, 1) == 0)
     }

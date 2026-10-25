@@ -67,6 +67,27 @@ struct ByteChannelTests {
         #expect(await received(on: theirs) == Data("last words".utf8))
     }
 
+    @Test("A released channel whose reader stopped closes, though the other end stays open")
+    func releaseAfterReaderStops() async throws {
+        let (ours, theirs) = try UnixSocket.pair()
+        defer { _ = close(theirs) }
+        var channel: ByteChannel? = ByteChannel.socket(ours, label: "test")
+        let incoming = try #require(channel?.incoming())
+        let reading = Task {
+            for await _ in incoming {}
+        }
+        reading.cancel()
+        await reading.value
+        channel = nil
+
+        // The other end reads as ended once the channel has closed its descriptors. Without that the
+        // read below would block, so a timed-out wait ends the test.
+        var descriptor = pollfd(fd: theirs, events: Int16(POLLIN), revents: 0)
+        try #require(poll(&descriptor, 1, 5_000) == 1)
+        var byte: UInt8 = 0
+        #expect(read(theirs, &byte, 1) == 0)
+    }
+
     @Test("Waiting for a flush ends when the channel closes without sending")
     func flushEndsAtDiscard() async throws {
         let (ours, theirs) = try UnixSocket.pair()
