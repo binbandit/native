@@ -3,7 +3,7 @@ import Experiments
 import Foundation
 import Observation
 
-/// A draft has no agent session or worktree until Start or Expand is chosen.
+/// A draft has no agent task or worktree until Start is chosen.
 @Observable
 final class QuickEntryModel {
     enum Picker: Equatable {
@@ -21,6 +21,7 @@ final class QuickEntryModel {
     /// Explicit navigation, so RootView can reveal a task even while Settings is showing.
     var taskOpenRequests = 0
     var draft = ""
+    var attachments: [PromptAttachment] = []
     var context: Context?
     var project: Project.ID?
     var agent: AgentDefinition.ID?
@@ -53,6 +54,7 @@ final class QuickEntryModel {
         dismiss()
         draft = ""
         context = nil
+        attachments = []
         failure = nil
     }
 }

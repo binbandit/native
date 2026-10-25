@@ -66,6 +66,7 @@ final class AppModel {
     var isChoosingAgent = false
     /// The draft and presentation for the opt-in New Task entry point.
     let quickEntry = QuickEntryModel()
+    let composeTask: ComposeTaskModel
     var changingAgent: ChangeAgentModel?
     var coordinatorEditor: CoordinatorTaskEditor?
     var coordinators: [HostCoordinator] = []
@@ -227,6 +228,7 @@ final class AppModel {
         runtimes = AgentRuntimes(plugins: plugins)
         sendGate.runtimes = runtimes
         projects = Projects(defaults: defaults)
+        composeTask = ComposeTaskModel(defaults: defaults)
         catalog = SessionCatalog(url: catalogURL)
         ordering = SessionOrdering(defaults: defaults)
         sessions = SessionStore(services: services)

@@ -51,7 +51,9 @@ struct RootView: View {
         // The status bar is part of the layout, under everything, so nothing ends up beneath it.
         let navigation = VStack(spacing: 0) {
             contentWithUndo
-            StatusBar(registry: statusBar)
+            if !model.quickEntry.isEnabled || !model.composeTask.isPresented {
+                StatusBar(registry: statusBar)
+            }
         }
         .taskPeekHost()
         .onPreferenceChange(HomePresentedTaskAskKey.self) { homeNeeds = $0 }
@@ -67,6 +69,7 @@ struct RootView: View {
         // The pull requests page and a session take turns in the detail column.
         .onChange(of: showsPullRequests) { _, shows in
             if shows {
+                model.closeComposeTask()
                 model.selection = nil
                 automationPage = nil
                 expeditions.isPageShown = false
@@ -74,21 +77,35 @@ struct RootView: View {
         }
         .onChange(of: automationPage) { _, page in
             if page != nil {
+                model.closeComposeTask()
                 model.selection = nil
                 showsPullRequests = false
                 expeditions.isPageShown = false
             }
         }
         .onChange(of: model.selection) { _, key in
+            if key != model.composeTask.navigationSelection,
+                !(key != nil && key == model.composeTask.starting?.openedSession)
+            {
+                model.closeComposeTask()
+            }
             if key != nil {
                 showsPullRequests = false
                 automationPage = nil
                 expeditions.isPageShown = false
             }
         }
-        .onChange(of: model.quickEntry.taskOpenRequests) { settings.close() }
+        .onChange(of: model.quickEntry.taskOpenRequests) {
+            settings.close()
+            if model.composeTask.isPresented {
+                showsPullRequests = false
+                automationPage = nil
+                expeditions.isPageShown = false
+            }
+        }
         .onChange(of: expeditions.isPageShown) { _, shows in
             if shows {
+                model.closeComposeTask()
                 model.selection = nil
                 showsPullRequests = false
                 automationPage = nil
@@ -345,7 +362,9 @@ struct RootView: View {
 
     @ViewBuilder
     private var detail: some View {
-        if showsPullRequests {
+        if model.quickEntry.isEnabled, model.composeTask.isPresented {
+            ComposeTaskPage(model: model, compose: model.composeTask, entry: model.quickEntry)
+        } else if showsPullRequests {
             PullRequestsView()
         } else if automationPage == .workflows {
             WorkflowsPage(path: $workflowPath, onSetUpAutomations: automationsSetUp) { session in
