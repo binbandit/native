@@ -1,6 +1,7 @@
 import Foundation
 import NativeHostProtocol
 import NativeLink
+import NativePolicy
 import Observation
 
 /// Add Host: pairs this Mac with a host that has no screen (a Mac mini in a closet), from the link
@@ -239,7 +240,9 @@ final class AddHostModel {
     }
 
     private var turnedOff: AddHostFailure {
-        .unexpected(policy.offReason)
+        policy.center.policy.remoteHostsEnabled
+            ? .unexpected(policy.offReason)
+            : .organizationTurnedOff(name: policy.center.policy.organizationName)
     }
 
     #if os(macOS)

@@ -29,6 +29,8 @@ nonisolated enum AddHostFailure: Hashable, Sendable {
     case notAMac(destination: String)
     case hostNotRunning(host: String)
     case notAllowed(host: String)
+    /// This Mac's organization turned remote hosts off while Add Host was open.
+    case organizationTurnedOff(name: String?)
     /// The two Natives speak different host protocols.
     case versionMismatch(host: String, theirs: PeerInfo, theirProtocol: Int)
     /// The link's host didn't answer at any of its addresses.
@@ -63,6 +65,7 @@ nonisolated enum AddHostFailure: Hashable, Sendable {
         case .notAMac(let destination): "\(Self.machine(destination)) isn't a Mac"
         case .hostNotRunning(let host): "Native's background host isn't running on \(host)"
         case .notAllowed(let host): "\(host) doesn't allow paired devices"
+        case .organizationTurnedOff: "Turned off by your organization"
         case .versionMismatch(let host, _, _): "\(host) runs a version of Native this Mac can't work with"
         case .unreachable(let host, _): "Couldn't reach \(host) to pair"
         case .wrongHost(let host): "Another machine answered for \(host)"
@@ -79,7 +82,7 @@ nonisolated enum AddHostFailure: Hashable, Sendable {
         switch self {
         case .wrongHost: "Native stopped before sending anything, so nothing was shared with it."
         case .versionMismatch: "Native stopped before pairing."
-        case .expired, .linkSpent, .replaced, .tooManyAttempts: "Nothing was paired."
+        case .expired, .linkSpent, .replaced, .tooManyAttempts, .organizationTurnedOff: "Nothing was paired."
         default: nil
         }
     }
@@ -114,6 +117,8 @@ nonisolated enum AddHostFailure: Hashable, Sendable {
             "Open Native on \(host) once (its host keeps running after that), or turn on Settings ▸ Background ▸ Keep agents running when Native quits there. Then try again."
         case .notAllowed:
             "The organization that manages it turned paired devices off. Ask them to turn on the companion, then try again."
+        case .organizationTurnedOff(let name):
+            "\(name ?? "Your organization") turned off remote hosts on this Mac. Ask them to turn remote hosts on, then try again."
         case .versionMismatch(let host, let theirs, let theirProtocol):
             theirProtocol < HostProtocol.version
                 ? "It has Native \(theirs.version). Update Native on \(host), then try again."

@@ -43,8 +43,12 @@ private final class Reached: Sendable {
 /// posts what a changed managed preference posts, so a `PolicyCenter` following it updates.
 private final class ScratchPolicy: PolicySource, Sendable {
     private let value: Mutex<Bool?>
+    private let organizationName: String?
 
-    init(_ value: Bool?) { self.value = Mutex(value) }
+    init(_ value: Bool?, organizationName: String? = nil) {
+        self.value = Mutex(value)
+        self.organizationName = organizationName
+    }
 
     func set(_ value: Bool?) {
         self.value.withLock { $0 = value }
@@ -52,6 +56,9 @@ private final class ScratchPolicy: PolicySource, Sendable {
     }
 
     func managedEntry(forKey key: String) -> ManagedEntry {
+        if key == PolicyKey.organizationName.rawValue {
+            return organizationName.map(ManagedEntry.value) ?? .absent
+        }
         guard key == PolicyKey.remoteHostsEnabled.rawValue else { return .absent }
         return value.withLock { $0 }.map(ManagedEntry.value) ?? .absent
     }
@@ -59,7 +66,8 @@ private final class ScratchPolicy: PolicySource, Sendable {
     func userValue(forKey key: String) -> Any? { nil }
 
     var managedKeys: [String]? {
-        value.withLock { $0 } == nil ? [] : [PolicyKey.remoteHostsEnabled.rawValue]
+        (value.withLock { $0 } == nil ? [] : [PolicyKey.remoteHostsEnabled.rawValue])
+            + (organizationName == nil ? [] : [PolicyKey.organizationName.rawValue])
     }
 }
 
@@ -376,6 +384,7 @@ private struct DroidManagedPolicyRegression {
         try await featureOff()
         try await noPairedDevices()
         try await offWhilePairingByLink()
+        try await offWhilePairingByLink(organizationName: "Northwind Federal IT")
         try await offWhilePairingOverSSH()
         try await offWhileReconnecting()
         try await offWithOpenTask()
@@ -406,9 +415,11 @@ private struct DroidManagedPolicyRegression {
         }
     }
 
-    static func fixture(policy value: Bool?, isFeatureOn: Bool = true, paired: Bool = true) -> Fixture {
+    static func fixture(
+        policy value: Bool?, isFeatureOn: Bool = true, paired: Bool = true, organizationName: String? = nil
+    ) -> Fixture {
         let network = FixtureNetwork()
-        let source = ScratchPolicy(value)
+        let source = ScratchPolicy(value, organizationName: organizationName)
         let center = PolicyCenter(source: source)
         center.start()
         let policy = RemoteHostsPolicy(center: center, isFeatureOn: isFeatureOn, reach: network.reach)
@@ -495,8 +506,8 @@ private struct DroidManagedPolicyRegression {
         print("PASS: with no paired host nothing reaches out until Add Host pairs one")
     }
 
-    static func offWhilePairingByLink() async throws {
-        let fixture = fixture(policy: nil, paired: false)
+    static func offWhilePairingByLink(organizationName: String? = nil) async throws {
+        let fixture = fixture(policy: nil, paired: false, organizationName: organizationName)
         fixture.hosts.start()
         let model = fixture.addHost()
         model.input = fixture.network.invite.url.absoluteString
@@ -506,12 +517,32 @@ private struct DroidManagedPolicyRegression {
         try await wait("pairing in flight") { fixture.network.pairing.held == 1 }
         fixture.source.set(false)
         try await wait("pairing stops") { isFailed(model) }
+        try requireOrganizationStopped(model, organizationName: organizationName)
         fixture.network.pairing.release()
         try await settle()
         try require(isFailed(model), "A pairing that finished after the policy turned off was shown as paired")
         try require(fixture.hosts.all.isEmpty && (try fixture.store.hosts()).isEmpty, "Kept a pairing made after off")
         try require(fixture.reached.count("connect") == 0, "Connected to a pairing made after off")
         print("PASS: turning off during a link pairing stops it and keeps nothing it finished")
+    }
+
+    static func requireOrganizationStopped(_ model: AddHostModel, organizationName: String? = nil) throws {
+        guard case .failed(let failure) = model.phase else {
+            throw PolicyFailure("Add Host didn't show a failure after the organization turned hosts off")
+        }
+        try require(
+            failure == .organizationTurnedOff(name: organizationName),
+            "Policy stop didn't use the organization-specific failure")
+        try require(
+            failure.title == "Turned off by your organization",
+            "Policy stop showed the wrong title: \(failure.title)")
+        try require(failure.recovery == "Nothing was paired.", "Policy stop didn't explain that nothing was paired")
+        for overSSH in [false, true] {
+            try require(
+                failure.suggestion(overSSH: overSSH)
+                    == "\(organizationName ?? "Your organization") turned off remote hosts on this Mac. Ask them to turn remote hosts on, then try again.",
+                "Policy stop didn't explain who turned hosts off and what to do next")
+        }
     }
 
     static func offWhilePairingOverSSH() async throws {
@@ -523,6 +554,7 @@ private struct DroidManagedPolicyRegression {
         try await wait("ssh runs") { fixture.reached.count("ssh") == 1 }
         fixture.source.set(false)
         try await wait("ssh stops while reaching") { isFailed(model) && fixture.reached.count("sshStopped") == 1 }
+        try requireOrganizationStopped(model)
         // On again, as far as the link: pair printed it and is waiting.
         fixture.source.set(true)
         try await wait("on again") { fixture.hosts.isEnabled }
@@ -531,6 +563,7 @@ private struct DroidManagedPolicyRegression {
         try await wait("link over ssh") { if case .confirming = model.phase { true } else { false } }
         fixture.source.set(false)
         try await wait("ssh stops while confirming") { isFailed(model) && fixture.reached.count("sshStopped") == 2 }
+        try requireOrganizationStopped(model)
         model.pair()
         try await settle()
         try require(fixture.reached.count("pair") == 0, "Paired after the policy turned off")

@@ -384,4 +384,17 @@ private enum AddHostPreview {
         AddHostSheet(model: AddHostPreview.model(.failed(.sshSignIn(destination: "me@mac-mini.local"))), close: {})
     }
 }
+
+#Preview("Add Host - Turned off by organization") {
+    DSPreviewPair {
+        AddHostSheet(
+            model: AddHostPreview.model(.failed(.organizationTurnedOff(name: "Northwind Federal IT"))), close: {})
+    }
+}
+
+#Preview("Add Host - Turned off by unnamed organization") {
+    DSPreviewPair {
+        AddHostSheet(model: AddHostPreview.model(.failed(.organizationTurnedOff(name: nil))), close: {})
+    }
+}
 #endif
