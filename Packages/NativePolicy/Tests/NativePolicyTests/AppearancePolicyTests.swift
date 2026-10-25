@@ -1,4 +1,4 @@
-import CodeThemes
+import CodeThemeCatalog
 import Testing
 
 @testable import NativePolicy
