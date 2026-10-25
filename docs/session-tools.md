@@ -116,6 +116,16 @@ its fact, whether its pane has something now, and its pane, or what its fact doe
 The screen reads tools only from the registry, so features never reach into it, and the registry is
 the task panel seam the lean-core plan (`docs/plans/lean-core.md`) builds modules on.
 
+A plugin adds tools the same way, from `NativePlugin.sessionTools` (`docs/plugins.md`). While the
+plugin is on, each is listed after Native's own in the well, in View ▸ Tools and on Settings ▸ Task
+Tools, with a summary and "Added by" its plugin, and follows the same rules: off means no row and a
+key that does nothing. Its command (`sessionTools.<id>`) has no default key, so the user assigns one
+in Settings ▸ Keyboard Shortcuts. Its row says what its fact says; choosing it opens its pane in its
+place, as Changes does, or does what its fact does. A plugin's tool id starts with the plugin's id
+(`acme.tickets`), so it can't take a built-in tool's place or saved arrangement, and it lives beside
+the conversation or over it: the workbench holds only Native's terminals and runs
+(`SessionToolSpec.isAllowed(fromPlugin:)`, tested in the package).
+
 Where the user put each tool is a `SessionToolArrangement`, saved in user defaults
 (`sessionTools.arrangement`) as only the places that differ from each tool's default.
 
@@ -136,8 +146,8 @@ it. Opening and closing the inspector disables animation to avoid the prototype'
 still needs a visual check on the main Mac in both appearances.
 
 The original Task Tools gate registers only Changes, with Side, Fact and Off placements.
-The well adds the shared workbench and tool adapters described above, and Settings ▸ Task Tools
-to place them. Plugin-contributed well tools and the default-on transition remain later slices.
+The well adds the shared workbench and tool adapters described above, Settings ▸ Task Tools
+to place them, and plugins' tools. The default-on transition remains a later slice.
 The standard screen is unchanged while both Labs switches are off.
 
 ## Narrow Changes

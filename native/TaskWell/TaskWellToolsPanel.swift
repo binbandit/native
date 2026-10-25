@@ -58,7 +58,7 @@ struct TaskWellToolsPanel<Destination: View>: View {
         }
     }
 
-    private var rows: [TaskWellTool] { TaskWellTool.allCases.filter(tools.wellToolAvailable) }
+    private var rows: [TaskWellTool] { tools.registry.wellTools.filter(tools.wellToolAvailable) }
 
     /// Up and down move through the rows that can open, as in a menu; Return or Space opens one.
     private func moveHighlight(by step: Int) -> KeyPress.Result {
@@ -149,7 +149,11 @@ struct TaskWellToolsPanel<Destination: View>: View {
                         .foregroundStyle(detail.unavailableReason == nil ? .dsTextPrimary : .dsTextTertiary)
                         .frame(width: DS.TaskWell.rowTitleWidth, alignment: .leading)
                     HStack(spacing: DS.Space.sm) {
-                        if detail.isRunning { StatusDot(color: .dsSuccess) }
+                        if detail.isRunning {
+                            StatusDot(color: .dsSuccess)
+                        } else if detail.hasFailed {
+                            StatusDot(color: .dsDanger)
+                        }
                         Text(detail.text).lineLimit(1).truncationMode(.middle)
                         if let since = detail.runningSince {
                             ElapsedTimeText(since: since).fixedSize().foregroundStyle(.dsTextTertiary)

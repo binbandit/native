@@ -1,6 +1,7 @@
 #if DEBUG
 import ACP
 import Foundation
+import SessionTools
 
 enum TaskWellPreviewFixtures {
     static var states: [TaskWellContent] {
@@ -33,6 +34,23 @@ enum TaskWellPreviewFixtures {
             .init(path: "DiffLayoutTests.swift", added: 2),
         ]
         return summary
+    }
+
+    /// A tool a plugin adds (`NativePlugin.sessionTools`), as the plugin registry hands it over.
+    static var pluginTool: SessionToolContribution {
+        var tool = SessionToolContribution(
+            spec: SessionToolSpec(id: "acme.tickets", places: [.side, .fact, .off], defaultPlace: .side),
+            title: "Ticket", systemImage: "ticket",
+            summary: "The ticket this task works on, beside the conversation.",
+            fact: { _ in SessionToolFact(text: "ACME-142 · In review") })
+        tool.pluginName = "Acme Tickets"
+        return tool
+    }
+
+    static func registryWithPluginTool() -> SessionToolRegistry {
+        let registry = SessionToolRegistry(defaults: PreviewUserDefaults())
+        registry.setPluginTools([pluginTool])
+        return registry
     }
 
     static let title = TaskWellTitleFacts(
