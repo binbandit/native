@@ -14,6 +14,7 @@ public struct AllInViewTaskRow: View {
     var askShortcut: KeyboardShortcut? = KeyboardShortcut("y", modifiers: .command)
     var unavailable: String?
     var hostName: String?
+    var projectName: String?
     var peek: (() -> Void)?
     let action: () -> Void
 
@@ -55,7 +56,7 @@ public struct AllInViewTaskRow: View {
                     .frame(height: DS.Sidebar.titleHeight)
                     if let sentence = unavailable ?? ask {
                         HStack(alignment: .bottom, spacing: DS.Space.md) {
-                            DSInlineCodeText(sentence, codeFont: DS.Sidebar.askCodeFont, codeColor: .dsTextPrimary)
+                            askText(sentence)
                                 .font(.dsBody)
                                 .foregroundStyle(unavailable == nil ? .dsTextSecondary : .dsTextTertiary)
                                 .lineSpacing(DS.Sidebar.askLineSpacing)
@@ -108,7 +109,7 @@ public struct AllInViewTaskRow: View {
         .accessibilityLabel(DSInlineCode.plain(title))
         .accessibilityValue(
             [
-                unavailable ?? status.label, isUnread ? "Unread" : nil, ask,
+                projectName, unavailable ?? status.label, isUnread ? "Unread" : nil, ask,
                 answersShortcut ? "Oldest ask" : nil,
             ].compactMap(\.self).joined(separator: ", ")
         )
@@ -117,6 +118,18 @@ public struct AllInViewTaskRow: View {
 
     private var signal: some View {
         TaskSignal(status: status, isUnread: isUnread, attentionSince: attentionSince, unavailable: unavailable)
+    }
+
+    private func askText(_ sentence: String) -> Text {
+        var text = AttributedString()
+        if let projectName {
+            var project = AttributedString("\(projectName)  ")
+            project.font = DS.Sidebar.attentionProjectFont
+            project.foregroundColor = .dsTextTertiary
+            text += project
+        }
+        text += DSInlineCode.attributed(sentence, codeFont: DS.Sidebar.askCodeFont, codeColor: .dsTextPrimary)
+        return Text(text)
     }
 
     private var emphasizesTitle: Bool {

@@ -16,7 +16,7 @@ so growth gets noticed while there's still room to choose what to cut; lower the
 
 | What | Budget | 2026-10-24, after the cold-package and gallery cut |
 | --- | --- | --- |
-| Download, update archive | 47 MB | 46.8 MB |
+| Download, update archive | 47.5 MB | 46.8 MB |
 | Download, disk image | 48 MB | not remeasured |
 | Installed app | 118 MB | 116.4 MB |
 | App binary (`Contents/MacOS/Native`) | 70 MB | 59.6 MB |
@@ -34,6 +34,33 @@ build them, and such an app looks 12 to 40 MB smaller than what ships.
   dry runs included, and stops before publishing when they're over.
 
 Raise a budget only with the reason written here, in the same change.
+
+2026-10-24: the open task well integrated with main through `44feb957` at `e5acaa05`
+measures 47.1 MB for the Release update archive and 47.2 MB for Nightly, over the 47 MB
+allowance. The worker facts, tool adapters and subagent roster compile alongside the legacy
+task presentation behind `NativeTaskWell`; the terminal and action runtime are shared, and
+there are no added assets or dependencies. The update archive allowance is now 47.5 MB for
+this measured integration. Installed sizes are 117.0/117.1 MB and both app binaries are
+60.0 MB, within their unchanged budgets. These are integrated measurements, not an isolated
+feature delta. Remeasure when the well replaces the legacy task presentation.
+
+2026-10-24: the collapsed sidebar attention list integrated with main through `44feb957` at
+`a69f9095` measures 47.1 MB for the Release update archive and 47.2 MB for Nightly, over the
+47 MB download allowance. The shared rows, Peek and command focus routing add compiled code
+without bundled assets or dependencies; fixtures remain Debug-only. The download budget is
+47.5 MB for this integration, with a small margin. Installed apps remain 117.0/117.1 MB and
+both app binaries are 60.0 MB, within their unchanged budgets. These are integrated measurements,
+not an isolated feature delta. Remeasure when the gated redesign replaces its legacy views.
+
+2026-10-24: Fine print's resting field and merged settings popover keep the existing composer
+available behind the default-off switch. The integrated local build at `ffb4c380` measures
+47.1 MB downloaded for Release and 47.2 MB for Nightly, with installed sizes of 117.0 and
+117.1 MB and binaries of 60.0 and 60.1 MB. Main at `1262168a` measured 46.8 and 46.9 MB
+in [CI](https://github.com/binbandit/native/actions/runs/40082622708). These are integrated
+build measurements, not an isolated binary delta. This slice adds no bundled assets or
+dependencies. The update archive allowance is 47.5 MB for this integration; the installed,
+binary, runtime and disk-image limits stay unchanged. Remeasure when Fine print replaces
+the legacy composer and the temporary duplication can be removed.
 
 2026-10-23: the reviewed Change Agent flow adds about 0.1 MB to the app binary, taking Release
 from main's 57.9 MB to just over 58 MB. Its local handoff generation, review controls and task

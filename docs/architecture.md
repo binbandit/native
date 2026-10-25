@@ -314,13 +314,19 @@ all open one 600pt popover without changing selection. A visible row supplies it
 rows and Settings use the window anchor. The model routes captured requests to their owning
 session and checks identity again before answering. Questions, plans and commands with unknown
 or irreversible effects open Peek from ⌘Y; a small ACP vocabulary permits routine approvals.
-Peek reuses `ToolCallView` and `AgentQuestionSection`. The composer's annotated approval has not
-landed yet and replaces the former when available. Recovered failures use their live signal;
+Peek reuses `AnnotatedApprovalView` and `AgentQuestionSection`, including command explanations,
+instruction recovery and the hold for irreversible approvals. Recovered failures use their live signal;
 unrecovered failures expose the real notice and the model's recovery action.
 
 Selection, menus, ordering, pins, archive and keyboard navigation remain shared with today's
 sidebar. All tasks stay visible in this slice; the rejected three-recent-task fold is removed.
-Fold by day, the collapsed toolbar signal and optional row facts are later slices. Enable before an isolated launch with
+Slice 3 keeps the platform's full sidebar hide. Back and forward remain beside search, followed by
+one amber signal while a reachable task has an ask or an unresolved failure. Its count is per task,
+including child asks under their parent, independent of sidebar filters and project folding.
+The popover lists oldest asks first, then failures; a click or Space opens the same `TaskPeekView`
+in place. Answering returns to the remaining list, and resolving the last task dismisses it.
+The current task and draft stay untouched until Open Task. No second approval or status view is used.
+Fold by day and optional row facts remain later slices. Enable before an isolated launch with
 `defaults write dev.binbandit.native.dev.<name> experiment.NativeSidebarNext -bool YES`.
 
 The sidebar's filter and sort controls also offer "Show agent icons", on by default. This only
@@ -359,7 +365,7 @@ feature presets, agent detail pages and the shared overnight receipt belong to l
 
 ### Fine print approvals
 
-`NativeComposerNext` is an off-by-default Labs gate at the composer's approval state. Enable it
+`NativeComposerNext` is an off-by-default Labs gate for the composer and its approval state. Enable it
 with Settings > Labs > Fine print, or set `experiment.NativeComposerNext` as a boolean in the
 isolated app's defaults. The rejected quiet-settings-line experiment has been removed.
 
@@ -367,6 +373,15 @@ isolated app's defaults. The rejected quiet-settings-line experiment has been re
 Peek and Home hosts. `SessionApprovalView` connects it to model actions. Only the oldest request
 owns shortcuts; the primary transcript leaves its response controls to the composer while enabled.
 The ordinary composer and approvals are unchanged with the gate off.
+
+At rest the gated composer is one field and a model-name control. `ComposerSettingsControl`
+opens model, effort, permission consequences and the agent's extra options in one popover;
+its MCP page embeds `MCPSessionPanel`. Picks still go through `SessionModel.pick`, including
+remembering successful choices and rejecting forbidden permission modes. `SettingsSourceLabel`
+is shared with New Tasks: personal choices need no tag, agent defaults name the agent, and
+managed permission rows name the configured organization. The existing policy
+catalog governs permission modes and MCP servers; it does not supply model locks or an offline
+web-search switch. Web search is editable only when the agent offers a config option for it.
 
 `Packages/ApprovalAnalysis` matches literal commands against bundled, versioned JSON knowledge,
 with additive plugin and managed-policy contributions. It never executes commands or inspects files
@@ -388,8 +403,10 @@ receives an edited tool call, and the ordinary draft is kept.
 `NativeTaskWell` is an off-by-default Labs gate selecting the task-tools screen with a centered
 activity capsule instead of the facts header and tool buttons. `TaskActivityNarration` in ACP projects
 reported tool activity and counted plan steps; `TaskWellWiring` connects the existing tool models.
-Requests lead to the existing composer or child request surface, and turn outcomes reuse detected
-Changes. The shared `TaskSignal` supplies the status vocabulary and finite attention animation.
+The open well reads worker identity, managed policy and cached tool summaries. Shells and Dev
+runs share the existing terminal workbench; its add menu reuses project actions. Subagents use a
+roster before opening their existing inspector. Requests lead to the existing composer or child
+request surface, and turn outcomes reuse detected Changes. The shared `TaskSignal` supplies the status vocabulary and finite attention animation.
 The behavior, tool order and remaining slices are described in `docs/session-tools.md`.
 
 ### Changing a task's agent (Labs)

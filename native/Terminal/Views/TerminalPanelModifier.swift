@@ -5,10 +5,14 @@ extension View {
     /// Adds the task's terminal panel under this view: the transcript and composer above, the
     /// terminal below, with a divider to resize it. ⌃` shows and hides it (`TerminalCommands`).
     @ViewBuilder func terminalPanel(
-        for session: SessionModel, showsToolbarButton: Bool = true, isEnabled: Bool = true
+        for session: SessionModel, showsToolbarButton: Bool = true, isEnabled: Bool = true, isWorkbench: Bool = false,
+        workbenchActions: AnyView? = nil
     ) -> some View {
         if isEnabled {
-            modifier(TerminalPanelModifier(session: session, showsToolbarButton: showsToolbarButton))
+            modifier(
+                TerminalPanelModifier(
+                    session: session, showsToolbarButton: showsToolbarButton, isWorkbench: isWorkbench,
+                    workbenchActions: workbenchActions))
         } else {
             self
         }
@@ -18,6 +22,8 @@ extension View {
 private struct TerminalPanelModifier: ViewModifier {
     let session: SessionModel
     let showsToolbarButton: Bool
+    let isWorkbench: Bool
+    let workbenchActions: AnyView?
     @Environment(TerminalStore.self) private var store
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dsAccentPalette) private var palette
@@ -32,8 +38,11 @@ private struct TerminalPanelModifier: ViewModifier {
         VStack(spacing: 0) {
             content
             if panel.isVisible {
-                TerminalPanel(panel: panel, store: store, maxHeight: maxPanelHeight)
-                    .transition(.move(edge: .bottom))
+                TerminalPanel(
+                    panel: panel, store: store, maxHeight: maxPanelHeight, isWorkbench: isWorkbench,
+                    workbenchActions: workbenchActions
+                )
+                .transition(.move(edge: .bottom))
             }
         }
         .onGeometryChange(for: CGFloat.self, of: \.size.height) { availableHeight = $0 }
@@ -75,3 +84,16 @@ private struct TerminalPanelModifier: ViewModifier {
                 isTrueBlack: colorScheme == .dark && darkTone == .trueBlack))
     }
 }
+
+#if DEBUG
+#Preview("Well - Shared workbench") {
+    let panel = TerminalPanelModel(workingDirectory: URL(filePath: "/work/task"), engine: { nil })
+    panel.attach(TerminalLogPreviewFixtures.running)
+    let store = TerminalStore(
+        preferences: TerminalPreferences(defaults: PreviewUserDefaults()), makeEngine: { .failure(.notBuilt) })
+    return DSPreviewPair {
+        TerminalPanel(panel: panel, store: store, maxHeight: DS.TaskWell.devMaxHeight, isWorkbench: true)
+            .frame(width: DS.TaskWell.panelWidth)
+    }
+}
+#endif

@@ -33,14 +33,32 @@ turn start and landing, never throughout work, and is absent with Reduce Motion.
 Cmd-I opens the tool list in key order: Changes, Terminal, Dev, Subagents, Pull request (Option-Cmd-1
 through 5). The list reuses `SessionToolsScreenModel` for Changes and existing terminal, project
 action and pull request actions for the other tools. Subagents and the pull request appear only
-when present. Dev opens the existing project-actions menu inside the well. No new tool runtime or
-network request is introduced. The old Task Tools gate and standard task screen remain available.
+when present.
+
+The worker block reports the agent's selected model, machine, last measured turn duration and
+reported context use. The checkout moves to the footer. Managed worker settings carry a lock;
+the footer names the administrator once, using the configured organization name or "your
+organization". Native never infers a company name or invents a locked model.
+
+Terminal opens a shell tab under the composer. Dev reveals the newest existing project-action
+run without restarting it, or opens the existing action chooser before the first run. Shells and
+terminal actions share the same resizable workbench, tabs, Stop, retry and hide controls.
+Its add menu offers a new shell and the existing project actions, so another run is always one
+step away. Background actions retain their existing output sheet. Closing the workbench keeps its jobs alive. A remote
+task names its machine and explains why its terminal cannot open on this Mac; it never starts a
+local shell in a remote path from the well. Subagents opens a roster, with the shared task signals,
+so every worker is reachable. The pull request row reads the shared branch cache and includes its
+number, state and check summary. No new tool runtime or network request is introduced.
+The old Task Tools gate and standard task screen remain available.
 
 The well uses the sidebar's shared `TaskSignal` at its well placement, with the actual request
-arrival driving its finite attention breath. The composer owns the annotated approval; until
-that replacement merges, this slice uses the existing approval surface.
-Later slices cover title identity and managed-policy details, full tool contributions and workbench
-placement, narrow full-width Changes, and diff quoting with the composer.
+arrival driving its finite attention breath. The composer owns the annotated approval and the
+well only routes attention to it.
+Later slices cover the title identity editor, full tool contribution and placement settings,
+narrow full-width Changes, and diff quoting with the composer. The mock's GitHub network restriction
+and Export Patch recovery need a managed GitHub capability and patch-export action; neither is
+invented by this presentation slice. Existing managed agent, host, shortcut and repository-action
+policies are reflected here.
 
 ## Places
 
@@ -83,6 +101,7 @@ diff. Escape closes the overlay ahead of composer actions, or the docked panel w
 it. Opening and closing the inspector disables animation to avoid the prototype's split-view constraint loop. The threshold
 still needs a visual check on the main Mac in both appearances.
 
-This step registers only Changes, with Side, Fact and Off placements. The existing subagent
-card inspector remains available. The other tool facts and panes, workbench, Settings editor,
-and default-on transition belong to later PRs. The standard screen is unchanged while Labs is off.
+The original Task Tools gate registers only Changes, with Side, Fact and Off placements.
+The well adds the shared workbench and tool adapters described above. The placement editor,
+full tool contributions and default-on transition remain later slices. The standard screen is
+unchanged while both Labs switches are off.

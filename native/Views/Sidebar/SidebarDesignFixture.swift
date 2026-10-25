@@ -35,7 +35,7 @@ struct SidebarDesignFixture: View {
         } else if scenario == "signals" {
             TaskSignalPreview()
         } else {
-            RootView()
+            RootView(initialSidebarVisibility: scenario.hasPrefix("collapsed") ? .detailOnly : .all)
                 .environment(app)
                 .environment(gitHub)
                 .environment(statusBar)
@@ -116,6 +116,37 @@ struct SidebarDesignFixture: View {
         let selection = SessionKey(
             agent: AgentDefinition.ID(rawValue: "codex"), id: SessionID(scenario == "ask" ? "native-1" : "native-2"))
         app.selection = selection
+        if scenario.hasPrefix("collapsed-") {
+            for item in app.tasksNeedingAttention {
+                let keep =
+                    scenario == "collapsed-single" && item.id.id.rawValue == "native-1"
+                    || scenario == "collapsed-failure" && item.ask == nil
+                guard !keep, let session = app.session(item.id) else { continue }
+                for call in session.permissionRequests { session.state.resolvePermission(toolCallID: call.id) }
+                session.questions = []
+                session.phase = .idle
+            }
+        }
+        if scenario == "collapsed-many" {
+            for index in 0..<16 {
+                add(
+                    app, project: project, id: "waiting-\(index)",
+                    title: "Verify the authentication migration and every dependent package \(index + 1)",
+                    status: .needsPermission, detail: "swift test --filter AuthenticationMigrationTests",
+                    age: Double(index) * 60)
+            }
+        }
+        if scenario == "collapsed-child" || scenario == "collapsed-home" {
+            let key = SessionKey(agent: agent, id: SessionID("native-1"))
+            if let parent = app.session(key) {
+                let child = parent.addSubagent(SessionID("approval-child"))
+                app.sessions.register(child)
+                child.phase = .prompting
+                child.previewPermissionRequest(command: "swift test --filter ChildApprovalTests")
+            }
+            app.session(selection)?.draft = "Keep this conversation draft."
+            if scenario == "collapsed-home" { app.selection = nil }
+        }
         return app
     }
 

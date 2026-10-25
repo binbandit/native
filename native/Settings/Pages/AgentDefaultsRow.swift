@@ -23,6 +23,7 @@ extension AgentSessionDefaults.Setting {
 /// The settings new tasks with one agent start with, one picker each.
 struct AgentDefaultsRow: View {
     @Environment(\.settingsPlainly) private var plainly
+    @Experiment(.composerNext) private var composerNext
     let agentName: String
     let agentID: AgentDefinition.ID
 
@@ -48,7 +49,12 @@ struct AgentDefaultsRow: View {
                     description: hasChoices || setting != .model
                         ? nil : Text("Start one task with \(agentName) to see its models.")
                 ) {
-                    AgentDefaultPicker(agentName: agentName, agentID: agentID, setting: setting)
+                    VStack(alignment: .trailing, spacing: DS.Space.xs) {
+                        AgentDefaultPicker(agentName: agentName, agentID: agentID, setting: setting)
+                        if composerNext {
+                            AgentDefaultSource(agentName: agentName, agentID: agentID, setting: setting)
+                        }
+                    }
                 }
             }
         } else {
@@ -69,6 +75,30 @@ struct AgentDefaultsRow: View {
             }
             // The pickers get a line of their own, under the text, so they fit narrow windows and iPad.
             .settingsControlBelow()
+        }
+    }
+}
+
+private struct AgentDefaultSource: View {
+    let agentName: String
+    let agentID: AgentDefinition.ID
+    let setting: AgentSessionDefaults.Setting
+    @AppStorage private var stored: String?
+
+    init(agentName: String, agentID: AgentDefinition.ID, setting: AgentSessionDefaults.Setting) {
+        self.agentName = agentName
+        self.agentID = agentID
+        self.setting = setting
+        _stored = AppStorage(setting.key(for: agentID))
+    }
+
+    var body: some View {
+        if stored?.isEmpty == false {
+            SettingsSourceLabel(source: .user)
+        } else if case .lastUsed = AgentSessionDefaults.fallback(for: agentID, setting: setting) {
+            SettingsSourceLabel(source: .user)
+        } else {
+            SettingsSourceLabel(source: .agent(agentName))
         }
     }
 }

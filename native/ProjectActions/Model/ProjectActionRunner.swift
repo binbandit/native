@@ -202,6 +202,44 @@ final class ProjectActionRunner {
         store.list(for: target.project).all.filter { state(of: $0, in: target)?.isRunning == true }
     }
 
+    /// The task's newest retained run, without consulting the project's Run Last preference.
+    func latestOutputAction(in target: ProjectActionTarget) -> ProjectAction? {
+        var runs = backgroundRuns.map { key, run in
+            ProjectActionRetainedRun(
+                action: run.action, worktree: URL(filePath: key.folder), startedAt: run.startedAt)
+        }
+        if let session = target.session {
+            let actions = store.list(for: target.project).all
+            runs += terminals.panel(for: session).tabs.tabs.compactMap { tab in
+                guard let job = tab.job, let action = actions.first(where: { $0.id.rawValue == job.key }) else {
+                    return nil
+                }
+                return ProjectActionRetainedRun(action: action, worktree: target.worktree, startedAt: job.startedAt)
+            }
+        }
+        return ProjectActionRetainedRun.latest(in: target.worktree, from: runs)?.action
+    }
+
+    /// Reveals an existing run without starting it again. The well and output actions share it.
+    @discardableResult
+    func showOutput(of action: ProjectAction, in target: ProjectActionTarget) -> Bool {
+        let key = ProjectActionRunKey(action.id, in: target)
+        let background = backgroundRuns[key]
+        if let session = target.session {
+            let panel = terminals.panel(for: session)
+            if let tab = panel.tabs.tab(forJob: action.id.rawValue), let job = tab.job,
+                background == nil || job.startedAt > (background?.startedAt ?? .distantPast)
+            {
+                panel.show()
+                panel.select(tab.id)
+                return true
+            }
+        }
+        guard background != nil else { return false }
+        shownOutput = key
+        return true
+    }
+
     func output(of key: ProjectActionRunKey) -> ProjectActionBackgroundRun? {
         backgroundRuns[key]
     }

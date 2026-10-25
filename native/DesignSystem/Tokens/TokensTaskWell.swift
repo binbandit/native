@@ -24,6 +24,9 @@ extension DS {
         public static let panelHeaderHeight: CGFloat = 42
         public static let panelHeaderLeading: CGFloat = 15
         public static let panelHeaderTrailing: CGFloat = 14
+        public static let contextRing: CGFloat = 13
+        public static let footerHeight: CGFloat = 38
+        public static let workbenchBarHeight: CGFloat = 36
         public static let devMaxHeight: CGFloat = 320
         public static let rowHeight: CGFloat = 34
         public static let rowIconWidth: CGFloat = 22

@@ -162,6 +162,7 @@ private struct SessionCommands: Commands {
     var body: some Commands {
         CommandMenu("Task") {
             if model.offersTaskPeek {
+                CommandMenuItem(.taskShowNeedsYou, in: menu)
                 CommandMenuItem(.taskPeek, in: menu)
                 CommandMenuItem(.taskAnswerOldestAsk, in: menu)
                 Divider()

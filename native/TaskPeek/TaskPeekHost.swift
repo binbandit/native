@@ -28,8 +28,11 @@ private struct TaskPeekHost: ViewModifier {
                         .allowsHitTesting(false)
                         .popover(
                             item: Binding(
-                                get: { model.offersTaskPeek ? model.taskPeek.request : nil },
-                                set: { model.taskPeek.request = $0 }),
+                                get: {
+                                    model.offersTaskPeek && !model.taskPeek.showsAttentionList
+                                        ? model.taskPeek.request : nil
+                                },
+                                set: { if !model.taskPeek.showsAttentionList { model.taskPeek.request = $0 } }),
                             arrowEdge: visible == nil ? .top : .trailing
                         ) { request in
                             TaskPeekView(
