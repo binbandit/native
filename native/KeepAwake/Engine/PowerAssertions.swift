@@ -1,3 +1,4 @@
+#if os(macOS)
 import Foundation
 import IOKit.pwr_mgt
 import NativeHostProtocol
@@ -46,3 +47,4 @@ nonisolated final class PowerAssertions: Sendable {
         }
     }
 }
+#endif

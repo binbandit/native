@@ -152,7 +152,9 @@ keeps it in `meta`, and holds what `caffeinate -i -s` would (no idle or system s
 only if asked) while the policy calls for it: While Agents Work as long as any session works
 (`HostSession.isWorking`), On or a timer regardless. So a droid stays awake mid-task with no window
 open, and after a restart. Off, the default, holds nothing, so a laptop behaves as before. When
-agents run in the app instead, the app holds the same assertions itself (`native/KeepAwake`).
+agents run in the app instead, the app holds the same assertions itself (`native/KeepAwake`). An
+iPad never does: it shows no keep-awake controls of its own, and sets a paired host's in that
+host's settings.
 Closing a laptop's lid still sleeps it; on wake, agents whose network calls failed surface as
 failed turns, which the queue and limit logic already handle.
 
