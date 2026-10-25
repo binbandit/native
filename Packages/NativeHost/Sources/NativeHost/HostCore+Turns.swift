@@ -32,7 +32,7 @@ extension HostCore {
     private func deliver(_ params: PromptParams) async throws -> PromptDelivery {
         let session = try session(params.sessionID)
         guard session.record.origin != .announced else { throw HostError.notAcceptingPrompts }
-        let text = params.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = PromptQuote.trimmed(params.text)
         guard !text.isEmpty || params.content?.isEmpty == false || !params.attachments.isEmpty else {
             throw HostError.emptyMessage
         }

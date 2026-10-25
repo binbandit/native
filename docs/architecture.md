@@ -557,3 +557,20 @@ Native reads only its own credential stores. Agent MCP configuration (server lis
 readable, but agent-owned sign-in stays unknown unless reported by the agent. An anonymous connection
 check cannot establish that the agent is signed out. Native-owned MCP secrets continue to support
 connection checks; agents retain responsibility for their own authentication.
+
+### Point and say (Fine print, slice 3)
+
+With `NativeComposerNext`, the transcript and Changes pane share a quote context supplied by
+`SessionView`. Cmd-L captures only a selection inside a registered Native source view, or the
+explicit line-number range in `DiffView`. The platform adapter never reads another application's
+selection or the pasteboard. Diff quotes retain their old/new side and original line numbers;
+transcript quotes use the selected text block's line numbers. Removing a quote supports Undo.
+
+`PromptQuote` stores snapshots as readable leading quote blocks in the existing draft. The gated
+composer renders those blocks with numbers in its 24pt padding and edits the message separately.
+Send, queue editing, failure recovery and unsent draft persistence therefore carry one text value.
+The switch-off composer exposes that same readable text, so changing the experiment cannot hide
+or discard context. File tokens are a display projection of canonical `@path` references;
+`FileReferenceProjection` maps edits and selections back to those paths. Displayed counts never
+enter the prompt. The existing repository monitor supplies uncommitted counts, with the latest
+reported turn edits as a fallback for committed files; unavailable or binary counts stay absent.

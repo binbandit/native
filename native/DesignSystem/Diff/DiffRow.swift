@@ -1,8 +1,8 @@
 import Foundation
 
 /// One line of a drawn diff: a change, context, or a gap standing in for folded lines.
-nonisolated struct DiffRow {
-    enum Kind { case context, added, removed, gap }
+nonisolated struct DiffRow: Equatable {
+    enum Kind: Equatable { case context, added, removed, gap }
 
     let kind: Kind
     /// The new file's line number, or the old file's for removed lines.

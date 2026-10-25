@@ -48,6 +48,7 @@ struct MessageView: View, Equatable {
                             cornerRadius: TranscriptMetrics.promptBubbleRadius, style: .continuous)
                         UserMessageText(text: message.text)
                             .textSelection(.enabled)
+                            .composerQuoteSource(ComposerQuoteSource(name: "Your message", text: message.text))
                             .padding(.horizontal, DS.Space.lg)
                             .padding(.vertical, DS.Space.md)
                             .background(.dsFill, in: bubble)
