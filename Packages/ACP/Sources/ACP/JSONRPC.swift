@@ -36,6 +36,15 @@ public struct RPCError: Error, Hashable, Sendable, Codable, LocalizedError {
 
     public var errorDescription: String? { message }
 
+    /// The agent's own account when it gives one: text `data` under a generic `message`, the way
+    /// codex-acp reports a configuration it can't load as "Internal error".
+    public var detail: String {
+        guard let text = data?.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else {
+            return message
+        }
+        return text
+    }
+
     static func methodNotFound(_ method: String) -> RPCError {
         RPCError(code: -32601, message: "Method not found: \(method)")
     }

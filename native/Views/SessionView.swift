@@ -24,7 +24,7 @@ struct SessionView: View {
     private static let subagentInspectorWidth: CGFloat = 420
 
     private var canQuote: Bool {
-        composerNext && session.acceptsPrompts && session.permissionRequests.isEmpty
+        composerNext && session.acceptsPrompts && session.permissionRequests.isEmpty && session.pendingQuestion == nil
     }
 
     var body: some View {

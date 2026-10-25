@@ -5,6 +5,8 @@ struct ApprovalActionStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
     var primary = false
     var small = false
+    /// Text only, for a choice that leaves things as they are (Skip).
+    var quiet = false
     var acknowledgesCompletion = false
     var sweepProgress: Double?
     var pressing: ((Bool) -> Void)?
@@ -14,12 +16,20 @@ struct ApprovalActionStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(small ? DS.Approval.smallButtonFont : .dsBodyMedium)
-            .foregroundStyle(isEmphasized ? (primary ? Color.dsTextOnAccent : .dsTextPrimary) : .dsTextTertiary)
+            .foregroundStyle(
+                isEmphasized
+                    ? (primary ? Color.dsTextOnAccent : quiet ? .dsTextSecondary : .dsTextPrimary) : .dsTextTertiary
+            )
             .padding(.horizontal, small ? DS.Approval.smallButtonInset : DS.Approval.buttonInset)
             .frame(minHeight: small ? DS.Approval.smallButtonHeight : DS.Approval.buttonHeight)
             .background {
                 RoundedRectangle(cornerRadius: DS.Radius.control)
-                    .fill(isEmphasized ? (primary ? Color.dsAccent : DS.Approval.buttonFill(colorScheme)) : .dsSelected)
+                    .fill(
+                        quiet
+                            ? Color.clear
+                            : isEmphasized
+                                ? (primary ? Color.dsAccent : DS.Approval.buttonFill(colorScheme)) : .dsSelected
+                    )
                     .overlay(alignment: .leading) {
                         if let sweepProgress {
                             GeometryReader { geometry in
@@ -34,7 +44,7 @@ struct ApprovalActionStyle: ButtonStyle {
                     }
             }
             .overlay {
-                if !primary {
+                if !primary, !quiet {
                     RoundedRectangle(cornerRadius: DS.Radius.control)
                         .strokeBorder(
                             isEmphasized ? DS.Approval.buttonBorder(colorScheme) : .clear,
@@ -53,6 +63,7 @@ struct ApprovalActionStyle: ButtonStyle {
         HStack {
             Button("Don't Allow") {}.buttonStyle(ApprovalActionStyle())
             Button("Allow") {}.buttonStyle(ApprovalActionStyle(primary: true))
+            Button("Skip") {}.buttonStyle(ApprovalActionStyle(quiet: true))
             Button("Unavailable") {}.buttonStyle(ApprovalActionStyle(primary: true)).disabled(true)
         }.padding(DS.Space.xl)
     }

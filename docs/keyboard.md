@@ -104,6 +104,24 @@ only while the card has focus; ⌘1 – ⌘9 stay task navigation.
 | Return | Next question, or send the answers after the last |
 | Tab / Shift-Tab | Move between the card, its free-text field and the composer |
 
+With Fine print (`NativeComposerNext`) enabled, the question takes the composer's place, in the
+approval's frame: "Claude Code asks", a `1 of 2` pager, choices on digit keycaps (a choice the agent
+recommends is tagged), Skip and Next (Return). The composer's field below becomes "Or answer in your
+own words"; Return there answers the shown question with what you typed. The draft waits
+underneath until the questions are answered, and ⌘L focuses the answer field.
+
+### A task that couldn't start (Fine print)
+
+With Fine print enabled, a task whose agent couldn't start shows why in the composer's place,
+above its message. When the agent's report names a file and line, the card shows that line with
+the part it couldn't read underlined, and, when one value it accepts is close to the one it
+rejected, a fix-it that changes it (keeping the original as `<file>.native-backup`).
+
+| Keys | Action |
+| --- | --- |
+| ⌘R | The card's main action: Fix and Retry (or Fix and Restart), Retry, Sign In, or Start in Project Folder |
+| ⌥⌘O | Show or hide what the agent reported |
+
 ## Command palette
 
 ⌘K opens the palette over the window: every command that can run right now, plus the tasks in the
