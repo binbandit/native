@@ -38,7 +38,7 @@ struct HomeNextAskView: View {
                 ErrorState("Couldn't complete that action", recovery: "Your task is still here.", details: answerError)
                     .padding(.top, DS.Space.lg)
             }
-            if task.status != .failed {
+            if task.status != .failed, task.request?.call == nil {
                 Button("Open Task", action: openTask)
                     .buttonStyle(.ds(.ghost)).keyboardShortcut(.return, modifiers: .command)
                     .padding(.top, DS.Space.lg)
@@ -65,7 +65,7 @@ struct HomeNextAskView: View {
                 isAvailable: request.session.phase != .disconnected && model.taskIsReachable(task.id),
                 focusRequested: wantsInstructionFocus, didFocus: { wantsInstructionFocus = false },
                 planEntries: call.kind == .switchMode ? request.session.state.currentTurnPlan : [],
-                showMorePlan: { model.peekHomeNextTask(task) },
+                showMorePlan: { model.peekHomeNextTask(task) }, openTask: openTask,
                 onChoose: { answer($0, request: request, call: call) },
                 onInstruct: { text in
                     try await request.session.instructBeforeDecliningPermission(text, call: call)

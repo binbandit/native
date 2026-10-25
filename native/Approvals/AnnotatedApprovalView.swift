@@ -17,6 +17,7 @@ struct AnnotatedApprovalView: View {
     var didFocus: () -> Void = {}
     var planEntries: [PlanEntry] = []
     var showMorePlan: (() -> Void)?
+    var openTask: (() -> Void)?
     @State var planExpanded = false
     let onChoose: (PermissionOption) -> Void
     let onInstruct: (String) async throws -> Void
@@ -81,6 +82,14 @@ struct AnnotatedApprovalView: View {
                             }
                         }
                         .background(DS.Approval.well(colorScheme), in: .rect(cornerRadius: DS.Radius.control))
+                    } else if call.kind == .switchMode,
+                        case .object(let input) = call.rawInput, input.count == 1,
+                        let proposal = input["plan"]?.stringValue, call.content.isEmpty, call.rawOutput == nil
+                    {
+                        // The permission proposal can differ from its progress checklist. Keep its
+                        // exact words visible without exposing the surrounding wire-format object.
+                        Text(verbatim: proposal).font(.dsBody).foregroundStyle(.dsTextSecondary)
+                            .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
                     } else {
                         ToolCallBody(call: call, presentation: ToolPresentation(call), phase: ToolPhase(call))
                     }
@@ -109,6 +118,7 @@ struct AnnotatedApprovalView: View {
                 .padding(.bottom, DS.Approval.commandInset)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .disabled(sending || committed || !isAvailable)
             if rejection != nil {
                 Rectangle().fill(DS.Approval.separator(colorScheme)).frame(height: DS.Approval.rule)
                 HStack(alignment: .bottom, spacing: DS.Space.md) {
@@ -124,26 +134,47 @@ struct AnnotatedApprovalView: View {
                         sendInstruction(instruction)
                         return .handled
                     }
-                    ComposerSendButton(
-                        disabledReason: instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                            ? "Enter an instruction first" : nil
-                    ) { sendInstruction(instruction) }
-                    .accessibilityLabel("Ask \(agentName) to do this instead")
+                    .disabled(sending || committed || !isAvailable)
+                    if openTask == nil || !instruction.isEmpty {
+                        ComposerSendButton(
+                            disabledReason: instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                ? "Enter an instruction first" : nil
+                        ) { sendInstruction(instruction) }
+                        .accessibilityLabel("Ask \(agentName) to do this instead")
+                        .disabled(sending || committed || !isAvailable)
+                    }
+                    taskLink
                 }
                 .padding(.horizontal, DS.Approval.inset)
                 .padding(.vertical, DS.Space.lg)
                 .frame(minHeight: DS.Approval.instructionHeight)
+            } else if openTask != nil {
+                taskLink.frame(maxWidth: .infinity, alignment: .trailing).padding(DS.Approval.inset)
             }
         }
         .onChange(of: focusRequested, initial: true) { _, requested in
             if requested { instructionFocused = true; didFocus() }
         }
-        .disabled(sending || committed || !isAvailable)
         .approvalHoldKeys(
             enabled: shortcutsEnabled && legacyShortcut && isAvailable && !sending && !committed
                 && analysis?.risk == .irreversible
         ) {
             keyboardHeld = $0
+        }
+    }
+
+    @ViewBuilder private var taskLink: some View {
+        if let openTask {
+            Button(action: openTask) {
+                HStack(spacing: DS.Space.sm) {
+                    Text("Open Task").font(.dsBody)
+                    Kbd("⌘↩", compact: true)
+                }
+                .fixedSize()
+            }
+            .buttonStyle(.plain).foregroundStyle(.dsTextTertiary)
+            .dsHitTarget(DS.Size.controlXS)
+            .keyboardShortcut(.return, modifiers: .command)
         }
     }
 
