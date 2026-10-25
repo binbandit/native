@@ -464,8 +464,12 @@ keycaps, the composer's field for an answer in the user's own words), answered t
 kept message. `NativeSetup`'s `AgentStartDiagnostic` reads a compiler-style `path:line:column:`
 location from the agent's own report (codex-acp puts it in the JSON-RPC error's `data`, which
 `RPCError.detail` keeps), and offers a fix-it only when exactly one value the agent lists is close
-to the one it rejected. Only the named file on this Mac is read, lines whose key names a credential
-show the key alone, and a fix-it is applied only on the user's click: `AgentStartFile` checks that
+to the one it rejected. The agent's path authorizes nothing: `AgentStartFile.mayRead` opens only an
+absolute, small settings file (TOML, JSON or YAML) on this Mac whose name and folders, before and
+after symbolic links resolve, aren't where credentials are kept (auth.json, .credentials.json,
+~/.ssh, ~/.config/gh, and the like); anything else stays a location without contents. Lines whose
+key names a credential show the key alone, and lines holding a URL password, bearer header or
+well-known token are hidden whole. A fix-it is applied only on the user's click: `AgentStartFile` checks that
 the line still holds the rejected value, keeps the original as `<file>.native-backup`, and keeps
 the file's permissions and symbolic links.
 

@@ -80,6 +80,59 @@ struct AgentStartDiagnosticTests {
         #expect(AgentStartDiagnostic(path: "/tmp/c", line: 9, column: 1, message: "").excerpt(of: "x = 1").isEmpty)
     }
 
+    @Test func excerptHidesCredentialsWithoutAKey() {
+        let diagnostic = AgentStartDiagnostic(path: "/tmp/config.toml", line: 3, column: 1, message: "")
+        let lines = diagnostic.excerpt(
+            of:
+                "url = \"https://fixture-user:fixture-pass@example.invalid\"\n\"Bearer abcdef0123\"\nmodel = \"ghp_0123456789abcdef\"\n"
+        )
+        // Line 1 isn't in the excerpt; lines 2 and 3 are hidden whole.
+        #expect(lines.allSatisfy { $0.isRedacted && $0.text.isEmpty })
+        let url = AgentStartDiagnostic(path: "/tmp/config.toml", line: 1, column: 1, message: "")
+        #expect(
+            url.excerpt(of: "https://fixture-user:fixture-pass@example.invalid\n") == [
+                .init(number: 1, text: "", isRedacted: true)
+            ])
+        #expect(url.excerpt(of: "model = \"gpt-6.1-sol\"\n")[0].isRedacted == false)
+    }
+
+    @Test(arguments: [
+        "/Users/developer/.git-credentials", "/Users/developer/.codex/auth.json",
+        "/Users/developer/.claude/.credentials.json", "/Users/developer/.ssh/config",
+        "/Users/developer/.config/gh/hosts.yml", "/Users/developer/.aws/config.toml",
+        "/Users/developer/.netrc", "/Users/developer/.npmrc", "/Users/developer/.config/app/oauth_tokens.json",
+        "relative/config.toml",
+    ])
+    func credentialStoresAreNeverOpened(_ path: String) {
+        #expect(!AgentStartFile.mayRead(path))
+        #expect(AgentStartFile.read(path) == nil)
+    }
+
+    @Test(arguments: [
+        "/Users/developer/.codex/config.toml", "/Users/developer/.claude/settings.json",
+        "/Users/developer/Developer/native/.codex/config.toml", "/Users/developer/.config/opencode/opencode.jsonc",
+    ])
+    func settingsFilesMayBeOpened(_ path: String) {
+        #expect(AgentStartFile.mayRead(path))
+    }
+
+    @Test func aLinkToACredentialStoreIsNeverOpened() throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "agent-start-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let store = folder.appending(path: ".git-credentials")
+        let link = folder.appending(path: "config.toml")
+        try Data("https://fixture-user:fixture-pass@example.invalid\n".utf8).write(to: store)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: store)
+        #expect(!AgentStartFile.mayRead(link.path))
+        #expect(AgentStartFile.read(link.path) == nil)
+        let diagnostic = AgentStartDiagnostic(
+            path: link.path, line: 1, column: 1, message: "unknown variant `hgih`, expected `high`")
+        #expect(throws: AgentStartFile.Failure.unreadable("config.toml")) {
+            try AgentStartFile.apply(AgentStartFixIt(original: "hgih", replacement: "high"), at: diagnostic)
+        }
+    }
+
     @Test func applyKeepsTheOriginalAndPermissions() throws {
         let folder = FileManager.default.temporaryDirectory.appending(path: "agent-start-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)

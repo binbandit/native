@@ -147,7 +147,8 @@ struct AgentStartFailureView: View {
     @ViewBuilder
     private func sourceText(_ line: AgentStartDiagnostic.SourceLine, diagnostic: AgentStartDiagnostic) -> some View {
         if line.isRedacted {
-            Text("\(Text(verbatim: line.text)) \(Text("value hidden").foregroundStyle(.dsTextTertiary))")
+            let hidden = Text(line.text.isEmpty ? "credential hidden" : "value hidden").foregroundStyle(.dsTextTertiary)
+            Text(line.text.isEmpty ? "\(hidden)" : "\(Text(verbatim: line.text)) \(hidden)")
                 .font(.dsMono).foregroundStyle(.dsTextPrimary)
         } else if line.number == diagnostic.line, let marked = Self.marked(line.text, column: diagnostic.column) {
             Text(

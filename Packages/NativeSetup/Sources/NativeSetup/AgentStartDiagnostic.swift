@@ -48,7 +48,8 @@ public struct AgentStartDiagnostic: Equatable, Sendable {
         }
     }
 
-    /// One numbered line of the file. A credential's value is never kept: `text` stops at its key.
+    /// One numbered line of the file. A credential's value is never kept: `text` stops at its key,
+    /// or is empty when the line holds one without a key (a URL with a password, a token).
     public struct SourceLine: Equatable, Sendable, Identifiable {
         public let number: Int
         public let text: String
@@ -61,6 +62,9 @@ public struct AgentStartDiagnostic: Equatable, Sendable {
             if let key = Self.credentialKey(in: text) {
                 self.text = key
                 isRedacted = true
+            } else if Self.holdsCredential(text) {
+                self.text = ""
+                isRedacted = true
             } else {
                 self.text = text
                 isRedacted = false
@@ -71,6 +75,13 @@ public struct AgentStartDiagnostic: Equatable, Sendable {
             self.number = number
             self.text = text
             self.isRedacted = isRedacted
+        }
+
+        /// A URL with a password in it, a bearer header, or a token in a well-known format.
+        private static func holdsCredential(_ text: String) -> Bool {
+            text.contains(/[A-Za-z][A-Za-z0-9+.-]*:\/\/[^\s\/@]+@/)
+                || text.contains(/(?i)\bbearer\s+\S/)
+                || text.contains(/\b(sk-|sk_live_|ghp_|gho_|ghs_|github_pat_|glpat-|xox[abpr]-|AKIA)[A-Za-z0-9_-]{8,}/)
         }
 
         /// The `key =` (or `"key":`) part of a line whose key names a credential.

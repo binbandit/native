@@ -2,8 +2,8 @@ import Foundation
 import NativeSetup
 
 // Fix-its for a task that couldn't start (Fine print): the line the agent stopped at, and a
-// one-click change to it. Files are read and changed only on this Mac, and only the file the
-// agent's own report names.
+// one-click change to it. Only on this Mac, and only a settings file the agent's report names that
+// isn't a credential store (`AgentStartFile.mayRead`).
 extension AppModel {
     /// The lines around where the agent stopped, when it named a file on this Mac.
     func startFailureSource(of task: StartingTask) async -> [AgentStartDiagnostic.SourceLine] {
@@ -13,10 +13,13 @@ extension AppModel {
         return contents.map(diagnostic.excerpt) ?? []
     }
 
-    /// The change Native can make for the task's failure; none for a file on another device.
+    /// The change Native can make for the task's failure; none for a file on another device or one
+    /// Native may not open (`AgentStartFile.mayRead`).
     func startFixIt(for task: StartingTask) -> AgentStartFixIt? {
-        guard task.device == .thisMac else { return nil }
-        return task.failure?.diagnostic?.fixIt
+        guard task.device == .thisMac, let diagnostic = task.failure?.diagnostic,
+            AgentStartFile.mayRead(diagnostic.path)
+        else { return nil }
+        return diagnostic.fixIt
     }
 
     /// Changes the value the agent rejected, keeping the original beside the file, then starts the

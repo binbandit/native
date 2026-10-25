@@ -1,8 +1,10 @@
 import Foundation
 
-/// The file a failed start names, read and changed only at the user's request. Reads are limited
-/// to small text files; a change keeps the original beside it and leaves its permissions and
-/// symbolic links as they were.
+/// The file a failed start names, read and changed only at the user's request. The path comes from
+/// the agent's output, so it authorizes nothing: only a small settings file in a settings format
+/// is opened, never one whose name or folder is where credentials are kept, checked again after
+/// symbolic links resolve. Anything else stays a location without contents. A change keeps the
+/// original beside it and leaves its permissions and symbolic links as they were.
 public enum AgentStartFile {
     /// Settings files are a few kilobytes; anything far larger isn't one to show or edit.
     static let maximumSize = 256 * 1024
@@ -12,8 +14,40 @@ public enum AgentStartFile {
         path + ".native-backup"
     }
 
-    /// The file's text, or nil when it's missing, not a regular file, too large or not UTF-8.
+    static let settingsExtensions: Set<String> = ["toml", "json", "jsonc", "json5", "yaml", "yml"]
+    /// Words in a file name that mark a credential store: Codex's auth.json, Claude Code's
+    /// .credentials.json, an OAuth token cache.
+    static let credentialWords = [
+        "auth", "credential", "secret", "token", "password", "passwd", "key", "cookie", "session", "oauth",
+    ]
+    /// Folders that hold credentials whatever the file is called.
+    static let credentialFolders: Set<String> = [
+        ".ssh", ".gnupg", ".aws", ".azure", ".docker", ".kube", ".password-store", "keychains", "gh", "github-copilot",
+        "gcloud", ".gcloud",
+    ]
+
+    /// Whether Native may open the file at `path` to show or change it: a settings file, as named
+    /// and as its links resolve.
+    public static func mayRead(_ path: String) -> Bool {
+        guard path.hasPrefix("/") else { return false }
+        let named = URL(filePath: path)
+        return isSettingsFile(named) && isSettingsFile(named.resolvingSymlinksInPath())
+    }
+
+    private static func isSettingsFile(_ url: URL) -> Bool {
+        let name = url.lastPathComponent.lowercased()
+        guard settingsExtensions.contains(url.pathExtension.lowercased()),
+            !credentialWords.contains(where: name.contains)
+        else { return false }
+        return url.deletingLastPathComponent().pathComponents.allSatisfy {
+            !credentialFolders.contains($0.lowercased())
+        }
+    }
+
+    /// The file's text, or nil when Native may not open it (`mayRead`), or it's missing, not a
+    /// regular file, too large or not UTF-8.
     public static func read(_ path: String) -> String? {
+        guard mayRead(path) else { return nil }
         let url = URL(filePath: path).resolvingSymlinksInPath()
         guard let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey]),
             values.isRegularFile == true, (values.fileSize ?? .max) <= maximumSize,
