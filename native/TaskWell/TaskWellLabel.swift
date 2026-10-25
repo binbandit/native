@@ -18,7 +18,7 @@ struct TaskWellLabel: View {
             .accessibilityHidden(true)
             headline
                 .frame(maxWidth: .infinity, alignment: .leading)
-            if content.progress != nil || (content.showsReview && !isCompact) {
+            if content.progress != nil || (content.showsReview && !isCompact) || content.exitKey != nil {
                 trailing
                     .padding(.leading, DS.TaskWell.dividerInset)
                     .overlay(alignment: .leading) {
@@ -65,7 +65,7 @@ struct TaskWellLabel: View {
 
     private func narration(includesAgent: Bool) -> some View {
         HStack(spacing: DS.TaskWell.textGap) {
-            if includesAgent {
+            if includesAgent, !content.agent.isEmpty {
                 Text(content.agent)
                     .font(.dsBody)
                     .foregroundStyle(.dsTextTertiary)
@@ -76,7 +76,7 @@ struct TaskWellLabel: View {
                 .fixedSize()
             if let object = content.object {
                 Text(object)
-                    .font(content.isWaiting ? .dsBody : DS.TaskWell.object)
+                    .font(content.isWaiting || !content.objectIsCode ? .dsBody : DS.TaskWell.object)
                     .foregroundStyle(content.isWaiting ? .dsTextSecondary : .dsTextPrimary)
                     .lineLimit(1)
                     .truncationMode(.middle)
@@ -106,6 +106,10 @@ struct TaskWellLabel: View {
             Text("Review")
                 .font(.dsBodyMedium)
                 .foregroundStyle(.dsTextPrimary)
+        } else if let exitKey = content.exitKey {
+            Text(exitKey)
+                .font(.dsBody)
+                .foregroundStyle(.dsTextTertiary)
         }
     }
 }

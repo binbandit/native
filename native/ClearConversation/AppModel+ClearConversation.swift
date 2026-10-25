@@ -42,6 +42,7 @@ extension AppModel {
         }
         earlierConversations.record(session.key, after: old.key)
         ordering.replace(old.key, with: session.key)
+        taskPairs.replace(old.key, with: session.key)
         // The task keeps its name; a fresh conversation would otherwise be named after its first prompt.
         if let title = titles.title(for: old.titleKey, agentTitle: old.title) {
             titles.rename(session.titleKey, to: title)

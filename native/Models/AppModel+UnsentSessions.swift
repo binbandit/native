@@ -54,6 +54,7 @@ extension AppModel {
             session.draft = draft
             catalog.swap(key, for: SessionInfo(sessionId: session.id, cwd: info.cwd, updatedAt: .now))
             ordering.replace(key, with: session.key)
+            taskPairs.replace(key, with: session.key)
             history.replace(key, with: session.key)
             unsentSessions.forget(key)
             unsentSessions.started(session.key)

@@ -34,6 +34,11 @@ extension GitTaskWorkspaceProvider {
         return options
     }
 
+    func newWorktreeStart(in project: Project) async throws -> TaskWorkspaceChoice? {
+        guard let base = try await git.taskWorktreeStart(in: project.url) else { return nil }
+        return .newWorktreeFrom(commit: base.commit, branch: base.branch, notice: base.localNotice)
+    }
+
     func workspace(for choice: TaskWorkspaceChoice, in project: Project) async throws -> URL {
         try await prepareWorkspace(for: choice, in: project).folder
     }
@@ -47,6 +52,15 @@ extension GitTaskWorkspaceProvider {
             let prefix = git.settings.branchPrefix(
                 forProjectAt: project.url, gitHubLogin: await gitHubLogin(for: project))
             guard let checkout = try await git.prepareTaskCheckout(in: project.url, prefix: prefix, forceWorktree: true)
+            else { throw TaskWorkspaceSelectionError("This folder is not a git repository. Use the project folder.") }
+            return .init(folder: checkout.folder, createdForTask: true)
+        case .newWorktreeFrom(let commit, let branch, let notice):
+            let prefix = git.settings.branchPrefix(
+                forProjectAt: project.url, gitHubLogin: await gitHubLogin(for: project))
+            guard
+                let checkout = try await git.prepareTaskCheckout(
+                    in: project.url, prefix: prefix, forceWorktree: true,
+                    startingAt: GitStore.PinnedStart(commit: commit, branch: branch, notice: notice))
             else { throw TaskWorkspaceSelectionError("This folder is not a git repository. Use the project folder.") }
             return .init(folder: checkout.folder, createdForTask: true)
         case .branch(let branch):

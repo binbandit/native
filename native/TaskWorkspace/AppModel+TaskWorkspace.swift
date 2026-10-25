@@ -72,6 +72,7 @@ extension AppModel {
                 unsentSessions.started(target.key)
             }
             ordering.replace(source.key, with: target.key)
+            taskPairs.replace(source.key, with: target.key)
             history.replace(source.key, with: target.key)
             earlierConversations.replace(source.key, with: target.key)
             unsentSessions.forget(source.key)

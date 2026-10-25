@@ -10,6 +10,11 @@ protocol TaskWorkspaceProvider: AnyObject {
     /// Removes only an untouched checkout created for a task, never a user-owned folder.
     func removeUnusedWorkspace(at folder: URL, in project: Project) async throws -> Bool
 
+    /// Where a new worktree in `project` would start now (fetching first, as the Git settings and
+    /// policy allow), as a choice that makes one there: several tasks prepared with it start from
+    /// the same commit. Nil where tasks don't get worktrees.
+    func newWorktreeStart(in project: Project) async throws -> TaskWorkspaceChoice?
+
     /// The folder a new task in `project` should run in: the project itself, or one made for it.
     func workspace(forNewTaskIn project: Project, title: String?) async throws -> URL
 
@@ -70,6 +75,8 @@ protocol TaskWorkspaceProvider: AnyObject {
 
 extension TaskWorkspaceProvider {
     func taskWasDeleted(_ task: SessionKey, title: String, folder: URL, in project: Project) async {}
+
+    func newWorktreeStart(in project: Project) async throws -> TaskWorkspaceChoice? { nil }
 
     /// Brings back only what was recorded, for workspaces no task was archived with.
     @discardableResult

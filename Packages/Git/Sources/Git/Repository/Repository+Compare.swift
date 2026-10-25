@@ -22,4 +22,13 @@ extension Repository {
     public func branchDiff(since base: String) async throws(GitError) -> String {
         try await run(["diff", "--no-color", "--no-ext-diff", "--no-textconv", "\(base)...HEAD"], readOnly: true).text
     }
+
+    /// The newest commit both `first` and `second` grow from (`git merge-base`), or nil when they
+    /// share no history. Two worktrees of one repository share its commits, so this finds where two
+    /// tasks started from the same point.
+    public func mergeBase(_ first: String, _ second: String) async throws(GitError) -> String? {
+        let output = try await run(["merge-base", first, second], readOnly: true, acceptingStatus: [0, 1])
+        let commit = output.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return output.status == 0 && !commit.isEmpty ? commit : nil
+    }
 }

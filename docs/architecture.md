@@ -217,8 +217,17 @@ workspace into the existing `StartingTask` pipeline. Address lines fold, the sha
 appears at the transcript's final width, and the composer settles below it. Startup failure uses
 the existing retry view with the snapshot intact. An explicitly held offline draft persists in
 Native's own preferences and resumes through the same pipeline when its paired host reconnects;
-Cancel Hold keeps it editable. The experiment remains off by default. Multiple agents and Compare /
-Keep are the next slice.
+Cancel Hold keeps it editable. The experiment remains off by default.
+
+A second agent on the To line sends the same brief to both. Start makes two `StartingTask`s, each
+with its own worktree, recorded as one `TaskPair` (`native/TaskPairs/`, saved in Native's
+preferences). The sidebar lists an undecided pair as a group under the brief's title
+(`TaskPairGrouping` in `Packages/TaskList`). When both are at rest, a card at the end of either
+transcript (the transcript's `TranscriptTrailer` slot) counts what each changed since the commit
+they share (`Repository.mergeBase`, snapshots, `treeChanges`), and Compare shows the two versions
+side by side, file by file, with the transcript's `DiffView`. Keep archives the other task through
+the existing archive path, so its worktree is put away with its branch and a checkpoint, and one
+Undo brings it back and regroups the pair.
 
 ### Home Next
 

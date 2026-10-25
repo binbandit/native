@@ -52,6 +52,13 @@ enum ComposeTaskPreviewFixtures {
             entry.failure = "The folder is unavailable. Restore it or choose another folder. Your draft is kept."
         }
         if state == "agents" { entry.picker = .agent }
+        if state == "twoAgents" {
+            compose.workspaces = [
+                TaskWorkspaceOption(choice: .newWorktree, title: "Its own worktree", detail: "", isCurrent: false)
+            ]
+            compose.second = ComposeRecipient(
+                agent: AgentDefinition.ID(rawValue: "claude-code"), options: claudeOptions)
+        }
         if state == "devices" || state == "offline" || state == "held" {
             compose.previewLastConnected = Calendar.current.date(bySettingHour: 14, minute: 14, second: 0, of: .now)
             let remote = SessionDevice.remote(RemoteHostID())
@@ -78,6 +85,13 @@ enum ComposeTaskPreviewFixtures {
             {"id":"effort","name":"Effort","category":"thought_level","type":"select","currentValue":"low","options":[{"value":"low","name":"Low","description":"Quick, and light on usage"},{"value":"high","name":"High","description":"Slower, more thorough"}]},
             {"id":"mode","name":"Permissions","category":"mode","type":"select","currentValue":"workspace-write","options":[{"value":"read-only","name":"Before any change"},{"value":"workspace-write","name":"Before leaving the worktree"},{"value":"agent-full-access","name":"Never"}]}
             ]
+            """
+        return (try? JSONDecoder().decode([ConfigOption].self, from: Data(json.utf8))) ?? []
+    }
+
+    static var claudeOptions: [ConfigOption] {
+        let json = """
+            [{"id":"model","name":"Model","category":"model","type":"select","currentValue":"opus","options":[{"value":"opus","name":"Opus 5.5"},{"value":"sonnet","name":"Sonnet 5.5"}]}]
             """
         return (try? JSONDecoder().decode([ConfigOption].self, from: Data(json.utf8))) ?? []
     }

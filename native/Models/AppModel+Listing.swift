@@ -29,7 +29,9 @@ extension AppModel {
 
     /// Every session in the sidebar, in its order: pinned first, then each project's.
     var sessionList: [SessionSummary] {
-        groupCoordinatorTasks([pinnedSessions] + projects.all.map { sessions(in: $0.id) }).flatMap { $0 }
+        groupTaskPairs(groupCoordinatorTasks([pinnedSessions] + projects.all.map { sessions(in: $0.id) })).flatMap {
+            $0
+        }
     }
 
     func moveSessions(in project: Project.ID, fromOffsets source: IndexSet, toOffset destination: Int) {

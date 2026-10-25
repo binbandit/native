@@ -208,6 +208,11 @@ private struct SessionCommands: Commands {
 
             Divider()
 
+            if model.offersTaskPairs {
+                CommandMenuItem(.taskCompareVersions, in: menu)
+                CommandMenuItem(.taskKeepVersion, in: menu)
+                Divider()
+            }
             CommandMenuItem(.sessionRename, in: menu)
             CommandMenuItem(.sessionArchive, in: menu)
             CommandMenuItem(.sessionTogglePin, in: menu)

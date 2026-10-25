@@ -38,7 +38,7 @@ struct SidebarListing {
                 project: project, all: all,
                 current: filter.isActive ? filter.apply(to: candidates, facts: facts) : all)
         }
-        let grouped = model.groupCoordinatorTasks([filteredPinned] + raw.map(\.visible))
+        let grouped = model.groupTaskPairs(model.groupCoordinatorTasks([filteredPinned] + raw.map(\.visible)))
         pinned = grouped[0]
         groups = raw.enumerated().map { index, group in
             let candidates = grouped[index + 1]
