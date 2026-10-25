@@ -128,7 +128,9 @@ struct PairPhoneSheet: View {
                 Toggle("Allow installing updates for this Mac's Native", isOn: $grants.manageHost)
                 Toggle("Allow turning plugins on and off", isOn: $grants.managePlugins)
             }
+            #if os(macOS)
             .toggleStyle(.checkbox)
+            #endif
             .font(.dsBody)
             .foregroundStyle(.dsTextPrimary)
             footer {
