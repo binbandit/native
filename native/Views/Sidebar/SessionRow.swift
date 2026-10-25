@@ -22,6 +22,8 @@ struct SessionRow<Accessory: View>: View {
     var indent: TaskRowIndent = .grouped
     /// Whether the row is in the Pinned section.
     var isPinned = false
+    /// One of a brief's two tasks, under the brief's heading: named by its agent, with its branch.
+    var isPairMember = false
     /// Where the row can move, worked out once by its list: the context menu is built on every
     /// update of any session, so it must not query the model's ordering itself.
     let canMoveUp: Bool
@@ -34,7 +36,12 @@ struct SessionRow<Accessory: View>: View {
     }
 
     private var title: String {
-        model.title(for: summary)
+        isPairMember ? summary.agent.displayName : model.title(for: summary)
+    }
+
+    /// A pair's tasks always say their branch: it's what tells the two versions apart.
+    private var showsBranch: Bool {
+        isPairMember || model.sidebarPreferences.shows(.branches)
     }
 
     private var isUnread: Bool {
@@ -124,13 +131,13 @@ struct SessionRow<Accessory: View>: View {
                 hostName: preferences.shows(.machines) ? remoteHost?.name : nil,
                 date: preferences.shows(.ages) ? model.lastActivity(for: summary) : nil,
                 changes: preferences.shows(.changes) ? finishedChanges : nil,
-                agentName: preferences.shows(.agents) ? summary.agent.displayName : nil,
-                branchName: preferences.shows(.branches) ? insights.branch(summary) : nil,
+                agentName: !isPairMember && preferences.shows(.agents) ? summary.agent.displayName : nil,
+                branchName: showsBranch ? insights.branch(summary) : nil,
                 peek: { model.peekTask(summary.id) },
                 action: { if model.taskPeek.request?.task != summary.id { select() } }
             )
-            .task(id: preferences.shows(.branches)) {
-                if preferences.shows(.branches) { await insights.prepareBranch(summary) }
+            .task(id: showsBranch) {
+                if showsBranch { await insights.prepareBranch(summary) }
             }
         } else {
             TaskRow(
@@ -287,6 +294,7 @@ struct SessionRow<Accessory: View>: View {
 extension SessionRow: @MainActor Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.summary == rhs.summary && lhs.indent == rhs.indent && lhs.isPinned == rhs.isPinned
+            && lhs.isPairMember == rhs.isPairMember
             && lhs.canMoveUp == rhs.canMoveUp && lhs.canMoveDown == rhs.canMoveDown
     }
 }

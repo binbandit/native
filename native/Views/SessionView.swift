@@ -28,6 +28,14 @@ struct SessionView: View {
     }
 
     var body: some View {
+        if let pair = model.comparedTaskPair(for: session.key) {
+            TaskPairComparePage(task: session.key, pair: pair)
+        } else {
+            taskBody
+        }
+    }
+
+    private var taskBody: some View {
         Group {
             if usesSessionTools || usesTaskWell || (usesComposeTask && session.usesComposePresentation) {
                 SessionToolsScreen(
@@ -54,6 +62,16 @@ struct SessionView: View {
                     selectedSource: session.quoteSelectionSource,
                     select: { session.selectQuote($1, source: $0) }, quote: session.quote,
                     clear: { session.clearQuoteSelection(source: $0) }) : nil)
+        .environment(\.transcriptTrailer, pairTrailer)
+    }
+
+    /// The two versions of a brief sent to two agents, at the end of either task's transcript.
+    private var pairTrailer: TranscriptTrailer? {
+        guard model.taskPairs.pair(containing: session.key) != nil else { return nil }
+        return TranscriptTrailer(
+            content: AnyView(TaskPairTranscriptTrailer(task: session.key)),
+            replacesChangesCard: model.openTaskPair(containing: session.key) != nil
+                && model.isTaskPairMemberSettled(session.key))
     }
 
     private var standardBody: some View {

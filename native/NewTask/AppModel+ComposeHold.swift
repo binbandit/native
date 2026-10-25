@@ -19,7 +19,8 @@ extension AppModel {
                 ComposeHeldDraft(
                     project: project, agent: agent, device: quickEntry.device, text: editor.draft,
                     files: editor.attachments.map(ComposeHeldDraft.File.init), choices: composeTask.addressedChoices,
-                    workspace: composeTask.workspace))
+                    workspace: composeTask.workspace, second: composeTask.second?.agent,
+                    secondChoices: composeTask.second?.choices))
             quickEntry.failure = nil
         } catch {
             quickEntry.failure = "Couldn't hold the task. Your draft is kept. Try again."
@@ -44,6 +45,16 @@ extension AppModel {
             composeTask.options[index].kind = .select(currentValue: value, options: choices)
         }
         composeTask.workspace = held.workspace
+        if let second = held.second {
+            var options = composeStartingOptions(for: second, in: projects.project(held.project))
+            for (index, option) in options.enumerated() {
+                guard let category = option.category, let value = held.secondChoices?[category],
+                    case .select(_, let choices) = option.kind, choices.contains(where: { $0.value == value })
+                else { continue }
+                options[index].kind = .select(currentValue: value, options: choices)
+            }
+            composeTask.second = ComposeRecipient(agent: second, options: options)
+        }
     }
 
     func resumeComposeHold(on host: RemoteHost) {

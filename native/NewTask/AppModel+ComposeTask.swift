@@ -25,31 +25,7 @@ extension AppModel {
         compose.editor = editor
         compose.pendingAttachments = false
         compose.choices = [:]
-        compose.options = AgentSessionDefaults.offeredOptions(for: agent.id)
-        var categories = AgentSessionDefaults.configuredValues(for: agent.id)
-        if let project, let model = ProjectTaskDefaults.model(for: project.id, agent: agent.id) {
-            categories["model"] = model
-        }
-        let defaults = NewSessionChoices(defaults: categories, lastUsed: AgentSessionDefaults.lastUsed(for: agent.id))
-        for id in defaults.order(in: compose.options) {
-            if case .set(let option, let value)? = defaults.start(
-                of: id, in: compose.options, allows: { !PolicyPermissionModes.forbids($0, value: $1) }),
-                let index = compose.options.firstIndex(where: { $0.id == option.id }),
-                case .select(_, let choices) = option.kind
-            {
-                compose.options[index].kind = .select(currentValue: value, options: choices)
-            }
-        }
-        let mode = ModeResolver.resolve(ModeLibrary.shared.startingMode, options: compose.options) {
-            !PolicyPermissionModes.forbids($0, value: $1)
-        }
-        for change in mode.changes {
-            if let index = compose.options.firstIndex(where: { $0.id == change.optionID }),
-                case .select(_, let choices) = compose.options[index].kind
-            {
-                compose.options[index].kind = .select(currentValue: change.value, options: choices)
-            }
-        }
+        compose.options = composeStartingOptions(for: agent.id, in: project)
         compose.defaults = Dictionary(
             compose.options.compactMap { option in
                 guard let category = option.category, case .select(let value, _) = option.kind else { return nil }
@@ -60,6 +36,38 @@ extension AppModel {
                 compose.choose(setting, value: value)
             }
         }
+        reconcileComposeSecondAgent()
+    }
+
+    /// The settings a new task with `agent` starts with: the project's model, then the agent's saved
+    /// defaults and last choices, then the starting mode, never one policy forbids.
+    func composeStartingOptions(for agent: AgentDefinition.ID, in project: Project?) -> [ConfigOption] {
+        var options = AgentSessionDefaults.offeredOptions(for: agent)
+        var categories = AgentSessionDefaults.configuredValues(for: agent)
+        if let project, let model = ProjectTaskDefaults.model(for: project.id, agent: agent) {
+            categories["model"] = model
+        }
+        let defaults = NewSessionChoices(defaults: categories, lastUsed: AgentSessionDefaults.lastUsed(for: agent))
+        for id in defaults.order(in: options) {
+            if case .set(let option, let value)? = defaults.start(
+                of: id, in: options, allows: { !PolicyPermissionModes.forbids($0, value: $1) }),
+                let index = options.firstIndex(where: { $0.id == option.id }),
+                case .select(_, let choices) = option.kind
+            {
+                options[index].kind = .select(currentValue: value, options: choices)
+            }
+        }
+        let mode = ModeResolver.resolve(ModeLibrary.shared.startingMode, options: options) {
+            !PolicyPermissionModes.forbids($0, value: $1)
+        }
+        for change in mode.changes {
+            if let index = options.firstIndex(where: { $0.id == change.optionID }),
+                case .select(_, let choices) = options[index].kind
+            {
+                options[index].kind = .select(currentValue: change.value, options: choices)
+            }
+        }
+        return options
     }
 
     func chooseComposeAgent(_ agent: AgentDefinition.ID) {
@@ -81,6 +89,7 @@ extension AppModel {
         quickEntry.attachments = composeTask.editor?.attachments ?? quickEntry.attachments
         quickEntry.context = nil
         composeTask.editor = nil
+        composeTask.second = nil
         composeTask.isPresented = false
         quickEntry.picker = nil
     }
@@ -116,6 +125,7 @@ extension AppModel {
             }
             // Explicitly address an isolated worktree where git can make one; plain folders stay folders.
             compose.workspace = options.contains(where: { $0.choice == .newWorktree }) ? .newWorktree : .project
+            if compose.workspace != .newWorktree { compose.second = nil }
         } catch {
             guard compose.workspaceRead == read, projectID == quickEntry.project, device == quickEntry.device else {
                 return
@@ -156,6 +166,10 @@ extension AppModel {
             quickEntry.picker = .agent
             return
         }
+        if let problem = composeSecondAgentProblem() {
+            quickEntry.failure = problem
+            return
+        }
         guard editor.missingAttachments.isEmpty else {
             quickEntry.failure = "An attached file is no longer available. Remove it or attach it again."
             return
@@ -185,6 +199,7 @@ extension AppModel {
         compose.stage = .folding
         quickEntry.clearAfterStarting()
         startingTasks.insert(task, at: 0)
+        startComposeSecondTask(beside: task)
         if revealing {
             compose.navigationSelection = task.id
             selection = task.id
@@ -196,6 +211,7 @@ extension AppModel {
             await start(task)
             if !compose.isPresented, compose.starting === task {
                 compose.editor = nil
+                compose.second = nil
                 compose.starting = nil
                 compose.stage = .writing
             }
@@ -204,6 +220,7 @@ extension AppModel {
 
     func cancelComposeStart() {
         guard let task = composeTask.starting, task.openedSession == nil else { return }
+        discardComposePartner(of: task)
         discard(task)
         composeTask.navigationSelection = selection
         composeTask.starting = nil

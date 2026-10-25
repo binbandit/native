@@ -15,6 +15,7 @@ struct TranscriptView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.isPrimaryTranscript) private var isPrimary
     @Environment(\.dsDrawsToolbarBand) private var drawsToolbarBand
+    @Environment(\.transcriptTrailer) private var trailer
     @State private var position = ScrollPosition(edge: .bottom)
     /// Whether the newest output is out of view.
     @State private var isAwayFromLatest = false
@@ -148,6 +149,9 @@ struct TranscriptView: View {
                 ChangeAgentDivider(agentName: session.agentName)
             }
             AnyView(style.makeBody(transcript))
+            if isPrimary, let trailer {
+                trailer.content.padding(.top, DS.Space.lg)
+            }
         }
         .environment(disclosures)
         .frame(maxWidth: maxColumnWidth(in: containerWidth))

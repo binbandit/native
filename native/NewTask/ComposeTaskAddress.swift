@@ -10,26 +10,38 @@ struct ComposeTaskAddress: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             line("To") {
-                Button {
-                    entry.toggle(.agent)
-                } label: {
-                    HStack(spacing: DS.Space.sm) {
-                        Text(model.quickEntryRuntime?.agent.displayName ?? compose.editor?.agentName ?? "Choose agent")
-                            .foregroundStyle(.dsTextPrimary)
-                        if let name = ComposerSettings(compose.options).model?.currentName ?? model.quickEntryModelName
-                        {
-                            Text(name).foregroundStyle(.dsTextSecondary)
+                HStack(spacing: DS.Space.sm) {
+                    Button {
+                        entry.toggle(.agent)
+                    } label: {
+                        recipient(
+                            model.quickEntryRuntime?.agent.displayName ?? compose.editor?.agentName ?? "Choose agent",
+                            model: ComposerSettings(compose.options).model?.currentName ?? model.quickEntryModelName
+                        ) {
+                            // Two agents read as two recipients, without pickers' chevrons.
+                            if compose.second == nil {
+                                Image(systemName: "chevron.down").font(.dsMicro).foregroundStyle(.dsTextTertiary)
+                            }
                         }
-                        Image(systemName: "chevron.down").font(.dsMicro).foregroundStyle(.dsTextTertiary)
                     }
-                }
-                .buttonStyle(.plain)
-                .disabled(compose.isHeld)
-                .dsHitTarget(DS.ComposeTask.rowHeight)
-                .frame(minHeight: DS.ComposeTask.rowHeight)
-                .accessibilityLabel("Choose task agent and model")
-                .dsPopover(isPresented: picker(.agent), attachmentAnchor: .point(.bottomLeading), arrowEdge: .top) {
-                    ComposeAgentPicker(model: model)
+                    .buttonStyle(.plain)
+                    .disabled(compose.isHeld)
+                    .dsHitTarget(DS.ComposeTask.rowHeight)
+                    .frame(minHeight: DS.ComposeTask.rowHeight)
+                    .accessibilityLabel("Choose task agent and model")
+                    .dsPopover(isPresented: picker(.agent), attachmentAnchor: .point(.bottomLeading), arrowEdge: .top) {
+                        ComposeAgentPicker(model: model)
+                    }
+                    if let second = compose.second {
+                        ComposeSecondRecipient(model: model, compose: compose, second: second)
+                    } else if model.composeOffersSecondAgent, !model.composeSecondAgentChoices.isEmpty {
+                        addRecipient
+                    }
+                    if compose.second != nil {
+                        Spacer(minLength: DS.Space.lg)
+                        Text("Side by side, each in its own worktree")
+                            .font(.dsBody).foregroundStyle(.dsTextTertiary).lineLimit(1)
+                    }
                 }
                 ForEach(consequences, id: \.self) { consequence in
                     Text(consequence).font(.dsBody).foregroundStyle(.dsTextTertiary)
@@ -77,6 +89,13 @@ struct ComposeTaskAddress: View {
                 if entry.project == nil {
                     Text("A branch of its own, made from the folder's current branch")
                         .foregroundStyle(.dsTextTertiary)
+                } else if let second = compose.second {
+                    // Each agent gets a worktree of its own; nothing to choose.
+                    VStack(alignment: .leading, spacing: DS.Space.xs) {
+                        ownWorktree(for: model.quickEntryRuntime?.agent.displayName ?? "The first agent")
+                        ownWorktree(for: model.plugins.agent(second.agent)?.displayName ?? second.agent.rawValue)
+                    }
+                    .frame(minHeight: DS.ComposeTask.rowHeight)
                 } else {
                     Button {
                         compose.beginWorkspaceSelection()
@@ -97,6 +116,49 @@ struct ComposeTaskAddress: View {
             }
         }
         .font(.dsCallout)
+    }
+
+    /// An agent and its model on the To line; with two agents, each sits on a token.
+    private func recipient<Trailing: View>(
+        _ agent: String, model: String?, @ViewBuilder trailing: () -> Trailing
+    ) -> some View {
+        HStack(spacing: DS.Space.sm) {
+            Text(agent).foregroundStyle(.dsTextPrimary)
+            if let model { Text(model).foregroundStyle(.dsTextSecondary) }
+            trailing()
+        }
+        .padding(.horizontal, compose.second == nil ? 0 : DS.ComposeTask.tokenPadding)
+        .frame(height: DS.ComposeTask.tokenHeight)
+        .background(compose.second == nil ? .clear : .dsFill, in: .rect(cornerRadius: DS.Radius.control))
+    }
+
+    private var addRecipient: some View {
+        Menu {
+            Section("Also send to") {
+                ForEach(model.composeSecondAgentChoices, id: \.agent.id) { runtime in
+                    Button(runtime.agent.displayName) { model.addComposeAgent(runtime.agent.id) }
+                }
+            }
+        } label: {
+            Image(systemName: "plus").font(.dsCaption).foregroundStyle(.dsTextTertiary)
+                .frame(width: DS.ComposeTask.tokenHeight, height: DS.ComposeTask.tokenHeight)
+                .contentShape(.rect)
+        }
+        .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
+        .disabled(compose.isHeld)
+        .dsHitTarget(DS.ComposeTask.rowHeight)
+        .help("Send the same task to a second agent, in its own worktree")
+        .accessibilityLabel("Add a second agent")
+    }
+
+    private func ownWorktree(for agent: String) -> some View {
+        HStack(spacing: DS.Space.sm) {
+            Text(workspaceBranch).font(.dsMono).foregroundStyle(.dsTextSecondary)
+            Text("→").font(.dsMono).foregroundStyle(.dsTextTertiary)
+            Text("new branch").font(.dsMono)
+            Text("\(agent)'s own worktree").foregroundStyle(.dsTextTertiary)
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private func line<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {

@@ -203,6 +203,7 @@ extension AppModel {
         let wasSelected = selection == task.id
         startingTasks.removeAll { $0 === task }
         history.replace(task.id, with: session.key)
+        taskPairs.replace(task.id, with: session.key)
         if wasSelected {
             session.wantsComposerFocus = !task.isSendRequested
             selection = session.key
@@ -228,6 +229,7 @@ extension AppModel {
 
     func remove(_ task: StartingTask) {
         startingTasks.removeAll { $0 === task }
+        taskPairs.forget(task.id)
         if selection == task.id {
             focusProject(task.project)
         }

@@ -9,6 +9,9 @@ extension DS {
         static let titleGap: CGFloat = 18
         static let titleHeight: CGFloat = 48
         static let rowHeight: CGFloat = 30
+        /// An agent on the To line once there are two.
+        static let tokenHeight: CGFloat = 24
+        static let tokenPadding: CGFloat = 8
         static let ruleGap: CGFloat = 14
         static let editorGap: CGFloat = 24
         static let editorFont = Font.ds(14)

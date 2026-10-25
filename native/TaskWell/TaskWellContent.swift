@@ -11,6 +11,8 @@ struct TaskWellContent: Equatable {
     var progress: TaskActivityNarration.Progress?
     var outcome: TurnSummary?
     var showsReview = false
+    /// A key that leaves what the well is narrating ("esc" while comparing), at its trailing edge.
+    var exitKey: String?
     var attentionSince: Date?
 
     var isWaiting: Bool { status.needsAttention }
@@ -23,6 +25,7 @@ struct TaskWellContent: Equatable {
         }
         if let progress { parts.append("\(progress.completed) of \(progress.total) plan steps") }
         if showsReview { parts.append("Review") }
+        if let exitKey { parts.append("\(exitKey) to go back") }
         return parts.joined(separator: ", ")
     }
 }

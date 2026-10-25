@@ -7,6 +7,8 @@ struct StartingTaskRow: View {
     @Environment(AppModel.self) private var model
     @Environment(\.sidebarAllInView) private var isAllInView
     let task: StartingTask
+    /// One of a brief's two tasks, under the brief's heading: named by its agent.
+    var isPairMember = false
 
     var body: some View {
         Group {
@@ -53,6 +55,7 @@ struct StartingTaskRow: View {
 
     /// The draft's first line once there is one, so a task named by what it's for shows that.
     private var title: String {
+        if isPairMember { return task.agent.displayName }
         let line = task.draft.split(separator: "\n", omittingEmptySubsequences: true).first.map(String.init)
         return line?.trimmingCharacters(in: .whitespaces).nilIfEmpty ?? "New Task"
     }

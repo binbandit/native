@@ -39,7 +39,7 @@ struct ComposeTaskPage: View {
                         model.startComposeTask()
                     } label: {
                         HStack(spacing: DS.Space.sm) {
-                            Text("Start"); Image(systemName: "return")
+                            Text(compose.second == nil ? "Start" : "Start 2 Tasks"); Image(systemName: "return")
                         }
                     }
                     .buttonStyle(.ds(.primary, size: .medium))
@@ -47,7 +47,7 @@ struct ComposeTaskPage: View {
                         !compose.hasContent || compose.pendingAttachments || compose.isReadingWorkspaces
                             || compose.stage != .writing || compose.isHeld
                     )
-                    .accessibilityLabel("Start task")
+                    .accessibilityLabel(compose.second == nil ? "Start task" : "Start 2 tasks")
                 }
             }
             .sharedBackgroundVisibility(.hidden)
@@ -192,6 +192,7 @@ struct ComposeTaskPage: View {
 #Preview("Compose - Devices") { ComposeTaskPreviewFixture(state: "devices") }
 #Preview("Compose - Attachments") { ComposeTaskPreviewFixture(state: "attachments") }
 #Preview("Compose - Changed defaults") { ComposeTaskPreviewFixture(state: "consequences") }
+#Preview("Compose - Two agents") { ComposeTaskPreviewFixture(state: "twoAgents") }
 #Preview("Compose - Failure") { ComposeTaskPreviewFixture(state: "failure") }
 #Preview("Compose - Narrow") { ComposeTaskPreviewFixture(state: "narrow") }
 #endif

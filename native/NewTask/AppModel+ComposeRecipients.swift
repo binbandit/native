@@ -1,0 +1,96 @@
+import ACP
+import Foundation
+import NativePolicy
+
+// A second agent on the Compose page's To line. Start makes one task per agent from the same brief,
+// each in its own worktree, and groups them (TaskPairs) until the user keeps one.
+extension AppModel {
+    /// Agents the brief can also go to: allowed here, ready, and not already on the To line.
+    var composeSecondAgentChoices: [AgentRuntime] {
+        quickEntryRuntimes.filter { runtime in
+            runtime.agent.id != quickEntry.agent && runtime.isAvailable && !runtime.needsSignIn
+                && PolicyCenter.shared.policy.agents.allows(runtime.agent.id.rawValue)
+        }
+    }
+
+    /// Two agents need two worktrees, so a second one is offered only where git can make them.
+    var composeOffersSecondAgent: Bool {
+        composeTask.workspaces.contains { $0.choice == .newWorktree }
+    }
+
+    var composeSecondRuntime: AgentRuntime? {
+        guard let second = composeTask.second else { return nil }
+        return quickEntryRuntimes.first { $0.agent.id == second.agent }
+    }
+
+    func addComposeAgent(_ agent: AgentDefinition.ID) {
+        guard !composeTask.isHeld, composeTask.stage == .writing, agent != quickEntry.agent,
+            composeOffersSecondAgent
+        else { return }
+        composeTask.second = ComposeRecipient(
+            agent: agent, options: composeStartingOptions(for: agent, in: quickEntry.project.flatMap(projects.project)))
+        composeTask.workspace = .newWorktree
+        quickEntry.failure = nil
+    }
+
+    func removeComposeAgent() {
+        guard !composeTask.isHeld, composeTask.stage == .writing else { return }
+        composeTask.second = nil
+        quickEntry.failure = nil
+    }
+
+    /// After the first agent, the project or the device changed, the second stays only while it's
+    /// another agent this device has, with the new project's defaults.
+    func reconcileComposeSecondAgent() {
+        guard let second = composeTask.second else { return }
+        guard second.agent != quickEntry.agent, quickEntryRuntimes.contains(where: { $0.agent.id == second.agent })
+        else {
+            composeTask.second = nil
+            return
+        }
+        composeTask.second = ComposeRecipient(
+            agent: second.agent,
+            options: composeStartingOptions(for: second.agent, in: quickEntry.project.flatMap(projects.project)))
+    }
+
+    /// Why the second agent can't take the brief now, or nil when it can.
+    func composeSecondAgentProblem() -> String? {
+        guard let second = composeTask.second else { return nil }
+        let name = plugins.agent(second.agent)?.displayName ?? second.agent.rawValue
+        guard let runtime = composeSecondRuntime, runtime.isAvailable, !runtime.needsSignIn,
+            PolicyCenter.shared.policy.agents.allows(second.agent.rawValue)
+        else { return "\(name) can't take the task right now. Remove it from To, or start when it's ready." }
+        guard composeTask.workspace == .newWorktree else {
+            return
+                "Two agents each need a worktree of their own, and this folder can't make one. Remove \(name) to start."
+        }
+        return nil
+    }
+
+    /// Starts the brief's second task beside `first`, with the same message and attachments, and
+    /// groups the two.
+    func startComposeSecondTask(beside first: StartingTask) {
+        guard let second = composeTask.second, let runtime = composeSecondRuntime else { return }
+        let task = StartingTask(
+            project: first.project, agent: runtime.agent, isAgentPicked: false, workspaceLabel: "Creating a worktree")
+        task.device = first.device
+        task.workspaceChoice = .newWorktree
+        task.draft = first.draft
+        task.attachments = first.attachments
+        task.configChoices = second.choices
+        task.usesComposePresentation = true
+        task.isSendRequested = true
+        task.wantsComposerFocus = false
+        startingTasks.insert(task, at: min(1, startingTasks.count))
+        taskPairs.add([first.id, task.id])
+        Task { await start(task) }
+    }
+
+    /// Escape before the first task opened takes back both of the brief's tasks.
+    func discardComposePartner(of task: StartingTask) {
+        guard let pair = taskPairs.pair(containing: task.id), let other = pair.other(than: task.id),
+            let partner = startingTask(other), partner.openedSession == nil
+        else { return }
+        discard(partner)
+    }
+}
