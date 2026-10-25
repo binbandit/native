@@ -140,6 +140,7 @@ extension AppModel {
         await findCheckouts(on: host)
         await refreshRemoteHistory(on: host)
         indexRemoteSessions()
+        resumeComposeHold(on: host)
     }
 
     /// Gives a paired host this Mac's agents, as its own host gets them: a host with no Native.app

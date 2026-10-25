@@ -35,26 +35,32 @@ extension GitTaskWorkspaceProvider {
     }
 
     func workspace(for choice: TaskWorkspaceChoice, in project: Project) async throws -> URL {
+        try await prepareWorkspace(for: choice, in: project).folder
+    }
+
+    func prepareWorkspace(for choice: TaskWorkspaceChoice, in project: Project) async throws -> TaskWorkspacePreparation
+    {
         switch choice {
         case .project:
-            return project.url
+            return .init(folder: project.url, createdForTask: false)
         case .newWorktree:
             let prefix = git.settings.branchPrefix(
                 forProjectAt: project.url, gitHubLogin: await gitHubLogin(for: project))
             guard let checkout = try await git.prepareTaskCheckout(in: project.url, prefix: prefix, forceWorktree: true)
             else { throw TaskWorkspaceSelectionError("This folder is not a git repository. Use the project folder.") }
-            return checkout.folder
+            return .init(folder: checkout.folder, createdForTask: true)
         case .branch(let branch):
             let repository = try await git.requireRepository(at: project.url)
             // Never switch a checkout under another task. Reuse its exact folder when checked out.
             if let existing = try await repository.worktrees().first(where: { $0.branch == branch && !$0.isPrunable }) {
-                return existing.path
+                return .init(folder: existing.path, createdForTask: false)
             }
             guard try await repository.hasBranch(branch) else {
                 throw TaskWorkspaceSelectionError(
                     "That branch is no longer available. Close this picker and try again.")
             }
-            return try await git.prepareTaskCheckout(in: project.url, existingBranch: branch).folder
+            let checkout = try await git.prepareTaskCheckout(in: project.url, existingBranch: branch)
+            return .init(folder: checkout.folder, createdForTask: true)
         case .worktree(let folder):
             let repository = try await git.requireRepository(at: project.url)
             guard
@@ -64,7 +70,7 @@ extension GitTaskWorkspaceProvider {
             else {
                 throw TaskWorkspaceSelectionError("That worktree is no longer available. Choose another workspace.")
             }
-            return existing.path
+            return .init(folder: existing.path, createdForTask: false)
         }
     }
 

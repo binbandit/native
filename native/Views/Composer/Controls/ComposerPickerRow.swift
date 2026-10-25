@@ -12,6 +12,8 @@ struct ComposerPickerRow: View {
     var symbol: String?
     let title: String
     let detail: String?
+    /// Short state, alongside the name, when a description would waste a second line.
+    var status: String? = nil
     /// What the choice can't do as asked here, said plainly under the description.
     var note: String?
     let trailing: Trailing
@@ -49,6 +51,9 @@ struct ComposerPickerRow: View {
                     }
                 }
                 Spacer(minLength: 0)
+                if let status {
+                    Text(status).font(.dsCaption).foregroundStyle(.dsTextTertiary)
+                }
                 trailingMark
             }
             .padding(.horizontal, DS.Space.md)

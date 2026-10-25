@@ -22,6 +22,11 @@ extension ComposerView {
         let text = session.draft.trimmingCharacters(in: .whitespacesAndNewlines)
         let attachments = session.attachments
         guard !text.isEmpty || !attachments.isEmpty else { return }
+        if let page {
+            guard attachmentsBlockedReason == nil, !flagMissingAttachments() else { return }
+            page.start()
+            return
+        }
         // `/clear` and `/goal …` are Native's own and never reach the agent, unless the user picked
         // the agent's command of that name from the list.
         let isAgentCommand = agentCommandDraft.map(session.draft.hasPrefix) ?? false
