@@ -6,7 +6,7 @@ import SwiftUI
 extension ComposerView {
     /// The selection in the draft, when the editor has reported one that still fits it.
     var selectedRange: Range<String.Index>? {
-        guard case .selection(let range)? = selection?.indices, range.upperBound <= session.draft.endIndex else {
+        guard case .selection(let range)? = selection?.indices, range.upperBound <= draftText.endIndex else {
             return nil
         }
         return range
@@ -14,7 +14,7 @@ extension ComposerView {
 
     /// Whether the caret is in a fenced code block.
     var isCaretInCodeBlock: Bool {
-        selectedRange.map { PromptCode.isInBlock($0.upperBound, in: session.draft) } ?? false
+        selectedRange.map { PromptCode.isInBlock($0.upperBound, in: draftText) } ?? false
     }
 
     /// The hint in a code block: Return's new line, and what ⌘Return does instead, which is what
@@ -31,8 +31,8 @@ extension ComposerView {
     /// Applies a code edit to the draft at the selection, and selects what it says.
     func editCode(_ edit: (String, Range<String.Index>) -> PromptCode.Edit) {
         guard let range = selectedRange else { return }
-        let result = edit(session.draft, range)
-        session.draft = result.text
+        let result = edit(draftText, range)
+        draftText = result.text
         selection =
             result.selection.isEmpty
             ? TextSelection(insertionPoint: result.selection.lowerBound) : TextSelection(range: result.selection)

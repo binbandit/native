@@ -7,6 +7,7 @@ struct FileMentionRow: View {
     let path: String
     let isChanged: Bool
     let isHighlighted: Bool
+    var counts: FileReferenceProjection.Counts?
 
     private var isFolder: Bool {
         FileMention.isFolder(path)
@@ -19,7 +20,10 @@ struct FileMentionRow: View {
 
     private var accessibilityLabel: String {
         let notes: [String?] = [isFolder ? "folder" : nil, isChanged ? "changed" : nil]
-        return ([path] + notes.compactMap(\.self)).joined(separator: ", ")
+        return
+            ([path] + notes.compactMap(\.self)
+            + (counts.map { [DSFormat.spokenDiffStat(added: $0.added, removed: $0.removed)] } ?? [])).joined(
+                separator: ", ")
     }
 
     private var folder: Substring {
@@ -42,7 +46,11 @@ struct FileMentionRow: View {
                 .lineLimit(1)
                 .truncationMode(.head)
             Spacer(minLength: 0)
-            if isChanged {
+            if let counts {
+                DiffStatsText(stats: DiffStats(added: counts.added, removed: counts.removed))
+                    .font(DS.ComposerQuote.numberFont)
+                    .fixedSize()
+            } else if isChanged {
                 // Uncommitted files are marked, since they're often the ones being worked on.
                 StatusDot(color: .dsWarning)
                     .help("Changed")
@@ -60,7 +68,8 @@ struct FileMentionRow: View {
             FileMentionRow(path: "native/Views/Composer/ComposerView.swift", isChanged: false, isHighlighted: true)
             FileMentionRow(path: "native/Views/Composer/Sections/", isChanged: false, isHighlighted: false)
             FileMentionRow(
-                path: "native/Views/Composer/Sections/QueuedPromptsSection.swift", isChanged: true, isHighlighted: false
+                path: "native/Views/Composer/Sections/QueuedPromptsSection.swift", isChanged: true,
+                isHighlighted: false, counts: .init(added: 3, removed: 1)
             )
             FileMentionRow(path: "README.md", isChanged: false, isHighlighted: false)
         }

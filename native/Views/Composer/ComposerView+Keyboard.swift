@@ -52,7 +52,7 @@ extension ComposerView {
         case .dismissOverlay:
             overlayDismissal?.dismiss()
         case .recallLastPrompt:
-            session.draft = session.state.lastPrompt ?? ""
+            draftText = session.state.lastPrompt ?? ""
         case .editLastQueuedPrompt:
             if let last = session.queuedPrompts.last {
                 edit(last)
@@ -88,7 +88,7 @@ extension ComposerView {
     private func handleAttachmentKey(_ press: KeyPress) -> KeyPress.Result? {
         let attachments = session.attachments
         let draft = DraftAttachmentKeys.Draft(
-            isEmpty: session.draft.isEmpty, isCaretAtStart: isCaretAtStart,
+            isEmpty: draftText.isEmpty, isCaretAtStart: isCaretAtStart,
             isComposing: PlatformTextInput.isComposing)
         let outcome = DraftAttachmentKeys.outcome(
             for: DraftAttachmentKeys.Key(press), selection: selectedAttachmentIndex, count: attachments.count,
@@ -102,7 +102,7 @@ extension ComposerView {
 
     /// The caret before the first character with nothing selected, where ← reaches the chips.
     private var isCaretAtStart: Bool {
-        guard case .selection(let range)? = selection?.indices else { return session.draft.isEmpty }
-        return range.isEmpty && range.lowerBound == session.draft.startIndex
+        guard case .selection(let range)? = selection?.indices else { return draftText.isEmpty }
+        return range.isEmpty && range.lowerBound == draftText.startIndex
     }
 }

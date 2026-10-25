@@ -4,6 +4,7 @@ import SwiftUI
 
 struct SessionView: View {
     let session: SessionModel
+    @Experiment(.composerNext) private var composerNext
     /// The subagent whose conversation is open in the inspector.
     @State private var openSubagent: SessionID?
     /// Whether the inspector shows the task's git changes (⌘⇧D) instead of a subagent.
@@ -22,6 +23,10 @@ struct SessionView: View {
     @Experiment(.composeTask) private var usesComposeTask
     private static let subagentInspectorWidth: CGFloat = 420
 
+    private var canQuote: Bool {
+        composerNext && session.acceptsPrompts && session.permissionRequests.isEmpty
+    }
+
     var body: some View {
         Group {
             if usesSessionTools || usesTaskWell || (usesComposeTask && session.usesComposePresentation) {
@@ -37,6 +42,18 @@ struct SessionView: View {
                 .sharedBackgroundVisibility(.hidden)
         }
         .taskWorkspacePresentation(session: session)
+        .modifier(ComposerFileReferenceWiring(session: session))
+        .onChange(of: canQuote) { _, enabled in
+            if !enabled, let source = session.quoteSelectionSource { session.clearQuoteSelection(source: source) }
+        }
+        .environment(
+            \.composerQuoteContext,
+            canQuote
+                ? ComposerQuoteContext(
+                    task: session.clientID, quotes: session.composerQuotes,
+                    selectedSource: session.quoteSelectionSource,
+                    select: { session.selectQuote($1, source: $0) }, quote: session.quote,
+                    clear: { session.clearQuoteSelection(source: $0) }) : nil)
     }
 
     private var standardBody: some View {
