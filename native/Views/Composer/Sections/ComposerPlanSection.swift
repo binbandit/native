@@ -11,6 +11,7 @@ struct ComposerPlanSection: View {
     let isWorking: Bool
     @Binding var isExpanded: Bool
     var presentation: Presentation = .progress
+    var showMore: (() -> Void)?
 
     var body: some View {
         switch presentation {
@@ -32,7 +33,11 @@ struct ComposerPlanSection: View {
                     isExpanded
                         ? "Show fewer steps" : "Show \(plan.entries.count - DS.PlanReview.visibleSteps) more steps"
                 ) {
-                    withAnimation(.dsDisclosure) { isExpanded.toggle() }
+                    if let showMore {
+                        showMore()
+                    } else {
+                        withAnimation(.dsDisclosure) { isExpanded.toggle() }
+                    }
                 }
                 .buttonStyle(.plain).font(.dsBody).foregroundStyle(.dsTextSecondary)
                 .dsHitTarget(DS.Size.controlXS)

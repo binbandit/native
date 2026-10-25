@@ -109,7 +109,8 @@ struct SessionRow<Accessory: View>: View {
             AllInViewTaskRow(
                 title: title, status: TaskStatus(session), isSelected: isSelected,
                 isPeeking: model.taskPeek.request?.task == summary.id, isUnread: isUnread,
-                ask: attention?.sentence ?? recoverySentence, attentionSince: attention?.since,
+                ask: model.taskPeek.homeIsVisible ? nil : attention?.sentence ?? recoverySentence,
+                attentionSince: attention?.since,
                 answersShortcut: attention?.answersShortcut == true,
                 askShortcut: CommandRegistry.shared.keyboardShortcut(for: .taskAnswerOldestAsk),
                 unavailable: unavailableSentence,
@@ -332,6 +333,20 @@ struct SessionContextUsage: View {
             }
         }
         .defaultAppStorage(defaults)
+        .frame(width: DS.Size.sidebarWidth - DS.Space.lg)
+    }
+    .sidebarPreviewEnvironment(app)
+}
+#Preview("Task rows - Asks folded on Home") {
+    let app = HomeNextPreviewFixtures.model(.busy)
+    let _ = app.setHomeNextVisible(true)
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xxs) {
+            ForEach(app.sessionList) { summary in
+                SessionRow(summary: summary, canMoveUp: true, canMoveDown: true, accessory: EmptyView()) {}
+            }
+        }
+        .environment(\.sidebarAllInView, true)
         .frame(width: DS.Size.sidebarWidth - DS.Space.lg)
     }
     .sidebarPreviewEnvironment(app)
