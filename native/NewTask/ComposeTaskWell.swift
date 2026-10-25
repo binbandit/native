@@ -14,7 +14,9 @@ struct ComposeTaskWell: View {
     }
 
     private var readiness: TaskWellContent {
-        let agent = model.quickEntryRuntime?.agent.displayName ?? compose.editor?.agentName ?? "Choose agent"
+        let first = model.quickEntryRuntime?.agent.displayName ?? compose.editor?.agentName ?? "Choose agent"
+        let secondName = compose.second.map { model.plugins.agent($0.agent)?.displayName ?? $0.agent.rawValue }
+        let agent = secondName.map { "\(first) and \($0)" } ?? first
         if compose.stage != .writing { return .init(status: .starting, agent: agent, verb: "Starting") }
         if entry.project == nil { return .init(status: .idle, agent: agent, verb: "· Needs a folder") }
         if model.composeDeviceOption?.canStart == false {
@@ -39,6 +41,11 @@ struct ComposeTaskWell: View {
         }
         if model.quickEntryRuntime?.isAvailable == false {
             return .init(status: .needsInput, agent: agent, verb: "Needs attention")
+        }
+        if let secondName, let runtime = model.composeSecondRuntime {
+            if runtime.needsSignIn { return .init(status: .needsInput, agent: "", verb: "Sign in to \(secondName)") }
+            if runtime.status == .starting { return .init(status: .starting, agent: secondName, verb: "Starting") }
+            if !runtime.isAvailable { return .init(status: .needsInput, agent: secondName, verb: "Needs attention") }
         }
         return .init(status: .idle, agent: agent, verb: "· Ready")
     }

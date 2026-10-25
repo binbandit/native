@@ -26,7 +26,7 @@ extension NativeCommand {
                 instruction.wrappedValue = true
             } else {
                 if let session = $0.session, ExperimentStore.shared.value(of: .composerNext),
-                    session.permissionRequests.isEmpty
+                    session.permissionRequests.isEmpty, session.pendingQuestion == nil
                 {
                     let quotes = PlatformQuoteSelection.capture(task: session.clientID) ?? session.quoteSelection
                     session.quote(quotes)

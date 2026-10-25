@@ -7,7 +7,10 @@ let package = Package(
     products: [.library(name: "PluginCatalog", targets: ["PluginCatalog"])],
     dependencies: [.package(path: "../NativePolicy")],
     targets: [
-        .target(name: "PluginCatalog", dependencies: [.product(name: "NativePolicy", package: "NativePolicy")]),
+        .target(
+            name: "PluginCatalog", dependencies: [.product(name: "NativePolicy", package: "NativePolicy")],
+            // Optimize infrequent operations for size; the app and streaming path stay at -O.
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         .testTarget(name: "PluginCatalogTests", dependencies: ["PluginCatalog"]),
     ]
 )

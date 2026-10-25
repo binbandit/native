@@ -42,7 +42,8 @@ bundle=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$app/Contents/I
 [ "$fixture" = 1 ] && "$root/scripts/perf/fixture.sh" "$bundle" "/private/tmp/native-perf/$name/fixture"
 rm -rf "$output"
 # The same arguments run-isolated.sh gives the instance.
-open -n "$app" --args -agentDefaults.codex.model gpt-6.1-sol -gitWorktreesFolder "$HOME/.native/worktrees-dev/$name" \
+open -n "$app" --args -defaultAgent claude-code -agentDefaults.claude-code.model haiku \
+    -agentDefaults.claude-code.effort low -gitWorktreesFolder "$HOME/.native/worktrees-dev/$name" \
     ${app_args[@]+"${app_args[@]}"}
 pid=""
 for _ in $(seq 1 2000); do

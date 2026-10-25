@@ -93,7 +93,7 @@ there to catch regressions in agent startup.
 
 - **Tasks.** `drive <pid> menu File "New Task"`, then `drive <pid> prompt "…"`; `drive <pid>
   enabled Task Stop` says whether a turn is still running.
-- **Streaming.** Start a long Codex turn (`gpt-6.1-sol`, which the instance uses), then
+- **Streaming.** Start a long Claude Code turn (Haiku, which the instance uses), then
   `sample <pid> 20` for the main thread and `rusage` for CPU and footprint growth.
 - **Growth and leaks.** Note `footprint`, run the workload (open and archive 20 tasks, switch
   tasks, toggle Settings, the terminal and the inspectors), note it again and run `leaks <pid>`.

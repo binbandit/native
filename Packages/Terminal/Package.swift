@@ -9,7 +9,10 @@ let package = Package(
         .library(name: "Terminal", targets: ["Terminal"])
     ],
     targets: [
-        .target(name: "Terminal"),
+        .target(
+            name: "Terminal",
+            // Optimize infrequent operations for size; the app and streaming path stay at -O.
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         .testTarget(name: "TerminalTests", dependencies: ["Terminal"]),
     ]
 )

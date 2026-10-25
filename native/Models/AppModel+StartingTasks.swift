@@ -84,6 +84,10 @@ extension AppModel {
             await restart(task.agent.id)
             guard !task.isDiscarded else { return }
         }
+        // One of a brief's tasks starts from the commit its partner does, chosen again if need be.
+        if let pair = taskPairs.pair(containing: task.id) {
+            guard await pinSharedWorktreeStart(for: pair.tasks.compactMap(startingTask)) else { return }
+        }
         await start(task)
     }
 
@@ -157,7 +161,7 @@ extension AppModel {
             } else {
                 fail(
                     task, "Couldn't start a \(task.agent.displayName) task",
-                    error.localizedDescription.withoutTerminalEscapes)
+                    ((error as? RPCError)?.detail ?? error.localizedDescription).withoutTerminalEscapes)
             }
         }
     }
@@ -203,6 +207,7 @@ extension AppModel {
         let wasSelected = selection == task.id
         startingTasks.removeAll { $0 === task }
         history.replace(task.id, with: session.key)
+        taskPairs.replace(task.id, with: session.key)
         if wasSelected {
             session.wantsComposerFocus = !task.isSendRequested
             selection = session.key
@@ -228,6 +233,7 @@ extension AppModel {
 
     func remove(_ task: StartingTask) {
         startingTasks.removeAll { $0 === task }
+        taskPairs.forget(task.id)
         if selection == task.id {
             focusProject(task.project)
         }

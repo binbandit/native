@@ -1,3 +1,4 @@
+#if os(macOS)
 import Foundation
 import IOKit.ps
 import NativeHostProtocol
@@ -21,3 +22,4 @@ extension PowerState {
         return state
     }
 }
+#endif

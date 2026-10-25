@@ -9,7 +9,10 @@ let package = Package(
     ],
     dependencies: [.package(path: "../ApprovalAnalysis"), .package(path: "../CodeThemes")],
     targets: [
-        .target(name: "NativePolicy", dependencies: ["ApprovalAnalysis", "CodeThemes"]),
+        .target(
+            name: "NativePolicy", dependencies: ["ApprovalAnalysis", "CodeThemes"],
+            // Optimize infrequent operations for size; the app and streaming path stay at -O.
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         .testTarget(name: "NativePolicyTests", dependencies: ["NativePolicy"]),
     ]
 )

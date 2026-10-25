@@ -1,3 +1,4 @@
+#if os(macOS)
 import Foundation
 import IOKit.ps
 
@@ -29,3 +30,4 @@ final class PowerSourceMonitor {
         }
     }
 }
+#endif

@@ -30,18 +30,32 @@ MISSING_CONFORMANCE = re.compile(
 )
 
 
+# Braces inside string literals and comments (sample code in a preview) don't open or close blocks.
+SKIPPED = re.compile(r'(#*)"""(?:\\.|[^\\])*?"""\1|(#*)"(?:\\.|[^"\\\n])*"\2|//[^\n]*|/\*.*?\*/', re.DOTALL)
+
+
+def matching_brace(text, opening):
+    depth = 0
+    position = opening
+    while position < len(text):
+        if skipped := SKIPPED.match(text, position):
+            position = skipped.end()
+            continue
+        depth += {"{": 1, "}": -1}.get(text[position], 0)
+        if depth == 0:
+            return position
+        position += 1
+    return None
+
+
 def strip_previews(text):
     start = 0
     while (preview := text.find("#Preview", start)) >= 0:
         opening = text.find("{", preview)
         if opening < 0:
             raise ValueError("#Preview has no body")
-        depth = 0
-        for end in range(opening, len(text)):
-            depth += {"{": 1, "}": -1}.get(text[end], 0)
-            if depth == 0:
-                break
-        else:
+        end = matching_brace(text, opening)
+        if end is None:
             raise ValueError("#Preview has an unclosed body")
         # Keep diagnostics at the original line numbers, including declarations below previews.
         replacement = "\n" * text[preview : end + 1].count("\n")

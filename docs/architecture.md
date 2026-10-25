@@ -217,8 +217,17 @@ workspace into the existing `StartingTask` pipeline. Address lines fold, the sha
 appears at the transcript's final width, and the composer settles below it. Startup failure uses
 the existing retry view with the snapshot intact. An explicitly held offline draft persists in
 Native's own preferences and resumes through the same pipeline when its paired host reconnects;
-Cancel Hold keeps it editable. The experiment remains off by default. Multiple agents and Compare /
-Keep are the next slice.
+Cancel Hold keeps it editable. The experiment remains off by default.
+
+A second agent on the To line sends the same brief to both. Start makes two `StartingTask`s, each
+with its own worktree, recorded as one `TaskPair` (`native/TaskPairs/`, saved in Native's
+preferences). The sidebar lists an undecided pair as a group under the brief's title
+(`TaskPairGrouping` in `Packages/TaskList`). When both are at rest, a card at the end of either
+transcript (the transcript's `TranscriptTrailer` slot) counts what each changed since the commit
+they share (`Repository.mergeBase`, snapshots, `treeChanges`), and Compare shows the two versions
+side by side, file by file, with the transcript's `DiffView`. Keep archives the other task through
+the existing archive path, so its worktree is put away with its branch and a checkpoint, and one
+Undo brings it back and regroups the pair.
 
 ### Home Next
 
@@ -456,6 +465,24 @@ program counts and diagnostics, behind the same off-by-default Fine print gate. 
 counting; Settings can purge it; nothing exports it. See [command knowledge](command-knowledge.md)
 for the schema, coverage, extension precedence, and storage contract. Host-side measurements remain
 a later slice, subject to managed network policy.
+
+Questions and failed starts use the same family. With the gate on, `SessionQuestionView` puts
+the oldest agent question in the composer's place through `AnnotatedQuestionView` (choices on digit
+keycaps, the composer's field for an answer in the user's own words), answered through
+`SessionModel.answerQuestion`. A starting task that fails shows `AgentStartFailureView` above its
+kept message. `NativeSetup`'s `AgentStartDiagnostic` reads a compiler-style `path:line:column:`
+location from the agent's own report (codex-acp puts it in the JSON-RPC error's `data`, which
+`RPCError.detail` keeps); when the report names only the setting ("unknown variant ... in
+`approval_policy`", as codex-acp words it once a task brings MCP servers), the one line of the
+agent's declared settings files that sets it stands in. It offers a fix-it only when exactly one value the agent lists is close
+to the one it rejected. The agent's path authorizes nothing: `AgentStartFile.mayRead` opens only a
+settings file the agent's plugin declares (`AgentManifest.settingsFiles`, such as Codex's
+`~/.codex/config.toml`) on this Mac, compared after symbolic links resolve, with a link required
+to keep the file's kind; anything else stays a location without contents. Lines whose key names a
+credential show the key alone, and lines holding a URL password, bearer header or well-known token
+are hidden whole. A fix-it is applied only on the user's click: `AgentStartFile` checks that
+the line still holds the rejected value, keeps the original as `<file>.native-backup`, and keeps
+the file's permissions and symbolic links.
 
 Irreversible requests use the tested `ApprovalHold` state machine: 0.6 seconds, early release
 cancels, 0.4 seconds of acknowledgement, five-second accessibility confirmation, and no Always

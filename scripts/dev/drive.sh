@@ -21,7 +21,7 @@ root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 
 # Projects to play with: a scratch clone of this repo (its origin a bare repo next to it, so pushes
 # stay on this Mac) and a tiny Python repo with one failing test, written as the instance's project
-# list along with Codex as the default agent. Extra folders are added after them. Also installs the
+# list along with Claude Code as the default agent. Extra folders are added after them. Also installs the
 # host tests' scriptable agent as "Fake Agent", for failures on cue (docs/playtesting.md).
 seed() {
     local folder="/private/tmp/native-playtest/$name"
@@ -130,8 +130,8 @@ JSON
         projects+="${projects:+,}{\"id\":\"$(uuidgen)\",\"url\":\"file://$path/\"}"
     done
     defaults write "$id" projects -data "$(printf '[%s]' "$projects" | xxd -p | tr -d '\n')"
-    defaults write "$id" defaultAgent codex
-    echo "seeded $name: projects $folder/native, $folder/sample${*:+, $*}; Codex is the default agent"
+    defaults write "$id" defaultAgent claude-code
+    echo "seeded $name: projects $folder/native, $folder/sample${*:+, $*}; Claude Code is the default agent"
     if [ -f "$plugin/plugin.json" ]; then echo "Fake Agent installed from $plugin"; fi
 }
 

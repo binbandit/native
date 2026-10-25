@@ -36,8 +36,8 @@ with its owner: Brayden is often at it while you play, and a dozen agents build 
 - **Never act on real GitHub.** Pull Requests reads Brayden's own account through `gh`: look, but
   never comment, review, approve, merge or close there, and never push anywhere but the seeded clone's
   local origin.
-- **Real sessions use Codex with `gpt-6.1-sol`**, the cheapest; your instance defaults to it. Use
-  another agent only when the behavior under test belongs to it.
+- **Real sessions use Claude Code on Haiku at Low effort**, the cheapest; your instance defaults to
+  it. Keep prompts tiny. Use another agent only when the behavior under test belongs to it.
 - **Nothing counts while the screen is locked.** Windows aren't laid out then, screenshots fail and
   the accessibility tree is incomplete. `drive.sh <name> screen` says `locked` or `unlocked`; the
   driver warns on every command and refuses screenshots while locked. Never try to unlock or wake it.
@@ -68,7 +68,7 @@ instance shares nothing with Brayden's Native or anyone else's instance:
 | Background host and its sessions | its own launchd job, socket and database under `~/Library/Application Support/Native/Channels/<channel>` (the launch prints the channel) |
 | Task worktrees | `~/.native/worktrees-dev/<name>` |
 
-Instances start muted and with Codex on `gpt-6.1-sol`. Launching again (`run-isolated.sh playtest
+Instances start muted, with new tasks on Claude Code with Haiku at Low effort. Launching again (`run-isolated.sh playtest
 --no-build` skips the build) replaces the app but leaves its host running, exactly like a person
 quitting and reopening Native, which is how durability is tested.
 
@@ -96,7 +96,7 @@ have (`--no-build`) and say which commit it is (`git log -1 --format=%h` when yo
   turns.
 - **Fake Agent**, a scripted agent from the host's tests, installed as a plugin for this instance
   only. It never calls a model, so it's free, and it fails on cue ([below](#failures-on-cue)).
-- Both folders as the instance's projects, with Codex as the default agent.
+- Both folders as the instance's projects, with Claude Code as the default agent.
 
 Seeding again keeps the folders and rewrites the project list; `seed <folder>…` adds more projects,
 and `seed --remove` deletes the folder. To see Native as a new user does, skip seeding:
@@ -109,12 +109,14 @@ Launch arguments go after `--`: `scripts/dev/run-isolated.sh playtest --no-build
 | `-appearance.mode light` / `dark` / `system` | Appearance, for checking both |
 | `-nativeWindowFrame "x y w h"` | Places the window (points, from the bottom left of the main display), so screenshots are the same size every time |
 | `-nativeDate 2026-12-25` | Pretends it's that day (celebrations, relative times) |
-| `-agentDefaults.codex.model <id>` | Codex's model; already `gpt-6.1-sol` |
+| `-defaultAgent <agent id>` | The agent new tasks start with; already `claude-code` |
+| `-agentDefaults.claude-code.model <id>` | Claude Code's model; already `haiku` |
+| `-agentDefaults.claude-code.effort <id>` | Claude Code's effort; already `low` |
 | `-nativeOpenSession <agent>/<session id>` | Opens that session at launch (`docs/performance.md`) |
 | `-pluginsDirectory <folder>` | Loads plugins from there; `seed` already points it at its plugins |
 | `-nativeHostRefused YES` | Acts as if background running were refused, to see the fallback (`docs/durability.md`) |
 | `-quickEntryFixture selection` | With `NativeComposeTask` on, Cmd-N renders a Quick Entry preview state. Also accepts `empty`, `firstLaunch`, `failure`, `offline`, `narrow`, `devices`, `agents`, `projects`. Debug only; the device fixtures never connect to a paired host. Omit this argument for behavior checks. |
-| `-composeTaskFixture ready` | With `NativeComposeTask` on, Shift-Command-N renders the Compose page with inert fixture content. Also accepts `empty`, `firstLaunch`, `failure`, `offline`, `held`, `narrow`, `agents`, `devices`, `folding`, `message`, `settled`. Omit for behavior checks. |
+| `-composeTaskFixture ready` | With `NativeComposeTask` on, Shift-Command-N renders the Compose page with inert fixture content. Also accepts `empty`, `firstLaunch`, `failure`, `offline`, `held`, `narrow`, `agents`, `devices`, `twoAgents`, `folding`, `message`, `settled`. Omit for behavior checks. |
 | `-framePacing YES` | Logs dropped frames once a second (`drive.sh <name> logs --stream`) |
 
 For a long transcript without spending anything, install the long-session fake agent
@@ -172,7 +174,7 @@ stands for `scripts/dev/drive.sh playtest`.
 
 ```sh
 # A new task: from Home's agent cards, a project's "+" (last-used agent), ⌘N, or any agent by name
-$D press "New Codex task"
+$D press "New Claude Code task"
 $D press "New Task in sample"
 $D menu File "New Task"
 $D press "New Task With" --item "Fake Agent"
@@ -293,7 +295,7 @@ state (seeded, or `--reset` for a first launch) and write down the commit you bu
    without help? Home with nothing in it, agents listed with their real state (installed, signed in,
    missing). Adding a project opens a folder picker, which is out of bounds: look at everything up to
    it, then quit, seed and relaunch to carry on from a first project and a first task.
-2. **Daily coding loop.** In the `native` clone with Codex: start a task ("add a line to README.md
+2. **Daily coding loop.** In the `native` clone with Claude Code: start a task ("add a line to README.md
    saying where the playtest guide is"), watch it work, approve or review what it asks, read the
    diff, ask for a change, commit it, start the next task. Then the same in `sample` ("fix the
    failing test"). This is the one that matters most: is it faster and calmer than a terminal?
@@ -323,11 +325,11 @@ Never break the real Mac to test a failure. Each of these breaks only your insta
 
 | Failure | How |
 | --- | --- |
-| Agent crashes mid-turn | Fake Agent: send `crash-once hello`. Or with Codex mid-turn: `drive.sh <name> processes` shows the instance's process tree; `kill` the `codex-acp` pid under its Native Host |
+| Agent crashes mid-turn | Fake Agent: send `crash-once hello`. Or with Claude Code mid-turn: `drive.sh <name> processes` shows the instance's process tree; `kill` the `claude-agent-acp` pid under its Native Host |
 | Network error | Fake Agent: `flaky-once hello` fails the first time with a network error |
 | A turn that won't stop | Fake Agent: `stubborn 40`, then Stop |
 | A long turn | Fake Agent: `slow 40` streams 40 ticks, 300 ms apart |
-| Tool approval | Fake Agent: `permission` asks to approve a tool call; Codex in a stricter permission mode (⌘⇧M) asks too |
+| Tool approval | Fake Agent: `permission` asks to approve a tool call; Claude Code in a stricter permission mode (⌘⇧M), like Manual, asks too |
 | A question for the user | Fake Agent: `question` |
 | Agent not installed | Add a plugin whose command doesn't exist (below), relaunch |
 | Signed out | A Codex variant with an empty `CODEX_HOME` (below). Don't press Sign in: it opens a browser |

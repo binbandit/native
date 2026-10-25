@@ -41,6 +41,7 @@ extension AppModel {
         guard composeCanRevealTask else { return }
         composeTask.isPresented = false
         composeTask.editor = nil
+        composeTask.second = nil
         composeTask.starting = nil
     }
 }

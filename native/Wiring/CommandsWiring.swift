@@ -35,6 +35,7 @@ enum CommandsWiring {
         registry.register(NativeCommand.newTasks(model: model))
         registry.register(NativeCommand.coordinatorTasks(model: model))
         registry.register(NativeCommand.quickEntry(model: model))
+        registry.register(NativeCommand.taskPairs(model: model))
         registry.register([.projectSettings(model: model, settings: settings), .projectRefresh(model: model)])
         registry.register([.pullRequestTasks(features.pullRequestTasks)])
         registry.register([.gitCleanUpMerged(features.gitCleanup, model: model)])
@@ -64,7 +65,11 @@ enum CommandsWiring {
         registry.register(NativeCommand.automation(BuiltInPlugins.automation.center))
         registry.register(NativeCommand.windowView)
         registry.register(NativeCommand.appearance(features.appearance))
-        registry.register([.gitChanges, .keepAwake(features.keepAwake), .statusBar(features.statusBar)])
+        registry.register([.gitChanges])
+        if KeepAwakeController.isSupported {
+            registry.register([.keepAwake(features.keepAwake)])
+        }
+        registry.register([.statusBar(features.statusBar)])
         registry.register(NativeCommand.sessionTools)
         registry.register(NativeCommand.taskWell)
         registry.register(NativeCommand.celebrations(features.celebrations, settings: settings))

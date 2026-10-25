@@ -39,7 +39,9 @@ struct NativeMenuBar: Commands {
             runner: projectActions, menu: menu,
             target: { [model] in ProjectActionsWiring.target(for: $0, model: model) })
         TerminalCommands(menu: menu)
-        KeepAwakeCommands(controller: keepAwake, menu: menu)
+        if KeepAwakeController.isSupported {
+            KeepAwakeCommands(controller: keepAwake, menu: menu)
+        }
         StatusBarCommands(registry: statusBar, menu: menu)
     }
 
@@ -208,6 +210,11 @@ private struct SessionCommands: Commands {
 
             Divider()
 
+            if model.offersTaskPairs {
+                CommandMenuItem(.taskCompareVersions, in: menu)
+                CommandMenuItem(.taskKeepVersion, in: menu)
+                Divider()
+            }
             CommandMenuItem(.sessionRename, in: menu)
             CommandMenuItem(.sessionArchive, in: menu)
             CommandMenuItem(.sessionTogglePin, in: menu)

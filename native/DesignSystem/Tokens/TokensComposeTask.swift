@@ -9,10 +9,15 @@ extension DS {
         static let titleGap: CGFloat = 18
         static let titleHeight: CGFloat = 48
         static let rowHeight: CGFloat = 30
+        /// An agent on the To line once there are two.
+        static let tokenHeight: CGFloat = 24
+        static let tokenPadding: CGFloat = 8
         static let ruleGap: CGFloat = 14
         static let editorGap: CGFloat = 24
         static let editorFont = Font.ds(14)
         static let editorLineSpacing: CGFloat = 7
+        /// `editorLineSpacing` in the rich-text editor (`ComposerMetrics.editorRichLineLeading`).
+        static let editorRichLineLeading: CGFloat = 5.5
         static let editorInsets = EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
         static let editorMaxHeight: CGFloat = 1200
         static let popoverWidth: CGFloat = 372

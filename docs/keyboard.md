@@ -104,6 +104,24 @@ only while the card has focus; ⌘1 – ⌘9 stay task navigation.
 | Return | Next question, or send the answers after the last |
 | Tab / Shift-Tab | Move between the card, its free-text field and the composer |
 
+With Fine print (`NativeComposerNext`) enabled, the question takes the composer's place, in the
+approval's frame: "Claude Code asks", a `1 of 2` pager, choices on digit keycaps (a choice the agent
+recommends is tagged), Skip and Next (Return). The composer's field below becomes "Or answer in your
+own words"; Return there answers the shown question with what you typed. The draft waits
+underneath until the questions are answered, and ⌘L focuses the answer field.
+
+### A task that couldn't start (Fine print)
+
+With Fine print enabled, a task whose agent couldn't start shows why in the composer's place,
+above its message. When the agent's report names a file and line, the card shows that line with
+the part it couldn't read underlined, and, when one value it accepts is close to the one it
+rejected, a fix-it that changes it (keeping the original as `<file>.native-backup`).
+
+| Keys | Action |
+| --- | --- |
+| ⌘R | The card's main action: Fix and Retry (or Fix and Restart), Retry, Sign In, or Start in Project Folder |
+| ⌥⌘O | Show or hide what the agent reported |
+
 ## Command palette
 
 ⌘K opens the palette over the window: every command that can run right now, plus the tasks in the
@@ -520,6 +538,21 @@ Cancel Hold keeps the draft editable. Escape cancels a pending Start until its t
 After a background start, the confirmation's Open button opens that task. Quick Entry
 captures only a selection inside Native; global shortcuts and capture from other apps are not
 part of this experiment.
+
+### Two agents
+
+The page's To line can name a second agent (the + after the first). Start then makes two tasks
+from the one brief, each in its own worktree, grouped in the sidebar under the brief's title. When
+both are at rest, the card at the end of either transcript compares them and keeps one. Keeping
+one archives the other: its worktree goes, its branch and uncommitted work are saved as a
+checkpoint, and Undo (the toast, or ⌘Z) brings it back as a group.
+
+| Keys | Action | Menu | Command |
+| --- | --- | --- | --- |
+| | Show both versions side by side, file by file (also Compare on the card) | Task | `task.compareVersions` |
+| | Keep the selected task's version and archive the other (also Keep on the card and in Compare) | Task | `task.keepVersion` |
+| Escape in Compare | Back to the task | | |
+| ⌘Z after keeping one | Bring the other task and its worktree back, and group them again | Edit | |
 
 ## Choosing a device
 

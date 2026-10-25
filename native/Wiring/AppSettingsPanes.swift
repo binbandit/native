@@ -16,10 +16,11 @@ enum AppSettingsPanes {
             .search(BuiltInPlugins.search.center), .hosts, .taskTools,
         ]
         // Labs goes away when the organization turns experiments off; Hosts stays hidden until
-        // paired hosts are on.
+        // paired hosts are on; Keep Awake is the Mac's own.
         .filter { $0.id != .labs || PolicyCenter.shared.policy.labsEnabled }
         .filter { $0.id != .celebrations || PolicyCenter.shared.policy.celebrationsEnabled }
         .filter { $0.id != .hosts || SettingsPane.showsHosts }
+        .filter { $0.id != .keepAwake || KeepAwakeController.isSupported }
         // Task Tools arranges the well, so it's listed only while the well is on.
         .filter { $0.id != .taskTools || ExperimentStore.shared.value(of: .taskWell) }
             + SettingsPane.projects(projects)

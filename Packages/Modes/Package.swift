@@ -11,7 +11,10 @@ let package = Package(
         .package(path: "../ACP")
     ],
     targets: [
-        .target(name: "Modes", dependencies: [.product(name: "ACP", package: "ACP")]),
+        .target(
+            name: "Modes", dependencies: [.product(name: "ACP", package: "ACP")],
+            // Optimize infrequent operations for size; the app and streaming path stay at -O.
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         .testTarget(name: "ModesTests", dependencies: ["Modes", .product(name: "ACP", package: "ACP")]),
     ]
 )

@@ -52,6 +52,10 @@ final class AppModel {
 
     var selection: SessionKey? {
         didSet {
+            // Compare belongs to its pair: going to any other task leaves it.
+            if let comparing = taskPairs.comparing, selection.flatMap(taskPairs.pair(containing:))?.id != comparing {
+                taskPairs.comparing = nil
+            }
             guard let selection else { return }
             unread.set(selection, unread: false)
             if !isNavigatingHistory, selection != oldValue {
@@ -68,6 +72,8 @@ final class AppModel {
     /// The draft and presentation for the opt-in New Task entry point.
     let quickEntry = QuickEntryModel()
     let composeTask: ComposeTaskModel
+    /// Tasks Compose started from one brief to two agents (TaskPairs).
+    let taskPairs: TaskPairs
     var changingAgent: ChangeAgentModel?
     var coordinatorEditor: CoordinatorTaskEditor?
     var coordinators: [HostCoordinator] = []
@@ -230,6 +236,7 @@ final class AppModel {
         sendGate.runtimes = runtimes
         projects = Projects(defaults: defaults)
         composeTask = ComposeTaskModel(defaults: defaults)
+        taskPairs = TaskPairs(defaults: defaults)
         catalog = SessionCatalog(url: catalogURL)
         ordering = SessionOrdering(defaults: defaults)
         sessions = SessionStore(services: services)
