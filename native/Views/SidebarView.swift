@@ -135,9 +135,11 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
         .animation(.dsQuick, value: selection.isActive)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .environment(\.sidebarSelection, selection)
+        #if os(macOS)
         .onModifierKeysChanged(mask: [.command, .shift]) { _, modifiers in
             selection.modifiers = modifiers
         }
+        #endif
         .onChange(of: model.selection, initial: true) { _, key in
             guard usesSidebarNext, let key,
                 let group = listing.groups.first(where: { $0.earlier.contains { $0.id == key } })

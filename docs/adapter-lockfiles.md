@@ -1,8 +1,9 @@
 # Adapter lockfiles
 
 `scripts/adapters/lockfile.py` is maintainer tooling for the managed-adapter plan.
-It does not change agent launches or built-in manifests. Production lockfiles and
-runtime integration are follow-up work.
+It does not change agent launches or built-in manifests. The first production pair is
+`adapters/pi` ([offline adapters](enterprise/offline-adapters.md#the-built-in-pi-pair));
+runtime integration is follow-up work.
 
 Resolution is a deliberate, networked maintainer step with an installed npm that
 supports lockfileVersion 3. Use a new scratch output directory:

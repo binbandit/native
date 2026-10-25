@@ -56,7 +56,7 @@ sessions  (agent, session) unique · title · cwd · project · created_at · up
 items     session_row → sessions (cascade) · ordinal · role · date · has_diff · anchor · body · parts
 items_fts fts5(body, parts, content='items', tokenize='unicode61 remove_diacritics 2'), kept by triggers
 sources   path · size · modified · offset · agent · session · cwd   -- one checkpoint per history file
-meta      'filled' once a pass over the history has finished
+meta      'filled' once a pass over the history has finished · 'compactionDue' · 'compactedAt' (retention)
 ```
 
 - **Code-aware tokens.** `unicode61` already splits on everything that isn't a letter or digit, so
@@ -116,7 +116,7 @@ Readers only read, and a pass reads only what's new. Each file has a **checkpoin
 modification time when it was read, and the byte offset just past the last complete line indexed.
 A file whose size and time match is skipped without being opened. One that only grew is read from
 its offset, and the new documents are appended to its session (a line still being written is left
-for next time). Anything else (a file that shrank, or whose session a retention policy dropped) is
+for next time). Anything else (a file that shrank, or one whose session isn't indexed any more) is
 read from the start. Files of excluded projects are known by their checkpoint's folder and never
 opened. Files are streamed a megabyte at a time, lines over 4 MB (an image pasted into a tool
 result) are skipped, and each line's JSON is parsed in its own autorelease pool, so memory stays
@@ -150,6 +150,16 @@ Local only: the index is a file in the app's own Application Support folder, que
 the process, and nothing is sent anywhere. Settings ▸ Search turns reading the agents' history off,
 excludes projects (their tasks are removed and never indexed), and clears the index. Turning
 the Search plugin off stops indexing altogether.
+
+**Retention.** `policy.search.retentionDays` (docs/enterprise.md) keeps tasks for that many days
+after their newest known time, at the start of every pass. A task past it goes with its items,
+their full-text entries and the checkpoints that name it, and history files last changed before
+the cutoff lose their checkpoints too (a pass skips them by date). A task with no time is kept:
+an unknown age isn't old. A file read later whose session is past the cutoff isn't indexed, and
+its checkpoint doesn't name the session. Deleted rows stay in free pages, older full-text segments
+and the write-ahead log until the file is compacted: `meta.compactionDue` is set with the delete,
+and the next pass merges the full-text index, vacuums and truncates the log, at most once a day
+(`meta.compactedAt`). An unusable value deletes nothing.
 
 ## Clients and the host
 
