@@ -86,6 +86,19 @@ private final class FixturePolicy: @unchecked Sendable {
         let indexFile = root.appending(path: "registry.json")
         try index.write(to: indexFile)
         try FileManager.default.setAttributes([.modificationDate: Date.distantPast], ofItemAtPath: indexFile.path)
+        policy.set(
+            PolicyLoader.load(
+                from: StaticPolicySource(managed: [
+                    "policy.deployment.mode": "internalOnly",
+                    "policy.network": [
+                        "services": [
+                            "icons.assets": [
+                                "enabled": true, "origins": ["https://mirror.example"],
+                            ]
+                        ]
+                    ],
+                ])))
+        network.policyDidChange()
         let staleRegistry = AgentIconRegistry(directory: root, network: network)
         require(await staleRegistry.icon(for: "fixture") == nil, "stale index bypassed policy")
         require(await transport.calls.isEmpty, "stale cache made a denied request")
