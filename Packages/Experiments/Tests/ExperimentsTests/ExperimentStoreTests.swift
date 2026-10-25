@@ -246,10 +246,25 @@ struct UserDefaultsStorageTests {
     @Test func aValueOfTheWrongKindReadsAsNothing() throws {
         let (defaults, suite) = try makeDefaults()
         defer { defaults.removePersistentDomain(forName: suite) }
-        defaults.set("yes", forKey: "experiment.hide-retry")
+        defaults.set("maybe", forKey: "experiment.hide-retry")
+        defaults.set(true, forKey: "experiment.density")
 
         let store = ExperimentStore(catalog: catalog, storage: UserDefaultsExperimentStorage(defaults))
         #expect(store.value(of: .hideRetry) == false)
+        #expect(store.value(of: .density) == .regular)
+    }
+
+    // `-experiment.hide-retry YES` on the command line lands in user defaults as the string "YES".
+    @MainActor
+    @Test(arguments: [("YES", true), ("true", true), ("1", true), ("NO", false), ("false", false), ("0", false)])
+    func launchArgumentWordsSetASwitch(text: String, isOn: Bool) throws {
+        let (defaults, suite) = try makeDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set(text, forKey: "experiment.hide-retry")
+
+        let store = ExperimentStore(catalog: catalog, storage: UserDefaultsExperimentStorage(defaults))
+        #expect(store.value(of: .hideRetry) == isOn)
+        #expect(store.value(of: .hideRetry) == defaults.bool(forKey: "experiment.hide-retry"))
     }
 }
 

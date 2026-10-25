@@ -25,6 +25,65 @@ struct HostReconnectTests {
         await recorder.stop()
     }
 
+    @Test("A turn that ends while the client is away reads idle once it's back, its events once")
+    func turnEndsWhileAway() async throws {
+        let harness = try HostHarness()
+        try harness.start()
+        let transport = CuttableTransport(location: harness.location)
+        let recorder = try await harness.connect(transport: transport)
+        let session = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "slow 5"))
+        try await recorder.wait("the turn to get going") { await $0.agentText(session.id).contains("tick 1") }
+        #expect(await recorder.summaries[session.id]?.phase == .prompting)
+
+        transport.goOffline()
+        let observer = try await harness.connect()
+        try await observer.wait("the turn to end on the host") {
+            await $0.listed(session.id)?.phase == .idle
+        }
+        transport.goOnline()
+
+        try await recorder.wait("the client to see the session idle") {
+            await $0.summaries[session.id]?.phase == .idle
+        }
+        #expect(await recorder.summaries[session.id]?.lastStopReason == "end_turn")
+        #expect(await recorder.turnsEnded(session.id) == ["end_turn"])
+        let seqs = await recorder.events[session.id, default: []].map(\.seq)
+        #expect(seqs == Array(1...(seqs.last ?? 0)))
+        #expect(await recorder.agentText(session.id) == (1...5).map { "tick \($0)\n" }.joined())
+        await observer.stop()
+        await recorder.stop()
+    }
+
+    @Test("An approval asked while the client is away shows once it's back, asked once")
+    func approvalWhileAway() async throws {
+        let harness = try HostHarness()
+        try harness.start()
+        let transport = CuttableTransport(location: harness.location)
+        let recorder = try await harness.connect(transport: transport)
+        let session = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
+
+        transport.goOffline()
+        // Another client (the droid's own Native, a phone) starts a turn that asks.
+        let observer = try await harness.connect()
+        _ = try await observer.client.prompt(PromptParams(sessionID: session.id, text: "permission"))
+        try await observer.wait("the host to wait for an answer") {
+            await $0.listed(session.id)?.needsApproval == true
+        }
+        transport.goOnline()
+
+        try await recorder.wait("the client to see the approval") {
+            await $0.summaries[session.id]?.needsApproval == true
+        }
+        #expect(await recorder.summaries[session.id]?.phase == .prompting)
+        let asked = await recorder.payloads(session.id).filter {
+            if case .permissionRequested = $0 { true } else { false }
+        }
+        #expect(asked.count == 1)
+        await observer.stop()
+        await recorder.stop()
+    }
+
     @Test("A prompt sent while the host is down goes out once it's back, and only once")
     func promptWaitsForTheHost() async throws {
         let harness = try HostHarness()

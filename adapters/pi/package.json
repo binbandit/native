@@ -1,0 +1,7 @@
+{
+  "name": "native-adapter-lock",
+  "private": true,
+  "dependencies": {
+    "pi-acp": "0.0.34"
+  }
+}
