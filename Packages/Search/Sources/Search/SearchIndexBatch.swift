@@ -52,7 +52,7 @@ public struct HistoryCheckpoint: Hashable, Sendable {
     /// The session the file holds; nil when it holds no conversation.
     public var session: SearchSessionKey?
     public var cwd: String?
-    /// Whether that session is still in the index (a retention policy may have dropped it).
+    /// Whether that session is still in the index (excluding its folder drops it and keeps this).
     public var isSessionIndexed: Bool
 
     public init(

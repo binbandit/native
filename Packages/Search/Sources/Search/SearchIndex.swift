@@ -57,9 +57,18 @@ public final class SearchIndex: Sendable {
         try await writer.removeSessions(under: folder)
     }
 
-    /// Forgets every session last active before `cutoff`, for a retention policy.
-    public func removeSessions(updatedBefore cutoff: Date) async throws {
-        try await writer.removeSessions(updatedBefore: cutoff)
+    /// Forgets every session last active before `cutoff`, for a retention policy, with the
+    /// checkpoints that name it. A session with no time is kept. What it removes leaves the file at
+    /// the next `compactIfDue`.
+    public func removeSessions(lastActiveBefore cutoff: Date) async throws {
+        try await writer.removeSessions(lastActiveBefore: cutoff)
+    }
+
+    /// Rewrites the file without what retention removed, when it removed something, at most once a
+    /// day. Returns whether it compacted.
+    @discardableResult
+    public func compactIfDue(now: Date = .now) async throws -> Bool {
+        try await writer.compactIfDue(now: now)
     }
 
     /// Forgets everything and gives the space back.
