@@ -63,7 +63,8 @@ struct QuickEntryPanel: View {
         ComposerEditor(
             text: $entry.draft, selection: $selection, placeholder: "What would you like to do?",
             isFocused: $isFocused, font: DS.QuickEntry.editorFont,
-            lineSpacing: DS.QuickEntry.editorLineSpacing, insets: DS.QuickEntry.textInsets
+            lineSpacing: DS.QuickEntry.editorLineSpacing, richLineLeading: DS.QuickEntry.editorRichLineLeading,
+            insets: DS.QuickEntry.textInsets
         ) { press in
             guard !PlatformTextInput.isComposing else { return .ignored }
             if press.key == .tab, press.modifiers.isSubset(of: [.shift]) {
