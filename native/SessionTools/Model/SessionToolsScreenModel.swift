@@ -41,7 +41,10 @@ final class SessionToolsScreenModel {
 
     /// The open tool in each place; a place without one is closed.
     private var presentation = SessionToolPresentation()
-    var openByPlace: [SessionToolPlace: SessionToolID] { presentation.openByPlace }
+    /// A tool whose plugin was turned off is never open, even before `closeRemovedTools` runs.
+    var openByPlace: [SessionToolPlace: SessionToolID] {
+        presentation.openByPlace.filter { registry.tool($0.value) != nil }
+    }
     /// Makes room in the window before the side panel appears, then shows it (`InspectorRoom`).
     @ObservationIgnored var makeRoomForSidePanel: (@escaping @MainActor () -> Void) -> Void = { $0() }
     @ObservationIgnored private var states: [SessionToolID: AnyObject] = [:]
@@ -69,12 +72,21 @@ final class SessionToolsScreenModel {
         // The side panel appears without sliding in, once there's room: sliding lays the whole
         // window out again every frame.
         let show: @MainActor @Sendable () -> Void = {
+            // Its plugin may have been turned off while the window made room.
+            guard self.registry.tool(id) != nil else { return }
             withTransaction(\.disablesAnimations, true) { self.presentation.present(id, at: place) }
         }
         if place == .side, openByPlace[.side] == nil {
             makeRoomForSidePanel(show)
         } else {
             show()
+        }
+    }
+
+    /// Forgets panes whose tool is gone (its plugin turned off), so they come back closed.
+    func closeRemovedTools() {
+        for id in presentation.openByPlace.values where registry.tool(id) == nil {
+            close(id)
         }
     }
 

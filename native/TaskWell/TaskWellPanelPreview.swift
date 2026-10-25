@@ -1,4 +1,5 @@
 #if DEBUG
+import SessionTools
 import SwiftUI
 
 struct TaskWellPanelPreview: View {
@@ -24,6 +25,7 @@ struct TaskWellPanelPreview: View {
         .onAppear {
             tools.hasWell = true
             tools.wellToolAvailable = {
+                if tools.registry.place(for: $0.spec) == .off { return false }
                 if isRemote && $0 == .dev { return false }
                 return isEmpty ? $0 == .changes || $0 == .terminal || $0 == .dev : true
             }
