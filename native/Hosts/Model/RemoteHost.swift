@@ -31,6 +31,9 @@ final class RemoteHost: Identifiable {
     private(set) var log: [LinkLogEntry] = []
     /// When this Mac last had a connection, for "Last connected 3h ago" while it's offline.
     private(set) var lastConnected: Date?
+    /// When the link last dropped, for "Offline since 2:14 PM". Nil while connected, and until it
+    /// has been connected this run: an unknown start is never guessed from the last connection.
+    private(set) var offlineSince: Date?
     /// What the host's agents did while this Mac was away from it (closed, asleep, off the
     /// network), from its activity journal, until dismissed.
     var away: AwaySummary?
@@ -211,7 +214,13 @@ final class RemoteHost: Identifiable {
         switch event {
         case .connection(let state):
             guard !isPairingEnded else { return }
+            let wasOnline = isOnline
             phase = PairedHostPhase(state)
+            if isOnline {
+                offlineSince = nil
+            } else if wasOnline {
+                offlineSince = .now
+            }
             if case .connected(let info) = state {
                 lastConnected = .now
                 if paired.machineName != info.machineName { paired.machineName = info.machineName }

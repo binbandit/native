@@ -296,9 +296,9 @@ extension AppModel {
         guard case .offline = composeDeviceOption?.availability else { return nil }
         var since: Date?
         #if DEBUG
-        since = composeTask.previewLastConnected
+        since = composeTask.previewOfflineSince
         #endif
-        if since == nil, case .remote(let id) = quickEntry.device { since = hosts.host(id)?.lastConnected }
+        if since == nil, case .remote(let id) = quickEntry.device { since = hosts.host(id)?.offlineSince }
         guard let since else { return nil }
         let time = since.formatted(date: .omitted, time: .shortened)
         if Calendar.current.isDateInToday(since) { return time }

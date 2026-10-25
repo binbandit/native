@@ -60,7 +60,7 @@ enum ComposeTaskPreviewFixtures {
                 agent: AgentDefinition.ID(rawValue: "claude-code"), options: claudeOptions)
         }
         if state == "devices" || state == "offline" || state == "held" {
-            compose.previewLastConnected = Calendar.current.date(bySettingHour: 14, minute: 14, second: 0, of: .now)
+            compose.previewOfflineSince = Calendar.current.date(bySettingHour: 14, minute: 14, second: 0, of: .now)
             let remote = SessionDevice.remote(RemoteHostID())
             entry.previewDeviceOptions = [
                 .init(device: .thisMac, name: "This Mac", availability: .online, checkout: .present(path: "native")),

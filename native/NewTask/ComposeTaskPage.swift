@@ -127,11 +127,17 @@ struct ComposeTaskPage: View {
                         allowsFileMentions: entry.project != nil && entry.device == .thisMac,
                         needsFolder: entry.project == nil,
                         openSettings: { entry.toggle(.agent) },
-                        start: { model.submitComposeTask() },
+                        start: submitOrClosePicker,
                         attachmentsPending: { compose.pendingAttachments = $0 })
                 )
                 .id(editor.id)
                 .environment(drops)
+                // The draft keeps focus under an open address popover, so its keys go to the popover
+                // first: Escape closes it, as Return does below, never starting the task behind it.
+                .environment(
+                    \.composerOverlayDismissal,
+                    entry.picker == nil ? nil : ComposerOverlayDismissal { entry.picker = nil }
+                )
                 .focusedSceneValue(\.composeDraft, compose.commandDraft)
                 .disabled(compose.isHeld || compose.stage != .writing)
             }
@@ -142,6 +148,14 @@ struct ComposeTaskPage: View {
             }
         }
         .overlay { closesPicker }
+    }
+
+    private func submitOrClosePicker() {
+        if entry.picker != nil {
+            entry.picker = nil
+        } else {
+            model.submitComposeTask()
+        }
     }
 
     /// A click anywhere else on the page closes an open address popover, as outside a system one.
