@@ -133,12 +133,14 @@ enum HomeNextPreviewFixtures {
     private static func fixtureSession(
         in app: AppModel, agent: String, id: String, cwd: String, title: String, failsAnswer: Bool
     ) -> SessionModel? {
-        guard failsAnswer else { return SessionModel.preview(in: app, agent: agent, id: id, cwd: cwd, title: title) }
         guard let definition = app.runtime(AgentDefinition.ID(rawValue: agent))?.agent,
-            let readOnly = FileHandle(forReadingAtPath: "/dev/null")
+            let input = FileHandle(forReadingAtPath: "/dev/null"),
+            let output = failsAnswer
+                ? FileHandle(forReadingAtPath: "/dev/null") : FileHandle(forWritingAtPath: "/dev/null")
         else { return nil }
-        // A read-only sink makes answering fail without starting a process or touching project data.
-        let connection = ACPConnection(reading: .nullDevice, writing: readOnly) { _ in }
+        // Own both handles: another preview's teardown must not close this fixture's transport.
+        // A read-only sink deliberately fails without starting a process or touching project data.
+        let connection = ACPConnection(reading: input, writing: output) { _ in }
         let session = SessionModel(
             agent: definition, id: SessionID(id), cwd: URL(filePath: cwd), connection: connection,
             services: app.sessions.services, supportsSteering: false, phase: .idle, title: title)
