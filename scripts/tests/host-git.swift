@@ -175,7 +175,9 @@ private struct HostGitRegression {
             await local.model(for: URL(filePath: path)).refreshNow()
             await insights.prepare([summary])
             try require(insights.hasUncommittedChanges(summary), "sidebar lost remote changes at \(path)")
-            try require(tasks.branch(of: summary) == nil, "remote task inherited a local PR branch at \(path)")
+            // No paired host answers for this remote checkout, so there's no gh to ask: never this Mac's.
+            try require(
+                tasks.branch(of: summary) == nil, "remote checkout without its host used this Mac's gh at \(path)")
             try require(tasks.menu(of: summary) == nil, "remote task inherited local PR actions")
         }
     }
