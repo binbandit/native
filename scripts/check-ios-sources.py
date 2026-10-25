@@ -22,8 +22,12 @@ MEMBER = re.compile(
     r"(?:func|var|let|typealias) +(`?\w+`?)",
     re.MULTILINE,
 )
-MISSING_NAME = re.compile(r"error: cannot find (?:type )?'([^']+)' in scope")
-MISSING_MEMBER = re.compile(r"error: .*has no (?:dynamic )?member '([^']+)'")
+# A property wrapper or attached macro that isn't in yet reads as an unknown attribute.
+MISSING_NAME = re.compile(r"error: (?:cannot find (?:type )?'([^']+)' in scope|unknown attribute '([^']+)')")
+# An implicit member (`.buttonStyle(.settings)`) whose declaration isn't in yet can't be resolved.
+MISSING_MEMBER = re.compile(
+    r"error: .*(?:has no (?:dynamic )?member '([^']+)'|reference to member '([^']+)' cannot be resolved)"
+)
 MISSING_CONFORMANCE = re.compile(
     r"(?:argument )?type '([^']+)' does not conform to (?:expected type|specified type|protocol) '([^']+)'"
     r"|requires that '([^']+)' conform to '([^']+)'"
@@ -98,7 +102,7 @@ def prepare(root, destination, paths=(), diagnostics=""):
 
     existing = {path.relative_to(destination) for path in destination.rglob("*.swift")}
     selected = existing | source_files(root, paths)
-    missing_names = MISSING_NAME.findall(diagnostics)
+    missing_names = [match[1] or match[2] for match in MISSING_NAME.finditer(diagnostics)]
     for name in missing_names:
         selected.update(declarations[name])
     # Missing type context can also make its properties look like unresolved bare names. Resolve
@@ -106,7 +110,7 @@ def prepare(root, destination, paths=(), diagnostics=""):
     if selected == existing:
         for name in missing_names:
             selected.update(members[name])
-    for member in MISSING_MEMBER.findall(diagnostics):
+    for member in (match[1] or match[2] for match in MISSING_MEMBER.finditer(diagnostics)):
         selected.update(members[member])
     for match in MISSING_CONFORMANCE.finditer(diagnostics):
         type_name, protocol = match.group(1, 2) if match[1] else match.group(3, 4)

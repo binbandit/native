@@ -2,8 +2,8 @@ import NativePolicy
 
 /// The part of a validated `NativePolicy` the planner uses: whether the policy can be trusted at all,
 /// its revision, and each retention period it sets. A value the organization set badly is
-/// `unusable`, never the stricter number the policy layer substitutes: for retention a smaller
-/// number deletes more, so failing closed here means deleting nothing by it.
+/// `unusable`: the policy layer keeps everything for it, as search does, and the planner deletes
+/// nothing by it but says why, rather than reading it as no period at all.
 public struct DataLifecyclePolicy: Equatable, Sendable {
     public enum Retention: Equatable, Sendable {
         /// No period is set: nothing expires by policy.

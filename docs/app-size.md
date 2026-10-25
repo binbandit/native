@@ -18,7 +18,7 @@ so growth gets noticed while there's still room to choose what to cut; lower the
 | --- | --- | --- |
 | Download, update archive | 47.5 MB | 46.9 MB |
 | Download, disk image | 48 MB | not remeasured |
-| Installed app | 118.5 MB | 115.1 MB |
+| Installed app | 118 MB | 115.1 MB |
 | App binary (`Contents/MacOS/Native`) | 70 MB | 58.9 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
@@ -34,6 +34,10 @@ build them, and such an app looks 12 to 40 MB smaller than what ships.
   dry runs included, and stops before publishing when they're over.
 
 Raise a budget only with the reason written here, in the same change.
+
+2026-10-25: the 0.5 MB installed raise below is reverted after #154's size cuts. Main at `e82527b2`
+measures 115.9 MB installed for Release and 116.0 MB for Nightly (Check run 40178138472), so the
+installed budget is back to 118 MB. No other budget changes.
 
 2026-10-25: managed network admission (the NativeNetwork package, its typed service inventory and
 the agent icon consumer) integrated with main through `c0264e9e` at `85cc7167` measures 118.0 MB

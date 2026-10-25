@@ -28,7 +28,9 @@ enum LinuxHost {
                     version: info.version, build: info.build,
                     channel: location.channel.isEmpty ? "stable" : location.channel),
                 reason: "Updates aren't available on this host yet."),
-            exit: { status in exit(status) }
+            exit: { status in exit(status) },
+            // No managed source here yet: a deployment file asks for one, and blocks the host.
+            policy: LinuxHostPolicySource()
         )
     }
 

@@ -71,6 +71,23 @@ class CheckIOSSourcesTests(unittest.TestCase):
         )
         self.assertEqual(set(added), {Path("native/Feature/Helper.swift"), Path("native/Platform/View+Action.swift")})
 
+    def test_property_wrapper_and_implicit_member(self):
+        self.write("native/Experiments/Experiment.swift", "@propertyWrapper\nstruct Experiment<Value> {}\n")
+        self.write(
+            "native/Settings/SettingsButtonStyle.swift",
+            "extension ButtonStyle where Self == SettingsButtonStyle {\n    static var settings: SettingsButtonStyle { .init() }\n}\n",
+        )
+        added = sources.prepare(
+            self.root,
+            self.destination,
+            diagnostics="error: unknown attribute 'Experiment'\n"
+            "error: reference to member 'settings' cannot be resolved without a contextual type",
+        )
+        self.assertEqual(
+            set(added),
+            {Path("native/Experiments/Experiment.swift"), Path("native/Settings/SettingsButtonStyle.swift")},
+        )
+
     def test_local_variables_do_not_supply_missing_members(self):
         self.write(
             "native/Unrelated/Extension.swift",

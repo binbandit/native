@@ -569,9 +569,12 @@ locally, where building each from nothing took 8.
 
 **Not yet on iPad.** The app target is one module whose folders use each other freely (models,
 plugins, commands, settings, views). Checking `native/Models` or a consumer now follows those
-dependencies automatically, but they still import macOS-only frameworks: ServiceManagement in
-`native/Host/HostRegistration.swift`, and AppKit in `NativeApp.swift`, the Mac's entry point. Those move behind
-`native/Platform` adapters with the iPad destination (`docs/architecture.md`, "Getting there"); add
+dependencies automatically. No folder imports a macOS-only framework unguarded any more, so
+`scripts/check-ios.sh native` reports every remaining error in one pass: models that spawn processes
+themselves (`AgentRuntime`, `ShellEnvironment`, `MCPLibrary`, the orchestration script tool, the
+status bar's process sampler) rather than through a host's `CommandRunner`, Mac-only SwiftUI and
+Foundation calls in a few views and libraries, and `NativeApp.swift`, the Mac's entry point. Those
+move behind `native/Platform` adapters with the iPad destination (`docs/architecture.md`, "Getting there"); add
 a folder to the workflow's typecheck once it compiles there. A dependency's genuine platform error
 still fails its consumer's check; the checker does not stub types or suppress those errors.
 
