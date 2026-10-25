@@ -55,13 +55,13 @@ struct ComposeTaskPage: View {
         .fileImporter(isPresented: $entry.isChoosingFolder, allowedContentTypes: [.folder]) { result in
             if case .success(let url) = result { Task { await model.addQuickEntryProject(url) } }
         }
-        .sheet(isPresented: $compose.showsWorkspaces) {
+        .sheet(isPresented: $compose.showsWorkspaces, onDismiss: compose.cancelWorkspaceSelection) {
             TaskWorkspacePickerContent(
-                options: compose.workspaces, selection: $compose.workspace,
+                options: compose.workspaces, selection: $compose.workspaceSelection,
                 isLoading: compose.isReadingWorkspaces, isChanging: false, error: compose.workspaceFailure,
-                cancel: { compose.showsWorkspaces = false },
+                cancel: compose.cancelWorkspaceSelection,
                 retry: { Task { await model.readComposeWorkspaces() } },
-                apply: { compose.showsWorkspaces = false })
+                apply: compose.applyWorkspaceSelection)
         }
         .task(id: "\(String(describing: entry.project))/\(entry.device)") { await loadWorkspace() }
         .task(id: compose.starting?.id) {

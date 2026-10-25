@@ -177,15 +177,20 @@ extension AppModel {
         let previous = workspacePreparations[project.id]
         let work = Task { [taskWorkspaces] in
             await previous?.value
+            let prepared: TaskWorkspacePreparation
             if let choice = task.workspaceChoice, let taskWorkspaces {
-                return try await taskWorkspaces.workspace(for: choice, in: project)
+                prepared = try await taskWorkspaces.prepareWorkspace(for: choice, in: project)
+            } else {
+                let folder = try await taskWorkspaces?.workspace(forNewTaskIn: project, title: nil) ?? project.url
+                prepared = .init(folder: folder, createdForTask: !SessionFolder.isSame(folder.folderPath, project.path))
             }
-            return try await taskWorkspaces?.workspace(forNewTaskIn: project, title: nil) ?? project.url
+            // Publish ownership before releasing the project lane to another start or cleanup.
+            task.folder = prepared.folder
+            task.ownsWorkspace = prepared.createdForTask
+            return prepared.folder
         }
         workspacePreparations[project.id] = Task { _ = try? await work.value }
-        let folder = try await work.value
-        task.folder = folder
-        return folder
+        return try await work.value
     }
 
     /// The session takes the task's place: in the sidebar, the selection and history, with the draft.
@@ -225,11 +230,21 @@ extension AppModel {
     /// Removes the workspace made for a discarded task, unless it's the project's own folder.
     private func removeWorkspace(of task: StartingTask) {
         // A paired host's worktree is removed there (`DeviceTaskWorkspaces` goes by the folder).
-        guard let folder = task.folder, let project = projects.project(task.project),
+        guard task.ownsWorkspace, let folder = task.folder, let project = projects.project(task.project),
             !SessionFolder.isSame(folder.folderPath, project.path)
         else { return }
         task.folder = nil
-        Task {
+        task.ownsWorkspace = false
+        let previous = workspacePreparations[project.id]
+        let cleanup = Task {
+            await previous?.value
+            guard !catalog.hasTask(in: project.id, at: folder, excluding: deletedSessions.contains),
+                sessions.open(in: folder).isEmpty,
+                !startingTasks.contains(where: {
+                    $0.device == task.device
+                        && $0.folder.map { SessionFolder.isSame($0.folderPath, folder.folderPath) } == true
+                })
+            else { return }
             do {
                 try await taskWorkspaces?.deleteWorkspace(at: folder, in: project)
             } catch {
@@ -241,5 +256,6 @@ extension AppModel {
                         details: error.localizedDescription))
             }
         }
+        workspacePreparations[project.id] = Task { await cleanup.value }
     }
 }

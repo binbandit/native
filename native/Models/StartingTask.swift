@@ -48,6 +48,7 @@ final class StartingTask: Identifiable {
     var device = SessionDevice.thisMac
     /// The task's folder, once made; a retry reuses it.
     var folder: URL?
+    var ownsWorkspace = false
     var isAgentReady = false
     var failure: Failure?
     var draft = ""

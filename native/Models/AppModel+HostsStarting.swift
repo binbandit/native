@@ -133,6 +133,8 @@ extension AppModel {
             }
             await applyComposeChoices(of: task, to: session)
             guard !task.isDiscarded else { sessions.remove(session); return }
+            rememberRemoteWorkspace(of: session, in: project)
+            indexRemoteSessions()
             finish(task, with: session)
         } catch {
             if runtime.noteSignInRequired(by: error) {
@@ -161,19 +163,22 @@ extension AppModel {
             path = try await cloneProject(project.id, onto: host)
         }
         guard let path else { throw RemoteCheckoutError.noFolder(host.name) }
-        let folder =
+        let prepared: TaskWorkspacePreparation =
             if let workspaces = await taskWorkspaces(on: host) {
                 if let choice = task.workspaceChoice {
-                    try await workspaces.workspace(for: choice, in: project.onHost(at: path))
+                    try await workspaces.prepareWorkspace(for: choice, in: project.onHost(at: path))
                 } else {
-                    try await workspaces.workspace(forNewTaskIn: project.onHost(at: path), title: nil)
+                    .init(
+                        folder: try await workspaces.workspace(forNewTaskIn: project.onHost(at: path), title: nil),
+                        createdForTask: true)
                 }
             } else {
                 // A host that can't run commands for this Mac still runs agents: in its checkout.
-                URL(filePath: path, directoryHint: .isDirectory)
+                .init(folder: URL(filePath: path, directoryHint: .isDirectory), createdForTask: false)
             }
-        task.folder = folder
-        return folder.folderPath
+        task.folder = prepared.folder
+        task.ownsWorkspace = prepared.createdForTask && !SessionFolder.isSame(prepared.folder.folderPath, path)
+        return prepared.folder.folderPath
     }
 }
 

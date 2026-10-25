@@ -180,6 +180,26 @@ private struct TaskWorkspaceRegression {
         try check(
             command?.isAvailable(CommandContext(session: moved)) == false, "menu is disabled after first submission")
 
+        // A model update can reset effort; Compose must restore the complete displayed address.
+        await host.configure(resetEffort: true)
+        let configured = try await start(at: folder)
+        guard let modelChoice = configured.configOptions.first(where: { $0.category == "model" }),
+            let effortChoice = configured.configOptions.first(where: { $0.category == "thought_level" })
+        else { throw Failure("fixture offers model and effort") }
+        await configured.setConfigOption(modelChoice, to: "small")
+        await configured.setConfigOption(effortChoice, to: "high")
+        let addressed = StartingTask(
+            project: project.id, agent: runtime.agent, isAgentPicked: true, workspaceLabel: "Fixture")
+        addressed.configChoices = ["model": "large", "thought_level": "high"]
+        addressed.isSendRequested = true
+        await app.applyComposeChoices(of: addressed, to: configured)
+        try check(addressed.isSendRequested, "restored model and effort allow sending")
+        try check(ComposerSettings(configured.configOptions).model?.value == "large", "addressed model is restored")
+        try check(
+            ComposerSettings(configured.configOptions).effort?.value == "high",
+            "model reset cannot change addressed effort")
+        await host.configure()
+
         // A real accepted host request with no echo yet also locks the folder.
         let sent = try await start(at: folder)
         _ = try await sent.submit("first message", .queue)
@@ -202,6 +222,48 @@ private struct TaskWorkspaceRegression {
         _ = try await app.changeWorkspace(of: shared, to: .project)
         try check(
             FileManager.default.fileExists(atPath: sharedTree.path()), "worktree shared by another task is preserved")
+        // Canceling a new task that borrows another task's checkout must leave its owner intact.
+        await host.configure(hold: true)
+        let borrowed = StartingTask(
+            project: project.id, agent: runtime.agent, isAgentPicked: true, workspaceLabel: "Reuse")
+        borrowed.workspaceChoice = .worktree(sharedTree)
+        app.startingTasks.append(borrowed)
+        let borrowing = Task { await app.start(borrowed) }
+        try await wait { await host.hasPendingNew }
+        app.discard(borrowed)
+        try await host.releaseNew()
+        await borrowing.value
+        await app.workspacePreparations[project.id]?.value
+        try await Task.sleep(for: .milliseconds(150))
+        try check(
+            FileManager.default.fileExists(atPath: sharedTree.path()), "cancel preserves a borrowed task worktree")
+        await host.configure(fail: true)
+        let failedBorrow = StartingTask(
+            project: project.id, agent: runtime.agent, isAgentPicked: true, workspaceLabel: "Reuse")
+        failedBorrow.workspaceChoice = .worktree(sharedTree)
+        app.startingTasks.append(failedBorrow)
+        await app.start(failedBorrow)
+        app.discard(failedBorrow)
+        await app.workspacePreparations[project.id]?.value
+        try await Task.sleep(for: .milliseconds(150))
+        try check(
+            FileManager.default.fileExists(atPath: sharedTree.path()), "discard preserves a borrowed task worktree")
+        await host.configure()
+        await host.configure(hold: true)
+        let created = StartingTask(
+            project: project.id, agent: runtime.agent, isAgentPicked: true, workspaceLabel: "Create")
+        created.workspaceChoice = .newWorktree
+        app.startingTasks.append(created)
+        let creating = Task { await app.start(created) }
+        try await wait { await host.hasPendingNew }
+        guard let createdFolder = created.folder else { throw Failure("new start prepared its workspace") }
+        app.discard(created)
+        try await host.releaseNew()
+        await creating.value
+        await app.workspacePreparations[project.id]?.value
+        try check(
+            !FileManager.default.fileExists(atPath: createdFolder.path()), "cancel removes its own unused worktree")
+        await host.configure()
         let pinnedTree = try await provider.workspace(for: .newWorktree, in: project)
         let pinned = try await start(at: pinnedTree)
         app.ordering.pin(pinned.key)
@@ -256,6 +318,19 @@ private struct TaskWorkspaceRegression {
         guard let runtime = remote.runtime(AgentDefinition.ID(rawValue: "workspace-fake")) else {
             throw Failure("paired fixture agent is ready")
         }
+        let start = StartingTask(
+            project: project.id, agent: runtime.agent, isAgentPicked: true, workspaceLabel: "Reuse")
+        start.device = .remote(remote.id)
+        start.workspaceChoice = .branch("user-owned")
+        app.startingTasks.append(start)
+        await app.start(start)
+        guard let startedKey = start.openedSession else { throw Failure("remote Compose start opened") }
+        await remote.refresh()
+        app.indexRemoteSessions()
+        try check(
+            app.allSessions(in: project.id).contains { $0.id == startedKey },
+            "explicit remote start stays in its project")
+        try check(app.catalog.lookup(startedKey)?.project == project.id, "remote start remains indexed after refresh")
         let source = try await app.launcher.start(on: runtime, cwd: project.url, project: project.id)
         source.draft = "Keep the remote draft"
         let inWorktree = try await app.changeWorkspace(of: source, to: .newWorktree)

@@ -39,6 +39,11 @@ final class DeviceTaskWorkspaces: TaskWorkspaceProvider {
         try await local.workspace(for: choice, in: project)
     }
 
+    func prepareWorkspace(for choice: TaskWorkspaceChoice, in project: Project) async throws -> TaskWorkspacePreparation
+    {
+        try await local.prepareWorkspace(for: choice, in: project)
+    }
+
     func removeUnusedWorkspace(at folder: URL, in project: Project) async throws -> Bool {
         try await local.removeUnusedWorkspace(at: folder, in: project)
     }

@@ -177,7 +177,7 @@ extension AppModel {
         task.workspaceChoice = compose.workspace
         task.draft = editor.draft
         task.attachments = editor.attachments
-        task.configChoices = compose.choices
+        task.configChoices = compose.heldDraft?.choices ?? compose.addressedChoices
         task.usesComposePresentation = true
         task.isSendRequested = true
         task.wantsComposerFocus = false
@@ -224,6 +224,7 @@ extension AppModel {
                     isError: true)
                 continue
             }
+            if case .select(let current, _) = option.kind, current == value { continue }
             await session.setConfigOption(option, to: value)
             guard case .select(let actual, _)? = session.configOptions.first(where: { $0.category == category })?.kind,
                 actual == value
@@ -234,6 +235,20 @@ extension AppModel {
                     isError: true)
                 continue
             }
+        }
+        // A later setting can revise earlier choices too. Never auto-send an address that drifted.
+        if task.isSendRequested,
+            task.configChoices.contains(where: { category, expected in
+                guard
+                    case .select(let actual, _)? = session.configOptions.first(where: { $0.category == category })?.kind
+                else { return true }
+                return actual != expected
+            })
+        {
+            task.isSendRequested = false
+            session.addNotice(
+                "The agent changed the selected settings. Your draft is kept. Review them before sending.",
+                isError: true)
         }
     }
 

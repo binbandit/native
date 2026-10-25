@@ -18,7 +18,7 @@ extension AppModel {
             try composeTask.hold(
                 ComposeHeldDraft(
                     project: project, agent: agent, device: quickEntry.device, text: editor.draft,
-                    files: editor.attachments.map(ComposeHeldDraft.File.init), choices: composeTask.choices,
+                    files: editor.attachments.map(ComposeHeldDraft.File.init), choices: composeTask.addressedChoices,
                     workspace: composeTask.workspace))
             quickEntry.failure = nil
         } catch {
@@ -36,7 +36,7 @@ extension AppModel {
         composeTask.editor = nil
         prepareComposeEditor()
         composeTask.editor?.attachments = held.files.map(\.attachment)
-        composeTask.choices = held.choices
+        composeTask.choices = held.choices.filter { composeTask.defaults[$0.key] != $0.value }
         for (index, option) in composeTask.options.enumerated() {
             guard let category = option.category, let value = held.choices[category],
                 case .select(_, let choices) = option.kind, choices.contains(where: { $0.value == value })

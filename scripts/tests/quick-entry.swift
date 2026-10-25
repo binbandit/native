@@ -209,6 +209,15 @@ private struct QuickEntryRegression {
         app.expandQuickEntry()
         try require(app.composeTask.editor?.draft == "Expand without sending", "Reopening Compose lost the draft")
         guard let editor = app.composeTask.editor else { throw CheckFailure("No Compose editor") }
+        app.composeTask.workspace = .newWorktree
+        app.composeTask.beginWorkspaceSelection()
+        app.composeTask.workspaceSelection = .project
+        app.composeTask.cancelWorkspaceSelection()
+        try require(app.composeTask.workspace == .newWorktree, "Cancel changed the addressed workspace")
+        app.composeTask.beginWorkspaceSelection()
+        app.composeTask.workspaceSelection = .project
+        app.composeTask.applyWorkspaceSelection()
+        try require(app.composeTask.workspace == .project, "Use Workspace did not commit the selection")
         let draftContext = CommandContext(composeDraft: app.composeTask.commandDraft)
         for id in [CommandID.composerAttachFiles, .composerFocus, .sessionChooseModel] {
             guard let command = NativeCommand.composer.first(where: { $0.id == id }) else {
@@ -231,8 +240,18 @@ private struct QuickEntryRegression {
         app.startComposeTask()
         try require(app.startingTasks.isEmpty && entry.failure != nil, "Missing attachment did not block Start")
         editor.attachments = []
+        app.composeTask.options = ComposeTaskPreviewFixtures.options
+        let addressed = Dictionary(
+            app.composeTask.options.compactMap { option -> (String, String)? in
+                guard let category = option.category, case .select(let value, _) = option.kind else { return nil }
+                return (category, value)
+            }, uniquingKeysWith: { first, _ in first })
+        app.composeTask.choices = [:]
         app.startComposeTask()
         guard let composed = app.composeTask.starting else { throw CheckFailure("Compose did not create a task") }
+        try require(composed.configChoices == addressed, "Start omitted the displayed defaults")
+        // This fixture agent has no settings; clear the captured values after testing the snapshot.
+        composed.configChoices = [:]
         let startingContext = CommandContext(composeDraft: app.composeTask.commandDraft)
         for command in NativeCommand.composer
         where [CommandID.composerAttachFiles, .composerFocus, .sessionChooseModel].contains(command.id) {
@@ -304,6 +323,8 @@ private struct QuickEntryRegression {
                 device: heldDevice, name: "elara", availability: .offline(reason: "Fixture offline"),
                 checkout: .present(path: "native"))
         ]
+        app.composeTask.options = ComposeTaskPreviewFixtures.options
+        let heldAddress = app.composeTask.addressedChoices
         app.holdComposeTask()
         try require(app.composeTask.isHeld, "Hold did not retain the offline task")
         let heldContext = CommandContext(composeDraft: app.composeTask.commandDraft)
@@ -314,6 +335,7 @@ private struct QuickEntryRegression {
         let restoredHold = ComposeTaskModel(defaults: defaults)
         try require(restoredHold.heldDraft?.text == "Keep while unavailable", "Hold was not durable")
         try require(restoredHold.heldDraft?.device == heldDevice, "Hold changed the destination")
+        try require(restoredHold.heldDraft?.choices == heldAddress, "Hold omitted the displayed defaults")
         app.closeComposeTask()
         app.expandQuickEntry()
         try require(app.composeTask.editor?.draft == "Keep while unavailable", "Opening Hold lost its draft")

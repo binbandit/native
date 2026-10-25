@@ -79,7 +79,7 @@ struct ComposeTaskAddress: View {
                         .foregroundStyle(.dsTextTertiary)
                 } else {
                     Button {
-                        compose.showsWorkspaces = true
+                        compose.beginWorkspaceSelection()
                     } label: {
                         HStack(spacing: DS.Space.sm) {
                             Text(workspaceBranch).font(.dsMono).foregroundStyle(.dsTextSecondary)

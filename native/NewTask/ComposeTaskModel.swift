@@ -22,6 +22,7 @@ final class ComposeTaskModel {
     var workspaceRead = UUID()
     var workspaceFailure: String?
     var showsWorkspaces = false
+    var workspaceSelection: TaskWorkspaceChoice?
     var isHeld = false
     var pendingAttachments = false
     var heldDraft: ComposeHeldDraft?
@@ -58,6 +59,32 @@ final class ComposeTaskModel {
 
     var commandDraft: SessionModel? {
         isPresented && !isHeld && stage == .writing ? editor : nil
+    }
+
+    var addressedChoices: [String: String] {
+        Dictionary(
+            options.compactMap { option in
+                guard let category = option.category, ["model", "thought_level", "mode"].contains(category),
+                    case .select(let value, _) = option.kind
+                else { return nil }
+                return (category, value)
+            }, uniquingKeysWith: { first, _ in first })
+    }
+
+    func beginWorkspaceSelection() {
+        workspaceSelection = workspace
+        showsWorkspaces = true
+    }
+
+    func cancelWorkspaceSelection() {
+        workspaceSelection = nil
+        showsWorkspaces = false
+    }
+
+    func applyWorkspaceSelection() {
+        guard let workspaceSelection else { return }
+        workspace = workspaceSelection
+        cancelWorkspaceSelection()
     }
 
     func choose(_ setting: SelectSetting, value: String) {
