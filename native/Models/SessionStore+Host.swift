@@ -17,6 +17,13 @@ extension SessionStore {
         hostSessions[id].flatMap { session($0) }
     }
 
+    /// The models following host sessions through `client`, subagents included, each once.
+    func sessions(on client: NativeHostClient) -> [SessionModel] {
+        hostSessions.compactMap { id, key in
+            session(key).flatMap { $0.host?.id == id && $0.host?.client === client ? $0 : nil }
+        }
+    }
+
     /// Routes one of the host's events.
     func handle(_ event: NativeHostClient.Event) {
         switch event {
