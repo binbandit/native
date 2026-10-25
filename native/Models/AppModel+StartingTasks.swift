@@ -228,7 +228,7 @@ extension AppModel {
     }
 
     /// Removes the workspace made for a discarded task, unless it's the project's own folder.
-    private func removeWorkspace(of task: StartingTask) {
+    func removeWorkspace(of task: StartingTask) {
         // A paired host's worktree is removed there (`DeviceTaskWorkspaces` goes by the folder).
         guard task.ownsWorkspace, let folder = task.folder, let project = projects.project(task.project),
             !SessionFolder.isSame(folder.folderPath, project.path)
