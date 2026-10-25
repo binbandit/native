@@ -1,3 +1,6 @@
+import AppAppearance
+import CodeThemes
+import Experiments
 import NativePolicy
 
 extension PluginRegistry {
