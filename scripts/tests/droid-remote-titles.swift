@@ -28,6 +28,8 @@ private actor TitlesHost {
     }
 
     let hostID = HostID()
+    /// The key every pairing with this host pins, as pairing the same host again does.
+    let hostKey = LinkIdentity().publicKey
     private(set) var epoch = UUID()
     private(set) var summaries: [HostSessionSummary] = []
     let configuring: Configuring
@@ -332,7 +334,7 @@ private struct DroidRemoteTitlesRegression {
             let client = NativeHostClient(transport: link, clientInfo: peerInfo)
             let paired = PairedHost(
                 result: LinkPairingResult(
-                    hostID: host.hostID, hostKey: LinkIdentity().publicKey, hostName: "Fixture", deviceID: UUID(),
+                    hostID: host.hostID, hostKey: host.hostKey, hostName: "Fixture", deviceID: UUID(),
                     grants: LinkGrants(manageHost: managesHost, runCommands: false), addresses: []),
                 identity: LinkIdentity())
             let remote = app.hosts.add(paired)
@@ -508,6 +510,30 @@ private struct DroidRemoteTitlesRegression {
             await thisMacLink.configurations == [ConfigureTitlesParams(provider: .off)],
             "This Mac's host heard about the paired hosts' titles")
         print("PASS: a pairing without the grant and an older host keep the app's own titles")
+
+        // A host followed through a pairing that could manage it, paired again without the grant:
+        // its task is the app's to title again, and nothing goes to either pairing.
+        let demoted = TitlesHost()
+        await demoted.addTask("demoted")
+        let (_, managingClient, managingLink) = await pair(demoted, managesHost: true)
+        clients.append(managingClient)
+        try await connected(managingClient)
+        try require(app.titles.isTitledByHost(key("demoted")), "The managing pairing didn't follow the task")
+        let (_, restrictedClient, restrictedLink) = await pair(demoted, managesHost: false)
+        clients.append(restrictedClient)
+        try await connected(restrictedClient)
+        try require(!app.titles.isTitledByHost(key("demoted")), "The task stayed with the replaced pairing")
+        titler.answer = "Sort the imports"
+        await app.titles.generateIfNeeded(
+            for: key("demoted"), request: TitleRequest(projectName: "repo", prompt: "sort the imports"), using: titler)
+        try require(shown("demoted") == "Sort the imports", "The app didn't title the task after the new pairing")
+        app.titles.rename(key("demoted"), to: "Imports")
+        try await settle()
+        try require(shown("demoted") == "Imports", "The rename didn't hold")
+        try require(await managingLink.titlesSent.isEmpty, "A title went to the replaced pairing")
+        try require(await restrictedLink.titlesSent.isEmpty, "A title went to the pairing without the grant")
+        try require(await restrictedLink.configurations.isEmpty, "The pairing without the grant configured its host")
+        print("PASS: paired again without the grant, a followed host's task goes back to the app's titles")
         for client in clients { await client.stop() }
     }
 }

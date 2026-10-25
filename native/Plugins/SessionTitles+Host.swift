@@ -53,6 +53,13 @@ extension SessionTitles {
         }
     }
 
+    /// Stops counting the tasks followed through `clients` (an earlier pairing's, stopped for good)
+    /// as titled by their host, as when the host closes one: their titles stay, and the app writes
+    /// them again until a client that follows the host adopts the task.
+    func unlinkTasks(on clients: [NativeHostClient]) {
+        hostLinks = hostLinks.filter { _, link in !clients.contains { $0 === link.client } }
+    }
+
     /// Whether a host titles the task, so the app doesn't too.
     func isTitledByHost(_ key: Key) -> Bool {
         hostLinks[key] != nil

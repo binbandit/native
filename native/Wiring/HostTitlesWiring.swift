@@ -22,13 +22,18 @@ enum HostTitlesWiring {
     }
 
     /// For each new client of a paired host (`AppModel.hostConnected`), before any session opens
-    /// on it.
+    /// on it and before an earlier pairing's tasks move to it.
     static func connect(_ model: AppModel, toPaired host: RemoteHost) async {
-        guard let client = host.client, host.paired.grants.manageHost else { return }
-        // Until the pairing is replaced, removed or ended: its client stops for good then.
-        await follow(client, for: model) { [weak model] in
-            model?.hosts.all.contains { $0.client === client } == true
+        guard let client = host.client else { return }
+        if host.paired.grants.manageHost {
+            // Until the pairing is replaced, removed or ended: its client stops for good then.
+            await follow(client, for: model) { [weak model] in
+                model?.hosts.all.contains { $0.client === client } == true
+            }
         }
+        // The tasks an earlier pairing of this host followed: the new one has taken those the host
+        // still has, if it follows at all, and the app titles the rest again.
+        model.titles.unlinkTasks(on: model.hosts.retiredClients(of: host).map(\.client))
     }
 
     private static func follow(

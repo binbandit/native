@@ -963,7 +963,7 @@ it on); off, the app titles that host's tasks as it did before and tells the hos
   same path.
   A pairing without `manageHost` never sends `titles/configure`: the host keeps the configuration
   its owner gave it, and the app titles the tasks it starts there as it always has, kept on this Mac
-  only (renames too). So does a pairing whose host refuses the configuration or predates titles
+  only (renames too), including tasks an earlier pairing of that host followed. So does a pairing whose host refuses the configuration or predates titles
   (`titles/configure` unknown), after one attempt for that pairing's connection in a launch. Such a
   host names a task started while this Mac is away only if its own configuration titles it, and the
   app shows that title in the agent's place (the summary's `title`) while it has none of its own.
