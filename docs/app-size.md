@@ -18,7 +18,7 @@ so growth gets noticed while there's still room to choose what to cut; lower the
 | --- | --- | --- |
 | Download, update archive | 47.5 MB | 46.8 MB |
 | Download, disk image | 48 MB | not remeasured |
-| Installed app | 118 MB | 116.4 MB |
+| Installed app | 118.5 MB | 116.4 MB |
 | App binary (`Contents/MacOS/Native`) | 70 MB | 59.6 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
@@ -34,6 +34,14 @@ build them, and such an app looks 12 to 40 MB smaller than what ships.
   dry runs included, and stops before publishing when they're over.
 
 Raise a budget only with the reason written here, in the same change.
+
+2026-10-25: managed network admission (the NativeNetwork package, its typed service inventory and
+the agent icon consumer) integrated with main through `c0264e9e` at `85cc7167` measures 118.0 MB
+installed for Nightly, over the 118 MB allowance, and 117.9 MB for Release, with app binaries of
+60.9 MB (PR #136, Check Nightly job 121044534687). Main at `5f4c9918` measured 117.9 MB installed.
+The package is compiled code only, with no bundled assets or dependencies. The installed allowance
+is now 118.5 MB for this integration; the download, binary, runtime and disk-image limits stay
+unchanged. These are integrated measurements, not an isolated feature delta.
 
 2026-10-24: the open task well integrated with main through `44feb957` at `e5acaa05`
 measures 47.1 MB for the Release update archive and 47.2 MB for Nightly, over the 47 MB
