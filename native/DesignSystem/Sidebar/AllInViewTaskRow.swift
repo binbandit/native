@@ -10,11 +10,16 @@ public struct AllInViewTaskRow: View {
     var isUnread = false
     var ask: String?
     var attentionSince: Date?
+    var showsAttentionClock = true
     var answersShortcut = false
     var askShortcut: KeyboardShortcut? = KeyboardShortcut("y", modifiers: .command)
     var unavailable: String?
     var hostName: String?
     var projectName: String?
+    var date: Date?
+    var changes: (added: Int, removed: Int)?
+    var agentName: String?
+    var branchName: String?
     var peek: (() -> Void)?
     let action: () -> Void
 
@@ -37,7 +42,7 @@ public struct AllInViewTaskRow: View {
                             .foregroundStyle(emphasizesTitle ? .dsTextPrimary : .dsTextSecondary)
                             .lineLimit(1)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                        if status.needsAttention, unavailable == nil, let attentionSince {
+                        if showsAttentionClock, status.needsAttention, unavailable == nil, let attentionSince {
                             DSMinuteTimeline { now in
                                 Text(DSFormat.compactAge(attentionSince, now: now))
                                     .font(DS.Sidebar.clockFont)
@@ -51,6 +56,16 @@ public struct AllInViewTaskRow: View {
                                 .font(.dsBody)
                                 .foregroundStyle(.dsTextTertiary)
                                 .help(hostName)
+                        }
+                        if let changes, changes.added > 0 || changes.removed > 0 {
+                            DiffStatLabel(added: changes.added, removed: changes.removed).fixedSize()
+                        }
+                        if !status.needsAttention, let date {
+                            DSMinuteTimeline { now in
+                                Text(DSFormat.compactAge(date, now: now))
+                                    .font(DS.Sidebar.ageFont)
+                                    .foregroundStyle(.dsTextTertiary)
+                            }.fixedSize()
                         }
                     }
                     .frame(height: DS.Sidebar.titleHeight)
@@ -72,6 +87,14 @@ public struct AllInViewTaskRow: View {
                             }
                         }
                         .transition(.opacity.combined(with: .move(edge: .top)))
+                    }
+                    if agentName != nil || branchName != nil {
+                        Text([agentName, branchName].compactMap(\.self).joined(separator: " · "))
+                            .font(DS.Sidebar.factFont)
+                            .foregroundStyle(.dsTextTertiary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .help([agentName, branchName].compactMap(\.self).joined(separator: " · "))
                     }
                 }
             }
@@ -109,7 +132,8 @@ public struct AllInViewTaskRow: View {
         .accessibilityLabel(DSInlineCode.plain(title))
         .accessibilityValue(
             [
-                projectName, unavailable ?? status.label, isUnread ? "Unread" : nil, ask,
+                projectName, unavailable ?? status.label, isUnread ? "Unread" : nil, ask, agentName, branchName,
+                changes.map { DSFormat.spokenDiffStat(added: $0.added, removed: $0.removed) },
                 answersShortcut ? "Oldest ask" : nil,
             ].compactMap(\.self).joined(separator: ", ")
         )
@@ -172,6 +196,25 @@ public struct AllInViewTaskRow: View {
             ) {}
         }
         .frame(width: DS.Size.sidebarWidth - DS.Sidebar.inset * 2)
+    }
+}
+#Preview("All in view - Optional facts and folded Home ask") {
+    DSPreviewPair {
+        VStack(spacing: 0) {
+            AllInViewTaskRow(
+                title: "Wrap diff lines at word boundaries", status: .done, isSelected: true,
+                date: .now.addingTimeInterval(-1080), changes: (24, 6), agentName: "Codex",
+                branchName: "fix/diff-word-wrap"
+            ) {}
+            AllInViewTaskRow(
+                title: "Fix flaky `PermissionRequestTests`", status: .needsPermission,
+                attentionSince: .now.addingTimeInterval(-720), showsAttentionClock: false
+            ) {}
+            AllInViewTaskRow(
+                title: "A task with a long branch and agent name", status: .working, agentName: "Claude Code",
+                branchName: "feature/authentication-migration-and-dependent-packages"
+            ) {}
+        }.frame(width: DS.Size.sidebarWidth - DS.Sidebar.inset * 2)
     }
 }
 #endif

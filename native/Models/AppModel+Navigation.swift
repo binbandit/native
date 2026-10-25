@@ -4,9 +4,15 @@ import Foundation
 // Where the user is: moving between sessions, back and forward through what they've viewed, and
 // which sessions have news they haven't seen.
 extension AppModel {
+    /// The live sidebar order includes filters and day disclosures while All in view is enabled.
+    var sidebarNavigationOrder: [SessionKey] {
+        if offersTaskPeek, let order = archiveNavigationOrder { return order.archiveSessionOrder() }
+        return sessionList.map(\.id)
+    }
+
     /// Selects the session `offset` places from the selected one in the sidebar, wrapping around.
-    func selectSession(offset: Int) {
-        let keys = sessionList.map(\.id)
+    func selectSession(offset: Int, in visible: [SessionKey]? = nil) {
+        let keys = visible ?? sidebarNavigationOrder
         guard !keys.isEmpty else { return }
         let index = selection.flatMap(keys.firstIndex(of:)).map { $0 + offset } ?? (offset > 0 ? 0 : keys.count - 1)
         selection = keys[(index % keys.count + keys.count) % keys.count]

@@ -1,4 +1,5 @@
 import ApprovalAnalysis
+import CodeThemes
 import Foundation
 
 /// Reads and validates every policy key from a source.
@@ -6,6 +7,12 @@ public enum PolicyLoader {
     public static func load(from source: any PolicySource) -> NativePolicy {
         var resolver = PolicyResolver(source: source)
         var policy = NativePolicy()
+        policy.organizationContact = resolver.resolve(
+            .organizationContact, expecting: "a non-empty string", PolicyParse.text)
+        policy.appearanceCodeTheme = resolver.resolve(
+            .appearanceCodeTheme, expecting: "a built-in code theme id", PolicyParse.codeTheme)
+        policy.appearanceCodeThemeReason = resolver.resolve(
+            .appearanceCodeThemeReason, expecting: "a non-empty string", PolicyParse.text)
         policy.commandKnowledge =
             resolver.resolve(
                 .commandKnowledge, expecting: "a command knowledge JSON document", PolicyParse.commandKnowledge)
@@ -140,6 +147,18 @@ struct PolicyResolver {
 /// Parsers for property-list values. Each returns nil when the value as a whole is unusable, and
 /// reports entries it skipped in `problems`.
 enum PolicyParse {
+    static func text(_ raw: Any, _ problems: inout [String]) -> String? {
+        guard let text = raw as? String, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        return text
+    }
+
+    static func codeTheme(_ raw: Any, _ problems: inout [String]) -> String? {
+        guard let id = raw as? String, CodeTheme.theme(id: .init(rawValue: id)) != nil else { return nil }
+        return id
+    }
+
     static func commandKnowledge(_ raw: Any, _ problems: inout [String]) -> CommandKnowledge? {
         guard let json = raw as? String else { return nil }
         let knowledge = CommandKnowledge.load(Data(json.utf8))

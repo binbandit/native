@@ -40,6 +40,9 @@ final class SessionStore {
         self.services = services
     }
 
+    /// Models already in memory. Reading this never restores history or starts an agent.
+    var loadedSessions: [SessionModel] { Array(sessions.values) }
+
     func session(_ key: SessionKey) -> SessionModel? {
         sessions[key]
     }

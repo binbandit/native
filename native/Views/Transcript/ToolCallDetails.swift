@@ -20,6 +20,7 @@ struct ToolCallBody: View {
                 .padding(DS.Space.lg)
             }
         }
+        .composerQuoteSource(ComposerQuoteSource(name: call.title, text: ToolOutput.text(of: call)))
     }
 
     @ViewBuilder private func output(hasArtifacts: Bool) -> some View {

@@ -33,3 +33,26 @@ struct SessionToolPanelLayoutTests {
         }
     }
 }
+
+struct SessionToolReplacementLayoutTests {
+    private func layout(_ open: [SessionToolPlace: SessionToolID], width: Double) -> SessionToolPanelLayout {
+        SessionToolPanelLayout(
+            open: open, availableWidth: width, minimumConversationWidth: 520, panelWidth: 420,
+            replacingConversationWith: "changes")
+    }
+
+    @Test func narrowChangesReplacesConversationAndWideChangesDocks() {
+        let open: [SessionToolPlace: SessionToolID] = [.side: "changes"]
+        #expect(layout(open, width: 644).replacement == "changes")
+        #expect(layout(open, width: 644).overlay == nil)
+        #expect(layout(open, width: 940).replacement == nil)
+        #expect(layout(open, width: 940).docked == "changes")
+    }
+
+    @Test func otherToolsAndExplicitFactPlacementKeepTheirPresentation() {
+        #expect(layout([.side: "terminal"], width: 644).overlay == "terminal")
+        #expect(layout([.fact: "changes"], width: 644).replacement == "changes")
+        #expect(layout([.fact: "changes"], width: 1200).overlay == "changes")
+        #expect(layout([:], width: 644).replacement == nil)
+    }
+}

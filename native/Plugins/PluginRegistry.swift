@@ -78,6 +78,16 @@ final class PluginRegistry {
         reload()
     }
 
+    #if DEBUG
+    /// Inert contributions for previews: no plugin folder reads or shared experiment mutations.
+    init(previewing plugins: [any NativePlugin], disabled: Set<String> = []) {
+        builtIns = plugins
+        defaults = PreviewUserDefaults()
+        choices = Dictionary(uniqueKeysWithValues: disabled.map { ($0, false) })
+        loadedPlugins = plugins.map { LoadedPlugin(plugin: $0, source: .builtIn) }
+    }
+    #endif
+
     /// Reads the plugins folder again. Built-ins come first, so their ids can't be taken over.
     func reload() {
         var loaded = builtIns.map { LoadedPlugin(plugin: $0, source: .builtIn) }

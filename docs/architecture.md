@@ -224,8 +224,9 @@ continue, preserving the draft; a disconnected in-process agent instead opens it
 Home retains the exact question or permission on screen, including subagent asks. An answer that
 cannot reach the host stays on screen with its error and no success receipt. Finished today includes tasks
 with a known successful turn completion today, five at a time; unknown history is not called done.
-On Home, the sidebar's asks fold to their title. Up next and finished rows open the shared Peek;
-its Open Task action enters the conversation. Home enables Peek independently of the sidebar
+Home publishes the exact requests it renders, including visible Up next rows, to the window.
+All in view folds matching sidebar asks to their title and signal; leaving Home restores the sentence
+and shortcut. Up next and finished rows open the shared Peek; its Open Task action enters the conversation. Home enables Peek independently of the sidebar
 experiment. Its visible ask owns the permission shortcuts while Peek is closed. Home and Peek share
 acknowledgement-based permission delivery: failed answers keep the exact request and Peek open,
 and failed instructions retain their text without duplicating queued follow-ups.
@@ -336,14 +337,26 @@ instruction recovery and the hold for irreversible approvals. Recovered failures
 unrecovered failures expose the real notice and the model's recovery action.
 
 Selection, menus, ordering, pins, archive and keyboard navigation remain shared with today's
-sidebar. All tasks stay visible in this slice; the rejected three-recent-task fold is removed.
+sidebar. The rejected three-recent-task fold is removed.
 Slice 3 keeps the platform's full sidebar hide. Back and forward remain beside search, followed by
 one amber signal while a reachable task has an ask or an unresolved failure. Its count is per task,
 including child asks under their parent, independent of sidebar filters and project folding.
 The popover lists oldest asks first, then failures; a click or Space opens the same `TaskPeekView`
 in place. Answering returns to the remaining list, and resolving the last task dismisses it.
 The current task and draft stay untouched until Open Task. No second approval or status view is used.
-Fold by day and optional row facts remain later slices. Enable before an isolated launch with
+Slice 4 completes All in view. Read tasks at rest before today's calendar boundary fold under
+"N earlier" in each project. Active, unread, paused, limited, offline and failed tasks stay visible;
+coordinator families stay together. The disclosure preserves saved order. Search and history
+reveal older selected tasks, filters expose every match, and sidebar arrow/bulk/archive navigation
+excludes folded earlier tasks. Pinned tasks stay in their existing user-chosen section.
+View > Sidebar and the list context menu share persisted choices: ask text and machine glyphs
+(default on), ages, changes on finished tasks, agent names and branches (default off), plus folding
+after a day, a week or never. Changes use the latest completed turn; branch facts use the existing
+git adapter without loading pull requests. No extra data is fetched with additions off.
+Home Next owns the asks it shows; matching sidebar sentences, clocks and keycaps fold. Requests not
+yet shown by Home, including different requests on the same task, keep their sidebar sentence.
+The Debug fixtures `fold`, `facts` and `home-fold` cover these states.
+Enable before an isolated launch with
 `defaults write dev.binbandit.native.dev.<name> experiment.NativeSidebarNext -bool YES`.
 
 The sidebar's filter and sort controls also offer "Show agent icons", on by default. This only
@@ -424,6 +437,9 @@ The open well reads worker identity, managed policy and cached tool summaries. S
 runs share the existing terminal workbench; its add menu reuses project actions. Subagents use a
 roster before opening their existing inspector. Requests lead to the existing composer or child
 request surface, and turn outcomes reuse detected Changes. The shared `TaskSignal` supplies the status vocabulary and finite attention animation.
+Narrow Changes replaces only the conversation, retaining the composer and the review's file/scope
+state across resizing. Its file pop-up reuses the repository and range models, and its diff is the
+shared `DiffView`, so the composer's quoting works there without a second selection model.
 The behavior, tool order and remaining slices are described in `docs/session-tools.md`.
 
 ### Changing a task's agent (Labs)
@@ -520,9 +536,41 @@ agent-created subagents, and `TaskOrchestrator` checks that scope on each tool c
 the project folder and an advertised read-only setting, bypassing workspace preparation. See
 `docs/coordinator-tasks.md` for scope, message attribution, lifecycle and deferred work.
 
+### Appearance code theme card
+
+Appearance uses one-line window choices and a single code card in the effective theme. The selectors
+write the existing light and dark preferences, with one undo action for both-mode changes. Managed
+`policy.appearance.codeTheme` overrides rendering while retaining those preferences.
+
+On entering the page, `AppearanceSpecimenSource` asks the Changes model for a bounded copy of the
+latest completed task's captured edit diffs. It never reads repository blobs, snapshots a shared
+working tree, opens a task or contacts a paired host. Without captured changes it uses a sample,
+so later edits from another task cannot be attributed to the completed one. Search-excluded projects
+are skipped. `SpecimenSource` selects completed task snapshots; `SpecimenLine`
+in `Packages/CodeThemes` scores highlighted added lines, filters every displayed line and metadata for
+secret patterns, and falls back to a language sample. The excerpt stays in memory and is not logged or
+persisted. The terminal line is always a sample. Try On's task preview is a later change.
+
 ### Credential ownership
 
 Native reads only its own credential stores. Agent MCP configuration (server lists and URLs) remains
 readable, but agent-owned sign-in stays unknown unless reported by the agent. An anonymous connection
 check cannot establish that the agent is signed out. Native-owned MCP secrets continue to support
 connection checks; agents retain responsibility for their own authentication.
+
+### Point and say (Fine print, slice 3)
+
+With `NativeComposerNext`, the transcript and Changes pane share a quote context supplied by
+`SessionView`. Cmd-L captures only a selection inside a registered Native source view, or the
+explicit line-number range in `DiffView`. The platform adapter never reads another application's
+selection or the pasteboard. Diff quotes retain their old/new side and original line numbers;
+transcript quotes use the selected text block's line numbers. Removing a quote supports Undo.
+
+`PromptQuote` stores snapshots as readable leading quote blocks in the existing draft. The gated
+composer renders those blocks with numbers in its 24pt padding and edits the message separately.
+Send, queue editing, failure recovery and unsent draft persistence therefore carry one text value.
+The switch-off composer exposes that same readable text, so changing the experiment cannot hide
+or discard context. File tokens are a display projection of canonical `@path` references;
+`FileReferenceProjection` maps edits and selections back to those paths. Displayed counts never
+enter the prompt. The existing repository monitor supplies uncommitted counts, with the latest
+reported turn edits as a fallback for committed files; unavailable or binary counts stay absent.

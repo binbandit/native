@@ -138,23 +138,25 @@ extension NativeCommand {
                 _ in
                 model.selectSession(offset: 1)
             }
-            .available { _ in !model.sessionList.isEmpty },
+            .available { _ in !model.sidebarNavigationOrder.isEmpty },
 
             NativeCommand(
                 .sessionPrevious, title: "Previous Task", category: .navigation, systemImage: "chevron.up"
             ) { _ in
                 model.selectSession(offset: -1)
             }
-            .available { _ in !model.sessionList.isEmpty },
+            .available { _ in !model.sidebarNavigationOrder.isEmpty },
         ]
             + CommandID.sessionSelectPositions.map { position in
                 NativeCommand(.sessionSelect(position), title: "Go to Task \(position)", category: .navigation) {
                     _ in
-                    guard let listed = model.sessionList.dropFirst(position - 1).first else { return }
-                    model.selection = listed.id
+                    guard let key = model.sidebarNavigationOrder.dropFirst(position - 1).first else { return }
+                    model.selection = key
                 }
-                .menuTitle { _ in model.sessionList.dropFirst(position - 1).first.map(model.title(for:)) ?? "" }
-                .available { _ in model.sessionList.count >= position }
+                .menuTitle { _ in
+                    model.sidebarNavigationOrder.dropFirst(position - 1).first.map(model.titleOfSession) ?? ""
+                }
+                .available { _ in model.sidebarNavigationOrder.count >= position }
                 // The palette lists the tasks themselves, by name.
                 .hiddenFromPalette()
             }

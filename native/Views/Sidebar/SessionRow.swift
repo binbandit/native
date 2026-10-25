@@ -1,5 +1,6 @@
 import ACP
 import SwiftUI
+import TaskList
 
 /// A session in the sidebar: the agent's icon or the session's status,
 /// its title and age, and `accessory` (pull request, branch state and context usage, as the app
@@ -14,7 +15,8 @@ struct SessionRow<Accessory: View>: View {
     @Environment(\.sidebarTaskInsights) private var insights
     @AppStorage("sidebar.showAgentIcons") private var showAgentIcons = true
     @Environment(\.sidebarAllInView) private var isAllInView
-    @Environment(\.oldestTaskAskID) private var oldestAskID
+    @Environment(\.homePresentedTaskNeeds) private var homeNeeds
+    @Environment(\.answerShortcutAskID) private var answerShortcutAskID
     let summary: SessionSummary
     /// Grouped under a project header, or flush in the Pinned section.
     var indent: TaskRowIndent = .grouped
@@ -104,18 +106,32 @@ struct SessionRow<Accessory: View>: View {
     @ViewBuilder private var taskRow: some View {
         if isAllInView {
             let attention = session.flatMap {
-                SidebarSessionAttention(session: $0, task: summary.id, oldest: oldestAskID)
+                SidebarSessionAttention(session: $0, task: summary.id, oldest: answerShortcutAskID)
             }
+            let preferences = model.sidebarPreferences
+            let isOnHome =
+                attention.map { homeNeeds.contains(.request($0.id)) }
+                ?? homeNeeds.contains(.failure(summary.id))
+            let hidesAsk = isOnHome || !preferences.shows(.needs)
             AllInViewTaskRow(
                 title: title, status: TaskStatus(session), isSelected: isSelected,
                 isPeeking: model.taskPeek.request?.task == summary.id, isUnread: isUnread,
-                ask: model.taskPeek.homeIsVisible ? nil : attention?.sentence ?? recoverySentence,
-                attentionSince: attention?.since,
-                answersShortcut: attention?.answersShortcut == true,
+                ask: hidesAsk ? nil : attention?.sentence ?? recoverySentence, attentionSince: attention?.since,
+                showsAttentionClock: !isOnHome,
+                answersShortcut: !hidesAsk && attention?.answersShortcut == true,
                 askShortcut: CommandRegistry.shared.keyboardShortcut(for: .taskAnswerOldestAsk),
                 unavailable: unavailableSentence,
-                hostName: remoteHost?.name, peek: { model.peekTask(summary.id) },
-                action: { if model.taskPeek.request?.task != summary.id { select() } })
+                hostName: preferences.shows(.machines) ? remoteHost?.name : nil,
+                date: preferences.shows(.ages) ? model.lastActivity(for: summary) : nil,
+                changes: preferences.shows(.changes) ? finishedChanges : nil,
+                agentName: preferences.shows(.agents) ? summary.agent.displayName : nil,
+                branchName: preferences.shows(.branches) ? insights.branch(summary) : nil,
+                peek: { model.peekTask(summary.id) },
+                action: { if model.taskPeek.request?.task != summary.id { select() } }
+            )
+            .task(id: preferences.shows(.branches)) {
+                if preferences.shows(.branches) { await insights.prepareBranch(summary) }
+            }
         } else {
             TaskRow(
                 title: title, status: TaskStatus(session), isSelected: isSelected, isUnread: isUnread,
@@ -123,6 +139,12 @@ struct SessionRow<Accessory: View>: View {
                 leading: AgentIcon(agent: summary.agent).opacity(showAgentIcons ? 1 : 0), accessory: accessory,
                 action: select, onArchive: archiveAction)
         }
+    }
+
+    private var finishedChanges: (added: Int, removed: Int)? {
+        guard let session, session.taskStatus == .done, let turn = session.state.turns.last else { return nil }
+        let summary = session.state.summary(of: turn)
+        return (summary.linesAdded, summary.linesRemoved)
     }
 
     private var remoteHost: RemoteHost? {
@@ -340,6 +362,8 @@ struct SessionContextUsage: View {
 #Preview("Task rows - Asks folded on Home") {
     let app = HomeNextPreviewFixtures.model(.busy)
     let _ = app.setHomeNextVisible(true)
+    let homeNeeds = Set(
+        app.sessionList.flatMap { app.taskAsks(for: $0.id) }.map { HomePresentedTaskNeed.request($0.id) })
     DSPreviewPair {
         VStack(spacing: DS.Space.xxs) {
             ForEach(app.sessionList) { summary in
@@ -347,6 +371,7 @@ struct SessionContextUsage: View {
             }
         }
         .environment(\.sidebarAllInView, true)
+        .environment(\.homePresentedTaskNeeds, homeNeeds)
         .frame(width: DS.Size.sidebarWidth - DS.Space.lg)
     }
     .sidebarPreviewEnvironment(app)
