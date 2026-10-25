@@ -340,10 +340,10 @@ enum AgentLaunch {
         process.standardInput = stdin
         process.standardOutput = stdout
         process.standardError = stderrPipe
-        let stderr = try StderrTail(reading: stderrPipe.fileHandleForReading)
+        // The tail and the channel get their own copies of our ends; closing the originals means that
+        // when the channel closes stdin, the agent sees EOF. Close-on-exec copies, like the pipes.
+        let stderr = try StderrTail(reading: fcntl(stderrPipe.fileHandleForReading.fileDescriptor, F_DUPFD_CLOEXEC, 0))
         try process.run()
-        // The channel gets its own copies of our ends; closing the originals means that when the
-        // channel closes stdin, the agent sees EOF. Close-on-exec copies, like the pipes themselves.
         let channel = ByteChannel(
             reading: fcntl(stdout.fileHandleForReading.fileDescriptor, F_DUPFD_CLOEXEC, 0),
             writing: fcntl(stdin.fileHandleForWriting.fileDescriptor, F_DUPFD_CLOEXEC, 0),
@@ -351,6 +351,7 @@ enum AgentLaunch {
         )
         try? stdout.fileHandleForReading.close()
         try? stdin.fileHandleForWriting.close()
+        try? stderrPipe.fileHandleForReading.close()
         return (process, channel, stderr)
     }
 
