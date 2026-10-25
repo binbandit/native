@@ -4,20 +4,66 @@ import NativeHostClient
 import NativeHostProtocol
 
 /// Where a session runs in Native's host: the client that reaches the host and the session's id
-/// there. Every action on a host session is one of its requests.
-struct HostSessionLink {
-    let client: NativeHostClient
+/// there. Every action on a host session is one of its requests. Pairing the same host again gives
+/// it a new client, and the session moves to it (`move(to:)`, AppModel+HostReconnection.swift): a
+/// reference, so actions already holding the link, waiting out a drop or registered for undo, follow.
+final class HostSessionLink {
+    private(set) var client: NativeHostClient
     let id: HostSessionID
 
+    init(client: NativeHostClient, id: HostSessionID) {
+        self.client = client
+        self.id = id
+    }
+
+    /// Follows the session through `client` from now on: the host's client for a new pairing.
+    func move(to client: NativeHostClient) {
+        self.client = client
+    }
+
     /// Makes a request, waiting out a dropped connection once: a host that restarts is back within
-    /// seconds, and the user's Stop or approval shouldn't be lost meanwhile.
+    /// seconds, and the user's Stop or approval shouldn't be lost meanwhile. The retry goes through
+    /// the client the session has by then, which a new pairing may have replaced.
     func request<Result: Sendable>(_ body: (NativeHostClient) async throws -> Result) async throws -> Result {
         do {
             return try await body(client)
-        } catch let error where error is PeerError || error as? NativeHostClient.Failure == .notConnected {
-            _ = try await client.connected()
+        } catch let error where Self.isConnectionLoss(error) {
+            try await connected()
             return try await body(client)
         }
+    }
+
+    /// Sends a message, and sends it again with the same request id if the connection drops before
+    /// the host answers, for up to `patience`. The host delivers each request id once, so retrying
+    /// never sends a message twice, even through the client of a new pairing. The client retries
+    /// the same way (`NativeHostClient.prompt`), but only on itself.
+    func prompt(_ params: PromptParams, patience: Duration = .seconds(60)) async throws -> PromptDelivery {
+        let deadline = ContinuousClock.now + patience
+        while true {
+            do {
+                return try await client.prompt(params, patience: .zero)
+            } catch  where Self.isConnectionLoss(error) && ContinuousClock.now < deadline {
+                // The state may still say connected for a moment after the connection dropped.
+                try await Task.sleep(for: .milliseconds(100))
+                while await client.hostInfo == nil, ContinuousClock.now < deadline {
+                    try await Task.sleep(for: .milliseconds(50))
+                }
+            }
+        }
+    }
+
+    /// Returns once the session's client is connected, reading it again each time: a new pairing's
+    /// client takes over from one that never will be.
+    private func connected() async throws {
+        while !Task.isCancelled {
+            if await client.hostInfo != nil { return }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        throw CancellationError()
+    }
+
+    private static func isConnectionLoss(_ error: any Error) -> Bool {
+        error is PeerError || error as? NativeHostClient.Failure == .notConnected
     }
 
     func respondPermission(toolCallID: String, optionID: String?) async {
@@ -231,7 +277,7 @@ extension SessionModel {
             behavior: behavior == .steer ? .steer : .queue, echo: echo, origin: origin == .task ? .task : .user)
         services.post(.promptSent(context, text: text))
         nameAfterPrompt(text, attachments: attachments, isFirstPrompt: isFirstPrompt)
-        return switch try await host.client.prompt(params) {
+        return switch try await host.prompt(params) {
         case .prompted: .prompted
         case .steered: .steered
         case .queued, .unknown: .queued

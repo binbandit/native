@@ -30,6 +30,9 @@ final class RemoteHosts {
     @ObservationIgnored var deviceWorkspaces: DeviceTaskWorkspaces?
     /// The hosts' clients the app has hooked its features to (titles), once each.
     @ObservationIgnored var wiredClients: Set<ObjectIdentifier> = []
+    /// Clients of pairings replaced or removed here, until the tasks still open on them move to
+    /// their host's next client (AppModel+HostReconnection.swift).
+    @ObservationIgnored private var retired: [RetiredClient] = []
     /// The app's definition of a host's agent (see `RemoteHost.definition`).
     @ObservationIgnored var definition: @MainActor (HostAgent) -> AgentDefinition = RemoteHost.definition(from:)
     @ObservationIgnored private let store: any PairedHostStore
@@ -120,13 +123,14 @@ final class RemoteHosts {
     // MARK: - What the user does
 
     /// Keeps a pairing Add Host made and connects to it. Pairing the same host instance again
-    /// replaces its old pairing, keeping what the user called it.
+    /// replaces its old pairing, keeping what the user called it, and its open tasks move to the
+    /// new client once it connects.
     @discardableResult
     func add(_ paired: PairedHost) -> RemoteHost {
         var paired = paired
         if let existing = host(paired.hostID) {
             paired.label = paired.label ?? existing.paired.label
-            existing.stop()
+            retire(existing)
             all.removeAll { $0.id == paired.hostID }
         }
         save(paired)
@@ -152,7 +156,7 @@ final class RemoteHosts {
     func remove(_ id: RemoteHostID) -> (paired: PairedHost, index: Int)? {
         guard let index = all.firstIndex(where: { $0.id == id }) else { return nil }
         let host = all.remove(at: index)
-        host.stop()
+        retire(host)
         do {
             try store.remove(id)
         } catch {
@@ -161,13 +165,48 @@ final class RemoteHosts {
         return (host.paired, index)
     }
 
-    /// Undoes `remove`.
+    /// Undoes `remove`: the tasks still open here move to the new client once it connects.
     func restore(_ paired: PairedHost, at index: Int) {
         guard host(paired.hostID) == nil else { return }
         save(paired)
         let host = makeHost(paired)
         all.insert(host, at: min(index, all.count))
         if isStarted { host.start() }
+    }
+
+    // MARK: - Pairings that ended here
+
+    /// A client of a pairing replaced or removed here, and what its tasks need to move on.
+    struct RetiredClient {
+        let host: RemoteHostID
+        /// The key its pairing pinned: only a client pinning the same one takes its tasks over.
+        let hostKey: LinkPublicKey
+        let client: NativeHostClient
+        /// The host process each of its sessions' transcripts comes from (`RemoteHost.deliveredRuns`).
+        let runs: [HostSessionID: UUID]
+    }
+
+    /// Stops a host's client for good, keeping it for the host's next client to take its tasks from.
+    /// A pairing the host ended has no client any more, so its tasks never move by themselves.
+    private func retire(_ host: RemoteHost) {
+        if let client = host.client {
+            // Nothing is hooked to it any more, and a later client may reuse its identifier.
+            wiredClients.remove(ObjectIdentifier(client))
+            retired.append(
+                RetiredClient(host: host.id, hostKey: host.paired.hostKey, client: client, runs: host.deliveredRuns))
+        }
+        host.stop()
+    }
+
+    /// The retired clients whose tasks `host` may take over: the same host, pinning the same key.
+    /// Another key, even under the same id, might be another machine.
+    func retiredClients(of host: RemoteHost) -> [RetiredClient] {
+        retired.filter { $0.host == host.id && $0.hostKey == host.paired.hostKey }
+    }
+
+    /// Forgets retired clients whose tasks have moved on.
+    func forget(_ clients: [RetiredClient]) {
+        retired.removeAll { old in clients.contains { $0.client === old.client } }
     }
 
     private func save(_ paired: PairedHost) {
@@ -184,8 +223,15 @@ final class RemoteHosts {
         let host = RemoteHost(
             paired: paired, discovered: { discovery.current }, addresses: RemoteHostsTesting.addresses)
         host.definition = { [weak self] agent in self?.definition(agent) ?? RemoteHost.definition(from: agent) }
-        host.onEvent = { [weak self] host, event in self?.onEvent?(host, event) }
-        host.onRefreshed = { [weak self] host in self?.onRefreshed?(host) }
+        // A replaced or removed pairing's client can still hand over what it read before it stopped.
+        host.onEvent = { [weak self] host, event in
+            guard let self, self.host(host.id) === host else { return }
+            onEvent?(host, event)
+        }
+        host.onRefreshed = { [weak self] host in
+            guard let self, self.host(host.id) === host else { return }
+            onRefreshed?(host)
+        }
         return host
     }
 

@@ -429,6 +429,26 @@ host and every paired one). Bonjour browsing, which is what asks for local-netwo
 only once a host is paired. Remote hosts are off by default until they work end to end
 (`-NativeRemoteHosts YES`, or that user default).
 
+**Pairing a host again.** Pairing the same host again, or undoing its removal, gives it a new
+`RemoteHost` and client. The old client stops at once, and `RemoteHosts` keeps it (`RetiredClient`)
+with the key its pairing pinned and the host process each of its sessions' events came from. Once
+the new client is connected to that `HostID`, `AppModel.reattachSessions(to:)` moves every model
+following a session through the old client, subagents included, to the new one: the same model,
+draft, attachments, transcript and its item ids, title, selection, queue and waiting approvals, with
+no `session/new` or open. `HostSessionLink` is a reference the session moves (`move(to:)`), so a
+request already waiting out the old client's drop goes through the new one, and a message in flight
+goes again under its request id, which the host delivers once. The new client attaches each session
+with the host's whole log; its `RemoteHost` holds back what the transcript already has from the
+same host process (by sequence number and epoch), so the rest, such as an approval answered on
+another device meanwhile, arrives once and plugins hear only what's new. A host process that
+restarted meanwhile numbers its events afresh, so everything it sends is applied, as after any
+reconnect. A dropped connection while attaching attaches again by itself; a later pairing that takes
+over while an attach is in flight wins, and the stale attach's answer is ignored. What the old
+client still delivers after it was replaced or removed is dropped. Only a client of the same
+`HostID` pinning the same key takes the tasks over: another key under that id could be another
+machine, and a pairing the host ended has no client left, so neither hands its tasks on by itself.
+Other hosts' and this Mac's tasks keep their clients.
+
 **Projects across devices.** `Project.url` is this Mac's checkout; `Project.checkouts` holds one
 `ProjectCheckout {host, path}` per paired host; `Project.repository` is the hosted repository the
 checkout's `origin` names ("github.com/owner/name", read by `ProjectRepository`, which folds every

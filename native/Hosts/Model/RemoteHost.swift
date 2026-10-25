@@ -13,7 +13,9 @@ import os
 ///
 /// The client lives as long as the pairing: it reconnects by itself across drops, sleeps and host
 /// restarts, and the session models made on it keep working through all of them. It stops only
-/// when the host is removed here, or when the host says the pairing is over.
+/// when the host is removed here, or when the host says the pairing is over. Pairing the host
+/// again, or undoing its removal, makes a new one, and the open tasks move to its client
+/// (AppModel+HostReconnection.swift).
 @Observable
 final class RemoteHost: Identifiable {
     let id: RemoteHostID
@@ -62,6 +64,12 @@ final class RemoteHost: Identifiable {
     /// The host process this run last connected to: the first connection of a run reads what
     /// happened while away; later ones to the same process only catch up.
     @ObservationIgnored private var lastEpoch: UUID?
+    /// The host process (its epoch) each session's events came from, as this client last passed
+    /// them on: what a new pairing's client compares with to tell what the app has already.
+    @ObservationIgnored private var eventRuns: [HostSessionID: UUID] = [:]
+    /// Sessions this client took over from an earlier pairing's client (`skipDelivered`), with the
+    /// last event the app has of each: the replay attaching them starts with is held back up to it.
+    @ObservationIgnored private var delivered: [HostSessionID: HostEventMark] = [:]
 
     static let logLimit = 200
     private static let logger = Logger(subsystem: "Native", category: "RemoteHosts")
@@ -186,7 +194,9 @@ final class RemoteHost: Identifiable {
         paired.label = trimmed?.isEmpty == false && trimmed != paired.machineName ? trimmed : nil
     }
 
-    private func pairingEnded(_ error: LinkError) {
+    /// The host revoked or forgot this Mac, or couldn't prove its pinned key, as the transport
+    /// reports. The client goes for good, so its tasks never move to a new pairing by themselves.
+    func pairingEnded(_ error: LinkError) {
         record(LinkLogEntry(.failure, error.localizedDescription))
         phase = .pairingEnded(error)
         stop()
@@ -227,10 +237,38 @@ final class RemoteHost: Identifiable {
             }
         case .sessionClosed(let id):
             sessions.removeAll { $0.id == id }
+            eventRuns[id] = nil
+            delivered[id] = nil
+        case .sessionEvent(let id, let step):
+            guard isNews(step, of: id) else { return }
         default:
             break
         }
         onEvent?(self, event)
+    }
+
+    /// Whether the app hasn't seen a session's event: not one it had through an earlier pairing's
+    /// client from the same host process. Events of another process are all news: it numbers them
+    /// afresh, from a reset.
+    private func isNews(_ step: SessionMirror.Step, of id: HostSessionID) -> Bool {
+        if let mark = delivered[id] {
+            if mark.run == lastEpoch, step.event.seq <= mark.seq { return false }
+            delivered[id] = nil
+        }
+        if let lastEpoch { eventRuns[id] = lastEpoch }
+        return true
+    }
+
+    /// Takes over a session from an earlier pairing's client, whose transcript here is folded up
+    /// to `mark`: the replay this client attaches it with passes on only what comes after.
+    func skipDelivered(_ id: HostSessionID, through mark: HostEventMark) {
+        delivered[id] = mark
+    }
+
+    /// The host process each session's transcript here comes from, through this client: for the
+    /// client of the next pairing (`RemoteHosts.RetiredClient`).
+    var deliveredRuns: [HostSessionID: UUID] {
+        eventRuns.merging(delivered.mapValues(\.run)) { _, pending in pending }
     }
 
     private func receive(_ status: HostStatus) {
@@ -368,6 +406,13 @@ final class RemoteHost: Identifiable {
         guard let client, let runtime = runtime(agent) else { throw NativeHostClient.Failure.notConnected }
         runtime.apply(try await client.cancelAgentSignIn(agent.rawValue))
     }
+}
+
+/// The last of a session's events the app has: its sequence number, in the host process (epoch)
+/// that numbered it.
+struct HostEventMark: Hashable {
+    let run: UUID
+    let seq: Int
 }
 
 /// A session an agent on a paired host saved in one of its checkouts.
