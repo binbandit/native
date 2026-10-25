@@ -43,13 +43,7 @@ public struct AllInViewTaskRow: View {
                             .lineLimit(1)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         if showsAttentionClock, status.needsAttention, unavailable == nil, let attentionSince {
-                            DSMinuteTimeline { now in
-                                Text(DSFormat.compactAge(attentionSince, now: now))
-                                    .font(DS.Sidebar.clockFont)
-                                    .monospacedDigit()
-                                    .foregroundStyle(.dsAttention)
-                            }
-                            .fixedSize()
+                            TaskAttentionClock(since: attentionSince)
                         }
                         if let hostName {
                             Image(systemName: "macmini")

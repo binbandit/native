@@ -82,11 +82,7 @@ struct TaskPeekView: View {
                 .lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
                 .help(model.titleOfSession(request.task))
             if let ask {
-                DSMinuteTimeline { now in
-                    Text(DSFormat.compactAge(ask.since, now: now))
-                        .font(DS.Sidebar.clockFont).foregroundStyle(.dsAttention)
-                }
-                .fixedSize()
+                TaskAttentionClock(since: ask.since)
             }
             Button {
                 open()
@@ -96,10 +92,7 @@ struct TaskPeekView: View {
                     Kbd("↩", compact: true)
                 }
                 .fixedSize()
-                .padding(.leading, DS.Peek.openLeading)
-                .overlay(alignment: .leading) {
-                    SeparatorLine(axis: .vertical).frame(height: DS.Peek.openDividerHeight)
-                }
+                .dsTrailingSegment(inset: DS.Peek.openLeading, dividerHeight: DS.Peek.openDividerHeight)
             }
             .buttonStyle(.plain).foregroundStyle(.dsTextTertiary)
             .padding(.leading, DS.Peek.openMargin)

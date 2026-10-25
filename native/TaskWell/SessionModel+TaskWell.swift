@@ -2,10 +2,11 @@ import ACP
 import Foundation
 
 extension SessionModel {
-    var taskWellAttentionSince: Date? {
-        if let question = pendingQuestion { return question.requestedAt }
-        if let permission = permissionRequests.first?.permission { return permission.requestedAt }
-        return children.values.lazy.compactMap(\.taskWellAttentionSince).first
+    /// The ask the well speaks for: the task's oldest, wherever in it it waits, which is the one its
+    /// sidebar row and Peek show (`TaskPeekAsk`), so the three never disagree about what's waiting
+    /// or since when.
+    var taskWellAsk: TaskPeekAsk? {
+        TaskPeekAsk.requests(in: self, task: key).first
     }
 
     func markTaskWellOutcomeReviewed(_ turnID: String?) {
@@ -14,14 +15,15 @@ extension SessionModel {
 
     /// The well only leads to the task's existing request surface; it never sends an answer.
     @discardableResult func focusTaskAttention() -> SessionID? {
-        if pendingQuestion != nil {
-            wantsComposerFocus = true
-            return nil
+        if let ask = taskWellAsk {
+            ask.session.wantsComposerFocus = true
+            if case .permission(let call) = ask.content {
+                ask.session.transcriptReveal = TranscriptReveal(itemID: "tool-\(call.id)")
+            }
+            return ask.session === self ? nil : ask.session.id
         }
-        if let call = permissionRequests.first {
-            wantsComposerFocus = true
-            transcriptReveal = TranscriptReveal(itemID: "tool-\(call.id)")
-        } else if let child = children.values.first(where: { $0.wait != nil || $0.needsApproval }) {
+        // A subagent said it's blocked on the user before its request reached the task.
+        if let child = children.values.first(where: \.needsApproval) {
             return child.focusTaskAttention() ?? child.id
         } else if let child = state.subagents.first(where: { $0.workState == .requiresAction }) {
             return child.id
