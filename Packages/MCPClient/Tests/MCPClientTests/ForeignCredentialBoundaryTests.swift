@@ -19,6 +19,7 @@ struct ForeignCredentialBoundaryTests {
             "Packages/MCPClient/Sources/MCPClient/Managed/SecretStore.swift",
             "Packages/NativeHost/Sources/NativeHostMac/HostKeychain.swift",
             "Packages/NativeLink/Sources/NativeLink/Device/PairedHostStore.swift",
+            "Packages/NativeLink/Sources/NativeLink/Identity/KeychainLinkKeyStore.swift",
         ]
         var scanned = 0
         for directory in ["native", "Packages", "NativeHostHelper", "Companion", "Runtime"] {
