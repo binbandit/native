@@ -234,7 +234,8 @@ struct AgentStartDiagnosticTests {
         return (folder, real, link, change)
     }
 
-    static let linkedOriginal = "model = \"gpt-6.1-sol\"\nmodel_reasoning_effort = \"xhigh\"\n"
+    static let linkedOriginal =
+        "model = \"gpt-6.1-sol\"\nmodel_reasoning_effort = \"xhigh\"\napproval_policy = \"on_request\"\n"
 
     @Test func restorePutsTheOriginalBackThroughTheLink() throws {
         let (folder, real, link, change) = try fixedLinkedFile()
@@ -252,7 +253,7 @@ struct AgentStartDiagnosticTests {
     @Test func restoreKeepsALaterEdit() throws {
         let (folder, real, _, change) = try fixedLinkedFile()
         defer { try? FileManager.default.removeItem(at: folder) }
-        let edited = "model = \"gpt-6.1-sol\"\nmodel_reasoning_effort = \"low\"\n"
+        let edited = "model_reasoning_effort = \"low\"\n"
         try Data(edited.utf8).write(to: real)
 
         #expect(
@@ -264,12 +265,19 @@ struct AgentStartDiagnosticTests {
         #expect(FileManager.default.fileExists(atPath: change.backup))
     }
 
-    @Test func restoreWithoutTheCopyLeavesTheFix() throws {
-        let (folder, real, _, change) = try fixedLinkedFile()
+    @Test func twoFixesTakenBackNewestFirstRestoreTheOriginal() throws {
+        let (folder, real, link, first) = try fixedLinkedFile()
         defer { try? FileManager.default.removeItem(at: folder) }
-        try FileManager.default.removeItem(atPath: change.backup)
+        // Retrying finds a second rejected value in the same file.
+        let diagnostic = AgentStartDiagnostic(
+            path: link.path, line: 3, column: 19,
+            message: "unknown variant `on_request`, expected one of `untrusted`, `on-failure`, `on-request`, `never`")
+        let second = try AgentStartFile.apply(try #require(diagnostic.fixIt), at: diagnostic, allowed: [link.path])
 
-        #expect(throws: AgentStartFile.Failure.backupMissing("config.toml")) { try AgentStartFile.restore(change) }
-        #expect(try String(contentsOf: real, encoding: .utf8).contains("\"high\""))
+        try AgentStartFile.restore(second)
+        try AgentStartFile.restore(first)
+
+        #expect(try String(contentsOf: real, encoding: .utf8) == Self.linkedOriginal)
+        #expect(!FileManager.default.fileExists(atPath: first.backup))
     }
 }

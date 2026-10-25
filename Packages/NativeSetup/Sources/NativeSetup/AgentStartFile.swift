@@ -67,6 +67,9 @@ public enum AgentStartFile {
         public let backup: String
         /// The name the user knows the file by (the link's, for a link).
         public let fileName: String
+        /// The text before the fix. Kept here as well as in `backup`, which the next fix of the same
+        /// file replaces, so fixes taken back newest first each restore their own original.
+        let original: String
         /// The text the fix wrote, so taking it back never discards a later edit.
         let written: String
     }
@@ -89,25 +92,27 @@ public enum AgentStartFile {
         } catch {
             throw .notWritten(diagnostic.fileName, error.localizedDescription)
         }
-        return Change(path: url.path, backup: backup.path, fileName: diagnostic.fileName, written: fixed)
+        return Change(
+            path: url.path, backup: backup.path, fileName: diagnostic.fileName, original: contents, written: fixed)
     }
 
-    /// Puts the original back over `change` and removes the copy, the same way the fix wrote: to the
-    /// link's target, keeping its permissions. Only while the file still holds what the fix wrote.
+    /// Puts the original back over `change` the same way the fix wrote: to the link's target, keeping
+    /// its permissions. Only while the file still holds what the fix wrote. The copy beside the file
+    /// goes too, when it's this fix's.
     public static func restore(_ change: Change) throws(Failure) {
         let url = URL(filePath: change.path)
+        let backup = URL(filePath: change.backup)
+        let keptOriginal =
+            (try? Data(contentsOf: backup)).flatMap { String(data: $0, encoding: .utf8) } == change.original
         guard let current = try? Data(contentsOf: url), String(data: current, encoding: .utf8) == change.written else {
-            throw .changedSinceFix(change.fileName, backup: URL(filePath: change.backup).lastPathComponent)
+            throw .changedSinceFix(change.fileName, backup: keptOriginal ? backup.lastPathComponent : nil)
         }
-        guard let data = try? Data(contentsOf: URL(filePath: change.backup)),
-            let original = String(data: data, encoding: .utf8)
-        else { throw .backupMissing(change.fileName) }
         do {
-            try write(original, to: url)
+            try write(change.original, to: url)
         } catch {
             throw .notWritten(change.fileName, error.localizedDescription)
         }
-        try? FileManager.default.removeItem(atPath: change.backup)
+        if keptOriginal { try? FileManager.default.removeItem(at: backup) }
     }
 
     /// Replaces the file's text atomically, keeping its permissions (an atomic write makes a new file).
@@ -125,10 +130,8 @@ public enum AgentStartFile {
         /// The line no longer holds the value the agent rejected.
         case changed(String)
         case notWritten(String, String)
-        /// Taking a fix back found the file edited since; with the original's file name.
-        case changedSinceFix(String, backup: String)
-        /// Taking a fix back found no copy of the original.
-        case backupMissing(String)
+        /// Taking a fix back found the file edited since; with the copy of the original, if it's there.
+        case changedSinceFix(String, backup: String?)
 
         public var errorDescription: String? {
             switch self {
@@ -136,11 +139,10 @@ public enum AgentStartFile {
             case .changed(let file):
                 "\(file) changed since the agent read it, so nothing was changed. Retry to read it again."
             case .notWritten(let file, let reason): "Couldn't change \(file): \(reason)"
-            case .changedSinceFix(let file, let backup):
+            case .changedSinceFix(let file, let backup?):
                 "\(file) changed after the fix, so Native left it as it is. "
                     + "The original is still beside it, in \(backup)."
-            case .backupMissing(let file):
-                "The copy of \(file) from before the fix is gone, so Native left the file as it is."
+            case .changedSinceFix(let file, nil): "\(file) changed after the fix, so Native left it as it is."
             }
         }
     }
