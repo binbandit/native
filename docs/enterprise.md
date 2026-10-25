@@ -45,7 +45,7 @@ shipped as a sample `.mobileconfig` in `docs/enterprise/`.
 | `policy.celebrations.enabled` | `false` removes the Celebrations page and command, disables its plugin contributions, and restores the usual appearance. Personal choices are retained. Defaults to `true`. |
 | `policy.organization.name` | Optional display name for managed notices, such as "Northwind Federal IT". Without it, notices describe this install without inventing an organization. |
 | `policy.labs.enabled` | Labs and experiments, including plugin experiments. |
-| `policy.companion.enabled` / `policy.remoteHosts.enabled` | Pairing devices; connecting to hosts other than this Mac. |
+| `policy.companion.enabled` / `policy.remoteHosts.enabled` | Pairing devices; connecting to hosts other than this Mac (see [remote hosts](#remote-hosts)). |
 | `policy.updates.feedURL` / `policy.updates.enabled` / `policy.updates.channels` | An internal update feed, or updates off; which channels are allowed. |
 | `policy.celebrations.downloadsEnabled` / `policy.celebrations.baseURL` | Disable celebration artwork downloads (including index and signature), or mirror Native-signed packs internally. Cached and bundled icons remain available. See [celebration artwork](celebrations-artwork.md). |
 | `policy.search.retentionDays` | How long the search index keeps tasks. |
@@ -56,6 +56,20 @@ shipped as a sample `.mobileconfig` in `docs/enterprise/`.
 
 Every key also exists as a user preference where it makes sense. Precedence: the organization's value,
 then the user's choice, then Native's default.
+
+### Remote hosts
+
+`policy.remoteHosts.enabled = false` turns off this Mac reaching other hosts: browsing the local
+network for paired hosts, connecting and reconnecting to them, and pairing a new one by link or over
+SSH. It wins over the user's own setting and over launch arguments. Native follows a change while it
+runs: off stops browsing, closes every connection to a paired host and ends a pairing under way,
+keeping nothing that pairing finishes afterwards. The pairings stay on this Mac, and each host's
+agents and tasks keep running there. On again reconnects each pairing once, and tasks open here pick
+up where they were. If Native started while it was off, on again takes effect at the next launch.
+
+It covers only this Mac's outbound connections. Devices pairing with this Mac go through its
+companion gateway, which `policy.companion.enabled` governs, and this Mac's own background host is
+unaffected.
 
 ## Telemetry
 
