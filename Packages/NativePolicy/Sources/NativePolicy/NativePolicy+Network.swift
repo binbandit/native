@@ -144,52 +144,62 @@ public struct NetworkOrigin: Hashable, Sendable {
 }
 
 extension PolicyLoader {
-    /// Network settings deliberately do not use the legacy fallback-on-invalid resolver.
-    static func loadNetwork(from source: any PolicySource, into policy: inout NativePolicy) {
+    /// Network settings are strict in every mode: any unusable part invalidates the whole snapshot,
+    /// and the deployment mode comes from `DeploymentResolution`.
+    static func loadNetwork(
+        from source: any PolicySource, deployment: DeploymentResolution, into policy: inout NativePolicy
+    ) {
         var network = NativePolicy.Network()
-        func value(_ key: PolicyKey) -> Any? {
-            if let managed = source.managedValue(forKey: key.rawValue) {
-                policy.managedKeys.insert(key)
-                return managed
-            }
-            // A managed deployment/network envelope cannot be loosened through user network keys.
-            if source.managedValue(forKey: PolicyKey.deploymentMode.rawValue) != nil
-                || source.managedValue(forKey: PolicyKey.network.rawValue) != nil
-            {
-                return nil
-            }
-            return source.userValue(forKey: key.rawValue)
+        network.mode = deployment.mode
+        network.localIPC = network.mode == .ordinary
+        if !deployment.isTrusted {
+            policy.keyStatus[.deploymentMode] = PolicyKeyStatus(validity: .invalid, origin: .failClosed)
+        } else if deployment.deployment.isManaged {
+            policy.keyStatus[.deploymentMode] = PolicyKeyStatus(validity: .valid, origin: .organization)
+        } else if network.mode != .ordinary {
+            policy.keyStatus[.deploymentMode] = PolicyKeyStatus(validity: .absent, origin: .user)
         }
-        func invalid(_ key: PolicyKey) {
+        guard deployment.isTrusted else {
+            // The deployment lockdown has already said why; nothing it carries can be trusted.
             network.isValid = false
+            network.localIPC = false
+            policy.network = network
+            policy.keyStatus[.network] = PolicyKeyStatus(validity: .unavailable, origin: .failClosed)
+            return
+        }
+        func invalid(_ key: PolicyKey, _ origin: PolicyDiagnostic.Origin) {
+            network.isValid = false
+            policy.keyStatus[key] = PolicyKeyStatus(
+                validity: origin == .organization ? .invalid : .absent, origin: .failClosed)
             policy.diagnostics.append(
                 PolicyDiagnostic(
-                    key: key.rawValue,
-                    origin: source.managedValue(forKey: key.rawValue) == nil ? .user : .organization,
-                    problem: "invalid network configuration; network denied"))
+                    key: key.rawValue, origin: origin, problem: "invalid network configuration; network denied"))
         }
-        if let raw = value(.deploymentMode) {
-            if let text = raw as? String, let mode = NativePolicy.DeploymentMode(rawValue: text) {
-                network.mode = mode
-            } else {
-                network.mode = .airGapped
-                invalid(.deploymentMode)
-            }
+        if deployment.userModeIsInvalid {
+            invalid(.deploymentMode, .user)
         }
-        network.localIPC = network.mode == .ordinary
-        if let raw = value(.network) {
-            if let parsed = parseNetwork(raw, mode: network.mode) {
-                network.localIPC = parsed.localIPC
-                network.services = parsed.services
-            } else {
-                invalid(.network)
+        func apply(_ raw: Any, _ origin: PolicyDiagnostic.Origin) {
+            guard let parsed = parseNetwork(raw, mode: network.mode) else { return invalid(.network, origin) }
+            network.localIPC = parsed.localIPC
+            network.services = parsed.services
+            policy.keyStatus[.network] = PolicyKeyStatus(
+                validity: origin == .organization ? .valid : .absent,
+                origin: origin == .organization ? .organization : .user)
+        }
+        switch source.managedEntry(forKey: PolicyKey.network.rawValue) {
+        case .unreadable: invalid(.network, .organization)
+        case .value(let raw): apply(raw, .organization)
+        case .absent:
+            // A managed deployment mode can't be loosened through the user's network settings.
+            if !deployment.deployment.isManaged, let raw = source.userValue(forKey: PolicyKey.network.rawValue) {
+                apply(raw, .user)
             }
         }
         if (source.managedKeys ?? []).contains(where: {
             ($0.hasPrefix("policy.network.") || $0.hasPrefix("policy.deployment."))
                 && PolicyKey(rawValue: $0) == nil
         }) {
-            invalid(.network)
+            invalid(.network, .organization)
         }
         policy.network = network
     }

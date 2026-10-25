@@ -25,7 +25,8 @@ import Testing
     func rejectsUnknownIDs(_ id: String) {
         let policy = PolicyLoader.load(from: StaticPolicySource(managed: ["policy.appearance.codeTheme": id]))
         #expect(policy.appearanceCodeTheme == nil)
-        #expect(!policy.isManaged(.appearanceCodeTheme))
+        // The organization set it badly: reported, and the user's own theme stays.
+        #expect(policy.keyStatus[.appearanceCodeTheme] == PolicyKeyStatus(validity: .invalid, origin: .failClosed))
         #expect(policy.diagnostics.count == 1)
         #expect(policy.diagnostics.first?.key == "policy.appearance.codeTheme")
     }

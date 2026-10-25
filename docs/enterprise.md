@@ -13,8 +13,9 @@ designed but not built.
   allowed, rather than reading preferences ad hoc. An organization's managed settings feed it.
 - **Managed means visible.** A setting an organization controls shows "Managed by your organization"
   and is disabled in Settings. Nothing is silently overridden.
-- **Data, not code.** Policy is declarative and validated. A bad value is reported and ignored, never
-  a crash or a lockout.
+- **Data, not code.** Policy is declarative and validated. A bad value is reported, never a crash.
+  A bad *managed* value denies what it governs instead of falling back to a more permissive one
+  (see [When a value is wrong](#when-a-value-is-wrong)).
 
 ## Managed settings
 
@@ -25,18 +26,22 @@ keys from the managed app configuration dictionary (`com.apple.configuration.man
 
 `NativePolicy` (in `Packages/NativePolicy`, UI-free and tested) reads the `policy.*` keys below,
 validates them, and publishes one value the app observes. The keys are documented in this file and
-shipped as a sample `.mobileconfig` in `docs/enterprise/`.
+shipped as a sample `.mobileconfig` in `docs/enterprise/`. [Policy coverage](enterprise/policy-coverage.md)
+maps every key to the capabilities it governs and the code that honors it.
 
 | Key | Effect |
 | --- | --- |
+| `policy.deployment.mode` | `ordinary` (today's behavior, the default), `internalOnly` or `airGapped`. See [Restricted deployment](#restricted-deployment). |
+| `policy.network` | Which network services may run and the exact origins they may use ([network admission](enterprise/network-admission.md)). |
 | `policy.organization.contact` | Help channel shown beside managed Appearance settings, for example #it-help. |
-| `policy.appearance.codeTheme` | A built-in code theme id for both appearances. Unknown ids are reported and ignored. Personal choices are preserved and return when the key is removed. Themes without a palette for one appearance use Native in that appearance. |
+| `policy.appearance.codeTheme` | A built-in code theme id for both appearances. Unknown ids are reported and leave the user's own theme. Personal choices are preserved and return when the key is removed. Themes without a palette for one appearance use Native in that appearance. |
 | `policy.appearance.codeTheme.reason` | Optional explanation shown when opening the locked code theme row. |
 | `policy.agents.allowed` | Agent ids that may be listed or started; others are hidden with "Not allowed by your organization". |
 | `policy.agents.environment` | Extra environment per agent, e.g. to route Claude Code through Bedrock or Vertex. |
 | `policy.mcp.allowed` / `policy.mcp.blocked` | MCP servers by name or command pattern; blocked ones are denied for every task through the same task policy as the user's own switches. |
 | `policy.mcp.required` | Servers every task gets, defined in the policy. |
-| `policy.plugins.allowed` | Plugin ids that may load; **later:** required signer team ids for manifest plugins. |
+| `policy.plugins.allowed` | Plugin ids that may load. Ordinary mode applies it to installed plugins; restricted modes to built-in ones too. **Later:** required signer team ids for manifest plugins. |
+| `policy.catalog.enabled` / `policy.catalog.indexURL` | Inputs for the plugin catalog and its internal mirror ([catalog policy](catalog-policy.md)); no app consumer yet. |
 | `policy.skills.blocked` | Skills by name, denied per task like MCP. |
 | `policy.permissions.forbiddenModes` | Permission modes users can't pick (for example, modes that skip approvals). |
 | `policy.scripts.enabled` | The V8 script runtime and `run_script`. |
@@ -54,8 +59,72 @@ shipped as a sample `.mobileconfig` in `docs/enterprise/`.
 | `policy.telemetry.native` | `on`, `off`, or `user` (the user chooses; the default). |
 | `policy.telemetry.endpoints` | The organization's own collectors (see below). |
 
-Every key also exists as a user preference where it makes sense. Precedence: the organization's value,
-then the user's choice, then Native's default.
+Every key also exists as a user preference where it makes sense. Precedence in ordinary mode: the
+organization's value, then the user's choice, then Native's default. A restricted mode ignores user
+values for these keys.
+
+### Where policy comes from
+
+The organization's input is the only authority over these keys. On macOS that is a forced
+preference from a configuration profile; on iPad, a key in the managed app configuration. Native
+tells a key the organization doesn't set from one it set badly:
+
+- On macOS, a forced key that a launch argument also names (`-policy.scripts.enabled YES`) can't be
+  told apart from the argument, so it is treated as unreadable and denied.
+- On iPad, a managed app configuration that isn't a dictionary makes every key unreadable, and
+  Native denies everything optional.
+- On both, `policy.*` keys Native doesn't know are reported, and lock a restricted mode down.
+
+Each snapshot carries the state of the organization's input (absent, valid, invalid or
+unavailable), a revision fingerprinting it, each key's validity and origin, and diagnostics that name
+keys and problems but never values. `NativePolicy.inspection` reports all of it without content.
+
+### When a value is wrong
+
+A managed value Native can't use is logged (subsystem "Native", category "Policy") and the key takes
+its most restrictive value: switches turn off, allowlists become empty, an unusable mirror or feed
+turns its download off, unusable retention keeps one day, unusable instructions or shortcuts lock
+Native's own. It never falls back to the user's value or Native's permissive default. When the
+value shapes agent sessions (`policy.agents.environment`, `policy.permissions.forbiddenModes`,
+`policy.skills.blocked`, `policy.mcp.required`), agents are denied until it's fixed, and an unusable
+`policy.mcp.blocked` blocks every server. Ordinary mode still keeps the usable entries of a list
+with a bad entry, and reports the rest; a restricted mode rejects the whole list. Strings, numbers
+and dates aren't Booleans: use `<true/>` and `<false/>`. Failing closed applies to the
+organization's input: on a Mac with no profile, a user preference Native can't use is reported and
+ignored, and never takes agents away. The exceptions are the network keys: an unusable
+`policy.network` preference still stops Native's own connections, and an unusable
+`policy.deployment.mode` preference means air-gapped ([network admission](enterprise/network-admission.md)).
+Neither is ever remembered, so deleting the preference restores ordinary mode.
+
+### Restricted deployment
+
+`policy.deployment.mode` = `internalOnly` or `airGapped` turns on deny-by-default. In a restricted
+mode:
+
+- Every key is the organization's: user values don't apply, and a key it doesn't set takes its
+  restricted value (features off, allowlists empty).
+- A grant only takes effect for a capability whose code consults the policy decision before acting
+  (`converted` in [policy coverage](enterprise/policy-coverage.md)). Today that is plugin
+  activation, plugins' themes, icon sets and command knowledge, and agent icon downloads. Everything
+  else is denied whatever the profile says. That denial only stops code that consults it: the
+  plugin registry, which admits plugins and hands tasks their agents and MCP servers. Elsewhere a
+  feature is off only where its own key's consumer reads the restricted value (updates, telemetry,
+  remote hosts); one without such a switch, such as git or the terminal, doesn't check the decision
+  yet and still acts. Schema coverage is complete; consumer integration is not.
+- Built-in plugins are admitted like installed ones: listed in `policy.plugins.allowed`, with every
+  capability they declare permitted. A plugin that doesn't declare its capabilities stays off.
+- Keys Native doesn't know, an unknown mode, or a managed source it can't read deny everything
+  optional.
+
+Native remembers a restricted mode the organization deployed, outside its preferences. Removing
+the profile, or a profile that can't be read, doesn't return it to ordinary mode: it stays
+restricted with everything optional denied, across restarts. To leave, deploy a profile with
+`policy.deployment.mode` = `ordinary`, let Native apply it once, then remove the profile.
+
+Restricted modes are off unless deployed, and are not ready to advertise or rely on: they deny most
+of Native, and don't yet stop every unconverted feature. Policy decides what Native itself starts; it isn't a sandbox for
+agents and the tools they run (see the [regulated environments plan](plans/regulated-environments.md)).
+An admin view of the effective policy, its origin and errors is a separate follow-up.
 
 ### Remote hosts
 
@@ -133,7 +202,7 @@ back to the local commit when offline.
 
 `policy.approvals.knowledge` accepts a string containing a version 1 command knowledge JSON document.
 The policy package validates each entry, reports bad values, and contributes only additive internal
-tools. `policy.approvals.countUnknownPrograms = false` disables local unknown-program counts even
+tools. `policy.approvals.countUnknownPrograms` = `false` disables local unknown-program counts even
 when the user enabled them. True permits the user choice; neither policy enables Fine print itself.
 Counts never enter telemetry or exports and can be purged from Settings > Privacy. See
 [command knowledge](command-knowledge.md) for the format, limits, and privacy contract.

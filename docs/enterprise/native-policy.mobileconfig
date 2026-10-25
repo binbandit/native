@@ -13,8 +13,11 @@
   - Replace every PayloadUUID with a fresh one (`uuidgen`).
   - Delete the keys you don't want to manage. A key that's absent leaves the user's choice alone.
 
-  Native validates every value. One it can't use is ignored and logged (subsystem "Native",
-  category "Policy"), never a crash or a lockout.
+  Native validates every value and logs what it can't use (subsystem "Native", category
+  "Policy"). A managed value it can't use denies what it governs instead of falling back to the
+  user's choice (docs/enterprise.md, "When a value is wrong"). Restricted deployment modes keep
+  every feature off unless this profile turns it on and Native can enforce it there
+  (docs/enterprise/policy-coverage.md); keep ordinary mode until you've read that.
 -->
 <plist version="1.0">
 <dict>
@@ -240,8 +243,9 @@
 
             <!-- Network admission (docs/enterprise/network-admission.md), which only agent icons use
                  so far. ordinary keeps today's behavior; internalOnly allows only the services and
-                 exact origins listed here; airGapped denies every off-machine origin. Unlike the keys
-                 above, a value Native can't use denies network access instead of being ignored. This
+                 exact origins listed here; airGapped denies every off-machine origin. A value Native
+                 can't use denies network access. A restricted mode outlives this profile's removal:
+                 deploy ordinary to leave it (docs/enterprise.md, "Restricted deployment"). This
                  points agent icons at an internal mirror. -->
             <key>policy.deployment.mode</key>
             <string>ordinary</string>

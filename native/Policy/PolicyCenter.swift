@@ -4,7 +4,8 @@ import Observation
 import os
 
 /// The organization's policy as the app sees it, kept current as managed settings change. Views
-/// read it from the environment; models and plugins read `PolicyCenter.shared`.
+/// read it from the environment; models and plugins read `PolicyCenter.shared`, or the center
+/// they were given. `policy.inspection` reports every key and capability without their content.
 @MainActor
 @Observable
 final class PolicyCenter {
@@ -30,11 +31,20 @@ final class PolicyCenter {
         report(policy)
         watch = Task { [weak self, source] in
             for await policy in PolicyLoader.updates(from: source) {
-                guard let self, policy != self.policy else { continue }
-                self.policy = policy
-                self.report(policy)
+                self?.apply(policy)
             }
         }
+    }
+
+    /// Reads the policy again now, rather than at the next preferences change.
+    func reload() {
+        apply(PolicyLoader.load(from: source))
+    }
+
+    private func apply(_ policy: NativePolicy) {
+        guard policy != self.policy else { return }
+        self.policy = policy
+        report(policy)
     }
 
     func isManaged(_ key: PolicyKey) -> Bool {
@@ -55,12 +65,32 @@ final class PolicyCenter {
         #else
         let simulated: Set<String> = []
         #endif
-        return NativePolicy.platformSource(simulatedManagedKeys: simulated)
+        return NativePolicy.platformSource(simulatedManagedKeys: simulated, enrollment: enrollmentStore)
     }
 
+    /// Where a restricted enrollment outlives a restart: a file of Native's own beside its other
+    /// data, never a preference (`PolicyEnrollment`). Each isolated instance has its own. Nil for a
+    /// process without a bundle id, such as a test harness, which keeps nothing.
+    nonisolated static let enrollmentStore: FilePolicyEnrollmentStore? = Bundle.main.bundleIdentifier.map {
+        FilePolicyEnrollmentStore(
+            url: URL.applicationSupportDirectory.appending(path: "\($0)/Policy", directoryHint: .isDirectory)
+                .appending(path: "enrollment.json"))
+    }
+
+    /// Diagnostics and the deployment summary never carry values, only keys, states and reasons.
     private func report(_ policy: NativePolicy) {
+        let deployment = policy.deployment
+        let summary =
+            "\(policy.deploymentMode.rawValue), \(deployment.state.rawValue)"
+            + (deployment.lockdown.map { ", lockdown \($0.rawValue)" } ?? "")
+            + (deployment.revision.map { ", revision \($0)" } ?? "")
+        if deployment.lockdown != nil {
+            logger.error("Policy \(summary, privacy: .public): everything optional is denied")
+        } else if deployment.state != .absent {
+            logger.info("Policy \(summary, privacy: .public)")
+        }
         for diagnostic in policy.diagnostics {
-            logger.error("Ignored policy value \(diagnostic.description, privacy: .public)")
+            logger.error("Policy value \(diagnostic.description, privacy: .public)")
         }
         if !policy.managedKeys.isEmpty {
             let keys = policy.managedKeys.map(\.rawValue).sorted().joined(separator: ", ")
