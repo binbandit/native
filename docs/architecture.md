@@ -126,6 +126,26 @@ need a default remote set in gh when their target is ambiguous; unresolved SSH a
 URL with the GitHub hostname. Account controls are hidden on iPad
 until account selection is carried by the remote-host protocol.
 
+### Pull requests of paired-host tasks
+
+A task on a paired host finds its pull request with gh on that host. `BranchReference` names the
+host (none for this Mac), the checkout as the host spells it and the branch, so one path and branch
+here and on two hosts are three lookups with three answers, cached and deduplicated apart.
+`RemoteHostsWiring` hands `GitHubModel` each pairing's command runner when it makes that host's
+task workspaces. gh runs there with an empty client environment, without this Mac's PATH, account
+choice or `GH_HOST`, so the host's login shell, signed-in account and GitHub hostname apply. Which
+pull request a branch was opened for is read with the host's git. Switching accounts here leaves
+hosts' answers alone; pairing a host again forgets its answers and drops what the old pairing was
+still answering. An offline host, a missing `runCommands` grant or gh, or a signed-out gh there
+keeps the last answer with its failure. This Mac's gh is never asked instead. Lookups are refused,
+before anything reaches the host, while the organization turns paired hosts or `github.cli` off,
+and in every restricted deployment mode while gh runs outside the network boundary.
+
+These pull requests are read-only for now. A paired-host task's row menu opens its pull request on
+GitHub or copies the link, and `AppTaskPullRequests.pullRequest(for:)`, behind Open Pull Request and
+the toolbar well, answers for this Mac's tasks only. The pull request page's merge, close and
+comment act as this Mac's account, and host-correct writes need their own design.
+
 ### Getting there
 
 1. Rules now: no AppKit in models or shared views, no process spawning outside `Packages/Exec` and
