@@ -56,6 +56,11 @@ import Testing
         }
         let typo = PolicyLoader.load(from: StaticPolicySource(managed: ["policy.network.enable": true]))
         #expect(!typo.network.isValid)
+        let sensitiveKey = PolicyLoader.load(
+            from: StaticPolicySource(managed: [
+                "policy.network.https://private.example/?token=secret": true
+            ]))
+        #expect(sensitiveKey.diagnostics.allSatisfy { !$0.description.contains("secret") })
     }
 
     @Test func configuredMirrorAndExplicitLocalPermission() throws {
