@@ -252,6 +252,7 @@ private struct DiffRowView: View {
                         if let onSelect {
                             Button(action: onSelect) { Text(verbatim: String(number)) }
                                 .buttonStyle(.plain)
+                                .dsHitTarget(DS.Size.minimumHitTarget)
                                 .accessibilityLabel("Select \(row.kind == .removed ? "old" : "new") line \(number)")
                                 .help("Select a line, then another to extend the range. Quote with ⌘L.")
                         } else {
