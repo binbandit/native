@@ -198,9 +198,10 @@ public struct HostSessionSummary: Codable, Hashable, Sendable, Identifiable {
     public var retryAt: Date?
     /// Native's titles for the session (the user's, the generated one), from hosts that keep them.
     public var titles: HostSessionTitles?
-    /// A subagent it started still works after its turn ended (a background agent). Nil from hosts
-    /// that don't say.
-    public var isWorkingInBackground: Bool?
+    /// Whether the host waits for this session before restarting for an update, as it reported it:
+    /// a turn, a hidden command, a load (a quiet one too) or background work. Nil from hosts that
+    /// don't report it; `holdsRestart` reads it.
+    public var isHoldingRestart: Bool?
 
     public init(
         id: HostSessionID, agentID: String, agentName: String, agentSessionID: SessionID?, cwd: String,
@@ -210,7 +211,7 @@ public struct HostSessionSummary: Codable, Hashable, Sendable, Identifiable {
         isQueuePaused: Bool = false, supportsSteering: Bool = false, lastActivity: Date? = nil,
         lastStopReason: String? = nil, problem: String? = nil, isStopping: Bool = false,
         isRunningHiddenCommand: Bool = false, retryAt: Date? = nil, titles: HostSessionTitles? = nil,
-        isWorkingInBackground: Bool? = nil
+        isHoldingRestart: Bool? = nil
     ) {
         self.id = id
         self.agentID = agentID
@@ -232,7 +233,7 @@ public struct HostSessionSummary: Codable, Hashable, Sendable, Identifiable {
         self.isRunningHiddenCommand = isRunningHiddenCommand
         self.retryAt = retryAt
         self.titles = titles
-        self.isWorkingInBackground = isWorkingInBackground
+        self.isHoldingRestart = isHoldingRestart
     }
 
     /// Whether a turn is running or about to (recovery resumes one, a retry sends one).
@@ -240,9 +241,9 @@ public struct HostSessionSummary: Codable, Hashable, Sendable, Identifiable {
         phase == .prompting || phase == .recovering || retryAt != nil
     }
 
-    /// Whether restarting the host now would interrupt something here, so an update waits for it:
-    /// a turn, a hidden command, a load or background work (the host's `HostSession.holdsRestart`).
+    /// Whether restarting the host now would interrupt something here, so an update waits for it.
+    /// A host that doesn't report it is judged by what its summary does say.
     public var holdsRestart: Bool {
-        isWorking || isRunningHiddenCommand || phase == .loading || isWorkingInBackground == true
+        isHoldingRestart ?? (isWorking || isRunningHiddenCommand || phase == .loading)
     }
 }

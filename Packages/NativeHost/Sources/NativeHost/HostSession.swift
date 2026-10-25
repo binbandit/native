@@ -190,7 +190,7 @@ final class HostSession {
             queue: queue.map(\.prompt.queued), isQueuePaused: record.isQueuePaused, supportsSteering: supportsSteering,
             lastActivity: record.lastActivity, lastStopReason: record.lastStopReason, problem: problem,
             isStopping: isStopping, isRunningHiddenCommand: hiddenCommand != nil, retryAt: retryAt,
-            titles: titleState.hostTitles, isWorkingInBackground: isWorkingInBackground
+            titles: titleState.hostTitles, isHoldingRestart: holdsRestart
         )
     }
 

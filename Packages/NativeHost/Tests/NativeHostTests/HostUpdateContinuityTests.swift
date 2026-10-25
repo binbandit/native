@@ -92,33 +92,42 @@ struct HostUpdateContinuityTests {
         core.agentExited("fake", generation: generation)
         #expect(!parent.holdsRestart)
         try await recorder.wait("the app to hear of it") { await $0.summaries[summary.id]?.holdsRestart == false }
+
+        // A quiet reload keeps the session looking idle, but the summary still says it holds.
+        parent.loading = Task {}
+        #expect(parent.summary.phase == .idle)
+        #expect(parent.summary.holdsRestart)
+        parent.loading = nil
         await host.stop()
     }
 
-    @Test("The app counts what an update waits for, and a host that doesn't report background work still decodes")
+    @Test("The app counts what the host waits for, and judges a host that doesn't report it by its summary")
     func summaryHoldsRestart() throws {
         func summary(
-            _ phase: HostSessionPhase = .idle, hidden: Bool = false, background: Bool? = nil
+            _ phase: HostSessionPhase = .idle, hidden: Bool = false, reported: Bool? = nil
         )
             -> HostSessionSummary
         {
             HostSessionSummary(
                 id: HostSessionID(), agentID: "fake", agentName: "Fake Agent", agentSessionID: nil, cwd: "/tmp",
-                phase: phase, isRunningHiddenCommand: hidden, isWorkingInBackground: background)
+                phase: phase, isRunningHiddenCommand: hidden, isHoldingRestart: reported)
         }
+        // What the host reports wins: a quiet reload or background work looks idle otherwise.
+        #expect(summary(reported: true).holdsRestart)
+        #expect(!summary(.prompting, reported: false).holdsRestart)
+        // An older host's summary says enough for the rest.
         #expect(!summary().holdsRestart)
         #expect(summary(.prompting).holdsRestart)
         #expect(summary(hidden: true).holdsRestart)
         #expect(summary(.loading).holdsRestart)
-        #expect(summary(background: true).holdsRestart)
 
-        let encoded = try JSONEncoder().encode(summary(background: true))
+        let encoded = try JSONEncoder().encode(summary(.prompting, reported: true))
         var fields = try #require(try JSONSerialization.jsonObject(with: encoded) as? [String: Any])
-        fields["isWorkingInBackground"] = nil
+        fields["isHoldingRestart"] = nil
         let older = try JSONDecoder().decode(
             HostSessionSummary.self, from: try JSONSerialization.data(withJSONObject: fields))
-        #expect(older.isWorkingInBackground == nil)
-        #expect(!older.holdsRestart)
+        #expect(older.isHoldingRestart == nil)
+        #expect(older.holdsRestart)
     }
 
     @Test("After the app reconnects, an update waits for a running turn and an approval without interrupting them")
