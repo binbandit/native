@@ -1,5 +1,6 @@
 import ACP
 import ApprovalAnalysis
+import NativePolicy
 import SwiftUI
 
 /// The approval shared by the composer, Peek and Home. Hosts supply the request and model actions;
@@ -11,12 +12,18 @@ struct AnnotatedApprovalView: View {
     var homeDirectory: String? = nil
     var knowledge: CommandKnowledge = .bundled
     var isAvailable = true
+    var responseAttempt = 0
     var forceReducedMotion = false
     var focusRequested = false
     var didFocus: () -> Void = {}
+    var planEntries: [PlanEntry] = []
+    var showMorePlan: (() -> Void)?
+    var openTask: (() -> Void)?
+    @State var planExpanded = false
     let onChoose: (PermissionOption) -> Void
     let onInstruct: (String) async throws -> Void
 
+    @Environment(PolicyCenter.self) private var policy: PolicyCenter?
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.legacyAskShortcutEnabled) private var legacyShortcut
     @Environment(\.permissionShortcutsEnabled) private var shortcutsEnabled
@@ -41,15 +48,31 @@ struct AnnotatedApprovalView: View {
         options.first { $0.kind == .rejectOnce } ?? options.first { $0.isRejection }
     }
 
+    private var requestTitle: String {
+        if call.kind == .switchMode {
+            return planEntries.isEmpty
+                ? "\(agentName) has a plan" : "\(agentName) has a plan: \(planEntries.count) steps"
+        }
+        return "\(agentName) wants to \(analysis?.action ?? call.title)"
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HeightCappedScrollView(maxHeight: DS.Approval.maximumHeight) {
                 VStack(alignment: .leading, spacing: DS.Space.xl) {
                     VStack(alignment: .leading, spacing: DS.Space.xxs) {
-                        Text("\(agentName) wants to \(analysis?.action ?? call.title)")
+                        Text(requestTitle)
                             .font(DS.Approval.titleFont).foregroundStyle(.dsTextPrimary)
-                        Text(analysis?.reason ?? "The agent asked for permission.")
-                            .font(.dsBody).foregroundStyle(.dsTextTertiary)
+                        Text(
+                            analysis?.reason
+                                ?? (call.kind == .switchMode ? call.title : "The agent asked for permission.")
+                        )
+                        .font(.dsBody).foregroundStyle(.dsTextTertiary)
+                    }
+                    if !planEntries.isEmpty {
+                        ComposerPlanSection(
+                            plan: PlanProgress(entries: planEntries), isWorking: false,
+                            isExpanded: $planExpanded, presentation: .review, showMore: showMorePlan)
                     }
                     if let analysis {
                         VStack(spacing: 0) {
@@ -60,12 +83,28 @@ struct AnnotatedApprovalView: View {
                             }
                         }
                         .background(DS.Approval.well(colorScheme), in: .rect(cornerRadius: DS.Radius.control))
+                    } else if call.kind == .switchMode,
+                        case .object(let input) = call.rawInput, input.count == 1,
+                        let proposal = input["plan"]?.stringValue, call.content.isEmpty, call.rawOutput == nil
+                    {
+                        // The permission proposal can differ from its progress checklist. Keep its
+                        // exact words visible without exposing the surrounding wire-format object.
+                        Text(verbatim: proposal).font(.dsBody).foregroundStyle(.dsTextSecondary)
+                            .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
                     } else {
                         ToolCallBody(call: call, presentation: ToolPresentation(call), phase: ToolPhase(call))
                     }
                     if !isAvailable {
                         Text("Waiting for the task to reconnect before you can answer.")
                             .font(.dsBody).foregroundStyle(.dsTextSecondary)
+                    }
+                    if let policy = policy?.policy, policy.isManaged(.forbiddenPermissionModes) {
+                        Label(
+                            "Permission modes are managed by \(policy.organizationName ?? "your organization").",
+                            systemImage: "lock"
+                        )
+                        .font(.dsBody).foregroundStyle(.dsTextTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
                     }
                     footer
                     if sending {
@@ -80,6 +119,7 @@ struct AnnotatedApprovalView: View {
                 .padding(.bottom, DS.Approval.commandInset)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .disabled(sending || committed || !isAvailable)
             if rejection != nil {
                 Rectangle().fill(DS.Approval.separator(colorScheme)).frame(height: DS.Approval.rule)
                 HStack(alignment: .bottom, spacing: DS.Space.md) {
@@ -95,26 +135,52 @@ struct AnnotatedApprovalView: View {
                         sendInstruction(instruction)
                         return .handled
                     }
-                    ComposerSendButton(
-                        disabledReason: instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                            ? "Enter an instruction first" : nil
-                    ) { sendInstruction(instruction) }
-                    .accessibilityLabel("Ask \(agentName) to do this instead")
+                    .disabled(sending || committed || !isAvailable)
+                    if openTask == nil || !instruction.isEmpty {
+                        ComposerSendButton(
+                            disabledReason: instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                ? "Enter an instruction first" : nil
+                        ) { sendInstruction(instruction) }
+                        .accessibilityLabel("Ask \(agentName) to do this instead")
+                        .disabled(sending || committed || !isAvailable)
+                    }
+                    taskLink
                 }
                 .padding(.horizontal, DS.Approval.inset)
                 .padding(.vertical, DS.Space.lg)
                 .frame(minHeight: DS.Approval.instructionHeight)
+            } else if openTask != nil {
+                taskLink.frame(maxWidth: .infinity, alignment: .trailing).padding(DS.Approval.inset)
             }
         }
         .onChange(of: focusRequested, initial: true) { _, requested in
             if requested { instructionFocused = true; didFocus() }
         }
-        .disabled(sending || committed || !isAvailable)
+        .onChange(of: responseAttempt) {
+            // Retrying a choice resets only its hold, never the user's instruction draft.
+            committed = false
+            keyboardHeld = false
+        }
         .approvalHoldKeys(
             enabled: shortcutsEnabled && legacyShortcut && isAvailable && !sending && !committed
                 && analysis?.risk == .irreversible
         ) {
             keyboardHeld = $0
+        }
+    }
+
+    @ViewBuilder private var taskLink: some View {
+        if let openTask {
+            Button(action: openTask) {
+                HStack(spacing: DS.Space.sm) {
+                    Text("Open Task").font(.dsBody)
+                    Kbd("⌘↩", compact: true)
+                }
+                .fixedSize()
+            }
+            .buttonStyle(.plain).foregroundStyle(.dsTextTertiary)
+            .dsHitTarget(DS.Size.controlXS)
+            .keyboardShortcut(.return, modifiers: .command)
         }
     }
 
@@ -231,6 +297,7 @@ struct AnnotatedApprovalView: View {
                     forceReducedMotion: forceReducedMotion,
                     didCommit: { committed = true }
                 ) { onChoose(allow) }
+                .id(responseAttempt)
             } else {
                 Button {
                     onChoose(allow)
@@ -249,7 +316,9 @@ struct AnnotatedApprovalView: View {
 
     private func optionTitle(_ option: PermissionOption, ordinary: String) -> String {
         // A kind is a lifetime, not a decision: strict review, decline and cancel can share it.
-        if option.kind == .rejectAlways || options.filter({ $0.kind == option.kind }).count > 1 {
+        if call.kind == .switchMode || option.kind == .rejectAlways
+            || options.filter({ $0.kind == option.kind }).count > 1
+        {
             return option.name
         }
         return ordinary
