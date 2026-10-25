@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A6A700000000000000000020 /* NativeNetwork in Frameworks */ = {isa = PBXBuildFile; productRef = A6A700000000000000000010 /* NativeNetwork */; };
 		C0A990010000000000000001 /* ApprovalAnalysis in Frameworks */ = {isa = PBXBuildFile; productRef = C0A990010000000000000002 /* ApprovalAnalysis */; };
 		000000000000000000000320 /* ACP in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000000310 /* ACP */; };
 		000000000000000000000420 /* MCP in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000000410 /* MCP */; };
@@ -129,6 +130,7 @@
 				00000000000000007A5C5C20 /* TaskScripts in Frameworks */,
 				0000000000000000C0DC1020 /* NativeCommands in Frameworks */,
 				0000000000000000901C0020 /* NativePolicy in Frameworks */,
+				A6A700000000000000000020 /* NativeNetwork in Frameworks */,
 				0000000000000000A1150020 /* AIInstructions in Frameworks */,
 				00000000000000005171E020 /* SessionTitling in Frameworks */,
 				000000000000000007C4E020 /* NativeOrchestration in Frameworks */,
@@ -261,6 +263,7 @@
 				00000000000000007A5C5C10 /* TaskScripts */,
 				0000000000000000C0DC1010 /* NativeCommands */,
 				0000000000000000901C0010 /* NativePolicy */,
+				A6A700000000000000000010 /* NativeNetwork */,
 				0000000000000000A1150010 /* AIInstructions */,
 				00000000000000005171E010 /* SessionTitling */,
 				000000000000000007C4E010 /* NativeOrchestration */,
@@ -325,6 +328,7 @@
 				00000000000000007A5C5C00 /* XCLocalSwiftPackageReference "Packages/TaskScripts" */,
 				0000000000000000C0DC1000 /* XCLocalSwiftPackageReference "Packages/NativeCommands" */,
 				0000000000000000901C0000 /* XCLocalSwiftPackageReference "Packages/NativePolicy" */,
+				A6A700000000000000000000 /* XCLocalSwiftPackageReference "Packages/NativeNetwork" */,
 				0000000000000000A1150000 /* XCLocalSwiftPackageReference "Packages/AIInstructions" */,
 				00000000000000005171E000 /* XCLocalSwiftPackageReference "Packages/SessionTitling" */,
 				000000000000000007C4E000 /* XCLocalSwiftPackageReference "Packages/Orchestration" */,
@@ -807,6 +811,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		A6A700000000000000000000 /* XCLocalSwiftPackageReference "Packages/NativeNetwork" */ = {isa = XCLocalSwiftPackageReference; relativePath = Packages/NativeNetwork; };
 		C0A990010000000000000003 /* XCLocalSwiftPackageReference "Packages/ApprovalAnalysis" */ = {isa = XCLocalSwiftPackageReference; relativePath = Packages/ApprovalAnalysis; };
 		000000000000000000000300 /* XCLocalSwiftPackageReference "Packages/ACP" */ = {
 			isa = XCLocalSwiftPackageReference;
@@ -954,6 +959,7 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		A6A700000000000000000010 /* NativeNetwork */ = {isa = XCSwiftPackageProductDependency; productName = NativeNetwork; };
 		C0A990010000000000000002 /* ApprovalAnalysis */ = {isa = XCSwiftPackageProductDependency; productName = ApprovalAnalysis; };
 		000000000000000000000310 /* ACP */ = {
 			isa = XCSwiftPackageProductDependency;

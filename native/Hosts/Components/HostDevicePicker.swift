@@ -18,6 +18,7 @@ struct HostDevicePicker: View {
     var lookOf: ((SessionDeviceOption) -> HostLook)?
     /// Nil when embedded across a containing panel, as in Quick Entry.
     var width: CGFloat? = HostsMetrics.pickerWidth
+    var allowsOfflineHold = false
     let dismiss: () -> Void
 
     @Environment(\.hostLookStore) private var injectedLooks
@@ -84,16 +85,16 @@ struct HostDevicePicker: View {
                 isSelected: isSelected
             )
             .background(
-                isHighlighted && option.canStart ? Color.dsSelected : .clear,
+                isHighlighted && canChoose(option) ? Color.dsSelected : .clear,
                 in: .rect(cornerRadius: DS.Radius.control, style: .continuous)
             )
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .disabled(!option.canStart)
+        .disabled(!canChoose(option))
         .dsHitTarget(DS.Size.controlMD)
         .onHover { isHovering in
-            if isHovering, option.canStart { highlighted = option.device }
+            if isHovering, canChoose(option) { highlighted = option.device }
         }
         .help(number <= 9 ? "\(option.name) (\(number))" : option.name)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
@@ -104,7 +105,7 @@ struct HostDevicePicker: View {
     }
 
     private func choose(_ option: SessionDeviceOption) {
-        guard option.canStart else { return }
+        guard canChoose(option) else { return }
         selection = option.device
         dismiss()
     }
@@ -136,7 +137,7 @@ struct HostDevicePicker: View {
 
     /// The next device in `step`'s direction that can take the session, wrapping around.
     private func move(by step: Int) {
-        let startable = options.filter(\.canStart).map(\.device)
+        let startable = options.filter(canChoose).map(\.device)
         guard !startable.isEmpty else { return }
         guard let current = highlighted.flatMap(startable.firstIndex(of:)) else {
             highlighted = step > 0 ? startable.first : startable.last
@@ -144,6 +145,13 @@ struct HostDevicePicker: View {
         }
         highlighted = startable[(current + step + startable.count) % startable.count]
     }
+    private func canChoose(_ option: SessionDeviceOption) -> Bool {
+        if option.canStart { return true }
+        guard allowsOfflineHold, option.device.isRemote else { return false }
+        if case .cannotClone = option.checkout { return false }
+        return true
+    }
+
 }
 
 /// One device in the picker: its glyph and name, its state, and its checkout or what keeps it from

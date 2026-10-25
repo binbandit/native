@@ -187,12 +187,16 @@ The move is mechanical and happens in small PRs once the current feature work la
 
 ## Experiments
 
-New Task's `NativeComposeTask` gate adds Quick Entry over the selected task. Its draft and
-removable selection context live in `native/NewTask/QuickEntryModel`; writing and dismissing
-the panel create no session or workspace. Start hands the message to the existing `StartingTask`
-pipeline. A background start leaves selection alone, and its confirmation follows the starting
-task to its finished session. During the first slice, Expand hands the same draft to today's
-full New Task view. Compose's page and the shared well's pre-start presentation follow later.
+New Task's `NativeComposeTask` gate adds Quick Entry over the selected task and a Compose page
+opened by Shift-Command-N or Quick Entry's expand. Both keep drafts without creating agent
+conversations or worktrees. Compose lays out the existing composer at page size, with To / On /
+From controls and the shared toolbar well's readiness. Start snapshots text, files, settings and
+workspace into the existing `StartingTask` pipeline. Address lines fold, the shared message renderer
+appears at the transcript's final width, and the composer settles below it. Startup failure uses
+the existing retry view with the snapshot intact. An explicitly held offline draft persists in
+Native's own preferences and resumes through the same pipeline when its paired host reconnects;
+Cancel Hold keeps it editable. The experiment remains off by default. Multiple agents and Compare /
+Keep are the next slice.
 
 ### Home Next
 

@@ -13,7 +13,8 @@ struct QuickEntryPicker: View {
                     options: deviceOptions,
                     projectName: entry.project.flatMap(model.projects.project)?.name ?? "the project",
                     selection: Binding(get: { entry.device }, set: model.chooseQuickEntryDevice),
-                    onAddHost: openAddHost.map { action in { action() } }, width: nil
+                    onAddHost: openAddHost.map { action in { action() } }, width: nil,
+                    allowsOfflineHold: model.composeTask.isPresented
                 ) { entry.picker = nil }
             case .agent:
                 agents

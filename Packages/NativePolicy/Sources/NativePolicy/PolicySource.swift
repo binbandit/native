@@ -34,9 +34,13 @@ public struct UserDefaultsPolicySource: PolicySource, @unchecked Sendable {
         return defaults.object(forKey: key)
     }
 
+    /// Forced values sit in the defaults search list, so the merged representation lists every key a
+    /// profile sets, including misspelled ones that no known key would ever read.
     public var managedKeys: [String]? {
-        guard !simulatedManagedKeys.isEmpty else { return nil }
-        return Array(simulatedManagedKeys)
+        let forced = defaults.dictionaryRepresentation().keys.filter {
+            $0.hasPrefix(PolicyKey.prefix) && defaults.objectIsForced(forKey: $0)
+        }
+        return Array(simulatedManagedKeys.union(forced))
     }
 }
 

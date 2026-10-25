@@ -11,6 +11,8 @@ actor WorkspaceTestHost: HostTransport {
     private var failNew = false
     private var holdNew = false
     private var failClose = false
+    private var resetsEffort = false
+    private var settings: [HostSessionID: (model: String, effort: String, sequence: Int)] = [:]
     private var pendingNew: JSONRPCPeer.Message?
     private var summaries: [HostSessionSummary] = []
     private let idPrefix: String
@@ -22,10 +24,11 @@ actor WorkspaceTestHost: HostTransport {
 
     init(idPrefix: String = "task") { self.idPrefix = idPrefix }
 
-    func configure(fail: Bool = false, hold: Bool = false, failClose: Bool = false) {
+    func configure(fail: Bool = false, hold: Bool = false, failClose: Bool = false, resetEffort: Bool = false) {
         failNew = fail
         holdNew = hold
         self.failClose = failClose
+        resetsEffort = resetEffort
     }
 
     func releaseNew() throws {
@@ -82,19 +85,8 @@ actor WorkspaceTestHost: HostTransport {
             counter += 1
             let params = try message.params(as: NewSessionParams.self)
             let task = params.sessionID ?? HostSessionID()
-            let options: JSONValue = .object([
-                "sessionUpdate": .string("config_option_update"),
-                "configOptions": .array([
-                    .object([
-                        "id": .string("model"), "name": .string("Model"), "category": .string("model"),
-                        "type": .string("select"), "currentValue": .string("small"),
-                        "options": .array([
-                            .object(["value": .string("small"), "name": .string("Small")]),
-                            .object(["value": .string("large"), "name": .string("Large")]),
-                        ]),
-                    ])
-                ]),
-            ])
+            settings[task] = ("small", "low", 1)
+            let options = configOptions(model: "small", effort: "low")
             try peer.notify(
                 HostProtocol.Method.sessionEvent,
                 SessionEventNotification(sessionID: task, event: HostEvent(seq: 1, payload: .update(options))))
@@ -105,7 +97,21 @@ actor WorkspaceTestHost: HostTransport {
             try peer.notify(HostProtocol.Method.sessionChanged, SessionChangedNotification(summary: summary))
             try peer.respond(to: id, with: summary)
         case HostProtocol.Method.setConfigOption:
-            configChanges.append(try message.params(as: SetConfigOptionParams.self))
+            let change = try message.params(as: SetConfigOptionParams.self)
+            configChanges.append(change)
+            if resetsEffort, var current = settings[change.sessionID] {
+                if change.configID == "model" { current.model = change.value; current.effort = "low" }
+                if change.configID == "effort" { current.effort = change.value }
+                current.sequence += 1
+                settings[change.sessionID] = current
+                try peer.notify(
+                    HostProtocol.Method.sessionEvent,
+                    SessionEventNotification(
+                        sessionID: change.sessionID,
+                        event: HostEvent(
+                            seq: current.sequence,
+                            payload: .update(configOptions(model: current.model, effort: current.effort)))))
+            }
             try peer.respond(to: id, with: EmptyMessage())
         case HostProtocol.Method.closeSession:
             if failClose {
@@ -124,4 +130,17 @@ actor WorkspaceTestHost: HostTransport {
             try peer.respond(to: id, error: .methodNotFound(message.method))
         }
     }
+    private func configOptions(model: String, effort: String) -> JSONValue {
+        func option(_ id: String, _ category: String, _ current: String, _ choices: [String]) -> JSONValue {
+            .object([
+                "id": .string(id), "name": .string(id), "category": .string(category),
+                "type": .string("select"), "currentValue": .string(current),
+                "options": .array(choices.map { .object(["value": .string($0), "name": .string($0)]) }),
+            ])
+        }
+        var options = [option("model", "model", model, ["small", "large"])]
+        if resetsEffort { options.append(option("effort", "thought_level", effort, ["low", "high"])) }
+        return .object(["sessionUpdate": .string("config_option_update"), "configOptions": .array(options)])
+    }
+
 }

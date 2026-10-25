@@ -25,26 +25,28 @@ extension NativeCommand {
             if let instruction = $0.taskPeekInstructionFocus {
                 instruction.wrappedValue = true
             } else {
-                if let session = $0.session {
-                    if ExperimentStore.shared.value(of: .composerNext), session.permissionRequests.isEmpty {
-                        let quotes = PlatformQuoteSelection.capture(task: session.clientID) ?? session.quoteSelection
-                        session.quote(quotes)
-                        if let source = session.quoteSelectionSource { session.clearQuoteSelection(source: source) }
-                    }
-                    session.wantsComposerFocus = true
+                if let session = $0.session, ExperimentStore.shared.value(of: .composerNext),
+                    session.permissionRequests.isEmpty
+                {
+                    let quotes = PlatformQuoteSelection.capture(task: session.clientID) ?? session.quoteSelection
+                    session.quote(quotes)
+                    if let source = session.quoteSelectionSource { session.clearQuoteSelection(source: source) }
                 }
+                ($0.session ?? $0.composeDraft)?.wantsComposerFocus = true
             }
         }
-        .available { $0.taskPeekInstructionFocus != nil || ($0.session.map { !$0.isSubagent } ?? false) },
+        .available {
+            $0.taskPeekInstructionFocus != nil || (($0.session ?? $0.composeDraft).map { !$0.isSubagent } ?? false)
+        },
 
         NativeCommand(
             .composerAttachFiles, title: "Attach Files…", category: .composer, systemImage: "paperclip",
             keywords: ["image", "upload"]
         ) {
-            $0.session?.isAttachmentPickerRequested = true
+            ($0.session ?? $0.composeDraft)?.isAttachmentPickerRequested = true
         }
         .available { context in
-            guard let session = context.session else { return false }
+            guard let session = context.session ?? context.composeDraft else { return false }
             return session.acceptsPrompts && session.phase != .disconnected
         },
 
@@ -67,10 +69,11 @@ extension NativeCommand {
         },
 
         NativeCommand(.sessionChooseModel, title: "Choose Model…", category: .composer, systemImage: "cpu") {
-            $0.session?.isModelPickerRequested = true
+            ($0.session ?? $0.composeDraft)?.isModelPickerRequested = true
         }
         .available { context in
-            context.session.map {
+            if context.composeDraft != nil { return true }
+            return context.session.map {
                 ExperimentStore.shared.value(of: .composerNext) || ComposerSettings($0.configOptions).model != nil
             } ?? false
         },

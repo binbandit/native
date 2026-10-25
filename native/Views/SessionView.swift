@@ -20,6 +20,7 @@ struct SessionView: View {
     @Environment(\.inspectorRoom) private var inspectorRoom
     @Experiment(.sessionTools) private var usesSessionTools
     @Experiment(.taskWell) private var usesTaskWell
+    @Experiment(.composeTask) private var usesComposeTask
     private static let subagentInspectorWidth: CGFloat = 420
 
     private var canQuote: Bool {
@@ -28,8 +29,10 @@ struct SessionView: View {
 
     var body: some View {
         Group {
-            if usesSessionTools || usesTaskWell {
-                SessionToolsScreen(session: session, usesTaskWell: usesTaskWell)
+            if usesSessionTools || usesTaskWell || (usesComposeTask && session.usesComposePresentation) {
+                SessionToolsScreen(
+                    session: session, usesTaskWell: usesTaskWell || (usesComposeTask && session.usesComposePresentation)
+                )
             } else {
                 standardBody
             }

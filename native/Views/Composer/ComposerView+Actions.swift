@@ -22,6 +22,11 @@ extension ComposerView {
         let text = PromptQuote.trimmed(session.draft)
         let attachments = session.attachments
         guard !text.isEmpty || !attachments.isEmpty else { return }
+        if let page {
+            guard attachmentsBlockedReason == nil, !flagMissingAttachments() else { return }
+            page.start()
+            return
+        }
         // `/clear` and `/goal …` are Native's own and never reach the agent, unless the user picked
         // the agent's command of that name from the list. They read the message the way the list
         // offered them, without its quotes, and leave the quotes for the next message.

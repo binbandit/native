@@ -7,6 +7,8 @@ import SwiftUI
 /// `@` file mentions floating above it. Its keys follow docs/keyboard.md.
 struct ComposerView: View {
     @Bindable var session: SessionModel
+    /// The same draft component, laid out as a page before the task starts.
+    var page: ComposerPageConfiguration? = nil
     /// Previews supply an in-memory mode library.
     var taskModes: TaskModes = .shared
     @Experiment(.composerNext) var composerNext
@@ -99,7 +101,7 @@ struct ComposerView: View {
     /// Commands Native handles itself, listed before the agent's.
     var nativeCommands: [ComposerSlashCommand] {
         var commands: [ComposerSlashCommand] = []
-        if session.origin == .user, !session.isSubagent {
+        if page == nil, session.origin == .user, !session.isSubagent {
             commands.append(
                 ComposerSlashCommand(
                     native: ClearConversationCommand.name, description: ClearConversationCommand.summary))
@@ -114,7 +116,9 @@ struct ComposerView: View {
         let settings = ComposerSettings(session.configOptions)
         let suggestions = composerNext && !session.permissionRequests.isEmpty ? nil : suggestions
         Group {
-            if composerNext, let call = session.permissionRequests.first {
+            if page != nil {
+                pageSurface(suggestions: suggestions)
+            } else if composerNext, let call = session.permissionRequests.first {
                 ApprovalSurface {
                     SessionApprovalView(session: session, call: call)
                 }
@@ -148,11 +152,13 @@ struct ComposerView: View {
             .animation(.dsQuick, value: feedback)
         }
         .frame(
-            maxWidth: composerNext ? max(columnWidth, DS.ComposerSettings.width) : columnWidth
+            maxWidth: page != nil
+                ? DS.ComposeTask.width
+                : composerNext ? max(columnWidth, DS.ComposerSettings.width) : columnWidth
         )
-        .padding(.horizontal, DS.Space.xxl)
-        .padding(.top, DS.Space.md)
-        .padding(.bottom, DS.Space.xl)
+        .padding(.horizontal, page == nil ? DS.Space.xxl : 0)
+        .padding(.top, page == nil ? DS.Space.md : 0)
+        .padding(.bottom, page == nil ? DS.Space.xl : 0)
         .frame(maxWidth: .infinity)
         // Only a brand-new session takes focus on its own (⌘N, then type). Others wait for ⌘L or a
         // click, so arrowing through the sidebar doesn't hand Return to a composer.
@@ -163,6 +169,7 @@ struct ComposerView: View {
             takeFocusIfWanted()
         }
         .onChange(of: session.draft) { draftChanged() }
+        .onChange(of: pendingAttachments.isEmpty) { _, empty in page?.attachmentsPending(!empty) }
         // A click in the text, typing, or the editor losing focus hands the keys back to the text.
         .onChange(of: selection) { selectedAttachment = nil }
         .onChange(of: isFocused) { _, focused in
@@ -176,7 +183,7 @@ struct ComposerView: View {
             }
         }
         .onChange(of: mentionQuery != nil) { _, isMentioning in
-            guard isMentioning else { return }
+            guard isMentioning, page?.allowsFileMentions != false else { return }
             let source = mentionSource ?? FileMentionSource(root: session.cwd)
             mentionSource = source
             Task { await source.loadIfNeeded() }
@@ -192,7 +199,7 @@ struct ComposerView: View {
         .onChange(of: session.wantsComposerFocus) { takeFocusIfWanted() }
         .onChange(of: session.isModelPickerRequested, initial: true) { _, isRequested in
             guard isRequested else { return }
-            isModelPickerOpen = true
+            if let page { page.openSettings() } else { isModelPickerOpen = true }
             session.isModelPickerRequested = false
         }
         .onChange(of: drops?.items.isEmpty == false) { _, hasDrops in
