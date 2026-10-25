@@ -69,6 +69,11 @@ public struct NativePolicy: Equatable, Sendable {
         public var repositoryScriptsEnabled = true
     }
 
+    public var organizationContact: String?
+    /// A validated built-in theme for both modes, applied without replacing personal preferences.
+    public var appearanceCodeTheme: String?
+    public var appearanceCodeThemeReason: String?
+
     /// Internal command descriptions, validated locally. Never fetched from a URL.
     public var commandKnowledge = CommandKnowledge()
     /// False prevents local coverage counting, even when the user has enabled it.

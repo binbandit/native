@@ -31,6 +31,9 @@ extension SettingsPane {
                         plainly: .init(title: "Colors")),
                     SettingsSearchEntry(
                         id: TerminalSettingsPage.fontRow, title: "Font", keywords: ["typeface", "monospace", "family"]),
+                    SettingsSearchEntry(
+                        id: TerminalCodeFontRow.rowID, title: "Use the same font as code",
+                        keywords: ["appearance", "font", "size"]),
                     SettingsSearchEntry(id: TerminalSettingsPage.sizeRow, title: "Font size", keywords: ["text size"]),
                     SettingsSearchEntry(
                         id: TerminalSettingsPage.scrollbackRow,

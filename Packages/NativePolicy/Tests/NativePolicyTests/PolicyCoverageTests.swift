@@ -31,7 +31,10 @@ import Testing
     }
 
     @Test func everyKeyHasARoleAndCapabilityOrSaysWhyNot() {
-        let displayOnly: Set<PolicyKey> = [.organizationName, .shortcutBindings]
+        let displayOnly: Set<PolicyKey> = [
+            .organizationName, .organizationContact, .appearanceCodeTheme, .appearanceCodeThemeReason,
+            .shortcutBindings,
+        ]
         for key in PolicyKey.allCases {
             #expect(key.role == .deployment || !key.capabilities.isEmpty || displayOnly.contains(key), "\(key)")
             #expect(!key.owners.isEmpty, "\(key)")

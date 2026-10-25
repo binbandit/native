@@ -17,6 +17,7 @@ extension View {
 
 #if DEBUG
 import ACP
+import TaskList
 
 struct SidebarDesignFixture: View {
     let scenario: String
@@ -26,7 +27,9 @@ struct SidebarDesignFixture: View {
 
     init(scenario: String) {
         self.scenario = scenario
-        _app = State(initialValue: Self.makeApp(scenario == "peek-plan" ? "plan" : scenario))
+        _app = State(
+            initialValue: Self.makeApp(
+                scenario == "peek-plan" ? "plan" : scenario == "facts-details" ? "facts" : scenario))
     }
 
     var body: some View {
@@ -34,6 +37,8 @@ struct SidebarDesignFixture: View {
             UndoToastPreviewGallery()
         } else if scenario == "signals" {
             TaskSignalPreview()
+        } else if scenario == "facts-details" {
+            AllInViewPreviewList(app: app, insights: AllInViewPreviewFixtures.factsInsights)
         } else {
             RootView(initialSidebarVisibility: scenario.hasPrefix("collapsed") ? .detailOnly : .all)
                 .environment(app)
@@ -113,6 +118,13 @@ struct SidebarDesignFixture: View {
             app.ordering.restore(
                 (0..<count).map { SessionKey(agent: agent, id: SessionID("\(prefix)-\($0)")) }, in: project.id)
         }
+        if scenario.hasPrefix("fold") || scenario == "facts" || scenario == "home-fold" {
+            addEarlierTasks(app, project: project, pier: pier, kite: kite)
+        }
+        if scenario == "facts" {
+            for fact in TaskSidebarPreferences.Fact.allCases { app.sidebarPreferences.set(fact, shown: true) }
+            app.ordering.pin(SessionKey(agent: agent, id: SessionID("native-2")))
+        }
         let selection = SessionKey(
             agent: AgentDefinition.ID(rawValue: "codex"), id: SessionID(scenario == "ask" ? "native-1" : "native-2"))
         app.selection = selection
@@ -147,7 +159,28 @@ struct SidebarDesignFixture: View {
             app.session(selection)?.draft = "Keep this conversation draft."
             if scenario == "collapsed-home" { app.selection = nil }
         }
+        if scenario == "home-fold" { app.selection = nil }
         return app
+    }
+
+    private static func addEarlierTasks(_ app: AppModel, project: Project, pier: Project, kite: Project) {
+        let agent = AgentDefinition.ID(rawValue: "codex")
+        for (project, id, title, days) in [
+            (project, "native-7", "Keyboard map for the composer", 1),
+            (project, "native-8", "Archive tasks with a swipe on iPad", 2),
+            (pier, "pier-3", "Dark mode for the marketing pages", 1),
+            (pier, "pier-4", "Regenerate the schema types", 6),
+            (kite, "kite-3", "Explain `kt land --dry-run` output", 3),
+            (kite, "kite-4", "Rename `kt go` to `kt start`", 8),
+        ] {
+            let date = Calendar.current.date(byAdding: .day, value: -days, to: .now) ?? .distantPast
+            app.catalog.add(
+                SessionInfo(sessionId: SessionID(id), cwd: project.path, title: title, updatedAt: date),
+                for: agent, in: project.id)
+            if let session = SessionModel.preview(in: app, agent: "codex", id: id, cwd: project.path, title: title) {
+                session.previewExchange(title, reply: "Done.", endedAgo: Date.now.timeIntervalSince(date))
+            }
+        }
     }
 
     private static func add(
@@ -156,7 +189,9 @@ struct SidebarDesignFixture: View {
     ) {
         let agent = AgentDefinition.ID(rawValue: "codex")
         app.catalog.add(
-            SessionInfo(sessionId: SessionID(id), cwd: project.path, title: title, updatedAt: .now),
+            SessionInfo(
+                sessionId: SessionID(id), cwd: project.path, title: title,
+                updatedAt: status == .done ? .now.addingTimeInterval(-1080) : .now),
             for: agent, in: project.id)
         guard let session = SessionModel.preview(in: app, agent: "codex", id: id, cwd: project.path, title: title)
         else { return }
@@ -181,7 +216,18 @@ struct SidebarDesignFixture: View {
                 session.questions = [.init(id: .int(1), request: question, requestedAt: .now.addingTimeInterval(-age))]
             }
         case .done:
-            session.previewExchange(title, reply: "Done. The change is ready to review.")
+            let date = Date.now.addingTimeInterval(-1080)
+            session.state.appendUserMessage(title, at: date.addingTimeInterval(-45))
+            let edit =
+                #"{"toolCallId":"fixture-edit","title":"Update word wrapping","kind":"edit","status":"completed","content":[{"type":"diff","path":"native/Views/DiffView.swift","oldText":"let wraps = false","newText":"let wraps = true\nlet mode = WrapMode.words"}]}"#
+            if let update = SessionModel.previewDecode(ToolCallUpdate.self, edit) {
+                session.state.apply(.toolCall(update), at: date)
+            }
+            session.state.apply(
+                .agentMessageChunk(ContentChunk(content: .text("Done. The change is ready to review."))), at: date)
+            session.state.endTurn(.endTurn, at: date)
+            session.lastStopReason = .endTurn
+            session.lastActivity = date
             app.unread.set(SessionKey(agent: agent, id: session.id), unread: id != "native-2")
         case .failed:
             session.phase = .disconnected

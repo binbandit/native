@@ -71,6 +71,14 @@ struct HomeNextView: View {
             .padding(.bottom, DS.Space.xxxl)
             .frame(maxWidth: .infinity, alignment: .top)
         }
+        .preference(
+            key: HomePresentedTaskAskKey.self,
+            value: Set(
+                asks.prefix(visibleCount + 1).compactMap { task -> HomePresentedTaskNeed? in
+                    if let id = task.request?.taskPeekID(task: task.id) { return .request(id) }
+                    return task.status == .failed ? .failure(task.id) : nil
+                })
+        )
         .onAppear { model.setHomeNextVisible(true) }
         .onDisappear { model.setHomeNextVisible(false) }
         .scrollBounceBehavior(.basedOnSize)

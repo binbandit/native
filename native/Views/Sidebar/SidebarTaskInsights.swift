@@ -10,6 +10,9 @@ struct SidebarTaskInsights: Equatable {
     var source: ObjectIdentifier?
     var hasUncommittedChanges: @MainActor (SessionSummary) -> Bool = { _ in false }
     var hasPullRequest: @MainActor (SessionSummary) -> Bool = { _ in false }
+    var branch: @MainActor (SessionSummary) -> String? = { _ in nil }
+    /// Optional branch facts read only git state, never pull-request data.
+    var prepareBranch: @MainActor (SessionSummary) async -> Void = { _ in }
     /// The row's "Pull Request" submenu, while the task's branch has one.
     var pullRequestMenu: @MainActor (SessionSummary) -> SidebarTaskMenu? = { _ in nil }
     /// Looks the answers up for tasks nobody has asked about yet (rows a filter hides never load

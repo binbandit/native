@@ -7,9 +7,9 @@ let package = Package(
     products: [
         .library(name: "NativePolicy", targets: ["NativePolicy"])
     ],
-    dependencies: [.package(path: "../ApprovalAnalysis")],
+    dependencies: [.package(path: "../ApprovalAnalysis"), .package(path: "../CodeThemes")],
     targets: [
-        .target(name: "NativePolicy", dependencies: ["ApprovalAnalysis"]),
+        .target(name: "NativePolicy", dependencies: ["ApprovalAnalysis", "CodeThemes"]),
         .testTarget(name: "NativePolicyTests", dependencies: ["NativePolicy"]),
     ]
 )

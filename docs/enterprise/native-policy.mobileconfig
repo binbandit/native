@@ -51,6 +51,12 @@
             <key>PayloadDisplayName</key>
             <string>Native settings</string>
 
+            <!-- Who manages Appearance, and the code theme used in both modes. -->
+            <key>policy.organization.name</key><string>Northwind Federal IT</string>
+            <key>policy.organization.contact</key><string>#it-help</string>
+            <key>policy.appearance.codeTheme</key><string>native</string>
+            <key>policy.appearance.codeTheme.reason</key><string>Consistent code colors on managed devices.</string>
+
             <!-- Local command knowledge and coverage diagnostics. No network or command execution. -->
             <key>policy.approvals.knowledge</key>
             <string>{"version":1,"programs":[],"locations":[]}</string>
@@ -158,8 +164,6 @@
             <!-- Off removes celebration settings and restores the usual appearance. -->
             <key>policy.celebrations.enabled</key>
             <false/>
-            <key>policy.organization.name</key>
-            <string>Example Corp</string>
 
             <key>policy.labs.enabled</key>
             <false/>

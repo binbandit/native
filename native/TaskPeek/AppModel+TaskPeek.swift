@@ -13,6 +13,10 @@ extension AppModel {
         sessionList.flatMap { taskAsks(for: $0.id) }.min { $0.since < $1.since }
     }
 
+    /// What Answer Oldest Ask would answer right now. Rows show its keycap only on this ask, so a
+    /// hint never points at a keystroke Home has taken for its own approval.
+    var answerShortcutAsk: TaskPeekAsk? { homeNextOwnsAskShortcut ? nil : oldestTaskAsk }
+
     func taskAsks(for key: SessionKey) -> [TaskPeekAsk] {
         guard taskIsAvailable(key), taskIsReachable(key), let session = session(key) else { return [] }
         return TaskPeekAsk.requests(in: session, task: key)
@@ -54,7 +58,7 @@ extension AppModel {
     }
 
     func answerOldestTaskAsk() async {
-        guard offersTaskPeek, !taskPeek.isAnswering, let ask = oldestTaskAsk else { return }
+        guard offersTaskPeek, !taskPeek.isAnswering, let ask = answerShortcutAsk else { return }
         if case .permission(let call) = ask.content, call.allowsQuickApproval,
             let option = call.permission?.options.first(where: { $0.kind == .allowOnce })
         {

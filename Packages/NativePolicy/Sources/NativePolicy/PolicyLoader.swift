@@ -1,4 +1,5 @@
 import ApprovalAnalysis
+import CodeThemes
 import Foundation
 
 /// Reads and validates every policy key from a source.
@@ -8,6 +9,15 @@ public enum PolicyLoader {
         var resolver = PolicyResolver(
             source: source, isRestricted: deployment.mode != .ordinary, isTrusted: deployment.isTrusted)
         var policy = NativePolicy()
+        policy.organizationContact = resolver.resolve(
+            .organizationContact, expecting: "a non-empty string", ordinary: nil, restricted: nil, PolicyParse.text)
+        // An unusable theme leaves the user's own, as the theme isn't a security setting.
+        policy.appearanceCodeTheme = resolver.resolve(
+            .appearanceCodeTheme, expecting: "a built-in code theme id", ordinary: nil, restricted: nil,
+            PolicyParse.codeTheme)
+        policy.appearanceCodeThemeReason = resolver.resolve(
+            .appearanceCodeThemeReason, expecting: "a non-empty string", ordinary: nil, restricted: nil,
+            PolicyParse.text)
         policy.commandKnowledge = resolver.resolve(
             .commandKnowledge, expecting: "a command knowledge JSON document", ordinary: .init(), restricted: .init(),
             PolicyParse.commandKnowledge)
@@ -146,6 +156,18 @@ extension NativePolicy {
 /// Parsers for property-list values. Each returns nil when the value as a whole is unusable, and
 /// reports entries it skipped in `problems`.
 enum PolicyParse {
+    static func text(_ raw: Any, _ problems: inout [String]) -> String? {
+        guard let text = raw as? String, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        return text
+    }
+
+    static func codeTheme(_ raw: Any, _ problems: inout [String]) -> String? {
+        guard let id = raw as? String, CodeTheme.theme(id: .init(rawValue: id)) != nil else { return nil }
+        return id
+    }
+
     static func commandKnowledge(_ raw: Any, _ problems: inout [String]) -> CommandKnowledge? {
         guard let json = raw as? String else { return nil }
         let knowledge = CommandKnowledge.load(Data(json.utf8))

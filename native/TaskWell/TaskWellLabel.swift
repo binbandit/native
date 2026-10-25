@@ -2,9 +2,11 @@ import ACP
 import SwiftUI
 
 /// The capsule keeps its size across states. The agent gives way before the object's middle;
-/// the trailing progress or Review never competes for the text's width.
+/// the trailing progress or Review never competes for the text's width. The compact well of a
+/// narrow window keeps only the count and progress; clicking it still reviews.
 struct TaskWellLabel: View {
     let content: TaskWellContent
+    var isCompact = false
 
     var body: some View {
         HStack(spacing: DS.TaskWell.gap) {
@@ -16,7 +18,7 @@ struct TaskWellLabel: View {
             .accessibilityHidden(true)
             headline
                 .frame(maxWidth: .infinity, alignment: .leading)
-            if content.progress != nil || content.showsReview {
+            if content.progress != nil || (content.showsReview && !isCompact) {
                 trailing
                     .padding(.leading, DS.TaskWell.dividerInset)
                     .overlay(alignment: .leading) {
@@ -29,7 +31,7 @@ struct TaskWellLabel: View {
         .font(DS.TaskWell.body)
         .padding(.leading, DS.TaskWell.leading)
         .padding(.trailing, DS.TaskWell.trailing)
-        .frame(width: DS.TaskWell.width, height: DS.TaskWell.height)
+        .frame(width: isCompact ? DS.TaskWell.compactWidth : DS.TaskWell.width, height: DS.TaskWell.height)
         .dsGlassEffect(in: Capsule())
         .contentShape(Capsule())
         .accessibilityElement(children: .ignore)
@@ -39,7 +41,8 @@ struct TaskWellLabel: View {
     @ViewBuilder private var headline: some View {
         if let outcome = content.outcome {
             HStack(spacing: DS.TaskWell.textGap) {
-                Text("Changed \(outcome.changedFiles.count) \(outcome.changedFiles.count == 1 ? "file" : "files")")
+                let files = "\(outcome.changedFiles.count) \(outcome.changedFiles.count == 1 ? "file" : "files")"
+                Text(isCompact ? files : "Changed \(files)")
                     .lineLimit(1)
                 DiffStatsText(stats: DiffStats(added: outcome.linesAdded, removed: outcome.linesRemoved))
                     .font(DS.TaskWell.object)
@@ -53,7 +56,7 @@ struct TaskWellLabel: View {
                 .truncationMode(.middle)
         } else {
             ViewThatFits(in: .horizontal) {
-                narration(includesAgent: !content.isWaiting)
+                narration(includesAgent: !content.isWaiting && !isCompact)
                     .fixedSize(horizontal: true, vertical: false)
                 narration(includesAgent: false)
             }
@@ -112,7 +115,10 @@ struct TaskWellLabel: View {
     DSPreviewPair {
         VStack(spacing: DS.Space.lg) {
             ForEach(Array(TaskWellPreviewFixtures.states.enumerated()), id: \.offset) { _, content in
-                TaskWellLabel(content: content)
+                HStack(spacing: DS.Space.lg) {
+                    TaskWellLabel(content: content)
+                    TaskWellLabel(content: content, isCompact: true)
+                }
             }
         }
         .padding(DS.Space.xl)

@@ -67,6 +67,9 @@ catalog keys have no app consumer yet; their capabilities stay off in restricted
 | `policy.taskScripts.repositoryScripts` | grant | `taskScripts.repository` | `Packages/TaskScripts/Sources/TaskScripts/TaskScriptPlan.swift` |
 | `policy.celebrations.enabled` | grant | `celebrations.use`, `celebrations.download` | `native/Celebrations/CelebrationsPlugin.swift` |
 | `policy.organization.name` | configuration | - | `native/Wiring/SessionTools/TaskWellWiring.swift` |
+| `policy.organization.contact` | configuration | - | `native/Appearance/AppearancePolicyDetails.swift` |
+| `policy.appearance.codeTheme` | configuration | - | `native/Appearance/AppearancePreferences.swift` |
+| `policy.appearance.codeTheme.reason` | configuration | - | `native/Appearance/AppearancePolicyDetails.swift` |
 | `policy.labs.enabled` | grant | `labs` | `native/Wiring/ExperimentsPolicyWiring.swift` |
 | `policy.companion.enabled` | grant | `hosts.pairing` | `native/Companion/PairedDevicesSettingsPage.swift` |
 | `policy.remoteHosts.enabled` | grant | `hosts.remote` | `native/Hosts/Model/RemoteHosts.swift` |

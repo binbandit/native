@@ -248,7 +248,8 @@ extension PolicyKey {
         case .celebrationAssetsBaseURL, .catalogIndexURL, .updatesFeedURL: .destination
         case .mcpBlocked, .skillsBlocked, .forbiddenPermissionModes, .searchRetentionDays, .updatesChannels:
             .restriction
-        case .commandKnowledge, .agentsEnvironment, .organizationName, .shortcutBindings, .aiInstructions:
+        case .commandKnowledge, .agentsEnvironment, .organizationName, .organizationContact, .appearanceCodeTheme,
+            .appearanceCodeThemeReason, .shortcutBindings, .aiInstructions:
             .configuration
         }
     }
@@ -278,6 +279,8 @@ extension PolicyKey {
         case .taskScriptsUser, .taskScriptsRepository: ["Packages/TaskScripts/Sources/TaskScripts/TaskScriptPlan.swift"]
         case .celebrationsEnabled: ["native/Celebrations/CelebrationsPlugin.swift"]
         case .organizationName: ["native/Wiring/SessionTools/TaskWellWiring.swift"]
+        case .organizationContact, .appearanceCodeThemeReason: ["native/Appearance/AppearancePolicyDetails.swift"]
+        case .appearanceCodeTheme: ["native/Appearance/AppearancePreferences.swift"]
         case .labsEnabled: ["native/Wiring/ExperimentsPolicyWiring.swift"]
         case .companionEnabled: ["native/Companion/PairedDevicesSettingsPage.swift"]
         case .remoteHostsEnabled: ["native/Hosts/Model/RemoteHosts.swift"]

@@ -122,6 +122,10 @@ extension NativePolicy {
         case .taskScriptsRepository: flag(taskScripts.repositoryScriptsEnabled)
         case .celebrationsEnabled: flag(celebrationsEnabled)
         case .organizationName: text(organizationName)
+        case .organizationContact: text(organizationContact)
+        // Theme ids are Native's own built-in set (`PolicyParse.codeTheme`).
+        case .appearanceCodeTheme: appearanceCodeTheme.map(PolicyValueSummary.option) ?? .unset
+        case .appearanceCodeThemeReason: text(appearanceCodeThemeReason)
         case .labsEnabled: flag(labsEnabled)
         case .companionEnabled: flag(companionEnabled)
         case .remoteHostsEnabled: flag(remoteHostsEnabled)

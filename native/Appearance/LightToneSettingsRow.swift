@@ -1,63 +1,39 @@
 import SwiftUI
 
-/// Settings ▸ Appearance ▸ Light mode: Paper or Wool, the white light mode is drawn on, with a
-/// small light-mode window in each so the choice shows even while the app is dark.
 struct LightToneSettingsRow: View {
     static let rowID = SettingsRowID("appearance.light-tone")
-
     static var searchEntry: SettingsSearchEntry {
         SettingsSearchEntry(
-            id: rowID,
-            title: "Light mode",
-            description: "Draw light mode on crisp Paper white or warm Wool.",
-            keywords: ["paper", "wool", "white", "off-white", "warm", "cream", "background", "glare"],
-            plainly: .lightTone)
+            id: rowID, title: "Light background", description: "Choose the light background.",
+            keywords: ["paper", "wool", "white", "warm"])
     }
 
-    @AppStorage(AppearancePreferences.lightToneKey) private var lightTone = DSLightTone.paper
+    @AppStorage(AppearancePreferences.lightToneKey) private var tone = DSLightTone.paper
 
     var body: some View {
-        // Read once here: the tiles' ForEach builds its rows after this body returns, when reading
-        // `lightTone` again could still give the value before the change, leaving the old tile checked.
-        let selection = lightTone
-        VStack(alignment: .leading, spacing: DS.Space.lg) {
-            SettingsRow(
-                id: Self.rowID,
-                "Light mode", plainly: .lightTone,
-                description: Text(
-                    "Draw light mode on crisp Paper white, or on Wool, a warm off-white that’s easier on the eyes.")
-            ) {
-                SettingsSelect(
-                    label: "Light mode",
-                    selection: $lightTone,
-                    options: DSLightTone.allCases.map { .init(value: $0, title: $0.title) }
-                )
-            }
-            HStack(spacing: DS.Space.lg) {
-                ForEach(DSLightTone.allCases) { tone in
-                    AppearanceChoiceTile(
-                        title: tone.title, isSelected: tone == selection,
-                        accessibilityLabel: "\(tone.title) light mode"
-                    ) {
-                        lightTone = tone
-                    } preview: {
-                        AppearancePreviewWindow()
-                            .environment(\.colorScheme, .light)
-                            .dsLightTone(tone)
-                    }
-                }
-            }
+        SettingsRow(id: Self.rowID, "Light background") {
+            SettingsSelect(
+                label: "Light background", selection: $tone,
+                options: DSLightTone.allCases.map { .init(value: $0, title: $0.title) },
+                isDefault: tone == .paper,
+                leading: AnyView(
+                    Circle().fill(.dsBackground)
+                        .overlay {
+                            Circle().strokeBorder(
+                                .dsBorderInner.opacity(DS.Appearance.swatchStrokeOpacity),
+                                lineWidth: DS.Settings.hairline)
+                        }
+                        .frame(width: DS.Appearance.swatch, height: DS.Appearance.swatch)
+                        .environment(\.colorScheme, .light)
+                        .dsLightTone(tone)))
         }
     }
 }
 
-#if NATIVE_PREVIEWS_WIP
-#Preview("Light tone row") {
-    DSPreviewPair {
-        SettingsRowGroup {
-            LightToneSettingsRow()
-        }
-        .settingsPreviewPage()
-    }
+#if DEBUG
+#Preview("Appearance - Light backgrounds") {
+    DSPreviewPair { SettingsRowGroup { LightToneSettingsRow() }.settingsPreviewPage() }
+        .defaultAppStorage(PreviewUserDefaults())
+        .environment(\.settingsPlainly, true)
 }
 #endif
