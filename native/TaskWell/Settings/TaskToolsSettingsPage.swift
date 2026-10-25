@@ -80,7 +80,8 @@ struct TaskToolsSettingsPage: View {
                     tool.title,
                     isOn: Binding(
                         get: { registry.place(for: tool.spec) != .off },
-                        set: { registry.setPlace($0 ? tool.spec.defaultPlace : .off, for: tool.spec) }))
+                        // Its one place, even for a plugin's tool that starts off.
+                        set: { registry.setPlace($0 ? places.first ?? .off : .off, for: tool.spec) }))
             }
         }
     }

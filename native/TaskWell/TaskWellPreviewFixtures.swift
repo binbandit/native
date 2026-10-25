@@ -49,7 +49,11 @@ enum TaskWellPreviewFixtures {
 
     static func registryWithPluginTool() -> SessionToolRegistry {
         let registry = SessionToolRegistry(defaults: PreviewUserDefaults())
-        registry.setPluginTools([pluginTool])
+        var runbook = SessionToolContribution(
+            spec: SessionToolSpec(id: "acme.runbook", places: [.side, .off], defaultPlace: .off),
+            title: "Runbook", systemImage: "book.closed", summary: "The team's runbook, beside the conversation.")
+        runbook.pluginName = "Acme Tickets"
+        registry.setPluginTools([pluginTool, runbook])
         return registry
     }
 

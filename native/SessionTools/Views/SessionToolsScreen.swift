@@ -164,6 +164,7 @@ struct SessionToolsScreen: View {
                 wellLightTrigger += 1
             }
         }
+        .onChange(of: registry.tools.map(\.id)) { tools.closeRemovedTools() }
         .onChange(of: tools.openTools) { previous, current in
             for id in previous.subtracting(current) {
                 if let tool = registry.tool(id) { tool.didClose(context(tool)) }
