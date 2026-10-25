@@ -23,10 +23,11 @@ extension DurableHost {
         try? await client.reportUpdateStatus(HostUpdateStatus(snapshot))
     }
 
-    /// The tasks restarting the host now would interrupt, for the confirmation that names them
-    /// (`hostRestartConfirmation`). An agent's own subagents go with their task.
+    /// The tasks restarting the host now would interrupt, which an update waits for: for the notice
+    /// and the confirmation that names them (`hostRestartConfirmation`). An agent's own subagents go
+    /// with their task.
     var interruptedByRestart: [HostSessionSummary] {
-        sessions.filter { $0.isWorking && $0.origin != .announced }
+        sessions.filter { $0.holdsRestart && $0.origin != .announced }
     }
 
     /// Restarts the host onto this app's binary now. Running turns are interrupted and resume on the
@@ -45,7 +46,7 @@ extension DurableHost {
         appVersionLabel = labels.app
         versionStatus = .compare(
             appBuild: AppVersion.current.build, hostBuild: info.hostInfo.build, hostVersion: labels.host,
-            workingTasks: workingTasks
+            workingTasks: interruptedByRestart.count
         )
         guard case .hostRestartPending = versionStatus, restartRequested != info.epoch, let client else { return }
         restartRequested = info.epoch

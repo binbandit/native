@@ -198,6 +198,9 @@ public struct HostSessionSummary: Codable, Hashable, Sendable, Identifiable {
     public var retryAt: Date?
     /// Native's titles for the session (the user's, the generated one), from hosts that keep them.
     public var titles: HostSessionTitles?
+    /// A subagent it started still works after its turn ended (a background agent). Nil from hosts
+    /// that don't say.
+    public var isWorkingInBackground: Bool?
 
     public init(
         id: HostSessionID, agentID: String, agentName: String, agentSessionID: SessionID?, cwd: String,
@@ -206,7 +209,8 @@ public struct HostSessionSummary: Codable, Hashable, Sendable, Identifiable {
         queue: [QueuedPrompt] = [],
         isQueuePaused: Bool = false, supportsSteering: Bool = false, lastActivity: Date? = nil,
         lastStopReason: String? = nil, problem: String? = nil, isStopping: Bool = false,
-        isRunningHiddenCommand: Bool = false, retryAt: Date? = nil, titles: HostSessionTitles? = nil
+        isRunningHiddenCommand: Bool = false, retryAt: Date? = nil, titles: HostSessionTitles? = nil,
+        isWorkingInBackground: Bool? = nil
     ) {
         self.id = id
         self.agentID = agentID
@@ -228,10 +232,17 @@ public struct HostSessionSummary: Codable, Hashable, Sendable, Identifiable {
         self.isRunningHiddenCommand = isRunningHiddenCommand
         self.retryAt = retryAt
         self.titles = titles
+        self.isWorkingInBackground = isWorkingInBackground
     }
 
     /// Whether a turn is running or about to (recovery resumes one, a retry sends one).
     public var isWorking: Bool {
         phase == .prompting || phase == .recovering || retryAt != nil
+    }
+
+    /// Whether restarting the host now would interrupt something here, so an update waits for it:
+    /// a turn, a hidden command, a load or background work (the host's `HostSession.holdsRestart`).
+    public var holdsRestart: Bool {
+        isWorking || isRunningHiddenCommand || phase == .loading || isWorkingInBackground == true
     }
 }

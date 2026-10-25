@@ -62,7 +62,7 @@ private struct HostRestartConfirmation: ViewModifier {
         let more = names.count > shown.count ? ["\(names.count - shown.count) more"] : []
         let tasks = (shown + more).formatted(.list(type: .and))
         return names.count == 1
-            ? "Restarting now interrupts \(tasks). A command it's running stops, and Native resumes the task right after. If you wait, the host restarts by itself once it finishes."
-            : "Restarting now interrupts \(tasks). Commands they're running stop, and Native resumes the tasks right after. If you wait, the host restarts by itself once they finish."
+            ? "Restarting now interrupts \(tasks). A command it's running stops, and its turn resumes right after. If you wait, the host restarts by itself once it finishes."
+            : "Restarting now interrupts \(tasks). Commands they're running stop, and their turns resume right after. If you wait, the host restarts by itself once they finish."
     }
 }

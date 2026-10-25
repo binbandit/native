@@ -4,6 +4,8 @@ import NativeHostClient
 import NativeHostProtocol
 import Testing
 
+@testable import NativeHost
+
 /// An update asks the host to restart once idle (`_native/host/shutdown {stopAgents: false}`); it
 /// must never cut off work to do it (docs/durability.md, "Updates").
 @Suite("Updates wait for work in progress", .serialized, .timeLimit(.minutes(1)))
@@ -58,6 +60,65 @@ struct HostUpdateContinuityTests {
         #expect(await recorder.turnsEnded(session) == ["end_turn"])
         #expect(harness.received == ["prompt\tflaky-once hi", "prompt\tflaky-once hi"])
         await recorder.stop()
+    }
+
+    @Test("A subagent working in the background holds an update while its agent runs, and not after")
+    @HostActor
+    func backgroundSubagent() async throws {
+        let host = try await ExecHost.make()
+        let core = host.core
+        defer { for link in core.agents.values { link.endNow() } }
+        let recorder = Recorder(client: host.owner)
+        await recorder.listen()
+        try await host.owner.syncAgents([host.harness.agentSpec])
+        let summary = try await host.owner.newSession(
+            NewSessionParams(agentID: "fake", cwd: host.projectPath, attach: true))
+        _ = try await host.owner.prompt(PromptParams(sessionID: summary.id, text: "hello"))
+        try await recorder.wait("the turn") { await $0.turnsEnded(summary.id) == ["end_turn"] }
+        let parent = try #require(core.sessions[summary.id])
+        let link = try #require(core.agents["fake"])
+        #expect(!parent.holdsRestart)
+
+        let running = Data(
+            #"{"params":{"sessionId":"parent","update":{"sessionUpdate":"subagent_update","sessionId":"child","state":{"state":"running"}}}}"#
+                .utf8)
+        core.apply(try #require(AgentUpdate.parse(running)).update, to: parent, on: link)
+        #expect(parent.holdsRestart)
+        try await recorder.wait("the app to hear of it") { await $0.summaries[summary.id]?.holdsRestart == true }
+
+        // Its agent's process goes away: the transcript's last word on the child is history now.
+        let generation = link.generation
+        link.end()
+        core.agentExited("fake", generation: generation)
+        #expect(!parent.holdsRestart)
+        try await recorder.wait("the app to hear of it") { await $0.summaries[summary.id]?.holdsRestart == false }
+        await host.stop()
+    }
+
+    @Test("The app counts what an update waits for, and a host that doesn't report background work still decodes")
+    func summaryHoldsRestart() throws {
+        func summary(
+            _ phase: HostSessionPhase = .idle, hidden: Bool = false, background: Bool? = nil
+        )
+            -> HostSessionSummary
+        {
+            HostSessionSummary(
+                id: HostSessionID(), agentID: "fake", agentName: "Fake Agent", agentSessionID: nil, cwd: "/tmp",
+                phase: phase, isRunningHiddenCommand: hidden, isWorkingInBackground: background)
+        }
+        #expect(!summary().holdsRestart)
+        #expect(summary(.prompting).holdsRestart)
+        #expect(summary(hidden: true).holdsRestart)
+        #expect(summary(.loading).holdsRestart)
+        #expect(summary(background: true).holdsRestart)
+
+        let encoded = try JSONEncoder().encode(summary(background: true))
+        var fields = try #require(try JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        fields["isWorkingInBackground"] = nil
+        let older = try JSONDecoder().decode(
+            HostSessionSummary.self, from: try JSONSerialization.data(withJSONObject: fields))
+        #expect(older.isWorkingInBackground == nil)
+        #expect(!older.holdsRestart)
     }
 
     @Test("After the app reconnects, an update waits for a running turn and an approval without interrupting them")

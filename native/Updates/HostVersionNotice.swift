@@ -24,8 +24,8 @@ struct HostVersionNotice: View {
                     ? "A task is still running on \(hostVersion) and keeps working until it's done."
                     : "\(workingTasks) tasks are still running on \(hostVersion) and keep working until they're done.",
                 footnote: workingTasks == 1
-                    ? "Restarting now interrupts it; Native resumes it right after."
-                    : "Restarting now interrupts them; Native resumes them right after."
+                    ? "Restarting now interrupts it; its turn resumes right after."
+                    : "Restarting now interrupts them; their turns resume right after."
             ) {
                 Button("Restart Now…", action: onRestartHost)
                     .buttonStyle(.ds(.secondary))
