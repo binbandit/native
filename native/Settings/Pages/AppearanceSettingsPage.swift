@@ -5,9 +5,7 @@ extension SettingsPane.ID {
 }
 
 extension SettingsPane {
-    /// The look of the app: light, dark or the system's first, then the white light mode and the
-    /// black dark mode are drawn on, the app icon (Mac-only, since the icon is the Dock's), how
-    /// see-through the translucent layers are, the accent, and the code font and theme.
+    /// Window choices, one current code sample, code font and app icon.
     static let appearance = SettingsPane(
         id: .appearance,
         title: "Appearance",
@@ -26,29 +24,6 @@ extension SettingsPane {
                 CodeThemeSettingsRow.searchEntry, CodeFontSettingsRow.searchEntry, AccentSettingsRow.searchEntry,
             ]
         },
-        content: {
-            SettingsPage {
-                SettingsHeader(
-                    "Appearance",
-                    plainly: .init(title: "Appearance", description: "How Native looks, from its window to your code."))
-                SettingsRowGroup {
-                    AppearanceModeSettingsRow()
-                    LightToneSettingsRow()
-                    DarkToneSettingsRow()
-                    PlayfulSpinnersSettingsRow()
-                }
-                SeparatorLine()
-                #if os(macOS)
-                AppearanceSettingsView()
-                SeparatorLine()
-                #endif
-                SettingsRowGroup {
-                    TransparencySettingsRow()
-                    AccentSettingsRow()
-                    CodeFontSettingsRow()
-                    CodeThemeSettingsRow()
-                }
-            }
-        }
+        content: { AppearanceSettingsContent() }
     )
 }

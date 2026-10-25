@@ -1,3 +1,4 @@
+import CodeThemes
 import Experiments
 import Foundation
 import NativeHostProtocol
@@ -33,12 +34,15 @@ private struct SettingsRegression {
         plainlyNavigation()
         combinedLibraryScope()
         accountNavigation()
+        codeThemeChoices()
         #endif
         if failures > 0 {
             print("FAILED: \(failures) Settings regressions")
             exit(1)
         }
-        print("PASS: Settings navigation, account links, sound migration, live switching and disabled playback")
+        print(
+            "PASS: Settings navigation, account links, code theme choices, sound migration, live switching and disabled playback"
+        )
     }
 
     private static func expect(_ condition: Bool, _ message: String) {
@@ -185,6 +189,44 @@ private struct SettingsRegression {
     #endif
 
     #if !BEFORE
+    /// What a pick from either theme menu, Use for Both Modes and Reset to Native write, and their one Undo.
+    private static func codeThemeChoices() {
+        let defaults = PreviewUserDefaults()
+        let selection = CodeThemeSelection(defaults: defaults)
+        let undo = UndoManager()
+        undo.groupsByEvent = false
+        let pick = { (id: String, appearance: CodeAppearance?) in
+            undo.beginUndoGrouping()
+            selection.select(id, for: appearance, undoManager: undo)
+            undo.endUndoGrouping()
+        }
+        let saved = {
+            (
+                light: defaults.string(forKey: AppearancePreferences.lightCodeThemeKey) ?? "native",
+                dark: defaults.string(forKey: AppearancePreferences.darkCodeThemeKey) ?? "native"
+            )
+        }
+        let ids = CodeTheme.all.map(\.id.rawValue).filter { $0 != CodeTheme.native.id.rawValue }
+        guard let first = ids.first, let second = ids.dropFirst().first else {
+            return expect(false, "Two built-in code themes to choose between")
+        }
+        pick(first, .dark)
+        expect(saved() == ("native", first), "A dark menu pick keeps the light theme")
+        pick(second, nil)
+        expect(saved() == (second, second), "Use for Both Modes writes both themes")
+        expect(undo.undoActionName == "Code Theme", "Theme changes are named for Undo")
+        undo.undo()
+        expect(saved() == ("native", first), "One Undo restores both modes")
+        undo.redo()
+        expect(saved() == (second, second), "Redo reapplies both modes")
+        undo.removeAllActions()
+        // Outside a group on purpose: registering an Undo step here would raise.
+        selection.select(second, for: nil, undoManager: undo)
+        expect(!undo.canUndo, "Choosing the current theme adds no Undo step")
+        pick("native", nil)
+        expect(saved() == ("native", "native"), "Reset to Native resets both modes")
+    }
+
     private static func soundChoices() async {
         let choices: [Bool?] = [nil, false, true]
         for legacy in choices {

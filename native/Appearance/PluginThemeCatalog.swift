@@ -6,13 +6,23 @@ import SwiftUI
 /// on the plugin's row in Settings ▸ Extensions; a disabled plugin's themes simply aren't here, so
 /// a choice of one falls back to the default.
 struct PluginThemeCatalog {
+    struct Entry: Identifiable {
+        let theme: CodeTheme
+        let pluginName: String?
+        var id: CodeTheme.ID { theme.id }
+    }
+
+    var entries: [Entry] { allCodeThemes.map { Entry(theme: $0, pluginName: pluginNames[$0.id]) } }
+
     private(set) var codeThemes: [CodeTheme] = []
+    private(set) var pluginNames: [CodeTheme.ID: String] = [:]
     private(set) var accents: [DSAccentPalette] = []
 
     init(_ registry: PluginRegistry) {
         for plugin in registry.enabledPlugins {
             let checked = Self.check(plugin.manifest)
             codeThemes += checked.codeThemes
+            for theme in checked.codeThemes { pluginNames[theme.id] = plugin.manifest.name }
             accents += checked.accents
         }
     }
@@ -28,7 +38,7 @@ struct PluginThemeCatalog {
         accents.first { $0.id == id }
     }
 
-    /// One plugin's themes, checked: the usable ones, named "Theme (Plugin)", and why the others aren't.
+    /// One plugin's themes, checked: the usable ones with their original names, and why the others aren't.
     static func check(
         _ manifest: PluginManifest
     ) -> (codeThemes: [CodeTheme], accents: [DSAccentPalette], problems: [ThemeProblem]) {
@@ -37,7 +47,7 @@ struct PluginThemeCatalog {
         var problems: [ThemeProblem] = []
         for result in manifest.themes.codeThemes(namespace: manifest.id) {
             switch result {
-            case .success(let theme): codeThemes.append(theme.labelled(manifest.name))
+            case .success(let theme): codeThemes.append(theme)
             case .failure(let error): problems.append(error.problem)
             }
         }
@@ -68,19 +78,6 @@ private enum AccentBackgrounds {
             DSDarkTone.allCases.map { background(.dark, .paper, $0) }
         )
     }()
-}
-
-extension CodeTheme {
-    /// The theme named with its plugin, as pickers list it.
-    fileprivate func labelled(_ plugin: String) -> CodeTheme {
-        let name = "\(name) (\(plugin))"
-        switch (light, dark) {
-        case (let light?, let dark?): return CodeTheme(id: id, name: name, light: light, dark: dark)
-        case (let light?, nil): return CodeTheme(id: id, name: name, light: light)
-        case (nil, let dark?): return CodeTheme(id: id, name: name, dark: dark)
-        case (nil, nil): return self
-        }
-    }
 }
 
 extension DSAccentPalette {

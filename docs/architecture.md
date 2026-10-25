@@ -533,6 +533,21 @@ agent-created subagents, and `TaskOrchestrator` checks that scope on each tool c
 the project folder and an advertised read-only setting, bypassing workspace preparation. See
 `docs/coordinator-tasks.md` for scope, message attribution, lifecycle and deferred work.
 
+### Appearance code theme card
+
+Appearance uses one-line window choices and a single code card in the effective theme. The selectors
+write the existing light and dark preferences, with one undo action for both-mode changes. Managed
+`policy.appearance.codeTheme` overrides rendering while retaining those preferences.
+
+On entering the page, `AppearanceSpecimenSource` asks the Changes model for a bounded copy of the
+latest completed task's captured edit diffs. It never reads repository blobs, snapshots a shared
+working tree, opens a task or contacts a paired host. Without captured changes it uses a sample,
+so later edits from another task cannot be attributed to the completed one. Search-excluded projects
+are skipped. `SpecimenSource` selects completed task snapshots; `SpecimenLine`
+in `Packages/CodeThemes` scores highlighted added lines, filters every displayed line and metadata for
+secret patterns, and falls back to a language sample. The excerpt stays in memory and is not logged or
+persisted. The terminal line is always a sample. Try On's task preview is a later change.
+
 ### Credential ownership
 
 Native reads only its own credential stores. Agent MCP configuration (server lists and URLs) remains
