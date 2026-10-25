@@ -73,7 +73,7 @@ final class SessionToolsScreenModel {
         // window out again every frame.
         let show: @MainActor @Sendable () -> Void = {
             // Its plugin may have been turned off while the window made room.
-            guard self.registry.tool(id) != nil else { return }
+            guard self.registry.tool(id) != nil else { return self.presentation.close(id) }
             withTransaction(\.disablesAnimations, true) { self.presentation.present(id, at: place) }
         }
         if place == .side, openByPlace[.side] == nil {
@@ -85,7 +85,7 @@ final class SessionToolsScreenModel {
 
     /// Forgets panes whose tool is gone (its plugin turned off), so they come back closed.
     func closeRemovedTools() {
-        for id in presentation.openByPlace.values where registry.tool(id) == nil {
+        for id in presentation.tools where registry.tool(id) == nil {
             close(id)
         }
     }
