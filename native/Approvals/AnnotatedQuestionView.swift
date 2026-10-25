@@ -14,6 +14,11 @@ struct AnnotatedQuestionView: View {
     var isAvailable = true
     var focusRequested = false
     var didFocus: () -> Void = {}
+    /// For hosts away from the task (Home): "Open Task" at the field's trailing edge.
+    var openTask: (() -> Void)?
+    /// The side margin. A host whose column already has one (Home) passes 0, so the field's rule
+    /// spans the column rather than overhanging it.
+    var inset = DS.Approval.inset
     /// Answers already given, for previews of a picked choice.
     var initialAnswers: AgentQuestionnaireAnswers?
     let onSubmit: ([String: JSONValue]) async -> Void
@@ -48,6 +53,7 @@ struct AnnotatedQuestionView: View {
                             row(option, number: offset + 1, in: question)
                         }
                     }
+                    .disabled(sending || !isAvailable)
                 }
                 if !isAvailable {
                     Text("Waiting for the task to reconnect before you can answer.")
@@ -56,13 +62,12 @@ struct AnnotatedQuestionView: View {
                 }
                 footer.padding(.top, DS.Approval.footerTop)
             }
-            .padding(.horizontal, DS.Approval.inset)
+            .padding(.horizontal, inset)
             .padding(.vertical, DS.Approval.askTop)
             .focusable(isAvailable)
             .focused($cardFocused)
             .focusEffectDisabled()
             .onKeyPress(phases: .down, action: handleKey)
-            .disabled(sending || !isAvailable)
             if question != nil {
                 Rectangle().fill(DS.Approval.separator(colorScheme)).frame(height: DS.Approval.rule)
                 ownWords
@@ -165,26 +170,31 @@ struct AnnotatedQuestionView: View {
 
     private var footer: some View {
         HStack(spacing: DS.Space.sm) {
+            // A confirmation has no field, so the link leads its buttons.
+            if question == nil, let openTask { AskOpenTaskLink(action: openTask) }
             Spacer(minLength: 0)
-            if question == nil {
-                Button("Skip") { decline() }.buttonStyle(ApprovalActionStyle(quiet: true))
-                Button {
-                    submit()
-                } label: {
-                    actionLabel("Continue")
+            Group {
+                if question == nil {
+                    Button("Skip") { decline() }.buttonStyle(ApprovalActionStyle(quiet: true))
+                    Button {
+                        submit()
+                    } label: {
+                        actionLabel("Continue")
+                    }
+                    .buttonStyle(ApprovalActionStyle(primary: true))
+                } else {
+                    Button("Skip") { skip() }
+                        .buttonStyle(ApprovalActionStyle(quiet: true))
+                        .help("Leave this question unanswered")
+                    Button {
+                        submit()
+                    } label: {
+                        actionLabel(isLast ? (questions.count == 1 ? "Answer" : "Send Answers") : "Next")
+                    }
+                    .buttonStyle(ApprovalActionStyle(primary: true))
                 }
-                .buttonStyle(ApprovalActionStyle(primary: true))
-            } else {
-                Button("Skip") { skip() }
-                    .buttonStyle(ApprovalActionStyle(quiet: true))
-                    .help("Leave this question unanswered")
-                Button {
-                    submit()
-                } label: {
-                    actionLabel(isLast ? (questions.count == 1 ? "Answer" : "Send Answers") : "Next")
-                }
-                .buttonStyle(ApprovalActionStyle(primary: true))
             }
+            .disabled(sending || !isAvailable)
         }
     }
 
@@ -197,22 +207,30 @@ struct AnnotatedQuestionView: View {
 
     private var ownWords: some View {
         HStack(alignment: .bottom, spacing: DS.Space.md) {
-            ComposerEditor(
-                text: typedText, selection: $wordsSelection, placeholder: "Or answer in your own words",
-                isFocused: $wordsFocused, inputLabel: "Answer \(agentName) in your own words",
-                insets: DS.Approval.editorInsets, maximumHeight: DS.Approval.instructionMaximumHeight
-            ) { press in
-                guard press.key == .return, press.modifiers.isEmpty, !PlatformTextInput.isComposing else {
-                    return .ignored
+            Group {
+                ComposerEditor(
+                    text: typedText, selection: $wordsSelection, placeholder: "Or answer in your own words",
+                    isFocused: $wordsFocused, inputLabel: "Answer \(agentName) in your own words",
+                    insets: DS.Approval.editorInsets, maximumHeight: DS.Approval.instructionMaximumHeight
+                ) { press in
+                    guard press.key == .return, press.modifiers.isEmpty, !PlatformTextInput.isComposing else {
+                        return .ignored
+                    }
+                    submit()
+                    return .handled
                 }
-                submit()
-                return .handled
+                if openTask == nil || !typedAnswer.isEmpty {
+                    ComposerSendButton(disabledReason: typedAnswer.isEmpty ? "Type an answer first" : nil) {
+                        submit()
+                    }
+                    .accessibilityLabel("Send Your Answer")
+                }
             }
-            ComposerSendButton(disabledReason: typedAnswer.isEmpty ? "Type an answer first" : nil) { submit() }
-                .accessibilityLabel("Send Your Answer")
+            .disabled(sending || !isAvailable)
+            // The task stays a click away while the answer can't be sent.
+            if let openTask { AskOpenTaskLink(action: openTask) }
         }
-        .disabled(sending || !isAvailable)
-        .padding(.horizontal, DS.Approval.inset)
+        .padding(.horizontal, inset)
         .padding(.vertical, DS.Space.lg)
         .frame(minHeight: DS.Approval.instructionHeight)
     }
@@ -230,7 +248,9 @@ struct AnnotatedQuestionView: View {
 
     private func handleKey(_ press: KeyPress) -> KeyPress.Result {
         // ⌘1–9 and the like belong to the app; typing in the field stays typing.
-        guard cardFocused, press.modifiers.isDisjoint(with: [.command, .option, .control]) else { return .ignored }
+        guard cardFocused, !sending, isAvailable, press.modifiers.isDisjoint(with: [.command, .option, .control]) else {
+            return .ignored
+        }
         let options = question?.options ?? []
         if let digit = press.characters.first?.wholeNumberValue, (1...9).contains(digit), digit <= options.count,
             let question

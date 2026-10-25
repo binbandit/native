@@ -1,5 +1,6 @@
 #if DEBUG
 import ACP
+import Experiments
 import SwiftUI
 
 @MainActor
@@ -41,10 +42,14 @@ enum TaskPeekPreviewFixtures {
         return request
     }
 
-    static func view(_ state: State, width: CGFloat = DS.Peek.width) -> some View {
+    /// `finePrint` turns on the composer's annotated asks (`NativeComposerNext`).
+    static func view(_ state: State, width: CGFloat = DS.Peek.width, finePrint: Bool = false) -> some View {
         let app = SidebarDesignFixture.makeApp("plan")
         let request = prepare(app, state: state)
-        return DSPreviewPair { TaskPeekView(request: request).frame(width: width) }.environment(app)
+        let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
+        experiments.set(finePrint, for: .composerNext)
+        return DSPreviewPair { TaskPeekView(request: request).frame(width: width) }
+            .environment(app).environment(\.experimentStore, experiments)
     }
 }
 #endif

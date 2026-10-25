@@ -170,18 +170,7 @@ struct AnnotatedApprovalView: View {
     }
 
     @ViewBuilder private var taskLink: some View {
-        if let openTask {
-            Button(action: openTask) {
-                HStack(spacing: DS.Space.sm) {
-                    Text("Open Task").font(.dsBody)
-                    Kbd("⌘↩", compact: true)
-                }
-                .fixedSize()
-            }
-            .buttonStyle(.plain).foregroundStyle(.dsTextTertiary)
-            .dsHitTarget(DS.Size.controlXS)
-            .keyboardShortcut(.return, modifiers: .command)
-        }
+        if let openTask { AskOpenTaskLink(action: openTask) }
     }
 
     private func fixIt(_ replacement: String) -> some View {

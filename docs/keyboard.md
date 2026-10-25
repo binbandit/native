@@ -108,7 +108,8 @@ With Fine print (`NativeComposerNext`) enabled, the question takes the composer'
 approval's frame: "Claude Code asks", a `1 of 2` pager, choices on digit keycaps (a choice the agent
 recommends is tagged), Skip and Next (Return). The composer's field below becomes "Or answer in your
 own words"; Return there answers the shown question with what you typed. The draft waits
-underneath until the questions are answered, and ⌘L focuses the answer field.
+underneath until the questions are answered, and ⌘L focuses the answer field. Peek and Home show
+the same question with the same keys; on Home, Open Task (⌘↩) sits at the field's trailing edge.
 
 ### A task that couldn't start (Fine print)
 
@@ -369,7 +370,7 @@ The current question uses the composer's question keys: 1-9 pick an offered choi
 sends, and typing in the answer field keeps digits as text. Plans use Cmd-Y to approve,
 Shift-Cmd-Delete to request a revised plan.
 Option-Cmd-Down shows the full plan in Peek without leaving Home. Cmd-L focuses the current
-approval's instruction field. Escape dismisses Peek. A failed task uses Cmd-R to retry and
+approval's instruction field, or with Fine print the question's answer field. Escape dismisses Peek. A failed task uses Cmd-R to retry and
 Option-Cmd-O to show its error output. Cmd-Return opens the task for every ask kind.
 
 ## Task tools (Labs)
