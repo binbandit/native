@@ -264,9 +264,17 @@ private struct TaskPeekChecks {
     ) throws -> SessionModel {
         let agent = AgentDefinition.ID(rawValue: name)
         app.catalog.add(SessionInfo(sessionId: SessionID(id), cwd: project.path, title: id), for: agent, in: project.id)
-        guard let session = SessionModel.preview(in: app, agent: name, id: id, cwd: project.path) else {
-            throw MissingFixture()
-        }
+        // Recovery closes its transport. Each fixture owns its handles so later delivery checks
+        // cannot inherit FileHandle.nullDevice after that shared handle has been closed.
+        guard let definition = app.runtime(agent)?.agent,
+            let input = FileHandle(forReadingAtPath: "/dev/null"),
+            let output = FileHandle(forWritingAtPath: "/dev/null")
+        else { throw MissingFixture() }
+        let connection = ACPConnection(reading: input, writing: output) { _ in }
+        let session = SessionModel(
+            agent: definition, id: SessionID(id), cwd: project.url, connection: connection,
+            services: app.sessions.services, supportsSteering: false, phase: .idle)
+        app.sessions.register(session)
         return session
     }
 
