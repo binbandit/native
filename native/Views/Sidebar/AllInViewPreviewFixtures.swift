@@ -4,6 +4,16 @@ import SwiftUI
 import TaskList
 
 enum AllInViewPreviewFixtures {
+    static var factsInsights: SidebarTaskInsights {
+        SidebarTaskInsights(branch: { summary in
+            switch summary.id.id.rawValue {
+            case "native-2": "fix/diff-word-wrap"
+            case "native-0": "feature/queue-follow-ups-and-preserve-the-current-turn"
+            default: nil
+            }
+        })
+    }
+
     static func manyTasks() -> AppModel {
         let app = SidebarPreviewFixtures.troubledApp()
         guard let project = app.previewProject() else { return app }
@@ -29,6 +39,7 @@ enum AllInViewPreviewFixtures {
 
 struct AllInViewPreviewList: View {
     let app: AppModel
+    var insights = SidebarTaskInsights()
     @State var filter = TaskFilter()
     @State private var folding = SidebarDayFolding()
     @State private var selection = SidebarSelectionModel()
@@ -36,11 +47,12 @@ struct AllInViewPreviewList: View {
     var body: some View {
         ScrollView {
             ProjectList(
-                listing: SidebarListing(model: app, filter: filter, insights: SidebarTaskInsights(), folding: folding),
+                listing: SidebarListing(model: app, filter: filter, insights: insights, folding: folding),
                 taskAccessory: { _ in EmptyView() }, filter: $filter, selection: selection, select: { _ in },
                 folding: folding)
         }
         .environment(\.sidebarAllInView, true)
+        .environment(\.sidebarTaskInsights, insights)
         .environment(\.sidebarSelection, selection)
         .sidebarPreviewEnvironment(app)
         .frame(width: DS.Size.sidebarWidth, height: DS.Size.sidebarWidth * 3)
@@ -56,7 +68,10 @@ struct AllInViewPreviewList: View {
 }
 
 #Preview("All in view - Optional facts") {
-    DSPreviewPair { AllInViewPreviewList(app: SidebarDesignFixture.makeApp("facts")) }
+    DSPreviewPair {
+        AllInViewPreviewList(
+            app: SidebarDesignFixture.makeApp("facts"), insights: AllInViewPreviewFixtures.factsInsights)
+    }
 }
 
 #Preview("All in view - No projects") {

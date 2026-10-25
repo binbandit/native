@@ -27,7 +27,9 @@ struct SidebarDesignFixture: View {
 
     init(scenario: String) {
         self.scenario = scenario
-        _app = State(initialValue: Self.makeApp(scenario == "peek-plan" ? "plan" : scenario))
+        _app = State(
+            initialValue: Self.makeApp(
+                scenario == "peek-plan" ? "plan" : scenario == "facts-details" ? "facts" : scenario))
     }
 
     var body: some View {
@@ -35,6 +37,8 @@ struct SidebarDesignFixture: View {
             UndoToastPreviewGallery()
         } else if scenario == "signals" {
             TaskSignalPreview()
+        } else if scenario == "facts-details" {
+            AllInViewPreviewList(app: app, insights: AllInViewPreviewFixtures.factsInsights)
         } else {
             RootView(initialSidebarVisibility: scenario.hasPrefix("collapsed") ? .detailOnly : .all)
                 .environment(app)
