@@ -24,11 +24,12 @@ public struct Kbd: View {
         let shape = RoundedRectangle(
             cornerRadius: compact ? DS.Sidebar.keycapRadius : DS.Radius.small, style: .continuous)
         HStack(spacing: 1) {
-            // Geist Mono has no modifier glyphs, so those come from the system font.
-            ForEach(Array(keys.enumerated()), id: \.offset) { _, character in
-                Text(String(character))
+            // Geist Mono has no modifier glyphs, so those come from the system font. A word ("esc")
+            // stays one run, so it reads as a word rather than spaced letters.
+            ForEach(Array(runs.enumerated()), id: \.offset) { _, run in
+                Text(run)
                     .font(
-                        Self.symbols.contains(character)
+                        run.count == 1 && run.first.map(Self.symbols.contains) == true
                             ? .system(size: 10, weight: style == .plain ? .regular : .medium)
                             : compact && style == .keycap ? DS.Sidebar.keycapFont : .dsMonoMicro)
             }
@@ -43,6 +44,17 @@ public struct Kbd: View {
         .fixedSize()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Shortcut \(keys)")
+    }
+
+    /// Each symbol on its own, and the characters between them together.
+    private var runs: [String] {
+        keys.reduce(into: [String]()) { runs, character in
+            if Self.symbols.contains(character) || runs.last.flatMap(\.last).map(Self.symbols.contains) ?? true {
+                runs.append(String(character))
+            } else {
+                runs[runs.count - 1].append(character)
+            }
+        }
     }
 
     private static let symbols: Set<Character> = ["⌘", "⇧", "⌥", "⌃", "⏎", "↩", "⇥", "⌫", "⌦", "⎋", "↑", "↓", "←", "→"]

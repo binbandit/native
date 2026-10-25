@@ -14,6 +14,7 @@ struct SettingsSelect<Value: Hashable>: View {
     var width = SettingsMetrics.selectWidth
     var fieldStyle = false
     var isDefault = false
+    var leading: AnyView?
 
     @Environment(\.settingsPlainly) private var plainly
 
@@ -37,11 +38,14 @@ struct SettingsSelect<Value: Hashable>: View {
             .labelsHidden()
         } label: {
             HStack(spacing: DS.Space.xs) {
+                if let leading { leading.accessibilityHidden(true) }
                 Text(selectedTitle)
                     .settingsText(.body)
                     .foregroundStyle(plainly && isDefault ? Color.dsTextSecondary : .dsTextPrimary)
                     .lineLimit(1)
-                    .frame(maxWidth: .infinity, alignment: plainly && !fieldStyle ? .trailing : .leading)
+                    .frame(
+                        maxWidth: leading == nil ? .infinity : nil,
+                        alignment: plainly && !fieldStyle ? .trailing : .leading)
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.system(size: SettingsMetrics.chevronGlyph, weight: .medium))
                     .foregroundStyle(.dsTextSecondary)

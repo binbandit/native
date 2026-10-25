@@ -10,7 +10,7 @@ struct AppearanceSettingsView: View {
     var body: some View {
         SettingsRowGroup {
             SettingsRow(
-                "App icon", plainly: .appIcon, description: Text("A little more you, in your Dock."), detail: iconDetail
+                "Icon", detail: iconDetail
             ) {
                 IconThemePicker(
                     "App icon",
@@ -31,10 +31,7 @@ struct AppearanceSettingsView: View {
                 .accessibilityIdentifier("icon-theme-picker")
             }
             SettingsRow(
-                "Icon appearance",
-                description: Text(
-                    "Light or dark, for icons other than Original. Automatic matches Native’s appearance."),
-                detail: preferences.usesSystemIcon ? Text("Follows macOS") : nil
+                "Icon appearance"
             ) {
                 SettingsSelect(
                     label: "Icon appearance",
@@ -54,8 +51,7 @@ struct AppearanceSettingsView: View {
         if preferences.isCelebrating {
             return Text("\(preferences.displayName) is showing. Your choice returns when the celebration ends.")
         }
-        return preferences.usesSystemIcon
-            ? Text("Default, Dark, Clear and Tinted follow your Mac’s settings.") : nil
+        return nil
     }
 
     private static func image(_ preview: AppIconOption.Preview, isDark: Bool) -> Image {

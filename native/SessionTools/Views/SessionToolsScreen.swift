@@ -16,6 +16,8 @@ struct SessionToolsScreen: View {
     @State private var drops = ComposerDropInbox()
     /// The room the conversation and the side panel share.
     @State private var width: CGFloat = 0
+    /// Where the screen starts in the window: the window controls only crowd the title without a sidebar.
+    @State private var leadingEdge: CGFloat = 0
     @State private var wellLightTrigger = 0
     @Environment(GitStore.self) private var git
     @Environment(\.inspectorRoom) private var inspectorRoom
@@ -27,19 +29,18 @@ struct SessionToolsScreen: View {
         let layout = registry.layout(for: session, on: tools)
         let turnChanges = registry.tools.filter { registry.place(of: $0.id) != .off }
             .compactMap { $0.turnChanges?(context($0)) }.first
-        TranscriptView(session: session) { id in
-            let show: @MainActor () -> Void = {
-                withTransaction(\.disablesAnimations, true) {
-                    tools.close(.side)
-                    openSubagent = id
-                }
-            }
-            if isSidePanelDocked.wrappedValue {
-                show()
-            } else {
-                inspectorRoom.open(DS.SessionTools.sidePanelIdealWidth, show)
+        ZStack {
+            conversation
+                .opacity(panelLayout.replacement == nil ? 1 : 0)
+                .allowsHitTesting(panelLayout.replacement == nil)
+                .accessibilityHidden(panelLayout.replacement != nil)
+            if let id = panelLayout.replacement, let tool = registry.tool(id) {
+                tool.pane?(context(tool))
+                    .environment(\.gitChangesCompact, true)
+                    .environment(\.gitChangesClose, GitChangesDismissal { tools.close(id) })
             }
         }
+        .environment(\.gitChangesNeutralMarkers, usesTaskWell)
         .environment(\.turnChangesActions, recordActions(turnChanges))
         .environment(\.isPrimaryTranscript, true)
         .dsToolbarBand()
@@ -84,7 +85,7 @@ struct SessionToolsScreen: View {
                 ToolbarItem(placement: .principal) {
                     TaskWellWiring(
                         session: session, tools: tools, location: location, turnChanges: turnChanges,
-                        openSubagents: toggleWellSubagents)
+                        isCompact: isWellCompact, openSubagents: toggleWellSubagents)
                 }
                 .sharedBackgroundVisibility(.hidden)
             }
@@ -108,7 +109,12 @@ struct SessionToolsScreen: View {
             }
         }
         // Outside the side panel, so the room counts the panel's width while it's docked.
-        .onGeometryChange(for: CGFloat.self, of: \.size.width) { width = $0 }
+        .onGeometryChange(for: CGFloat.self, of: \.size.width) { newWidth in
+            // Moving the same review between containers is one layout change. Animating the
+            // inspector out while its replacement measures can leave both panes participating.
+            withTransaction(\.disablesAnimations, true) { width = newWidth }
+        }
+        .onGeometryChange(for: CGFloat.self, of: { $0.frame(in: .global).minX }) { leadingEdge = $0 }
         .onChange(of: isSidePanelDocked.wrappedValue) { _, isPresented in
             if !isPresented { inspectorRoom.release() }
         }
@@ -154,6 +160,22 @@ struct SessionToolsScreen: View {
         .environment(\.transcriptColumnMaxWidth, columnWidth.maxWidth)
     }
 
+    private var conversation: some View {
+        TranscriptView(session: session) { id in
+            let show: @MainActor () -> Void = {
+                withTransaction(\.disablesAnimations, true) {
+                    tools.close(.side)
+                    openSubagent = id
+                }
+            }
+            if isSidePanelDocked.wrappedValue {
+                show()
+            } else {
+                inspectorRoom.open(DS.SessionTools.sidePanelIdealWidth, show)
+            }
+        }
+    }
+
     private var composer: some View {
         VStack(spacing: 0) {
             // A conversation `/clear` set aside is kept to read: no composer, the way back instead.
@@ -170,12 +192,15 @@ struct SessionToolsScreen: View {
 
     private var wellTitleWidth: CGFloat {
         let conversationWidth = width - (isSidePanelDocked.wrappedValue ? DS.SessionTools.sidePanelIdealWidth : 0)
+        let windowControls = max(0, DS.TaskWell.leadingToolbarWidth - leadingEdge)
+        let wellWidth = isWellCompact ? DS.TaskWell.compactWidth : DS.TaskWell.width
         return min(
             DS.TaskWell.titleMaxWidth,
-            max(
-                DS.TaskWell.titleMinWidth,
-                (conversationWidth - DS.TaskWell.width) / 2 - DS.TaskWell.leadingToolbarWidth))
+            max(DS.TaskWell.titleMinWidth, (conversationWidth - wellWidth) / 2 - windowControls - DS.Space.lg))
     }
+
+    /// A window too narrow for a docked panel shortens the well before the title gives way.
+    private var isWellCompact: Bool { !panelLayout.docksSidePanel }
 
     private func recordActions(_ actions: TurnChangesActions?) -> TurnChangesActions? {
         guard usesTaskWell, var actions else { return actions }
@@ -208,7 +233,7 @@ struct SessionToolsScreen: View {
     }
 
     @ViewBuilder private func sidePanel(_ layout: SessionToolLayout) -> some View {
-        if let id = tools.openByPlace[.side], let open = registry.tool(id) {
+        if let id = panelLayout.docked, let open = registry.tool(id) {
             SessionToolsSidePanel(
                 tabs: layout.side.compactMap(registry.tool), open: open, context: context,
                 select: { tools.open($0) }, close: { tools.close(.side) }
@@ -225,11 +250,12 @@ struct SessionToolsScreen: View {
         SessionToolPanelLayout(
             open: tools.openByPlace, availableWidth: width,
             minimumConversationWidth: DS.SessionTools.conversationBesidePanelMinWidth,
-            panelWidth: DS.SessionTools.sidePanelIdealWidth)
+            panelWidth: DS.SessionTools.sidePanelIdealWidth,
+            replacingConversationWith: usesTaskWell ? .changes : nil)
     }
 
     private var overlayDismissal: ComposerOverlayDismissal? {
-        guard let id = panelLayout.overlay else { return nil }
+        guard let id = panelLayout.replacement ?? panelLayout.overlay else { return nil }
         return ComposerOverlayDismissal { tools.close(id) }
     }
 
@@ -237,7 +263,9 @@ struct SessionToolsScreen: View {
         Binding(
             get: { openSubagent != nil || panelLayout.docked != nil },
             set: { isPresented in
-                if !isPresented {
+                // SwiftUI acknowledges a layout-driven undock by writing false back. Only a
+                // dismissal of a currently docked pane is a request to close the tool.
+                if !isPresented, openSubagent != nil || panelLayout.docked != nil {
                     withTransaction(\.disablesAnimations, true) {
                         openSubagent = nil
                         tools.close(.side)
@@ -281,6 +309,21 @@ struct SessionToolsScreen: View {
                 SessionToolsPreviewFixtures.sidePanel
             }
         }
+    }
+}
+#endif
+
+#if DEBUG
+#Preview("Well - Narrow Changes with composer") {
+    DSPreviewPair {
+        VStack(spacing: 0) {
+            GitChangesInspector(model: GitPreviewFixtures.model, review: GitChangesReview())
+                .environment(\.gitChangesCompact, true)
+                .environment(\.gitChangesNeutralMarkers, true)
+                .environment(\.gitChangesClose, GitChangesDismissal {})
+            ComposerStatePreviewFixtures.finePrint(phase: .idle, draft: "Why fixedSize here?")
+        }
+        .frame(width: DS.ComposerSettings.width, height: DS.TaskWell.panelWidth)
     }
 }
 #endif

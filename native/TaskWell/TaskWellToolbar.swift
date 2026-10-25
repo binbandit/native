@@ -8,6 +8,7 @@ struct TaskWellToolbar<Destination: View>: View {
     let identity: TaskWellIdentity
     let turnChanges: TurnChangesActions?
     let detail: (TaskWellTool) -> TaskWellToolDetail
+    var isCompact = false
     var openSubagent: (SessionID) -> Void = { _ in }
     @ViewBuilder var destination: (TaskWellTool) -> Destination
     @State private var isLanding = false
@@ -24,7 +25,7 @@ struct TaskWellToolbar<Destination: View>: View {
                 tools.toggleWell()
             }
         } label: {
-            TaskWellLabel(content: content)
+            TaskWellLabel(content: content, isCompact: isCompact)
                 .opacity(tools.showsWell ? 0 : 1)
         }
         .buttonStyle(.plain)

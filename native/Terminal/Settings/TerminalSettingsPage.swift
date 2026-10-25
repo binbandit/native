@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 import Terminal
 
@@ -20,6 +19,7 @@ struct TerminalSettingsPage: View {
 
     let store: TerminalStore
 
+    @AppStorage(AppearancePreferences.terminalUsesCodeFontKey) private var terminalUsesCodeFont = false
     @State private var families: [String] = []
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dsAccentPalette) private var palette
@@ -45,6 +45,7 @@ struct TerminalSettingsPage: View {
                     note: usesGhostty ? "Not in use while your Ghostty settings are on." : nil)
                 TerminalSettingsPreview(settings: preferences.settings, colors: colors)
                 SettingsRowGroup {
+                    TerminalCodeFontRow(isOn: $terminalUsesCodeFont)
                     SettingsRow(id: Self.fontRow, "Font", description: Text("Any monospaced font on this Mac.")) {
                         SettingsSelect(
                             label: "Font",
@@ -90,7 +91,7 @@ struct TerminalSettingsPage: View {
             .disabled(usesGhostty)
             .opacity(usesGhostty ? 0.5 : 1)
         }
-        .task { families = Self.monospacedFamilies() }
+        .task { families = DSCodeFont.installedFamilies }
         .onChange(of: appearanceKey, initial: true) { _, key in
             let appearance = TerminalAppearance(key.colorScheme)
             store.setAppearance(
@@ -140,18 +141,6 @@ struct TerminalSettingsPage: View {
             TerminalScrollback.choices.contains(current)
             ? TerminalScrollback.choices : TerminalScrollback.choices + [current]
         return choices.map { .init(value: $0, title: $0.title) }
-    }
-
-    /// Installed monospaced families other than the default, by name.
-    static func monospacedFamilies() -> [String] {
-        let manager = NSFontManager.shared
-        let fixedPitch = NSFontTraitMask.fixedPitchFontMask.rawValue
-        return manager.availableFontFamilies.filter { family in
-            guard !family.hasPrefix("."), family != "Geist Mono",
-                let traits = manager.availableMembers(ofFontFamily: family)?.first?[3] as? NSNumber
-            else { return false }
-            return traits.uintValue & fixedPitch != 0
-        }
     }
 
     private var appearanceKey: TerminalAppearanceKey {

@@ -52,7 +52,7 @@ extension SessionModel {
 
     /// Sends the user's draft as a prompt, if the agent is idle, and waits for the turn to end.
     func send() async {
-        let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = PromptQuote.trimmed(draft)
         let attachments = self.attachments
         guard origin == .user, acceptsPrompts, phase == .idle, !isRunningHiddenCommand, turnHold == nil,
             !text.isEmpty || !attachments.isEmpty
@@ -79,7 +79,7 @@ extension SessionModel {
     /// Sends the user's draft whatever the agent is doing: right away when it's idle, otherwise
     /// queued for when the turn ends or steered into the running turn, as `behavior` says.
     func submit(_ behavior: FollowUpBehavior) async {
-        let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = PromptQuote.trimmed(draft)
         let attachments = self.attachments
         guard origin == .user, acceptsPrompts, phase == .idle || phase == .prompting,
             !text.isEmpty || !attachments.isEmpty
@@ -113,7 +113,7 @@ extension SessionModel {
     func submit(
         _ text: String, attaching attachments: [PromptAttachment] = [], _ behavior: FollowUpBehavior, echo: Bool = true
     ) async throws -> FollowUpDelivery {
-        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = PromptQuote.trimmed(text)
         guard !text.isEmpty || !attachments.isEmpty else { throw SendError.emptyMessage }
         guard !isChangingAgent, !isChangingWorkspace, !isWorkspaceReplaced else { throw SendError.busy }
         guard acceptsPrompts else {

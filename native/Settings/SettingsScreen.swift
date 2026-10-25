@@ -171,7 +171,7 @@ struct SettingsScreen: View {
             scrollPosition = ScrollPosition()
         }
         .task(id: pane) {
-            if plainly, let pane, SettingsPageMap.destination(pane) != pane {
+            if presentation.rowReveal == nil, plainly, let pane, SettingsPageMap.destination(pane) != pane {
                 reveal = SettingsReveal(rowID: SettingsPageMap.sectionID(pane))
             }
         }

@@ -12,7 +12,7 @@ extension HostCore {
     func updateQueued(_ params: QueueItemParams) throws {
         let session = try session(params.sessionID)
         guard let index = session.queue.firstIndex(where: { $0.prompt.id == params.itemID }) else { return }
-        let text = params.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let text = params.text.map(PromptQuote.trimmed) ?? ""
         if text.isEmpty, session.queue[index].prompt.attachments.isEmpty {
             remember(session.queue.remove(at: index).prompt, in: session)
         } else {

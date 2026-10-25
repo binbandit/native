@@ -12,6 +12,7 @@ struct RootView: View {
     @Environment(\.undoManager) private var undoManager
     @Environment(\.releaseChannel) private var releaseChannel
     @State private var columnVisibility = NavigationSplitViewVisibility.all
+    @State private var homeNeeds: Set<HomePresentedTaskNeed> = []
     @State private var contentSize = CGSize.zero
     /// The sidebar's width as the user left it. Settings replaces the split view, and a new one opens
     /// at its ideal width, so this is the ideal.
@@ -55,6 +56,7 @@ struct RootView: View {
             }
         }
         .taskPeekHost()
+        .onPreferenceChange(HomePresentedTaskAskKey.self) { homeNeeds = $0 }
         .onGeometryChange(for: CGSize.self, of: \.size) { contentSize = $0 }
         .approvalHoldKeyRoot()
         .addHostPresentation(hosts: model.hosts)
@@ -340,6 +342,7 @@ struct RootView: View {
         } taskAccessory: { summary in
             AppTaskRowAccessory(summary: summary)
         }
+        .environment(\.homePresentedTaskNeeds, homeNeeds)
         .environment(\.sidebarTaskInsights, AppSidebarTaskInsights.make(model: model, git: git, gitHub: gitHub))
     }
 

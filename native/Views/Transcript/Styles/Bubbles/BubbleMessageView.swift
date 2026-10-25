@@ -41,6 +41,7 @@ struct BubbleMessageView: View {
             Text(verbatim: message.text)
                 .foregroundStyle(BubblePalette.outgoingText(palette))
                 .textSelection(.enabled)
+                .composerQuoteSource(ComposerQuoteSource(name: "Your message", text: message.text))
         case .leading:
             MarkdownView(message.text)
         }

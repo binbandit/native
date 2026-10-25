@@ -15,10 +15,14 @@ struct GitFileDiffView: View {
     /// Loads a collapsed diff in full.
     let onLoadDiff: () -> Void
 
+    @Environment(\.gitChangesCompact) private var compact
+
     var body: some View {
         VStack(spacing: 0) {
-            header
-            SeparatorLine()
+            if !compact {
+                header
+                SeparatorLine()
+            }
             lines
         }
     }
@@ -87,3 +91,21 @@ struct GitFileDiffView: View {
         return "\(changedLines.formatted()) lines changed in a \(file) file, so the diff waits until you ask for it."
     }
 }
+
+#if DEBUG
+#Preview("Wide diff - Loading, binary, large and failure") {
+    DSPreviewPair {
+        ForEach(0..<5) { state in
+            let contents: [GitDiffContent?] = [
+                nil, .binary, .collapsed(changedLines: 800, size: 100_000),
+                .unavailable("The file moved. Select another file or refresh Changes."), .submodule,
+            ]
+            GitFileDiffView(
+                kind: .modified, path: "Sources/Example.swift", stats: nil, content: contents[state], onLoadDiff: {}
+            )
+            .environment(\.gitChangesCompact, true)
+            .frame(width: DS.TaskWell.panelWidth, height: DS.TaskWell.devMaxHeight)
+        }
+    }
+}
+#endif
