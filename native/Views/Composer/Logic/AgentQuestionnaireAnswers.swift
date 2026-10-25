@@ -35,6 +35,19 @@ struct AgentQuestionnaireAnswers: Equatable {
         picks[question.key] = current
     }
 
+    /// Text typed for a question. Without a companion field the text is the answer itself, so it
+    /// replaces a pick rather than going out behind it; `choose` is the other way round.
+    mutating func type(_ text: String, for question: AgentQuestionnaire.Question) {
+        if question.customKey == nil, !text.isEmpty { picks[question.key] = nil }
+        typed[Self.textKey(for: question)] = text
+    }
+
+    /// Picks an option, replacing text typed as the answer when the question has no companion field.
+    mutating func choose(_ option: AgentQuestionnaire.Option, in question: AgentQuestionnaire.Question) {
+        if question.customKey == nil { typed[question.key] = nil }
+        pick(option, in: question)
+    }
+
     /// Leaves a question unanswered.
     mutating func clear(_ question: AgentQuestionnaire.Question) {
         picks[question.key] = nil

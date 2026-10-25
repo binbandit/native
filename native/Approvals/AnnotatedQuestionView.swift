@@ -121,7 +121,7 @@ struct AnnotatedQuestionView: View {
         let label = AgentQuestionOptionLabel(option.title)
         return Button {
             highlighted = number - 1
-            answers.pick(option, in: question)
+            answers.choose(option, in: question)
         } label: {
             HStack(alignment: .top, spacing: DS.Approval.optionGap) {
                 keycap(number, isPicked: isPicked).opacity(number <= 9 ? 1 : 0)
@@ -241,7 +241,11 @@ struct AnnotatedQuestionView: View {
 
     private var typedText: Binding<String> {
         let key = question.map { AgentQuestionnaireAnswers.textKey(for: $0) } ?? ""
-        return Binding(get: { answers.typed[key, default: ""] }, set: { answers.typed[key] = $0 })
+        return Binding(
+            get: { answers.typed[key, default: ""] },
+            set: { text in
+                if let question { answers.type(text, for: question) }
+            })
     }
 
     // MARK: - Actions
@@ -256,14 +260,14 @@ struct AnnotatedQuestionView: View {
             let question
         {
             highlighted = digit - 1
-            answers.pick(options[digit - 1], in: question)
+            answers.choose(options[digit - 1], in: question)
             return .handled
         }
         switch press.key {
         case .upArrow: highlighted = max(highlighted - 1, 0)
         case .downArrow: highlighted = min(highlighted + 1, max(options.count - 1, 0))
         case .space where options.indices.contains(highlighted):
-            if let question { answers.pick(options[highlighted], in: question) }
+            if let question { answers.choose(options[highlighted], in: question) }
         case .return: submit()
         default: return .ignored
         }
