@@ -1,0 +1,13 @@
+Revision: c6e50561d017f7e70337454a17d45c730af6405e
+Instance: cx-cont-well-5, isolated Debug, 1440 x 900 points
+NativeTaskWell and NativeComposerNext set with Boolean defaults before launch.
+App captures use Fake Agent and the private sample repository.
+The sidebar/account is cropped away; the Terminal fixture path is visibly redacted.
+Mock crops are from the existing session-top.html renders, at their original pixel scale.
+Rest, waiting and the open well were captured in dark and light.
+Keyboard highlight was captured in dark. The appearance change cleared the light highlight;
+app-keyboard-light.png is deliberately omitted from review evidence.
+Up, Down and Return were exercised; Return opened Terminal.
+The screen locked before the remaining states could be retaken. The instance was then quit.
+Pending: light keyboard highlight, landed, reviewing, managed open well, narrow landed,
+narrow Changes, 700pt turn card, title popover, Task Tools, and plugin states.
