@@ -100,7 +100,9 @@ struct CodeThemeSettingsRow: View {
                     .dsSeparator, lineWidth: DS.Settings.hairline)
             }
             if let note = tryOn?.keptNote, policy.appearanceCodeTheme == nil {
-                ThemeTryOnKeptLine(message: note.message) { tryOn?.undoKeep(undoManager: undoManager) }
+                ThemeTryOnKeptLine(message: note.message, names: note.names) {
+                    tryOn?.undoKeep(undoManager: undoManager)
+                }
             } else {
                 SettingsFooter(footer)
             }

@@ -29,6 +29,8 @@ final class ThemeTryOnModel {
     /// The line Settings shows after Keep, with its Undo.
     struct KeptNote: Equatable {
         let message: String
+        /// The kept themes' names in `message`, which the line sets apart.
+        let names: [String]
         fileprivate let before: Trial.Choice
         fileprivate let after: Trial.Choice
     }
@@ -150,7 +152,11 @@ final class ThemeTryOnModel {
         let returnsToSettings = origin?.settingsPane != nil
         finish()
         if let message {
-            keptNote = returnsToSettings ? KeptNote(message: message, before: trial.kept, after: choice) : nil
+            keptNote =
+                returnsToSettings
+                ? KeptNote(
+                    message: message, names: Self.changedModes(in: trial).map { trial.shown($0).name },
+                    before: trial.kept, after: choice) : nil
             AccessibilityNotification.Announcement(message).post()
         }
     }
@@ -260,12 +266,15 @@ final class ThemeTryOnModel {
         AccessibilityNotification.Announcement("Previewing \(trial.highlighted.name)").post()
     }
 
+    /// The modes whose theme Keep changes, the listed one first.
+    private static func changedModes(in trial: Trial) -> [CodeAppearance] {
+        [trial.mode, trial.mode == .dark ? .light : .dark].filter { trial.shown($0) != trial.inUse($0) }
+    }
+
     /// "Kept Tokyo Night for dark mode. The terminal uses it too.", naming the listed mode first; nil
     /// when nothing changed.
     static func message(for trial: Trial) -> String? {
-        let modes = [trial.mode, trial.mode == .dark ? .light : .dark].filter {
-            trial.shown($0) != trial.inUse($0)
-        }
+        let modes = changedModes(in: trial)
         let kept = modes.map { "\(trial.shown($0).name) for \($0 == .dark ? "dark" : "light") mode" }
         if !kept.isEmpty {
             return "Kept \(kept.joined(separator: " and ")). The terminal uses \(kept.count == 1 ? "it" : "them") too."

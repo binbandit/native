@@ -20,13 +20,15 @@ struct ThemeTryOnRow: View {
                     .foregroundStyle(isHighlighted ? Color.dsTextPrimary : .dsTextSecondary)
                     .lineLimit(1)
                 Spacer(minLength: 0)
+                // Both on the theme in use while it's highlighted, so what you have stays marked.
+                if isInUse {
+                    Text("In use")
+                        .font(.dsCaption)
+                        .foregroundStyle(.dsTextTertiary)
+                }
                 if isHighlighted {
                     Image(systemName: "return")
                         .font(.dsBody)
-                        .foregroundStyle(.dsTextTertiary)
-                } else if isInUse {
-                    Text("In use")
-                        .font(.dsCaption)
                         .foregroundStyle(.dsTextTertiary)
                 }
             }

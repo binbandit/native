@@ -71,24 +71,42 @@ struct ThemeTryOnPanel: View {
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(maxWidth: .infinity)
-            HStack(spacing: DS.Space.md) {
-                Text("Background")
-                    .font(.dsBody)
-                    .foregroundStyle(.dsTextTertiary)
-                Spacer(minLength: 0)
-                backgroundPicker(trial)
-                    .controlSize(.small)
-                    .fixedSize()
+            // Segments share the column's width rather than hugging their titles.
+            .buttonSizing(.flexible)
+            .frame(minWidth: 0, maxWidth: .infinity)
+            // The label sits beside the switch, or above it when a longer background name or a
+            // narrower column leaves no room.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: DS.Space.sm) {
+                    backgroundLabel.frame(maxWidth: .infinity, alignment: .leading)
+                    backgroundPicker(trial)
+                }
+                VStack(alignment: .leading, spacing: DS.Space.xs) {
+                    backgroundLabel
+                    backgroundPicker(trial)
+                }
             }
-            .padding(.leading, DS.Space.xxs)
         }
         .padding(.top, DS.TryOn.sectionGap)
         .padding(.horizontal, DS.TryOn.controlInset)
     }
 
-    @ViewBuilder
+    private var backgroundLabel: some View {
+        Text("Background")
+            .font(.dsBody)
+            .foregroundStyle(.dsTextTertiary)
+            .lineLimit(1)
+            .fixedSize()
+    }
+
     private func backgroundPicker(_ trial: ThemeTryOnModel.Trial) -> some View {
+        backgroundSegments(trial)
+            .controlSize(.small)
+            .fixedSize()
+    }
+
+    @ViewBuilder
+    private func backgroundSegments(_ trial: ThemeTryOnModel.Trial) -> some View {
         let backgrounds = trial.tried.backgrounds
         if trial.mode == .dark {
             Picker(
