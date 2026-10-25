@@ -16,7 +16,7 @@ nonisolated enum ComposerMetrics {
     /// The rich-text editor's leading increase that draws the same lines as `editorLineSpacing`.
     /// Measured, since it doesn't follow from the spacing alone: scripts/tests/composer-caret.sh
     /// checks that both editors draw a draft alike.
-    static let editorRichLineLeading: CGFloat = 3.5
+    static let editorRichLineLeading: CGFloat = 4
     /// The model picker's search row.
     static let modelSearchHeight: CGFloat = 34
     /// The model list's cap: 420 less the search row.

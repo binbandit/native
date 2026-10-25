@@ -14,7 +14,7 @@ extension DS {
         static let editorFont = Font.ds(15)
         static let editorLineSpacing: CGFloat = 5
         /// `editorLineSpacing` in the rich-text editor (`ComposerMetrics.editorRichLineLeading`).
-        static let editorRichLineLeading: CGFloat = 4
+        static let editorRichLineLeading: CGFloat = 4.5
         static let barHeight: CGFloat = 50
         static let clipInset: CGFloat = 20
         static let clipMaxHeight: CGFloat = 96

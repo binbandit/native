@@ -15,6 +15,11 @@ private struct ComposerCaretChecks {
         app.setActivationPolicy(.prohibited)
         let arguments = CommandLine.arguments
         let renderFolder = arguments.firstIndex(of: "--render").map { URL(fileURLWithPath: arguments[$0 + 1]) }
+        // The leading tokens are measured for Geist; the system font would pass with other values.
+        guard DSTypography.nsFont(size: 13).familyName == "Geist" else {
+            print("FAIL the editor isn't drawing in Geist: the app's fonts aren't in this check's bundle")
+            exit(1)
+        }
         var failures = 0
 
         for editor in ComposerCaretFixture.Editor.allCases {

@@ -14,7 +14,7 @@ extension DS {
         static let editorFont = Font.ds(14)
         static let editorLineSpacing: CGFloat = 7
         /// `editorLineSpacing` in the rich-text editor (`ComposerMetrics.editorRichLineLeading`).
-        static let editorRichLineLeading: CGFloat = 5
+        static let editorRichLineLeading: CGFloat = 5.5
         static let editorInsets = EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0)
         static let editorMaxHeight: CGFloat = 1200
         static let popoverWidth: CGFloat = 372
