@@ -38,18 +38,18 @@ struct ManagedAdapterInstallerTests {
         }
     }
 
-    private static let loginPath = ProcessInfo.processInfo.environment["PATH"] ?? "/usr/bin:/bin"
-    private static let hasNpm = loginPath.split(separator: ":").contains {
-        FileManager.default.isExecutableFile(atPath: "\($0)/npm")
-    }
-
-    @Test(.enabled(if: hasNpm, "Requires an installed npm; fixture tarballs and cache stay local"))
+    @Test(
+        .enabled(
+            if: LocalNodeTools.installed != nil,
+            "Requires an installed Node and npm; fixture tarballs and cache stay local"
+        ))
     func includesOptionalPackagesOffline() async throws {
+        let tools = try #require(LocalNodeTools.installed)
         let root = try scratch()
         defer { try? FileManager.default.removeItem(at: root) }
         let cache = root.appending(path: "cache")
         let environment = [
-            "PATH": Self.loginPath, "HOME": root.path, "npm_config_cache": cache.path,
+            "PATH": tools.path, "HOME": root.path, "npm_config_cache": cache.path,
             "npm_config_userconfig": root.appending(path: "user.npmrc").path,
             "npm_config_globalconfig": root.appending(path: "global.npmrc").path,
             "npm_config_offline": "true", "npm_config_omit": "optional",

@@ -51,8 +51,9 @@ private final class ScratchPolicy: PolicySource, Sendable {
         NotificationCenter.default.post(name: UserDefaults.didChangeNotification, object: nil)
     }
 
-    func managedValue(forKey key: String) -> Any? {
-        key == PolicyKey.remoteHostsEnabled.rawValue ? value.withLock { $0 } : nil
+    func managedEntry(forKey key: String) -> ManagedEntry {
+        guard key == PolicyKey.remoteHostsEnabled.rawValue else { return .absent }
+        return value.withLock { $0 }.map(ManagedEntry.value) ?? .absent
     }
 
     func userValue(forKey key: String) -> Any? { nil }

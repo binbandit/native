@@ -5,6 +5,11 @@ NATIVE_FEED_URL = $(NATIVE_STABLE_FEED_URL)
 // Notarization requires the hardened runtime on every executable, the host helper's included.
 ENABLE_HARDENED_RUNTIME = YES
 
+// The app's own code optimizes for size: 2.6 MB less code than -O, with streaming into and reopening
+// a 500-turn session no slower (docs/app-size.md). Packages set their own optimization, so ACP, the
+// host protocol and the other hot paths stay at -O.
+SWIFT_OPTIMIZATION_LEVEL = -Osize
+
 // Strip every Release and Nightly build, not only archives, so `just install` runs the same binaries
 // users download: unstripped, the app binary is about 37 MB bigger (docs/app-size.md). The symbols
 // live on in the dSYMs (DEBUG_INFORMATION_FORMAT = dwarf-with-dsym), which Sentry symbolicates from.

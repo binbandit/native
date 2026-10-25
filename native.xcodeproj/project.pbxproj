@@ -227,6 +227,7 @@
 				0000000000000000004E480D /* Embed Login Items */,
 				0000000000000000004E480F /* Install Launch Agent */,
 				0000000000000000005C5230 /* Embed Script Runtime */,
+				0000000000000000005C5240 /* Thin Embedded Frameworks */,
 			);
 			buildRules = (
 			);
@@ -411,6 +412,24 @@
 			shellPath = /bin/sh;
 			shellScript = (
 				"/bin/bash \"$SCRIPT_INPUT_FILE_0\" --xcode",
+			);
+		};
+		0000000000000000005C5240 /* Thin Embedded Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			inputPaths = (
+				"$(SRCROOT)/scripts/thin-embedded-frameworks.sh",
+				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Sparkle.framework/Versions/B/Sparkle",
+			);
+			name = "Thin Embedded Frameworks";
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Sparkle.framework/Versions/B/Autoupdate",
+				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater",
+				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/MacOS/Downloader",
+				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/MacOS/Installer",
+			);
+			shellPath = /bin/sh;
+			shellScript = (
+				"/bin/bash \"$SCRIPT_INPUT_FILE_0\"",
 			);
 		};
 /* End PBXShellScriptBuildPhase section */

@@ -33,6 +33,28 @@ extension DS {
         static let hintOpacity: Double = 0.55
         static let pressedOpacity: Double = 0.8
         static let cancelAnimation = Animation.linear(duration: 0.15)
+        // Questions and failed starts share the approval's frame and type.
+        static let askTop: CGFloat = 14
+        static let questionTitleTop: CGFloat = 6
+        static let questionTitleBottom: CGFloat = 10
+        static let optionInset: CGFloat = 10
+        static let optionGap: CGFloat = 12
+        static let optionDetailGap: CGFloat = 1
+        static let keycapSize: CGFloat = 18
+        static let keycapFont = DSTypography.font(size: 10.5, weight: .medium, design: .mono)
+        static let footerTop: CGFloat = 10
+        static let failureIcon: CGFloat = 16
+        /// The failure's text and source hang from the end of its icon.
+        static let failureIndent: CGFloat = 24
+        static let failureDetailTop: CGFloat = 3
+        static let failureFooterTop: CGFloat = 16
+        static let sourceTop: CGFloat = 14
+        static let sourceInset: CGFloat = 10
+        static let lineNumberWidth: CGFloat = 40
+        static let squiggleAmplitude: CGFloat = 1.25
+        static let squiggleWavelength: CGFloat = 4
+        static let squiggleOffset: CGFloat = 3
+        static let outputMaximumHeight: CGFloat = 160
         static let surfaceTintOpacity: Double = 0.78
         static let shadowRadius: CGFloat = 16
         static let shadowOffset: CGFloat = 8

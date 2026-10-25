@@ -10,6 +10,7 @@ extension ComposerView {
                     : "Describe the task. @ mentions a file, / runs a command.",
                 isFocused: $isFocused, hidesCaret: selectedAttachmentIndex != nil,
                 font: DS.ComposeTask.editorFont, lineSpacing: DS.ComposeTask.editorLineSpacing,
+                richLineLeading: DS.ComposeTask.editorRichLineLeading,
                 insets: DS.ComposeTask.editorInsets, maximumHeight: DS.ComposeTask.editorMaxHeight
             ) { press in
                 handleKey(press, suggestions: suggestions)

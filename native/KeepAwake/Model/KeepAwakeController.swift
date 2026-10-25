@@ -6,7 +6,7 @@ import Observation
 /// The app's side of keeping awake: the user's policy (kept under `keepAwake.policy`), the app's
 /// activity, and the engine that acts on both: the background host once Native runs its agents
 /// there (`useHost`), else the app itself. Views and menu commands change the policy only through
-/// these methods.
+/// these methods. On iPad there's no engine: it's a client, and never holds power assertions.
 @Observable
 final class KeepAwakeController {
     private(set) var policy: KeepAwakePolicy {
@@ -32,7 +32,8 @@ final class KeepAwakeController {
         .seconds(30 * 60), .seconds(3600), .seconds(2 * 3600), .seconds(4 * 3600), .seconds(8 * 3600),
     ]
 
-    @ObservationIgnored private var engine: any KeepAwakeEngine
+    /// Nil when the app keeps nothing awake itself (iPad) and no host has taken over.
+    @ObservationIgnored private var engine: (any KeepAwakeEngine)?
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private var following: Task<Void, Never>?
     private static let policyKey = "keepAwake.policy"
@@ -46,21 +47,42 @@ final class KeepAwakeController {
             ? handsOverToHostByDefault : UserDefaults.standard.bool(forKey: "NativeHostKeepAwake")
     }
 
+    /// Whether the app keeps its machine awake: on the Mac. An iPad's agents run on a host, so its
+    /// keep-awake menu, status item and settings page are left out; a paired host's Keep Awake is
+    /// set in that host's settings.
+    static var isSupported: Bool {
+        #if os(macOS)
+        return true
+        #else
+        return false
+        #endif
+    }
+
     /// Quitting needs nothing: the system drops a process's power assertions when it exits.
-    init(engine: any KeepAwakeEngine = KeepAwake(), defaults: UserDefaults = .standard) {
-        self.engine = engine
+    init(engine: (any KeepAwakeEngine)? = KeepAwakeController.inAppEngine(), defaults: UserDefaults = .standard) {
         self.defaults = defaults
         policy =
             defaults.data(forKey: Self.policyKey).flatMap { try? JSONDecoder().decode(KeepAwakePolicy.self, from: $0) }
             ?? KeepAwakePolicy()
-        connect(engine)
+        if let engine {
+            connect(engine)
+        }
+    }
+
+    /// The engine that holds power assertions in the app itself, where there is one.
+    static func inAppEngine() -> (any KeepAwakeEngine)? {
+        #if os(macOS)
+        return KeepAwake()
+        #else
+        return nil
+        #endif
     }
 
     /// Hands keeping awake to the host that runs this Mac's agents: it holds the assertions while
     /// they work, also after Native quits, and the policy goes to it. The app lets go of its own.
     func useHost(_ client: NativeHostClient) {
         guard Self.handsOverToHost else { return }
-        engine.stop()
+        engine?.stop()
         isHostBacked = true
         connect(KeepAwakeHostEngine(client: client))
     }
@@ -136,7 +158,7 @@ final class KeepAwakeController {
     }
 
     private func apply() {
-        status = engine.apply(policy, activity: activity)
+        status = engine?.apply(policy, activity: activity) ?? .off
     }
 
     private func engineChanged(_ status: KeepAwakeStatus) {

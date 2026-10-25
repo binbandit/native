@@ -466,6 +466,24 @@ counting; Settings can purge it; nothing exports it. See [command knowledge](com
 for the schema, coverage, extension precedence, and storage contract. Host-side measurements remain
 a later slice, subject to managed network policy.
 
+Questions and failed starts use the same family. With the gate on, `SessionQuestionView` puts
+the oldest agent question in the composer's place through `AnnotatedQuestionView` (choices on digit
+keycaps, the composer's field for an answer in the user's own words), answered through
+`SessionModel.answerQuestion`. A starting task that fails shows `AgentStartFailureView` above its
+kept message. `NativeSetup`'s `AgentStartDiagnostic` reads a compiler-style `path:line:column:`
+location from the agent's own report (codex-acp puts it in the JSON-RPC error's `data`, which
+`RPCError.detail` keeps); when the report names only the setting ("unknown variant ... in
+`approval_policy`", as codex-acp words it once a task brings MCP servers), the one line of the
+agent's declared settings files that sets it stands in. It offers a fix-it only when exactly one value the agent lists is close
+to the one it rejected. The agent's path authorizes nothing: `AgentStartFile.mayRead` opens only a
+settings file the agent's plugin declares (`AgentManifest.settingsFiles`, such as Codex's
+`~/.codex/config.toml`) on this Mac, compared after symbolic links resolve, with a link required
+to keep the file's kind; anything else stays a location without contents. Lines whose key names a
+credential show the key alone, and lines holding a URL password, bearer header or well-known token
+are hidden whole. A fix-it is applied only on the user's click: `AgentStartFile` checks that
+the line still holds the rejected value, keeps the original as `<file>.native-backup`, and keeps
+the file's permissions and symbolic links.
+
 Irreversible requests use the tested `ApprovalHold` state machine: 0.6 seconds, early release
 cancels, 0.4 seconds of acknowledgement, five-second accessibility confirmation, and no Always
 Allow. Platform key monitoring and haptics live in `native/Platform`. An alternative instruction is

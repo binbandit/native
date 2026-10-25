@@ -59,6 +59,12 @@ struct ComposerView: View {
         }
     }
 
+    /// Fine print: an approval or a question takes the composer's place until it's answered; the
+    /// draft waits underneath.
+    var asksInPlace: Bool {
+        composerNext && page == nil && (!session.permissionRequests.isEmpty || session.pendingQuestion != nil)
+    }
+
     var canEdit: Bool {
         session.phase != .disconnected
     }
@@ -116,13 +122,17 @@ struct ComposerView: View {
 
     var body: some View {
         let settings = ComposerSettings(session.configOptions)
-        let suggestions = composerNext && !session.permissionRequests.isEmpty ? nil : suggestions
+        let suggestions = asksInPlace ? nil : suggestions
         Group {
             if page != nil {
                 pageSurface(suggestions: suggestions)
             } else if composerNext, let call = session.permissionRequests.first {
                 ApprovalSurface {
                     SessionApprovalView(session: session, call: call)
+                }
+            } else if composerNext, let question = session.pendingQuestion {
+                ApprovalSurface {
+                    SessionQuestionView(session: session, question: question)
                 }
             } else {
                 VStack(alignment: .leading, spacing: DS.Space.sm) {
@@ -341,7 +351,7 @@ struct ComposerView: View {
 
     /// Takes focus when the app asks (⌘L, a click on the session in the sidebar), then clears the ask.
     func takeFocusIfWanted() {
-        guard session.wantsComposerFocus, !(composerNext && !session.permissionRequests.isEmpty) else { return }
+        guard session.wantsComposerFocus, !asksInPlace else { return }
         isFocused = true
         session.wantsComposerFocus = false
     }
@@ -350,5 +360,9 @@ struct ComposerView: View {
 #if DEBUG
 #Preview("Composer - Fine print approval") {
     DSPreviewPair { ApprovalPreviewFixtures.composer().frame(width: 850) }
+}
+
+#Preview("Composer - Fine print question") {
+    DSPreviewPair { AskPreviewFixtures.questionComposer().frame(width: 850) }
 }
 #endif

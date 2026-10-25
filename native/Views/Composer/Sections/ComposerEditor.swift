@@ -26,6 +26,8 @@ struct ComposerEditor: View {
     var inputLabel = "Message"
     var font: Font = .dsCallout
     var lineSpacing: CGFloat = ComposerMetrics.editorLineSpacing
+    /// `lineSpacing` as the rich-text editor's leading increase, which draws the same lines.
+    var richLineLeading: CGFloat = ComposerMetrics.editorRichLineLeading
     var insets: EdgeInsets = DS.Composer.textInsets
     var maximumHeight = ComposerMetrics.editorMaxHeight
     var referencesEnabled = false
@@ -62,6 +64,9 @@ struct ComposerEditor: View {
                 Group {
                     if showsCode {
                         TextEditor(text: $styled, selection: $styledSelection)
+                            // With `.lineSpacing`, SwiftUI's rich-text editor moves the caret to the end
+                            // after every keystroke, so it gets the same spacing as a line height.
+                            .lineHeight(.leading(increase: richLineLeading))
                             .attributedTextFormattingDefinition(ComposerFileReferenceAttribute.Scope.self)
                             .onAppear {
                                 if refocusRichEditor {
@@ -71,10 +76,10 @@ struct ComposerEditor: View {
                             }
                     } else {
                         TextEditor(text: $text, selection: $selection)
+                            .lineSpacing(lineSpacing)
                     }
                 }
                 .font(font)
-                .lineSpacing(lineSpacing)
                 .foregroundStyle(.dsTextPrimary)
                 // The window's tint (`dsAccentPalette`) colors the caret; nil would reset it to blue.
                 .tint(hidesCaret ? .clear : .dsAccent)
