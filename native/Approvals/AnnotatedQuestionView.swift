@@ -74,13 +74,14 @@ struct AnnotatedQuestionView: View {
             }
         }
         .onAppear {
-            if let initialAnswers { answers = initialAnswers }
+            answers = initialAnswers ?? AgentQuestionnaireAnswers(suggesting: questionnaire)
+            highlighted = question.map { answers.initialHighlight(in: $0) } ?? 0
             if takesFocus, isAvailable { cardFocused = true }
         }
         .onChange(of: focusRequested, initial: true) { _, requested in
             if requested, question != nil { wordsFocused = true; didFocus() }
         }
-        .onChange(of: index) { highlighted = 0 }
+        .onChange(of: index) { highlighted = question.map { answers.initialHighlight(in: $0) } ?? 0 }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(
             questions.count > 1 ? "\(agentName) asks, question \(index + 1) of \(questions.count)" : "\(agentName) asks"

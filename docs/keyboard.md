@@ -106,7 +106,7 @@ only while the card has focus; ⌘1 – ⌘9 stay task navigation.
 
 With Fine print (`NativeComposerNext`) enabled, the question takes the composer's place, in the
 approval's frame: "Claude Code asks", a `1 of 2` pager, choices on digit keycaps (a choice the agent
-recommends is tagged), Skip and Next (Return). The composer's field below becomes "Or answer in your
+recommends is tagged and starts picked, so Return accepts it), Skip and Next (Return). The composer's field below becomes "Or answer in your
 own words"; Return there answers the shown question with what you typed. The draft waits
 underneath until the questions are answered, and ⌘L focuses the answer field. Peek and Home show
 the same question with the same keys; on Home, Open Task (⌘↩) sits at the field's trailing edge.
