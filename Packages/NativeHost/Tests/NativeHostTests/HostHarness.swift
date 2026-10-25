@@ -189,6 +189,11 @@ actor Recorder {
         payloads(session).compactMap { if case .turnEnded(let reason) = $0 { reason } else { nil } }
     }
 
+    /// The session as the host lists it now (`session/list`), whatever this client has heard.
+    func listed(_ session: HostSessionID) async -> HostSessionSummary? {
+        try? await client.sessions().first { $0.id == session }
+    }
+
     /// Polls until `condition` holds, failing the test after `timeout`.
     @discardableResult
     func wait(
@@ -214,6 +219,9 @@ final class CuttableTransport: HostTransport, @unchecked Sendable {
     private let base: LocalSocketTransport
     private let lock = NSLock()
     private var current: (any ByteStream)?
+    private var isOffline = false
+
+    struct Offline: Error {}
 
     init(location: HostLocation) {
         base = LocalSocketTransport(location: location)
@@ -222,6 +230,7 @@ final class CuttableTransport: HostTransport, @unchecked Sendable {
     var displayName: String { "Cuttable" }
 
     func connect() async throws -> any ByteStream {
+        guard !lock.withLock({ isOffline }) else { throw Offline() }
         let stream = try await base.connect()
         lock.withLock { current = stream }
         return stream
@@ -229,6 +238,19 @@ final class CuttableTransport: HostTransport, @unchecked Sendable {
 
     func cut() {
         lock.withLock { current }?.close()
+    }
+
+    /// Cuts the connection and refuses new ones until `goOnline()`, as a Mac asleep or off the
+    /// network would: the host carries on without this client meanwhile.
+    func goOffline() {
+        lock.withLock {
+            isOffline = true
+            return current
+        }?.close()
+    }
+
+    func goOnline() {
+        lock.withLock { isOffline = false }
     }
 }
 
