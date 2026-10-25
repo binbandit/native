@@ -30,16 +30,24 @@ public struct NetworkInventory: Sendable {
         typealias Entry = NetworkInventory
         switch service {
         case .appUpdateFeed, .appUpdateAssets, .appUpdateNotes:
+            let source: DestinationSource =
+                switch service {
+                case .appUpdateFeed: .configured("SUFeedURL / policy.updates.feedURL")
+                case .appUpdateAssets: .document("signed appcast enclosure URL; embedded archive signature")
+                default: .document("appcast release notes URL")
+                }
             return Entry(
                 service: service, owner: "native/Updates/SparkleUpdateDriver.swift",
-                destination: .configured("SUFeedURL / policy.updates.feedURL; feed enclosure and release notes"),
+                destination: source,
                 trigger: "startup, automatic or manual update check", payload: "version metadata and update bytes",
                 redirects: .approvedOrigins, location: .offMachine, offline: "keep installed app; report check failure",
                 integration: .awaitingIntegration)
         case .hostUpdateFeed, .hostUpdateSignature, .hostUpdateAssets:
             return Entry(
                 service: service, owner: "Packages/HostUpdater/Sources/HostUpdater/HostUpdateSource.swift",
-                destination: .configured("NativeHostFeedURL; detached signature and signed feed asset URLs"),
+                destination: service == .hostUpdateAssets
+                    ? .document("signed host feed asset URL")
+                    : .configured(service == .hostUpdateFeed ? "NativeHostFeedURL" : "NativeHostFeedURL plus .sig"),
                 trigger: "host startup and daily check", payload: "version metadata, signature, executable archive",
                 redirects: .approvedOrigins, location: .offMachine, offline: "keep current or verified staged host",
                 integration: .awaitingIntegration)
@@ -144,8 +152,9 @@ public struct NetworkInventory: Sendable {
         case .celebrationIndex, .celebrationSignature, .celebrationAssets:
             return Entry(
                 service: service, owner: "native/Celebrations/CelebrationAssetStore.swift",
-                destination: .configured(
-                    "policy.celebrations.baseURL or NativeGitHubRepository release; signed index files"),
+                destination: service == .celebrationAssets
+                    ? .document("Native-signed celebration index pack path")
+                    : .configured("policy.celebrations.baseURL or NativeGitHubRepository release; index and .sig"),
                 trigger: "artwork choice or cache refresh", payload: "signed index, signature and artwork pack",
                 redirects: .approvedOrigins, location: .configured,
                 offline: "bundled/cache art; missing assets explained",
