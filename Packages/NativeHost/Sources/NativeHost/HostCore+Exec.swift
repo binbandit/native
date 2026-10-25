@@ -9,8 +9,10 @@ import Synchronization
 extension HostCore {
     /// Runs a command for a client with the `runCommands` grant, in one of the host's projects, with
     /// the host's login-shell environment under the client's own variables. Recorded in the activity
-    /// journal before it starts.
+    /// journal before it starts. The policy is checked again once the environment is read, and a
+    /// revoked policy cancels the command (`HostCore.apply`).
     func runCommand(_ params: ExecRunParams, for client: ClientLink) async throws -> ExecRunResult {
+        try require(.commands)
         try requireCommandsGrant(client, to: "run commands")
         guard let runner = commandRunner else {
             throw CommandError.unavailable("This host can't run commands yet.")
@@ -25,6 +27,7 @@ extension HostCore {
         let environment = await agentEnvironment().merging(params.environment) { $1 }
         // The client may have gone while the environment was read, and nobody would stop it then.
         guard clients[client.id] != nil else { throw HostError.cancelled }
+        try require(.commands)
         // Checked and claimed in one actor turn, so two requests can't share an id.
         guard client.commands[params.execID] == nil else {
             throw RPCError(code: -32602, message: "A command with id \(params.execID) is already running.")
