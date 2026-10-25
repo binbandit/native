@@ -41,12 +41,14 @@ extension AppModel {
                 let info = SessionInfo(
                     sessionId: agentSessionID, cwd: summary.cwd, title: summary.title, updatedAt: summary.lastActivity)
                 let entry = SessionSummary(project: project.id, agent: runtime.agent, info: info)
+                hosts.deviceWorkspaces?.remember(entry.id, on: host.id)
                 if !deletedSessions.contains(entry.id), seen.insert(entry.id).inserted { summaries.append(entry) }
             }
             for (folder, listings) in host.history where belongsToCheckout(folder) {
                 for listed in listings where !notTasks.contains(listed.key) {
                     guard let runtime = host.runtime(listed.agent) else { continue }
                     let entry = SessionSummary(project: project.id, agent: runtime.agent, info: listed.info)
+                    hosts.deviceWorkspaces?.remember(entry.id, on: host.id)
                     if !deletedSessions.contains(entry.id), seen.insert(entry.id).inserted { summaries.append(entry) }
                 }
             }
@@ -78,13 +80,14 @@ extension AppModel {
     /// The runtime of the agent a session runs on: its host's for a session on a paired host, else
     /// this Mac's. Deleting a task's copy and pinning go through it, so they reach the right agent.
     func agentRuntime(for key: SessionKey) -> AgentRuntime? {
-        remotePlace(of: key)?.host.runtime(key.agent) ?? runtimes[key.agent]
+        taskRuntime(for: taskActionOwner(for: key), agent: key.agent)
     }
 
     /// `agentRuntime(for:)`, started if it's idle.
     func ensureRunning(for key: SessionKey) async -> AgentRuntime? {
-        guard let host = remotePlace(of: key)?.host else { return await ensureRunning(key.agent) }
-        guard let runtime = host.runtime(key.agent), runtime.isAvailable else { return nil }
+        let owner = taskActionOwner(for: key)
+        if owner == .local { return await ensureRunning(key.agent) }
+        guard let runtime = taskRuntime(for: owner, agent: key.agent), runtime.isAvailable else { return nil }
         if !runtime.isReady { await runtime.startOnHost() }
         return runtime.isReady ? runtime : nil
     }

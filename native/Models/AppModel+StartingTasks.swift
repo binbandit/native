@@ -235,10 +235,8 @@ extension AppModel {
 
     /// Removes the workspace made for a discarded task, unless it's the project's own folder.
     func removeWorkspace(of task: StartingTask) {
-        // A paired host's worktree is removed there (`DeviceTaskWorkspaces` goes by the folder).
-        guard task.ownsWorkspace, let folder = task.folder, let project = projects.project(task.project),
-            !SessionFolder.isSame(folder.folderPath, project.path)
-        else { return }
+        guard task.ownsWorkspace, let route = taskActionRoute(for: task), let folder = route.folder else { return }
+        let project = route.project
         task.folder = nil
         task.ownsWorkspace = false
         let previous = workspacePreparations[project.id]
@@ -252,11 +250,11 @@ extension AppModel {
                 })
             else { return }
             do {
-                try await taskWorkspaces?.deleteWorkspace(at: folder, in: project)
+                try await deleteWorkspace(using: route)
             } catch {
                 problems.report(
                     ProjectProblem(
-                        project: project.id, work: .workspaceDeletion(task.id, folder: folder),
+                        project: route.project.id, work: .workspaceDeletion(task.id, folder: folder),
                         title: "Couldn't remove a discarded task's workspace",
                         recovery: "The task is gone, but its workspace is still on disk.",
                         details: error.localizedDescription))

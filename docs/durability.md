@@ -463,12 +463,22 @@ changes inspector, branch and diff badges, turn baselines) reads a host's folder
 store (`GitStore.sessionStore`, by session/client identity), so diffs and Files Changed come
 from the host's own git. Stores retain the stable host ID, so re-pairing the same host moves open
 tasks' Git reads and actions to its replacement client once that store is ready. Folder-only lookups stay local; unavailable hosts never fall back to this
-Mac. Remote inspector file menus offer Copy Path, withholding local Open and Reveal actions. `DeviceTaskWorkspaces` is the app's task
-workspaces while remote hosts are on: it sends archiving, restoring, deleting and branch renames to
-the host whose worktrees folder or checkout holds the task's folder, so a task on a host is put away
-with its checkpoint there exactly as one here. Deleting a task's copy in its agent and pinning use
-the host's runtime (`agentRuntime(for:)`). What a host's sessions get from this Mac: its agent
-catalog (`_native/agents/sync` with the plugin-built specs, on each connection with `runCommands`,
+Mac. Remote inspector file menus offer Copy Path, withholding local Open and Reveal actions.
+Task archive, restore, undo and delayed deletion capture a `TaskActionRoute` synchronously before
+suspending or removing a catalog entry. It keeps the task key, owning host, that host's project
+checkout, workspace and title. `DeviceTaskWorkspaces` retains those routes and the owners learned
+from remote listings, including unopened tasks. Workspace operations serialize by host and folder,
+so identical paths on different machines cannot select another provider or block each other.
+Recovery uses the same route, resolving the owner's current provider and agent connection after
+reconnect or re-pairing. An unavailable remote host produces a recoverable project problem and
+never falls back to this Mac. Cleanup protects the owning host's project root, and failed deletion
+keeps its workspace recovery information without running teardown. Agent-copy deletion and
+`agentRuntime(for:)` use the same ownership boundary. The local removed-workspace scan skips
+remote tasks. Discarded starting tasks capture their explicit device, checkout and workspace before
+clearing startup state, so failed cleanup can retry even though no catalog entry ever existed.
+Discard during workspace preparation cleans up once preparation finishes. Draft cleanup does not
+run session-deletion hooks. Folder-only title operations still need their own task routes.
+What a host's sessions get from this Mac: its agent catalog (`_native/agents/sync` with the plugin-built specs, on each connection with `runCommands`,
 never this Mac's worktrees folder or a command that's a path here), its organization policy as
 `_meta`, and only MCP servers the host can reach itself (`PairedHostServers`: HTTP to another
 machine); this Mac's loopback tools and stdio commands stay here. Task setup and teardown scripts
