@@ -120,14 +120,16 @@ extension AppModel {
         return nil
     }
 
-    /// A host (re)connected and listed its agents and sessions: open the user's sessions it's
-    /// working on, has messages queued for or that wait for the user, so the sidebar shows them as
-    /// they are, then list what its agents saved in its checkouts.
+    /// A host (re)connected and listed its agents and sessions: move the tasks still open on an
+    /// earlier pairing's client to it, open the user's sessions it's working on, has messages queued
+    /// for or that wait for the user, so the sidebar shows them as they are, then list what its
+    /// agents saved in its checkouts.
     func hostConnected(_ host: RemoteHost) async {
         if let client = host.client, hosts.wiredClients.insert(ObjectIdentifier(client)).inserted {
             // Titles for its tasks, as for this Mac's host, before any session opens on it.
             await HostTitlesWiring.connect(self, to: client)
         }
+        await reattachSessions(to: host)
         await syncAgents(to: host)
         for summary in host.sessions
         where summary.origin == .user && summary.parentID == nil
