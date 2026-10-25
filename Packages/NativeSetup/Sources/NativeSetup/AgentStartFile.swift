@@ -59,29 +59,65 @@ public enum AgentStartFile {
         return String(data: data, encoding: .utf8)
     }
 
+    /// A fix-it written to a settings file, for taking it back.
+    public struct Change: Equatable, Sendable {
+        /// The file written, after symbolic links: the target, never the link.
+        public let path: String
+        /// Where the original was kept.
+        public let backup: String
+        /// The name the user knows the file by (the link's, for a link).
+        public let fileName: String
+        /// The text the fix wrote, so taking it back never discards a later edit.
+        let written: String
+    }
+
     /// Applies `fixIt` to the file the diagnostic names, when `allowed` has it, after copying the
-    /// original to `backupPath(for:)`. Returns where the original was kept.
+    /// original to `backupPath(for:)`.
     @discardableResult
     public static func apply(
         _ fixIt: AgentStartFixIt, at diagnostic: AgentStartDiagnostic, allowed: [String]
-    ) throws(Failure) -> String {
+    ) throws(Failure) -> Change {
         let url = URL(filePath: diagnostic.path).resolvingSymlinksInPath()
         guard let contents = read(diagnostic.path, allowed: allowed) else { throw .unreadable(diagnostic.fileName) }
         guard let fixed = fixIt.apply(to: contents, at: diagnostic) else { throw .changed(diagnostic.fileName) }
         let backup = URL(filePath: backupPath(for: url.path))
         let fileManager = FileManager.default
         do {
-            let permissions = try fileManager.attributesOfItem(atPath: url.path)[.posixPermissions]
             if fileManager.fileExists(atPath: backup.path) { try fileManager.removeItem(at: backup) }
             try fileManager.copyItem(at: url, to: backup)
-            try Data(fixed.utf8).write(to: url, options: .atomic)
-            if let permissions {
-                try fileManager.setAttributes([.posixPermissions: permissions], ofItemAtPath: url.path)
-            }
+            try write(fixed, to: url)
         } catch {
             throw .notWritten(diagnostic.fileName, error.localizedDescription)
         }
-        return backup.path
+        return Change(path: url.path, backup: backup.path, fileName: diagnostic.fileName, written: fixed)
+    }
+
+    /// Puts the original back over `change` and removes the copy, the same way the fix wrote: to the
+    /// link's target, keeping its permissions. Only while the file still holds what the fix wrote.
+    public static func restore(_ change: Change) throws(Failure) {
+        let url = URL(filePath: change.path)
+        guard let current = try? Data(contentsOf: url), String(data: current, encoding: .utf8) == change.written else {
+            throw .changedSinceFix(change.fileName, backup: URL(filePath: change.backup).lastPathComponent)
+        }
+        guard let data = try? Data(contentsOf: URL(filePath: change.backup)),
+            let original = String(data: data, encoding: .utf8)
+        else { throw .backupMissing(change.fileName) }
+        do {
+            try write(original, to: url)
+        } catch {
+            throw .notWritten(change.fileName, error.localizedDescription)
+        }
+        try? FileManager.default.removeItem(atPath: change.backup)
+    }
+
+    /// Replaces the file's text atomically, keeping its permissions (an atomic write makes a new file).
+    private static func write(_ text: String, to url: URL) throws {
+        let fileManager = FileManager.default
+        let permissions = try fileManager.attributesOfItem(atPath: url.path)[.posixPermissions]
+        try Data(text.utf8).write(to: url, options: .atomic)
+        if let permissions {
+            try fileManager.setAttributes([.posixPermissions: permissions], ofItemAtPath: url.path)
+        }
     }
 
     public enum Failure: Error, Equatable, LocalizedError {
@@ -89,6 +125,10 @@ public enum AgentStartFile {
         /// The line no longer holds the value the agent rejected.
         case changed(String)
         case notWritten(String, String)
+        /// Taking a fix back found the file edited since; with the original's file name.
+        case changedSinceFix(String, backup: String)
+        /// Taking a fix back found no copy of the original.
+        case backupMissing(String)
 
         public var errorDescription: String? {
             switch self {
@@ -96,6 +136,11 @@ public enum AgentStartFile {
             case .changed(let file):
                 "\(file) changed since the agent read it, so nothing was changed. Retry to read it again."
             case .notWritten(let file, let reason): "Couldn't change \(file): \(reason)"
+            case .changedSinceFix(let file, let backup):
+                "\(file) changed after the fix, so Native left it as it is. "
+                    + "The original is still beside it, in \(backup)."
+            case .backupMissing(let file):
+                "The copy of \(file) from before the fix is gone, so Native left the file as it is."
             }
         }
     }

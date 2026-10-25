@@ -482,7 +482,8 @@ to keep the file's kind; anything else stays a location without contents. Lines 
 credential show the key alone, and lines holding a URL password, bearer header or well-known token
 are hidden whole. A fix-it is applied only on the user's click: `AgentStartFile` checks that
 the line still holds the rejected value, keeps the original as `<file>.native-backup`, and keeps
-the file's permissions and symbolic links.
+the file's permissions and symbolic links. The window's undo toast (and ⌘Z) takes the fix back
+with `AgentStartFile.restore`, the same way, and only while the file still holds what the fix wrote.
 
 Irreversible requests use the tested `ApprovalHold` state machine: 0.6 seconds, early release
 cancels, 0.4 seconds of acknowledgement, five-second accessibility confirmation, and no Always

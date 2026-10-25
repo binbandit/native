@@ -206,15 +206,70 @@ struct AgentStartDiagnosticTests {
 
         // A dotfiles setup: the declared settings file links to the real one.
         let allowed = [link.path]
-        let backup = try AgentStartFile.apply(try #require(diagnostic.fixIt), at: diagnostic, allowed: allowed)
+        let change = try AgentStartFile.apply(try #require(diagnostic.fixIt), at: diagnostic, allowed: allowed)
 
         #expect(try String(contentsOf: real, encoding: .utf8).contains("model_reasoning_effort = \"high\""))
-        #expect(try String(contentsOf: URL(filePath: backup), encoding: .utf8) == original)
+        #expect(try String(contentsOf: URL(filePath: change.backup), encoding: .utf8) == original)
         #expect(try FileManager.default.destinationOfSymbolicLink(atPath: link.path) == real.path)
         let permissions = try FileManager.default.attributesOfItem(atPath: real.path)[.posixPermissions] as? Int
         #expect(permissions == 0o600)
         #expect(throws: AgentStartFile.Failure.changed("config.toml")) {
             try AgentStartFile.apply(try #require(diagnostic.fixIt), at: diagnostic, allowed: allowed)
         }
+    }
+
+    /// A linked settings file at 0600 with the effort codex-acp rejects, and its fix applied.
+    private func fixedLinkedFile() throws -> (folder: URL, real: URL, link: URL, change: AgentStartFile.Change) {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "agent-start-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let real = folder.appending(path: "dotfiles-config.toml")
+        let link = folder.appending(path: "config.toml")
+        try Data(Self.linkedOriginal.utf8).write(to: real)
+        try FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: real.path)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: real)
+        let diagnostic = AgentStartDiagnostic(
+            path: link.path, line: 2, column: 26,
+            message: "unknown variant `xhigh`, expected one of `minimal`, `low`, `medium`, `high`")
+        let change = try AgentStartFile.apply(try #require(diagnostic.fixIt), at: diagnostic, allowed: [link.path])
+        return (folder, real, link, change)
+    }
+
+    static let linkedOriginal = "model = \"gpt-6.1-sol\"\nmodel_reasoning_effort = \"xhigh\"\n"
+
+    @Test func restorePutsTheOriginalBackThroughTheLink() throws {
+        let (folder, real, link, change) = try fixedLinkedFile()
+        defer { try? FileManager.default.removeItem(at: folder) }
+
+        try AgentStartFile.restore(change)
+
+        #expect(try String(contentsOf: real, encoding: .utf8) == Self.linkedOriginal)
+        #expect(try FileManager.default.destinationOfSymbolicLink(atPath: link.path) == real.path)
+        let permissions = try FileManager.default.attributesOfItem(atPath: real.path)[.posixPermissions] as? Int
+        #expect(permissions == 0o600)
+        #expect(!FileManager.default.fileExists(atPath: change.backup))
+    }
+
+    @Test func restoreKeepsALaterEdit() throws {
+        let (folder, real, _, change) = try fixedLinkedFile()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let edited = "model = \"gpt-6.1-sol\"\nmodel_reasoning_effort = \"low\"\n"
+        try Data(edited.utf8).write(to: real)
+
+        #expect(
+            throws: AgentStartFile.Failure.changedSinceFix("config.toml", backup: "dotfiles-config.toml.native-backup")
+        ) {
+            try AgentStartFile.restore(change)
+        }
+        #expect(try String(contentsOf: real, encoding: .utf8) == edited)
+        #expect(FileManager.default.fileExists(atPath: change.backup))
+    }
+
+    @Test func restoreWithoutTheCopyLeavesTheFix() throws {
+        let (folder, real, _, change) = try fixedLinkedFile()
+        defer { try? FileManager.default.removeItem(at: folder) }
+        try FileManager.default.removeItem(atPath: change.backup)
+
+        #expect(throws: AgentStartFile.Failure.backupMissing("config.toml")) { try AgentStartFile.restore(change) }
+        #expect(try String(contentsOf: real, encoding: .utf8).contains("\"high\""))
     }
 }
