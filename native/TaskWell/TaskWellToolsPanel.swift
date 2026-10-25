@@ -8,7 +8,8 @@ struct TaskWellToolsPanel<Destination: View>: View {
     @Bindable var tools: SessionToolsScreenModel
     let detail: (TaskWellTool) -> TaskWellToolDetail
     @ViewBuilder var destination: (TaskWellTool) -> Destination
-    @State private var hovered: TaskWellTool?
+    /// The row under the pointer, or the one the arrow keys moved to: one highlight for both.
+    @State private var highlighted: TaskWellTool?
     @FocusState private var isFocused: Bool
 
     var body: some View {
@@ -29,7 +30,7 @@ struct TaskWellToolsPanel<Destination: View>: View {
                 .padding(DS.Space.lg)
             } else {
                 VStack(spacing: 0) {
-                    ForEach(TaskWellTool.allCases.filter(tools.wellToolAvailable)) { tool in
+                    ForEach(rows) { tool in
                         row(tool, detail: detail(tool))
                     }
                 }
@@ -48,6 +49,25 @@ struct TaskWellToolsPanel<Destination: View>: View {
             if tools.wellPage != nil { tools.showWellTools() } else { tools.showsWell = false }
             return .handled
         }
+        .onKeyPress(.downArrow) { moveHighlight(by: 1) }
+        .onKeyPress(.upArrow) { moveHighlight(by: -1) }
+        .onKeyPress(keys: [.return, .space]) { _ in
+            guard tools.wellPage == nil, let highlighted else { return .ignored }
+            tools.performWellTool(highlighted)
+            return .handled
+        }
+    }
+
+    private var rows: [TaskWellTool] { TaskWellTool.allCases.filter(tools.wellToolAvailable) }
+
+    /// Up and down move through the rows that can open, as in a menu; Return or Space opens one.
+    private func moveHighlight(by step: Int) -> KeyPress.Result {
+        let enabled = rows.filter { detail($0).unavailableReason == nil }
+        guard tools.wellPage == nil, !enabled.isEmpty else { return .ignored }
+        let current = highlighted.flatMap(enabled.firstIndex(of:))
+        let next = current.map { min(max($0 + step, 0), enabled.count - 1) } ?? (step > 0 ? 0 : enabled.count - 1)
+        highlighted = enabled[next]
+        return .handled
     }
 
     private var worker: some View {
@@ -157,10 +177,20 @@ struct TaskWellToolsPanel<Destination: View>: View {
             .buttonStyle(.plain)
             .disabled(detail.unavailableReason != nil)
             .background(
-                detail.isSelected ? .dsSelected : hovered == tool ? .dsHover : .clear,
+                detail.isSelected ? .dsSelected : highlighted == tool ? .dsHover : .clear,
                 in: .rect(cornerRadius: DS.Radius.card)
             )
-            .trackHover(Binding(get: { hovered == tool }, set: { hovered = $0 ? tool : nil }))
+            .trackHover(
+                Binding(
+                    get: { highlighted == tool },
+                    set: { isHovered in
+                        if isHovered {
+                            highlighted = tool
+                        } else if highlighted == tool {
+                            highlighted = nil
+                        }
+                    })
+            )
             .dsHitTarget(DS.TaskWell.rowHeight)
             .accessibilityIdentifier("taskWell.\(tool.title)")
             if let reason = detail.unavailableReason ?? detail.note {

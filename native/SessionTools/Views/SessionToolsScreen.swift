@@ -18,6 +18,9 @@ struct SessionToolsScreen: View {
     @State private var width: CGFloat = 0
     /// Where the screen starts in the window: the window controls only crowd the title without a sidebar.
     @State private var leadingEdge: CGFloat = 0
+    /// Where the well's title starts in the window, and its width shown whole.
+    @State private var wellTitleMinX: CGFloat?
+    @State private var wellTitleIdealWidth: CGFloat = 0
     @State private var wellLightTrigger = 0
     @Environment(GitStore.self) private var git
     @Environment(\.inspectorRoom) private var inspectorRoom
@@ -67,8 +70,11 @@ struct SessionToolsScreen: View {
         .toolbar {
             ToolbarItem(placement: .navigation) {
                 if usesTaskWell {
-                    TaskWellTitleWiring(session: session, tools: tools)
-                        .frame(maxWidth: wellTitleWidth, alignment: .leading)
+                    TaskWellTitleWiring(session: session, tools: tools) { wellTitleIdealWidth = $0 }
+                        .frame(maxWidth: toolbarLayout.titleWidth, alignment: .leading)
+                        .onGeometryChange(for: CGFloat.self, of: { $0.frame(in: .global).minX }) {
+                            wellTitleMinX = $0
+                        }
                 } else {
                     SessionToolsTitle(
                         title: session.displayTitle, location: location,
@@ -87,7 +93,8 @@ struct SessionToolsScreen: View {
                 ToolbarItem(placement: .principal) {
                     TaskWellWiring(
                         session: session, tools: tools, turnChanges: turnChanges,
-                        isCompact: isWellCompact, openSubagents: toggleWellSubagents)
+                        width: toolbarLayout.wellWidth, isCompact: isWellCompact,
+                        openSubagents: toggleWellSubagents)
                 }
                 .sharedBackgroundVisibility(.hidden)
             }
@@ -108,6 +115,7 @@ struct SessionToolsScreen: View {
                         max: DS.SessionTools.sidePanelMaxWidth)
             } else {
                 sidePanel(layout)
+                    .environment(\.gitChangesNeutralMarkers, usesTaskWell)
             }
         }
         // Outside the side panel, so the room counts the panel's width while it's docked.
@@ -192,13 +200,20 @@ struct SessionToolsScreen: View {
         }
     }
 
-    private var wellTitleWidth: CGFloat {
+    /// The title takes the room up to the well, which gives way first (`SessionToolToolbarLayout`).
+    private var toolbarLayout: SessionToolToolbarLayout {
         let conversationWidth = width - (isSidePanelDocked.wrappedValue ? DS.SessionTools.sidePanelIdealWidth : 0)
-        let windowControls = max(0, DS.TaskWell.leadingToolbarWidth - leadingEdge)
+        // Until it's measured, the window controls are what sits before the title.
+        let titleOffset =
+            wellTitleMinX.map { max(0, $0 - leadingEdge) }
+            ?? max(0, DS.TaskWell.leadingToolbarWidth - leadingEdge)
         let wellWidth = isWellCompact ? DS.TaskWell.compactWidth : DS.TaskWell.width
-        return min(
-            DS.TaskWell.titleMaxWidth,
-            max(DS.TaskWell.titleMinWidth, (conversationWidth - wellWidth) / 2 - windowControls - DS.Space.lg))
+        return SessionToolToolbarLayout(
+            conversationWidth: conversationWidth, titleOffset: titleOffset, titleIdealWidth: wellTitleIdealWidth,
+            wellWidth: wellWidth,
+            // An ask keeps its words: the title gives way to it.
+            compactWellWidth: session.taskStatus.needsAttention ? wellWidth : DS.TaskWell.compactWidth,
+            gap: DS.Space.lg, minimumTitleWidth: DS.TaskWell.titleMinWidth)
     }
 
     /// A window too narrow for a docked panel shortens the well before the title gives way.

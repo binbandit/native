@@ -30,6 +30,15 @@ struct TaskWellContent: Equatable {
         return parts.joined(separator: ", ")
     }
 
+    /// An ask's own words as the reason it waits: "Write notes.txt" reads "to write notes.txt".
+    /// The verb is kept, never softened; a leading acronym ("PR") keeps its case.
+    static func reason(_ title: String) -> String {
+        guard let first = title.first, first.isUppercase else { return "to \(title)" }
+        let second = title.dropFirst().first
+        let isAcronym = second.map { $0.isUppercase } ?? false
+        return "to " + (isAcronym ? title : first.lowercased() + title.dropFirst())
+    }
+
     /// "Changed 1 file", "Changed 3 files", or without the verb where the well is compact.
     func changedFiles(of outcome: TurnSummary, includesVerb: Bool = true) -> String {
         let count = outcome.changedFiles.count

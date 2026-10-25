@@ -58,8 +58,10 @@ struct TurnChangesCard: View {
                     Text(Self.title(for: summary))
                         .font(.dsCalloutMedium)
                         .foregroundStyle(.dsTextPrimary)
+                        .lineLimit(1)
                     DiffStatsText(stats: DiffStats(added: summary.linesAdded, removed: summary.linesRemoved))
                         .font(.dsBody)
+                        .fixedSize()
                     DisclosureChevron(isExpanded: showsFiles)
                     Spacer(minLength: DS.Space.md)
                 }
@@ -74,13 +76,17 @@ struct TurnChangesCard: View {
                     .font(.dsBody)
                     .foregroundStyle(.dsTextTertiary)
                     .padding(.trailing, DS.Space.xs)
+                    .fixedSize()
             } else if let actions, !actions.isRecordOnly {
+                // A narrow column truncates the summary, never the actions.
                 Button("Review", action: actions.review)
                     .buttonStyle(.ds(.ghost))
+                    .fixedSize()
                     .help("Review this turn's changes")
                 if let commitForm = actions.commitForm {
                     Button("Commit") { isCommitting = true }
                         .buttonStyle(.ds(.ghost))
+                        .fixedSize()
                         .help("Commit the changes")
                         .popover(isPresented: $isCommitting, arrowEdge: .bottom) {
                             commitForm($isCommitting)

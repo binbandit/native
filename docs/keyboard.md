@@ -378,7 +378,8 @@ With The well enabled (`NativeTaskWell`, off by default), Cmd-I opens the center
 Its tools appear in this fixed key order. Missing tools leave no row; their keys stay reserved.
 Clicking a waiting well focuses the composer, where the full request can be answered.
 Dev reveals the latest project action in the workbench, or its action chooser before the first run.
-Subagents opens a roster; Return or Space on a row opens that worker. Escape returns from a
+Up and Down move through the tool list and Return or Space opens the highlighted tool, as in a
+menu. Subagents opens a roster; Return or Space on a row opens that worker. Escape returns from a
 chooser to the tool list, then closes the well. Terminal and Dev keep their existing run, stop,
 new-tab and hide commands in the workbench under the composer. A tool turned off in Settings ▸
 Task Tools has no row and its key does nothing. Task ▸ Rename Task… (no default keys) opens the

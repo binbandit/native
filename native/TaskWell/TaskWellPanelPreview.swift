@@ -13,7 +13,7 @@ struct TaskWellPanelPreview: View {
             identity: TaskWellIdentity(
                 model: "6.1 Sol", machine: isRemote ? "On Build Mac" : "On this Mac",
                 timing: isEmpty ? nil : "last turn 2m 4s", contextFraction: isEmpty ? nil : 0.41,
-                isManaged: isManaged, management: isManaged ? "Managed by Northwind Federal IT" : nil,
+                isManaged: isManaged, management: isManaged ? "Managed by Northwind Federal IT · #it-help" : nil,
                 project: "native",
                 branch: isRemote ? "feature/a-long-branch-name-for-wrapping-the-diff" : "feature/diff"),
             tools: tools, detail: detail
@@ -42,7 +42,7 @@ struct TaskWellPanelPreview: View {
                     ? "This task runs on another machine. Its terminal cannot be opened on this Mac." : nil)
         case .dev:
             TaskWellToolDetail(
-                text: isEmpty ? "Project actions" : "Dev", isSelected: !isEmpty, isRunning: !isEmpty,
+                text: isEmpty ? "2 actions to run" : "Dev · running", isSelected: !isEmpty, isRunning: !isEmpty,
                 note: isManaged ? "Repository actions are off. Your actions are still available." : nil,
                 isManaged: isManaged)
         case .subagents: TaskWellToolDetail(text: "3 workers · 2 working")

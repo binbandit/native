@@ -6,6 +6,8 @@ import SwiftUI
 /// narrow window keeps only the count and progress; clicking it still reviews.
 struct TaskWellLabel: View {
     let content: TaskWellContent
+    /// Narrower than the full well when the title needs the room; the agent's name goes first.
+    var width = DS.TaskWell.width
     var isCompact = false
 
     var body: some View {
@@ -29,7 +31,7 @@ struct TaskWellLabel: View {
         .font(DS.TaskWell.body)
         .padding(.leading, DS.TaskWell.leading)
         .padding(.trailing, DS.TaskWell.trailing)
-        .frame(width: isCompact ? DS.TaskWell.compactWidth : DS.TaskWell.width, height: DS.TaskWell.height)
+        .frame(width: isCompact ? DS.TaskWell.compactWidth : width, height: DS.TaskWell.height)
         .dsGlassEffect(in: Capsule())
         .contentShape(Capsule())
         .accessibilityElement(children: .ignore)
@@ -77,7 +79,7 @@ struct TaskWellLabel: View {
             if let object = content.object {
                 Text(object)
                     .font(content.isWaiting || !content.objectIsCode ? .dsBody : DS.TaskWell.object)
-                    .foregroundStyle(content.isWaiting ? .dsTextSecondary : .dsTextPrimary)
+                    .foregroundStyle(content.isWaiting ? .dsTextTertiary : .dsTextPrimary)
                     .lineLimit(1)
                     .truncationMode(.middle)
             }
