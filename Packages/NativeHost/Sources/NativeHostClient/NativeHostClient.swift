@@ -68,6 +68,11 @@ public actor NativeHostClient {
     private let clientInfo: PeerInfo
     private let continuation: AsyncStream<Event>.Continuation
     private var handlers: [(id: UUID, handle: EventHandler)] = []
+    /// Whether handlers are hearing an event now; see `deliver(_:)`.
+    private var isDelivering = false
+    /// Events that came while handlers were busy with an earlier one, each with whoever waits for
+    /// it to be handled.
+    private var waitingEvents: [(event: Event, handled: CheckedContinuation<Void, Never>)] = []
     private var peer: JSONRPCPeer?
     private var generation = 0
     private var running: Task<Void, Never>?
@@ -244,7 +249,26 @@ public actor NativeHostClient {
         await deliver(event)
     }
 
+    /// Hands `event` to every handler and to `events`, and returns once they have it. Events go out
+    /// one at a time in the order they got here: the host's notifications arrive one after another,
+    /// but the connection's states and a re-attach's summary come from the connecting task, and an
+    /// event mustn't overtake one whose handler is still busy (a newer summary undone by an older).
     private func deliver(_ event: Event) async {
+        guard !isDelivering else {
+            await withCheckedContinuation { waitingEvents.append((event, $0)) }
+            return
+        }
+        isDelivering = true
+        await handOut(event)
+        while !waitingEvents.isEmpty {
+            let (event, handled) = waitingEvents.removeFirst()
+            await handOut(event)
+            handled.resume()
+        }
+        isDelivering = false
+    }
+
+    private func handOut(_ event: Event) async {
         for handler in handlers {
             await handler.handle(event)
         }
