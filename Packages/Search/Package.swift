@@ -16,6 +16,8 @@ let package = Package(
         .target(
             name: "Search",
             dependencies: [.product(name: "ACP", package: "ACP")],
+            // Optimize infrequent operations for size; the app and streaming path stay at -O.
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))],
             linkerSettings: [.linkedLibrary("sqlite3")]
         ),
         .testTarget(

@@ -14,12 +14,12 @@ inventory and retention limits are in `docs/releasing.md`. This changes file cou
 bundle or its size budgets. The budgets sit about 10% above where the app was when they were set,
 so growth gets noticed while there's still room to choose what to cut; lower them as the cuts in "Still to do" land.
 
-| What | Budget | 2026-10-24, after the cold-package and gallery cut |
+| What | Budget | 2026-10-25, after thinning Sparkle (Nightly) |
 | --- | --- | --- |
-| Download, update archive | 47.5 MB | 46.8 MB |
+| Download, update archive | 47.5 MB | 47.1 MB |
 | Download, disk image | 48 MB | not remeasured |
-| Installed app | 118.5 MB | 116.4 MB |
-| App binary (`Contents/MacOS/Native`) | 70 MB | 59.6 MB |
+| Installed app | 118.5 MB | 116.6 MB |
+| App binary (`Contents/MacOS/Native`) | 70 MB | 60.8 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
 `scripts/release/size-check.sh` holds the same numbers and fails when anything is over. It also
@@ -140,6 +140,41 @@ growth. Growth since the budgets were set at a 53.2 MB binary is mostly the rede
 old and new versions of six areas behind switches. Reclaim that space by deleting each old
 version when its switch flips. The size cut below brings the executable under the former 60 MB
 limit. The download, disk-image, installed-app and script-runtime budgets are unchanged.
+
+## 2026-10-25: Sparkle's Intel slices and more cold packages
+
+Main reached its download and installed budgets (Nightly 47.6 and 118.6 MB at `41bb7dc8`),
+which blocked every pull request that adds code. Two cuts that change no behavior:
+
+- **Sparkle without its Intel half.** Sparkle's framework ships universal, and Native ships arm64
+  only (macOS 27 runs only on Apple silicon), so its five executables (the framework, Autoupdate,
+  Updater, and the Downloader and Installer services) carried 1.2 MB of x86_64 code nothing runs.
+  The app's "Thin Embedded Frameworks" phase (`scripts/thin-embedded-frameworks.sh`) keeps only the
+  build's architectures. lipo keeps each remaining slice's own signature, so the helpers stay signed
+  as Sparkle ships them, `codesign --verify --deep --strict` passes on the signed app, and release
+  signing (`release.sh` re-signs the helpers inside out) is unchanged.
+- **-Osize for 23 more cold packages**: Search, Terminal, NativeTelemetry, NativeOrchestration,
+  NativePolicy, Experiments, Modes, ScriptRuntime, ProjectActions, MCP, ApprovalAnalysis,
+  NativeCommands, TaskScripts, NativeSetup, NativeNetwork, SessionTitling, Undo, SessionTools,
+  AIInstructions, ProjectIcons, NativeDiagnostics, HostUpdater and PluginCatalog. They hold settings,
+  catalogues, policy, indexing and subprocess or network work. ACP, the host protocol and client,
+  NativeHost, NativeLink, Exec, CodeThemes, the tree-sitter grammars and the app keep `-O`.
+
+Release, arm64, built unsigned the way `check.sh` builds it, on `1970d0db`, in bytes as
+`size-check.sh` counts them:
+
+| Component, MB | Before | After |
+| --- | ---: | ---: |
+| Main executable | 60.951 | 60.757 |
+| Script runtime | 41.420 | 41.420 |
+| Host helper bundle | 5.361 | 5.348 |
+| Frameworks | 2.781 | 1.519 |
+| Resources | 7.501 | 7.501 |
+| **Installed total** | **118.015** | **116.546** |
+| **Update archive** | **47.504** | **47.049** |
+
+Nightly measures the same differences: 47.1 MB downloaded, 116.6 MB installed and a 60.8 MB
+binary after the cut.
 
 ## 2026-10-24: recover headroom by cutting size
 
@@ -462,6 +497,9 @@ Largest first.
 
 | What | Saves, installed / download | Owner |
 | --- | --- | --- |
+| The update archive as `.tar.xz`, which Sparkle reads, instead of ZIP: measured 47.4 to 32.8 MB on 2026-10-25 | 14.6 MB of download, nothing installed | Release pipeline; first installs would need a format Finder opens |
+| The app target at `-Osize`: measured 22.5 to 19.9 MB of the app's own code on 2026-10-25, with the hot paths (transcript planning, Markdown, streaming) still to be measured against `-O` | 2.8 / 0.76 MB | Performance |
+| Sparkle's Downloader and Installer services, which only sandboxed apps use, and its 35 localizations, which an English-only app never loads: both change the signed framework after Xcode signs it, so the build would sign it again | about 0.44 / 0.15 MB | Release pipeline (signing) |
 | libghostty without its embedded fonts (3.05 MB; the Nerd Font symbols render prompt icons) or custom shaders (glslang and SPIRV-Cross, 3.5 MB) | up to 6.5 / 2.5 MB | Terminal; needs a patch on the pinned Ghostty, since its build has no option |
 | Lossy compression for the 24 alternate icons (lossless 1024 px images, 4.4 MB that zip can't shrink) | perhaps half of that, both | Icon artwork |
 | Per-channel icon catalogs: needs the icon artist to export them that way. Xcode can't leave single imagesets out of a catalog per configuration, only whole catalogs, so the channel-only imagesets would move from `native/Assets.xcassets` into one catalog per channel that `Config/*.xcconfig` excludes elsewhere. Stable could drop `AppIcon-dev-*`, `AppIcon-halloween-dev-*`, `-nightly-*` and `-beta-*` (1.9 MB); `AppIcon-nightly-*` stays, since Nightly is an icon theme in every channel. Seasonal icons could come with their downloadable celebration pack instead | about 1.5 to 1.9 MB, both | Icon artwork, then the release pipeline |

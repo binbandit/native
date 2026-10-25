@@ -13,7 +13,10 @@ let package = Package(
     targets: [
         // TODO(linux): add apple/swift-crypto for Ed25519 on Linux (CryptoKit on Apple platforms),
         // with a decision record, when the host first builds there.
-        .target(name: "HostUpdater"),
+        .target(
+            name: "HostUpdater",
+            // Optimize infrequent operations for size; the app and streaming path stay at -O.
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         .testTarget(name: "HostUpdaterTests", dependencies: ["HostUpdater"]),
     ]
 )

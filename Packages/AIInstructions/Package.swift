@@ -8,7 +8,10 @@ let package = Package(
         .library(name: "AIInstructions", targets: ["AIInstructions"])
     ],
     targets: [
-        .target(name: "AIInstructions"),
+        .target(
+            name: "AIInstructions",
+            // Optimize infrequent operations for size; the app and streaming path stay at -O.
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         .testTarget(name: "AIInstructionsTests", dependencies: ["AIInstructions"]),
     ]
 )

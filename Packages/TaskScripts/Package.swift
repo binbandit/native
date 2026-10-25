@@ -15,7 +15,10 @@ let package = Package(
         .package(path: "../Exec")
     ],
     targets: [
-        .target(name: "TaskScripts", dependencies: [.product(name: "Exec", package: "Exec")]),
+        .target(
+            name: "TaskScripts", dependencies: [.product(name: "Exec", package: "Exec")],
+            // Optimize infrequent operations for size; the app and streaming path stay at -O.
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         .testTarget(name: "TaskScriptsTests", dependencies: ["TaskScripts"]),
     ]
 )
