@@ -41,7 +41,7 @@ extension SessionModel {
             let reject = call.permission?.options.first(where: { $0.kind == .rejectOnce })
                 ?? call.permission?.options.first(where: \.isRejection)
         else { throw SendError.busy }
-        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = PromptQuote.trimmed(text)
         let previous = Set(queuedPrompts.map(\.id))
         try await submit(text, .queue)
         let queued = queuedPrompts.first { !previous.contains($0.id) && $0.text == text }?.id

@@ -6,7 +6,7 @@ import SwiftUI
 extension ComposerView {
     func draftChanged() {
         highlighted = 0
-        if SlashCommandQuery(draft: session.draft) == nil, mentionQuery == nil {
+        if SlashCommandQuery(draft: draftText) == nil, mentionQuery == nil {
             suggestionsDismissed = false
         }
         if session.draft.isEmpty {
@@ -19,7 +19,7 @@ extension ComposerView {
     /// Sends the draft; while the agent works, queues or steers it, or saves the queued message
     /// being edited. Says what happened, or why nothing could.
     func submit(_ behavior: FollowUpBehavior) {
-        let text = session.draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = PromptQuote.trimmed(session.draft)
         let attachments = session.attachments
         guard !text.isEmpty || !attachments.isEmpty else { return }
         if let page {
@@ -28,15 +28,16 @@ extension ComposerView {
             return
         }
         // `/clear` and `/goal …` are Native's own and never reach the agent, unless the user picked
-        // the agent's command of that name from the list.
-        let isAgentCommand = agentCommandDraft.map(session.draft.hasPrefix) ?? false
-        if !isAgentCommand, ClearConversationCommand.matches(session.draft) {
+        // the agent's command of that name from the list. They read the message the way the list
+        // offered them, without its quotes, and leave the quotes for the next message.
+        let message = draftText
+        let isAgentCommand = agentCommandDraft.map(message.hasPrefix) ?? false
+        if !isAgentCommand, ClearConversationCommand.matches(message) {
             clearConversation()
             return
         }
-        if !isAgentCommand, let command = GoalCommand(parsing: session.draft), let goal = automation.goal(for: session)
-        {
-            session.draft = ""
+        if !isAgentCommand, let command = GoalCommand(parsing: message), let goal = automation.goal(for: session) {
+            draftText = ""
             Task { await goal.perform(command) }
             return
         }
@@ -84,8 +85,8 @@ extension ComposerView {
     }
 
     func insert(_ path: String, for query: FileMentionQuery) {
-        let (text, cursor) = query.draft(session.draft, inserting: path)
-        session.draft = text
+        let (text, cursor) = query.draft(draftText, inserting: path)
+        draftText = text
         selection = TextSelection(insertionPoint: cursor)
         mentionSource?.noteMentioned(path)
         isFocused = true
@@ -93,24 +94,28 @@ extension ComposerView {
 
     /// Tab, Return or a click on a listed command: the caret goes after it, ready for its argument.
     func insert(_ command: ComposerSlashCommand) {
-        let (text, cursor) = SlashCommandQuery.draft(session.draft, inserting: command)
-        session.draft = text
+        let (text, cursor) = SlashCommandQuery.draft(draftText, inserting: command)
+        draftText = text
         selection = TextSelection(insertionPoint: cursor)
-        agentCommandDraft = command.isNative ? nil : session.draft
+        agentCommandDraft = command.isNative ? nil : draftText
         isFocused = true
     }
 
-    /// `/clear`: a fresh conversation in this task (AppModel+ClearConversation.swift). The draft
-    /// comes back if it can't start, with why.
+    /// `/clear`: a fresh conversation in this task (AppModel+ClearConversation.swift). Quotes move
+    /// with it, for the next message; the message comes back if it can't start, with why.
     func clearConversation() {
-        let draft = session.draft
-        session.draft = ""
+        let message = draftText
+        draftText = ""
         Task {
             do {
-                try await app.clearConversation(of: session)
+                let fresh = try await app.clearConversation(of: session)
+                if fresh.draft.isEmpty {
+                    fresh.draft = session.draft
+                }
+                session.draft = ""
             } catch {
-                if session.draft.isEmpty {
-                    session.draft = draft
+                if draftText.isEmpty {
+                    draftText = message
                 }
                 feedback = .blocked(error.localizedDescription)
             }
