@@ -121,7 +121,7 @@ extension AppModel {
 
     /// A user-owned checkout may live outside the host's managed folder. Keep its project
     /// association with the paired checkout, so remote history can find it after reconnecting.
-    private func rememberRemoteWorkspace(of task: SessionModel, in project: Project) {
+    func rememberRemoteWorkspace(of task: SessionModel, in project: Project) {
         guard let link = task.host, let host = hosts.all.first(where: { $0.client === link.client }) else { return }
         projects.update(project.id) { project in
             guard let index = project.checkouts.firstIndex(where: { $0.host == host.id }),

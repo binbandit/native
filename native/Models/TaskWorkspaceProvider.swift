@@ -6,6 +6,7 @@ import Foundation
 protocol TaskWorkspaceProvider: AnyObject {
     func workspaceOptions(in project: Project, current: URL) async throws -> [TaskWorkspaceOption]
     func workspace(for choice: TaskWorkspaceChoice, in project: Project) async throws -> URL
+    func prepareWorkspace(for choice: TaskWorkspaceChoice, in project: Project) async throws -> TaskWorkspacePreparation
     /// Removes only an untouched checkout created for a task, never a user-owned folder.
     func removeUnusedWorkspace(at folder: URL, in project: Project) async throws -> Bool
 

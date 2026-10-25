@@ -490,8 +490,15 @@ The current text selection in Native is included as removable context. The addre
 | ⌥⌘O | Open the device picker |
 | Escape | Close the picker first, then Quick Entry; keep the draft for next time |
 
-During slice 1, expanding uses today's full New Task view. The Compose page replaces it in
-slice 2. After a background start, the confirmation's Open button opens that task. Quick Entry
+Expanding opens the Compose page without creating a task or worktree. The page keeps the draft,
+quoted context and attachments. Return starts the task; Shift-Return and Option-Return insert a
+new line. The toolbar's Start does the same. File > Attach Files (⌘U) attaches to the page;
+Option-Command-O opens its device picker. Escape closes a picker before returning to writing.
+Command-L focuses the page editor; Shift-Command-E opens its agent and model popover. Task-only
+commands, such as goals and archiving, stay unavailable until Start creates the task.
+An offline device offers Hold and Run on This Mac together; Return holds the task for that device.
+Cancel Hold keeps the draft editable. Escape cancels a pending Start until its task has opened.
+After a background start, the confirmation's Open button opens that task. Quick Entry
 captures only a selection inside Native; global shortcuts and capture from other apps are not
 part of this experiment.
 

@@ -21,6 +21,10 @@ final class RecordingWorkspaces: TaskWorkspaceProvider {
     }
     func workspaceOptions(in project: Project, current: URL) async throws -> [TaskWorkspaceOption] { [] }
     func workspace(for choice: TaskWorkspaceChoice, in project: Project) async throws -> URL { project.url }
+    func prepareWorkspace(for choice: TaskWorkspaceChoice, in project: Project) async throws -> TaskWorkspacePreparation
+    {
+        .init(folder: project.url, createdForTask: false)
+    }
     func removeUnusedWorkspace(at folder: URL, in project: Project) async throws -> Bool { false }
     func workspace(forNewTaskIn project: Project, title: String?) async throws -> URL {
         if holdPreparation { return await withCheckedContinuation { pendingPreparation = $0 } }

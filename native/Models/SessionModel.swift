@@ -61,6 +61,7 @@ final class SessionModel {
     /// What the agent takes in a prompt besides text: images, embedded files.
     let promptCapabilities: PromptCapabilities
     var isChangingAgent = false
+    var usesComposePresentation = false
     var isChangingWorkspace = false
     var isWorkspaceReplaced = false
     var isWorkspacePickerRequested = false
@@ -232,7 +233,7 @@ final class SessionModel {
     /// A session of `agent`, the user's or (`origin: .task`) one Native's tools started. A task's
     /// `parent` adopts it as a subagent.
     init(
-        agent: AgentDefinition, id: SessionID, clientID: UUID = UUID(), cwd: URL, connection: ACPConnection,
+        agent: AgentDefinition, id: SessionID, clientID: UUID = UUID(), cwd: URL, connection: ACPConnection?,
         services: SessionServices, supportsSteering: Bool,
         promptCapabilities: PromptCapabilities = PromptCapabilities(), phase: Phase,
         title: String? = nil, configOptions: [ConfigOption] = [], origin: Origin = .user, parent: SessionModel? = nil

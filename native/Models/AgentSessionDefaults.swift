@@ -58,6 +58,10 @@ enum AgentSessionDefaults {
         _ options: [ConfigOption], for agent: AgentDefinition.ID, isNew: Bool = false,
         defaults: UserDefaults = .standard
     ) {
+        if let data = try? JSONEncoder().encode(options.compactMap(AgentSavedConfigOption.init)) {
+            defaults.set(data, forKey: "agentDefaults.\(agent.rawValue).offeredConfig")
+            if isNew { defaults.set(data, forKey: "agentDefaults.\(agent.rawValue).initialConfig") }
+        }
         for setting in Setting.allCases {
             guard let option = options.first(where: { $0.category == setting.category }),
                 case .select(let current, let choices) = option.kind,
@@ -69,6 +73,45 @@ enum AgentSessionDefaults {
                 defaults.set(current, forKey: setting.key(for: agent) + ".agentDefault")
             }
         }
+    }
+
+    /// The last options the agent actually reported, for addressing a task before it exists.
+    static func offeredOptions(for agent: AgentDefinition.ID, defaults: UserDefaults = .standard) -> [ConfigOption] {
+        var options =
+            defaults.data(forKey: "agentDefaults.\(agent.rawValue).offeredConfig")
+            .flatMap { try? JSONDecoder().decode([ConfigOption].self, from: $0) } ?? []
+        let initial =
+            defaults.data(forKey: "agentDefaults.\(agent.rawValue).initialConfig")
+            .flatMap { try? JSONDecoder().decode([ConfigOption].self, from: $0) } ?? []
+        for setting in Setting.allCases where !options.contains(where: { $0.category == setting.category }) {
+            let choices = offeredChoices(for: agent, setting: setting, defaults: defaults)
+            guard !choices.isEmpty else { continue }
+            let key = setting.key(for: agent)
+            let current = defaults.string(forKey: key + ".agentDefault") ?? choices[0].value
+            let wire: [String: Any] = [
+                "id": defaults.string(forKey: key + ".option") ?? setting.rawValue,
+                "name": setting.rawValue.capitalized, "category": setting.category,
+                "type": "select", "currentValue": current,
+                "options": choices.map { ["value": $0.value, "name": $0.name] },
+            ]
+            if let data = try? JSONSerialization.data(withJSONObject: wire),
+                let option = try? JSONDecoder().decode(ConfigOption.self, from: data)
+            {
+                options.append(option)
+            }
+        }
+        // A previous task's permission choice is never a new task's default.
+        options = options.compactMap { option in
+            guard option.category == "mode" else { return option }
+            guard let original = initial.first(where: { $0.id == option.id }),
+                case .select(let value, _) = original.kind, case .select(_, let choices) = option.kind,
+                choices.contains(where: { $0.value == value })
+            else { return nil }
+            var option = option
+            option.kind = .select(currentValue: value, options: choices)
+            return option
+        }
+        return options
     }
 
     /// What new sessions start on for `setting` when nothing pins it (Settings, a project).
