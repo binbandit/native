@@ -419,14 +419,13 @@
 			inputPaths = (
 				"$(SRCROOT)/scripts/thin-embedded-frameworks.sh",
 				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Sparkle.framework/Versions/B/Sparkle",
+			);
+			name = "Thin Embedded Frameworks";
+			outputPaths = (
 				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Sparkle.framework/Versions/B/Autoupdate",
 				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater",
 				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/MacOS/Downloader",
 				"$(TARGET_BUILD_DIR)/$(FRAMEWORKS_FOLDER_PATH)/Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/MacOS/Installer",
-			);
-			name = "Thin Embedded Frameworks";
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/thin-embedded-frameworks.stamp",
 			);
 			shellPath = /bin/sh;
 			shellScript = (
