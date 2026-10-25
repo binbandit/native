@@ -16,7 +16,9 @@ let package = Package(
     targets: [
         .target(
             name: "NativeOrchestration",
-            dependencies: [.product(name: "ACP", package: "ACP"), .product(name: "MCP", package: "MCPServer")]),
+            dependencies: [.product(name: "ACP", package: "ACP"), .product(name: "MCP", package: "MCPServer")],
+            // Optimize infrequent operations for size; the app and streaming path stay at -O.
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         .testTarget(
             name: "NativeOrchestrationTests",
             dependencies: [

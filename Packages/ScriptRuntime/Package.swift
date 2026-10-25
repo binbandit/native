@@ -10,7 +10,10 @@ let package = Package(
         .library(name: "ScriptRuntime", targets: ["ScriptRuntime"])
     ],
     targets: [
-        .target(name: "ScriptRuntime"),
+        .target(
+            name: "ScriptRuntime",
+            // Optimize infrequent operations for size; the app and streaming path stay at -O.
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         .testTarget(name: "ScriptRuntimeTests", dependencies: ["ScriptRuntime"]),
     ]
 )

@@ -181,13 +181,17 @@ struct AgentManifest: Codable, Hashable, Sendable {
     /// offers only to clients that open links (`"type": "_native/link"`). For hosts nobody sits
     /// at; see docs/agents.md, "Signing in on a host with no screen".
     var authMethods: [AuthMethod] = []
+    /// The settings files the agent reads as it starts, which a failed start may show and fix
+    /// (Fine print): `~/…`, `$VARIABLE/…` in the agent's environment, or a path in the task's
+    /// folder. Native opens no other file an agent's error names.
+    var settingsFiles: [String] = []
 
     init(
         id: String, name: String, symbol: String? = nil, command: String, args: [String] = [],
         env: [String: String] = [:], resolveExecutables: [String: String] = [:], mcpConfig: String? = nil,
         icon: AgentIconSource? = nil, requires: [String] = [], setup: AgentSetupGuide? = nil,
         idleSessionTimeout: Int? = nil, idleUnloadTimeout: Int? = nil, renameCommand: String? = nil,
-        authMethods: [AuthMethod] = []
+        authMethods: [AuthMethod] = [], settingsFiles: [String] = []
     ) {
         self.id = id
         self.name = name
@@ -204,6 +208,7 @@ struct AgentManifest: Codable, Hashable, Sendable {
         self.idleUnloadTimeout = idleUnloadTimeout
         self.renameCommand = renameCommand
         self.authMethods = authMethods
+        self.settingsFiles = settingsFiles
     }
 
     init(from decoder: any Decoder) throws {
@@ -223,6 +228,7 @@ struct AgentManifest: Codable, Hashable, Sendable {
         idleUnloadTimeout = try container.decodeIfPresent(Int.self, forKey: .idleUnloadTimeout)
         renameCommand = try container.decodeIfPresent(String.self, forKey: .renameCommand)
         authMethods = try container.decodeIfPresent([AuthMethod].self, forKey: .authMethods) ?? []
+        settingsFiles = try container.decodeIfPresent([String].self, forKey: .settingsFiles) ?? []
     }
 }
 

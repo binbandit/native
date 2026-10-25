@@ -8,7 +8,10 @@ let package = Package(
         .library(name: "ProjectActions", targets: ["ProjectActions"])
     ],
     targets: [
-        .target(name: "ProjectActions"),
+        .target(
+            name: "ProjectActions",
+            // Optimize infrequent operations for size; the app and streaming path stay at -O.
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         .testTarget(
             name: "ProjectActionsTests",
             dependencies: ["ProjectActions"],

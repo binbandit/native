@@ -16,7 +16,9 @@ enum AmbientWiring {
                 model.agents.compactMap { BuiltInPlugins.usage.limits.limitStatus(for: $0.agent.id) }
             }))
         registry.register(TasksStatusItem(source: model))
-        registry.register(KeepAwakeStatusItem(controller: keepAwake))
+        if KeepAwakeController.isSupported {
+            registry.register(KeepAwakeStatusItem(controller: keepAwake))
+        }
         registry.register(ResourcesStatusItem(source: model))
         registry.register(MCPStatusItem(model: model) { settings.open(.mcpServers) }, isVisibleByDefault: false)
         registry.register(HelpStatusItem(help: shortcutsHelp))

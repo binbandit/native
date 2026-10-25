@@ -8,7 +8,10 @@ let package = Package(
         .library(name: "NativeCommands", targets: ["NativeCommands"])
     ],
     targets: [
-        .target(name: "NativeCommands"),
+        .target(
+            name: "NativeCommands",
+            // Optimize infrequent operations for size; the app and streaming path stay at -O.
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         .testTarget(name: "NativeCommandsTests", dependencies: ["NativeCommands"]),
     ]
 )

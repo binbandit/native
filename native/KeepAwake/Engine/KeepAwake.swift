@@ -1,3 +1,4 @@
+#if os(macOS)
 import Foundation
 import NativeHostProtocol
 
@@ -5,7 +6,8 @@ import NativeHostProtocol
 /// (Settings ▸ Background off, or no host answered): takes and releases the power assertions,
 /// follows the power source for the battery rules, and ends timers on time. With a host,
 /// `KeepAwakeHostEngine` hands the policy to it instead, since assertions belong to the process the
-/// agents keep busy. Both decide with `KeepAwakeStatus.evaluate`.
+/// agents keep busy. Both decide with `KeepAwakeStatus.evaluate`. Mac only: an iPad is a client,
+/// and keeping a machine awake belongs to the host its agents run on.
 final class KeepAwake {
     private(set) var status = KeepAwakeStatus.off
     /// Called when the status changes on its own: a timer ran out, or the power source changed.
@@ -79,3 +81,4 @@ final class KeepAwake {
         }
     }
 }
+#endif

@@ -121,6 +121,20 @@ class CheckIOSSourcesTests(unittest.TestCase):
         self.assertNotIn("#Preview", prepared)
         self.assertEqual(prepared.splitlines().index("struct After {}"), text.splitlines().index("struct After {}"))
 
+    def test_preview_removal_ignores_braces_in_strings_and_comments(self):
+        text = r'''#Preview {
+    Code(lines: "if a {\n    b(\"}\") {")
+    // {
+    Text("""
+    {
+    """)
+}
+struct After {}
+'''
+        prepared = sources.strip_previews(text)
+        self.assertEqual(prepared.splitlines().index("struct After {}"), text.splitlines().index("struct After {}"))
+        self.assertEqual(prepared.strip(), "struct After {}")
+
     def test_missing_or_outside_paths_are_rejected(self):
         self.write("native/Feature/View.swift", "struct View {}\n")
         for path in ["native/Missing", "../"]:

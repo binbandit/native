@@ -8,11 +8,15 @@ struct StartingTaskView: View {
 
     @Environment(AppModel.self) private var model
     @Experiment(.transcriptWidth) private var columnWidth: TranscriptWidth
+    @Experiment(.composerNext) private var composerNext
 
     var body: some View {
         VStack(spacing: 0) {
             Group {
-                if let failure = task.failure, failure.canUseProjectFolder {
+                if composerNext {
+                    // Fine print: the failure, and what fixes it, take the composer's place.
+                    StartingTaskProgress(task: task)
+                } else if let failure = task.failure, failure.canUseProjectFolder {
                     ErrorState(
                         failure.title,
                         suggestion: failure.message,
@@ -45,12 +49,18 @@ struct StartingTaskView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            StartingTaskComposer(task: task)
-                .frame(maxWidth: columnWidth.maxWidth)
-                .padding(.horizontal, DS.Space.xxl)
-                .padding(.top, DS.Space.md)
-                .padding(.bottom, DS.Space.xl)
-                .frame(maxWidth: .infinity)
+            Group {
+                if composerNext, let failure = task.failure {
+                    StartingTaskFailureComposer(task: task, failure: failure)
+                } else {
+                    StartingTaskComposer(task: task)
+                }
+            }
+            .frame(maxWidth: composerNext ? max(columnWidth.maxWidth, DS.ComposerSettings.width) : columnWidth.maxWidth)
+            .padding(.horizontal, DS.Space.xxl)
+            .padding(.top, DS.Space.md)
+            .padding(.bottom, DS.Space.xl)
+            .frame(maxWidth: .infinity)
         }
         .navigationTitle("New Task")
         .navigationSubtitle(model.projects.project(task.project)?.url.abbreviatedPath ?? "")
@@ -69,6 +79,12 @@ struct StartingTaskView: View {
         StartingTaskPreviewFixture(failed: true)
     }
 }
+
+#Preview("Starting task - Fine print fix-it") {
+    DSPreviewPair {
+        StartingTaskPreviewFixture(failed: true, finePrint: true)
+    }
+}
 #endif
 
 /// The steps a starting task goes through, the one it's on animated, with the time it's taken.
@@ -81,13 +97,15 @@ private struct StartingTaskProgress: View {
                 Text("Starting a \(task.agent.displayName) task")
                     .font(.dsTitle3)
                     .foregroundStyle(.dsTextPrimary)
-                HStack(spacing: DS.Space.xs) {
-                    Text("\(task.stepLabel)…")
-                    Text("·")
-                    ElapsedTimeText(since: task.startedAt)
+                if task.failure == nil {
+                    HStack(spacing: DS.Space.xs) {
+                        Text("\(task.stepLabel)…")
+                        Text("·")
+                        ElapsedTimeText(since: task.startedAt)
+                    }
+                    .font(.dsBody)
+                    .foregroundStyle(.dsTextSecondary)
                 }
-                .font(.dsBody)
-                .foregroundStyle(.dsTextSecondary)
             }
             VStack(alignment: .leading, spacing: DS.Space.sm) {
                 row(task.workspaceLabel, done: task.folder != nil, isCurrent: task.step == .preparingWorkspace)
@@ -96,10 +114,12 @@ private struct StartingTaskProgress: View {
                     isCurrent: task.step == .startingAgent)
                 row("Opening the task", done: false, isCurrent: task.step == .openingSession)
             }
-            Text("Write your first message below. It goes out as soon as the task is ready.")
-                .font(.dsCaption)
-                .foregroundStyle(.dsTextTertiary)
-                .multilineTextAlignment(.center)
+            if task.failure == nil {
+                Text("Write your first message below. It goes out as soon as the task is ready.")
+                    .font(.dsCaption)
+                    .foregroundStyle(.dsTextTertiary)
+                    .multilineTextAlignment(.center)
+            }
         }
         .padding(DS.Space.xxl)
         .accessibilityElement(children: .combine)
@@ -107,7 +127,7 @@ private struct StartingTaskProgress: View {
 
     private func row(_ title: String, done: Bool, isCurrent: Bool) -> some View {
         HStack(spacing: DS.Space.sm) {
-            StatusIndicator(status: done ? .done : isCurrent ? .starting : .idle)
+            StatusIndicator(status: done ? .done : isCurrent ? (task.failure == nil ? .starting : .failed) : .idle)
             Text(title)
                 .font(.dsCallout)
                 .foregroundStyle(done || isCurrent ? .dsTextPrimary : .dsTextTertiary)

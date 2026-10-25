@@ -545,9 +545,8 @@ locally, where building each from nothing took 8.
 
 **Not yet on iPad.** The app target is one module whose folders use each other freely (models,
 plugins, commands, settings, views). Checking `native/Models` or a consumer now follows those
-dependencies automatically, but they still import macOS-only frameworks: ServiceManagement in `native/Host`
-(`HostRegistration`, the Background settings and host notices), IOKit in the KeepAwake engine, AppKit in
-`native/Terminal/Settings`, and `NativeApp.swift`, the Mac's entry point. Those move behind
+dependencies automatically, but they still import macOS-only frameworks: ServiceManagement in
+`native/Host/HostRegistration.swift`, and AppKit in `NativeApp.swift`, the Mac's entry point. Those move behind
 `native/Platform` adapters with the iPad destination (`docs/architecture.md`, "Getting there"); add
 a folder to the workflow's typecheck once it compiles there. A dependency's genuine platform error
 still fails its consumer's check; the checker does not stub types or suppress those errors.

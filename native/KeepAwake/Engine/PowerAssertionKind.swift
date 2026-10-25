@@ -1,3 +1,4 @@
+#if os(macOS)
 import IOKit.pwr_mgt
 import NativeHostProtocol
 
@@ -12,3 +13,4 @@ extension PowerAssertionKind {
         }
     }
 }
+#endif
