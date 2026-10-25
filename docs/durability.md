@@ -905,10 +905,11 @@ the user's renames hold on every client. So the host writes titles and keeps the
 `Packages/SessionTitling` (the rules, `SessionTitleState`, and `OnDeviceTitleGenerator`, the
 on-device model the app and the host share), the host's side `HostCore+Titles.swift` and
 `HostStore+Titles.swift`, the protocol `NativeHostProtocol/HostTitles.swift`, the app's
-`native/Plugins/SessionTitles+Host.swift`. It's behind `HostTitles` (the user default
-`NativeHostTitles`, read at launch; off by default until it's verified in the running app, and
-`-NativeHostTitles YES` turns it on); off, the app titles tasks as it did before and tells the host
-not to (`provider: off`).
+`native/Plugins/SessionTitles+Host.swift`, and `HostTitlesWiring`, which chooses who titles each
+host's tasks. This Mac's own host is behind `HostTitles` (the user default `NativeHostTitles`, read
+at launch; off by default until it's verified in the running app, and `-NativeHostTitles YES` turns
+it on); off, the app titles that host's tasks as it did before and tells the host not to
+(`provider: off`). Paired hosts don't read it ("Paired hosts" below).
 
 - **Who writes them.** At connect, after every reconnect, and whenever the titles plugin or the
   user's title instructions change, the app sends `_native/titles/configure {provider,
@@ -947,6 +948,34 @@ not to (`provider: off`).
   (`TaskWorkspaceProvider.taskDidGetTitle`), in the app, whenever a title lands from a host: live,
   or at the next launch for a task titled while the app was closed. For a paired host's task the
   provider runs git there (`RemoteHostsWiring`), so the same path names remote workspaces.
+- **Paired hosts.** With `NativeRemoteHosts` on, a paired host titles its own tasks whatever
+  `HostTitles` says on this Mac: the Mac that started a task there may be asleep when the task needs
+  its name. A pairing with `manageHost` configures the host at each connection as above (the titles
+  plugin on or off, its provider, the user's instructions with the organization's). Nothing else
+  goes: no titler, key or model of this Mac's, so a titler that runs only in apps leaves the
+  summary's `titles.request` for a client to answer. While no client is attached the host keeps each
+  task's fallback and request, or the title its own model wrote, through restarts; when the Mac is
+  back it adopts them once and answers a waiting request once. A title on its way when the host
+  restarts, or when the host is paired again, is written again when the host next asks (at once
+  through the new pairing); a rename that didn't arrive goes when the host is back, or at once
+  through the new pairing; a replaced pairing's client stops following. This Mac's per-project
+  instructions are keyed by its own folders, so a paired host applies them only to a checkout at the
+  same path.
+  A pairing without `manageHost` never sends `titles/configure`: the host keeps the configuration
+  its owner gave it, and the app titles the tasks it starts there as it always has, kept on this Mac
+  only (renames too). So does a pairing whose host refuses the configuration or predates titles
+  (`titles/configure` unknown), after one attempt for that pairing's connection in a launch. Such a
+  host names a task started while this Mac is away only if its own configuration titles it, and the
+  app shows that title in the agent's place (the summary's `title`) while it has none of its own.
+- **Release test switches.** For this path, the laptop needs `NativeRemoteHosts` and nothing else:
+
+  | Switch | Read by | For paired-host titles |
+  | --- | --- | --- |
+  | `NativeRemoteHosts` | the laptop | `YES`: the only one needed |
+  | `NativeHostTitles` | the laptop, for its own host only | leave unset: the laptop's host keeps today's default |
+  | `manageHost` | the pairing's grants | needed to configure the host; without it, the app's own titles (above) |
+  | Keep Mac Awake | the paired host's own policy, kept across restarts (`host/keep_awake/set`) | not set by this path; the laptop's `NativeHostKeepAwake` affects only its own host |
+  | `NativeHostTasks` | check on the paired host itself | not needed for titles |
 
 ## Native's tools in the host
 

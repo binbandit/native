@@ -13,33 +13,37 @@ struct HostTitleLink {
     let folder: URL
 }
 
-// Titles of tasks in a host (docs/durability.md, "Titles"; `HostTitles`). The host writes them from
-// each task's first message and keeps the user's renames, so a task started with the app closed
-// still gets its title. This side mirrors them into the titles every view reads (and keeps them for
-// tasks the host later closes), sends renames back, and writes a title when the host asks for one.
+// Titles of tasks in a host (docs/durability.md, "Titles"; `HostTitlesWiring` says which hosts). The
+// host writes them from each task's first message and keeps the user's renames, so a task started
+// with the app closed or asleep still gets its title. This side mirrors them into the titles every
+// view reads (and keeps them for tasks the host later closes), sends renames back, and writes a
+// title when the host asks for one.
 extension SessionTitles {
     private static let hostLogger = Logger(subsystem: "Native", category: "Titles")
 
     /// Follows the titles of `client`'s tasks from now on, once the host has heard who writes them.
     /// `titler` is the one plugins provide now; `landed` hears each task's title as it arrives, so
-    /// its workspace (a provisional branch) can be named after it. A host that can't keep titles
-    /// (an older build) is left alone, and its tasks are titled here as before.
+    /// its workspace (a provisional branch) can be named after it. `isCurrent` turns false when the
+    /// client stops for good (a paired host's pairing was replaced or removed), and following it
+    /// stops with it. A host that can't keep titles (an older build) or won't take this app's
+    /// configuration is left alone, and its tasks are titled here as before.
     func follow(
         _ client: NativeHostClient, titler: @escaping () -> (any SessionTitler)?,
+        while isCurrent: @escaping @MainActor @Sendable () -> Bool = { true },
         landed: @escaping (Key, URL, String) -> Void
     ) async {
         hostTitler = titler
         titleLanded = landed
         guard await configure(client) else { return }
         await client.addEventHandler { [weak self] event in
-            await self?.receive(event, from: client)
+            await self?.receive(event, from: client, while: isCurrent)
         }
-        keepConfigured(client)
+        keepConfigured(client, while: isCurrent)
         await adoptAll(from: client)
     }
 
-    /// For `HostTitles` off: this app writes titles, so the host is told not to, now and whenever it
-    /// comes back.
+    /// For this Mac's host with `HostTitles` off: this app writes titles, so the host is told not
+    /// to, now and whenever it comes back.
     func leaveTitlesToApp(on client: NativeHostClient) async {
         let off = ConfigureTitlesParams(provider: .off)
         try? await client.configureTitles(off)
@@ -70,15 +74,24 @@ extension SessionTitles {
             }
             let remaining = renamesInFlight[key, default: 1] - 1
             renamesInFlight[key] = remaining > 0 ? remaining : nil
-            if sent, remaining == 0 {
+            guard remaining == 0 else { return }
+            if sent {
                 unsyncedRenames.remove(key)
+            } else if let current = hostLinks[key], current.client !== link.client {
+                // The task's host was paired again meanwhile: the new pairing takes the rename now.
+                // Otherwise it goes when the host is back.
+                sendRename(key)
             }
         }
     }
 
     // MARK: - From the host
 
-    private func receive(_ event: NativeHostClient.Event, from client: NativeHostClient) {
+    private func receive(
+        _ event: NativeHostClient.Event, from client: NativeHostClient, while isCurrent: @MainActor () -> Bool
+    ) {
+        // A replaced pairing's client may still hand over what it read before it stopped.
+        guard isCurrent() else { return }
         switch event {
         case .sessionChanged(let summary):
             adopt(summary, from: client)
@@ -138,7 +151,9 @@ extension SessionTitles {
 
     /// Writes the title the host asked for, with this app's titler and the user's instructions for
     /// the task's folder. Repeated summaries don't retry it; the host requests one retry on the
-    /// next turn with a new attempt number.
+    /// next turn with a new attempt number. A title that never reached the host (it restarted, or
+    /// the pairing was replaced while it was on its way) is written again when the host next asks,
+    /// or right away through the task's new pairing.
     private func writeTitle(_ request: HostTitleRequest, for key: Key, on link: HostTitleLink) {
         guard userTitle(for: key) == nil, generatedTitle(for: key) == nil,
             let titler = hostTitler(), requestsForHosts[key] != request
@@ -148,12 +163,25 @@ extension SessionTitles {
             projectName: request.projectName, prompt: request.prompt,
             instructions: AIInstructionsStore.shared.addition(for: .title, in: link.folder))
         Task {
+            let title: String?
             do {
-                guard let title = try await titler.title(for: titleRequest) else { return }
+                title = try await titler.title(for: titleRequest)
+            } catch {
+                Self.hostLogger.error("Couldn't write a title the host asked for: \(error.localizedDescription)")
+                return
+            }
+            guard let title else { return }
+            do {
                 try await link.client.setSessionTitle(
                     SetSessionTitleParams(sessionID: link.session, title: title, source: .generated))
             } catch {
-                Self.hostLogger.error("Couldn't write a title the host asked for: \(error.localizedDescription)")
+                Self.hostLogger.error("Couldn't send a title to the host: \(error.localizedDescription)")
+                // An answer from the host (an error) means it arrived; only a lost one goes again.
+                guard !(error is RPCError), requestsForHosts[key] == request else { return }
+                requestsForHosts[key] = nil
+                if let current = hostLinks[key], current.client !== link.client {
+                    writeTitle(request, for: key, on: current)
+                }
             }
         }
     }
@@ -175,12 +203,15 @@ extension SessionTitles {
         }
     }
 
-    /// Configures the host again whenever the titler or the user's instructions change.
-    private func keepConfigured(_ client: NativeHostClient) {
+    /// Configures the host again whenever the titler or the user's instructions change, until the
+    /// client stops for good.
+    private func keepConfigured(
+        _ client: NativeHostClient, while isCurrent: @escaping @MainActor @Sendable () -> Bool
+    ) {
         Task { [weak self] in
             let changes = Observations { [weak self] in self?.hostConfiguration() }
             for await _ in changes.dropFirst() {
-                guard let self else { return }
+                guard let self, isCurrent() else { return }
                 await configure(client)
             }
         }
