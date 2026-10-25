@@ -32,10 +32,10 @@ PATH. Existing `npx` launches remain unchanged until separate launch integration
 ## Explicit offline input
 
 `importOffline` is a separate local-only API. It consumes a format-1 directory bundle,
-an independently approved manifest digest and reviewed lock bytes, qualified absolute
-Node/npm paths, and a local-install policy decision. It never consults download
-permission or retries online. The existing `install(...allowedByPolicy:)` API retains
-its explicit online/download semantics unchanged.
+an independently approved manifest digest, reviewed lock digests (`ReviewedLock.pi` is
+built in), qualified absolute Node/npm paths, and a local-install policy decision. It
+never consults download permission or retries online. The existing
+`install(...allowedByPolicy:)` API retains its explicit online/download semantics unchanged.
 
 Offline import verifies all declared input before processes, isolates npm configuration
 and its preseeded cache, and publishes an installation receipt exclusively. Reuse

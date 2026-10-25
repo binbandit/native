@@ -44,10 +44,11 @@ public struct OfflineAdapterReceipt: Sendable {
                 receipt == (try record(files: files, approval: approval)),
                 let manifest = files["bundle.json"],
                 try ContentHash.sha256(manifest) == approval.manifestSHA256,
-                files["package.json"] == approval.packageJSON, files["package-lock.json"] == approval.packageLock
+                try approval.lock.matches(files)
             else { throw OfflineAdapterBundle.Failure.invalidReceipt }
             let bundle = try JSONDecoder().decode(OfflineAdapterBundle.self, from: manifest)
-            guard bundle.formatVersion == 1, bundle.os == OfflineAdapterBundle.platformOS,
+            guard bundle.formatVersion == 1, bundle.adapterID == approval.lock.adapterID,
+                bundle.adapterVersion == approval.lock.adapterVersion, bundle.os == OfflineAdapterBundle.platformOS,
                 bundle.architecture == OfflineAdapterBundle.platformArchitecture,
                 bundle.nodeVersion == approval.nodeVersion, bundle.npmVersion == approval.npmVersion,
                 bundle.agentVersion == approval.agentVersion

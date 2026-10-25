@@ -38,11 +38,39 @@ public struct OfflineAdapterBundle: Codable, Equatable, Sendable {
     public let requiredInstalledFiles: [String]
     public let payloads: [Payload]
 
+    /// A reviewed `package.json` and `package-lock.json`, named by digest. The bundle carries the
+    /// bytes, but only Native or the deployment decides which bytes are acceptable.
+    public struct ReviewedLock: Equatable, Sendable {
+        public let adapterID: String
+        public let adapterVersion: String
+        public let packageJSONSHA256: String
+        public let packageLockSHA256: String
+
+        public init(adapterID: String, adapterVersion: String, packageJSONSHA256: String, packageLockSHA256: String) {
+            self.adapterID = adapterID
+            self.adapterVersion = adapterVersion
+            self.packageJSONSHA256 = packageJSONSHA256
+            self.packageLockSHA256 = packageLockSHA256
+        }
+
+        /// `adapters/pi`, the pin PiPlugin launches (docs/enterprise/offline-adapters.md). A test keeps
+        /// these equal to the committed files, so changing the pair means reviewing it again.
+        public static let pi = Self(
+            adapterID: "pi-acp", adapterVersion: "0.0.34",
+            packageJSONSHA256: "c39f352d89de8a20cb58cbd65965d0008bbb5b02439f0ffdf162b915bdd4a806",
+            packageLockSHA256: "8f183449ca56ab6c147d0074e2900785094c3ea2696848fe818fc45e81b2c9fa")
+
+        func matches(_ files: [String: Data]) throws -> Bool {
+            guard let package = files["package.json"], let lock = files["package-lock.json"] else { return false }
+            return try ContentHash.sha256(package) == packageJSONSHA256
+                && ContentHash.sha256(lock) == packageLockSHA256
+        }
+    }
+
     /// Caller-owned approval, never decoded from the bundle. Tool distributions remain deployment-owned.
     public struct Approval: Sendable {
         public let manifestSHA256: String
-        public let packageJSON: Data
-        public let packageLock: Data
+        public let lock: ReviewedLock
         public let node: URL
         public let nodeSHA256: String
         public let npmCLI: URL
@@ -52,13 +80,12 @@ public struct OfflineAdapterBundle: Codable, Equatable, Sendable {
         public let agentVersion: String
 
         public init(
-            manifestSHA256: String, packageJSON: Data, packageLock: Data,
+            manifestSHA256: String, lock: ReviewedLock,
             node: URL, nodeSHA256: String, npmCLI: URL, npmCLISHA256: String,
             nodeVersion: String, npmVersion: String, agentVersion: String
         ) {
             self.manifestSHA256 = manifestSHA256
-            self.packageJSON = packageJSON
-            self.packageLock = packageLock
+            self.lock = lock
             self.node = node
             self.nodeSHA256 = nodeSHA256
             self.npmCLI = npmCLI
@@ -73,8 +100,9 @@ public struct OfflineAdapterBundle: Codable, Equatable, Sendable {
         guard let manifest = files["bundle.json"], manifest.count <= 1 << 20,
             try ContentHash.sha256(manifest) == approval.manifestSHA256,
             let bundle = try? JSONDecoder().decode(Self.self, from: manifest), bundle.formatVersion == 1,
-            !bundle.adapterID.isEmpty, !bundle.adapterVersion.isEmpty,
-            files["package.json"] == approval.packageJSON, files["package-lock.json"] == approval.packageLock
+            bundle.adapterID == approval.lock.adapterID, bundle.adapterVersion == approval.lock.adapterVersion,
+            let packageJSON = files["package.json"], let packageLock = files["package-lock.json"],
+            try approval.lock.matches(files)
         else { throw Failure.invalidBundle }
         guard bundle.os == platformOS, bundle.architecture == platformArchitecture,
             ["arm64", "x64"].contains(bundle.architecture)
@@ -98,11 +126,11 @@ public struct OfflineAdapterBundle: Codable, Equatable, Sendable {
                 try ContentHash.sha256(bytes) == payload.sha256
             else { throw Failure.invalidBundle }
         }
-        // Auditing remains the caller's job. These checks bind the declared adapter and ensure npm
-        // cannot silently discard an optional package that this platform's approval requires.
-        guard let root = try JSONSerialization.jsonObject(with: approval.packageJSON) as? [String: Any],
+        // Auditing happened when the lock digests were reviewed. These checks bind the declared adapter
+        // and ensure npm cannot silently discard an optional package this platform requires.
+        guard let root = try JSONSerialization.jsonObject(with: packageJSON) as? [String: Any],
             root["dependencies"] as? [String: String] == [bundle.adapterID: bundle.adapterVersion],
-            let lock = try JSONSerialization.jsonObject(with: approval.packageLock) as? [String: Any],
+            let lock = try JSONSerialization.jsonObject(with: packageLock) as? [String: Any],
             lock["lockfileVersion"] as? Int == 3,
             let packages = lock["packages"] as? [String: [String: Any]],
             packages["node_modules/" + bundle.adapterID]?["version"] as? String == bundle.adapterVersion

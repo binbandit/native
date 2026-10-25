@@ -161,10 +161,9 @@ public struct ManagedAdapterInstaller: Sendable {
             try files.removeItem(at: stage.appending(path: "cache"))
         }
         let installed = try OfflineAdapterBundle.snapshot(stage)
-        guard installed["package.json"] == approval.packageJSON,
-            installed["package-lock.json"] == approval.packageLock,
-            installed["bundle.json"] == inputs["bundle.json"]
-        else { throw Failure.lockPairChanged }
+        guard ["bundle.json", "package.json", "package-lock.json"].allSatisfy({ installed[$0] == inputs[$0] }) else {
+            throw Failure.lockPairChanged
+        }
         try OfflineAdapterReceipt.requireInstalledFiles(bundle, files: installed)
         let receipt = try OfflineAdapterReceipt.record(files: installed, approval: approval)
         try receipt.write(to: stage.appending(path: "receipt.json"), options: .withoutOverwriting)

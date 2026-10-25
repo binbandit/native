@@ -6,10 +6,6 @@ import Testing
 
 @testable import NativeHost
 
-#if canImport(CryptoKit)
-import CryptoKit
-#endif
-
 private let offlineAdapterHashingAvailable: Bool = {
     #if canImport(CryptoKit)
     true
@@ -24,7 +20,7 @@ private let offlineAdapterHashingAvailable: Bool = {
         if: offlineAdapterHashingAvailable,
         "Offline import fails closed without the existing CryptoKit hash provider"))
 struct OfflineAdapterBundleTests {
-    private var temporaryRoot: URL {
+    var temporaryRoot: URL {
         #if os(macOS)
         URL(filePath: "/private/tmp")
         #else
@@ -32,11 +28,11 @@ struct OfflineAdapterBundleTests {
         #endif
     }
 
-    private typealias Bundle = OfflineAdapterBundle
-    private typealias Failure = OfflineAdapterBundle.Failure
-    private let entry = "node_modules/fixture/main.js"
+    typealias Bundle = OfflineAdapterBundle
+    typealias Failure = OfflineAdapterBundle.Failure
+    let entry = "node_modules/fixture/main.js"
 
-    private struct Runner: CommandRunner {
+    struct Runner: CommandRunner {
         let body: @Sendable (Command) async throws -> Void
         func run(_ command: Command) async throws -> CommandResult {
             try await body(command)
@@ -45,14 +41,14 @@ struct OfflineAdapterBundleTests {
         }
     }
 
-    private struct Fixture {
+    struct Fixture {
         let root: URL
         let source: URL
         let destination: URL
         let approval: Bundle.Approval
     }
 
-    private func fixture(
+    func fixture(
         mutate: ([String: Any]) -> [String: Any] = { $0 },
         node: URL? = nil, npm: URL? = nil, nodeVersion: String = "1.0.0", npmVersion: String = "1.0.0",
         extra: [String: Data] = [:], packageRecords: [String: [String: Any]] = [:]
@@ -98,7 +94,10 @@ struct OfflineAdapterBundleTests {
         return Fixture(
             root: physical, source: source, destination: physical.appending(path: "installed"),
             approval: Bundle.Approval(
-                manifestSHA256: try ContentHash.sha256(bytes), packageJSON: package, packageLock: lock,
+                manifestSHA256: try ContentHash.sha256(bytes),
+                lock: Bundle.ReviewedLock(
+                    adapterID: "fixture", adapterVersion: "1.0.0", packageJSONSHA256: try ContentHash.sha256(package),
+                    packageLockSHA256: try ContentHash.sha256(lock)),
                 node: node, nodeSHA256: try ContentHash.sha256(Data(contentsOf: node)),
                 npmCLI: npm, npmCLISHA256: try ContentHash.sha256(Data(contentsOf: npm)),
                 nodeVersion: nodeVersion, npmVersion: npmVersion, agentVersion: "1.0.0"))
@@ -115,7 +114,7 @@ struct OfflineAdapterBundleTests {
             .write(to: target.deletingLastPathComponent().appending(path: "package.json"))
     }
 
-    private func importBundle(
+    func importBundle(
         _ f: Fixture, runner: any CommandRunner, allowed: Bool = true
     ) async throws -> OfflineAdapterReceipt {
         try await ManagedAdapterInstaller(runner: runner).importOffline(
@@ -164,6 +163,48 @@ struct OfflineAdapterBundleTests {
         #expect(throws: Failure.invalidReceipt) {
             try OfflineAdapterReceipt.reuse(
                 at: f.destination, expectedSHA256: receipt.sha256, approval: f.approval, localInstallAllowed: true)
+        }
+    }
+
+    /// The committed Pi pair is what `ReviewedLock.pi` names, and the importer accepts a bundle of
+    /// exactly those bytes. Tarballs are left out: npm, not validation, reports them missing.
+    @Test(arguments: ["reviewed", "own-lock", "unrequired-package"])
+    func builtInPiLock(_ mode: String) throws {
+        let pair = URL(filePath: #filePath).deletingLastPathComponent().appending(path: "../../../../adapters/pi")
+        let package = try Data(contentsOf: pair.appending(path: "package.json"))
+        var lock = try Data(contentsOf: pair.appending(path: "package-lock.json"))
+        #expect(try ContentHash.sha256(package) == Bundle.ReviewedLock.pi.packageJSONSHA256)
+        #expect(try ContentHash.sha256(lock) == Bundle.ReviewedLock.pi.packageLockSHA256)
+        let records = try #require(
+            (try JSONSerialization.jsonObject(with: lock) as? [String: Any])?["packages"] as? [String: Any])
+        let piEntry = "node_modules/pi-acp/dist/index.js"
+        var required = Set(records.keys.filter { !$0.isEmpty }.map { $0 + "/package.json" } + [piEntry])
+        switch mode {
+        case "own-lock": lock.append(Data("\n".utf8))
+        case "unrequired-package": required.remove("node_modules/zod/package.json")
+        default: break
+        }
+        var files = ["package.json": package, "package-lock.json": lock]
+        let manifest: [String: Any] = [
+            "formatVersion": 1, "adapterID": "pi-acp", "adapterVersion": "0.0.34",
+            "os": Bundle.platformOS, "architecture": Bundle.platformArchitecture,
+            "nodeVersion": "26.12.1", "npmVersion": "11.20.0", "agentVersion": "1.3.0", "entryPoint": piEntry,
+            "requiredInstalledFiles": required.sorted(),
+            "payloads": try files.keys.sorted().map {
+                let payload = try Bundle.Payload(path: $0, bytes: files[$0] ?? Data())
+                return ["path": payload.path, "size": payload.size, "sha256": payload.sha256] as [String: Any]
+            },
+        ]
+        // The manifest approval is genuine in every case: only the reviewed lock may refuse it.
+        files["bundle.json"] = try JSONSerialization.data(withJSONObject: manifest, options: [.sortedKeys])
+        let approval = Bundle.Approval(
+            manifestSHA256: try ContentHash.sha256(files["bundle.json"] ?? Data()), lock: .pi,
+            node: URL(filePath: "/qualified/node"), nodeSHA256: "", npmCLI: URL(filePath: "/qualified/npm-cli.js"),
+            npmCLISHA256: "", nodeVersion: "26.12.1", npmVersion: "11.20.0", agentVersion: "1.3.0")
+        if mode == "reviewed" {
+            #expect(try Bundle.validate(files, approval: approval).entryPoint == piEntry)
+        } else {
+            #expect(throws: Failure.invalidBundle) { try Bundle.validate(files, approval: approval) }
         }
     }
 
@@ -273,113 +314,4 @@ struct OfflineAdapterBundleTests {
         #expect(!remaining.contains { $0.hasPrefix(".adapter-install-") })
         #expect(remaining.contains("installed") == (mode == "race"))
     }
-    #if os(macOS)
-    private struct NetworkDeniedRunner: CommandRunner {
-        let preload: URL
-        func run(_ command: Command) async throws -> CommandResult {
-            var environment = command.environment
-            environment["NODE_OPTIONS"] = "--require " + preload.path
-            return try await LocalCommandRunner().run(
-                Command(
-                    "/usr/bin/sandbox-exec",
-                    ["-p", "(version 1)(allow default)(deny network*)", command.executable] + command.arguments,
-                    in: command.directory, environment: environment, timeout: .seconds(30)))
-        }
-    }
-
-    @Test(arguments: ["complete", "missing-optional", "poisoned-cache"])
-    func realNpmWithOutboundDenied(_ mode: String) async throws {
-        let omitOptional = mode == "missing-optional"
-        let search = (ProcessInfo.processInfo.environment["PATH"] ?? "/usr/bin:/bin").split(separator: ":")
-        func tool(_ name: String) throws -> URL {
-            let path = try #require(
-                search.map { String($0) + "/" + name }.first {
-                    FileManager.default.isExecutableFile(atPath: $0)
-                }, "BLOCKER: local Node/npm missing; never fetch a tool to run this fixture")
-            return URL(filePath: path).resolvingSymlinksInPath()
-        }
-        let node = try tool("node")
-        let npm = try tool("npm")
-        let scratch = temporaryRoot.appending(path: "offline-tools-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(
-            at: scratch, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
-        defer { try? FileManager.default.removeItem(at: scratch) }
-        let preload = scratch.appending(path: "deny-network.cjs")
-        let transportMarker = scratch.appending(path: "transport-attempt")
-        let script = """
-            const fs = require('fs');
-            function deny() { fs.writeFileSync(\(String(data: try JSONEncoder().encode(transportMarker.path), encoding: .utf8) ?? "''"), 'attempt'); throw Error('network denied'); }
-            for (const name of ['http', 'https']) { const m = require(name); m.request = deny; m.get = deny; }
-            require('net').Socket.prototype.connect = deny;
-            require('dns').lookup = deny;
-            """
-        try Data(script.utf8).write(to: preload)
-        let runner = NetworkDeniedRunner(preload: preload)
-        let environment = ["HOME": scratch.path, "PATH": node.deletingLastPathComponent().path]
-        func version(_ args: [String]) async throws -> String {
-            let result = try await runner.run(Command(node.path, args, in: scratch.path, environment: environment))
-            try #require(result.succeeded, "Local qualification probe failed")
-            return result.output.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        let nodeVersion = String(try await version(["--version"]).dropFirst())
-        let npmVersion = try await version([
-            npm.path, "--version", "--userconfig=" + scratch.appending(path: "user.npmrc").path,
-            "--globalconfig=" + scratch.appending(path: "global.npmrc").path, "--offline",
-        ])
-        let archives = [
-            "H4sIAAAAAAAC/+3TsU7DMBAG4Mw8ReTFjdSkTlsyMCNegLWLSS6VwbGDnQBVlXfHaSKQurCUCon/W846yz7L0t/K8kXuadVONXv21kQXJoJiuz3V4LyKdXH7tT7187zY5FEsoivofSddGB/9T0dmZEPsLma1+uh6R2wZszdyXlkzdvNMZGLs+dKptvOhd2TKhE/Tetw3tqI4pXjHHL32ytGC154n2btTHT0oTY8HUy74dDp10vAlf5IVT3aMDeFa23ZhktT31JKpyJSKphnzc9JWy662rvl+zDBEcClz7leNVCaE/1dm/JR/sTnPvyjWAvm/htIabzVl2u5DcufMOZLVgSc3iAcAAAAAAAAAAAAAAAAAAADAn/cJb0pP6AAoAAA=",
-            "H4sIAAAAAAAC/+3UsU7DMBAG4Mw8ReTFjdS4TmiDxAPwAqxdTHKpDI4d7ASoqr47TlsxdGGBgtT/W866k3WSpd+9ql/Uhhb9sYrn4Gzyw2RULZeHGp1XWcq7r/OhXxRVuUpSmVzAGAbl4/rkOu2YVR2x+5S1+mMYPeW9UUPrfMfmKXsjH7Sz07gQUsipF2qv+yHE3o5pG1/PmGluXUNpTumaeXodtacZbwPPxLvXAz1oQ49bW8/48XbuleVz/qQanq0Z2+8T+Bun3C86pW0M/6/s+C7/8nZ1ln9ZlRL5v4Ta2eAMCeM2MbCnL8CTarY8u0E8AAAAAAAAAAAAAAAAAAAAAP69T+EmX4EAKAAA",
-        ]
-        var payloads: [String: Data] = [:]
-        var records: [String: [String: Any]] = [:]
-        for (index, name) in ["fixture", "fixture-platform"].enumerated() {
-            let archive = try #require(Data(base64Encoded: archives[index]))
-            let digest = SHA512.hash(data: archive)
-            let hex = digest.map { String(format: "%02x", $0) }.joined()
-            if !omitOptional || index == 0 {
-                payloads[
-                    "cache/_cacache/content-v2/sha512/\(hex.prefix(2))/\(hex.dropFirst(2).prefix(2))/\(hex.dropFirst(4))"
-                ] = archive
-            }
-            var record: [String: Any] = [
-                "version": "1.0.0", "resolved": "https://fixture.invalid/\(name).tgz",
-                "integrity": "sha512-" + Data(digest).base64EncodedString(), "hasInstallScript": true,
-            ]
-            if index == 0 {
-                record["optionalDependencies"] = ["fixture-platform": "1.0.0"]
-            } else {
-                record["optional"] = true
-            }
-            records["node_modules/" + name] = record
-        }
-        let f = try fixture(
-            node: node, npm: npm, nodeVersion: nodeVersion, npmVersion: npmVersion, extra: payloads,
-            packageRecords: records)
-        defer { try? FileManager.default.removeItem(at: f.root) }
-        if mode == "poisoned-cache" {
-            let cachePath = try #require(payloads.keys.first)
-            try Data("poison".utf8).write(to: f.source.appending(path: cachePath))
-            await #expect(throws: Failure.invalidBundle) {
-                try await importBundle(f, runner: Runner { _ in Issue.record("Poisoned cache must not spawn") })
-            }
-        } else if omitOptional {
-            await #expect(throws: Failure.missingArtifact) { try await importBundle(f, runner: runner) }
-            #expect(!FileManager.default.fileExists(atPath: f.destination.path))
-        } else {
-            let receipt = try await importBundle(f, runner: runner)
-            let reused = try OfflineAdapterReceipt.reuse(
-                at: f.destination, expectedSHA256: receipt.sha256, approval: f.approval, localInstallAllowed: true)
-            let result = try await runner.run(
-                Command(reused.command.executable, reused.command.arguments, in: scratch.path, environment: environment)
-            )
-            #expect(result.succeeded)
-            #expect(result.output.trimmingCharacters(in: .whitespacesAndNewlines) == "fixture-ready")
-            let installed = try Bundle.snapshot(f.destination)
-            #expect(!installed.keys.contains { $0.hasSuffix("script-ran") })
-        }
-        #expect(!FileManager.default.fileExists(atPath: transportMarker.path))
-        #expect(!FileManager.default.fileExists(atPath: scratch.appending(path: ".npm").path))
-    }
-    #endif
-
 }

@@ -3,6 +3,7 @@ import hashlib
 import importlib.util
 import json
 from pathlib import Path
+import re
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -10,6 +11,34 @@ from unittest.mock import patch
 _spec = importlib.util.spec_from_file_location("offline_bundle", Path(__file__).parents[1] / "offline-bundle.py")
 bundle = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(bundle)
+REPOSITORY = Path(__file__).resolve().parents[3]
+PI_PAIR = REPOSITORY / "adapters/pi"
+
+
+class BuiltInPiPairTests(unittest.TestCase):
+    """The reviewed Pi pair stays audited and matches the pin PiPlugin launches."""
+
+    def test_audits_offline(self):
+        with patch("subprocess.run", side_effect=AssertionError("process")), \
+                patch("socket.socket", side_effect=AssertionError("network")):
+            bundle.lockfile.audit(PI_PAIR, "pi-acp", "0.0.34")
+
+    def test_matches_plugin_pin(self):
+        plugin = (REPOSITORY / "native/Plugins/PiPlugin.swift").read_text(encoding="utf-8")
+        pinned = re.findall(r'"pi-acp@([^"]+)"', plugin)
+        package = json.loads((PI_PAIR / "package.json").read_text(encoding="utf-8"))
+        self.assertEqual(pinned, [package["dependencies"]["pi-acp"]])
+
+    def test_missing_archives_publish_nothing(self):
+        with tempfile.TemporaryDirectory(prefix="offline-bundle-pi-") as temporary:
+            root = Path(temporary).resolve()
+            (root / "archives").mkdir()
+            with self.assertRaises(FileNotFoundError):
+                bundle.build(PI_PAIR, root / "archives", root / "output", adapter="pi-acp", version="0.0.34",
+                             os_name="darwin", architecture="arm64", node_version="26.12.1",
+                             npm_version="11.20.0", agent_version="1.3.0",
+                             entry="node_modules/pi-acp/dist/index.js")
+            self.assertFalse((root / "output").exists())
 
 
 class OfflineBundleTests(unittest.TestCase):
