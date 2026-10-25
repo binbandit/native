@@ -8,8 +8,11 @@ extension AppModel {
     /// The experiment is resolved here so menus and model actions use the same gate.
     var offersAgentChange: Bool { experiments.value(of: .changeAgent) }
 
+    /// The agents where the task runs: a paired host's task continues only with that host's.
     func changeAgentChoices(for source: SessionModel) -> [AgentRuntime] {
-        agents.filter { $0.agent.id != source.agent.id && $0.isAvailable && !$0.needsSignIn }
+        agentChangeRuntimes(at: agentChangePlace(of: source)).filter {
+            $0.agent.id != source.agent.id && $0.isAvailable && !$0.needsSignIn
+        }
     }
 
     func changeAgentBlock(for source: SessionModel) -> String? {
@@ -33,9 +36,7 @@ extension AppModel {
             return "Wait for the task's subagents to finish."
         }
         if let hold = source.turnHold { return hold }
-        if let host = source.host, launcher.isRemote(host.client) {
-            return "Changing agents on paired hosts is not available yet."
-        }
+        if let reason = remoteAgentChangeBlock(for: source) { return reason }
         guard catalog.lookup(source.key) != nil, !isArchived(source.key), !pendingDeletionKeys.contains(source.key),
             removedWorkspaces[source.key] == nil
         else {
@@ -51,22 +52,28 @@ extension AppModel {
 
     func prepareAgentChange(_ source: SessionModel, to agent: AgentDefinition.ID) async throws -> SessionModel {
         if let reason = changeAgentBlock(for: source) { throw AgentChangeFailure(reason) }
+        let place = agentChangePlace(of: source)
         guard changeAgentChoices(for: source).contains(where: { $0.agent.id == agent }),
-            let runtime = await ensureRunning(agent)
-        else { throw AgentChangeFailure(startFailure(of: agent)) }
+            let runtime = await startAgentChangeRuntime(agent, at: place)
+        else { throw AgentChangeFailure(agentChangeStartFailure(of: agent, at: place)) }
         if let reason = changeAgentBlock(for: source) { throw AgentChangeFailure(reason) }
         let started = try await launcher.start(
             on: runtime, cwd: source.cwd, project: catalog.lookup(source.key)?.project)
+        // Some agents list even empty conversations, and a host lists every one it has open. Keep the
+        // unsent candidate out of the sidebar, including after quitting during review; an accepted
+        // handoff removes this tombstone.
+        deletedSessions.insert(started.key)
         let candidate = try currentAgentChangeTarget(started)
         if candidate !== started {
-            deletedSessions.insert(started.key)
             unsentSessions.forget(started.key)
         }
-        // Some agents list even empty conversations. Keep the unsent candidate out of the sidebar,
-        // including after quitting during review; an accepted handoff removes this tombstone.
         deletedSessions.insert(candidate.key)
-        unsentSessions.started(candidate.key)
-        catalog.remove(candidate.key)
+        if place == .thisMac {
+            unsentSessions.started(candidate.key)
+            catalog.remove(candidate.key)
+        } else {
+            indexRemoteSessions()
+        }
         return candidate
     }
 
@@ -76,9 +83,10 @@ extension AppModel {
         _ source: SessionModel, to prepared: SessionModel, handoff: String, modelValue: String
     ) async throws {
         if let reason = changeAgentBlock(for: source) { throw AgentChangeFailure(reason) }
+        let place = agentChangePlace(of: source)
         var target = try currentAgentChangeTarget(prepared)
         guard !source.isChangingAgent, target.agent.id != source.agent.id, target.cwd == source.cwd,
-            let project = catalog.lookup(source.key)?.project,
+            agentChangePlace(of: target) == place, let project = catalog.lookup(source.key)?.project,
             !handoff.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         else { throw AgentChangeFailure("The handoff is not ready. Cancel and try again.") }
         source.isChangingAgent = true
@@ -114,11 +122,15 @@ extension AppModel {
         // the new agent. Cancel removes an unused candidate; an accepted one stays recoverable.
         titles.rename(target.titleKey, to: source.displayTitle)
         target.draft = handoff
-        deletedSessions.remove(target.key)
-        if !catalog.contains(target.key) {
-            catalog.add(
-                SessionInfo(sessionId: target.id, cwd: source.cwd.folderPath, updatedAt: .now),
-                for: target.agent.id, in: project)
+        if place == .thisMac {
+            deletedSessions.remove(target.key)
+            if !catalog.contains(target.key) {
+                catalog.add(
+                    SessionInfo(sessionId: target.id, cwd: source.cwd.folderPath, updatedAt: .now),
+                    for: target.agent.id, in: project)
+            }
+        } else {
+            publishRemoteAgentChange(target, in: project)
         }
         if !target.hasStarted {
             do {
@@ -182,13 +194,16 @@ extension AppModel {
         deletedSessions.insert(candidate.key)
         unsentSessions.forget(candidate.key)
         catalog.remove(candidate.key)
-        if let runtime = runtime(candidate.agent.id), candidate.host != nil {
-            closeOnHost(candidate, on: runtime)
-        } else {
-            sessions.remove(candidate)
-            if runtime(candidate.agent.id)?.capabilities?.closeSessions == true, let connection = candidate.connection {
-                Task { _ = try? await connection.send(CloseSessionRequest(sessionId: candidate.id)) }
-            }
+        // Closed where it runs, by the agent that runs it: a paired host's candidate on that host.
+        let runtime = agentChangeRuntimes(at: agentChangePlace(of: candidate)).first {
+            $0.agent.id == candidate.agent.id
+        }
+        sessions.remove(candidate)
+        let closes = runtime?.capabilities?.closeSessions == true
+        if let link = candidate.host {
+            Task { try? await link.client.closeSession(link.id, closeInAgent: closes) }
+        } else if closes, let connection = candidate.connection {
+            Task { _ = try? await connection.send(CloseSessionRequest(sessionId: candidate.id)) }
         }
     }
 }

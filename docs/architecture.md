@@ -456,10 +456,17 @@ After an accepted handoff, the existing conversation chain preserves the origina
 sidebar position and pin, title, branch, worktree and unsent draft. A quiet divider names the new
 agent; Earlier Conversation opens the original transcript read-only. Links survive relaunch.
 
-This first slice is limited to this Mac. Paired-host coordination, a single combined transcript,
-and carrying goal automation and its budgets across agents remain follow-up work. Pause a goal
-before switching; its objective goes in the handoff, but its controller stays in the earlier
-conversation. Disable the gate to hide entry points; existing conversation links stay readable.
+A task on a paired host (`NativeRemoteHosts`) changes only to another agent that host runs, found
+through the task's current pairing (`AppModel+RemoteAgentChange.swift`). The replacement starts
+there, in the task's exact folder: nothing is cloned, no worktree is made and nothing starts on this
+Mac. The host's listing publishes it, never this Mac's catalog or unsent drafts, and the same guards,
+review and single send apply. An offline host, a pairing removed or replaced by another key, no
+eligible agent, or an agent that fails to start leaves the original as it was; Cancel closes the
+unsent candidate on its host. Pairing the same host again during review moves both conversations to
+the new client. Moving a task between devices, a single combined transcript, and carrying goal
+automation and its budgets across agents remain follow-up work. Pause a goal before switching; its
+objective goes in the handoff, but its controller stays in the earlier conversation. Disable the
+gate to hide entry points; existing conversation links stay readable.
 
 ### Transcript styles
 
