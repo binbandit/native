@@ -1,9 +1,12 @@
 import ACP
-import AppKit
 import Exec
 import NativeAutomation
 import NativeCommands
 import SwiftUI
+
+#if os(macOS)
+import AppKit
+#endif
 
 @main
 struct NativeApp: App {
