@@ -23,8 +23,14 @@ extension DurableHost {
         try? await client.reportUpdateStatus(HostUpdateStatus(snapshot))
     }
 
+    /// The tasks restarting the host now would interrupt, for the confirmation that names them
+    /// (`hostRestartConfirmation`). An agent's own subagents go with their task.
+    var interruptedByRestart: [HostSessionSummary] {
+        sessions.filter { $0.isWorking && $0.origin != .announced }
+    }
+
     /// Restarts the host onto this app's binary now. Running turns are interrupted and resume on the
-    /// new host, which says it restarted to update.
+    /// new host, which says it restarted to update. Ask first while `interruptedByRestart` has any.
     func restartHost() async {
         await perform("restart the host") { client in
             try await client.shutdownHost(stopAgents: false, immediately: true)

@@ -16,6 +16,7 @@ struct HostNotices: View {
     var updates: UpdateController?
 
     @Environment(AppModel.self) private var model
+    @State private var isConfirmingRestart = false
 
     var body: some View {
         if hasNotices {
@@ -24,7 +25,7 @@ struct HostNotices: View {
                     HostVersionNotice(
                         status: host.versionStatus,
                         appVersion: host.appVersionLabel,
-                        onRestartHost: { Task { await host.restartHost() } },
+                        onRestartHost: requestRestart,
                         onCheckForUpdates: { updates?.checkForUpdates() }
                     )
                 }
@@ -32,7 +33,7 @@ struct HostNotices: View {
                     unavailable
                 }
                 if let orchestration, orchestration.move != nil {
-                    OrchestrationServerNotice(status: orchestration) { Task { await host.restartHost() } }
+                    OrchestrationServerNotice(status: orchestration, onRestartHost: requestRestart)
                 }
                 if let fallback = host.fallbackNotice {
                     HostFallbackNotice(fallback: fallback, isAttached: host.placement.usesHost) {
@@ -52,6 +53,16 @@ struct HostNotices: View {
             }
             .padding(DS.Space.md)
             .animation(.dsStandard, value: host.away?.items.count)
+            .hostRestartConfirmation(host, isPresented: $isConfirmingRestart)
+        }
+    }
+
+    /// Restarts the host now, after asking when that would interrupt tasks.
+    private func requestRestart() {
+        if host.interruptedByRestart.isEmpty {
+            Task { await host.restartHost() }
+        } else {
+            isConfirmingRestart = true
         }
     }
 

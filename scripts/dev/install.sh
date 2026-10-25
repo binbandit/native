@@ -57,8 +57,11 @@ fi
 mkdir -p "$derived"
 log="$derived/install.log"
 echo "Build log: $log"
+# Numbered like releases (the commit count), so a newer install reads as newer to the running host,
+# which then moves onto it once its tasks are idle (docs/durability.md, "Updates").
+build_number=$(git -C "$source" rev-list --count HEAD)
 if ! xcodebuild -project "$source/native.xcodeproj" -scheme native -configuration "$configuration" \
-    -derivedDataPath "$derived" -skipPackageUpdates build >"$log" 2>&1; then
+    -derivedDataPath "$derived" -skipPackageUpdates CURRENT_PROJECT_VERSION="$build_number" build >"$log" 2>&1; then
     grep -E "^/.*error:" "$log" | sort -u | head -20 >&2
     echo "Build failed; full log: $log" >&2
     exit 1
@@ -66,16 +69,21 @@ fi
 
 built="$derived/Build/Products/$configuration/$product.app"
 target="$HOME/Applications/$product.app"
-# Stop the installed copy only, matched by its path: test instances share its name. Ask it to quit,
-# then make sure it's gone.
-executable="$target/Contents/MacOS/$product"
-if pgrep -f "^$executable" >/dev/null; then
-    pkill -TERM -f "^$executable" || true
-    for _ in 1 2 3 4 5 6 7 8 9 10; do pgrep -f "^$executable" >/dev/null || break; sleep 0.5; done
-    pkill -KILL -f "^$executable" 2>/dev/null || true
-fi
 mkdir -p "$HOME/Applications"
-rm -rf "$target"
-ditto "$built" "$target"
+# Copied next to the build first (the same volume, so the swap below is a rename): the app is down
+# only for the swap, and an interrupted copy leaves the installed one as it was.
+staged=$(mktemp -d "$derived/install.XXXXXX")
+trap 'rm -rf "$staged"' EXIT
+ditto "$built" "$staged/$product.app"
+# Quit the installed copy the way ⌘Q does, so it saves its state and its background host keeps every
+# agent working. Never a signal: that would lose what the app hasn't saved. Only that exact bundle
+# quits; test instances share its name.
+swift "$root/scripts/dev/quit-for-install.swift" "$target"
+if [ -d "$target" ]; then mv "$target" "$staged/previous.app"; fi
+if ! mv "$staged/$product.app" "$target"; then
+    [ ! -d "$staged/previous.app" ] || mv "$staged/previous.app" "$target"
+    echo "Couldn't replace $target; the previous app was kept." >&2
+    exit 1
+fi
 echo "Installed $target"
 open "$target"

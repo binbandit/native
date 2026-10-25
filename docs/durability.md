@@ -114,9 +114,25 @@ for both) with `HostVersionStatus` and shows `HostVersionNotice` above the detai
 | --- | --- | --- |
 | Same build | nothing | nothing |
 | Older host, nothing running | the app asks it to restart (`_native/host/shutdown {stopAgents: false}`); it exits 75 right away and launchd starts the new binary | "Native's background host is restarting onto 1.4…", then nothing |
-| Older host, tasks running | same request; the host exits 75 the first moment nothing is running | "Native updated to 1.4. Its background host switches over when your tasks finish." with **Restart Host Now** |
-| Restart Host Now | `shutdown {stopAgents: false, immediately: true}`: the host exits 75 at once; the new binary resumes interrupted turns as `hostUpdated` | in each transcript: "Native's background host restarted at 2:14 PM to update. Native restarted Claude Code and asked it to pick up where it left off." |
+| Older host, tasks running | same request; the host exits 75 the first moment nothing is running | "Native updated to 1.4. The update finishes when your tasks are idle." with **Restart Now…** |
+| Restart Now… | asks first, naming the tasks it would interrupt (`hostRestartConfirmation`; waiting is the default), then `shutdown {stopAgents: false, immediately: true}`: the host exits 75 at once; the new binary resumes interrupted turns as `hostUpdated` | in each transcript: "Native's background host restarted at 2:14 PM to update. Native restarted Claude Code and asked it to pick up where it left off." |
 | Newer host (an older copy of Native was opened) | nothing; the host stays | "This copy of Native (1.3) is older than its background host (1.4)" with **Check for Updates** |
+
+**The guarantee: updating never stops work in progress.** A new build arrives three ways, and none
+of them stops a running agent unless the user says so:
+
+| What arrives | What happens to running tasks |
+| --- | --- |
+| Native updates (Sparkle installs and relaunches) | The app quits like ⌘Q; the background host keeps every agent running. The new app reattaches: running turns keep streaming, approvals and questions still wait, and every composer's draft comes back (`ComposerDrafts` saves them as they're typed, so a crash keeps them too). Nothing is marked stopped or failed. |
+| `just dev` or `just install` replaces `~/Applications/Native.app` | The same: `scripts/dev/install.sh` copies the build first, asks only that copy to quit the way ⌘Q does (`quit-for-install.swift`; it never sends a signal, and stops the install if the app doesn't quit), swaps the bundle in one move and opens it. Builds are numbered like releases (the commit count), so the host sees that it's older. |
+| The host's own binary changes (after either of the above, or a standalone host's update) | The host waits until nothing would be cut off (`HostSession.holdsRestart`): no turn (so no approval or question either), recovery, retry waiting to go out, hidden command, session load, stop being verified, or subagent still working in the background. It checks whenever work ends and on every heartbeat, then exits 75 and launchd starts the new binary. Queued messages are stored, so the new host sends them. |
+
+The exceptions are the user's own choices: Restart Now… (above), a paired device's "install now"
+(`_native/host/update/install {when: now}`), and agents that run in the app rather than a host
+(background running off, or a fallback), which stop with any app restart; the updater asks first
+for those (`UpdateRestartConfirmation`). The host never hands a running agent's process to its
+successor: an agent's stdio belongs to the host that started it, so waiting is the only way to
+update without interrupting it. `HostUpdateContinuityTests` covers the host's side.
 
 The app asks each host process (each `epoch`) once. **The handshake is frozen**, so this works
 across any two versions: `initialize`, the `protocolVersion` and `hostInfo` of its result
@@ -750,7 +766,7 @@ reloads the session from the agent (`session/load`), then `RecoveryPlanner` deci
 | Agent process exits mid-turn | its stdout closes | restarts the agent, reloads, resumes or resends | "Claude Code stopped unexpectedly at 2:14 PM. Native restarted Claude Code and asked it to pick up where it left off." |
 | Agent exits while idle | same | nothing until the session is used; then reloads quietly | nothing (nothing was lost) |
 | Agent can't start again (uninstalled, signed out) | launch or `initialize` fails | keeps the turn committed, session `disconnected` with the reason; retries on the user's next message or the next host start | "Native couldn't restart Claude Code: <reason>" with the fix (install command, Sign in) |
-| Host restarted for an update (Restart Host Now) | a restart mark in `meta`, written just before exiting | resumes every unfinished turn like a crash | "Native's background host restarted at 2:14 PM to update. …" |
+| Host restarted for an update (Restart Now…) | a restart mark in `meta`, written just before exiting | resumes every unfinished turn like a crash | "Native's background host restarted at 2:14 PM to update. …" |
 | Host killed or crashed | unfinished turns at startup, same boot | launchd restarts it; it resumes every unfinished turn, then drains queues | "Native's background host stopped unexpectedly at 2:14 PM. …" |
 | Mac restarted or logged out | boot time differs from the last run's | resumes at login | "Your Mac restarted at 2:14 PM while Codex was working. …" |
 | The prompt never reached the agent | not in the replay | resends with the same request id | "Your message hadn't reached Codex yet, so Native sent it again." |

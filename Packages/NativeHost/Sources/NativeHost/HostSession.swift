@@ -155,6 +155,15 @@ final class HostSession {
             || (!queue.isEmpty && !record.isQueuePaused)
     }
 
+    /// Whether restarting the host for an update would cut something off: a turn (with its
+    /// approvals), its recovery, a retry waiting to go out, a hidden command, a load, or a subagent
+    /// still working in the background. Queued messages don't hold it: they're stored, and the new
+    /// host sends them.
+    var holdsRestart: Bool {
+        turn != nil || phase == .recovering || retryAt != nil || hiddenCommand != nil || loading != nil
+            || mirror.state.subagents.contains { $0.workState?.isWorking == true }
+    }
+
     /// Whether the running turn produced anything: an answer, a tool call, a subagent.
     var turnMadeProgress: Bool {
         mirror.state.items.dropFirst(turnItemsStart).contains { item in

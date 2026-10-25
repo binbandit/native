@@ -71,6 +71,9 @@ final class SessionStore {
         if let draft = restartDrafts.removeValue(forKey: session.key) {
             session.draft = draft.text
             session.attachments = draft.attachments
+        } else if session.draft.isEmpty, let draft = services.drafts.draft(for: session.key) {
+            // Left in its composer in an earlier run, or before the session was closed while idle.
+            session.draft = draft
         }
         if let summary = session.hostSummary { recordActivity(summary) }
         sessions[session.key] = session
@@ -100,6 +103,8 @@ final class SessionStore {
     /// keeps sending its events, so it's still followed.
     func replace(_ old: SessionModel, with new: SessionModel) {
         sessions[old.key] = nil
+        // The draft carries on under the new key.
+        services.drafts.keep("", for: old.key)
         register(new)
     }
 
