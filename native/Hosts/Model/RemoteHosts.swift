@@ -11,7 +11,7 @@ import os
 /// another, and nothing here reaches this Mac's own host (`DurableHost`).
 ///
 /// Off by default until remote hosts work end to end: `-NativeRemoteHosts YES` (or the user default
-/// of that name) turns them on.
+/// of that name) turns them on, and the organization's policy can turn them off (`RemoteHostsPolicy`).
 @Observable
 final class RemoteHosts {
     /// In the order they were paired.
@@ -35,20 +35,43 @@ final class RemoteHosts {
     @ObservationIgnored private var retired: [RetiredClient] = []
     /// The app's definition of a host's agent (see `RemoteHost.definition`).
     @ObservationIgnored var definition: @MainActor (HostAgent) -> AgentDefinition = RemoteHost.definition(from:)
+    /// Whether remote hosts are on, and the only way this model reaches them.
+    @ObservationIgnored let policy: RemoteHostsPolicy
     @ObservationIgnored private let store: any PairedHostStore
     @ObservationIgnored private let discovery = RemoteHostDiscovery()
     @ObservationIgnored private var isStarted = false
+    /// Connecting to the hosts and browsing for them: started, and on when the policy last said.
+    @ObservationIgnored private var isActive = false
+    @ObservationIgnored private var policyWatch: Task<Void, Never>?
+    #if DEBUG
+    @ObservationIgnored private var testPairing: Task<Void, Never>?
+    #endif
 
     static let defaultsKey = "NativeRemoteHosts"
     private static let logger = Logger(subsystem: "Native", category: "RemoteHosts")
 
-    /// Whether this run uses remote hosts at all.
-    static var isEnabled: Bool {
+    /// Whether remote hosts are turned on for this run, before the organization has its say.
+    static var isFeatureOn: Bool {
         UserDefaults.standard.bool(forKey: defaultsKey)
     }
 
-    init(store: any PairedHostStore = FilePairedHostStore(directory: RemoteHosts.storeDirectory)) {
+    /// Whether this run uses remote hosts now: turned on, and allowed by the organization
+    /// (`RemoteHostsPolicy.app`).
+    static var isEnabled: Bool {
+        RemoteHostsPolicy.app.isEnabled
+    }
+
+    /// The same, under this model's policy.
+    var isEnabled: Bool {
+        policy.isEnabled
+    }
+
+    init(
+        store: any PairedHostStore = FilePairedHostStore(directory: RemoteHosts.storeDirectory),
+        policy: RemoteHostsPolicy = .app
+    ) {
         self.store = store
+        self.policy = policy
     }
 
     /// `~/Library/Application Support/<bundle id>/Hosts`: one file per pairing, readable by the user alone.
@@ -64,10 +87,10 @@ final class RemoteHosts {
 
     // MARK: - Lifecycle
 
-    /// Reads the pairings and connects to every host. Once per run; nothing happens while the
-    /// feature is off.
+    /// Reads the pairings and connects to every host, then follows the organization's policy for
+    /// the rest of the run (`follow`). Once per run; nothing happens in a run with remote hosts off.
     func start() {
-        guard Self.isEnabled, !isStarted else { return }
+        guard policy.isOnForRun, !isStarted else { return }
         isStarted = true
         do {
             all = try store.hosts().map(makeHost)
@@ -75,18 +98,51 @@ final class RemoteHosts {
             problem = "Couldn't read paired hosts: \(error.localizedDescription)"
             Self.logger.error("Couldn't read paired hosts: \(error.localizedDescription, privacy: .public)")
         }
-        discoverIfPaired()
-        for host in all { host.start() }
-        #if DEBUG
-        if let link = RemoteHostsTesting.pairLink {
-            Task { await pairForTesting(link) }
+        follow()
+        policyWatch = Task { [weak self, policy] in
+            for await _ in policy.changes {
+                guard let self else { return }
+                follow()
+            }
         }
+    }
+
+    /// Connects or disconnects as the policy says now: on connects every pairing not connected yet,
+    /// off stops all this client has under way with remote hosts (`disconnect`).
+    private func follow() {
+        if isEnabled {
+            isActive = true
+            discoverIfPaired()
+            for host in all where host.client == nil { policy.connect(host) }
+            #if DEBUG
+            if testPairing == nil, let link = RemoteHostsTesting.pairLink {
+                testPairing = Task { await pairForTesting(link) }
+            }
+            #endif
+        } else if isActive {
+            isActive = false
+            disconnect()
+        }
+    }
+
+    /// Stops browsing, every host's connection and its reconnecting, and the launch's test pairing.
+    /// The pairings stay, and so do the agents and tasks on each host. Each host gets a new model,
+    /// not started, so its open tasks move to the client it connects with next (`retire`).
+    private func disconnect() {
+        discovery.end()
+        #if DEBUG
+        testPairing?.cancel()
         #endif
+        all = all.map { host in
+            guard host.client != nil else { return host }
+            retire(host)
+            return makeHost(host.paired)
+        }
     }
 
     #if DEBUG
     /// Pairs with a `pair` link given at launch (`RemoteHostsTesting.pairLink`), with what the
-    /// link offers, as Add Host would after the user chose Pair.
+    /// link offers, as Add Host would after the user chose Pair. Once per run.
     private func pairForTesting(_ link: String) async {
         do {
             var invite = try PairingInvite(url: link)
@@ -95,12 +151,11 @@ final class RemoteHosts {
                 ? invite.addresses.filter { $0.kind == .loopback } : invite.addresses
             var device = Self.deviceInfo
             device.requestedGrants = invite.grants
-            let (paired, channel) = try await LinkPairing.pair(
-                credential: .invite(invite), endpoints: LinkPairing.endpoints(for: invite, discovered: []),
-                device: device, installationSecret: Self.installationSecret, log: { _ in },
-                awaitingConfirmation: { _ in })
-            channel.close()
+            let paired = try await policy.pair(invite, as: device, log: { _ in }, awaitingConfirmation: { _ in })
+            try Task.checkCancellation()
             add(paired)
+        } catch is CancellationError, is RemoteHostsPolicy.TurnedOff {
+            Self.logger.info("Test pairing stopped: remote hosts are off")
         } catch {
             problem = "Couldn't pair with the link given at launch: \(error.localizedDescription)"
             Self.logger.error("Test pairing failed: \(error.localizedDescription, privacy: .public)")
@@ -108,7 +163,10 @@ final class RemoteHosts {
     }
     #endif
 
+    /// Stops for good: every connection, browsing and following the policy.
     func stop() {
+        policyWatch?.cancel()
+        isActive = false
         for host in all { host.stop() }
         discovery.end()
     }
@@ -116,15 +174,18 @@ final class RemoteHosts {
     /// Looks for paired hosts on the network only once there is one: browsing is what asks for
     /// local-network access, so a Mac that never pairs a host is never asked.
     private func discoverIfPaired() {
-        guard !all.isEmpty, !RemoteHostsTesting.isLoopbackOnly else { return }
-        discovery.begin()
+        guard !all.isEmpty, !RemoteHostsTesting.isLoopbackOnly, !discovery.isBrowsing,
+            let browser = policy.browse()
+        else { return }
+        discovery.begin(browser)
     }
 
     // MARK: - What the user does
 
-    /// Keeps a pairing Add Host made and connects to it. Pairing the same host instance again
-    /// replaces its old pairing, keeping what the user called it, and its open tasks move to the
-    /// new client once it connects.
+    /// Keeps a pairing Add Host made and connects to it while remote hosts are on; one kept while
+    /// they're off connects when they're on again. Pairing the same host instance again replaces
+    /// its old pairing, keeping what the user called it, and its open tasks move to the new client
+    /// once it connects.
     @discardableResult
     func add(_ paired: PairedHost) -> RemoteHost {
         var paired = paired
@@ -136,9 +197,9 @@ final class RemoteHosts {
         save(paired)
         let host = makeHost(paired)
         all.append(host)
-        if isStarted {
+        if isActive {
             discoverIfPaired()
-            host.start()
+            policy.connect(host)
         }
         return host
     }
@@ -171,7 +232,7 @@ final class RemoteHosts {
         save(paired)
         let host = makeHost(paired)
         all.insert(host, at: min(index, all.count))
-        if isStarted { host.start() }
+        if isActive { policy.connect(host) }
     }
 
     // MARK: - Pairings that ended here
@@ -262,13 +323,28 @@ final class RemoteHosts {
     }
 }
 
+/// A Bonjour browser for Native hosts on the local network (`LinkBrowser`).
+nonisolated protocol RemoteHostBrowsing: Sendable {
+    /// What it sees right now.
+    var current: [DiscoveredHost] { get }
+    func cancel()
+}
+
+nonisolated extension LinkBrowser: RemoteHostBrowsing {}
+
 /// The Bonjour browser paired hosts are found with, readable from the transports' own threads.
 nonisolated final class RemoteHostDiscovery: Sendable {
-    private let browser = Mutex<LinkBrowser?>(nil)
+    private let browser = Mutex<(any RemoteHostBrowsing)?>(nil)
 
-    func begin() {
+    var isBrowsing: Bool {
+        browser.withLock { $0 != nil }
+    }
+
+    /// Finds hosts with `new` until `end()`.
+    func begin(_ new: any RemoteHostBrowsing) {
         browser.withLock { browser in
-            if browser == nil { browser = LinkBrowser() }
+            browser?.cancel()
+            browser = new
         }
     }
 

@@ -9,9 +9,10 @@ import os
 // device has a checkout of a project, which one a new session starts on, and which one each session
 // lives on (`docs/durability.md`, "Host identity and many hosts").
 extension AppModel {
-    /// Whether this run offers paired hosts at all (`RemoteHosts.isEnabled`).
+    /// Whether paired hosts are offered now: turned on for this run, and allowed by the
+    /// organization (`RemoteHostsPolicy`).
     var offersRemoteHosts: Bool {
-        RemoteHosts.isEnabled
+        hosts.isEnabled
     }
 
     /// Connects to every paired host and routes their sessions' events to the models here. Called
