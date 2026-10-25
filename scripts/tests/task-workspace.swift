@@ -240,7 +240,10 @@ private struct TaskWorkspaceRegression {
         await host.configure(fail: true)
         let failedBorrow = StartingTask(
             project: project.id, agent: runtime.agent, isAgentPicked: true, workspaceLabel: "Reuse")
-        failedBorrow.workspaceChoice = .worktree(sharedTree)
+        guard let sharedBranch = try await git.requireRepository(at: sharedTree).status().branch.name else {
+            throw Failure("shared worktree has a branch")
+        }
+        failedBorrow.workspaceChoice = .branch(sharedBranch)
         app.startingTasks.append(failedBorrow)
         await app.start(failedBorrow)
         app.discard(failedBorrow)
