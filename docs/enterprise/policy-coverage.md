@@ -21,8 +21,8 @@ and then flips its `Enforcement` to `converted`.
 | --- | --- | --- |
 | absent | Nothing managed, never enrolled in a restricted mode | Ordinary mode, user preferences and defaults |
 | valid | Every managed value read and valid | Managed values win; restricted modes apply their rules |
-| invalid | A managed value is malformed, a managed configuration isn't a dictionary, the mode is unknown, or a restricted policy has keys Native doesn't know | The malformed key fails closed; the last three lock everything optional down |
-| unavailable | The source can't be read, a forced key is shadowed by a launch argument, or a restricted policy disappeared | Everything optional denied |
+| invalid | A managed value is malformed or shadowed by a launch argument, a managed configuration isn't a dictionary, the mode is unknown, or a restricted policy has keys Native doesn't know | The bad key fails closed; the last three lock everything optional down |
+| unavailable | The source or its deployment mode can't be read, or a restricted policy disappeared | Everything optional denied |
 
 Each key reports `absent`, `valid`, `invalid` or `unavailable`, and where its effective value came
 from: `organization`, `user`, `default`, `restricted` (restricted mode's value) or `failClosed`.
