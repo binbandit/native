@@ -113,7 +113,7 @@ struct AgentStartFailureView: View {
     private func sourceWell(_ diagnostic: AgentStartDiagnostic) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(source.isEmpty ? "\(path(diagnostic)), line \(diagnostic.line)" : path(diagnostic))
-                .font(.dsCaption).foregroundStyle(.dsTextTertiary)
+                .font(.dsMonoCaption).foregroundStyle(.dsTextTertiary)
                 .padding(.leading, DS.Approval.commandInset)
                 .padding(.bottom, DS.Space.xs)
                 .textSelection(.enabled)

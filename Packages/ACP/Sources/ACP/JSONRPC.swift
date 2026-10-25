@@ -36,12 +36,11 @@ public struct RPCError: Error, Hashable, Sendable, Codable, LocalizedError {
 
     public var errorDescription: String? { message }
 
-    /// The agent's own account when it gives one: text `data` under a generic `message`, the way
-    /// codex-acp reports a configuration it can't load as "Internal error".
+    /// The agent's own account when it gives one: text `data` (or its `details`) under a generic
+    /// `message`, the way codex-acp reports a configuration it can't load as "Internal error".
     public var detail: String {
-        guard let text = data?.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else {
-            return message
-        }
+        let text = (data?.stringValue ?? data?["details"]?.stringValue)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let text, !text.isEmpty else { return message }
         return text
     }
 

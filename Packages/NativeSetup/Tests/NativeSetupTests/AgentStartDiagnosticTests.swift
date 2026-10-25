@@ -32,6 +32,32 @@ struct AgentStartDiagnosticTests {
         #expect(!diagnostic.message.contains("Check"))
     }
 
+    /// codex-acp 2.2.2's `data.details` when session/new brings MCP servers: the key, no file.
+    static let withoutFile = """
+        invalid configuration: unknown variant `on_request`, expected one of `untrusted`, `on-failure`, \
+        `on-request`, `granular`, `never`
+        in `approval_policy`
+        """
+
+    @Test func findsTheLineThatSetsTheNamedKey() throws {
+        let files = [
+            (path: "/home/.codex/config.toml", contents: "model = \"gpt-6.1-sol\"\napproval_policy = \"on_request\"\n"),
+            (path: "/work/.codex/config.toml", contents: "# approval_policy = \"on_request\" was here\n"),
+        ]
+        let diagnostic = try #require(AgentStartDiagnostic(locating: Self.withoutFile, in: files))
+        #expect(diagnostic.path == "/home/.codex/config.toml")
+        #expect(diagnostic.line == 2)
+        #expect(diagnostic.column == 19)
+        #expect(diagnostic.fixIt == AgentStartFixIt(original: "on_request", replacement: "on-request"))
+        #expect(diagnostic.fixIt?.apply(to: files[0].contents, at: diagnostic)?.contains("\"on-request\"") == true)
+    }
+
+    @Test func aKeySetInTwoPlacesIsNotGuessed() {
+        let line = "approval_policy = \"on_request\"\n"
+        #expect(AgentStartDiagnostic(locating: Self.withoutFile, in: [("/a.toml", line), ("/b.toml", line)]) == nil)
+        #expect(AgentStartDiagnostic(locating: Self.withoutFile, in: [("/a.toml", "model = \"x\"\n")]) == nil)
+    }
+
     @Test func outputWithoutALocationClaimsNothing() {
         #expect(AgentStartDiagnostic(output: "Codex exited.\n\nerror: connection reset by peer") == nil)
         #expect(AgentStartDiagnostic(output: "Internal error") == nil)

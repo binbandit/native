@@ -463,7 +463,9 @@ keycaps, the composer's field for an answer in the user's own words), answered t
 `SessionModel.answerQuestion`. A starting task that fails shows `AgentStartFailureView` above its
 kept message. `NativeSetup`'s `AgentStartDiagnostic` reads a compiler-style `path:line:column:`
 location from the agent's own report (codex-acp puts it in the JSON-RPC error's `data`, which
-`RPCError.detail` keeps), and offers a fix-it only when exactly one value the agent lists is close
+`RPCError.detail` keeps); when the report names only the setting ("unknown variant ... in
+`approval_policy`", as codex-acp words it once a task brings MCP servers), the one line of the
+agent's declared settings files that sets it stands in. It offers a fix-it only when exactly one value the agent lists is close
 to the one it rejected. The agent's path authorizes nothing: `AgentStartFile.mayRead` opens only a
 settings file the agent's plugin declares (`AgentManifest.settingsFiles`, such as Codex's
 `~/.codex/config.toml`) on this Mac, compared after symbolic links resolve, with a link required

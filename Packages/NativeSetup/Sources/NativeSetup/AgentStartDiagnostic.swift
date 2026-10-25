@@ -28,6 +28,31 @@ public struct AgentStartDiagnostic: Equatable, Sendable {
         self.init(path: String(match.1), line: line, column: column, message: String(match.4))
     }
 
+    /// For a report that names the setting but no file ("unknown variant `on_request`, expected …
+    /// in `approval_policy`", as codex-acp words it when a task brings MCP servers): the one line
+    /// in `files` that sets that key to that value. Nil when none does, or more than one could.
+    public init?(locating output: String, in files: [(path: String, contents: String)]) {
+        guard let match = output.firstMatch(of: /unknown variant `([^`]+)`[^\n]*/),
+            let key = output.firstMatch(of: /\bin `([^`]+)`/)?.1.split(separator: ".").last
+        else { return nil }
+        let value = String(match.1)
+        let message = String(match.0)
+        var found: [AgentStartDiagnostic] = []
+        for file in files {
+            let lines = file.contents.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+            for (offset, line) in lines.enumerated() {
+                let trimmed = line.drop { $0 == " " || $0 == "\t" }
+                guard trimmed.hasPrefix(key), trimmed.dropFirst(key.count).drop(while: { $0 == " " }).first == "=",
+                    let quote = ["\"\(value)\"", "'\(value)'"].lazy.compactMap({ line.range(of: $0) }).first
+                else { continue }
+                let column = line.distance(from: line.startIndex, to: quote.lowerBound) + 1
+                found.append(AgentStartDiagnostic(path: file.path, line: offset + 1, column: column, message: message))
+            }
+        }
+        guard found.count == 1, let only = found.first else { return nil }
+        self = only
+    }
+
     public var fileName: String {
         URL(filePath: path).lastPathComponent
     }
