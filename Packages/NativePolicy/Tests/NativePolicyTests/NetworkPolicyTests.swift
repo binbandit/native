@@ -95,7 +95,7 @@ import Testing
             "https://user:secret@example.com", "https://example.com?token=x", "https://example.com/#x",
             "https://example.com/path", "https://*.example.com", "https://example.com.", "http://127.1",
             "http://2130706433", "http://0177.0.0.1", "http://0x7f000001", "file:///tmp/file",
-            "https://example.com:0", "https://example.com:65536", "http://[fe80::1%25en0]",
+            "https://example.com:", "https://example.com:0", "https://example.com:65536", "http://[fe80::1%25en0]",
         ] { #expect(NetworkOrigin(text) == nil) }
     }
 }

@@ -94,6 +94,8 @@ public struct NetworkOrigin: Hashable, Sendable {
             ["https", "http", "ssh", "tcp", "udp"].contains(scheme),
             let rawHost = parts.percentEncodedHost, !rawHost.contains("%"), !rawHost.isEmpty
         else { return nil }
+        let authority = raw.dropFirst(scheme.count + 3).prefix { $0 != "/" && $0 != "?" && $0 != "#" }
+        guard !authority.hasSuffix(":") else { return nil }
         let host = rawHost.lowercased()
         let defaultPort: Int? = ["https": 443, "http": 80, "ssh": 22][scheme]
         guard let port = parts.port ?? defaultPort, (1...65535).contains(port) else { return nil }
