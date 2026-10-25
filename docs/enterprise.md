@@ -50,7 +50,7 @@ maps every key to the capabilities it governs and the code that honors it.
 | `policy.celebrations.enabled` | `false` removes the Celebrations page and command, disables its plugin contributions, and restores the usual appearance. Personal choices are retained. Defaults to `true`. |
 | `policy.organization.name` | Optional display name for managed notices, such as "Northwind Federal IT". Without it, notices describe this install without inventing an organization. |
 | `policy.labs.enabled` | Labs and experiments, including plugin experiments. |
-| `policy.companion.enabled` / `policy.remoteHosts.enabled` | Pairing devices; connecting to hosts other than this Mac. |
+| `policy.companion.enabled` / `policy.remoteHosts.enabled` | Pairing devices; connecting to hosts other than this Mac (see [remote hosts](#remote-hosts)). |
 | `policy.updates.feedURL` / `policy.updates.enabled` / `policy.updates.channels` | An internal update feed, or updates off; which channels are allowed. |
 | `policy.celebrations.downloadsEnabled` / `policy.celebrations.baseURL` | Disable celebration artwork downloads (including index and signature), or mirror Native-signed packs internally. Cached and bundled icons remain available. See [celebration artwork](celebrations-artwork.md). |
 | `policy.search.retentionDays` | How long the search index keeps tasks. |
@@ -107,9 +107,10 @@ mode:
   (`converted` in [policy coverage](enterprise/policy-coverage.md)). Today that is plugin
   activation, plugins' themes, icon sets and command knowledge, and agent icon downloads. Everything
   else is denied whatever the profile says. That denial only stops code that consults it: the
-  plugin registry, which admits plugins and hands tasks their agents and MCP servers. Other
-  unconverted features, such as updates, diagnostics, remote hosts and git, don't check it yet and
-  still act. Schema coverage is complete; consumer integration is not.
+  plugin registry, which admits plugins and hands tasks their agents and MCP servers. Elsewhere a
+  feature is off only where its own key's consumer reads the restricted value (updates, telemetry,
+  remote hosts); one without such a switch, such as git or the terminal, doesn't check the decision
+  yet and still acts. Schema coverage is complete; consumer integration is not.
 - Built-in plugins are admitted like installed ones: listed in `policy.plugins.allowed`, with every
   capability they declare permitted. A plugin that doesn't declare its capabilities stays off.
 - Keys Native doesn't know, an unknown mode, or a managed source it can't read deny everything
@@ -124,6 +125,20 @@ Restricted modes are off unless deployed, and are not ready to advertise or rely
 of Native, and don't yet stop every unconverted feature. Policy decides what Native itself starts; it isn't a sandbox for
 agents and the tools they run (see the [regulated environments plan](plans/regulated-environments.md)).
 An admin view of the effective policy, its origin and errors is a separate follow-up.
+
+### Remote hosts
+
+`policy.remoteHosts.enabled = false` turns off this Mac reaching other hosts: browsing the local
+network for paired hosts, connecting and reconnecting to them, and pairing a new one by link or over
+SSH. It wins over the user's own setting and over launch arguments. Native follows a change while it
+runs: off stops browsing, closes every connection to a paired host and ends a pairing under way,
+keeping nothing that pairing finishes afterwards. The pairings stay on this Mac, and each host's
+agents and tasks keep running there. On again reconnects each pairing once, and tasks open here pick
+up where they were. If Native started while it was off, on again takes effect at the next launch.
+
+It covers only this Mac's outbound connections. Devices pairing with this Mac go through its
+companion gateway, which `policy.companion.enabled` governs, and this Mac's own background host is
+unaffected.
 
 ## Telemetry
 

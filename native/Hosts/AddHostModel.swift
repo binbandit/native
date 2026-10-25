@@ -35,8 +35,12 @@ final class AddHostModel {
 
     @ObservationIgnored private let register: (PairedHost) -> Void
     @ObservationIgnored private let environment: () async -> [String: String]
+    /// Whether remote hosts are on, and the only way Add Host pairs.
+    @ObservationIgnored private let policy: RemoteHostsPolicy
     @ObservationIgnored private var remote: Task<Void, Never>?
     @ObservationIgnored private var work: Task<Void, Never>?
+    /// While an attempt runs: ends it as soon as remote hosts go off (`followPolicy`).
+    @ObservationIgnored private var policyWatch: Task<Void, Never>?
     /// The SSH destination of the last attempt, for Try Again; nil after a pasted link.
     @ObservationIgnored private var lastDestination: String?
 
@@ -50,10 +54,11 @@ final class AddHostModel {
     /// login shell's, which carries the user's ssh-agent.
     init(
         register: @escaping (PairedHost) -> Void, environment: @escaping () async -> [String: String],
-        input: String = "", phase: Phase = .entering, approvalPage: URL? = nil
+        input: String = "", phase: Phase = .entering, approvalPage: URL? = nil, policy: RemoteHostsPolicy = .app
     ) {
         self.register = register
         self.environment = environment
+        self.policy = policy
         self.input = input
         self.phase = phase
         self.approvalPage = approvalPage
@@ -68,6 +73,7 @@ final class AddHostModel {
         guard !text.isEmpty else { return }
         stop()
         lastDestination = nil
+        guard policy.isEnabled else { return fail(turnedOff) }
         if text.hasPrefix("\(PairingInvite.scheme):") {
             do {
                 offer(AddHostOffer(invite: try PairingInvite(url: text)))
@@ -87,6 +93,7 @@ final class AddHostModel {
     func pair() {
         guard case .confirming(let offer) = phase else { return }
         guard !offer.invite.isExpired(at: .now) else { return fail(.expired(host: offer.hostName)) }
+        guard policy.isEnabled else { return fail(turnedOff) }
         phase = .pairing(offer)
         progress = nil
         var device = RemoteHosts.deviceInfo
@@ -94,24 +101,27 @@ final class AddHostModel {
         let invite = offer.invite
         let tried = invite.addresses.filter { $0.port != nil }.map(\.label).joined(separator: ", ")
         work?.cancel()
-        work = Task { [weak self] in
+        followPolicy()
+        work = Task { [weak self, policy] in
             do {
-                let (paired, channel) = try await LinkPairing.pair(
-                    credential: .invite(invite), endpoints: LinkPairing.endpoints(for: invite, discovered: []),
-                    device: device, installationSecret: RemoteHosts.installationSecret,
-                    log: { entry in Task { @MainActor in self?.progress = entry.message } },
+                let paired = try await policy.pair(
+                    invite, as: device, log: { entry in Task { @MainActor in self?.progress = entry.message } },
                     awaitingConfirmation: { code in
                         Task { @MainActor in
                             self?.progress = "Choose Pair on \(offer.hostName), where it shows \(code.description)."
                         }
                     })
-                // The hosts model connects on its own, as for every later launch.
-                channel.close()
+                // Stopped meanwhile (Edit, the sheet closing, remote hosts going off): nothing is kept.
+                guard !Task.isCancelled else { return }
                 self?.paired(paired, offer: offer)
             } catch is CancellationError {
                 return
             } catch {
-                self?.fail(.pairing(error, host: offer.hostName, tried: tried.isEmpty ? "no address" : tried))
+                guard !Task.isCancelled, let self else { return }
+                fail(
+                    error is RemoteHostsPolicy.TurnedOff
+                        ? turnedOff : .pairing(error, host: offer.hostName, tried: tried.isEmpty ? "no address" : tried)
+                )
             }
         }
     }
@@ -155,6 +165,8 @@ final class AddHostModel {
         remote = nil
         work?.cancel()
         work = nil
+        policyWatch?.cancel()
+        policyWatch = nil
     }
 
     // MARK: - Steps
@@ -191,16 +203,43 @@ final class AddHostModel {
         stop()
         lastDestination = destination
         approvalPage = nil
+        guard policy.isEnabled else { return fail(turnedOff) }
         phase = .reaching(destination: destination)
-        remote = Task { [weak self, environment] in
-            let updates = LinkSSHPairing.pair(
-                destination: destination, grants: Self.sshOffer, appName: Bundle.main.bundleURL.lastPathComponent,
-                environment: await environment(), ssh: AddHostTesting.sshExecutable)
+        followPolicy()
+        remote = Task { [weak self, environment, policy] in
+            let environment = await environment()
+            // Off meanwhile: the policy watch says so.
+            guard !Task.isCancelled,
+                let updates = policy.pairOverSSH(destination, offering: Self.sshOffer, environment: environment)
+            else { return }
             for await update in updates {
                 self?.receive(update, from: destination)
             }
         }
         #endif
+    }
+
+    /// Ends the attempt under way as soon as remote hosts go off (the organization's policy): ssh
+    /// stops, which closes the host's pairing window, and pairing stops, keeping nothing it finishes.
+    private func followPolicy() {
+        guard policyWatch == nil else { return }
+        policyWatch = Task { [weak self, policy] in
+            for await isEnabled in policy.changes where !isEnabled {
+                self?.policyTurnedOff()
+                return
+            }
+        }
+    }
+
+    private func policyTurnedOff() {
+        switch phase {
+        case .reaching, .confirming, .pairing: fail(turnedOff)
+        case .entering, .paired, .failed: stop()
+        }
+    }
+
+    private var turnedOff: AddHostFailure {
+        .unexpected(policy.offReason)
     }
 
     #if os(macOS)
@@ -261,11 +300,8 @@ final class AddHostModel {
     }
 
     private func fail(_ failure: AddHostFailure) {
-        work?.cancel()
-        work = nil
         // Nothing more will come of the remote command; ending it closes the host's window.
-        remote?.cancel()
-        remote = nil
+        stop()
         phase = .failed(failure)
         progress = nil
     }

@@ -9,8 +9,9 @@ This is schema coverage: every key and capability has a typed, managed decision 
 validity. It is not enforcement coverage. A capability marked **unconverted** below has owners that
 don't consult its decision yet: ordinary mode keeps today's behavior there (the key's own consumer,
 where one exists), and restricted modes report it disabled whatever the policy says. That decision
-only stops what consults it (plugin admission, and the registry's agents and MCP servers); an
-unconverted owner's own entry points still act, so restricted modes aren't enforced there yet.
+only stops what consults it (plugin admission, and the registry's agents and MCP servers), plus
+whatever a key's own consumer turns off with the key's restricted value. An unconverted owner
+without such a switch still acts, so restricted modes aren't enforced there yet.
 Converting one is a separate change per feature that makes its owners check
 `NativePolicy.decision(for:)` before acting and then flips its `Enforcement` to `converted`.
 

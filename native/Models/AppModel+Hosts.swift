@@ -9,9 +9,10 @@ import os
 // device has a checkout of a project, which one a new session starts on, and which one each session
 // lives on (`docs/durability.md`, "Host identity and many hosts").
 extension AppModel {
-    /// Whether this run offers paired hosts at all (`RemoteHosts.isEnabled`).
+    /// Whether paired hosts are offered now: turned on for this run, and allowed by the
+    /// organization (`RemoteHostsPolicy`).
     var offersRemoteHosts: Bool {
-        RemoteHosts.isEnabled
+        hosts.isEnabled
     }
 
     /// Connects to every paired host and routes their sessions' events to the models here. Called
@@ -26,7 +27,7 @@ extension AppModel {
         hosts.onRefreshed = { [weak self] host in
             Task { await self?.hostConnected(host) }
         }
-        launcher.isRemote = { [hosts] client in hosts.all.contains { $0.client === client } }
+        launcher.isRemote = { [hosts] client in hosts.hostID(of: client) != nil }
         hosts.start()
     }
 
@@ -64,12 +65,12 @@ extension AppModel {
         return remotePlace(of: session).map { .remote($0.host.id) } ?? .thisMac
     }
 
-    /// Where a remote session lives: `(HostID, HostSessionID)`. Nil for this Mac's sessions.
+    /// Where a remote session lives: `(HostID, HostSessionID)`. Nil for this Mac's sessions. An open
+    /// task's client says which host it's on, even a client retired while the task waits for the
+    /// host's next one: a task on another machine never passes for this Mac's.
     func remoteSession(_ key: SessionKey) -> RemoteSessionRef? {
-        if let link = sessions.session(key)?.host,
-            let host = hosts.all.first(where: { $0.client === link.client })
-        {
-            return RemoteSessionRef(host: host.id, session: link.id)
+        if let link = sessions.session(key)?.host, let host = hosts.hostID(of: link.client) {
+            return RemoteSessionRef(host: host, session: link.id)
         }
         for host in hosts.all {
             if let summary = host.sessions.first(where: {
