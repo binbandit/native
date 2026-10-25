@@ -49,7 +49,7 @@ struct TaskPairComparePage: View {
                             content: TaskWellContent(
                                 status: .idle, agent: "", verb: "Comparing",
                                 object: order.map(model.taskPairAgentName).joined(separator: " and "),
-                                exitKey: "esc"))
+                                objectIsCode: false, exitKey: "esc"))
                     }
                     .buttonStyle(.plain)
                     .help("Back to the task (Escape)")

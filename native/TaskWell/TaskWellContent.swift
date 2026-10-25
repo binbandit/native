@@ -8,6 +8,8 @@ struct TaskWellContent: Equatable {
     var agent: String
     var verb: String = ""
     var object: String?
+    /// The object is code (a file, a command), set in code type; names (agents) aren't.
+    var objectIsCode = true
     var progress: TaskActivityNarration.Progress?
     var outcome: TurnSummary?
     var showsReview = false

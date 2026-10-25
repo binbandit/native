@@ -76,7 +76,7 @@ struct TaskWellLabel: View {
                 .fixedSize()
             if let object = content.object {
                 Text(object)
-                    .font(content.isWaiting ? .dsBody : DS.TaskWell.object)
+                    .font(content.isWaiting || !content.objectIsCode ? .dsBody : DS.TaskWell.object)
                     .foregroundStyle(content.isWaiting ? .dsTextSecondary : .dsTextPrimary)
                     .lineLimit(1)
                     .truncationMode(.middle)

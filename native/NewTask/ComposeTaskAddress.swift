@@ -91,11 +91,12 @@ struct ComposeTaskAddress: View {
                         .foregroundStyle(.dsTextTertiary)
                 } else if let second = compose.second {
                     // Each agent gets a worktree of its own; nothing to choose.
-                    VStack(alignment: .leading, spacing: DS.Space.xs) {
+                    VStack(alignment: .leading, spacing: 0) {
                         ownWorktree(for: model.quickEntryRuntime?.agent.displayName ?? "The first agent")
                         ownWorktree(for: model.plugins.agent(second.agent)?.displayName ?? second.agent.rawValue)
                     }
-                    .frame(minHeight: DS.ComposeTask.rowHeight)
+                    // The first line centers on the label's row, as a single line would.
+                    .padding(.vertical, (DS.ComposeTask.rowHeight - DS.ComposeTask.tokenHeight) / 2)
                 } else {
                     Button {
                         compose.beginWorkspaceSelection()
@@ -158,6 +159,7 @@ struct ComposeTaskAddress: View {
             Text("new branch").font(.dsMono)
             Text("\(agent)'s own worktree").foregroundStyle(.dsTextTertiary)
         }
+        .frame(height: DS.ComposeTask.tokenHeight)
         .accessibilityElement(children: .combine)
     }
 
