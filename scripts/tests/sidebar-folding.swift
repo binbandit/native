@@ -40,7 +40,7 @@ private struct SidebarFoldingChecks {
             "Renaming an expanded earlier row keeps its position")
         app.renaming = nil
         folding.setExpanded(project.id, false)
-        check(listing(TaskFilter(statuses: [.idle])).order.contains(old), "Filters expose old matches")
+        check(listing(TaskFilter(statuses: [.done])).order.contains(old), "Filters expose old matches")
         app.sidebarPreferences.setFoldAfter(.week)
         check(listing().order.contains(old), "A week keeps yesterday visible")
         app.sidebarPreferences.setFoldAfter(.never)
