@@ -16,11 +16,20 @@ struct GitChangesInspector: View {
     /// Opens the GitHub feature's pull request flow; the button is hidden without it.
     var onCreatePullRequest: (() -> Void)?
 
+    @Environment(\.gitChangesCompact) private var compact
     @State private var isCommitting = false
     @State private var pendingDiscard: [FileChange] = []
 
     var body: some View {
         VStack(spacing: 0) {
+            if compact {
+                GitChangesHeader(
+                    model: model, isCommitting: $isCommitting,
+                    fileMenu: AnyView(
+                        GitChangesFileMenu(model: model, review: review, scope: review.map(scopeBinding))),
+                    onCreatePullRequest: onCreatePullRequest)
+                SeparatorLine()
+            }
             switch model.state {
             case .loading:
                 DotGridLoader(pattern: .settingUp)
@@ -68,11 +77,13 @@ struct GitChangesInspector: View {
     }
 
     @ViewBuilder private var ready: some View {
-        GitChangesHeader(model: model, isCommitting: $isCommitting, onCreatePullRequest: onCreatePullRequest)
-        SeparatorLine()
-        if let review {
-            GitChangesScopePicker(scope: scopeBinding(review))
+        if !compact {
+            GitChangesHeader(model: model, isCommitting: $isCommitting, onCreatePullRequest: onCreatePullRequest)
             SeparatorLine()
+            if let review {
+                GitChangesScopePicker(scope: scopeBinding(review))
+                SeparatorLine()
+            }
         }
         noticeBanner
         switch review?.scope ?? .uncommitted {
@@ -98,19 +109,23 @@ struct GitChangesInspector: View {
             if !status.conflicted.isEmpty {
                 conflictsBanner(count: status.conflicted.count)
             }
-            summary(status)
-            SeparatorLine()
-            // The list takes what it needs, up to a share of the column, and the diff the rest.
-            GeometryReader { proxy in
-                VStack(spacing: 0) {
-                    GitChangeList(model: model, pendingDiscard: $pendingDiscard)
-                        .frame(
-                            height: min(
-                                GitChangeList.contentHeight(for: status),
-                                max(proxy.size.height * GitMetrics.listShare, GitMetrics.listMinHeight)))
-                    SeparatorLine()
-                    // Reads the selection and its diff itself, so a diff arriving redraws only the pane.
-                    GitDiffPane(model: model)
+            if compact {
+                GitDiffPane(model: model)
+            } else {
+                summary(status)
+                SeparatorLine()
+                // The list takes what it needs, up to a share of the column, and the diff the rest.
+                GeometryReader { proxy in
+                    VStack(spacing: 0) {
+                        GitChangeList(model: model, pendingDiscard: $pendingDiscard)
+                            .frame(
+                                height: min(
+                                    GitChangeList.contentHeight(for: status),
+                                    max(proxy.size.height * GitMetrics.listShare, GitMetrics.listMinHeight)))
+                        SeparatorLine()
+                        // Reads the selection and its diff itself, so a diff arriving redraws only the pane.
+                        GitDiffPane(model: model)
+                    }
                 }
             }
         } else {
@@ -226,6 +241,22 @@ struct GitChangesInspector: View {
     DSPreviewPair {
         GitChangesInspector(model: GitPreviewFixtures.cleanModel, onCreatePullRequest: {})
             .frame(width: GitMetrics.inspectorIdealWidth, height: 480)
+    }
+}
+#endif
+
+#if DEBUG
+#Preview("Narrow Changes - Populated and clean") {
+    DSPreviewPair {
+        ForEach([false, true], id: \.self) { clean in
+            GitChangesInspector(
+                model: clean ? GitPreviewFixtures.cleanModel : GitPreviewFixtures.model, review: GitChangesReview()
+            )
+            .environment(\.gitChangesCompact, true)
+            .environment(\.gitChangesNeutralMarkers, true)
+            .environment(\.gitChangesClose, GitChangesDismissal {})
+            .frame(width: DS.TaskWell.panelWidth, height: DS.TaskWell.panelWidth)
+        }
     }
 }
 #endif

@@ -29,7 +29,8 @@ enum SessionChangesTool {
                         resetsReviewOnDisappear: false
                     ) {
                         Task { await GitHubGitWiring.createPullRequest(from: repository, gitHub: gitHub) }
-                    })
+                    }
+                    .environment(\.gitChangesNeutralMarkers, context.screen.hasWell))
             },
             help: { isOpen in
                 CommandRegistry.shared.help(isOpen ? "Hide Changes" : "Show Changes", for: .sessionToolChanges)

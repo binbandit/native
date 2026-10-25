@@ -370,6 +370,10 @@ new-tab and hide commands in the workbench under the composer.
 | ⌥⌘5 | Pull request | View ▸ Tools | `taskWell.pullRequest` |
 | Escape | Close the well and return focus to the task | | |
 
+With The well enabled, narrow Changes replaces the conversation and keeps the composer below.
+Escape, or the esc key in its header, returns to the conversation. The file pop-up also chooses
+This Turn, Uncommitted or Branch. Its diff quotes selected lines the same way as every other diff.
+
 With Task Tools enabled in Settings ▸ Labs (off by default), the Changes fact under the title
 opens the changes panel. It docks beside a wide conversation and overlays a narrow one.
 
