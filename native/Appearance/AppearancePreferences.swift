@@ -37,6 +37,33 @@ extension View {
     }
 }
 
+extension View {
+    /// While Try On runs, this window shows the tried code themes and backgrounds instead of the
+    /// user's. Put it just inside `appearancePreferences(plugins:)`, whose values it overrides.
+    func themeTryOnPreview(_ tryOn: ThemeTryOnModel) -> some View {
+        modifier(ThemeTryOnPreviewModifier(tryOn: tryOn))
+    }
+}
+
+/// Overrides rather than branches, so starting and ending Try On keeps every view's state.
+private struct ThemeTryOnPreviewModifier: ViewModifier {
+    let tryOn: ThemeTryOnModel
+
+    func body(content: Content) -> some View {
+        let trial = tryOn.trial
+        content
+            .transformEnvironment(\.dsCodeThemes) { themes in
+                if let trial { themes = DSCodeThemes(light: trial.shown(.light), dark: trial.shown(.dark)) }
+            }
+            .transformEnvironment(\.dsLightTone) { tone in
+                if let trial { tone = trial.tried.backgrounds.light }
+            }
+            .transformEnvironment(\.dsDarkTone) { tone in
+                if let trial { tone = trial.tried.backgrounds.dark }
+            }
+    }
+}
+
 private struct AppearancePreferencesModifier: ViewModifier {
     let plugins: PluginRegistry
 

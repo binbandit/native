@@ -619,6 +619,20 @@ them one in Settings ▸ Keyboard Shortcuts.
 | | Follow the system's light or dark appearance | View | `appearance.system` |
 | | Light | View | `appearance.light` |
 | | Dark | View | `appearance.dark` |
+| | Try on code themes on the task in view (from Settings or Home, the latest task with changes) | View | `appearance.tryOn` |
+
+Try On (Settings ▸ Appearance ▸ Try On…, or View ▸ Appearance ▸ Try On Themes…) turns the sidebar into
+the theme list and recolors the window as the highlight moves. Focus starts in the list, on the theme
+in use. It's unavailable while an organization sets the code theme.
+
+| Keys | Action |
+| --- | --- |
+| ↑ / ↓ | Highlight the previous or next theme, and show it |
+| Home / End | Highlight the first or last theme |
+| ← / → | List Dark mode's or Light mode's themes (the window shows that mode meanwhile) |
+| Typing a name | Highlight the first theme it starts ("to" for Tokyo Night) |
+| Return | Keep the highlighted themes and backgrounds, and go back |
+| Escape, ⌘. | Cancel: write nothing and go back (from anywhere in the window) |
 
 ## Ownership
 

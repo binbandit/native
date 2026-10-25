@@ -21,3 +21,17 @@ extension DS {
         static let lockWidth: CGFloat = 340
     }
 }
+
+extension DS {
+    /// Try On's panel, in the sidebar's column.
+    enum TryOn {
+        static let rowHeight: CGFloat = 30
+        static let rowGap: CGFloat = 10
+        static let headerLeading: CGFloat = 18
+        static let subtitleGap: CGFloat = 3
+        static let controlInset: CGFloat = 14
+        static let controlGap: CGFloat = 10
+        static let sectionGap: CGFloat = 14
+        static let footerBottom: CGFloat = 14
+    }
+}

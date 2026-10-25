@@ -43,6 +43,8 @@ struct AppearanceCommands: Commands {
                 ForEach(AppearanceMode.allCases) { mode in
                     CommandMenuItem(mode.commandID, in: menu, title: mode.title)
                 }
+                Divider()
+                CommandMenuItem(.appearanceTryOn, in: menu)
             }
         }
     }

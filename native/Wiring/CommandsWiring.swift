@@ -15,6 +15,7 @@ enum CommandsWiring {
         let updates: UpdateController
         let whatsNew: WhatsNewCenter
         let appearance: AppearanceModeController
+        let tryOn: ThemeTryOnModel
         let pullRequestTasks: PullRequestTaskOpener
         let shortcutsHelp: KeyboardShortcutsHelp
         let gitCleanup: GitCleanupCenter
@@ -64,6 +65,7 @@ enum CommandsWiring {
         registry.register(NativeCommand.automation(BuiltInPlugins.automation.center))
         registry.register(NativeCommand.windowView)
         registry.register(NativeCommand.appearance(features.appearance))
+        registry.register([.themeTryOn(features.tryOn)])
         registry.register([.gitChanges, .keepAwake(features.keepAwake), .statusBar(features.statusBar)])
         registry.register(NativeCommand.sessionTools)
         registry.register(NativeCommand.taskWell)

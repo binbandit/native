@@ -569,7 +569,15 @@ so later edits from another task cannot be attributed to the completed one. Sear
 are skipped. `SpecimenSource` selects completed task snapshots; `SpecimenLine`
 in `Packages/CodeThemes` scores highlighted added lines, filters every displayed line and metadata for
 secret patterns, and falls back to a language sample. The excerpt stays in memory and is not logged or
-persisted. The terminal line is always a sample. Try On's task preview is a later change.
+persisted. The terminal line is always a sample.
+
+Try On (`native/Appearance/TryOn`) previews themes on a task without writing them. `ThemeTrial` in
+`Packages/CodeThemes` holds what each mode shows, which mode is listed and what Keep writes; the
+window root's `themeTryOnPreview` overrides the code themes and backgrounds from it, just inside
+`appearancePreferences(plugins:)`, and `AppearanceModeController.preview(_:)` shows the other mode
+without saving it. `ThemeTryOnModel` opens the task (the latest one with captured changes from
+Settings, the one in view from View ▸ Appearance, or a read-only sample), puts its panel in the
+sidebar's column, and returns there on Keep or Cancel. It never sends to or changes a task.
 
 ### Credential ownership
 
