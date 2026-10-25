@@ -18,7 +18,7 @@ enum TaskWellTool: CaseIterable, Identifiable {
         switch self {
         case .changes: "plus.forwardslash.minus"
         case .terminal: "terminal"
-        case .dev: "play.fill"
+        case .dev: "play"
         case .subagents: "person.2"
         case .pullRequest: "arrow.triangle.pull"
         }

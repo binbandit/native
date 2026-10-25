@@ -80,17 +80,13 @@ struct TaskWellToolsPanel<Destination: View>: View {
         .padding(.horizontal, DS.Space.xl)
     }
 
+    /// One line: the branch's middle gives way before the administrator's name does.
     private var footer: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: DS.Space.sm) {
-                checkout
-                Spacer(minLength: DS.Space.md)
-                management
-            }
-            VStack(alignment: .leading, spacing: DS.Space.sm) {
-                checkout
-                management
-            }
+        HStack(spacing: DS.Space.sm) {
+            checkout
+            Spacer(minLength: DS.Space.md)
+            management
+                .layoutPriority(1)
         }
         .font(DS.TaskWell.caption)
         .foregroundStyle(.dsTextTertiary)
@@ -116,8 +112,7 @@ struct TaskWellToolsPanel<Destination: View>: View {
     @ViewBuilder private var management: some View {
         if let management = identity.management {
             Label(management, systemImage: "lock")
-                .font(.dsCaption)
-                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(1)
         }
     }
 
