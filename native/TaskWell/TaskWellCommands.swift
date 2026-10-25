@@ -16,6 +16,8 @@ extension NativeCommand {
             NativeCommand(tool.command, title: "Show \(tool.title)", category: .view, systemImage: tool.symbol) {
                 $0.sessionTools?.performWellTool(tool)
             }
-            .available { $0.sessionTools?.wellToolAvailable(tool) == true }
+            .available {
+                $0.sessionTools?.wellToolAvailable(tool) == true && $0.sessionTools?.wellToolEnabled(tool) == true
+            }
         }
 }

@@ -194,7 +194,7 @@ struct AgentCLITests {
     @Test func signsInThroughTheAgent() throws {
         let entry = ConfiguredServer(server: remote, format: .codex, scope: .user, source: URL(filePath: "/c"))
         let command = try AgentCLI.signIn(entry).get()
-        #expect(command.displayText == "codex mcp login docs")
+        #expect(command.displayText == "codex mcp login docs --no-browser")
         #expect(command.command(environment: [:]).timeout == .seconds(300))
         let local = ConfiguredServer(server: stdio, format: .claudeCode, scope: .user, source: URL(filePath: "/c"))
         #expect(throws: AgentCLIUnavailable.self) { try AgentCLI.signIn(local).get() }

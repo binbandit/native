@@ -2,6 +2,7 @@ import ACP
 import Experiments
 import Foundation
 import NativeCommands
+import SwiftUI
 
 @testable import Native
 
@@ -11,6 +12,7 @@ private struct TaskPeekChecks {
     static func main() async throws {
         try await checkRecovery()
         try checkQuestionNavigation()
+        try await checkAttentionList()
         let defaults = PreviewUserDefaults()
         let app = AppModel(
             plugins: PluginRegistry(builtIns: [BuiltInPlugins.codex], defaults: defaults),
@@ -51,6 +53,10 @@ private struct TaskPeekChecks {
         await app.answerOldestTaskAsk()
         require(app.taskPeek.request?.task == destructive.key, "Destructive shortcut opens Peek")
         require(destructive.permissionRequests.count == 1, "Destructive shortcut sends no approval")
+        let presentation = app.taskPeek.request?.id
+        await app.answerOldestTaskAsk()
+        require(
+            app.taskPeek.request?.id == presentation, "Repeating review preserves the open Peek and its instruction")
 
         let stale = try firstAsk(app, destructive.key)
         let option = try allow(stale)
@@ -83,20 +89,101 @@ private struct TaskPeekChecks {
         require(routine.permissionRequests.isEmpty, "Late permission is answered")
         require(app.taskPeek.request == nil, "Answer closes Peek when its ask arrived after opening")
 
-        app.taskPeek.request = .init(task: routine.key, ask: nil)
-        let question = try JSONDecoder().decode(
-            CreateElicitationRequest.self,
-            from: Data(
-                #"{"sessionId":"routine","message":"Use the template?","mode":"form","requestedSchema":{"type":"object","properties":{}}}"#
-                    .utf8))
-        routine.requestQuestion(question, id: .int(99))
-        let questionAsk = try firstAsk(app, routine.key)
-        await app.answerTaskQuestion(questionAsk, content: [:])
-        require(routine.pendingQuestion == nil, "Late question is answered")
-        require(app.taskPeek.request == nil, "Answer closes a late question Peek")
         print(
             "PASS: gate, shortcut ownership, global routing, recovery drafts, question navigation, stale and late asks"
         )
+    }
+
+    static func checkAttentionList() async throws {
+        let defaults = PreviewUserDefaults()
+        let app = AppModel(
+            plugins: PluginRegistry(builtIns: [BuiltInPlugins.codex], defaults: defaults),
+            defaults: defaults, catalogURL: nil,
+            experiments: ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage()))
+        _ = app.runtimes.sync()
+        let project = app.projects.add(URL(filePath: "/fixture/attention"))
+        let current = try session("current", in: app, project: project)
+        let waiting = try session("waiting", in: app, project: project)
+        let failed = try session("failed", in: app, project: project)
+        failed.phase = .disconnected
+        waiting.previewPermissionRequest(command: "swift test", at: .now.addingTimeInterval(-60))
+        let child = waiting.addSubagent(SessionID("child"))
+        app.sessions.register(child)
+        child.previewPermissionRequest(command: "git status", at: .now.addingTimeInterval(-120))
+        app.selection = current.key
+        current.draft = "Keep reading here."
+        require(
+            app.tasksNeedingAttention.map(\.id) == [waiting.key, failed.key], "Count tasks once, asks before failures")
+        require(app.tasksNeedingAttention.first?.ask?.session === child, "The row keeps the oldest child's owner")
+        guard let focus = NativeCommand.composer.first(where: { $0.id == .composerFocus }) else {
+            throw MissingFixture()
+        }
+        var wantsInstructionFocus = false
+        let instructionFocus = Binding(get: { wantsInstructionFocus }, set: { wantsInstructionFocus = $0 })
+        let peekContext = CommandContext(session: current, taskPeekInstructionFocus: instructionFocus)
+        require(focus.isAvailable(peekContext), "The visible Peek offers Focus Composer")
+        focus.perform(peekContext)
+        require(
+            wantsInstructionFocus && !current.wantsComposerFocus && !child.wantsComposerFocus,
+            "Focus goes to the visible child-owned instruction, not either task's composer")
+        require(
+            app.selection == current.key && current.draft == "Keep reading here.",
+            "Instruction focus preserves the current task and draft")
+        wantsInstructionFocus = false
+        let homeContext = CommandContext(taskPeekInstructionFocus: instructionFocus)
+        require(focus.isAvailable(homeContext), "Peek offers instruction focus on Home without an active task")
+        focus.perform(homeContext)
+        require(wantsInstructionFocus, "Home routes focus to the shown instruction")
+        focus.perform(CommandContext(session: current))
+        require(current.wantsComposerFocus, "Closing Peek restores normal composer focus")
+        require(!focus.isAvailable(CommandContext()), "Home without Peek has no composer to focus")
+        current.wantsComposerFocus = false
+        app.showTasksNeedingAttention()
+        require(!app.taskPeek.showsAttentionList, "Default gate blocks the collapsed list")
+        app.experiments.set(true, for: .sidebarNext)
+        app.showTasksNeedingAttention()
+        require(app.taskPeek.showsAttentionList, "The count opens the list")
+        app.peekTask(waiting.key, ask: app.tasksNeedingAttention.first?.ask)
+        require(
+            app.selection == current.key && current.draft == "Keep reading here.",
+            "List Peek preserves the task and draft")
+        guard let ask = app.taskPeek.request?.ask else { throw MissingFixture() }
+        await app.answerTaskAsk(ask, option: try allow(ask))
+        require(
+            child.permissionRequests.isEmpty && waiting.permissionRequests.count == 1,
+            "List answer reaches only its owner")
+        require(app.taskPeek.request == nil && app.taskPeek.showsAttentionList, "Answer returns to the remaining list")
+        app.peekTask(waiting.key)
+        app.closeTasksNeedingAttention()
+        require(app.taskPeek.request == nil && !app.taskPeek.showsAttentionList, "Dismissing the list closes its Peek")
+        failed.phase = .idle
+        require(app.tasksNeedingAttention.map(\.id) == [waiting.key], "Recovered failures disappear")
+        app.archivedSessions.set(waiting.key, archived: true)
+        require(app.tasksNeedingAttention.isEmpty, "Archived asks stay out of the count")
+        app.showTasksNeedingAttention()
+        require(!app.taskPeek.showsAttentionList, "Nothing needs you leaves no list")
+        app.archivedSessions.set(waiting.key, archived: false)
+        app.showTasksNeedingAttention()
+        app.peekTask(waiting.key)
+        app.openPeekedTask(waiting.key)
+        require(app.selection == waiting.key && !app.taskPeek.showsAttentionList, "Open Task closes the list")
+        waiting.phase = .prompting
+        let instructionAsk = try firstAsk(app, waiting.key)
+        app.peekTask(waiting.key, ask: instructionAsk)
+        try await app.instructTaskAsk(instructionAsk, text: "Run only the focused tests.")
+        require(waiting.permissionRequests.isEmpty, "The instruction declines its captured request")
+        require(!waiting.queuedPrompts.isEmpty, "The instruction is secured in the task queue")
+        require(
+            app.taskPeek.request == nil && !app.taskPeek.isAnswering,
+            "The instruction closes Peek and releases the guard")
+        let queued = waiting.queuedPrompts.count
+        do {
+            try await app.instructTaskAsk(instructionAsk, text: "Do not send this stale instruction.")
+            require(false, "Stale instructions must fail")
+        } catch {
+            require(waiting.queuedPrompts.count == queued, "A stale instruction leaves the queue alone")
+        }
+        print("PASS: collapsed count, child ownership, gate, selection, draft, resolution, recovery and archive")
     }
 
     static func checkRecovery() async throws {
@@ -139,6 +226,19 @@ private struct TaskPeekChecks {
         require(app.selection == current.key, "Peek recovery keeps the selected task")
         await app.loadSession(background.key)
         require(app.session(background.key)?.draft == background.draft, "Recovery retains drafts until a later reopen")
+
+        // This success check uses the live local transport; an unopened preview connection cannot send an answer.
+        app.taskPeek.request = .init(task: current.key, ask: nil)
+        let question = try JSONDecoder().decode(
+            CreateElicitationRequest.self,
+            from: Data(
+                #"{"sessionId":"current","message":"Use the template?","mode":"form","requestedSchema":{"type":"object","properties":{}}}"#
+                    .utf8))
+        reopened.requestQuestion(question, id: .int(99))
+        let questionAsk = try firstAsk(app, current.key)
+        await app.answerTaskQuestion(questionAsk, content: [:])
+        require(reopened.pendingQuestion == nil, "Late question is answered")
+        require(app.taskPeek.request == nil, "Answer closes a late question Peek")
     }
 
     static func checkQuestionNavigation() throws {
@@ -164,9 +264,17 @@ private struct TaskPeekChecks {
     ) throws -> SessionModel {
         let agent = AgentDefinition.ID(rawValue: name)
         app.catalog.add(SessionInfo(sessionId: SessionID(id), cwd: project.path, title: id), for: agent, in: project.id)
-        guard let session = SessionModel.preview(in: app, agent: name, id: id, cwd: project.path) else {
-            throw MissingFixture()
-        }
+        // Recovery closes its transport. Each fixture owns its handles so later delivery checks
+        // cannot inherit FileHandle.nullDevice after that shared handle has been closed.
+        guard let definition = app.runtime(agent)?.agent,
+            let input = FileHandle(forReadingAtPath: "/dev/null"),
+            let output = FileHandle(forWritingAtPath: "/dev/null")
+        else { throw MissingFixture() }
+        let connection = ACPConnection(reading: input, writing: output) { _ in }
+        let session = SessionModel(
+            agent: definition, id: SessionID(id), cwd: project.url, connection: connection,
+            services: app.sessions.services, supportsSteering: false, phase: .idle)
+        app.sessions.register(session)
         return session
     }
 

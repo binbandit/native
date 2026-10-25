@@ -59,6 +59,16 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
         }
     }
 
+    /// The well's Terminal row selects a shell; Dev owns the job tabs in the same workbench.
+    func showShell() {
+        if let tab = tabs.tabs.first(where: { $0.job == nil }) {
+            isVisible = true
+            select(tab.id)
+        } else {
+            newTab()
+        }
+    }
+
     /// Hides the panel; its shells keep running.
     func hide() {
         let hadFocus = isFocused

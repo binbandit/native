@@ -1,3 +1,4 @@
+import ApprovalAnalysis
 import CodeThemes
 import Foundation
 
@@ -12,6 +13,13 @@ public enum PolicyLoader {
             .appearanceCodeTheme, expecting: "a built-in code theme id", PolicyParse.codeTheme)
         policy.appearanceCodeThemeReason = resolver.resolve(
             .appearanceCodeThemeReason, expecting: "a non-empty string", PolicyParse.text)
+        policy.commandKnowledge =
+            resolver.resolve(
+                .commandKnowledge, expecting: "a command knowledge JSON document", PolicyParse.commandKnowledge)
+            ?? .init()
+        policy.unknownCommandCountsEnabled =
+            resolver.resolve(
+                .unknownCommandCounts, expecting: "a Boolean", PolicyParse.bool) ?? true
         policy.agents.allowed = resolver.resolve(
             .agentsAllowed, expecting: "an array of agent ids", PolicyParse.stringSet)
         policy.agents.environment =
@@ -79,6 +87,7 @@ public enum PolicyLoader {
                 PolicyParse.endpoints) ?? []
         policy.managedKeys = resolver.managedKeys
         policy.diagnostics = resolver.diagnostics + unknownKeys(in: source)
+        loadNetwork(from: source, into: &policy)
         return policy
     }
 
@@ -87,6 +96,8 @@ public enum PolicyLoader {
         let known = Set(PolicyKey.allCases.map(\.rawValue))
         return (source.managedKeys ?? [])
             .filter { $0.hasPrefix(PolicyKey.prefix) && !known.contains($0) }
+            // Network parsing reports these without echoing untrusted configuration keys.
+            .filter { !$0.hasPrefix("policy.network.") && !$0.hasPrefix("policy.deployment.") }
             .sorted()
             .map { PolicyDiagnostic(key: $0, origin: .organization, problem: "isn't a Native policy key") }
     }
@@ -146,6 +157,13 @@ enum PolicyParse {
     static func codeTheme(_ raw: Any, _ problems: inout [String]) -> String? {
         guard let id = raw as? String, CodeTheme.theme(id: .init(rawValue: id)) != nil else { return nil }
         return id
+    }
+
+    static func commandKnowledge(_ raw: Any, _ problems: inout [String]) -> CommandKnowledge? {
+        guard let json = raw as? String else { return nil }
+        let knowledge = CommandKnowledge.load(Data(json.utf8))
+        problems += knowledge.problems
+        return knowledge
     }
 
     static func bool(_ raw: Any, _ problems: inout [String]) -> Bool? {

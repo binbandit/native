@@ -53,6 +53,13 @@
             <key>policy.organization.contact</key><string>#it-help</string>
             <key>policy.appearance.codeTheme</key><string>native</string>
             <key>policy.appearance.codeTheme.reason</key><string>Consistent code colors on managed devices.</string>
+
+            <!-- Local command knowledge and coverage diagnostics. No network or command execution. -->
+            <key>policy.approvals.knowledge</key>
+            <string>{"version":1,"programs":[],"locations":[]}</string>
+            <key>policy.approvals.countUnknownPrograms</key>
+            <false/>
+
             <!-- Agent ids that may be listed or started. -->
             <key>policy.agents.allowed</key>
             <array>
@@ -230,6 +237,40 @@
                     </dict>
                 </dict>
             </array>
+
+            <!-- Network admission (docs/enterprise/network-admission.md), which only agent icons use
+                 so far. ordinary keeps today's behavior; internalOnly allows only the services and
+                 exact origins listed here; airGapped denies every off-machine origin. Unlike the keys
+                 above, a value Native can't use denies network access instead of being ignored. This
+                 points agent icons at an internal mirror. -->
+            <key>policy.deployment.mode</key>
+            <string>ordinary</string>
+            <key>policy.network</key>
+            <dict>
+                <key>services</key>
+                <dict>
+                    <key>icons.index</key>
+                    <dict>
+                        <key>enabled</key>
+                        <true/>
+                        <key>origins</key>
+                        <array>
+                            <string>https://artwork.example.com</string>
+                        </array>
+                        <key>endpoint</key>
+                        <string>https://artwork.example.com/registry.json</string>
+                    </dict>
+                    <key>icons.assets</key>
+                    <dict>
+                        <key>enabled</key>
+                        <true/>
+                        <key>origins</key>
+                        <array>
+                            <string>https://artwork.example.com</string>
+                        </array>
+                    </dict>
+                </dict>
+            </dict>
         </dict>
     </array>
 </dict>

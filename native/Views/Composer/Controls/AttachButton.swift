@@ -7,6 +7,9 @@ import UniformTypeIdentifiers
 struct AttachButton: View {
     @Binding var isPickingFiles: Bool
     let onPick: (IncomingAttachments) -> Void
+    /// Fine print owns the file importer outside its popover so the keyboard command also works closed.
+    var presentsFilePicker = true
+    var isPage = false
 
     @State private var isPickingPhotos = false
     @State private var photo: PhotosPickerItem?
@@ -26,13 +29,16 @@ struct AttachButton: View {
                 .buttonStyle(.plain)
                 .menuIndicator(.hidden)
             } else {
-                Button("Attach Files", systemImage: "plus") { isPickingFiles = true }
+                Button("Attach Files", systemImage: isPage ? "paperclip" : "plus") { isPickingFiles = true }
                     .labelStyle(.iconOnly)
                     .buttonStyle(.pill(isSquare: true))
             }
         }
         .help("Attach files… (⌘U)")
-        .fileImporter(isPresented: $isPickingFiles, allowedContentTypes: [.item], allowsMultipleSelection: true) {
+        .fileImporter(
+            isPresented: presentsFilePicker ? $isPickingFiles : .constant(false), allowedContentTypes: [.item],
+            allowsMultipleSelection: true
+        ) {
             result in
             if case .success(let urls) = result, !urls.isEmpty {
                 onPick(.files(urls))

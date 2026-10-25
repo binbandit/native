@@ -12,6 +12,7 @@ struct RootView: View {
     @Environment(\.undoManager) private var undoManager
     @Environment(\.releaseChannel) private var releaseChannel
     @State private var columnVisibility = NavigationSplitViewVisibility.all
+    @State private var contentSize = CGSize.zero
     /// The sidebar's width as the user left it. Settings replaces the split view, and a new one opens
     /// at its ideal width, so this is the ideal.
     @State private var sidebarWidth = RootSidebarWidth()
@@ -39,15 +40,22 @@ struct RootView: View {
     @Environment(UpdateController.self) private var updates: UpdateController?
     @Environment(WhatsNewCenter.self) private var whatsNew
 
+    init(initialSidebarVisibility: NavigationSplitViewVisibility = .all) {
+        _columnVisibility = State(initialValue: initialSidebarVisibility)
+    }
+
     var body: some View {
         @Bindable var model = model
         @Bindable var automation = automation
         // The status bar is part of the layout, under everything, so nothing ends up beneath it.
         let navigation = VStack(spacing: 0) {
             contentWithUndo
-            StatusBar(registry: statusBar)
+            if !model.quickEntry.isEnabled || !model.composeTask.isPresented {
+                StatusBar(registry: statusBar)
+            }
         }
         .taskPeekHost()
+        .onGeometryChange(for: CGSize.self, of: \.size) { contentSize = $0 }
         .approvalHoldKeyRoot()
         .addHostPresentation(hosts: model.hosts)
         // After an update with highlights, once nothing waits on the user.
@@ -59,6 +67,7 @@ struct RootView: View {
         // The pull requests page and a session take turns in the detail column.
         .onChange(of: showsPullRequests) { _, shows in
             if shows {
+                model.closeComposeTask()
                 model.selection = nil
                 automationPage = nil
                 expeditions.isPageShown = false
@@ -66,21 +75,35 @@ struct RootView: View {
         }
         .onChange(of: automationPage) { _, page in
             if page != nil {
+                model.closeComposeTask()
                 model.selection = nil
                 showsPullRequests = false
                 expeditions.isPageShown = false
             }
         }
         .onChange(of: model.selection) { _, key in
+            if key != model.composeTask.navigationSelection,
+                !(key != nil && key == model.composeTask.starting?.openedSession)
+            {
+                model.closeComposeTask()
+            }
             if key != nil {
                 showsPullRequests = false
                 automationPage = nil
                 expeditions.isPageShown = false
             }
         }
-        .onChange(of: model.quickEntry.taskOpenRequests) { settings.close() }
+        .onChange(of: model.quickEntry.taskOpenRequests) {
+            settings.close()
+            if model.composeTask.isPresented {
+                showsPullRequests = false
+                automationPage = nil
+                expeditions.isPageShown = false
+            }
+        }
         .onChange(of: expeditions.isPageShown) { _, shows in
             if shows {
+                model.closeComposeTask()
                 model.selection = nil
                 showsPullRequests = false
                 automationPage = nil
@@ -243,7 +266,9 @@ struct RootView: View {
                     }
                     // Pushes the toggle and search to the leading edge, next to the window controls, and
                     // back and forward to its trailing edge, by the content they navigate.
-                    ToolbarSpacer(.flexible)
+                    if columnVisibility != .detailOnly || !model.offersTaskPeek {
+                        ToolbarSpacer(.flexible)
+                    }
                     // The update button: right-aligned before back and forward, and still there when
                     // the sidebar is hidden. It shows only when an update needs the user.
                     if let updates, updates.showsToolbarButton {
@@ -252,15 +277,11 @@ struct RootView: View {
                         }
                         .sharedBackgroundVisibility(.hidden)
                     }
-                    // They belong to the sidebar's header, so they go away with it (⌘[ and ⌘] still work).
                     if columnVisibility != .detailOnly {
                         ToolbarItem {
                             HistoryNavigationButtons(
-                                canGoBack: model.canGoBack,
-                                canGoForward: model.canGoForward,
-                                onBack: model.goBack,
-                                onForward: model.goForward
-                            )
+                                canGoBack: model.canGoBack, canGoForward: model.canGoForward,
+                                onBack: model.goBack, onForward: model.goForward)
                         }
                         .sharedBackgroundVisibility(.hidden)
                     }
@@ -282,6 +303,15 @@ struct RootView: View {
             .environment(\.inspectorRoom, inspectorRoom.room(sidebar: $columnVisibility))
             .environment(\.sessionTranscriptMemory, transcriptMemory)
             .modifier(QuickEntryPresentation(model: model, git: git))
+            // A popover needs an anchor in the visible column, not the sidebar's hidden hosting view.
+            .toolbar {
+                if columnVisibility == .detailOnly, model.offersTaskPeek {
+                    ToolbarItem(placement: .navigation) {
+                        RootHistoryToolbar(showsAttention: true, contentSize: contentSize)
+                    }
+                    .sharedBackgroundVisibility(.hidden)
+                }
+            }
         }
         .toolbar(removing: .sidebarToggle)
         .tracksWindowRoom(inspectorRoom.window)
@@ -329,7 +359,9 @@ struct RootView: View {
 
     @ViewBuilder
     private var detail: some View {
-        if showsPullRequests {
+        if model.quickEntry.isEnabled, model.composeTask.isPresented {
+            ComposeTaskPage(model: model, compose: model.composeTask, entry: model.quickEntry)
+        } else if showsPullRequests {
             PullRequestsView()
         } else if automationPage == .workflows {
             WorkflowsPage(path: $workflowPath, onSetUpAutomations: automationsSetUp) { session in

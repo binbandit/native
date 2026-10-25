@@ -2,12 +2,25 @@ import Foundation
 
 /// Task workspaces on whichever device a task runs on: this Mac's for this Mac's folders, and each
 /// paired host's own (the Git feature with its git running on the host) for folders on that host.
-/// `AppModel.taskWorkspaces` is this, so archiving, restoring and deleting a task on a host puts
-/// away its worktree there, exactly as for a task here. A folder is a host's when it's inside that
-/// host's worktrees folder or is one of its checkouts; everything else is this Mac's.
+/// Task archive, restore and deletion select an explicit `TaskActionRoute` before calling a
+/// provider. The route and owner records here survive catalog removal and disappearing listings.
+/// Legacy folder-only operations remain separate from that task action boundary.
 final class DeviceTaskWorkspaces: TaskWorkspaceProvider {
     let local: any TaskWorkspaceProvider
     private weak var model: AppModel?
+    var routes: [SessionKey: TaskActionRoute] = [:]
+    var owners: [SessionKey: TaskActionRoute.Owner] = [:]
+
+    /// Listings establish ownership even for tasks never opened here. Keep it when a host loses
+    /// its listing or pairing, so retries cannot reinterpret a remote task as local.
+    func remember(_ key: SessionKey, on host: RemoteHostID) {
+        let owner = TaskActionRoute.Owner.remote(host)
+        if let existing = owners[key], existing != owner {
+            owners[key] = .unavailableRemote
+        } else {
+            owners[key] = owner
+        }
+    }
 
     init(local: any TaskWorkspaceProvider, model: AppModel) {
         self.local = local
@@ -37,6 +50,11 @@ final class DeviceTaskWorkspaces: TaskWorkspaceProvider {
 
     func workspace(for choice: TaskWorkspaceChoice, in project: Project) async throws -> URL {
         try await local.workspace(for: choice, in: project)
+    }
+
+    func prepareWorkspace(for choice: TaskWorkspaceChoice, in project: Project) async throws -> TaskWorkspacePreparation
+    {
+        try await local.prepareWorkspace(for: choice, in: project)
     }
 
     func removeUnusedWorkspace(at folder: URL, in project: Project) async throws -> Bool {

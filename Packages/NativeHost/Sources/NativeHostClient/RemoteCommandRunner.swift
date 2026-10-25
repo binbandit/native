@@ -29,14 +29,21 @@ public struct RemoteCommandRunner: CommandRunner {
         try await run(command, streaming: onOutput)
     }
 
+    public func run(
+        _ command: Command, input: CommandInput, onOutput: @escaping @Sendable (CommandOutput) -> Void
+    ) async throws -> CommandResult {
+        try await run(command, streaming: onOutput, input: input)
+    }
+
     private func run(
-        _ command: Command, streaming onOutput: (@Sendable (CommandOutput) -> Void)?
+        _ command: Command, streaming onOutput: (@Sendable (CommandOutput) -> Void)?, input: CommandInput? = nil
     ) async throws -> CommandResult {
         try Task.checkCancellation()
         let params = ExecRunParams(
             executable: command.executable, arguments: command.arguments, directory: command.directory,
             environment: command.environment, stdin: command.standardInput,
-            timeout: command.timeout.map(Self.seconds), stream: onOutput != nil)
+            timeout: command.timeout.map(Self.seconds), stream: onOutput != nil,
+            interactive: input == nil ? nil : true)
         // Output arrives as notifications before the answer; collect it as the answer would.
         let collected = Mutex((stdout: Data(), stderr: Data()))
         let outputs = await client.execOutputs()
@@ -55,12 +62,7 @@ public struct RemoteCommandRunner: CommandRunner {
 
         let result: ExecRunResult
         do {
-            result = try await withTaskCancellationHandler {
-                try await client.call(HostProtocol.Method.execRun, params)
-            } onCancel: {
-                // The host stops it and everything it started, then answers `cancelled`.
-                Task { [client] in try? await client.cancelCommand(params.execID) }
-            }
+            result = try await execute(params, input: input)
         } catch {
             throw failure(error, running: command)
         }
@@ -72,6 +74,33 @@ public struct RemoteCommandRunner: CommandRunner {
         let (stdout, stderr) = collected.withLock { $0 }
         return CommandResult(
             exitCode: result.exitCode, standardOutput: stdout + result.stdout, standardError: stderr + result.stderr)
+    }
+
+    private func execute(_ params: ExecRunParams, input: CommandInput?) async throws -> ExecRunResult {
+        try await withThrowingTaskGroup(of: ExecRunResult?.self) { group in
+            group.addTask {
+                try await withTaskCancellationHandler {
+                    try await client.call(HostProtocol.Method.execRun, params)
+                } onCancel: {
+                    Task { [client] in try? await client.cancelCommand(params.execID) }
+                }
+            }
+            if let input {
+                group.addTask {
+                    for await data in input.chunks {
+                        try Task.checkCancellation()
+                        let _: EmptyMessage = try await client.call(
+                            HostProtocol.Method.execInput, ExecInputParams(execID: params.execID, data: data))
+                    }
+                    return nil
+                }
+            }
+            defer { group.cancelAll() }
+            while let completed = try await group.next() {
+                if let result = completed { return result }
+            }
+            throw CancellationError()
+        }
     }
 
     /// The host's answer as `LocalCommandRunner` would have failed, so callers handle one set of errors.

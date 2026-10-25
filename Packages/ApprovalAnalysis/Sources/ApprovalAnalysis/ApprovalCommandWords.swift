@@ -9,6 +9,7 @@ struct ApprovalCommandWords {
     let tokens: [Token]
 
     init?(_ command: String) {
+        guard command.utf8.count <= 65_536 else { return nil }
         let chars = Array(command)
         var result: [Token] = []
         var index = 0
@@ -31,7 +32,8 @@ struct ApprovalCommandWords {
                 }
                 index += 1
             }
-            guard quote == nil, !value.isEmpty else { return nil }
+            guard quote == nil, !result.isEmpty || !value.isEmpty else { return nil }
+            guard result.count < 512 else { return nil }
             result.append(Token(value: value, range: start..<index, expandsHome: chars[start] == "~"))
         }
         guard !result.isEmpty else { return nil }

@@ -214,7 +214,7 @@ struct MCPSessionPanel: View {
             await library.probeStale(library.entries(forSession: session.clientID), in: session.context)
         }
         .sheet(item: $pendingCommand) { command in
-            MCPCommandSheet(library: library, command: command)
+            MCPCommandSheet(library: library, command: command, task: session)
         }
     }
 

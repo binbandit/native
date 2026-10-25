@@ -10,8 +10,10 @@ struct SessionApprovalView: View {
         AnnotatedApprovalView(
             call: call, agentName: session.agentName,
             workingDirectory: session.cwd.path,
-            homeDirectory: approvalHome, isAvailable: isAvailable, forceReducedMotion: forceReducedMotion,
+            homeDirectory: approvalHome, knowledge: app.plugins.commandKnowledge, isAvailable: isAvailable,
+            forceReducedMotion: forceReducedMotion,
             focusRequested: session.wantsComposerFocus, didFocus: { session.wantsComposerFocus = false },
+            planEntries: call.kind == .switchMode ? session.state.currentTurnPlan : [],
             onChoose: { option in Task { await session.chooseApproval(option, for: call) } },
             onInstruct: instruct
         )

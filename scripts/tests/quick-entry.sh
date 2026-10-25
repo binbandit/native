@@ -14,7 +14,7 @@ for map in "$derived"/Build/Intermediates.noindex/GeneratedModuleMaps*/*.modulem
 done
 # Any standard-default writes belong to this isolated instance, never the installed application.
 executable="$work/dev.binbandit.native.dev.$instance"
-nice -n 10 xcrun swiftc "${flags[@]}" "$root/scripts/tests/quick-entry.swift" \
+nice -n 10 xcrun swiftc "${flags[@]}" "$root/scripts/tests/quick-entry.swift" "$root/scripts/tests/quick-entry-host.swift" \
     "$app/Contents/MacOS/Native.debug.dylib" \
     -Xlinker -rpath -Xlinker "$app/Contents/Frameworks" \
     -Xlinker -rpath -Xlinker "$app/Contents/MacOS" -o "$executable"

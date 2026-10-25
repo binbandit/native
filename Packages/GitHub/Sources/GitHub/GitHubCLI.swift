@@ -2,7 +2,7 @@ import Exec
 import Foundation
 
 /// The user's own `gh`: their logins, hosts (GitHub Enterprise included), aliases and config all
-/// apply. Account overrides only enter child-process environments. Every read uses `--json`; nothing parses
+/// apply. Native checks account choices without retrieving credentials. Every read uses `--json`; nothing parses
 /// gh's human-readable output.
 ///
 /// gh runs through a `CommandRunner`, so it can run on whichever machine hosts the project. Pass

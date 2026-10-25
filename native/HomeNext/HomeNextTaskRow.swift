@@ -38,7 +38,7 @@ struct HomeNextTaskRow: View {
         .buttonStyle(SidebarRowButtonStyle())
         .dsHitTarget(finished ? DS.HomeNext.finishedHeight : DS.HomeNext.rowHeight)
         .accessibilityElement(children: .combine)
-        .accessibilityHint("Opens the task")
+        .accessibilityHint("Opens Peek without leaving Home")
         .help([task.title, task.ask].joined(separator: "\n"))
     }
 }

@@ -8,9 +8,20 @@ public protocol CommandRunner: Sendable {
     /// Runs like `run(_:)`, handing over output as it arrives, for showing a long command's
     /// progress. Output already handed over stays handed over when the command then times out.
     func run(_ command: Command, onOutput: @escaping @Sendable (CommandOutput) -> Void) async throws -> CommandResult
+    /// Gives the CLI a private terminal with echo disabled. Output streams are combined as stdout.
+    /// The caller sends input after the prompt arrives and cancels the run to stop it.
+    func run(
+        _ command: Command, input: CommandInput, onOutput: @escaping @Sendable (CommandOutput) -> Void
+    ) async throws -> CommandResult
 }
 
 extension CommandRunner {
+    public func run(
+        _ command: Command, input: CommandInput, onOutput: @escaping @Sendable (CommandOutput) -> Void
+    ) async throws -> CommandResult {
+        throw CommandError.unavailable("This host needs an update to support interactive sign-in.")
+    }
+
     /// For runners that can't stream: all the output at once, when the command ends.
     public func run(
         _ command: Command, onOutput: @escaping @Sendable (CommandOutput) -> Void

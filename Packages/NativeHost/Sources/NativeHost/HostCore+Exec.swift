@@ -35,9 +35,20 @@ extension HostCore {
             params.executable, params.arguments, in: directory, environment: environment,
             standardInput: params.stdin, timeout: timeout)
         let relay = ExecOutputRelay(execID: params.execID, peer: client.peer, streams: params.stream)
-        let running = Task { try await runner.run(command) { relay.receive($0) } }
+        let input = params.interactive == true ? CommandInput() : nil
+        client.commandInputs[params.execID] = input
+        let running = Task {
+            if let input {
+                return try await runner.run(command, input: input) { relay.receive($0) }
+            }
+            return try await runner.run(command) { relay.receive($0) }
+        }
         client.commands[params.execID] = running
-        defer { client.commands[params.execID] = nil }
+        defer {
+            input?.finish()
+            client.commandInputs[params.execID] = nil
+            client.commands[params.execID] = nil
+        }
         do {
             let result = try await running.value
             let rest = relay.remainder()
@@ -55,6 +66,13 @@ extension HostCore {
     /// left alone.
     func cancelCommand(_ execID: UUID, for client: ClientLink) {
         client.commands[execID]?.cancel()
+    }
+
+    func inputCommand(_ params: ExecInputParams, for client: ClientLink) throws {
+        try requireCommandsGrant(client, to: "send command input")
+        guard let input = client.commandInputs[params.execID], input.send(params.data) else {
+            throw RPCError(code: -32602, message: "This command isn't waiting for input, or the input is too large.")
+        }
     }
 
     private var commandRunner: (any CommandRunner)? {

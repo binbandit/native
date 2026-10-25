@@ -52,7 +52,9 @@ regulator's approval, Section 508 conformance or FIPS validation.
    across host state, search, agents' history, attachments, task artifacts, caches and backups.
    Explain exactly what deletion covers and report failures. FileVault/OS storage encryption and
    customer backup policy remain deployment controls; unlinking a file is not secure erasure.
-8. **Secrets.** Native-owned credentials and private keys belong only in the Keychain on Apple
+8. **Secrets.** Native never reads other apps' secrets, including their Keychain items and credential
+   files. Agent configuration and agent-reported sign-in status are allowed; unknown status must not
+   be presented as signed out. Native-owned credentials and private keys belong only in the Keychain on Apple
    platforms, with references in ordinary storage. No secrets in preferences, profiles, manifests,
    URLs, logs or host session records. A future supported Linux host needs an approved OS secret
    store or must refuse secret persistence in restricted mode. Third-party CLI stores need explicit

@@ -1,3 +1,4 @@
+import ApprovalAnalysis
 import Foundation
 
 /// What an organization (or the user) allows, resolved from every policy key: the organization's
@@ -71,6 +72,11 @@ public struct NativePolicy: Equatable, Sendable {
     public var appearanceCodeTheme: String?
     public var appearanceCodeThemeReason: String?
 
+    /// Internal command descriptions, validated locally. Never fetched from a URL.
+    public var commandKnowledge = CommandKnowledge()
+    /// False prevents local coverage counting, even when the user has enabled it.
+    public var unknownCommandCountsEnabled = true
+    public var network = Network()
     public var agents = Agents()
     public var mcp = MCP()
     /// Ids of the plugins installed from manifests that may load; nil allows all. Built-in plugins

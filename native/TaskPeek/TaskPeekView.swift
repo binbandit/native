@@ -2,13 +2,14 @@ import ACP
 import SwiftUI
 
 /// One moment, in the place the user is already reading. Permission and question content is shared
-/// with the task. Replace ToolCallView with the composer's annotated approval when that lands.
+/// with the task.
 struct TaskPeekView: View {
     let request: TaskPeekPresentation.Request
     var maxBodyHeight = DS.Peek.maxBodyHeight
     @Environment(AppModel.self) private var model
     var openTask: ((SessionKey) -> Void)?
     @FocusState private var isFocused: Bool
+    @State private var wantsInstructionFocus = false
 
     private var session: SessionModel? { request.ask?.session ?? model.session(request.task) }
     private var ask: TaskPeekAsk? {
@@ -22,8 +23,8 @@ struct TaskPeekView: View {
             HeightCappedScrollView(maxHeight: maxBodyHeight) {
                 moment
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, DS.Peek.bodyHorizontal)
-                    .padding(.vertical, DS.Peek.bodyVertical)
+                    .padding(.horizontal, showsAnnotatedApproval ? 0 : DS.Peek.bodyHorizontal)
+                    .padding(.vertical, showsAnnotatedApproval ? 0 : DS.Peek.bodyVertical)
             }
         }
         .background(.dsOverlay)
@@ -31,6 +32,7 @@ struct TaskPeekView: View {
         .accessibilityIdentifier("task-peek")
         .focusable()
         .focused($isFocused)
+        .focusedSceneValue(\.taskPeekInstructionFocus, showsInstructionEditor ? $wantsInstructionFocus : nil)
         .focusEffectDisabled()
         .onAppear {
             if case .question = ask?.content { return }
@@ -50,6 +52,20 @@ struct TaskPeekView: View {
 
     private func open() {
         if let openTask { openTask(request.task) } else { model.openPeekedTask(request.task) }
+    }
+
+    /// The shared approval already owns its insets, including the instruction field's full-width rule.
+    private var showsAnnotatedApproval: Bool {
+        guard model.taskIsAvailable(request.task), model.taskIsReachable(request.task),
+            let ask, ask.isCurrent, model.session(ask.session.key) === ask.session,
+            case .permission = ask.content
+        else { return false }
+        return true
+    }
+
+    private var showsInstructionEditor: Bool {
+        guard showsAnnotatedApproval, case .permission(let call) = ask?.content else { return false }
+        return call.permission?.options.contains(where: \.isRejection) == true
     }
 
     private var header: some View {
@@ -102,7 +118,15 @@ struct TaskPeekView: View {
             notice("This host is offline", detail: "The task and its ask are kept. Reconnect the host to answer.")
         } else if let ask {
             if ask.isCurrent, model.session(ask.session.key) === ask.session {
-                answer(ask).id(ask.id).disabled(model.taskPeek.isAnswering)
+                VStack(alignment: .leading, spacing: DS.Space.lg) {
+                    answer(ask).id(ask.id).disabled(model.taskPeek.isAnswering)
+                    if let failure = model.taskPeek.answerFailure {
+                        ErrorState(
+                            "Couldn't send your answer", recovery: "Your ask is kept. Try again.", details: failure
+                        )
+                        .padding(DS.Peek.bodyHorizontal)
+                    }
+                }
             } else {
                 notice("This ask changed or was resolved", detail: "Open the task to see what happened next.")
                 if !model.taskAsks(for: request.task).isEmpty {
@@ -140,9 +164,18 @@ struct TaskPeekView: View {
     @ViewBuilder private func answer(_ ask: TaskPeekAsk) -> some View {
         switch ask.content {
         case .permission(let call):
-            ToolCallView(call: call) { option in
-                Task { await model.answerTaskAsk(ask, option: option) }
-            }
+            AnnotatedApprovalView(
+                call: call, agentName: ask.session.agentName, workingDirectory: ask.session.cwd.path,
+                homeDirectory: model.device(of: ask.task) == .thisMac ? NSHomeDirectory() : nil,
+                knowledge: model.plugins.commandKnowledge,
+                responseAttempt: model.taskPeek.approvalAttempt,
+                focusRequested: wantsInstructionFocus, didFocus: { wantsInstructionFocus = false },
+                planEntries: call.kind == .switchMode ? ask.session.state.currentTurnPlan : [],
+                planExpanded: true,
+                onChoose: { option in Task { await model.answerTaskAsk(ask, option: option) } },
+                onInstruct: { try await model.instructTaskAsk(ask, text: $0) }
+            )
+            .id(call)
         case .question(let question):
             if let schema = question.request.requestedSchema,
                 let questionnaire = AgentQuestionnaire(message: question.request.message, schema: schema)
@@ -176,10 +209,15 @@ struct TaskPeekView: View {
     }
 }
 
+extension FocusedValues {
+    @Entry var taskPeekInstructionFocus: Binding<Bool>?
+}
+
 #if DEBUG
 #Preview("Peek - Routine approval") { TaskPeekPreviewFixtures.view(.routine) }
 #Preview("Peek - Destructive approval") { TaskPeekPreviewFixtures.view(.destructive) }
 #Preview("Peek - Question") { TaskPeekPreviewFixtures.view(.question) }
+#Preview("Peek - Answer delivery failed") { TaskPeekPreviewFixtures.view(.answerFailure) }
 #Preview("Peek - Failure") { TaskPeekPreviewFixtures.view(.failure) }
 #Preview("Peek - Recovering") { TaskPeekPreviewFixtures.view(.recovering) }
 #Preview("Peek - Plan") { TaskPeekPreviewFixtures.view(.plan) }

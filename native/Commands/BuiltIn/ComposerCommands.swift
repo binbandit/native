@@ -1,5 +1,7 @@
 import ACP
+import Experiments
 import NativeCommands
+import SwiftUI
 
 extension CommandID {
     static let composerFocus: Self = "composer.focus"
@@ -20,18 +22,24 @@ extension NativeCommand {
         .available { $0.session?.canChangeWorkspace == true },
 
         NativeCommand(.composerFocus, title: "Focus Composer", category: .composer, systemImage: "text.cursor") {
-            $0.session?.wantsComposerFocus = true
+            if let instruction = $0.taskPeekInstructionFocus {
+                instruction.wrappedValue = true
+            } else {
+                ($0.session ?? $0.composeDraft)?.wantsComposerFocus = true
+            }
         }
-        .available { $0.session.map { !$0.isSubagent } ?? false },
+        .available {
+            $0.taskPeekInstructionFocus != nil || (($0.session ?? $0.composeDraft).map { !$0.isSubagent } ?? false)
+        },
 
         NativeCommand(
             .composerAttachFiles, title: "Attach Files…", category: .composer, systemImage: "paperclip",
             keywords: ["image", "upload"]
         ) {
-            $0.session?.isAttachmentPickerRequested = true
+            ($0.session ?? $0.composeDraft)?.isAttachmentPickerRequested = true
         }
         .available { context in
-            guard let session = context.session else { return false }
+            guard let session = context.session ?? context.composeDraft else { return false }
             return session.acceptsPrompts && session.phase != .disconnected
         },
 
@@ -54,10 +62,13 @@ extension NativeCommand {
         },
 
         NativeCommand(.sessionChooseModel, title: "Choose Model…", category: .composer, systemImage: "cpu") {
-            $0.session?.isModelPickerRequested = true
+            ($0.session ?? $0.composeDraft)?.isModelPickerRequested = true
         }
         .available { context in
-            context.session.map { ComposerSettings($0.configOptions).model != nil } ?? false
+            if context.composeDraft != nil { return true }
+            return context.session.map {
+                ExperimentStore.shared.value(of: .composerNext) || ComposerSettings($0.configOptions).model != nil
+            } ?? false
         },
     ]
 

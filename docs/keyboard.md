@@ -124,6 +124,12 @@ sidebar, the projects and the Settings pages, recently used ones first. With a t
 | ⌘Return | Commit the selected files |
 | Escape | Close the popover |
 
+## MCP sign-in sheet
+
+Return starts sign-in, submits a pasted redirect address while waiting, or closes a successful sign-in.
+Escape cancels the pending sign-in and closes the sheet. Tab reaches Open Browser and the redirect
+field; Space activates Open Browser. Closing the sheet stops its pending command on the host.
+
 ## Git sheets
 
 | Keys | Action |
@@ -241,6 +247,8 @@ before the hold fills sends nothing. Pointer and touch use the same hold; VoiceO
 use Allow followed by Confirm Allow within five seconds. The button acknowledges Allowed for
 0.4 seconds before the request folds away. Reduce Motion keeps the ring but removes the fill sweep.
 ⌘L focuses Tell the agent what to do instead while an approval is shown; Return sends the instruction.
+In Peek, this focuses the shown approval, including a child task ask or a Peek opened from Home,
+without selecting its task or changing the current draft. Closing Peek restores Focus Composer.
 The fix-it and every permission option are also in the keyboard tab order.
 Only the oldest request owns these keys; changing tasks or losing the window cancels a hold.
 When an agent offers several choices of one permission kind, each stays visible under its own name;
@@ -305,6 +313,7 @@ Other file types use the platform's Quick Look preview, with its native navigati
 | ⌃Tab / ⌃⇧Tab | Next / previous task | Task | `session.next` / `session.previous` |
 | Return on a selected sidebar task | Rename it (Escape cancels, Return commits) | Task | |
 | ⌃⌘S | Show or hide the sidebar | View | `view.toggleSidebar` |
+| | With All in view on and the sidebar hidden, show tasks needing you (also the amber toolbar count) | Task | `task.showNeedsYou` |
 | ⌥⌘↑ / ⌥⌘↓ | Move the selected project or task up / down (a queued message instead, while one is open in the composer) | Task | `sidebar.moveUp` / `sidebar.moveDown` |
 | ⌘Z / ⇧⌘Z | Undo / redo the window's latest change, newest first: typing, or archiving, renaming, pinning or deleting a task or project (a deletion until it's carried out). The undo toast's Undo takes back the same change, once | Edit | |
 | ⌘Z after removing a host | Restore the removed host's pairing, also offered by the toast's Undo | Edit | |
@@ -331,12 +340,14 @@ On iPad, the corner Dismiss button is always visible and swiping down dismisses 
 With Next enabled in Settings > Labs, Home shows one ask at a time. The visible approval owns
 the usual permission keys: Cmd-Y allows once, Option-Cmd-Y always allows when offered, and
 Shift-Cmd-Delete rejects. Tab and Space reach Up next, Open Task, the ordering menu, and Show
-more. Cmd-Return opens the current ask's task; Shift-Cmd-Down shows the next five rows.
+more. Up next opens Peek; its Open Task action enters the conversation. Cmd-Return opens the
+current ask's task; Shift-Cmd-Down shows the next five rows.
 Cmd-N starts a task and Cmd-O opens a folder, including before the first project exists.
 The current question uses the composer's question keys: 1-9 pick an offered choice, Return
 sends, and typing in the answer field keeps digits as text. Plans use Cmd-Y to approve,
 Shift-Cmd-Delete to request a revised plan.
-Option-Cmd-Down expands the remaining plan steps. A failed task uses Cmd-R to retry and
+Option-Cmd-Down shows the full plan in Peek without leaving Home. Cmd-L focuses the current
+approval's instruction field. Escape dismisses Peek. A failed task uses Cmd-R to retry and
 Option-Cmd-O to show its error output. Cmd-Return opens the task for every ask kind.
 
 ## Task tools (Labs)
@@ -344,6 +355,10 @@ Option-Cmd-O to show its error output. Cmd-Return opens the task for every ask k
 With The well enabled (`NativeTaskWell`, off by default), Cmd-I opens the centered task well.
 Its tools appear in this fixed key order. Missing tools leave no row; their keys stay reserved.
 Clicking a waiting well focuses the composer, where the full request can be answered.
+Dev reveals the latest project action in the workbench, or its action chooser before the first run.
+Subagents opens a roster; Return or Space on a row opens that worker. Escape returns from a
+chooser to the tool list, then closes the well. Terminal and Dev keep their existing run, stop,
+new-tab and hide commands in the workbench under the composer.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
@@ -378,6 +393,12 @@ being hit by accident, since it ends work in progress.
 
 ## Picking tasks in the sidebar
 
+With All in view on, hiding the sidebar keeps back and forward in the toolbar. While tasks need
+you, one amber signal counts them. Click it or choose Task > Tasks Needing You to open the list.
+Up and Down highlight a task; Space, Return or a click opens its shared Peek without changing the
+current task or draft. Escape returns from Peek to the list, then closes the list. Answering the
+last ask removes the signal; unresolved failures also count until they recover.
+
 Several tasks can be picked at once and acted on together. While more than one is picked (or Select
 Tasks is on, which makes taps pick, for touch), a bar at the foot of the sidebar says how many, with
 Archive, Mark as Read, Delete and the rest under More; a picked task's context menu offers the same.
@@ -408,6 +429,14 @@ Extra agent settings, such as Claude Code's Agent selector, always live in the c
 Controls ("…") menu. Each setting lists its choices with the current value checked; use the arrow
 keys and Return to choose from the menu. Model, effort, autonomy and mode keep their dedicated
 controls, moving into More only as the row runs out of room.
+
+With Fine print (`NativeComposerNext`) enabled, the model name at the trailing edge of the
+field opens one Task Settings popover. Choose Model (⌘⇧E) opens the same popover, including
+effort, when the agent asks, MCP servers and the agent's extra settings from More. Tab reaches
+each control, Return chooses a focused option, and Escape closes the popover. Show MCP Servers
+(⌃⌘M) opens its existing panel inside this popover; Back returns to the settings. Attach Files
+(⌘U), Mode and Set Goal keep their existing commands and are available inside the popover too.
+Goal commands open the shared editor even when Task Settings is closed or showing MCP servers.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
@@ -461,8 +490,15 @@ The current text selection in Native is included as removable context. The addre
 | ⌥⌘O | Open the device picker |
 | Escape | Close the picker first, then Quick Entry; keep the draft for next time |
 
-During slice 1, expanding uses today's full New Task view. The Compose page replaces it in
-slice 2. After a background start, the confirmation's Open button opens that task. Quick Entry
+Expanding opens the Compose page without creating a task or worktree. The page keeps the draft,
+quoted context and attachments. Return starts the task; Shift-Return and Option-Return insert a
+new line. The toolbar's Start does the same. File > Attach Files (⌘U) attaches to the page;
+Option-Command-O opens its device picker. Escape closes a picker before returning to writing.
+Command-L focuses the page editor; Shift-Command-E opens its agent and model popover. Task-only
+commands, such as goals and archiving, stay unavailable until Start creates the task.
+An offline device offers Hold and Run on This Mac together; Return holds the task for that device.
+Cancel Hold keeps the draft editable. Escape cancels a pending Start until its task has opened.
+After a background start, the confirmation's Open button opens that task. Quick Entry
 captures only a selection inside Native; global shortcuts and capture from other apps are not
 part of this experiment.
 
@@ -593,3 +629,14 @@ With Settings > Labs > Coordinator tasks enabled, File > New Coordinator Task op
 picker in the current project. File > Edit Assigned Tasks edits the selected coordinator. Both
 commands are also in the command palette. They have no default shortcut. Tab, Space and Return
 operate the picker; Escape cancels without changing assignments.
+
+## Command knowledge (Fine print in Labs)
+
+These Help menu actions have no default shortcut and can be rebound in Settings > Keyboard Shortcuts.
+They appear only while Fine print is enabled.
+
+| Keys | Action | Command |
+| --- | --- | --- |
+| | Command Diagnostics (opens Settings > Privacy) | `help.commandDiagnostics` |
+| | Count Unknown Programs Locally | `privacy.countUnknownPrograms` |
+| | Clear Unknown Program Counts | `privacy.clearUnknownPrograms` |

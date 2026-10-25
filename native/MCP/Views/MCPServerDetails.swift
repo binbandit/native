@@ -60,7 +60,7 @@ struct MCPServerDetails: View {
             .buttonStyle(.ds(.secondary, size: .medium))
         } else if library.health(of: key) == .authenticationUnknown {
             message(
-                "Native couldn't confirm this server's shared sign-in. Check it in a task with \(entry?.format.displayName ?? "your agent")."
+                "\(entry?.format.displayName ?? "Your agent") manages sign-in for this server. Native doesn't read its credentials. Check access in a task with that agent."
             )
             Button("Check Again") {
                 Task {
@@ -76,6 +76,9 @@ struct MCPServerDetails: View {
             case .failed(let failure): failed(failure, stderr: report.stderr)
             }
         } else {
+            if let entry, entry.authentication == .unknown, entry.server.transport.url != nil {
+                message("\(entry.format.displayName) manages sign-in. Native hasn't checked this connection.")
+            }
             message(
                 "Not checked yet. Checking starts the server or reaches it, lists its tools and disconnects; it never calls a tool."
             )

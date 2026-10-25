@@ -176,12 +176,13 @@ public enum AgentCLI {
             return .success(
                 AgentCLICommand(
                     format: .claudeCode, action: .signIn, serverName: entry.name, executable: "claude",
-                    arguments: ["mcp", "login", entry.name], directory: entry.scope.project.map(ProjectPath.key)))
+                    arguments: ["mcp", "login", entry.name, "--no-browser"],
+                    directory: entry.scope.project.map(ProjectPath.key)))
         case .codex:
             return .success(
                 AgentCLICommand(
                     format: .codex, action: .signIn, serverName: entry.name, executable: "codex",
-                    arguments: ["mcp", "login", entry.name]))
+                    arguments: ["mcp", "login", entry.name, "--no-browser"]))
         case .cursor:
             return .failure(AgentCLIUnavailable(message: "Sign in from Cursor's MCP settings."))
         }

@@ -1,14 +1,15 @@
 import ACP
 import SwiftUI
 
-struct TaskWellToolbar<Dev: View>: View {
+struct TaskWellToolbar<Destination: View>: View {
     let session: SessionModel
     @Bindable var tools: SessionToolsScreenModel
     let location: String
+    let identity: TaskWellIdentity
     let turnChanges: TurnChangesActions?
-    let detail: (TaskWellTool) -> String
+    let detail: (TaskWellTool) -> TaskWellToolDetail
     var openSubagent: (SessionID) -> Void = { _ in }
-    @ViewBuilder var dev: () -> Dev
+    @ViewBuilder var destination: (TaskWellTool) -> Destination
     @State private var isLanding = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -30,7 +31,9 @@ struct TaskWellToolbar<Dev: View>: View {
         .dsHitTarget(DS.TaskWell.height)
         .help(help)
         .dsPopover(isPresented: $tools.showsWell, attachmentAnchor: .point(.top), arrowEdge: .bottom) {
-            TaskWellToolsPanel(content: content, location: location, tools: tools, detail: detail, dev: dev)
+            TaskWellToolsPanel(
+                content: content, location: location, identity: identity, tools: tools, detail: detail,
+                destination: destination)
         }
         .onChange(of: session.phase) { previous, phase in
             if previous == .prompting, phase == .idle {
@@ -114,11 +117,12 @@ struct TaskWellToolbar<Dev: View>: View {
     return DSPreviewPair {
         if let session = SessionModel.preview(in: app) {
             TaskWellToolbar(
-                session: session, tools: SessionToolsScreenModel(), location: "native · main", turnChanges: nil
+                session: session, tools: SessionToolsScreenModel(), location: "native · main",
+                identity: .init(machine: "On this Mac"), turnChanges: nil
             ) {
                 _ in
-                ""
-            } dev: {
+                TaskWellToolDetail()
+            } destination: { _ in
                 EmptyView()
             }
         }

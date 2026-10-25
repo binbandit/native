@@ -7,11 +7,17 @@ import SwiftUI
 struct HelpCommands: Commands {
     let menu: CommandMenuContext
     let model: AppModel
+    @Experiment(.composerNext) private var finePrint
 
     var body: some Commands {
         CommandGroup(after: .help) {
             CommandMenuItem(.helpKeyboardShortcuts, in: menu)
             Link("Agent Client Protocol Docs", destination: Self.protocolDocs)
+            if finePrint {
+                CommandMenuItem(.commandDiagnostics, in: menu)
+                CommandMenuItem(.countUnknownPrograms, in: menu)
+                CommandMenuItem(.clearUnknownPrograms, in: menu)
+            }
             Divider()
             Text(versions)
         }

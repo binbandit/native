@@ -42,7 +42,6 @@ final class MCPLibrary {
     /// Whether this build can run scripts at all; without it nothing can run through them.
     var scriptsAvailable = false
     @ObservationIgnored let files: any ConfigFileSystem
-    @ObservationIgnored let credentialKeychain: any MCPCredentialKeychain
     @ObservationIgnored private var readAgainRequested = false
     @ObservationIgnored private let secretStore: any SecretStore
     @ObservationIgnored private let storeURL: URL?
@@ -66,7 +65,6 @@ final class MCPLibrary {
         runner: any CommandRunner = LocalCommandRunner(),
         launcher: any StdioLauncher = LocalStdioLauncher(),
         files: any ConfigFileSystem = LocalConfigFiles(),
-        credentialKeychain: any MCPCredentialKeychain = LocalMCPCredentialKeychain(),
         secretStore: any SecretStore = KeychainSecretStore(),
         storeURL: URL? = MCPLibrary.defaultStoreURL,
         initialConfigurations: [AgentConfigFormat: AgentMCPConfiguration] = [:]
@@ -75,7 +73,6 @@ final class MCPLibrary {
         self.launcher = launcher
         scriptConnections = MCPScriptConnections(launcher: launcher)
         self.files = files
-        self.credentialKeychain = credentialKeychain
         self.secretStore = secretStore
         self.storeURL = storeURL
         configurations = initialConfigurations
@@ -255,7 +252,7 @@ final class MCPLibrary {
         }
         let environment = await host.mcpEnvironment()
         let reader = AgentConfigReader(
-            files: files, home: home(in: environment), environment: environment, credentialKeychain: credentialKeychain)
+            files: files, home: home(in: environment), environment: environment)
         let projects = host.mcpProjects
         let projectKeys = Set(projects.map(ProjectPath.key))
         let folders = Set(trackedSessions.values.map { ProjectPath.key($0.cwd) }).subtracting(projectKeys)
@@ -291,7 +288,7 @@ final class MCPLibrary {
         guard configurations.isEmpty, firstRead == nil, let host else { return }
         let environment = ProcessInfo.processInfo.environment
         let reader = AgentConfigReader(
-            files: files, home: home(in: environment), environment: environment, credentialKeychain: credentialKeychain)
+            files: files, home: home(in: environment), environment: environment)
         let projects = host.mcpProjects
         firstRead = Task {
             let read = await Task.detached {
@@ -346,8 +343,7 @@ final class MCPLibrary {
             folderConfigurations["\(AgentConfigFormat.claudeCode.rawValue)|\(folder)"] == nil
         else { return }
         let reader = AgentConfigReader(
-            files: files, home: home(in: readEnvironment), environment: readEnvironment,
-            credentialKeychain: credentialKeychain)
+            files: files, home: home(in: readEnvironment), environment: readEnvironment)
         let read = await Task.detached {
             Dictionary(
                 uniqueKeysWithValues: AgentConfigFormat.allCases.map { format in
