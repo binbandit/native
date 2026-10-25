@@ -2,8 +2,10 @@ import ApprovalAnalysis
 import Foundation
 
 /// What an organization (or the user) allows, resolved from every policy key: the organization's
-/// value, then the user's, then Native's default. Every feature asks this rather than reading
-/// preferences itself. A value that fails validation is reported in `diagnostics` and ignored.
+/// value, then the user's, then Native's default. Restricted deployment modes ignore user values and
+/// keep features off until the organization allows them (`PolicyResolver`). Every feature asks this
+/// rather than reading preferences itself. A managed value that fails validation is reported in
+/// `diagnostics` and denies what it governs; it never falls back to a more permissive value.
 public struct NativePolicy: Equatable, Sendable {
     public struct Agents: Equatable, Sendable {
         /// Agent ids that may be listed or started; nil allows every agent.
@@ -79,8 +81,9 @@ public struct NativePolicy: Equatable, Sendable {
     public var network = Network()
     public var agents = Agents()
     public var mcp = MCP()
-    /// Ids of the plugins installed from manifests that may load; nil allows all. Built-in plugins
-    /// are part of Native and governed by their own keys.
+    /// Ids of the plugins installed from manifests that may load; nil allows all. In ordinary mode
+    /// built-in plugins are part of Native and governed by their own keys; restricted mode lists
+    /// them too (`admission(ofPlugin:origin:capabilities:)`).
     public var allowedPlugins: Set<String>?
     public var celebrations = Celebrations()
     public var catalog = Catalog()
@@ -112,14 +115,18 @@ public struct NativePolicy: Equatable, Sendable {
     public var aiInstructions: [String: String]?
     public var telemetry = Telemetry()
 
-    /// The keys the organization sets with a valid value.
+    /// The keys the organization controls, so users can't change them: the ones it sets, validly or
+    /// not, and every key under its restricted mode.
     public var managedKeys: Set<PolicyKey> = []
-    /// Values that were ignored, and why.
+    /// How each key's effective value came about; a key missing here took Native's ordinary default.
+    public var keyStatus: [PolicyKey: PolicyKeyStatus] = [:]
+    public var deployment = Deployment()
+    /// Values that were ignored or denied, and why. Never carries header, environment or URL values.
     public var diagnostics: [PolicyDiagnostic] = []
 
     public init() {}
 
-    /// Native's defaults: everything allowed, nothing managed.
+    /// Native's ordinary defaults: everything allowed, nothing managed.
     public static let `default` = NativePolicy()
 
     public func isManaged(_ key: PolicyKey) -> Bool {
@@ -135,7 +142,7 @@ public struct NativePolicy: Equatable, Sendable {
     }
 }
 
-/// A policy value that was ignored.
+/// A policy value that was ignored or denied.
 public struct PolicyDiagnostic: Equatable, Sendable, CustomStringConvertible {
     public enum Origin: String, Equatable, Sendable {
         case organization, user

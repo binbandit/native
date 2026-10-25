@@ -203,6 +203,33 @@ extension HostTitleTests {
         await client.stop()
     }
 
+    @Test("Configuring again, as each reconnect and new pairing does, writes no title twice")
+    func reconfiguring() async throws {
+        let rig = try Rig()
+        let titler = Titler(answer: "Fix login test", released: false)
+        let host = try rig.host(titler)
+        let owner = try await rig.connect(to: host)
+        let configuration = ConfigureTitlesParams(provider: .onDevice)
+        try await owner.configureTitles(configuration)
+        let id = try await rig.startTask("fix the login test", on: owner)
+        for _ in 0..<500 where titler.requests.isEmpty {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        // The same settings from two pairings, then new instructions, while the title is written.
+        for _ in 0..<2 {
+            let laptop = try await rig.connect(to: host, grants: Self.pairedMac, syncingAgents: false)
+            try await laptop.configureTitles(configuration)
+            await laptop.stop()
+        }
+        try await owner.configureTitles(
+            ConfigureTitlesParams(provider: .onDevice, instructions: HostTitleInstructions(global: "Keep it short")))
+        titler.release()
+        try await settled(id, in: host)
+        #expect(titler.requests.count == 1)
+        #expect(host.sessions[id]?.titleState.generated == "Fix login test")
+        await owner.stop()
+    }
+
     @Test("An unavailable model is retried on the next turn after a restart, not at each restart")
     func unavailableAcrossRestart() async throws {
         let rig = try Rig()

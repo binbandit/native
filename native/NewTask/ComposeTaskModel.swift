@@ -26,6 +26,8 @@ final class ComposeTaskModel {
     var isHeld = false
     var pendingAttachments = false
     var heldDraft: ComposeHeldDraft?
+    /// A second agent on the To line: the same brief goes to both, each in its own worktree.
+    var second: ComposeRecipient?
     @ObservationIgnored private let storage: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
@@ -61,7 +63,10 @@ final class ComposeTaskModel {
         isPresented && !isHeld && stage == .writing ? editor : nil
     }
 
-    var addressedChoices: [String: String] {
+    var addressedChoices: [String: String] { Self.addressedChoices(in: options) }
+
+    /// The settings a task is started with, by category.
+    static func addressedChoices(in options: [ConfigOption]) -> [String: String] {
         Dictionary(
             options.compactMap { option in
                 guard let category = option.category, ["model", "thought_level", "mode"].contains(category),
@@ -97,4 +102,14 @@ final class ComposeTaskModel {
             options[index].kind = .select(currentValue: value, options: setting.choices)
         }
     }
+}
+
+/// An agent the brief also goes to, with the settings its task starts with: the project's and the
+/// agent's defaults, as a new task of its own would have.
+struct ComposeRecipient: Equatable {
+    let agent: AgentDefinition.ID
+    var options: [ConfigOption]
+
+    var modelName: String? { ComposerSettings(options).model?.currentName }
+    var choices: [String: String] { ComposeTaskModel.addressedChoices(in: options) }
 }

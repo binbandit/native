@@ -110,19 +110,20 @@ import Testing
             ])
     }
 
-    @Test func badValuesAreReportedAndIgnored() {
+    @Test func badManagedValuesAreReportedAndFailClosed() {
         let policy = load(managed: [
-            .scriptsEnabled: "no",
+            .scriptsEnabled: "yes",
             .updatesFeedURL: "file:///etc/passwd",
             .searchRetentionDays: 0,
             .telemetryNative: "sometimes",
             .updatesChannels: ["stable", "canary"],
             .mcpRequired: [["name": "both", "command": "x", "url": "https://x.example.com"]],
         ])
-        #expect(policy.scriptsEnabled)
-        #expect(policy.updates.feedURL == nil)
-        #expect(policy.searchRetentionDays == nil)
-        #expect(policy.telemetry.native == .user)
+        #expect(!policy.scriptsEnabled)
+        #expect(policy.updates.feedURL == nil && !policy.updates.isEnabled)
+        #expect(policy.searchRetentionDays == 1)
+        #expect(policy.telemetry.native == .off)
+        // Ordinary mode keeps the usable part of a collection; restricted mode wouldn't.
         #expect(policy.updates.allowedChannels == ["stable"])
         #expect(policy.mcp.required.isEmpty)
         let keys = Set(policy.diagnostics.map(\.key))
@@ -132,15 +133,18 @@ import Testing
                     PolicyKey.scriptsEnabled, .updatesFeedURL, .searchRetentionDays, .telemetryNative, .updatesChannels,
                     .mcpRequired,
                 ].map(\.rawValue).reduce(into: Set()) { $0.insert($1) })
-        #expect(!policy.isManaged(.scriptsEnabled))
+        #expect(policy.isManaged(.scriptsEnabled))
         #expect(policy.isManaged(.updatesChannels))
+        #expect(policy.keyStatus[.scriptsEnabled] == PolicyKeyStatus(validity: .invalid, origin: .failClosed))
+        #expect(policy.deployment.state == .invalid)
     }
 
     @Test func numbersAreNotBooleans() {
-        let policy = load(managed: [.labsEnabled: NSNumber(value: 0), .searchRetentionDays: true])
+        let policy = load(managed: [.labsEnabled: NSNumber(value: 1), .searchRetentionDays: true])
         // A plist integer isn't a Boolean, and a Boolean isn't a number of days.
         #expect(policy.diagnostics.map(\.key).contains(PolicyKey.searchRetentionDays.rawValue))
-        #expect(policy.searchRetentionDays == nil)
+        #expect(!policy.labsEnabled)
+        #expect(policy.searchRetentionDays == 1)
     }
 
     @Test func organizationThenUserThenDefault() {
@@ -150,9 +154,9 @@ import Testing
         let userOnly = load(user: [.labsEnabled: false])
         #expect(!userOnly.labsEnabled && !userOnly.isManaged(.labsEnabled))
 
-        // A bad organization value falls back to the user's, and is reported.
-        let badManaged = load(managed: [.labsEnabled: "maybe"], user: [.labsEnabled: false])
-        #expect(!badManaged.labsEnabled && !badManaged.isManaged(.labsEnabled))
+        // A bad organization value is reported and denies, rather than falling back to the user's.
+        let badManaged = load(managed: [.labsEnabled: "maybe"], user: [.labsEnabled: true])
+        #expect(!badManaged.labsEnabled && badManaged.isManaged(.labsEnabled))
         #expect(badManaged.diagnostics.first?.origin == .organization)
 
         #expect(load().labsEnabled)
@@ -215,7 +219,8 @@ import Testing
         #expect(managed.aiInstructions == ["branchName": "Start with the Jira key."])
         #expect(managed.isManaged(.aiInstructions))
         #expect(managed.diagnostics.map(\.problem) == ["title should be a string; skipped"])
-        #expect(load(managed: [.aiInstructions: "Be brief."]).aiInstructions == nil)
+        // Unusable instructions lock Native's own (none) rather than leaving the user's in place.
+        #expect(load(managed: [.aiInstructions: "Be brief."]).aiInstructions == [:])
     }
 
     @Test func wildcards() {

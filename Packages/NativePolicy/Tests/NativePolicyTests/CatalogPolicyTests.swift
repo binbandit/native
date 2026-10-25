@@ -48,22 +48,22 @@ import Testing
         #expect(policy.diagnostics.isEmpty)
     }
 
-    @Test func wrongManagedTypesFallBackToUserValues() {
+    @Test func wrongManagedTypesFailClosedInsteadOfUsingUserValues() {
         let mirror = "https://user.example.com/index.json"
         let policy = load(
-            managed: [.catalogEnabled: "false", .catalogIndexURL: [mirror]],
-            user: [.catalogEnabled: false, .catalogIndexURL: mirror])
+            managed: [.catalogEnabled: "true", .catalogIndexURL: [mirror]],
+            user: [.catalogEnabled: true, .catalogIndexURL: mirror])
         #expect(!policy.catalog.isEnabled)
-        #expect(policy.catalog.indexURL == URL(string: mirror))
-        #expect(policy.managedKeys.isEmpty)
+        #expect(policy.catalog.indexURL == nil)
+        #expect(policy.managedKeys == [.catalogEnabled, .catalogIndexURL])
         #expect(
             policy.diagnostics == [
                 PolicyDiagnostic(
                     key: PolicyKey.catalogEnabled.rawValue, origin: .organization,
-                    problem: "should be a Boolean; ignored"),
+                    problem: "should be a Boolean; denied"),
                 PolicyDiagnostic(
                     key: PolicyKey.catalogIndexURL.rawValue, origin: .organization,
-                    problem: "should be an http or https URL; ignored"),
+                    problem: "should be an http or https URL; denied"),
             ])
     }
 
@@ -84,26 +84,24 @@ import Testing
     @Test(arguments: [
         "", "index.json", "https:index.json", "file:///tmp/index.json", "ftp://mirror.example.com/index.json",
     ])
-    func invalidMirrorFallsBackAndReportsEachOrigin(mirror: String) {
+    func invalidManagedMirrorDisablesTheCatalog(mirror: String) {
         let policy = load(managed: [.catalogIndexURL: mirror], user: [.catalogIndexURL: mirror])
         #expect(policy.catalog.indexURL == nil)
-        #expect(policy.managedKeys.isEmpty)
+        #expect(!policy.catalog.isEnabled)
+        #expect(policy.managedKeys == [.catalogIndexURL])
         #expect(
             policy.diagnostics == [
                 PolicyDiagnostic(
                     key: PolicyKey.catalogIndexURL.rawValue, origin: .organization,
-                    problem: "should be an http or https URL; ignored"),
-                PolicyDiagnostic(
-                    key: PolicyKey.catalogIndexURL.rawValue, origin: .user,
-                    problem: "should be an http or https URL; ignored"),
+                    problem: "should be an http or https URL; denied")
             ])
     }
 
-    @Test func invalidManagedMirrorFallsBackToUserMirror() {
+    @Test func invalidManagedMirrorNeverFallsBackToTheUserMirror() {
         let mirror = "http://user.example.com/index.json"
         let policy = load(managed: [.catalogIndexURL: "file:///tmp/index.json"], user: [.catalogIndexURL: mirror])
-        #expect(policy.catalog.indexURL == URL(string: mirror))
-        #expect(!policy.isManaged(.catalogIndexURL))
+        #expect(policy.catalog.indexURL == nil)
+        #expect(policy.isManaged(.catalogIndexURL))
         #expect(policy.diagnostics.count == 1)
         #expect(policy.diagnostics.first?.origin == .organization)
     }

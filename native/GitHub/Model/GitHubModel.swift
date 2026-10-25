@@ -30,6 +30,8 @@ final class GitHubModel {
     /// Pull requests behind task branches, for badges.
     var branchPullRequests: [BranchReference: BranchPullRequest] = [:]
     @ObservationIgnored var branchLookupsInFlight: [BranchReference: Task<GitHubError?, Never>] = [:]
+    /// gh on paired hosts, for their branches (`answerBranches(on:with:linkedPullRequest:)`).
+    @ObservationIgnored var remoteBranches = RemoteBranchPullRequests()
 
     /// Opens a pull request as a task: the app's Open as Task sheet takes it from there (which
     /// project, cloning it, the worktree, the task). Set by the app, which owns worktrees and
@@ -312,10 +314,8 @@ final class GitHubModel {
         accountRevision += 1
         availability = nil
         inbox = nil
-        for branch in branchPullRequests.keys {
-            branchPullRequests[branch] = BranchPullRequest(pullRequest: nil, fetchedAt: .distantPast)
-        }
-        branchLookupsInFlight = [:]
+        // Paired hosts' gh answers with their own accounts, which this switch doesn't change.
+        forgetBranches(on: nil)
         pages = [:]
         presentedPullRequest = nil
         mergeRequest = nil

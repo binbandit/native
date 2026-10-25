@@ -113,4 +113,35 @@ import Testing
             "https://example.com:", "https://example.com:0", "https://example.com:65536", "http://[fe80::1%25en0]",
         ] { #expect(NetworkOrigin(text) == nil) }
     }
+
+    @Test func mcpTransportsAreAlternativesAndARequiredServerNeedsItsOwn() {
+        func load(off services: [String]) -> NativePolicy {
+            PolicyLoader.load(
+                from: StaticPolicySource(managed: [
+                    "policy.mcp.required": [["name": "audit", "command": "auditd"]],
+                    "policy.network": [
+                        "services": Dictionary(uniqueKeysWithValues: services.map { ($0, ["enabled": false]) })
+                    ],
+                ]))
+        }
+        let sseOff = load(off: ["mcp.sse"])
+        #expect(sseOff.decision(for: .mcpExecution) == .required)
+        #expect(sseOff.decision(for: .agentExecution) == .allowed)
+
+        let stdioOff = load(off: ["mcp.stdio"])
+        #expect(stdioOff.decision(for: .mcpExecution) == .disabled(.serviceDisabled(.mcpStdio), conflict: true))
+        #expect(stdioOff.decision(for: .agentExecution) == .disabled(.requiredButDenied(.mcpExecution)))
+
+        // A URL server goes over streamable HTTP, so SSE alone can't carry it.
+        let url = PolicyLoader.load(
+            from: StaticPolicySource(managed: [
+                "policy.mcp.required": [["name": "audit", "url": "https://audit.example.com/mcp"]],
+                "policy.network": ["services": ["mcp.http": ["enabled": false]]],
+            ]))
+        #expect(url.decision(for: .mcpExecution) == .disabled(.serviceDisabled(.mcpHTTP), conflict: true))
+        #expect(url.decision(for: .agentExecution) == .disabled(.requiredButDenied(.mcpExecution)))
+
+        let allOff = load(off: ["mcp.stdio", "mcp.http", "mcp.sse"])
+        #expect(allOff.decision(for: .mcpExecution).state == .disabled)
+    }
 }

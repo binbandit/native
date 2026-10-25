@@ -27,13 +27,15 @@ struct CelebrationDownloadPolicyTests {
         #expect(policy.diagnostics.isEmpty)
     }
 
-    @Test func invalidValuesReportDiagnostics() {
+    @Test func invalidValuesReportDiagnosticsAndDenyDownloads() {
         let policy = PolicyLoader.load(
             from: StaticPolicySource(managed: [
-                "policy.celebrations.downloadsEnabled": "no",
+                "policy.celebrations.downloadsEnabled": "yes",
                 "policy.celebrations.baseURL": "file:///tmp/icons/",
             ]))
         #expect(policy.diagnostics.count == 2)
-        #expect(policy.managedKeys.isEmpty)
+        #expect(policy.managedKeys == [.celebrationDownloadsEnabled, .celebrationAssetsBaseURL])
+        #expect(!policy.celebrations.downloadsEnabled)
+        #expect(policy.celebrations.baseURL == nil)
     }
 }

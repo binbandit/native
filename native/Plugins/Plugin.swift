@@ -33,6 +33,10 @@ protocol NativePlugin: Sendable {
     var isEnabledByDefault: Bool { get }
     /// Built-in features own their policy gate; the registry enforces it before loading contributions.
     func isAllowed(by policy: NativePolicy) -> Bool
+    /// What the plugin does that policy decides on as a whole. Restricted mode admits it only when
+    /// every one is permitted, and keeps a plugin that hasn't declared (nil) off, built in or not.
+    /// Ordinary mode doesn't consult it.
+    var capabilities: Set<PolicyCapability>? { get }
     /// What the plugin wants left out of a session (MCP servers, skills), as intent. Every enabled
     /// plugin's policy is merged, and the session's agent applies what it can.
     func sessionPolicy(for session: SessionContext) -> SessionPolicy
@@ -54,6 +58,7 @@ protocol NativePlugin: Sendable {
 extension NativePlugin {
     var isEnabledByDefault: Bool { true }
     func isAllowed(by policy: NativePolicy) -> Bool { true }
+    var capabilities: Set<PolicyCapability>? { nil }
     var titler: (any SessionTitler)? { nil }
     func mcpServers(for session: SessionContext) -> [MCPServer] { [] }
     func handle(_ event: SessionEvent) async {}

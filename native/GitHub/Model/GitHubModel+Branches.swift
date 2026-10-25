@@ -1,3 +1,4 @@
+import Exec
 import Foundation
 import GitHub
 
@@ -12,7 +13,8 @@ extension GitHubModel {
         branchPullRequests[branch]?.pullRequest
     }
 
-    /// An explicit refresh (`maxAge: 0`) waits for older work, then bypasses the cache.
+    /// An explicit refresh (`maxAge: 0`) waits for older work, then bypasses the cache. A paired
+    /// host's branch is asked of gh on that host, never of this Mac's.
     @discardableResult
     func loadPullRequest(for branch: BranchReference, maxAge: TimeInterval = branchMaxAge) async -> GitHubError? {
         if maxAge > 0, let cached = branchPullRequests[branch], Date.now.timeIntervalSince(cached.fetchedAt) < maxAge {
@@ -26,7 +28,10 @@ extension GitHubModel {
                 if Task.isCancelled { return .cancelled }
                 continue
             }
-            if maxAge == 0, !checkedAccounts, availability == .notInstalled || availability == .notAuthenticated {
+            // This Mac's gh only: a host's gh is installed and signed in there.
+            if branch.host == nil, maxAge == 0, !checkedAccounts,
+                availability == .notInstalled || availability == .notAuthenticated
+            {
                 // Wait for older lookups before recovery; they can still report an expired login.
                 checkedAccounts = true
                 await checkAccounts()
@@ -34,22 +39,65 @@ extension GitHubModel {
             }
             break
         }
-        if availability == .notInstalled { return recordBranchFailure(.notInstalled, for: branch) }
-        if availability == .notAuthenticated { return recordBranchFailure(.notAuthenticated(""), for: branch) }
-        let revision = accountRevision
-        let lookup = Task {
-            let failure = await fetchPullRequest(for: branch, revision: revision, reportsMissing: maxAge == 0)
-            if revision == accountRevision { branchLookupsInFlight[branch] = nil }
-            return failure
+        let reportsMissing = maxAge == 0
+        let lookup: Task<GitHubError?, Never>
+        if let host = branch.host {
+            let source: RemoteBranchPullRequests.Source
+            switch remoteBranches.source(for: host) {
+            case .success(let found): source = found
+            case .failure(let error): return recordBranchFailure(error, for: branch)
+            }
+            lookup = Task {
+                let isCurrent: @MainActor () -> Bool = { self.remoteBranches.isCurrent(source, on: host) }
+                let failure = await fetchPullRequest(
+                    for: branch, using: source.cli, linkedPullRequest: source.linkedPullRequest,
+                    reportsMissing: reportsMissing, isCurrent: isCurrent)
+                if isCurrent() { branchLookupsInFlight[branch] = nil }
+                return failure
+            }
+        } else {
+            if availability == .notInstalled { return recordBranchFailure(.notInstalled, for: branch) }
+            if availability == .notAuthenticated { return recordBranchFailure(.notAuthenticated(""), for: branch) }
+            let revision = accountRevision
+            lookup = Task {
+                let cli = await cli(rereadEnvironment: availability == .notInstalled)
+                let failure = await fetchPullRequest(
+                    for: branch, using: cli, linkedPullRequest: linkedPullRequest, reportsMissing: reportsMissing,
+                    isCurrent: { revision == self.accountRevision })
+                if revision == accountRevision { branchLookupsInFlight[branch] = nil }
+                return failure
+            }
         }
         branchLookupsInFlight[branch] = lookup
         return await lookup.value
     }
 
+    /// Asks `runner`'s gh (a paired host's) about `host`'s branches from now on, as for the host's
+    /// next pairing. What an earlier pairing said or is still saying no longer counts.
+    func answerBranches(
+        on host: RemoteHostID, with runner: any CommandRunner,
+        linkedPullRequest: @escaping @MainActor (BranchReference) async -> URL?
+    ) {
+        remoteBranches.install(runner, on: host, linkedPullRequest: linkedPullRequest)
+        forgetBranches(on: host)
+    }
+
+    /// Forgets what one machine's gh said about its branches (`nil`: this Mac's) and drops what it's
+    /// still looking up, once its answers no longer count.
+    func forgetBranches(on host: RemoteHostID?) {
+        for branch in branchPullRequests.keys where branch.host == host {
+            branchPullRequests[branch] = BranchPullRequest(pullRequest: nil, fetchedAt: .distantPast)
+        }
+        branchLookupsInFlight = branchLookupsInFlight.filter { $0.key.host != host }
+    }
+
+    /// `isCurrent` turns false once the answer no longer counts: another account here, another
+    /// pairing with the host.
     private func fetchPullRequest(
-        for branch: BranchReference, revision: Int, reportsMissing: Bool
+        for branch: BranchReference, using cli: GitHubCLI,
+        linkedPullRequest: (@MainActor (BranchReference) async -> URL?)?, reportsMissing: Bool,
+        isCurrent: @MainActor () -> Bool
     ) async -> GitHubError? {
-        let cli = await cli(rereadEnvironment: availability == .notInstalled)
         do {
             let found: BranchPullRequests?
             if let link = await linkedPullRequest?(branch) {
@@ -57,20 +105,21 @@ extension GitHubModel {
             } else {
                 found = try await cli.pullRequests(forBranch: branch.branch, in: .directory(branch.directory))
             }
-            guard revision == accountRevision else { return .cancelled }
+            guard isCurrent() else { return .cancelled }
             branchPullRequests[branch] = BranchPullRequest(found, fetchedAt: .now)
             return nil
         } catch .notARepository {
-            guard revision == accountRevision else { return .cancelled }
+            guard isCurrent() else { return .cancelled }
             branchPullRequests[branch] = BranchPullRequest(pullRequest: nil, fetchedAt: .now)
             return nil
         } catch {
-            guard revision == accountRevision else { return .cancelled }
+            guard isCurrent() else { return .cancelled }
             if case .notFound = error, !reportsMissing {
                 branchPullRequests[branch] = BranchPullRequest(pullRequest: nil, fetchedAt: .now)
                 return nil
             }
-            if case .notAuthenticated = error { reportAuthenticationFailure() }
+            // A host's gh signing out says nothing about this Mac's account.
+            if case .notAuthenticated = error, branch.host == nil { reportAuthenticationFailure() }
             return recordBranchFailure(error, for: branch)
         }
     }

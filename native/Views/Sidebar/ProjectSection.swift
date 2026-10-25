@@ -47,8 +47,14 @@ struct ProjectSection<TaskAccessory: View>: View {
             ForEach(problems.filter { !isFiltered || $0.work == .refresh }) { problem in
                 ProjectProblemRow(problem: problem)
             }
+            let startingKeys = starting.map(\.id)
             ForEach(starting) { task in
-                StartingTaskRow(task: task)
+                let placement = model.taskPairPlacement(of: task.id, among: startingKeys)
+                if case .first(let pair)? = placement {
+                    TaskPairSidebarHeader(pair: pair, select: select)
+                }
+                StartingTaskRow(task: task, isPairMember: placement != nil)
+                    .padding(.leading, placement != nil ? DS.TaskPair.memberIndent : 0)
             }
             taskRows(sessions)
             if !earlier.isEmpty {
@@ -94,17 +100,27 @@ struct ProjectSection<TaskAccessory: View>: View {
     }
 
     private func taskRows(_ rows: [SessionSummary]) -> some View {
-        ForEach(rows) { summary in
+        let keys = rows.map(\.id)
+        return ForEach(rows) { summary in
             let row = SidebarDragState.Item.session(summary.id, in: project.id)
             let index = order[summary.id] ?? 0
+            // A brief's two tasks sit under its title, each named by its agent.
+            let placement = model.taskPairPlacement(of: summary.id, among: keys)
+            if case .first(let pair)? = placement {
+                TaskPairSidebarHeader(pair: pair, select: select)
+            }
             SessionRow(
-                summary: summary, canMoveUp: index > 0, canMoveDown: index < order.count - 1,
-                accessory: taskAccessory(summary)
+                summary: summary, isPairMember: placement != nil, canMoveUp: index > 0,
+                canMoveDown: index < order.count - 1, accessory: taskAccessory(summary)
             ) {
                 select(summary.id)
             }
             .equatable()
-            .padding(.leading, model.isCoordinatorChild(summary.id, among: sessions + earlier) ? DS.Space.xl : 0)
+            .padding(
+                .leading,
+                model.isCoordinatorChild(summary.id, among: sessions + earlier)
+                    ? DS.Space.xl : placement != nil ? DS.TaskPair.memberIndent : 0
+            )
             .sidebarDraggable(row, title: model.title(for: summary), state: drag)
             .sidebarDropTarget(row, state: drag, isActive: drag.dragged.isSession, onDrop: model.applySidebarDrop)
         }

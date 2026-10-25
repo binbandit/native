@@ -521,6 +521,21 @@ After a background start, the confirmation's Open button opens that task. Quick 
 captures only a selection inside Native; global shortcuts and capture from other apps are not
 part of this experiment.
 
+### Two agents
+
+The page's To line can name a second agent (the + after the first). Start then makes two tasks
+from the one brief, each in its own worktree, grouped in the sidebar under the brief's title. When
+both are at rest, the card at the end of either transcript compares them and keeps one. Keeping
+one archives the other: its worktree goes, its branch and uncommitted work are saved as a
+checkpoint, and Undo (the toast, or ⌘Z) brings it back as a group.
+
+| Keys | Action | Menu | Command |
+| --- | --- | --- | --- |
+| | Show both versions side by side, file by file (also Compare on the card) | Task | `task.compareVersions` |
+| | Keep the selected task's version and archive the other (also Keep on the card and in Compare) | Task | `task.keepVersion` |
+| Escape in Compare | Back to the task | | |
+| ⌘Z after keeping one | Bring the other task and its worktree back, and group them again | Edit | |
+
 ## Choosing a device
 
 New Task's device picker says where the task runs: This Mac or a paired host (Settings ▸ Hosts),

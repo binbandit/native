@@ -43,4 +43,7 @@ struct ComposeHeldDraft: Codable {
     let files: [File]
     let choices: [String: String]
     let workspace: TaskWorkspaceChoice?
+    /// The second agent on the To line, and the settings its task starts with.
+    var second: AgentDefinition.ID?
+    var secondChoices: [String: String]?
 }

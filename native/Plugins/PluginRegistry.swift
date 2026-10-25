@@ -61,14 +61,21 @@ final class PluginRegistry {
 
     private let defaults: UserDefaults
     private let builtIns: [any NativePlugin]
+    /// The organization's policy, which admits every plugin before it contributes or runs.
+    let policyCenter: PolicyCenter
+    @ObservationIgnored private var policyWatch: Task<Void, Never>?
     private let logger = Logger(subsystem: "Native", category: "Plugins")
     private static let choicesKey = "pluginChoices"
     /// Before plugins had defaults, only turning one off was recorded.
     private static let legacyDisabledKey = "disabledPlugins"
 
-    init(builtIns: [any NativePlugin] = BuiltInPlugins.all, defaults: UserDefaults = .standard) {
+    init(
+        builtIns: [any NativePlugin] = BuiltInPlugins.all, defaults: UserDefaults = .standard,
+        policyCenter: PolicyCenter = .shared
+    ) {
         self.builtIns = builtIns
         self.defaults = defaults
+        self.policyCenter = policyCenter
         if let stored = defaults.dictionary(forKey: Self.choicesKey) as? [String: Bool] {
             choices = stored
         } else {
@@ -76,6 +83,17 @@ final class PluginRegistry {
             choices = Dictionary(uniqueKeysWithValues: disabled.map { ($0, false) })
         }
         reload()
+        // A plugin the organization revokes takes its experiments out of Labs straight away.
+        policyWatch = Task { [weak self, policyCenter] in
+            for await _ in Observations({ policyCenter.policy }) {
+                guard let self else { return }
+                self.syncExperiments()
+            }
+        }
+    }
+
+    isolated deinit {
+        policyWatch?.cancel()
     }
 
     #if DEBUG
@@ -83,6 +101,7 @@ final class PluginRegistry {
     init(previewing plugins: [any NativePlugin], disabled: Set<String> = []) {
         builtIns = plugins
         defaults = PreviewUserDefaults()
+        policyCenter = .shared
         choices = Dictionary(uniqueKeysWithValues: disabled.map { ($0, false) })
         loadedPlugins = plugins.map { LoadedPlugin(plugin: $0, source: .builtIn) }
     }
@@ -116,16 +135,13 @@ final class PluginRegistry {
         return choices[id] ?? loadedPlugins.first { $0.id == id }?.plugin.isEnabledByDefault ?? true
     }
 
-    /// Whether the organization lets the plugin load. Its list covers plugins installed from
-    /// manifests; built-ins are part of Native and governed by their own policy keys.
+    /// Whether the organization lets the plugin load (`admission(of:)`), and its own feature gate
+    /// agrees (`NativePlugin.isAllowed(by:)`).
     func isAllowed(_ id: String) -> Bool {
-        if let loaded = loadedPlugins.first(where: { $0.id == id }),
-            !loaded.plugin.isAllowed(by: PolicyCenter.shared.policy)
-        {
-            return false
+        guard let loaded = loadedPlugins.first(where: { $0.id == id }) else {
+            return policyCenter.policy.admission(ofPlugin: id, origin: .installed, capabilities: nil).isAdmitted
         }
-        guard loadedPlugins.first(where: { $0.id == id })?.source != .builtIn else { return true }
-        return PolicyCenter.shared.policy.allowsPlugin(id)
+        return loaded.plugin.isAllowed(by: policyCenter.policy) && admission(of: loaded).isAdmitted
     }
 
     /// Whether the user has switched the plugin on or off themselves, rather than it following its default.
@@ -153,7 +169,7 @@ final class PluginRegistry {
 
     // MARK: - Contributions of enabled plugins
 
-    /// Enabled plugins, plus the system plugins that always run (`SystemPlugins`).
+    /// Enabled plugins, plus the system plugins policy admits (`SystemPlugins`).
     var enabledPlugins: [any NativePlugin] {
         contributions.enabledPlugins
     }
@@ -172,8 +188,9 @@ final class PluginRegistry {
 
     /// Every MCP server enabled plugins want the agent to have for this session.
     func mcpServers(for session: SessionContext) -> [MCPServer] {
+        guard policyCenter.policy.decision(for: .mcpExecution).isPermitted else { return [] }
         // The organization's blocks and allowlist apply to every server but the ones it requires.
-        let policy = PolicyCenter.shared.policy.mcp
+        let policy = policyCenter.policy.mcp
         let required = Set(policy.required.map(\.name))
         return enabledPlugins.flatMap { plugin in
             plugin.manifest.mcpServers.compactMap(\.server) + plugin.mcpServers(for: session)
@@ -225,17 +242,31 @@ final class PluginRegistry {
         enabledPlugins.lazy.compactMap(\.titler).first
     }
 
-    /// Returns once every enabled plugin has what agents' launches depend on.
-    func prepareForLaunch() async {
+    /// Returns once every enabled plugin has what agents' launches depend on, with the ids of those
+    /// prepared. Admission is checked again before each plugin starts and after it finishes, so one
+    /// the organization revokes meanwhile is neither prepared nor counted, and contributes nothing.
+    @discardableResult
+    func prepareForLaunch() async -> Set<String> {
+        var prepared: Set<String> = []
         for plugin in enabledPlugins {
+            let id = plugin.manifest.id
+            guard isActive(id) else { continue }
             await plugin.prepareForLaunch()
+            if isActive(id) { prepared.insert(id) }
+        }
+        return prepared
+    }
+
+    /// Delivers an event to each enabled plugin still admitted when its turn comes.
+    func broadcast(_ event: SessionEvent) async {
+        for plugin in enabledPlugins where isActive(plugin.manifest.id) {
+            await plugin.handle(event)
         }
     }
 
-    func broadcast(_ event: SessionEvent) async {
-        for plugin in enabledPlugins {
-            await plugin.handle(event)
-        }
+    /// Whether the plugin is among the enabled ones under the policy as it is now.
+    private func isActive(_ id: String) -> Bool {
+        enabledPlugins.contains { $0.manifest.id == id }
     }
 
     // MARK: - Cached contributions
@@ -284,18 +315,21 @@ final class PluginRegistry {
         } else {
             plugins = loadedPlugins
         }
-        let enabled = plugins.filter { isEnabled($0.id) }.map(\.plugin) + SystemPlugins.current
-        let policy = PolicyCenter.shared.policy.agents
+        let policy = policyCenter.policy
+        let system = SystemPlugins.current(policy: policy).filter {
+            policy.admission(ofPlugin: $0.manifest.id, origin: .system, capabilities: $0.capabilities).isAdmitted
+        }
+        let enabled = plugins.filter { isEnabled($0.id) }.map(\.plugin) + system
+        let runsAgents = policy.decision(for: .agentExecution).isPermitted
         let agents = enabled.flatMap { plugin in
             let manifest = plugin.manifest
-            return manifest.agents.filter { policy.allows($0.id) }.map { agent in
+            return manifest.agents.filter { runsAgents && policy.agents.allows($0.id) }.map { agent in
                 var agent = agent
-                agent.env.merge(policy.environment[agent.id] ?? [:]) { $1 }
+                agent.env.merge(policy.agents.environment[agent.id] ?? [:]) { $1 }
                 return AgentDefinition(agent, pluginID: manifest.id)
             }
         }
-        var knowledge = CommandKnowledge.bundled.adding(
-            PolicyCenter.shared.policy.commandKnowledge, source: "Organization policy")
+        var knowledge = CommandKnowledge.bundled.adding(policy.commandKnowledge, source: "Organization policy")
         for plugin in enabled {
             if let document = plugin.manifest.commandKnowledge, let data = try? JSONEncoder().encode(document) {
                 knowledge = knowledge.adding(.load(data), source: "Plugin \(plugin.manifest.id)")
@@ -355,5 +389,9 @@ struct ManifestPlugin: NativePlugin {
 
     func historyReader(for agent: AgentDefinition.ID) -> (any SessionHistoryReader)? {
         manifest.agents.contains { $0.id == agent.rawValue } ? historyReader : nil
+    }
+
+    var capabilities: Set<PolicyCapability>? {
+        manifest.capabilities.union(historyReader == nil ? [] : [.search])
     }
 }

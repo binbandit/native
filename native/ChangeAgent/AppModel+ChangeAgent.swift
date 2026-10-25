@@ -144,6 +144,7 @@ extension AppModel {
         earlierConversations.record(target.key, after: source.key)
         earlierConversations.keep(target.key)
         ordering.replace(source.key, with: target.key)
+        taskPairs.replace(source.key, with: target.key)
         target.draft = source.draft
         target.attachments = source.attachments
         source.draft = ""

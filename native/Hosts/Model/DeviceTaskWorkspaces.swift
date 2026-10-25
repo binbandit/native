@@ -61,6 +61,10 @@ final class DeviceTaskWorkspaces: TaskWorkspaceProvider {
         try await local.removeUnusedWorkspace(at: folder, in: project)
     }
 
+    func newWorktreeStart(in project: Project) async throws -> TaskWorkspaceChoice? {
+        try await local.newWorktreeStart(in: project)
+    }
+
     func workspace(forNewTaskIn project: Project, title: String?) async throws -> URL {
         try await local.workspace(forNewTaskIn: project, title: title)
     }

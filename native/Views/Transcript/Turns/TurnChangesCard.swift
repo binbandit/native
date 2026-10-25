@@ -7,10 +7,16 @@ struct TurnChangesCard: View {
     let summary: TurnSummary
 
     @Environment(\.turnChangesActions) private var actions
+    @Environment(\.transcriptTrailer) private var trailer
+    @Environment(\.isPrimaryTranscript) private var isPrimary
     @State private var showsFiles = false
     @State private var isCommitting = false
 
     var body: some View {
+        if !(isPrimary && trailer?.replacesChangesCard == true) { card }
+    }
+
+    private var card: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
             if showsFiles {
