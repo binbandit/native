@@ -66,7 +66,7 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
                     select: select, folding: folding
                 )
                 .environment(\.sidebarAllInView, usesSidebarNext)
-                .environment(\.oldestTaskAskID, usesSidebarNext ? model.oldestTaskAsk?.id : nil)
+                .environment(\.answerShortcutAskID, usesSidebarNext ? model.answerShortcutAsk?.id : nil)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, usesSidebarNext ? DS.Sidebar.inset : DS.Space.sm)
                 .padding(.vertical, usesSidebarNext ? 0 : DS.Space.md)

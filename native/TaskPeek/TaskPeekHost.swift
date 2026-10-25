@@ -69,5 +69,5 @@ extension View {
 
 extension EnvironmentValues {
     @Entry var legacyAskShortcutEnabled = true
-    @Entry var oldestTaskAskID: TaskPeekAsk.ID?
+    @Entry var answerShortcutAskID: TaskPeekAsk.ID?
 }

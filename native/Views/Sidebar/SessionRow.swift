@@ -16,7 +16,7 @@ struct SessionRow<Accessory: View>: View {
     @AppStorage("sidebar.showAgentIcons") private var showAgentIcons = true
     @Environment(\.sidebarAllInView) private var isAllInView
     @Environment(\.homePresentedTaskNeeds) private var homeNeeds
-    @Environment(\.oldestTaskAskID) private var oldestAskID
+    @Environment(\.answerShortcutAskID) private var answerShortcutAskID
     let summary: SessionSummary
     /// Grouped under a project header, or flush in the Pinned section.
     var indent: TaskRowIndent = .grouped
@@ -106,7 +106,7 @@ struct SessionRow<Accessory: View>: View {
     @ViewBuilder private var taskRow: some View {
         if isAllInView {
             let attention = session.flatMap {
-                SidebarSessionAttention(session: $0, task: summary.id, oldest: oldestAskID)
+                SidebarSessionAttention(session: $0, task: summary.id, oldest: answerShortcutAskID)
             }
             let preferences = model.sidebarPreferences
             let isOnHome =
