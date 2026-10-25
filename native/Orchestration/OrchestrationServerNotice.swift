@@ -25,7 +25,6 @@ struct OrchestrationServerNotice: View {
             ) {
                 Button("Restart Host") {
                     onRestartHost()
-                    status.dismiss()
                 }
                 .buttonStyle(.ds(.secondary))
                 .help("Restarts Native's background host. Running turns pick up where they left off.")
