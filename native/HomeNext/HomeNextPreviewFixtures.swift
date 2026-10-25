@@ -1,13 +1,16 @@
 #if DEBUG
 import ACP
+import Experiments
 import NativeHostProtocol
 import SwiftUI
 
 /// Inert models for the canvas and isolated UI checks. No processes or filesystem writes.
 enum HomeNextPreviewFixtures {
     enum State: String {
-        case busy, quiet, first, empty, loading, recovery, narrow
-        case question, questionText, questions, questionFailure, plan, planText, planRetained, failure, failurePaused
+        case busy, calm, managed, quiet, first, empty, loading, recovery, narrow
+        case destructive, unknown, approvalFailure
+        case question, questionText, questions, questionFailure, plan, planFailure, planText, planRetained, failure,
+            failurePaused
     }
 
     static var requested: State? {
@@ -23,7 +26,14 @@ enum HomeNextPreviewFixtures {
     ]
 
     static func model(_ state: State) -> AppModel {
-        let app = AppModel.preview(.empty)
+        let defaults = PreviewUserDefaults()
+        let app = AppModel(
+            plugins: PluginRegistry(
+                builtIns: [BuiltInPlugins.claudeCode, BuiltInPlugins.codex, BuiltInPlugins.cursor], defaults: defaults),
+            defaults: defaults, catalogURL: nil,
+            experiments: ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage()))
+        app.experiments.set(true, for: .homeNext)
+        _ = app.runtimes.sync()
         guard state != .first else { return app }
         let project = app.projects.add(URL(filePath: "/tmp/native-home-fixture", directoryHint: .isDirectory))
         app.focusProject(project.id)
@@ -34,12 +44,17 @@ enum HomeNextPreviewFixtures {
             "Dark mode for the marketing site", "Wrap diff lines at word boundaries",
             "Add setup steps to the README", "Compress originals before upload",
         ]
-        let count = state == .quiet ? 10 : (state == .empty || state == .loading) ? 0 : state == .recovery ? 1 : 5
+        let count =
+            state == .quiet
+            ? 10
+            : (state == .empty || state == .loading)
+                ? 0
+                : state == .recovery ? 1 : (state == .calm || state == .managed) ? 7 : 5
         for index in 0..<count {
             let titleIndex: Int
             switch fixtureKind(state, index: index) {
             case .question, .questionText, .questions, .questionFailure: titleIndex = 1
-            case .plan, .planText, .planRetained: titleIndex = 2
+            case .plan, .planFailure, .planText, .planRetained: titleIndex = 2
             case .failure, .failurePaused: titleIndex = 3
             default: titleIndex = index
             }
@@ -49,7 +64,10 @@ enum HomeNextPreviewFixtures {
                 : titles[titleIndex]
             let kind = fixtureKind(state, index: index)
             let agent =
-                [State.question, .questionText, .questions, .questionFailure, .plan, .planText, .planRetained].contains(
+                [
+                    State.question, .questionText, .questions, .questionFailure, .plan, .planFailure, .planText,
+                    .planRetained,
+                ].contains(
                     kind)
                 ? "claude-code" : "codex"
             let id = "home-next-\(index)"
@@ -60,7 +78,8 @@ enum HomeNextPreviewFixtures {
             guard
                 let session = fixtureSession(
                     in: app, agent: agent, id: id, cwd: project.path, title: title,
-                    failsAnswer: kind == .questionFailure)
+                    failsAnswer: kind == .questionFailure
+                        || ([.approvalFailure, .planFailure].contains(state) && index == 0))
             else { continue }
             if state == .quiet {
                 session.previewExchange(
@@ -72,7 +91,7 @@ enum HomeNextPreviewFixtures {
                 switch kind {
                 case .question, .questionText, .questions, .questionFailure:
                     question(session, kind: kind)
-                case .plan, .planText, .planRetained:
+                case .plan, .planFailure, .planText, .planRetained:
                     plan(session, includesSteps: kind != .planText, date: date, retainsOlderPlan: kind == .planRetained)
                 case .failure:
                     session.state.endTurn(.error)
@@ -97,7 +116,13 @@ enum HomeNextPreviewFixtures {
                 case .quiet:
                     break
                 default:
-                    permission(session, command: "swift test --filter PermissionRequestTests", date: date)
+                    let command =
+                        state == .destructive
+                        ? "git push --force origin main"
+                        : state == .unknown
+                            ? "internal-check --workspace ."
+                            : "swift test --package-path Packages/ACP --filter PermissionRequestTests"
+                    permission(session, command: command, date: date, always: state != .managed)
                 }
                 session.lastActivity = date
             }
@@ -108,12 +133,14 @@ enum HomeNextPreviewFixtures {
     private static func fixtureSession(
         in app: AppModel, agent: String, id: String, cwd: String, title: String, failsAnswer: Bool
     ) -> SessionModel? {
-        guard failsAnswer else { return SessionModel.preview(in: app, agent: agent, id: id, cwd: cwd, title: title) }
         guard let definition = app.runtime(AgentDefinition.ID(rawValue: agent))?.agent,
-            let readOnly = FileHandle(forReadingAtPath: "/dev/null")
+            let input = FileHandle(forReadingAtPath: "/dev/null"),
+            let output = failsAnswer
+                ? FileHandle(forReadingAtPath: "/dev/null") : FileHandle(forWritingAtPath: "/dev/null")
         else { return nil }
-        // A read-only sink makes answering fail without starting a process or touching project data.
-        let connection = ACPConnection(reading: .nullDevice, writing: readOnly) { _ in }
+        // Own both handles: another preview's teardown must not close this fixture's transport.
+        // A read-only sink deliberately fails without starting a process or touching project data.
+        let connection = ACPConnection(reading: input, writing: output) { _ in }
         let session = SessionModel(
             agent: definition, id: SessionID(id), cwd: URL(filePath: cwd), connection: connection,
             services: app.sessions.services, supportsSteering: false, phase: .idle, title: title)
@@ -126,7 +153,7 @@ enum HomeNextPreviewFixtures {
         let start: Int
         switch state {
         case .question, .questionText, .questions, .questionFailure: start = 1
-        case .plan, .planText, .planRetained: start = 2
+        case .plan, .planFailure, .planText, .planRetained: start = 2
         case .failure, .failurePaused: start = 3
         default: start = 0
         }
@@ -196,13 +223,14 @@ enum HomeNextPreviewFixtures {
         session.state.requestPermission(request, id: .int(3))
     }
 
-    private static func permission(_ session: SessionModel, command: String, date: Date) {
+    private static func permission(_ session: SessionModel, command: String, date: Date, always: Bool = true) {
+        let persistent = always ? #"{"optionId":"always","name":"Always Allow","kind":"allow_always"},"# : ""
         let json = """
             {"sessionId":"\(session.id.rawValue)","toolCall":{
             "toolCallId":"approval-\(session.id.rawValue)","title":"\(command)","kind":"execute",
             "status":"pending","rawInput":{"command":["/bin/zsh","-lc","\(command)"]}},
             "options":[{"optionId":"reject","name":"Don't Allow","kind":"reject_once"},
-            {"optionId":"always","name":"Always Allow","kind":"allow_always"},
+            \(persistent)
             {"optionId":"allow","name":"Allow","kind":"allow_once"}]}
             """
         guard let request = SessionModel.previewDecode(RequestPermissionRequest.self, json) else { return }

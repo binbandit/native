@@ -25,8 +25,11 @@ extension NativeCommand {
             NativeCommand(.taskAnswerOldestAsk, title: "Answer Oldest Ask", category: .tasks, systemImage: "checkmark")
             { _ in
                 Task { await model.answerOldestTaskAsk() }
-            }.available { _ in model.offersTaskPeek && model.oldestTaskAsk != nil && !model.taskPeek.isAnswering }
-                .shownInSettings { model.offersTaskPeek },
+            }.available { _ in
+                model.offersTaskPeek && !model.homeNextOwnsAskShortcut
+                    && model.oldestTaskAsk != nil && !model.taskPeek.isAnswering
+            }
+            .shownInSettings { model.offersTaskPeek },
         ]
     }
 }
@@ -36,6 +39,6 @@ extension AppModel {
         guard let shortcut = DefaultShortcuts.all[.taskAnswerOldestAsk],
             registry.bindings.commands(boundTo: shortcut) == [.taskAnswerOldestAsk]
         else { return false }
-        return !offersTaskPeek || oldestTaskAsk == nil
+        return homeNextOwnsAskShortcut || !offersTaskPeek || oldestTaskAsk == nil
     }
 }
