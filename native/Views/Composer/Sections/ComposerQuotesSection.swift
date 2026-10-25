@@ -71,7 +71,11 @@ struct ComposerQuotesSection: View {
     private func lineLabel(_ quote: PromptQuote) -> String {
         guard let first = quote.lines.first?.number, let last = quote.lines.last?.number else { return "" }
         let range = first == last ? "line \(first)" : "lines \(first)-\(last)"
-        return quote.side == .transcript ? range : "\(range), \(quote.side.rawValue)"
+        switch quote.side {
+        case .transcript: return range
+        case .new: return "\(range), after the change"
+        case .old: return "\(range), before the change"
+        }
     }
 }
 

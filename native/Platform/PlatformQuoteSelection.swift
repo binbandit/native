@@ -25,7 +25,7 @@ enum PlatformQuoteSelection {
 
     static var entries: [UUID: Entry] = [:]
 
-    static func capture(task: UUID) -> [PromptQuote]? {
+    static func capture(task: UUID, source: ComposerQuoteSource? = nil) -> [PromptQuote]? {
         #if canImport(AppKit)
         guard
             let window = NSApp.keyWindow ?? NSApp.mainWindow
@@ -35,12 +35,12 @@ enum PlatformQuoteSelection {
         let selectedText: String
         let range: NSRange
         let frame: CGRect
-        if let view = window.firstResponder as? NSTextView, view.selectedRange().length > 0 {
+        if source == nil, let view = window.firstResponder as? NSTextView, view.selectedRange().length > 0 {
             text = view.string
             range = view.selectedRange()
             selectedText = (view.string as NSString).substring(with: range)
             frame = window.convertToScreen(view.convert(view.bounds, to: nil))
-        } else if let focused = window.accessibilityFocusedUIElement as? any NSAccessibilityProtocol,
+        } else if let focused = selectedElement(in: window, task: task, source: source),
             let selected = focused.accessibilitySelectedText(), !selected.isEmpty
         {
             text =
@@ -53,7 +53,9 @@ enum PlatformQuoteSelection {
             return nil
         }
         let matching = entries.values.filter { entry in
-            guard entry.task == task, let view = entry.view, view.window === window else { return false }
+            guard entry.task == task, source == nil || entry.source == source,
+                let view = entry.view, view.window === window
+            else { return false }
             return window.convertToScreen(view.convert(view.bounds, to: nil)).contains(
                 CGPoint(x: frame.midX, y: frame.midY))
         }
@@ -68,7 +70,9 @@ enum PlatformQuoteSelection {
         let selectedText = ((view.text ?? "") as NSString).substring(with: range)
         let frame = view.convert(view.bounds, to: window)
         let matching = entries.values.filter { entry in
-            guard entry.task == task, let anchor = entry.view, anchor.window === window else { return false }
+            guard entry.task == task, source == nil || entry.source == source,
+                let anchor = entry.view, anchor.window === window
+            else { return false }
             return anchor.convert(anchor.bounds, to: window).contains(CGPoint(x: frame.midX, y: frame.midY))
         }
         #endif
@@ -95,6 +99,40 @@ enum PlatformQuoteSelection {
         guard let size = entry.view?.bounds.size else { return .greatestFiniteMagnitude }
         return size.width * size.height
     }
+
+    #if canImport(AppKit)
+    private static func selectedElement(
+        in window: NSWindow, task: UUID, source: ComposerQuoteSource?
+    ) -> (any NSAccessibilityProtocol)? {
+        guard let source else { return window.accessibilityFocusedUIElement as? any NSAccessibilityProtocol }
+        let frames = entries.values.compactMap { entry -> CGRect? in
+            guard entry.task == task, entry.source == source, let view = entry.view, view.window === window else {
+                return nil
+            }
+            return window.convertToScreen(view.convert(view.bounds, to: nil))
+        }
+        // A context menu can take focus away from selected SwiftUI text. Read only selected text
+        // inside the source that opened it, through this window's own accessibility hierarchy.
+        func selected(in element: any NSAccessibilityProtocol, depth: Int) -> (any NSAccessibilityProtocol)? {
+            guard depth < 64 else { return nil }
+            let frame = element.accessibilityFrame()
+            if frames.contains(where: { $0.contains(CGPoint(x: frame.midX, y: frame.midY)) }),
+                let text = element.accessibilitySelectedText(), !text.isEmpty
+            {
+                return element
+            }
+            for child in element.accessibilityChildren() ?? [] {
+                if let child = child as? any NSAccessibilityProtocol,
+                    let match = selected(in: child, depth: depth + 1)
+                {
+                    return match
+                }
+            }
+            return nil
+        }
+        return selected(in: window, depth: 0)
+    }
+    #endif
 
     #if !canImport(AppKit)
     private static func selectedView(in view: UIView) -> UITextView? {

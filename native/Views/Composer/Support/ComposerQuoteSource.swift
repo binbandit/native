@@ -16,7 +16,7 @@ struct ComposerQuoteContext: Equatable {
     }
 }
 
-struct ComposerQuoteSource {
+struct ComposerQuoteSource: Equatable {
     var name: String
     var text: String?
     var firstLine = 1
@@ -43,9 +43,11 @@ private struct ComposerQuoteSourceModifier: ViewModifier {
                 .background { PlatformQuoteSelectionAnchor(task: context.task, source: source).allowsHitTesting(false) }
                 .contextMenu {
                     Button("Quote Selected Lines") {
-                        if let quotes = PlatformQuoteSelection.capture(task: context.task) { context.quote(quotes) }
+                        if let quotes = PlatformQuoteSelection.capture(task: context.task, source: source) {
+                            context.quote(quotes)
+                        }
                     }
-                    .disabled(PlatformQuoteSelection.capture(task: context.task) == nil)
+                    .disabled(PlatformQuoteSelection.capture(task: context.task, source: source) == nil)
                 }
         } else {
             content

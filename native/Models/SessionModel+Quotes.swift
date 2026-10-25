@@ -24,6 +24,8 @@ extension SessionModel {
         guard acceptsPrompts, permissionRequests.isEmpty, !quotes.isEmpty else { return }
         let current = PromptQuote.split(draft)
         draft = PromptQuote.draft(quotes: current.quotes + quotes, message: current.message)
+        quoteSelection = []
+        quoteSelectionSource = nil
         wantsComposerFocus = true
     }
 
@@ -34,10 +36,19 @@ extension SessionModel {
         draft = PromptQuote.draft(quotes: current.quotes, message: current.message)
         undoManager?.registerUndo(withTarget: self) { session in
             MainActor.assumeIsolated {
-                var current = PromptQuote.split(session.draft)
-                current.quotes.insert(removed, at: min(index, current.quotes.count))
-                session.draft = PromptQuote.draft(quotes: current.quotes, message: current.message)
+                session.restoreQuote(removed, at: index, undoManager: undoManager)
             }
+        }
+        undoManager?.setActionName("Remove Quote")
+    }
+
+    private func restoreQuote(_ quote: PromptQuote, at index: Int, undoManager: UndoManager?) {
+        var current = PromptQuote.split(draft)
+        let index = min(index, current.quotes.count)
+        current.quotes.insert(quote, at: index)
+        draft = PromptQuote.draft(quotes: current.quotes, message: current.message)
+        undoManager?.registerUndo(withTarget: self) { session in
+            MainActor.assumeIsolated { session.removeQuote(at: index, undoManager: undoManager) }
         }
         undoManager?.setActionName("Remove Quote")
     }

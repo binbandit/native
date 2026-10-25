@@ -634,7 +634,8 @@ They appear only while Fine print is enabled.
 
 With Fine print enabled, select transcript text and choose Task > Focus Composer (⌘L) to quote
 its source lines. In a diff, select a line number, then another to extend the range, and choose
-Quote Selected Lines or ⌘L. Line buttons and Quote Selected Lines also work with Tab and Space
+Quote Selected Lines or ⌘L. Two numbers on the same side quote only that file version;
+selecting across old and new numbers includes both versions separately. Line buttons and Quote Selected Lines also work with Tab and Space
 and touch. Remove Quote is beside each quoted source; ⌘Z restores a removed quote. Quotes are
 snapshots of the selected text, including old/new line identity. File references in the draft and
 @ list show the current known additions and removals; unknown counts stay absent.

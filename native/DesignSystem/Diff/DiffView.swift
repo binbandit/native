@@ -176,24 +176,18 @@ private struct DiffLines: View {
         .onDisappear { quoteContext?.clear(sourceID) }
     }
 
-    private var selectedQuotes: [PromptQuote] {
-        guard let selected else { return [] }
-        var result: [PromptQuote] = []
-        var lines: [PromptQuote.Line] = []
-        var side = PromptQuote.Side.new
-        func flush() {
-            if !lines.isEmpty { result.append(PromptQuote(source: path, side: side, lines: lines)); lines = [] }
-        }
-        for index in selected where rows.indices.contains(index) {
-            let row = rows[index]
-            guard let number = row.number else { flush(); continue }
-            let nextSide = row.kind == .removed ? PromptQuote.Side.old : .new
-            if nextSide != side { flush(); side = nextSide }
-            lines.append(.init(number: number, text: row.text))
-        }
-        flush()
-        return result
+    private var quoteSelection: PromptQuoteSelection? {
+        guard let selected else { return nil }
+        return PromptQuoteSelection(
+            source: path,
+            rows: rows.map { row in
+                .init(
+                    side: row.kind == .removed ? .old : .new, line: row.number.map { .init(number: $0, text: row.text) }
+                )
+            }, range: selected)
     }
+
+    private var selectedQuotes: [PromptQuote] { quoteSelection?.quotes ?? [] }
 
     private func select(_ index: Int) {
         if let anchor {
@@ -218,12 +212,13 @@ private struct DiffLines: View {
     }
 
     private func rowViews(_ numberTemplate: String) -> some View {
-        ForEach(rows.indices, id: \.self) { index in
+        let selectedIndices = Set(quoteSelection?.indices ?? [])
+        return ForEach(rows.indices, id: \.self) { index in
             DiffRowView(
                 row: rows[index], numberTemplate: numberTemplate, lines: lines,
                 onSelect: quoteContext == nil || rows[index].number == nil ? nil : { select(index) }
             )
-            .background(selected?.contains(index) == true || isQuoted(rows[index]) ? Color.dsAccentSubtle : .clear)
+            .background(selectedIndices.contains(index) || isQuoted(rows[index]) ? Color.dsAccentSubtle : .clear)
             .composerQuoteSource(
                 ComposerQuoteSource(
                     name: path, text: rows[index].text, firstLine: rows[index].number ?? 1,
@@ -330,6 +325,7 @@ private struct DiffRowView: View {
     }
 }
 
+#if DEBUG
 #Preview("Diff") {
     DSPreviewPair {
         VStack(spacing: DS.Space.lg) {
@@ -345,3 +341,23 @@ private struct DiffRowView: View {
         .frame(width: 520)
     }
 }
+
+#Preview("Diff - Quoted source lines") {
+    DSPreviewPair {
+        DiffView(
+            path: "PromptQueue.swift", oldText: "remove()\nappend(old)\n", newText: "remove()\nappend(edited)\n"
+        )
+        .environment(
+            \.composerQuoteContext,
+            ComposerQuoteContext(
+                task: UUID(),
+                quotes: [
+                    PromptQuote(
+                        source: "PromptQueue.swift", side: .new,
+                        lines: [.init(number: 1, text: "remove()"), .init(number: 2, text: "append(edited)")])
+                ], selectedSource: nil, select: { _, _ in }, quote: { _ in }, clear: { _ in })
+        )
+        .frame(width: 420)
+    }
+}
+#endif

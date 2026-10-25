@@ -30,6 +30,9 @@ private struct ComposerQuoteChecks {
         require(session.draft == "Keep it in place. Add a test.", "Removing leaves the message")
         undo.undo()
         require(session.composerQuotes == [quote], "Undo restores the source snapshot")
+        undo.redo()
+        require(session.composerQuotes.isEmpty, "Redo removes the quote again")
+        undo.undo()
         session.queue.append(session.draft)
         session.draft = ""
         guard let queued = session.queuedPrompts.first else { throw MissingFixture() }
@@ -50,7 +53,7 @@ private struct ComposerQuoteChecks {
         session.quote([quote])
         require(
             session.draft == draftBeforeApproval, "Approval instructions do not hide new quotes in the ordinary draft")
-        print("PASS: quote, edit, remove, undo, queue reopen, ACP payload and source ownership")
+        print("PASS: quote, edit, remove, undo/redo, queue reopen, ACP payload and source ownership")
     }
 
     private static func require(_ value: @autoclosure () -> Bool, _ message: String) {

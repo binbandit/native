@@ -19,8 +19,8 @@ def send(**message):
     print(json.dumps(dict(jsonrpc="2.0", **message)), flush=True)
 
 
-def update(kind, **values):
-    send(method="session/update", params=dict(sessionId="quote-fixture", update=dict(sessionUpdate=kind, **values)))
+def update(update_kind, **values):
+    send(method="session/update", params=dict(sessionId="quote-fixture", update=dict(sessionUpdate=update_kind, **values)))
 
 
 def options():
