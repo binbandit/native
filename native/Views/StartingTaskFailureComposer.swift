@@ -10,6 +10,7 @@ struct StartingTaskFailureComposer: View {
     @Environment(AppModel.self) private var model
     @Environment(\.colorScheme) private var colorScheme
     @State private var source: [AgentStartDiagnostic.SourceLine] = []
+    @State private var fixIt: AgentStartFixIt?
     @State private var fixFailure: String?
     @State private var isFixing = false
     @State private var selection: TextSelection?
@@ -29,7 +30,7 @@ struct StartingTaskFailureComposer: View {
                         task.device == .thisMac ? URL(filePath: $0.path).abbreviatedPath : $0.path
                     },
                     source: source,
-                    fixIt: fixFailure == nil ? model.startFixIt(for: task) : nil,
+                    fixIt: fixFailure == nil ? fixIt : nil,
                     recovery: recovery,
                     draft: task.isSendRequested ? .waiting : task.draft.isEmpty ? .none : .kept,
                     fixFailure: fixFailure,
@@ -45,6 +46,7 @@ struct StartingTaskFailureComposer: View {
         .task(id: failure) {
             fixFailure = nil
             source = await model.startFailureSource(of: task)
+            fixIt = await model.startFixIt(for: task)
         }
     }
 

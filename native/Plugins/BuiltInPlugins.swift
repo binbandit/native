@@ -90,7 +90,9 @@ enum BuiltInPlugins {
                             description:
                                 "Sign in to ChatGPT by opening a verification page and entering a one-time code",
                             kind: .link)
-                    ]
+                    ],
+                    // Its home, a CODEX_HOME override, and a trusted project's own settings.
+                    settingsFiles: ["~/.codex/config.toml", "$CODEX_HOME/config.toml", ".codex/config.toml"]
                 )
             ]
         ), policyTranslator: CodexPolicyTranslator(), historyReader: CodexHistoryReader.standard())

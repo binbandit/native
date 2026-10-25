@@ -1,10 +1,10 @@
 import Foundation
 
 /// The file a failed start names, read and changed only at the user's request. The path comes from
-/// the agent's output, so it authorizes nothing: only a small settings file in a settings format
-/// is opened, never one whose name or folder is where credentials are kept, checked again after
-/// symbolic links resolve. Anything else stays a location without contents. A change keeps the
-/// original beside it and leaves its permissions and symbolic links as they were.
+/// the agent's output, so it authorizes nothing: only a settings file the agent's plugin declares
+/// (`settingsPaths`) is opened, compared after symbolic links resolve. Anything else stays a
+/// location without contents. A change keeps the original beside it and leaves its permissions and
+/// symbolic links as they were.
 public enum AgentStartFile {
     /// Settings files are a few kilobytes; anything far larger isn't one to show or edit.
     static let maximumSize = 256 * 1024
@@ -14,40 +14,40 @@ public enum AgentStartFile {
         path + ".native-backup"
     }
 
-    static let settingsExtensions: Set<String> = ["toml", "json", "jsonc", "json5", "yaml", "yml"]
-    /// Words in a file name that mark a credential store: Codex's auth.json, Claude Code's
-    /// .credentials.json, an OAuth token cache.
-    static let credentialWords = [
-        "auth", "credential", "secret", "token", "password", "passwd", "key", "cookie", "session", "oauth",
-    ]
-    /// Folders that hold credentials whatever the file is called.
-    static let credentialFolders: Set<String> = [
-        ".ssh", ".gnupg", ".aws", ".azure", ".docker", ".kube", ".password-store", "keychains", "gh", "github-copilot",
-        "gcloud", ".gcloud",
-    ]
-
-    /// Whether Native may open the file at `path` to show or change it: a settings file, as named
-    /// and as its links resolve.
-    public static func mayRead(_ path: String) -> Bool {
-        guard path.hasPrefix("/") else { return false }
-        let named = URL(filePath: path)
-        return isSettingsFile(named) && isSettingsFile(named.resolvingSymlinksInPath())
+    /// The files a plugin's settings patterns name: `~/…` in `home`, `$NAME/…` in that variable's
+    /// folder (none while it's unset), and anything else in the task's `folder`.
+    public static func settingsPaths(
+        _ patterns: [String], home: String, environment: [String: String], folder: String?
+    ) -> [String] {
+        patterns.compactMap { pattern -> String? in
+            if pattern.hasPrefix("~/") { return home + pattern.dropFirst() }
+            if pattern.hasPrefix("$") {
+                let name = pattern.dropFirst().prefix { $0 != "/" }
+                guard let value = environment[String(name)], value.hasPrefix("/") else { return nil }
+                return value + pattern.dropFirst(name.count + 1)
+            }
+            if pattern.hasPrefix("/") { return pattern }
+            return folder.map { URL(filePath: $0).appending(path: pattern).path }
+        }
     }
 
-    private static func isSettingsFile(_ url: URL) -> Bool {
-        let name = url.lastPathComponent.lowercased()
-        guard settingsExtensions.contains(url.pathExtension.lowercased()),
-            !credentialWords.contains(where: name.contains)
-        else { return false }
-        return url.deletingLastPathComponent().pathComponents.allSatisfy {
-            !credentialFolders.contains($0.lowercased())
+    /// Whether Native may open `path` to show or change it: it's one of the `allowed` settings
+    /// files, once both resolve their links, and a link keeps the settings file's kind
+    /// (`config.toml` may lead to a dotfiles copy, never to `.git-credentials`).
+    public static func mayRead(_ path: String, allowed: [String]) -> Bool {
+        guard path.hasPrefix("/") else { return false }
+        let resolved = URL(filePath: path).standardizedFileURL.resolvingSymlinksInPath()
+        return allowed.contains { declared in
+            let settings = URL(filePath: declared).standardizedFileURL
+            return settings.resolvingSymlinksInPath().path == resolved.path
+                && !settings.pathExtension.isEmpty && settings.pathExtension == resolved.pathExtension
         }
     }
 
     /// The file's text, or nil when Native may not open it (`mayRead`), or it's missing, not a
     /// regular file, too large or not UTF-8.
-    public static func read(_ path: String) -> String? {
-        guard mayRead(path) else { return nil }
+    public static func read(_ path: String, allowed: [String]) -> String? {
+        guard mayRead(path, allowed: allowed) else { return nil }
         let url = URL(filePath: path).resolvingSymlinksInPath()
         guard let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey]),
             values.isRegularFile == true, (values.fileSize ?? .max) <= maximumSize,
@@ -56,12 +56,14 @@ public enum AgentStartFile {
         return String(data: data, encoding: .utf8)
     }
 
-    /// Applies `fixIt` to the file the diagnostic names, after copying the original to
-    /// `backupPath(for:)`. Returns where the original was kept.
+    /// Applies `fixIt` to the file the diagnostic names, when `allowed` has it, after copying the
+    /// original to `backupPath(for:)`. Returns where the original was kept.
     @discardableResult
-    public static func apply(_ fixIt: AgentStartFixIt, at diagnostic: AgentStartDiagnostic) throws(Failure) -> String {
+    public static func apply(
+        _ fixIt: AgentStartFixIt, at diagnostic: AgentStartDiagnostic, allowed: [String]
+    ) throws(Failure) -> String {
         let url = URL(filePath: diagnostic.path).resolvingSymlinksInPath()
-        guard let contents = read(url.path) else { throw .unreadable(diagnostic.fileName) }
+        guard let contents = read(diagnostic.path, allowed: allowed) else { throw .unreadable(diagnostic.fileName) }
         guard let fixed = fixIt.apply(to: contents, at: diagnostic) else { throw .changed(diagnostic.fileName) }
         let backup = URL(filePath: backupPath(for: url.path))
         let fileManager = FileManager.default

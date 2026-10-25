@@ -96,24 +96,34 @@ struct AgentStartDiagnosticTests {
         #expect(url.excerpt(of: "model = \"gpt-6.1-sol\"\n")[0].isRedacted == false)
     }
 
-    @Test(arguments: [
-        "/Users/developer/.git-credentials", "/Users/developer/.codex/auth.json",
-        "/Users/developer/.claude/.credentials.json", "/Users/developer/.ssh/config",
-        "/Users/developer/.config/gh/hosts.yml", "/Users/developer/.aws/config.toml",
-        "/Users/developer/.netrc", "/Users/developer/.npmrc", "/Users/developer/.config/app/oauth_tokens.json",
-        "relative/config.toml",
-    ])
-    func credentialStoresAreNeverOpened(_ path: String) {
-        #expect(!AgentStartFile.mayRead(path))
-        #expect(AgentStartFile.read(path) == nil)
+    static let codexSettings = ["$CODEX_HOME/config.toml", "~/.codex/config.toml", ".codex/config.toml"]
+
+    @Test func settingsPathsExpandFromThePlugin() {
+        let paths = AgentStartFile.settingsPaths(
+            Self.codexSettings, home: "/Users/developer", environment: ["CODEX_HOME": "/opt/codex"],
+            folder: "/Users/developer/Developer/native")
+        #expect(
+            paths == [
+                "/opt/codex/config.toml", "/Users/developer/.codex/config.toml",
+                "/Users/developer/Developer/native/.codex/config.toml",
+            ])
+        // An unset variable, or no task folder yet, names nothing.
+        #expect(
+            AgentStartFile.settingsPaths(Self.codexSettings, home: "/Users/developer", environment: [:], folder: nil)
+                == ["/Users/developer/.codex/config.toml"])
     }
 
     @Test(arguments: [
-        "/Users/developer/.codex/config.toml", "/Users/developer/.claude/settings.json",
-        "/Users/developer/Developer/native/.codex/config.toml", "/Users/developer/.config/opencode/opencode.jsonc",
+        "/Users/developer/.git-credentials", "/Users/developer/.codex/auth.json",
+        "/Users/developer/Library/Application Support/Firefox/Profiles/x/logins.json",
+        "/Users/developer/.codex/../.ssh/config", "relative/config.toml",
     ])
-    func settingsFilesMayBeOpened(_ path: String) {
-        #expect(AgentStartFile.mayRead(path))
+    func onlyDeclaredSettingsFilesAreOpened(_ path: String) {
+        let allowed = ["/Users/developer/.codex/config.toml"]
+        #expect(!AgentStartFile.mayRead(path, allowed: allowed))
+        #expect(AgentStartFile.read(path, allowed: allowed) == nil)
+        #expect(AgentStartFile.mayRead("/Users/developer/.codex/config.toml", allowed: allowed))
+        #expect(AgentStartFile.mayRead("/Users/developer/.codex/./config.toml", allowed: allowed))
     }
 
     @Test func aLinkToACredentialStoreIsNeverOpened() throws {
@@ -124,12 +134,15 @@ struct AgentStartDiagnosticTests {
         let link = folder.appending(path: "config.toml")
         try Data("https://fixture-user:fixture-pass@example.invalid\n".utf8).write(to: store)
         try FileManager.default.createSymbolicLink(at: link, withDestinationURL: store)
-        #expect(!AgentStartFile.mayRead(link.path))
-        #expect(AgentStartFile.read(link.path) == nil)
+        // The link is where a settings file would be, but it leads to a credential store.
+        let allowed = [link.path]
+        #expect(!AgentStartFile.mayRead(link.path, allowed: allowed))
+        #expect(AgentStartFile.read(link.path, allowed: allowed) == nil)
         let diagnostic = AgentStartDiagnostic(
             path: link.path, line: 1, column: 1, message: "unknown variant `hgih`, expected `high`")
         #expect(throws: AgentStartFile.Failure.unreadable("config.toml")) {
-            try AgentStartFile.apply(AgentStartFixIt(original: "hgih", replacement: "high"), at: diagnostic)
+            try AgentStartFile.apply(
+                AgentStartFixIt(original: "hgih", replacement: "high"), at: diagnostic, allowed: allowed)
         }
     }
 
@@ -147,7 +160,9 @@ struct AgentStartDiagnosticTests {
             path: link.path, line: 2, column: 26,
             message: "unknown variant `xhigh`, expected one of `minimal`, `low`, `medium`, `high`")
 
-        let backup = try AgentStartFile.apply(try #require(diagnostic.fixIt), at: diagnostic)
+        // A dotfiles setup: the declared settings file links to the real one.
+        let allowed = [link.path]
+        let backup = try AgentStartFile.apply(try #require(diagnostic.fixIt), at: diagnostic, allowed: allowed)
 
         #expect(try String(contentsOf: real, encoding: .utf8).contains("model_reasoning_effort = \"high\""))
         #expect(try String(contentsOf: URL(filePath: backup), encoding: .utf8) == original)
@@ -155,7 +170,7 @@ struct AgentStartDiagnosticTests {
         let permissions = try FileManager.default.attributesOfItem(atPath: real.path)[.posixPermissions] as? Int
         #expect(permissions == 0o600)
         #expect(throws: AgentStartFile.Failure.changed("config.toml")) {
-            try AgentStartFile.apply(try #require(diagnostic.fixIt), at: diagnostic)
+            try AgentStartFile.apply(try #require(diagnostic.fixIt), at: diagnostic, allowed: allowed)
         }
     }
 }
