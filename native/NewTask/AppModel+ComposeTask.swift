@@ -289,4 +289,20 @@ extension AppModel {
         #endif
         return quickEntry.project.flatMap { id in deviceOptions(for: id).first { $0.device == quickEntry.device } }
     }
+
+    /// When the chosen device went offline, as the On line and the well say it: "2:14 PM",
+    /// "yesterday, 6:40 PM", or the day for anything older. Nil when it isn't offline.
+    var composeDeviceOfflineSince: String? {
+        guard case .offline = composeDeviceOption?.availability else { return nil }
+        var since: Date?
+        #if DEBUG
+        since = composeTask.previewLastConnected
+        #endif
+        if since == nil, case .remote(let id) = quickEntry.device { since = hosts.host(id)?.lastConnected }
+        guard let since else { return nil }
+        let time = since.formatted(date: .omitted, time: .shortened)
+        if Calendar.current.isDateInToday(since) { return time }
+        if Calendar.current.isDateInYesterday(since) { return "yesterday, \(time)" }
+        return "\(since.formatted(.dateTime.month(.abbreviated).day())), \(time)"
+    }
 }

@@ -22,6 +22,23 @@ extension DS {
         static let editorMaxHeight: CGFloat = 1200
         static let popoverWidth: CGFloat = 372
         static let popoverMaxHeight: CGFloat = 600
+        /// However little room is left below its control, a popover shows a few rows before it scrolls.
+        static let popoverMinHeight: CGFloat = 120
+        /// A popover starts this far left of its control's text, and this far below its row.
+        static let popoverLeading: CGFloat = 10
+        static let popoverGap: CGFloat = 6
+        /// Its arrow, whose tip sits this far in from the popover's leading edge.
+        static let popoverArrowTip: CGFloat = 30
+        static let popoverArrowWidth: CGFloat = 16
+        static let popoverArrowHeight: CGFloat = 8
+        /// The open control's highlight reaches this far past its text, at this height.
+        static let focusInset: CGFloat = 7
+        static let focusHeight: CGFloat = 26
+        /// Notes under an address line (why a device is offline), at an 18pt line and a short measure.
+        static let noteLineSpacing: CGFloat = 3
+        static let noteWidth: CGFloat = 540
+        /// The Return hint on the page's primary buttons.
+        static let keyHintOpacity: Double = 0.5
         static let foldOffset: CGFloat = -22
         static let foldOpacity: Double = 0.28
         static let settlingOpacity: Double = 0.55

@@ -29,8 +29,8 @@ struct ComposeTaskAddress: View {
                     .dsHitTarget(DS.ComposeTask.rowHeight)
                     .frame(minHeight: DS.ComposeTask.rowHeight)
                     .accessibilityLabel("Choose task agent and model")
-                    .dsPopover(isPresented: picker(.agent), attachmentAnchor: .point(.bottomLeading), arrowEdge: .top) {
-                        ComposeAgentPicker(model: model)
+                    .composeAddressPopover(isPresented: entry.picker == .agent, dismiss: { entry.picker = nil }) {
+                        ComposeAgentPicker(model: model, maxHeight: $0)
                     }
                     if let second = compose.second {
                         ComposeSecondRecipient(model: model, compose: compose, second: second)
@@ -48,14 +48,16 @@ struct ComposeTaskAddress: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
+            .zIndex(entry.picker == .agent ? 1 : 0)
             line("On") {
-                VStack(alignment: .leading, spacing: DS.Space.sm) {
+                // The offline note reads as a second line of the device's name, so no gap.
+                VStack(alignment: .leading, spacing: 0) {
                     Button {
                         entry.toggle(.device)
                     } label: {
                         HStack(spacing: DS.Space.sm) {
                             Image(systemName: entry.device == .thisMac ? "laptopcomputer" : "desktopcomputer")
-                                .foregroundStyle(.dsTextSecondary)
+                                .foregroundStyle(isOffline ? .dsTextTertiary : .dsTextSecondary)
                             Text(deviceName)
                             if model.composeDeviceOption?.availability == .connecting {
                                 Text("Connecting…").foregroundStyle(.dsTextTertiary)
@@ -64,27 +66,29 @@ struct ComposeTaskAddress: View {
                             {
                                 Text("Needs a checkout").foregroundStyle(.dsAttention)
                             } else if model.composeDeviceOption?.canStart == false {
-                                if let lastConnected {
-                                    Text("Offline · last connected \(lastConnected, format: .dateTime.hour().minute())")
-                                        .foregroundStyle(.dsAttention)
-                                } else {
-                                    Text("Offline").foregroundStyle(.dsAttention)
+                                HStack(spacing: DS.Space.sm) {
+                                    StatusDot(color: .dsAttention)
+                                    Text(model.composeDeviceOfflineSince.map { "Offline since \($0)" } ?? "Offline")
                                 }
+                                .foregroundStyle(.dsAttention)
+                                .padding(.leading, DS.Space.xs)
                             }
                         }
+                        .composeFocus(entry.picker == .device)
                     }
                     .buttonStyle(.plain).dsHitTarget(DS.ComposeTask.rowHeight).disabled(compose.isHeld)
                     .frame(minHeight: DS.ComposeTask.rowHeight)
                     .accessibilityLabel("Choose task device")
-                    .dsPopover(isPresented: picker(.device), attachmentAnchor: .point(.bottomLeading), arrowEdge: .top)
-                    {
-                        QuickEntryPicker(model: model, entry: entry).frame(width: DS.ComposeTask.popoverWidth)
+                    .composeAddressPopover(isPresented: entry.picker == .device, dismiss: { entry.picker = nil }) {
+                        QuickEntryPicker(model: model, entry: entry)
+                            .frame(width: DS.ComposeTask.popoverWidth).frame(maxHeight: $0)
                     }
                     if entry.device.isRemote, model.composeDeviceOption?.canStart == false || compose.isHeld {
                         offline
                     }
                 }
             }
+            .zIndex(entry.picker == .device ? 1 : 0)
             line("From") {
                 if entry.project == nil {
                     Text("A branch of its own, made from the folder's current branch")
@@ -130,8 +134,12 @@ struct ComposeTaskAddress: View {
         }
         .padding(.horizontal, compose.second == nil ? 0 : DS.ComposeTask.tokenPadding)
         .frame(height: DS.ComposeTask.tokenHeight)
-        .background(compose.second == nil ? .clear : .dsFill, in: .rect(cornerRadius: DS.Radius.control))
+        .background(compose.second == nil ? .clear : tokenFill, in: .rect(cornerRadius: DS.Radius.control))
+        .composeFocus(compose.second == nil && entry.picker == .agent)
     }
+
+    /// A token is already filled, so while its popover is open the fill itself is the highlight.
+    private var tokenFill: Color { entry.picker == .agent ? .dsSelected : .dsFill }
 
     private var addRecipient: some View {
         Menu {
@@ -174,23 +182,31 @@ struct ComposeTaskAddress: View {
     }
 
     private var offline: some View {
-        VStack(alignment: .leading, spacing: DS.Space.md) {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
             Text(
                 compose.isHeld
                     ? "Held for \(deviceName). Starts when it reconnects. You can cancel the hold and keep writing."
                     : model.composeDeviceOption?.unavailableReason
                         ?? "Native can hold this task until the device is back."
             )
-            .font(.dsBody).foregroundStyle(.dsTextTertiary).fixedSize(horizontal: false, vertical: true)
+            .font(.dsBody).lineSpacing(DS.ComposeTask.noteLineSpacing).foregroundStyle(.dsTextTertiary)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: DS.ComposeTask.noteWidth, alignment: .leading)
             HStack(spacing: DS.Space.sm) {
                 if compose.isHeld {
-                    Button("Cancel Hold") { compose.cancelHold() }.buttonStyle(.ds(.secondary))
+                    Button("Cancel Hold") { compose.cancelHold() }.buttonStyle(.ds(.secondary, size: .medium))
                 } else {
-                    Button("Hold for \(deviceName)") { model.holdComposeTask() }
-                        .buttonStyle(.ds(.primary))
-                        .disabled(!compose.hasContent || compose.pendingAttachments || !canHold)
+                    // Return in the draft holds it too, as it starts a task anywhere else.
+                    Button {
+                        model.holdComposeTask()
+                    } label: {
+                        ComposeKeyLabel(title: "Hold for \(deviceName)", systemImage: "clock")
+                    }
+                    .buttonStyle(.ds(.primary, size: .medium))
+                    .disabled(!compose.hasContent || compose.pendingAttachments || !canHold)
+                    .help("Hold the task for \(deviceName) (Return)")
                     Button("Run on This Mac") { model.chooseQuickEntryDevice(.thisMac) }
-                        .buttonStyle(.ds(.secondary))
+                        .buttonStyle(.ds(.secondary, size: .medium))
                 }
             }
         }
@@ -204,12 +220,9 @@ struct ComposeTaskAddress: View {
     }
 
     private var deviceName: String { model.composeDeviceOption?.name ?? model.deviceName(entry.device) }
-    private var lastConnected: Date? {
-        #if DEBUG
-        if let date = compose.previewLastConnected { return date }
-        #endif
-        guard case .remote(let id) = entry.device else { return nil }
-        return model.hosts.host(id)?.lastConnected
+    private var isOffline: Bool {
+        if case .offline = model.composeDeviceOption?.availability { return true }
+        return false
     }
     private var workspaceBranch: String {
         if entry.project == nil { return "Choose a folder first" }
@@ -239,9 +252,6 @@ struct ComposeTaskAddress: View {
             return "\(choice.name) effort"
                 + (choice.descriptionWithoutName.map { ": \($0)" } ?? ": differs from the project default")
         }
-    }
-    private func picker(_ picker: QuickEntryModel.Picker) -> Binding<Bool> {
-        Binding(get: { entry.picker == picker }, set: { if !$0 { entry.picker = nil } })
     }
 }
 

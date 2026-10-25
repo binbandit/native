@@ -9,6 +9,7 @@ struct ComposeTaskPage: View {
     @Environment(GitStore.self) private var git: GitStore?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var drops = ComposerDropInbox()
+    @State private var viewportHeight = CGFloat.infinity
 
     var body: some View {
         Group {
@@ -38,9 +39,7 @@ struct ComposeTaskPage: View {
                     Button {
                         model.startComposeTask()
                     } label: {
-                        HStack(spacing: DS.Space.sm) {
-                            Text(compose.second == nil ? "Start" : "Start 2 Tasks"); Image(systemName: "return")
-                        }
+                        ComposeKeyLabel(title: compose.second == nil ? "Start" : "Start 2 Tasks")
                     }
                     .buttonStyle(.ds(.primary, size: .medium))
                     .disabled(
@@ -94,42 +93,62 @@ struct ComposeTaskPage: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 VStack(alignment: .leading, spacing: DS.ComposeTask.titleGap) {
-                    letterhead
+                    letterhead.zIndex(entry.picker == .project ? 1 : 0)
                     ComposeTaskAddress(model: model, branch: branch, compose: compose, entry: entry)
                         .disabled(compose.stage != .writing)
                 }
                 .opacity(compose.stage == .folding ? DS.ComposeTask.foldOpacity : 1)
                 .offset(y: compose.stage == .folding && !reduceMotion ? DS.ComposeTask.foldOffset : 0)
-                SeparatorLine().padding(.top, DS.ComposeTask.ruleGap).padding(.bottom, DS.ComposeTask.editorGap)
-                if let editor = compose.editor {
-                    ComposerView(
-                        session: editor,
-                        page: .init(
-                            allowsFileMentions: entry.project != nil && entry.device == .thisMac,
-                            needsFolder: entry.project == nil,
-                            openSettings: { entry.toggle(.agent) },
-                            start: { model.submitComposeTask() },
-                            attachmentsPending: { compose.pendingAttachments = $0 })
-                    )
-                    .id(editor.id)
-                    .environment(drops)
-                    .focusedSceneValue(\.composeDraft, compose.commandDraft)
-                    .disabled(compose.isHeld || compose.stage != .writing)
-                }
-                if let failure = entry.failure {
-                    Text(failure).font(.dsBody).foregroundStyle(.dsAttention)
-                        .fixedSize(horizontal: false, vertical: true).padding(.top, DS.Space.xl)
-                        .accessibilityIdentifier("compose-failure")
-                }
+                // An open address popover draws over the draft below.
+                .zIndex(entry.picker == nil ? 0 : 1)
+                draft
             }
             .frame(maxWidth: DS.ComposeTask.width, alignment: .leading)
             .padding(.horizontal, DS.ComposeTask.labelWidth + DS.ComposeTask.labelGap + DS.Space.md)
             .padding(.top, DS.ComposeTask.topInset)
             .padding(.bottom, DS.Space.xxl)
             .frame(maxWidth: .infinity, alignment: .top)
+            .background { closesPicker }
         }
+        .coordinateSpace(.composeViewport)
+        .onGeometryChange(for: CGFloat.self, of: \.size.height) { viewportHeight = $0 }
+        .environment(\.composeViewportHeight, viewportHeight)
         .composerDropTarget(drops, isEnabled: !compose.isHeld && compose.stage == .writing)
         .dsToolbarBand()
+    }
+
+    private var draft: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            SeparatorLine().padding(.top, DS.ComposeTask.ruleGap).padding(.bottom, DS.ComposeTask.editorGap)
+            if let editor = compose.editor {
+                ComposerView(
+                    session: editor,
+                    page: .init(
+                        allowsFileMentions: entry.project != nil && entry.device == .thisMac,
+                        needsFolder: entry.project == nil,
+                        openSettings: { entry.toggle(.agent) },
+                        start: { model.submitComposeTask() },
+                        attachmentsPending: { compose.pendingAttachments = $0 })
+                )
+                .id(editor.id)
+                .environment(drops)
+                .focusedSceneValue(\.composeDraft, compose.commandDraft)
+                .disabled(compose.isHeld || compose.stage != .writing)
+            }
+            if let failure = entry.failure {
+                Text(failure).font(.dsBody).foregroundStyle(.dsAttention)
+                    .fixedSize(horizontal: false, vertical: true).padding(.top, DS.Space.xl)
+                    .accessibilityIdentifier("compose-failure")
+            }
+        }
+        .overlay { closesPicker }
+    }
+
+    /// A click anywhere else on the page closes an open address popover, as outside a system one.
+    @ViewBuilder private var closesPicker: some View {
+        if entry.picker != nil {
+            Color.clear.contentShape(.rect).onTapGesture { entry.picker = nil }.accessibilityHidden(true)
+        }
     }
 
     private var letterhead: some View {
@@ -147,12 +166,11 @@ struct ComposeTaskPage: View {
             }
             .buttonStyle(.plain).disabled(compose.isHeld || compose.stage != .writing)
             .accessibilityLabel("Choose task project")
-            .dsPopover(
-                isPresented: Binding(get: { entry.picker == .project }, set: { if !$0 { entry.picker = nil } }),
-                attachmentAnchor: .point(.bottomLeading), arrowEdge: .top
-            ) {
-                QuickEntryPicker(model: model, entry: entry).frame(width: DS.ComposeTask.popoverWidth)
+            .composeAddressPopover(isPresented: entry.picker == .project, dismiss: { entry.picker = nil }) {
+                QuickEntryPicker(model: model, entry: entry)
+                    .frame(width: DS.ComposeTask.popoverWidth).frame(maxHeight: $0)
             }
+            .zIndex(entry.picker == .project ? 1 : 0)
             if entry.project == nil {
                 Button("Open Folder…") { entry.isChoosingFolder = true }.buttonStyle(.ds(.ghost))
             }

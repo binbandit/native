@@ -18,7 +18,9 @@ struct ComposeTaskWell: View {
         let secondName = compose.second.map { model.plugins.agent($0.agent)?.displayName ?? $0.agent.rawValue }
         let agent = secondName.map { "\(first) and \($0)" } ?? first
         if compose.stage != .writing { return .init(status: .starting, agent: agent, verb: "Starting") }
-        if entry.project == nil { return .init(status: .idle, agent: agent, verb: "· Needs a folder") }
+        if entry.project == nil {
+            return .init(status: .idle, agent: agent, verb: "Needs a folder", verbIsState: true)
+        }
         if model.composeDeviceOption?.canStart == false {
             if model.composeDeviceOption?.availability == .connecting {
                 return .init(status: .starting, agent: "", verb: "Connecting to \(model.deviceName(entry.device))")
@@ -28,7 +30,8 @@ struct ComposeTaskWell: View {
             }
             return .init(
                 status: .needsInput, agent: "",
-                verb: "Waiting for \(model.composeDeviceOption?.name ?? model.deviceName(entry.device))")
+                verb: "Waiting for \(model.composeDeviceOption?.name ?? model.deviceName(entry.device))",
+                object: model.composeDeviceOfflineSince.map { "offline since \($0)" }, objectIsCode: false)
         }
         if let runtime = model.quickEntryRuntime, runtime.needsSignIn {
             return .init(status: .needsInput, agent: agent, verb: "Sign in to \(agent)")
@@ -47,7 +50,7 @@ struct ComposeTaskWell: View {
             if runtime.status == .starting { return .init(status: .starting, agent: secondName, verb: "Starting") }
             if !runtime.isAvailable { return .init(status: .needsInput, agent: secondName, verb: "Needs attention") }
         }
-        return .init(status: .idle, agent: agent, verb: "· Ready")
+        return .init(status: .idle, agent: agent, verb: "Ready", verbIsState: true)
     }
 }
 
@@ -55,7 +58,7 @@ struct ComposeTaskWell: View {
 #Preview("Compose well - Before Start") {
     DSPreviewPair {
         VStack(spacing: DS.Space.md) {
-            ForEach(["ready", "firstLaunch", "offline"], id: \.self) { state in
+            ForEach(["ready", "firstLaunch", "offline", "twoAgents"], id: \.self) { state in
                 let model = ComposeTaskPreviewFixtures.model(state)
                 ComposeTaskWell(model: model, compose: model.composeTask, entry: model.quickEntry)
             }

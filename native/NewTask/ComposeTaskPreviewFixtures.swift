@@ -7,7 +7,7 @@ import SwiftUI
 
 enum ComposeTaskPreviewFixtures {
     static let prompt =
-        "The device pill should say how long a droid has been offline, like ‘Offline · 12 min’. Put it in `HostDevicePill.swift` and the picker row, and add a preview of the offline state in light and dark."
+        "The device pill should say how long a droid has been offline, like ‘Offline · 12 min’. Put it in @native/Hosts/Components/HostDevicePill.swift and the picker row, and add a preview of the offline state in light and dark."
 
     static func model(_ state: String) -> AppModel {
         let model = AppModel.preview(state == "firstLaunch" ? .empty : .populated)

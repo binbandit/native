@@ -16,6 +16,8 @@ struct TaskWellContent: Equatable {
     /// A key that leaves what the well is narrating ("esc" while comparing), at its trailing edge.
     var exitKey: String?
     var attentionSince: Date?
+    /// The verb is the agent's state, not an action, so a dot sets it apart: "Codex · Ready".
+    var verbIsState = false
 
     var isWaiting: Bool { status.needsAttention }
 

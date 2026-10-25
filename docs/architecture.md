@@ -212,7 +212,10 @@ The move is mechanical and happens in small PRs once the current feature work la
 New Task's `NativeComposeTask` gate adds Quick Entry over the selected task and a Compose page
 opened by Shift-Command-N or Quick Entry's expand. Both keep drafts without creating agent
 conversations or worktrees. Compose lays out the existing composer at page size, with To / On /
-From controls and the shared toolbar well's readiness. Start snapshots text, files, settings and
+From controls and the shared toolbar well's readiness. The project, agent and device popovers are
+drawn in the page (`composeAddressPopover`), left-aligned under their control, where a system
+popover would center on it; the agent popover is the composer's settings popover at the page's
+scale. Start snapshots text, files, settings and
 workspace into the existing `StartingTask` pipeline. Address lines fold, the shared message renderer
 appears at the transcript's final width, and the composer settles below it. Startup failure uses
 the existing retry view with the snapshot intact. An explicitly held offline draft persists in
