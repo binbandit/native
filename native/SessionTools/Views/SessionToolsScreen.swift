@@ -38,10 +38,6 @@ struct SessionToolsScreen: View {
                 tool.pane?(context(tool))
                     .environment(\.gitChangesCompact, true)
                     .environment(\.gitChangesClose, GitChangesDismissal { tools.close(id) })
-                    .onKeyPress(.escape) {
-                        tools.close(id)
-                        return .handled
-                    }
             }
         }
         .environment(\.gitChangesNeutralMarkers, usesTaskWell)

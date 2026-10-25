@@ -33,9 +33,11 @@ struct GitChangesHeader: View {
             }
             primaryAction
             if let close {
-                // The key it teaches is also the button, so touch has the same way back.
+                // The key it teaches is also the button, so touch has the same way back. As a cancel
+                // shortcut it answers Escape wherever focus is, like the overlay it replaces.
                 Button(action: close.close) { Kbd("esc", compact: true) }
                     .buttonStyle(.plain)
+                    .keyboardShortcut(.cancelAction)
                     .dsHitTarget(DS.Size.controlXS)
                     .accessibilityLabel("Close Changes")
                     .help("Return to the conversation (Escape)")

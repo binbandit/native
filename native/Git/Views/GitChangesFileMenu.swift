@@ -73,6 +73,10 @@ struct GitChangesFileMenu: View {
                             }
                         }
                     }
+                    if let shown = stageable {
+                        Divider()
+                        Button(stageTitle(shown)) { toggleStaged(shown) }
+                    }
                 }
             } label: {
                 HStack(spacing: DS.Space.sm) {
@@ -104,15 +108,48 @@ struct GitChangesFileMenu: View {
                 DiffStatLabel(added: stats.additions, removed: stats.deletions)
                     .fixedSize()
             }
+            // Commit waits on staged conflicts, and there's no list here to stage them from.
+            if let shown = stageable, shown.area == .conflicted {
+                Button("Stage") { toggleStaged(shown) }
+                    .buttonStyle(.ds(.secondary))
+                    .help("Mark \(URL(filePath: shown.path).lastPathComponent) resolved")
+                    .fixedSize()
+            }
         }
+    }
+
+    /// The uncommitted change on show, which the menu can stage or unstage in place of the list.
+    private var stageable: FileChange? {
+        guard range == nil, review?.scope != .turn else { return nil }
+        return model.shownDiff?.change
+    }
+
+    private func stageTitle(_ change: FileChange) -> String {
+        let name = URL(filePath: change.path).lastPathComponent
+        return change.area == .staged ? "Unstage \(name)" : "Stage \(name)"
+    }
+
+    private func toggleStaged(_ change: FileChange) {
+        Task { change.area == .staged ? await model.unstage([change]) : await model.stage([change]) }
     }
 }
 
 #if DEBUG
-#Preview("Changes file menu - Uncommitted and empty") {
-    DSPreviewPair {
+#Preview("Changes file menu - Uncommitted, conflicted and empty") {
+    let conflicted = GitRepositoryModel(
+        folder: URL(filePath: "/Users/preview/Developer/native"),
+        fixedStatus: RepositoryStatus(
+            branch: GitPreviewFixtures.branch,
+            changes: [
+                FileChange(
+                    path: "native/DesignSystem/Diff/DiffRow.swift", kind: .conflicted, area: .conflicted,
+                    stats: LineStats(additions: 14, deletions: 4))
+            ], totals: LineStats(additions: 14, deletions: 4)),
+        diff: GitPreviewFixtures.diff)
+    return DSPreviewPair {
         VStack(spacing: DS.Space.lg) {
             GitChangesFileMenu(model: GitPreviewFixtures.model, review: nil, scope: nil)
+            GitChangesFileMenu(model: conflicted, review: nil, scope: nil)
             GitChangesFileMenu(model: GitPreviewFixtures.cleanModel, review: nil, scope: nil)
         }
         .frame(width: DS.TaskWell.width)

@@ -112,7 +112,9 @@ With `NativeTaskWell`, a Changes pane that cannot fit beside the conversation ta
 The composer remains underneath, and Escape or Close Changes returns to the same conversation.
 The 44pt header holds one file pop-up, its position and line totals, and the existing Commit action.
 The pop-up includes This Turn, Uncommitted and Branch; partly staged files remain separate entries
-under their staging areas. Loading, missing-repository, clean, comparison fallback, binary, large
+under their staging areas. It also stages or unstages the shown uncommitted file, and a conflicted
+file shows Stage beside the pop-up, so a resolved conflict can be marked without the list. Escape
+closes it wherever focus is. Loading, missing-repository, clean, comparison fallback, binary, large
 and failed-diff states reuse the existing Changes views. Other tools and the original Task Tools
 switch keep their existing overlay behavior.
 
