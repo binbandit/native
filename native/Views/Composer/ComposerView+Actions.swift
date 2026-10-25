@@ -101,14 +101,18 @@ extension ComposerView {
         isFocused = true
     }
 
-    /// `/clear`: a fresh conversation in this task (AppModel+ClearConversation.swift). The message
-    /// comes back if it can't start, with why.
+    /// `/clear`: a fresh conversation in this task (AppModel+ClearConversation.swift). Quotes move
+    /// with it, for the next message; the message comes back if it can't start, with why.
     func clearConversation() {
         let message = draftText
         draftText = ""
         Task {
             do {
-                try await app.clearConversation(of: session)
+                let fresh = try await app.clearConversation(of: session)
+                if fresh.draft.isEmpty {
+                    fresh.draft = session.draft
+                }
+                session.draft = ""
             } catch {
                 if draftText.isEmpty {
                     draftText = message

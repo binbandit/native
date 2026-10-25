@@ -22,6 +22,8 @@
 		C0C000000000000000000087 /* FileDiff+DiffView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C000000000000000000077 /* FileDiff+DiffView.swift */; };
 		C0C000000000000000000088 /* ToolCategory+Glyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C000000000000000000078 /* ToolCategory+Glyph.swift */; };
 		C0C000000000000000000089 /* TranscriptCodeBlock.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C000000000000000000079 /* TranscriptCodeBlock.swift */; };
+		C0C0000000000000000000C0 /* ComposerQuoteSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C0000000000000000000C2 /* ComposerQuoteSource.swift */; };
+		C0C0000000000000000000C1 /* PlatformQuoteSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C0000000000000000000C3 /* PlatformQuoteSelection.swift */; };
 		C0C0000000000000000000AA /* AppAppearance in Frameworks */ = {isa = PBXBuildFile; productRef = C0C0000000000000000000A9 /* AppAppearance */; };
 		C0C0000000000000000000B8 /* Undo in Frameworks */ = {isa = PBXBuildFile; productRef = C0C0000000000000000000B7 /* Undo */; };
 		C0C0000000000000000000AC /* CelebrationDates.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C0000000000000000000AB /* CelebrationDates.swift */; };
@@ -56,6 +58,8 @@
 		C0C000000000000000000077 /* FileDiff+DiffView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "FileDiff+DiffView.swift"; path = "../native/Views/Transcript/FileDiff+DiffView.swift"; sourceTree = SOURCE_ROOT; };
 		C0C000000000000000000078 /* ToolCategory+Glyph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ToolCategory+Glyph.swift"; path = "../native/Views/Transcript/ToolCategory+Glyph.swift"; sourceTree = SOURCE_ROOT; };
 		C0C000000000000000000079 /* TranscriptCodeBlock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TranscriptCodeBlock.swift; path = ../native/Views/Transcript/TranscriptCodeBlock.swift; sourceTree = SOURCE_ROOT; };
+		C0C0000000000000000000C2 /* ComposerQuoteSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ComposerQuoteSource.swift; path = ../native/Views/Composer/Support/ComposerQuoteSource.swift; sourceTree = SOURCE_ROOT; };
+		C0C0000000000000000000C3 /* PlatformQuoteSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PlatformQuoteSelection.swift; path = ../native/Platform/PlatformQuoteSelection.swift; sourceTree = SOURCE_ROOT; };
 		C0C0000000000000000000A0 /* AppIcon-arcade.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = "AppIcon-arcade.icon"; sourceTree = "<group>"; };
 		C0C0000000000000000000A1 /* AppIcon-cobalt.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = "AppIcon-cobalt.icon"; sourceTree = "<group>"; };
 		C0C0000000000000000000A2 /* AppIcon-ember.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = "AppIcon-ember.icon"; sourceTree = "<group>"; };
@@ -166,6 +170,8 @@
 				C0C000000000000000000075 /* ToolPresentation.swift */,
 				C0C000000000000000000078 /* ToolCategory+Glyph.swift */,
 				C0C000000000000000000079 /* TranscriptCodeBlock.swift */,
+				C0C0000000000000000000C2 /* ComposerQuoteSource.swift */,
+				C0C0000000000000000000C3 /* PlatformQuoteSelection.swift */,
 				C0C0000000000000000000AB /* CelebrationDates.swift */,
 				C0C000000000000000000073 /* AppIcon.icon */,
 			);
@@ -355,6 +361,8 @@
 				C0C000000000000000000085 /* ToolPresentation.swift in Sources */,
 				C0C000000000000000000088 /* ToolCategory+Glyph.swift in Sources */,
 				C0C000000000000000000089 /* TranscriptCodeBlock.swift in Sources */,
+				C0C0000000000000000000C0 /* ComposerQuoteSource.swift in Sources */,
+				C0C0000000000000000000C1 /* PlatformQuoteSelection.swift in Sources */,
 				C0C0000000000000000000AC /* CelebrationDates.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
