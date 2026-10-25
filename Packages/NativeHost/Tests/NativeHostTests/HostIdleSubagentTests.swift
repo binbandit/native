@@ -64,11 +64,14 @@ struct HostIdleSubagentTests {
         #expect(!parent.needsLoad)
         waiting.hiddenCommand = nil
 
-        // The first pass closes the parent; the next can stop the adapter once the close settles.
+        // The first pass closes the parent; a later one stops the adapter once the agent answers the
+        // close, which can take well over 100 ms on a busy runner.
         core.unloadIdleSessions(now: later)
-        try await Task.sleep(for: .milliseconds(100))
-        core.unloadIdleSessions(now: later)
-        #expect(link.status == .stopped)
+        let stopped = await HostKeepAwakeTests.eventually(within: .seconds(10)) {
+            core.unloadIdleSessions(now: later)
+            return link.status == .stopped
+        }
+        #expect(stopped)
 
         let reader = try await host.connect(.owner, name: "fresh reader")
         let reading = Recorder(client: reader)

@@ -68,11 +68,19 @@ public actor NativeHostClient {
     private let clientInfo: PeerInfo
     private let continuation: AsyncStream<Event>.Continuation
     private var handlers: [(id: UUID, handle: EventHandler)] = []
+    /// Whether handlers are hearing an event now; see `deliver(_:)`.
+    private var isDelivering = false
+    /// Events that came while handlers were busy with an earlier one, each with whoever waits for
+    /// it to be handled.
+    private var waitingEvents: [(event: Event, handled: CheckedContinuation<Void, Never>)] = []
     private var peer: JSONRPCPeer?
     private var generation = 0
     private var running: Task<Void, Never>?
     /// Sessions this client follows, with the last event seen, to re-attach without gaps.
     var attachments: [HostSessionID: Int?] = [:]
+    /// Sessions whose summary the host has sent on the current connection. Nothing newer than
+    /// that comes from re-attaching, so its answer isn't passed on for these.
+    private var summariesHeard: Set<HostSessionID> = []
     private(set) var epoch: UUID?
     /// Notifications that aren't `Event`s (a remote command's output), by method, in order with
     /// everything else. See `HostNotificationRoute`.
@@ -178,6 +186,7 @@ public actor NativeHostClient {
         let stream = try await transport.connect()
         generation += 1
         let generation = generation
+        summariesHeard = []
         let peer = JSONRPCPeer(channel: stream, label: "host") { [weak self] event in
             await self?.receive(event, generation: generation)
         }
@@ -206,9 +215,17 @@ public actor NativeHostClient {
         epoch = info.epoch
         await setState(.connected(info))
         for (session, seen) in attachments {
-            _ = try? await peer.request(
-                HostProtocol.Method.attach, AttachParams(sessionID: session, epoch: epoch, afterSeq: seen),
-                as: AttachResult.self)
+            guard
+                let attached = try? await peer.request(
+                    HostProtocol.Method.attach, AttachParams(sessionID: session, epoch: epoch, afterSeq: seen),
+                    as: AttachResult.self)
+            else { continue }
+            // The host told only the clients it had when the session last changed (a turn ended, an
+            // approval came up), so while this one was away it missed that: the answer says where
+            // the session is now. A summary heard on this connection is at least as new.
+            if !summariesHeard.contains(session) {
+                await deliver(.sessionChanged(attached.summary))
+            }
         }
     }
 
@@ -219,16 +236,39 @@ public actor NativeHostClient {
             return
         }
         guard let event = Self.event(from: message) else { return }
-        if case .sessionEvent(let session, let step) = event, attachments.keys.contains(session) {
+        switch event {
+        case .sessionEvent(let session, let step) where attachments.keys.contains(session):
             attachments[session] = step.event.seq
-        }
-        if case .sessionClosed(let session) = event {
+        case .sessionChanged(let summary):
+            summariesHeard.insert(summary.id)
+        case .sessionClosed(let session):
             attachments[session] = nil
+        default:
+            break
         }
         await deliver(event)
     }
 
+    /// Hands `event` to every handler and to `events`, and returns once they have it. Events go out
+    /// one at a time in the order they got here: the host's notifications arrive one after another,
+    /// but the connection's states and a re-attach's summary come from the connecting task, and an
+    /// event mustn't overtake one whose handler is still busy (a newer summary undone by an older).
     private func deliver(_ event: Event) async {
+        guard !isDelivering else {
+            await withCheckedContinuation { waitingEvents.append((event, $0)) }
+            return
+        }
+        isDelivering = true
+        await handOut(event)
+        while !waitingEvents.isEmpty {
+            let (event, handled) = waitingEvents.removeFirst()
+            await handOut(event)
+            handled.resume()
+        }
+        isDelivering = false
+    }
+
+    private func handOut(_ event: Event) async {
         for handler in handlers {
             await handler.handle(event)
         }

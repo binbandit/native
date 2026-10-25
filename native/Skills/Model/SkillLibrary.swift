@@ -71,7 +71,7 @@ final class SkillLibrary {
     }
 
     var home: String {
-        environment["HOME"] ?? FileManager.default.homeDirectoryForCurrentUser.path(percentEncoded: false)
+        environment["HOME"] ?? URL.homeDirectory.path(percentEncoded: false)
     }
 
     var agents: [SkillsAgent] {

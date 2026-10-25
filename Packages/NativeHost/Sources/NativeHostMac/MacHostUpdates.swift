@@ -12,9 +12,13 @@ public enum MacHostUpdates {
     public static let standaloneRoot = FileManager.default.homeDirectoryForCurrentUser.appending(
         path: ".native/host", directoryHint: .isDirectory)
 
-    public static func environment(location: HostLocation, bundle: Bundle = .main) -> HostUpdateEnvironment {
+    /// `mirror` is the organization's host feed (`MacHostPolicySource.updateFeedURL`), read at each
+    /// check; while it names one, a standalone host checks only there, never its built-in feed.
+    public static func environment(
+        location: HostLocation, bundle: Bundle = .main, mirror: @escaping @Sendable () -> URL? = { nil }
+    ) -> HostUpdateEnvironment {
         let info = bundle.infoDictionary ?? [:]
-        let channel = info["NativeChannel"] as? String ?? (location.channel.isEmpty ? "stable" : location.channel)
+        let channel = channel(location: location, bundle: bundle)
         let current = HostUpdateStatus.Build(
             version: info["CFBundleShortVersionString"] as? String ?? "0",
             build: info["CFBundleVersion"] as? String ?? "0",
@@ -32,11 +36,17 @@ public enum MacHostUpdates {
         let executable = (bundle.executableURL ?? URL(filePath: CommandLine.arguments[0])).resolvingSymlinksInPath()
         let versions = standaloneRoot.appending(path: "versions").resolvingSymlinksInPath().path(percentEncoded: false)
         if executable.path(percentEncoded: false).hasPrefix(versions + "/"),
-            let updater = StandaloneHostUpdater(info: info, root: standaloneRoot, runningBuild: current.build)
+            let updater = StandaloneHostUpdater(
+                info: info, root: standaloneRoot, runningBuild: current.build, mirror: mirror)
         {
             return HostUpdateEnvironment(provider: .standalone, current: current, selfUpdater: updater)
         }
         return .none(current: current, reason: HostUpdateError.notInstalled.localizedDescription)
+    }
+
+    /// The channel this host updates on: its build's, or its location's.
+    public static func channel(location: HostLocation, bundle: Bundle = .main) -> String {
+        bundle.infoDictionary?["NativeChannel"] as? String ?? (location.channel.isEmpty ? "stable" : location.channel)
     }
 
     /// `Native.app`, when this host is the helper at `Native.app/Contents/Library/LoginItems/`.
@@ -70,21 +80,38 @@ public enum MacHostUpdates {
 /// A standalone host's updater: `Packages/HostUpdater`'s signed feed and atomic install.
 public struct StandaloneHostUpdater: HostSelfUpdater {
     public let installer: HostBinaryInstaller
-    let source: HostUpdateSource
+    /// The feed this build was released with (`NativeHostFeedURL`).
+    let releasedFeed: URL
+    let key: UpdateSigningKey
     let runningBuild: String
+    /// The organization's feed in place of `releasedFeed`, when it names one; signed by the same key.
+    let mirror: @Sendable () -> URL?
+    let fetch: HostUpdateSource.Fetch
 
     /// Nil when the host carries no feed or key (the embedded Info.plist's `NativeHostFeedURL` and
     /// `SUPublicEDKey`), so it has nothing it could trust.
-    public init?(info: [String: Any], root: URL, runningBuild: String) {
+    public init?(
+        info: [String: Any], root: URL, runningBuild: String, mirror: @escaping @Sendable () -> URL? = { nil },
+        fetch: @escaping HostUpdateSource.Fetch = HostUpdateSource.download
+    ) {
         guard let feed = (info["NativeHostFeedURL"] as? String).flatMap(URL.init(string:)),
             let key = (info["SUPublicEDKey"] as? String).flatMap({ try? UpdateSigningKey(base64: $0) })
         else { return nil }
         installer = HostBinaryInstaller(root: root, key: key)
-        source = HostUpdateSource(feedURL: feed, key: key)
+        releasedFeed = feed
+        self.key = key
         self.runningBuild = runningBuild
+        self.mirror = mirror
+        self.fetch = fetch
+    }
+
+    /// Where this check looks: the mirror while one is managed, with no fallback to the built-in feed.
+    var source: HostUpdateSource {
+        HostUpdateSource(feedURL: mirror() ?? releasedFeed, key: key, fetch: fetch)
     }
 
     public func checkAndStage() async throws -> HostUpdateStatus.Release? {
+        let source = self.source
         let feed = try await source.latest()
         guard feed.isNewer(than: runningBuild) else { return nil }
         if !installer.isStaged(feed.build) {

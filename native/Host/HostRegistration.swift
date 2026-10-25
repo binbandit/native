@@ -1,7 +1,5 @@
 import Foundation
-import NativeHostClient
 import NativeHostProtocol
-import ServiceManagement
 
 /// How the app starts its background host (`docs/durability.md`). The launchd plist ships in the app
 /// bundle, generated at build time; it carries the host's channel, so this app and the host it
@@ -9,7 +7,7 @@ import ServiceManagement
 ///
 /// Native and Native Nightly register a login item with `SMAppService`: the host starts at every
 /// login. Development builds (a channel per build folder) run a launchd job for this login session only,
-/// so the many builds agents make never pile up as login items.
+/// so the many builds agents make never pile up as login items. Both go through `PlatformHostAgent`.
 struct HostRegistration {
     static let plistName = "NativeHost.plist"
 
@@ -19,8 +17,6 @@ struct HostRegistration {
         case needsApproval
         case notRegistered
     }
-
-    private let service = SMAppService.agent(plistName: Self.plistName)
 
     /// Where this build's host keeps its socket and store.
     var location: HostLocation {
@@ -34,7 +30,7 @@ struct HostRegistration {
     var status: Status {
         if Self.simulatesRefusal { return .needsApproval }
         if isDevelopmentBuild { return .registered }
-        return switch service.status {
+        return switch agent.loginItemStatus {
         case .enabled: .registered
         case .requiresApproval: .needsApproval
         default: .notRegistered
@@ -49,12 +45,12 @@ struct HostRegistration {
         }
         if isDevelopmentBuild {
             // Earlier development builds registered login items; take this build's back out.
-            if service.status != .notRegistered {
-                try? await service.unregister()
+            if agent.loginItemStatus != .notRegistered {
+                try? await agent.unregisterLoginItem()
             }
-            try await sessionJob.start()
-        } else if service.status != .enabled {
-            try service.register()
+            try await agent.startSessionJob()
+        } else if agent.loginItemStatus != .enabled {
+            try agent.registerLoginItem()
         }
     }
 
@@ -63,19 +59,19 @@ struct HostRegistration {
     /// afresh; a session job is kicked.
     func restart() async throws {
         if isDevelopmentBuild {
-            try await sessionJob.start()
+            try await agent.startSessionJob()
         } else {
-            try? await service.unregister()
-            try service.register()
+            try? await agent.unregisterLoginItem()
+            try agent.registerLoginItem()
         }
     }
 
     /// Stops the host and its agents, and keeps it from starting again.
     func unregister() async throws {
         if isDevelopmentBuild {
-            try await sessionJob.stop()
+            try await agent.stopSessionJob()
         } else {
-            try await service.unregister()
+            try await agent.unregisterLoginItem()
         }
     }
 
@@ -89,8 +85,8 @@ struct HostRegistration {
         #endif
     }
 
-    private var sessionJob: LaunchdSessionJob {
-        LaunchdSessionJob(bundledPlist: Self.bundledPlist, appBundle: Bundle.main.bundleURL, location: location)
+    private var agent: PlatformHostAgent {
+        PlatformHostAgent(plistName: Self.plistName, bundledPlist: Self.bundledPlist, location: location)
     }
 
     private static var bundledPlist: URL {

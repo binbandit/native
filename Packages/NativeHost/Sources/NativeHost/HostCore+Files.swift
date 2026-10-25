@@ -27,7 +27,7 @@ extension HostCore {
                 let path = try projectPath(params.path, for: client, to: "look at files")
                 return try await Self.fileInfo(path, as: params.path)
             case Method.fsWatch:
-                try watchFiles(try message.params(as: FileWatchParams.self), for: client)
+                try await watchFiles(try message.params(as: FileWatchParams.self), for: client)
                 return EmptyMessage()
             case Method.fsUnwatch:
                 unwatchFiles(try message.params(as: FileUnwatchParams.self).watchID, for: client)

@@ -22,6 +22,8 @@ let package = Package(
         .package(path: "../Orchestration"),
         .package(path: "../MCPServer"),
         .package(path: "../SessionTitling"),
+        // The Mac host's policy source: the managed preferences Native's app reads, read by the host.
+        .package(path: "../NativePolicy"),
         // Tests only: Git running against a host through `RemoteCommandRunner`.
         .package(path: "../Git"),
         // Tests only: MCP browser sign-in through the paired command runner.
@@ -55,6 +57,7 @@ let package = Package(
                 .product(name: "HostUpdater", package: "HostUpdater", condition: .when(platforms: [.macOS])),
                 .product(name: "SessionTitling", package: "SessionTitling"),
                 .product(name: "NativeOrchestration", package: "Orchestration"),
+                .product(name: "NativePolicy", package: "NativePolicy", condition: .when(platforms: [.macOS])),
             ]),
         .target(
             name: "NativeHostClient",
@@ -77,6 +80,7 @@ let package = Package(
                 "FakeACPAgent", .product(name: "SessionTitling", package: "SessionTitling"),
                 .product(name: "MCPClient", package: "MCPClient", condition: .when(platforms: [.macOS])),
                 .product(name: "NativeOrchestration", package: "Orchestration"),
+                .product(name: "NativePolicy", package: "NativePolicy", condition: .when(platforms: [.macOS])),
             ]
         ),
     ]

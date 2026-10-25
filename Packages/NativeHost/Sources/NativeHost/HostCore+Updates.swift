@@ -4,7 +4,8 @@ import NativeHostProtocol
 // Updating this host from any client (docs/releasing.md, "Remote updates"). Anyone authenticated may
 // read the status and ask for a check; installing takes the `manageHost` grant, carries no URL or
 // binary, and is journaled with the device that asked. A Mac host relays installs to Native.app's
-// updater; a standalone host installs builds its own signed feed offered.
+// updater; a standalone host installs builds its own signed feed offered. Checking, staging and
+// installing all need the policy's `updates` (docs/enterprise/host-policy.md).
 extension HostCore {
     static func initialUpdateState(_ updates: HostUpdateEnvironment) -> HostUpdateStatus {
         switch updates.provider {
@@ -26,7 +27,12 @@ extension HostCore {
     func updateStatus(for client: ClientLink) -> HostUpdateStatus {
         var status = updateState
         status.workingSessions = sessions.values.count { $0.turn != nil || $0.phase == .recovering }
-        status.canInstall = client.grants.manageHost && status.provider != .none && status.hasInstallableUpdate
+        status.canInstall =
+            client.grants.manageHost && status.provider != .none && status.hasInstallableUpdate && allows(.updates)
+        if !allows(.updates), status.provider == .standalone {
+            status.state = .unavailable
+            status.message = HostPolicyDenial(HostCapability.updates.action, policy: policy).localizedDescription
+        }
         return status
     }
 
@@ -37,7 +43,7 @@ extension HostCore {
     }
 
     /// At startup: a standalone host says if its last update was rolled back, and checks its feed
-    /// now and then.
+    /// now and then, while the policy allows updates.
     func startUpdates() {
         let updates = configuration.updates
         guard updates.provider == .standalone, let updater = updates.selfUpdater else { return }
@@ -49,6 +55,7 @@ extension HostCore {
                 detail: "Native Host \(rollback.from) didn't start, so the host went back to \(rollback.to)")
             try? store.setMeta(MetaKey.journaledRollback, String(rollback.at.timeIntervalSince1970))
         }
+        guard allows(.updates), updateChecks == nil else { return }
         let interval = updates.checkInterval
         updateChecks = Task { [weak self] in
             while !Task.isCancelled {
@@ -60,6 +67,9 @@ extension HostCore {
 
     /// Starts a check: the Mac app's updater for provider `app`, the host's own feed for `standalone`.
     func checkForUpdate() {
+        // The policy as it is now, not as it was at the last refresh: the check reads its mirror now.
+        refreshPolicy()
+        guard allows(.updates) else { return }
         switch configuration.updates.provider {
         case .app:
             if let id = appUpdateClient, let app = clients[id] {
@@ -70,9 +80,11 @@ extension HostCore {
             updateState.state = .checking
             updateState.message = nil
             publishUpdate()
-            Task {
+            updateCheck = Task {
                 do {
                     let release = try await updater.checkAndStage()
+                    // Revoked while it checked: what it found isn't offered or installed.
+                    guard !Task.isCancelled, allows(.updates) else { return }
                     updateState.available = release
                     updateState.state = release == nil ? .upToDate : .ready
                     updateState.lastChecked = .now
@@ -81,6 +93,7 @@ extension HostCore {
                         applyStandaloneUpdate(pending)
                     }
                 } catch {
+                    guard !Task.isCancelled, allows(.updates) else { return }
                     updateState.lastChecked = .now
                     updateFailed(error)
                 }
@@ -90,8 +103,24 @@ extension HostCore {
         }
     }
 
+    /// The policy no longer allows updates: the timer and any check stop, and nothing waits to be
+    /// installed. A build already staged stays on disk, unused.
+    func stopUpdates() {
+        updateChecks?.cancel()
+        updateChecks = nil
+        updateCheck?.cancel()
+        updateCheck = nil
+        updateState.pendingInstall = nil
+        // A restart already asked for still happens, onto this build.
+        pendingActivation = nil
+        if updateState.provider == .standalone, updateState.state == .checking || updateState.state == .installing {
+            updateState.state = .idle
+        }
+    }
+
     /// Installs the update the host already knows about, once nothing is running or now.
     func installUpdate(_ when: HostUpdateStatus.When, by client: ClientLink) throws {
+        try require(.updates)
         guard client.grants.manageHost else { throw HostError.notAuthorized("install updates") }
         guard updateState.provider != .none else {
             throw HostError.updateUnavailable(updateState.message ?? "This host can't update itself.")
@@ -155,7 +184,7 @@ extension HostCore {
     }
 
     private func applyStandaloneUpdate(_ when: HostUpdateStatus.When) {
-        guard let build = updateState.available?.build else { return }
+        guard allows(.updates), let build = updateState.available?.build else { return }
         pendingActivation = build
         updateState.state = .installing
         publishUpdate()

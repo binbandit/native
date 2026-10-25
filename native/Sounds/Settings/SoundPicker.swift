@@ -48,7 +48,9 @@ struct SoundPicker: View {
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
         .fixedSize()
+        #if os(macOS)
         .contentShape(.focusEffect, shape)
+        #endif
         .trackHover($isHovered)
         .accessibilityLabel("Sound for \(trigger.title.lowercased())")
         .accessibilityValue(title)
