@@ -118,7 +118,7 @@ extension AppModel {
         }
         await starting.value
         task.isAgentReady = runtime.isReady
-        guard !task.isDiscarded else { return }
+        guard !task.isDiscarded else { return removeWorkspace(of: task) }
         guard runtime.isReady else {
             return fail(
                 task, "Couldn't start \(task.agent.displayName) on \(host.name)",
@@ -129,7 +129,7 @@ extension AppModel {
                 on: runtime, cwd: URL(filePath: folder, directoryHint: .isDirectory), project: project.id)
             guard !task.isDiscarded else {
                 sessions.remove(session)
-                return
+                return removeWorkspace(of: task)
             }
             finish(task, with: session)
         } catch {
