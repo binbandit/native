@@ -7,17 +7,20 @@ import Synchronization
 // Each watch runs the host's `FileWatching` on the folder and sends what changes, coalesced, as
 // `_native/fs/changed`, until the client unwatches it or goes away.
 extension HostCore {
-    func watchFiles(_ params: FileWatchParams, for client: ClientLink) throws {
+    /// Answers once the watcher is running, so the client sees every change it makes after that.
+    func watchFiles(_ params: FileWatchParams, for client: ClientLink) async throws {
         let root = try projectPath(params.root, for: client, to: "watch files")
         guard let status = HostFileStatus(path: root, followingLinks: true) else {
             throw HostFileError.notFound(path: params.root)
         }
         guard status.kind == .directory else { throw HostFileError.notADirectory(path: params.root) }
-        // A client that left while this was on its way would never unwatch it.
+        let changes = await fileWatching.changes(under: root)
+        // A client that left while this was on its way, or while the watcher started, would never
+        // unwatch it. Dropping the stream stops the watcher.
         guard clients[client.id] != nil else { return }
         client.fileWatches[params.watchID]?.stop()
         client.fileWatches[params.watchID] = HostFileWatch(
-            id: params.watchID, root: root, changes: fileWatching.changes(under: root), peer: client.peer)
+            id: params.watchID, root: root, changes: changes, peer: client.peer)
     }
 
     /// Stops one of the client's own watches; one it doesn't have is already stopped.
