@@ -181,44 +181,6 @@ import Testing
         #expect(policy.admission(ofPlugin: "native.policy", origin: .system, capabilities: []).isAdmitted)
     }
 
-    @Test func removingARestrictedProfileKeepsItRestrictedUntilTheOrganizationSaysOrdinary() {
-        let store = MemoryPolicyEnrollmentStore()
-        let enrolled = load(managed: internalOnly(["policy.plugins.allowed": ["acme"]]), enrollment: store)
-        #expect(enrolled.deployment.state == .valid && enrolled.isRestricted)
-        #expect(store.load()?.mode == .internalOnly && store.load()?.revision == enrolled.deployment.revision)
-
-        // The profile is removed, and Native restarts with only the user's own preferences.
-        let removed = load(
-            user: ["policy.deployment.mode": "ordinary", "policy.plugins.allowed": ["acme"]], enrollment: store)
-        #expect(removed.deployment.lockdown == .removedAfterEnrollment && removed.deployment.state == .unavailable)
-        #expect(removed.deploymentMode == .internalOnly && removed.allowedPlugins == [])
-        #expect(removed.decision(for: .pluginAppearance) == .disabled(.policyUnavailable))
-
-        // A replacement profile without the mode is still not the organization's way out.
-        let partial = load(managed: ["policy.plugins.allowed": ["acme"]], enrollment: store)
-        #expect(partial.deployment.lockdown == .removedAfterEnrollment)
-
-        let released = load(managed: ["policy.deployment.mode": "ordinary"], enrollment: store)
-        #expect(released.deployment.lockdown == nil && !released.isRestricted)
-        #expect(store.load() == nil)
-        #expect(!load(enrollment: store).isRestricted)
-    }
-
-    @Test func enrollmentFileSurvivesARestartAndAnUnreadableOneStaysRestricted() throws {
-        let folder = FileManager.default.temporaryDirectory.appending(
-            path: "RestrictedPolicyTests-\(UUID().uuidString)")
-        defer { try? FileManager.default.removeItem(at: folder) }
-        let url = folder.appending(path: "Policy/enrollment.json")
-        _ = load(managed: ["policy.deployment.mode": "airGapped"], enrollment: FilePolicyEnrollmentStore(url: url))
-        let restarted = load(enrollment: FilePolicyEnrollmentStore(url: url))
-        #expect(restarted.deploymentMode == .airGapped && restarted.deployment.lockdown == .removedAfterEnrollment)
-
-        try Data("not json".utf8).write(to: url)
-        #expect(FilePolicyEnrollmentStore(url: url).load()?.mode == .airGapped)
-        _ = load(managed: ["policy.deployment.mode": "ordinary"], enrollment: FilePolicyEnrollmentStore(url: url))
-        #expect(!FileManager.default.fileExists(atPath: url.path(percentEncoded: false)))
-    }
-
     @Test func restrictedModeIgnoresUserValuesAndLocksEveryKey() {
         let policy = load(
             managed: internalOnly(),

@@ -81,7 +81,15 @@ struct DeploymentResolution {
                 // The organization's own ordinary mode is the one way out of a restricted enrollment.
                 let enrollment =
                     managed == .ordinary ? nil : PolicyEnrollment(mode: managed, revision: deployment.revision)
-                source.enrollment?.save(enrollment)
+                do {
+                    try source.enrollment?.save(enrollment)
+                } catch {
+                    let problem =
+                        enrollment == nil
+                        ? "leaving restricted mode couldn't be recorded; removing the profile restricts Native again"
+                        : "restricted mode couldn't be recorded; it holds until Native quits"
+                    diagnostics.append(PolicyDiagnostic(key: key, origin: .organization, problem: problem))
+                }
                 deployment.enrollment = enrollment
             case .absent:
                 if let enrolled {

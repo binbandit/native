@@ -73,12 +73,19 @@ extension PolicyCapability {
         case unconverted
     }
 
+    public enum ServiceNeed: String, Sendable {
+        case all
+        case any
+    }
+
     public struct Coverage: Sendable {
         public let kind: Kind
         /// The policy keys that turn it on, off or shape it.
         public let keys: [PolicyKey]
         /// The network services it uses (`NativeNetwork.NetworkInventory` describes each).
         public let services: [NativePolicy.NetworkService]
+        /// Whether it needs every one of `services`, or they are alternatives (MCP's transports).
+        public let servicesNeeded: ServiceNeed
         /// Where the decision has to be honored, relative to the repository root.
         public let owners: [String]
         public let enforcement: Enforcement
@@ -87,10 +94,12 @@ extension PolicyCapability {
     public var coverage: Coverage {
         typealias Service = NativePolicy.NetworkService
         func entry(
-            _ kind: Kind, _ keys: [PolicyKey] = [], _ services: [Service] = [], owners: [String],
-            _ enforcement: Enforcement = .unconverted
+            _ kind: Kind, _ keys: [PolicyKey] = [], _ services: [Service] = [], needing: ServiceNeed = .all,
+            owners: [String], _ enforcement: Enforcement = .unconverted
         ) -> Coverage {
-            Coverage(kind: kind, keys: keys, services: services, owners: owners, enforcement: enforcement)
+            Coverage(
+                kind: kind, keys: keys, services: services, servicesNeeded: needing, owners: owners,
+                enforcement: enforcement)
         }
         return switch self {
         case .agentExecution:
@@ -119,7 +128,7 @@ extension PolicyCapability {
         case .terminal: entry(.execution, owners: ["native/Terminal/"])
         case .mcpExecution:
             entry(
-                .execution, [.mcpAllowed, .mcpBlocked, .mcpRequired], [.mcpStdio, .mcpHTTP, .mcpSSE],
+                .execution, [.mcpAllowed, .mcpBlocked, .mcpRequired], [.mcpStdio, .mcpHTTP, .mcpSSE], needing: .any,
                 owners: [
                     "native/Plugins/PluginRegistry.swift", "native/MCP/Model/MCPLibrary+Policy.swift",
                     "Packages/MCPClient/",

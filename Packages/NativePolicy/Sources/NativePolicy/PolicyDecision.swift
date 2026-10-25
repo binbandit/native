@@ -144,11 +144,32 @@ extension NativePolicy {
         let coverage = capability.coverage
         if isRestricted && coverage.enforcement == .unconverted { return .notSupportedInRestrictedMode }
         if let key = gate(capability) { return key }
-        let deniedService = coverage.services.first { service in
-            let rule = network.services[service]
-            return rule?.enabled == false || (isRestricted && rule?.enabled != true)
+        let denied = coverage.services.filter(isDenied)
+        // Alternatives (MCP's transports) are denied only together; a required server still needs its own.
+        if coverage.servicesNeeded == .any && denied.count < coverage.services.count {
+            let required = capability == .mcpExecution ? deniedRequiredTransport() : nil
+            return required.map(CapabilityDecision.Reason.serviceDisabled)
         }
-        return deniedService.map(CapabilityDecision.Reason.serviceDisabled)
+        return denied.first.map(CapabilityDecision.Reason.serviceDisabled)
+    }
+
+    private func isDenied(_ service: NetworkService) -> Bool {
+        let rule = network.services[service]
+        return rule?.enabled == false || (isRestricted && rule?.enabled != true)
+    }
+
+    /// A transport the organization requires a server over, when every way to reach it is denied.
+    private func deniedRequiredTransport() -> NetworkService? {
+        for server in mcp.required {
+            // An agent takes a URL server over streamable HTTP or SSE, whichever it supports.
+            let transports: [NetworkService] =
+                switch server.transport {
+                case .stdio: [.mcpStdio]
+                case .http: [.mcpHTTP, .mcpSSE]
+                }
+            if transports.allSatisfy(isDenied) { return transports.first }
+        }
+        return nil
     }
 
     /// The keys that switch a capability off as a whole. Finer rules (which agents, which servers)

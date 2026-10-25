@@ -19,8 +19,9 @@ public struct PolicyEnrollment: Codable, Equatable, Sendable {
 /// organization's own input.
 public protocol PolicyEnrollmentStore: Sendable {
     func load() -> PolicyEnrollment?
-    /// Records the enrollment, or forgets it when the organization deploys ordinary mode.
-    func save(_ enrollment: PolicyEnrollment?)
+    /// Records the enrollment, or forgets it when the organization deploys ordinary mode. Throws
+    /// when it can't be kept across a restart.
+    func save(_ enrollment: PolicyEnrollment?) throws
 }
 
 /// Keeps the enrollment in a file of its own, outside the preferences policy keys are read from.
@@ -28,7 +29,10 @@ public final class FilePolicyEnrollmentStore: PolicyEnrollmentStore, @unchecked 
     private let url: URL
     private let lock = NSLock()
     // Read once: policy loads on every preference change, and only this store writes the file.
+    // An enrollment that couldn't be written is held here instead, so it holds until Native quits.
     private var cached: PolicyEnrollment??
+    /// The cache is ahead of the file because a write failed, so the next save tries again.
+    private var isUnwritten = false
 
     public init(url: URL) {
         self.url = url
@@ -48,9 +52,9 @@ public final class FilePolicyEnrollmentStore: PolicyEnrollmentStore, @unchecked 
         }
     }
 
-    public func save(_ enrollment: PolicyEnrollment?) {
-        lock.withLock {
-            if case .some(let current) = cached, current == enrollment { return }
+    public func save(_ enrollment: PolicyEnrollment?) throws {
+        try lock.withLock {
+            if !isUnwritten, case .some(let current) = cached, current == enrollment { return }
             do {
                 if let enrollment {
                     try FileManager.default.createDirectory(
@@ -60,9 +64,13 @@ public final class FilePolicyEnrollmentStore: PolicyEnrollmentStore, @unchecked 
                     try FileManager.default.removeItem(at: url)
                 }
                 cached = .some(enrollment)
+                isUnwritten = false
             } catch {
-                // Leave the cache unset so the next load reads what the file actually holds.
-                cached = nil
+                // A restriction stays in memory. A release that couldn't remove the file leaves the
+                // cache unset, so the next load reads the restriction the file still holds.
+                cached = enrollment.map { .some($0) }
+                isUnwritten = enrollment != nil
+                throw error
             }
         }
     }

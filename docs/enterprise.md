@@ -103,8 +103,10 @@ mode:
 - A grant only takes effect for a capability whose code consults the policy decision before acting
   (`converted` in [policy coverage](enterprise/policy-coverage.md)). Today that is plugin
   activation, plugins' themes, icon sets and command knowledge, and agent icon downloads. Everything
-  else stays off whatever the profile says, including agents, MCP, updates and diagnostics, until
-  its conversion lands. Schema coverage is complete; consumer integration is not.
+  else is denied whatever the profile says. That denial only stops code that consults it: the
+  plugin registry, which admits plugins and hands tasks their agents and MCP servers. Other
+  unconverted features, such as updates, diagnostics, remote hosts and git, don't check it yet and
+  still act. Schema coverage is complete; consumer integration is not.
 - Built-in plugins are admitted like installed ones: listed in `policy.plugins.allowed`, with every
   capability they declare permitted. A plugin that doesn't declare its capabilities stays off.
 - Keys Native doesn't know, an unknown mode, or a managed source it can't read deny everything
@@ -115,8 +117,8 @@ the profile, or a profile that can't be read, doesn't return it to ordinary mode
 restricted with everything optional denied, across restarts. To leave, deploy a profile with
 `policy.deployment.mode` = `ordinary`, let Native apply it once, then remove the profile.
 
-Restricted modes are off unless deployed, and are not ready to advertise: they deny most of Native
-until each feature is converted. Policy decides what Native itself starts; it isn't a sandbox for
+Restricted modes are off unless deployed, and are not ready to advertise or rely on: they deny most
+of Native, and don't yet stop every unconverted feature. Policy decides what Native itself starts; it isn't a sandbox for
 agents and the tools they run (see the [regulated environments plan](plans/regulated-environments.md)).
 An admin view of the effective policy, its origin and errors is a separate follow-up.
 
