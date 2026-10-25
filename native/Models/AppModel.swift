@@ -4,6 +4,7 @@ import Experiments
 import Foundation
 import NativeHostProtocol
 import Observation
+import TaskList
 import Undo
 import os
 
@@ -25,6 +26,7 @@ final class AppModel {
     let ordering: SessionOrdering
     let sessions: SessionStore
     let taskPeek = TaskPeekPresentation()
+    let sidebarPreferences: TaskSidebarPreferences
     let unread: UnreadSessions
     /// New sessions that haven't had a message yet, so an empty one doesn't outlive the run.
     let unsentSessions: UnsentSessions
@@ -199,6 +201,7 @@ final class AppModel {
         self.plugins = plugins
         self.titles = titles
         self.defaults = defaults
+        sidebarPreferences = TaskSidebarPreferences(defaults: defaults)
         let workingSpinners = WorkingSpinnerPreferences(defaults: defaults)
         self.workingSpinners = workingSpinners
         installations = AgentInstallations(defaults: defaults)

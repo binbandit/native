@@ -7,6 +7,11 @@ extension DS {
         public static let leading: CGFloat = 6
         public static let trailing: CGFloat = 10
         public static let rowVertical: CGFloat = 7
+        public static let foldHeight: CGFloat = 24
+        public static let foldFont = Font.ds(12, weight: .book)
+        public static let foldChevronFont = Font.ds(9)
+        public static let ageFont = Font.ds(11, weight: .book, design: .mono)
+        public static let factFont = Font.ds(11, design: .mono)
         public static let rowHeight: CGFloat = 30
         public static let titleHeight: CGFloat = 16
         public static let askGap: CGFloat = 3

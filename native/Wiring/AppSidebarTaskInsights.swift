@@ -19,6 +19,16 @@ enum AppSidebarTaskInsights {
             hasPullRequest: { summary in
                 tasks.pullRequest(of: summary) != nil
             },
+            branch: { summary in
+                guard let folder = tasks.checkout(of: summary) else { return nil }
+                return git.model(for: folder, session: summary.id).branch?.name
+            },
+            prepareBranch: { summary in
+                guard let folder = tasks.checkout(of: summary) else { return }
+                let repository = git.model(for: folder, session: summary.id)
+                if repository.isLocal, !FileManager.default.fileExists(atPath: folder.path) { return }
+                if repository.status == nil { await repository.refreshNow() }
+            },
             pullRequestMenu: { summary in
                 tasks.menu(of: summary)
             },

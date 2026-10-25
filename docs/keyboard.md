@@ -391,6 +391,13 @@ being hit by accident, since it ends work in progress.
 
 ## Picking tasks in the sidebar
 
+With All in view on, View > Sidebar and the list context menu offer task ages, finished-task
+changes, agent names, branches, machines and ask text. Fold Tasks Older Than chooses A Day
+(the default), A Week or Never. The "earlier" disclosure is keyboard focusable; Space toggles
+it. Filters show every matching task. Arrow navigation, Next/Previous Task, numbered task shortcuts and bulk selection exclude folded earlier tasks;
+search and history reveal a selected older task. Home Next owns the full ask it is showing,
+so the matching sidebar row keeps its title and signal.
+
 With All in view on, hiding the sidebar keeps back and forward in the toolbar. While tasks need
 you, one amber signal counts them. Click it or choose Task > Tasks Needing You to open the list.
 Up and Down highlight a task; Space, Return or a click opens its shared Peek without changing the

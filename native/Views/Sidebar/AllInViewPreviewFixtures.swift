@@ -30,13 +30,15 @@ enum AllInViewPreviewFixtures {
 struct AllInViewPreviewList: View {
     let app: AppModel
     @State var filter = TaskFilter()
+    @State private var folding = SidebarDayFolding()
     @State private var selection = SidebarSelectionModel()
 
     var body: some View {
         ScrollView {
             ProjectList(
-                listing: SidebarListing(model: app, filter: filter, insights: SidebarTaskInsights()),
-                taskAccessory: { _ in EmptyView() }, filter: $filter, selection: selection, select: { _ in })
+                listing: SidebarListing(model: app, filter: filter, insights: SidebarTaskInsights(), folding: folding),
+                taskAccessory: { _ in EmptyView() }, filter: $filter, selection: selection, select: { _ in },
+                folding: folding)
         }
         .environment(\.sidebarAllInView, true)
         .environment(\.sidebarSelection, selection)
@@ -47,6 +49,14 @@ struct AllInViewPreviewList: View {
 
 #Preview("All in view - Active, unread, failed, pinned and archived") {
     DSPreviewPair { AllInViewPreviewList(app: AllInViewPreviewFixtures.manyTasks()) }
+}
+
+#Preview("All in view - Day folding") {
+    DSPreviewPair { AllInViewPreviewList(app: SidebarDesignFixture.makeApp("fold")) }
+}
+
+#Preview("All in view - Optional facts") {
+    DSPreviewPair { AllInViewPreviewList(app: SidebarDesignFixture.makeApp("facts")) }
 }
 
 #Preview("All in view - No projects") {

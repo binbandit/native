@@ -1,4 +1,5 @@
 import ACP
+import Foundation
 import TaskList
 
 /// The sidebar's tasks as the window's filter shows them, worked out once per update: the pinned
@@ -10,7 +11,10 @@ struct SidebarListing {
         /// Every task in the project's order, for moving rows.
         let all: [SessionSummary]
         /// What the filter keeps, in its order; archived tasks too when the filter includes them.
-        let visible: [SessionSummary]
+        let current: [SessionSummary]
+        var earlier: [SessionSummary] = []
+        var isEarlierExpanded = false
+        var visible: [SessionSummary] { current + (isEarlierExpanded ? earlier : []) }
     }
 
     let filter: TaskFilter
@@ -19,7 +23,10 @@ struct SidebarListing {
     let pinned: [SessionSummary]
     let groups: [Group]
 
-    init(model: AppModel, filter: TaskFilter, insights: SidebarTaskInsights) {
+    init(
+        model: AppModel, filter: TaskFilter, insights: SidebarTaskInsights,
+        folding: SidebarDayFolding? = nil, now: Date = .now
+    ) {
         self.filter = filter
         allPinned = model.pinnedSessions
         let facts = { (summary: SessionSummary) in model.taskFacts(for: summary, insights: insights) }
@@ -29,12 +36,31 @@ struct SidebarListing {
             let candidates = filter.includesArchived ? all + model.archivedSessions(in: project.id) : all
             return Group(
                 project: project, all: all,
-                visible: filter.isActive ? filter.apply(to: candidates, facts: facts) : all)
+                current: filter.isActive ? filter.apply(to: candidates, facts: facts) : all)
         }
         let grouped = model.groupCoordinatorTasks([filteredPinned] + raw.map(\.visible))
         pinned = grouped[0]
         groups = raw.enumerated().map { index, group in
-            Group(project: group.project, all: group.all, visible: grouped[index + 1])
+            let candidates = grouped[index + 1]
+            guard let folding, !filter.isNarrowing else {
+                return Group(project: group.project, all: group.all, current: candidates)
+            }
+            let parts = TaskDayFolding.partition(candidates) { summary in
+                let status = TaskStatus(model.session(summary.id))
+                return TaskDayFolding.isEarlier(
+                    lastActivity: model.lastActivity(for: summary),
+                    isAtRest: status == .done || status == .idle || status == .cancelled,
+                    isUnread: model.isUnread(summary.id),
+                    isProtected: model.removedWorkspaces[summary.id] != nil
+                        || (!folding.isExpanded(group.project.id)
+                            && (summary.id == model.renaming || summary.id == model.taskPeek.request?.task)),
+                    interval: model.sidebarPreferences.foldAfter, now: now)
+            } isChild: {
+                model.isCoordinatorChild($0.id, among: candidates)
+            }
+            return Group(
+                project: group.project, all: group.all, current: parts.current, earlier: parts.earlier,
+                isEarlierExpanded: folding.isExpanded(group.project.id))
         }
     }
 
