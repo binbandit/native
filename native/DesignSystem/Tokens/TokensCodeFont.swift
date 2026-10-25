@@ -49,6 +49,15 @@ public nonisolated struct DSCodeFont: Hashable, Sendable {
         return families.filter { !$0.hasPrefix(".") && $0 != defaultFamilyName }.sorted()
     }
 
+    /// Whether `family` is installed, monospaced or not.
+    @MainActor public static func isInstalled(_ family: String) -> Bool {
+        #if canImport(AppKit)
+        NSFontManager.shared.availableFontFamilies.contains(family)
+        #else
+        UIFont.familyNames.contains(family)
+        #endif
+    }
+
     /// The font for code `offset` points off the chosen size (diffs and tool output are a point smaller).
     func platformFont(offset: Double) -> DSPlatformFont {
         let size = max(size + offset, 8)
