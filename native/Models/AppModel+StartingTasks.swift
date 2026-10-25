@@ -242,8 +242,13 @@ extension AppModel {
         let previous = workspacePreparations[project.id]
         let cleanup = Task {
             await previous?.value
-            guard !catalog.hasTask(in: project.id, at: folder, excluding: deletedSessions.contains),
-                sessions.open(in: folder).isEmpty,
+            guard
+                !catalog.hasTask(
+                    in: project.id, at: folder,
+                    excluding: {
+                        deletedSessions.contains($0) || taskActionOwner(for: $0) != route.owner
+                    }),
+                !sessions.open(in: folder).contains(where: { taskActionOwner(for: $0.key) == route.owner }),
                 !startingTasks.contains(where: {
                     $0.device == task.device
                         && $0.folder.map { SessionFolder.isSame($0.folderPath, folder.folderPath) } == true
