@@ -197,6 +197,25 @@
     "FolderPolicyTests_and_PolicyCoverageTests": "9 passed",
     "format": "pass",
     "iPad": "native/Platform pass; broader SidebarFolders feature check still reaches unsupported app dependencies",
-    "releaseAndNightly": "rerunning after review fixes; preceding revision passed unchanged budgets"
-  }
+    "releaseAndNightly": "pass, final revision compilation and unchanged size budgets; Release 47.9 MB archive / 117.5 MB installed, Nightly 48.0 MB archive / 117.6 MB installed",
+    "pullfrog": "approved fa9faad9, both findings addressed and thread resolved"
+  },
+  "additionalVariants": [
+    {
+      "state": "all roots forbidden",
+      "theme": "dark",
+      "actual": "blocked-dark.png",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
+      "referenceMock": "mocks/F7-dark.png",
+      "note": "F7 shows permitted managed roots; no dedicated forbidden-roots mock was supplied"
+    },
+    {
+      "state": "all roots forbidden",
+      "theme": "light",
+      "actual": "blocked-light.png",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
+      "referenceMock": "mocks/F7-light.png",
+      "note": "F7 shows permitted managed roots; no dedicated forbidden-roots mock was supplied"
+    }
+  ]
 }
