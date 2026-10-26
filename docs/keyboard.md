@@ -10,6 +10,10 @@ shortcut there. The keys here are the defaults. `DefaultShortcuts` (`Packages/Na
 mirrors them, and its tests fail when the two disagree, so change a key here first, then there.
 Rows without an id are keys a view answers itself; they can't be changed.
 
+On Mac, double-clicking empty title bar or toolbar space follows Desktop & Dock's title bar action
+(Zoom, Fill, Minimize or Do Nothing). Zoom and Fill restore the previous window size on the next
+double-click. Toolbar buttons, the task title and the well keep their own interactions.
+
 Standard macOS behavior comes for free and must not be broken: Tab / Shift-Tab move focus through
 controls (with Full Keyboard Access on), arrow keys move within lists and menus, Space activates the
 focused control, Escape dismisses popovers and sheets, ⌘W closes the frontmost window or sheet, ⌘Q quits, ⌘, opens
