@@ -63,6 +63,7 @@ private actor SettingsHost: HostTransport {
 private struct ComposerSettingsRegression {
     static func main() async {
         do {
+            try capturedModels()
             try keyboardTargets()
             try composeChoicesAndDismissal()
             try await restartRouting()
@@ -82,6 +83,23 @@ private struct ComposerSettingsRegression {
             if ContinuousClock.now > deadline { throw SettingsFailure(message: "Timed out") }
             try await Task.sleep(for: .milliseconds(1))
         }
+    }
+
+    private static func capturedModels() throws {
+        let options = try GatewayWire.options()
+        let settings = ComposerSettings(options)
+        guard let model = settings.model else { throw SettingsFailure(message: "No captured model option") }
+        guard case .select(_, let wireChoices) = options.first(where: { $0.category == "model" })?.kind else {
+            throw SettingsFailure(message: "No wire choices")
+        }
+        try expect(model.choices == wireChoices.uniqued, "Composer changed captured name/value pairs")
+        var sent: String?
+        let popover = ComposerSettingsPopover(
+            settings: settings, agentName: "Fixture", onSet: { _, value in sent = value })
+        let reversedID = "claude-fable-5-dd-5.4-ukiah-edualc/tolipoc"
+        popover.choose(.model(reversedID), closing: false)
+        try expect(sent == reversedID, "Composer changed the gateway's selection value")
+        print("PASS: captured wire models retain name/value pairs through ComposerSettings and selection")
     }
 
     private static func keyboardTargets() throws {
