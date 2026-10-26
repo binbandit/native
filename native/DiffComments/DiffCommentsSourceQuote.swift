@@ -32,7 +32,7 @@ struct DiffCommentsSourceQuote: View {
                 let line = quote.displayLines[offset]
                 Text(verbatim: line.text.isEmpty ? " " : line.text)
                     .font(DS.ComposerQuote.codeFont)
-                    .foregroundStyle(.dsTextPrimary)
+                    .foregroundStyle(.dsTextSecondary)
                     .frame(minHeight: DS.ComposerQuote.lineHeight, alignment: .topLeading)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .overlay(alignment: .topLeading) {

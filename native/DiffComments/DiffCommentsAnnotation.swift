@@ -12,7 +12,7 @@ struct DiffCommentsAnnotation: View {
             HStack(spacing: DS.Space.md) {
                 Text("In draft · \(DiffCommentsSourceQuote.label(quote))")
                     .font(DS.ComposerQuote.headerFont)
-                    .foregroundStyle(.dsTextSecondary)
+                    .foregroundStyle(.dsTextTertiary)
                 Spacer(minLength: DS.Space.xs)
                 Button("Edit") { session.editDiffComment(quote) }
                     .buttonStyle(.ds(.ghost))
@@ -40,7 +40,8 @@ struct DiffCommentsAnnotation: View {
         .overlay(alignment: .leading) { Rectangle().fill(.dsBorder).frame(width: DS.DiffComments.hairline) }
         .padding(.leading, DS.DiffComments.anchorInset)
         .padding(.trailing, DS.Space.xl)
-        .padding(.vertical, DS.Space.md)
+        .padding(.top, DS.Space.md)
+        .padding(.bottom, DS.Space.xl)
         .contextMenu {
             Button("Edit") { session.editDiffComment(quote) }
             Button("Remove") {

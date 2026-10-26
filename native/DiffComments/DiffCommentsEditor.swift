@@ -30,11 +30,17 @@ struct DiffCommentsEditor: View {
             )
             .font(.dsCallout)
             .scrollContentBackground(.hidden)
+            .scrollIndicators(.hidden)
             .padding(.vertical, DS.Space.md)
             .padding(.horizontal, DS.DiffComments.editorHorizontal)
             .frame(height: DS.DiffComments.editorMinHeight)
             .background(.dsSurface, in: RoundedRectangle(cornerRadius: DS.Radius.control))
-            .overlay { RoundedRectangle(cornerRadius: DS.Radius.control).strokeBorder(.dsBorderStrong) }
+            .overlay {
+                RoundedRectangle(cornerRadius: DS.Radius.control)
+                    .strokeBorder(
+                        focused ? Color.dsKeyboardFocusIndicator : Color.dsBorderStrong,
+                        lineWidth: DS.DiffComments.hairline)
+            }
             .dsFocusShape(RoundedRectangle(cornerRadius: DS.Radius.control))
             .focused($focused)
             .accessibilityLabel("Comment on \(quote.source), \(DiffCommentsSourceQuote.label(quote))")
@@ -69,7 +75,7 @@ struct DiffCommentsEditor: View {
         .overlay(alignment: .leading) { Rectangle().fill(.dsBorderStrong).frame(width: DS.DiffComments.hairline) }
         .padding(.leading, isInline ? DS.DiffComments.anchorInset : 0)
         .padding(.trailing, isInline ? DS.Space.xl : 0)
-        .padding(.top, DS.Space.md)
+        .padding(.top, DS.Space.md + DS.Space.xxs)
         .padding(.bottom, DS.Space.xl)
         .contextMenu {
             Button("Discard Draft Comment") {

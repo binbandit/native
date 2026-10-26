@@ -13,8 +13,8 @@ struct ComposerQuotesSection: View {
                     quote(quotes[index], index: index)
                 }
             }
-            .padding(.top, DS.ComposerQuote.top)
-            .padding(.bottom, DS.ComposerQuote.bottom)
+            .padding(.top, quotes.contains { $0.comment != nil } ? DS.Space.md : DS.ComposerQuote.top)
+            .padding(.bottom, quotes.contains { $0.comment != nil } ? DS.Space.sm : DS.ComposerQuote.bottom)
             .padding(.horizontal, DS.ComposerQuote.inset)
         }
 
