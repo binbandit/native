@@ -3,6 +3,7 @@
 from pathlib import Path
 import importlib.util
 import subprocess
+import sys
 import tempfile
 import unittest
 import xml.etree.ElementTree as ET
@@ -25,14 +26,20 @@ class ReleaseAssetPlanTests(unittest.TestCase):
             )
         return result.stderr
 
-    def test_single_app_download_and_two_deltas_in_every_channel(self):
+    def test_update_archive_first_install_zip_and_two_deltas_in_every_channel(self):
         for channel in ("stable", "beta", "nightly"):
             with self.subTest(channel=channel):
                 plan = self.plan(channel)
                 self.assertIn("--maximum-deltas 2", plan)
                 uploads = "\n".join(line for line in plan.splitlines()
                                     if "gh release create" in line or "gh release upload" in line)
+                self.assertIn(".tar.xz", uploads)
                 self.assertIn(".zip", uploads)
+                self.assertIn("/installer/Native", uploads)
+                self.assertIn("/installer", plan)
+                self.assertIn("xz:compression-level=9", plan)
+                self.assertIn("--archive", plan)
+                self.assertIn("--installer-zip", plan)
                 self.assertNotIn(".dmg", uploads)
                 self.assertNotIn("dSYMs", uploads)
                 self.assertIn("native-host-", uploads)
@@ -40,6 +47,10 @@ class ReleaseAssetPlanTests(unittest.TestCase):
                 # Packaging checks stay intact even though the DMG isn't attached.
                 self.assertIn("hdiutil create", plan)
                 self.assertIn("stapler staple", plan)
+                # The archive is unpacked and its app checked before anything is published.
+                unpacked = plan.split("/usr/bin/tar -x", 1)[1]
+                self.assertIn("codesign --verify --deep --strict", unpacked)
+                self.assertIn("stapler validate", unpacked)
 
     def test_only_stable_packs_celebration_icons(self):
         self.assertIn("celebration-assets.sh pack", self.plan("stable"))
@@ -72,7 +83,7 @@ class DeltaAssetTests(unittest.TestCase):
 <rss xmlns:sparkle="{deltas.SPARKLE}"><channel>
 <item><sparkle:version>2</sparkle:version><sparkle:channel>beta</sparkle:channel>
 <description>&lt;p&gt;Release &amp; notes&lt;/p&gt;</description>
-<enclosure url="{self.prefix}Native-2.zip" sparkle:edSignature="app-signature"/>
+<enclosure url="{self.prefix}Native-2.tar.xz" sparkle:edSignature="app-signature"/>
 <sparkle:deltas>{patches(current_deltas)}</sparkle:deltas></item>
 <item><sparkle:version>1</sparkle:version>
 <enclosure url="https://example.invalid/releases/download/v1/Native-1.zip"
@@ -86,7 +97,7 @@ class DeltaAssetTests(unittest.TestCase):
         return path
 
     def select(self):
-        return deltas.select(self.appcast, "Native-2.zip", self.prefix, 2)
+        return deltas.select(self.appcast, "Native-2.tar.xz", self.prefix, 2)
 
     def test_only_current_deltas_ship_without_changing_other_channel_downloads(self):
         current = self.patch_file("Native2-1.delta")
@@ -130,7 +141,7 @@ class DeltaAssetTests(unittest.TestCase):
     def test_missing_current_archive_stops_publication(self):
         self.feed()
         with self.assertRaisesRegex(ValueError, "Expected one appcast item"):
-            deltas.select(self.appcast, "wrong.zip", self.prefix, 2)
+            deltas.select(self.appcast, "wrong.tar.xz", self.prefix, 2)
 
     def test_path_outside_artifacts_is_rejected(self):
         self.feed([self.prefix + "../outside.delta"])
@@ -149,17 +160,91 @@ class NightlyRetentionTests(unittest.TestCase):
         return set(result.stdout.splitlines())
 
     def test_keeps_two_downloads_signed_feeds_and_only_current_deltas(self):
-        keep = {"Native-Nightly-10.zip", "Native-Nightly-11.zip",
+        keep = {"Native-Nightly-10.tar.xz", "Native-Nightly-11.tar.xz",
                 "native-host-10-macos-universal", "native-host-11-macos-universal",
                 "appcast.xml", "host-feed.json", "host-feed.json.sig", "Native-Nightly11-10.delta"}
-        remove = {"Native-Nightly-9.zip", "native-host-9-macos-universal", "Native-Nightly.dmg",
+        remove = {"Native-Nightly-9.tar.xz", "native-host-9-macos-universal", "Native-Nightly.dmg",
                   "Native-Nightly10-9.delta", "celebration-christmas.json",
                   "celebration-assets.json", "celebration-assets.json.sig"}
         self.assertEqual(self.obsolete(sorted(keep | remove), "Native-Nightly11-10.delta"), remove)
 
+    def test_switching_from_zip_keeps_the_newest_two_archives(self):
+        names = ["Native-Nightly-9.zip", "Native-Nightly-10.zip", "Native-Nightly-11.tar.xz"]
+        self.assertEqual(self.obsolete(names), {"Native-Nightly-9.zip"})
+        self.assertEqual(self.obsolete(names[1:] + ["Native-Nightly-12.tar.xz"]), {"Native-Nightly-10.zip"})
+
+    def test_both_formats_keep_two_builds_instead_of_two_files(self):
+        names = [f"Native-Nightly-{build}.{ext}" for build in (9, 10, 11)
+                 for ext in ("tar.xz", "zip")]
+        self.assertEqual(self.obsolete(names), {"Native-Nightly-9.tar.xz", "Native-Nightly-9.zip"})
+
     def test_empty_first_release_and_no_deltas_are_safe(self):
         self.assertEqual(self.obsolete([]), set())
-        self.assertEqual(self.obsolete(["appcast.xml", "Native-Nightly-1.zip"]), set())
+        self.assertEqual(self.obsolete(["appcast.xml", "Native-Nightly-1.tar.xz"]), set())
+
+
+class SeedArchiveTests(unittest.TestCase):
+    def archive(self, names, base="Native-1.4.0"):
+        result = subprocess.run(
+            ["bash", "-euo", "pipefail", "-c", 'source "$1"; update_archive_in "$2"', "test",
+             str(ROOT / "scripts/release/lib.sh"), base],
+            input="\n".join(names), text=True, capture_output=True, check=True,
+        )
+        return result.stdout.strip()
+
+    def test_prefers_the_tar_xz_and_falls_back_to_an_older_releases_zip(self):
+        self.assertEqual(self.archive(["Native-1.4.0.zip", "Native-1.4.0.tar.xz", "appcast.xml"]),
+                         "Native-1.4.0.tar.xz")
+        self.assertEqual(self.archive(["Native-1.4.0.zip", "Native-1.4.0.dmg"]), "Native-1.4.0.zip")
+
+    def test_another_versions_archive_or_none_is_not_a_seed(self):
+        self.assertEqual(self.archive(["Native-1.4.0.1.tar.xz", "Native-1.4.zip"]), "")
+        self.assertEqual(self.archive([]), "")
+
+
+class NightlySeedTests(unittest.TestCase):
+    def test_one_archive_per_build_prefers_tar_and_orders_newest_first(self):
+        result = subprocess.run(
+            ["bash", "-euo", "pipefail", "-c",
+             'source "$1"; nightly_update_archives Native-Nightly', "test",
+             str(ROOT / "scripts/release/lib.sh")],
+            input="Native-Nightly-9.zip\nNative-Nightly-10.zip\nNative-Nightly-10.tar.xz\n",
+            text=True, capture_output=True, check=True,
+        )
+        self.assertEqual(result.stdout.splitlines(), ["Native-Nightly-10.tar.xz", "Native-Nightly-9.zip"])
+
+
+@unittest.skipUnless(sys.platform == "darwin", "Release packaging uses macOS bsdtar")
+class ArchiveRoundTripTests(unittest.TestCase):
+    def test_packer_preserves_bundle_files_symlinks_and_permissions(self):
+        with tempfile.TemporaryDirectory(prefix="release-archive-test-") as directory:
+            root = Path(directory)
+            app = root / "Native Fixture.app"
+            binary = app / "Contents/MacOS/Native"
+            binary.parent.mkdir(parents=True)
+            binary.write_bytes(b"signed executable fixture")
+            binary.chmod(0o755)
+            ticket = app / "Contents/CodeResources"
+            ticket.write_bytes(b"stapled ticket fixture")
+            ticket.chmod(0o644)
+            link = app / "Contents/Current"
+            link.symlink_to("MacOS")
+            archive = root / "update.tar.xz"
+            subprocess.run(
+                ["bash", "-euo", "pipefail", "-c", 'source "$1"; pack_update_archive "$2" "$3"',
+                 "test", str(ROOT / "scripts/release/lib.sh"), str(app), str(archive)], check=True,
+                capture_output=True,
+            )
+            unpacked = root / "unpacked"
+            unpacked.mkdir()
+            subprocess.run(["/usr/bin/tar", "-xf", str(archive), "-C", str(unpacked)], check=True)
+            for source in app.rglob("*"):
+                target = unpacked / app.name / source.relative_to(app)
+                self.assertEqual(source.lstat().st_mode, target.lstat().st_mode)
+                if source.is_symlink():
+                    self.assertEqual(source.readlink(), target.readlink())
+                elif source.is_file():
+                    self.assertEqual(source.read_bytes(), target.read_bytes())
 
 
 if __name__ == "__main__":

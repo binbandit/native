@@ -103,7 +103,8 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
           path: |
-            ${{ runner.temp }}/native-release/nightly/appcast/*.zip
+            ${{ runner.temp }}/native-release/nightly/installer/*.zip
+            ${{ runner.temp }}/native-release/nightly/appcast/*.tar.xz
             ${{ runner.temp }}/native-release/nightly/appcast/*.delta
             ${{ runner.temp }}/native-release/nightly/appcast/appcast.xml
             ${{ runner.temp }}/native-release/nightly/host/
