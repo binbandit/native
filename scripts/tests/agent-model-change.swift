@@ -145,7 +145,7 @@ private struct AgentModelChangeRegression {
         first.undo()
         try require(app.selection == source.key && !source.isEarlierConversation, "Undo didn't restore source identity")
         try require(
-            source.draft == "Draft edited after selection" && source.attachments == [attachment],
+            source.draft == "Draft edited after selection" && source.attachments == [attachment, firstFile],
             "Undo lost current edits")
         try require(await process.accepted.isEmpty, "Undo submitted a prompt")
         await secondRead.release(secondFile)
@@ -275,7 +275,13 @@ private struct AgentModelChangeRegression {
             let manifest = PluginManifest(
                 id: "in-app-fixture", name: "In-app fixture",
                 agents: [
-                    AgentManifest(id: "fixture", name: "Fixture", command: "/usr/bin/true"),
+                    AgentManifest(
+                        id: "fixture", name: "Fixture", command: "/usr/bin/python3",
+                        args: [
+                            script,
+                            "--kind", "source", "--store", scratch.appending(path: "source").path,
+                            "--project", scratch.path,
+                        ]),
                     AgentManifest(
                         id: "target", name: "Target", command: "/usr/bin/python3",
                         args: [
@@ -287,18 +293,19 @@ private struct AgentModelChangeRegression {
             func launch() -> AppModel {
                 AppModel(
                     plugins: PluginRegistry(builtIns: [ManifestPlugin(manifest: manifest)], defaults: defaults),
-                    titles: SessionTitles(defaults: defaults), defaults: defaults,
+                    titles: SessionTitles(), defaults: defaults,
                     catalogURL: scratch.appending(path: "catalog.json"), experiments: experiments)
             }
             let first = launch()
             defer { first.stopAgents() }
             _ = await first.checkForAgents()
             let project = first.projects.add(scratch)
+            _ = await first.ensureRunning(.init(rawValue: "fixture"))
             let sourceSettings = ComposerSettingsPreviewFixtures.claude(mode: "default")
             let sourceOptions = [sourceSettings.model?.option, sourceSettings.autonomy?.option].compactMap { $0 }
             guard
                 let source = SessionModel.preview(
-                    in: first, agent: "fixture", id: "source", cwd: scratch.path,
+                    in: first, agent: "fixture", id: "model-source", cwd: scratch.path,
                     configOptions: sourceOptions)
             else { throw ChangeFailure("No in-app source") }
             source.previewExchange("Keep this task", reply: "Recorded progress before changing the agent")
