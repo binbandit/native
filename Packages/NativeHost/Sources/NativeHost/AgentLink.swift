@@ -109,6 +109,8 @@ final class AgentLink {
         admit: @escaping @HostActor () throws -> Void = {},
         onEvent: @escaping @Sendable (Int, JSONRPCPeer.Event) async -> Void
     ) async throws {
+        // Keep direct launch callers fail-closed too, before reading any inherited environment.
+        try HostAgentRouteAdmission.check(spec, policy: .unrestricted)
         try await waitForCommandStop()
         if status == .ready { return }
         if let starting {

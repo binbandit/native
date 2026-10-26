@@ -1,5 +1,6 @@
 import Foundation
 import NativeSetup
+import Undo
 
 // Fix-its for a task that couldn't start (Fine print): the line the agent stopped at, and a
 // one-click change to it. Only on this Mac, and only a settings file the agent's plugin declares
@@ -34,8 +35,8 @@ extension AppModel {
         }.value
     }
 
-    /// Changes the value the agent rejected, keeping the original beside the file, then starts the
-    /// task again with its message.
+    /// Changes the value the agent rejected, keeping the original beside the file, offers to take
+    /// the change back (the toast and ⌘Z), then starts the task again with its message.
     func applyStartFixIt(
         _ fixIt: AgentStartFixIt, at diagnostic: AgentStartDiagnostic, to task: StartingTask
     ) async throws(AgentStartFile.Failure) {
@@ -45,8 +46,25 @@ extension AppModel {
                 try AgentStartFile.apply(fixIt, at: diagnostic, allowed: allowed)
             }
         }.value
-        _ = try applied.get()
+        let change = try applied.get()
+        offerUndo(
+            "Changed “\(fixIt.original)” to “\(fixIt.replacement)” in \(change.fileName).", name: "Fix-It",
+            undoManager: undoHistory.manager
+        ) { model in
+            Task { await model.restoreStartFixIt(change) }
+        }
         await retry(task)
+    }
+
+    /// Puts the file back as it was before the fix-it. The task keeps running with the settings it
+    /// started with.
+    private func restoreStartFixIt(_ change: AgentStartFile.Change) async {
+        let restored = await Task.detached {
+            Result { () throws(AgentStartFile.Failure) in try AgentStartFile.restore(change) }
+        }.value
+        if case .failure(let failure) = restored {
+            actionFailure = ActionFailure("Couldn't Undo the Fix-It", failure.localizedDescription)
+        }
     }
 
     /// The agent's declared settings files for the task, or nil for a task on another device.

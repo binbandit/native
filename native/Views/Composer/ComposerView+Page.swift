@@ -11,7 +11,9 @@ extension ComposerView {
                 isFocused: $isFocused, hidesCaret: selectedAttachmentIndex != nil,
                 font: DS.ComposeTask.editorFont, lineSpacing: DS.ComposeTask.editorLineSpacing,
                 richLineLeading: DS.ComposeTask.editorRichLineLeading,
-                insets: DS.ComposeTask.editorInsets, maximumHeight: DS.ComposeTask.editorMaxHeight
+                insets: DS.ComposeTask.editorInsets, maximumHeight: DS.ComposeTask.editorMaxHeight,
+                // A mentioned file shows as its name on a chip, even where @ can't look files up (another Mac).
+                referencesEnabled: true
             ) { press in
                 handleKey(press, suggestions: suggestions)
             }
@@ -23,15 +25,13 @@ extension ComposerView {
                     agentName: session.agentName,
                     onRemove: removeAttachment)
             }
-            HStack(spacing: DS.Space.sm) {
-                AttachButton(isPickingFiles: $isPickingFiles, onPick: attach, isPage: true)
-                if session.attachments.isEmpty {
-                    Text("Attach files, or drop them anywhere on the page")
-                        .font(.dsBody)
-                        .foregroundStyle(.dsTextTertiary)
-                }
+            if page?.isSealed != true {
+                AttachButton(
+                    isPickingFiles: $isPickingFiles, onPick: attach, isPage: true,
+                    showsPageHint: session.attachments.isEmpty
+                )
+                .fileDialogDefaultDirectory(session.cwd)
             }
-            .fileDialogDefaultDirectory(session.cwd)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .dropDestination(for: ComposerDropItem.self) { items, _ in

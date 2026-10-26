@@ -115,7 +115,8 @@ underneath until the questions are answered, and ⌘L focuses the answer field.
 With Fine print enabled, a task whose agent couldn't start shows why in the composer's place,
 above its message. When the agent's report names a file and line, the card shows that line with
 the part it couldn't read underlined, and, when one value it accepts is close to the one it
-rejected, a fix-it that changes it (keeping the original as `<file>.native-backup`).
+rejected, a fix-it that changes it (keeping the original as `<file>.native-backup`). Undo on the
+toast that follows, or ⌘Z while it's the latest change, puts the original back.
 
 | Keys | Action |
 | --- | --- |
