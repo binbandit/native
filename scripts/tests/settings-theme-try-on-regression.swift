@@ -94,6 +94,9 @@ extension SettingsRegression {
         tryOn.start()
         expect(!tryOn.isAvailable && !tryOn.isActive, "Try On stays shut while policy sets the code theme")
 
+        await unopenedPreviewTasks()
+        runningTaskIsUnchanged()
+
         // Try On lands on code: with none to recolor, from Settings or the View menu, it opens the sample.
         let populated = AppModel.preview(.populated)
         var historyReplies: [SessionKey: String] = [:]
@@ -278,6 +281,73 @@ extension SettingsRegression {
         await finishTaskSearch(bufferedReplay)
         expect(bufferedReplay.stage == .task(newest), "An idle task's buffered history is inspected after restoration")
         bufferedReplay.cancel()
+    }
+
+    private static func runningTaskIsUnchanged() {
+        let app = AppModel.preview(.empty)
+        guard let session = SessionModel.preview(in: app) else {
+            return expect(false, "The running-task fixture exists")
+        }
+        session.previewExchange("Show code", reply: "```swift\nlet running = true\n```", endedAgo: 0)
+        session.previewRunningTurn("Keep working")
+        session.draft = "Leave this draft alone"
+        app.selection = session.key
+        let items = session.state.items
+        let defaults = PreviewUserDefaults()
+        let settings = SettingsPresentation()
+        var policy = NativePolicy()
+        let tryOn = ThemeTryOnModel(
+            app: app, settings: settings,
+            appearance: AppearanceModeController(defaults: PreviewUserDefaults()),
+            plugins: PluginRegistry(previewing: []), defaults: defaults, policy: { policy })
+        for ending in 0..<3 {
+            tryOn.start(on: session.key)
+            expect(tryOn.stage == .task(session.key), "Try On previews a running task with code")
+            tryOn.move(1)
+            _ = tryOn.highlight(matching: "to")
+            if ending == 0 {
+                tryOn.keep(undoManager: nil)
+            } else if ending == 1 {
+                tryOn.cancel()
+            } else {
+                policy.appearanceCodeTheme = "nord"
+                tryOn.policyChanged()
+            }
+            expect(!tryOn.isActive && app.selection == session.key, "All trial exits return to the running task")
+            expect(session.phase == .prompting, "Keep, Cancel and policy never stop the running turn")
+            expect(
+                session.state.items == items && session.draft == "Leave this draft alone",
+                "Trial changes leave task content and draft untouched")
+        }
+    }
+
+    private static func unopenedPreviewTasks() async {
+        let app = AppModel.preview(.populated)
+        let candidates = app.sessionList.sorted {
+            (app.lastActivity(for: $0) ?? .distantPast) > (app.lastActivity(for: $1) ?? .distantPast)
+        }
+        guard let unopened = candidates.first(where: { app.session($0.id) == nil }) else {
+            return expect(false, "The populated preview includes unopened tasks")
+        }
+        let settings = SettingsPresentation()
+        settings.open(.appearance)
+        let selection = app.selection
+        var opened: [SessionKey] = []
+        let tryOn = ThemeTryOnModel(
+            app: app, settings: settings,
+            appearance: AppearanceModeController(defaults: PreviewUserDefaults()),
+            plugins: PluginRegistry(previewing: []), defaults: PreviewUserDefaults(), policy: { NativePolicy() },
+            loadSession: { key in
+                opened.append(key)
+                SessionModel.preview(in: app, agent: key.agent.rawValue, id: key.id.rawValue)?
+                    .previewExchange("Show code", reply: "```swift\nlet unopened = true\n```", endedAgo: 0)
+            })
+        tryOn.start()
+        await finishTaskSearch(tryOn)
+        expect(opened == [unopened.id], "A fresh populated preview opens the newest unopened eligible task")
+        expect(tryOn.stage == .task(unopened.id), "Settings uses unopened code without a manual task-open step")
+        tryOn.cancel()
+        expect(app.selection == selection && settings.pane == .appearance, "Cancel restores selection and Settings")
     }
 
     private static func finishTaskSearch(_ tryOn: ThemeTryOnModel) async {
