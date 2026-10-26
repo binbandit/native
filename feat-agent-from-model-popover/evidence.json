@@ -256,5 +256,27 @@
         }
       }
     }
-  ]
+  ],
+  "validatedRevision": "05a2f57d",
+  "liveChecks": {
+    "themes": [
+      "dark",
+      "light"
+    ],
+    "agent": "Local ACP fixture",
+    "actions": [
+      "explicit model initialization",
+      "choose target with popover retained",
+      "no new-task starters",
+      "original models selectable before submission",
+      "draft preserved",
+      "Undo restores source and composer focus"
+    ],
+    "screenshots": [
+      "live-applied-dark.png",
+      "live-applied-light.png",
+      "live-undo-dark.png",
+      "live-undo-light.png"
+    ]
+  }
 }
