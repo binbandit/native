@@ -65,6 +65,7 @@ struct ComposerSettingsPopover: View {
     @State var hovered: Target?
     @State var highlighted: Target?
     @State var page: Page?
+    @State var usesNativeTraversal = false
     @State var typeAhead = ComposerSettingsTypeAhead()
     @FocusState var isFocused: Bool
     @FocusState var isFilterFocused: Bool

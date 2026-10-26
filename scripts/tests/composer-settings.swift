@@ -64,8 +64,8 @@ private struct ComposerSettingsRegression {
     static func main() async {
         do {
             try capturedModels()
-            try keyboardTargets()
             try composeChoicesAndDismissal()
+            try keyboardTargets()
             try await restartRouting()
         } catch {
             print("FAIL: \(error)")
@@ -111,6 +111,11 @@ private struct ComposerSettingsRegression {
         try expect(popover.sections.flatMap { $0 }.contains(.retry), "Retry cannot be reached")
         try expect(
             popover.pageTargets(rows[0]).contains(.command(row: "mode", index: 0)), "Edit Modes cannot be reached")
+        let modelPage = ComposerSettingsPopover(
+            settings: ComposerSettingsPreviewFixtures.codex(), agentName: "Fixture",
+            failure: .init(optionID: "model", message: "Try another model", retry: {}), onSet: { _, _ in },
+            page: .model)
+        try expect(modelPage.sections.flatMap { $0 }.contains(.retry), "Model page Retry cannot be reached")
         var retried = false
         var restarted = false
         var changed = false
@@ -137,12 +142,20 @@ private struct ComposerSettingsRegression {
         let settings = ComposerSettingsPreviewFixtures.claude()
         app.composeTask.options = [settings.model?.option, settings.effort?.option, settings.autonomy?.option]
             .compactMap { $0 }
-        app.composeTask.defaults = ["mode": "acceptEdits"]
+        app.composeTask.defaults = ["mode": "bypassPermissions"]
+        guard let permissions = settings.autonomy else { throw SettingsFailure(message: "No permissions") }
+        app.composeTask.choose(permissions, value: "default")
         app.quickEntry.picker = .agent
         guard let popover = ComposeAgentPicker(model: app).body as? ComposerSettingsPopover,
             let mode = popover.rows.first(where: { $0.id == "compose-mode" })
         else { throw SettingsFailure(message: "Compose lost its Mode row") }
+        mode.perform("build")
+        try expect(
+            ComposerSettings(app.composeTask.options).autonomy?.value == "default",
+            "Selecting current Build changed a non-default permission")
         mode.perform("plan")
+        popover.onClose()
+        app.quickEntry.picker = .agent
         try expect(app.composeTask.choices["mode"] == "plan", "Compose cannot start in Plan")
         guard let updated = ComposeAgentPicker(model: app).body as? ComposerSettingsPopover,
             let updatedMode = updated.rows.first(where: { $0.id == "compose-mode" })
@@ -150,8 +163,8 @@ private struct ComposerSettingsRegression {
         try expect(updatedMode.value == "Plan", "Compose did not reflect Plan")
         updatedMode.perform("build")
         try expect(
-            ComposerSettings(app.composeTask.options).autonomy?.value == "acceptEdits",
-            "Build did not restore Compose's permission level")
+            ComposerSettings(app.composeTask.options).autonomy?.value == "default",
+            "Build broadened permissions after dismissing and reopening the picker")
         popover.onClose()
         try expect(app.quickEntry.picker == nil, "Compose did not wire the dismissal handler")
         print("PASS: Compose offers Plan, restores Build permissions and closes its owning presentation")

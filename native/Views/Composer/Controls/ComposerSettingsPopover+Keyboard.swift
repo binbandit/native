@@ -24,7 +24,11 @@ extension ComposerSettingsPopover {
         case .choices(let id):
             return [[.back] + (rows.first { $0.id == id }.map(pageTargets) ?? [])]
         case .model:
-            return [[.back] + (fastMode == nil ? [] : [.fastMode]) + (modelList?.rows.map { .model($0.id) } ?? [])]
+            let retry: [Target] =
+                failure?.optionID == settings.model?.option.id && failure?.retry != nil ? [.retry] : []
+            return [
+                [.back] + (fastMode == nil ? [] : [.fastMode]) + (modelList?.rows.map { .model($0.id) } ?? []) + retry
+            ]
         case nil:
             var sections: [[Target]] = []
             if let model = settings.model {
@@ -48,6 +52,12 @@ extension ComposerSettingsPopover {
         let isTab = press.key == .tab || press.key == KeyEquivalent("\u{19}")
         if isTab, leadingContent != nil {
             highlighted = nil
+            usesNativeTraversal = true
+            return .ignored
+        }
+        // A container's Boolean FocusState stays true for focused descendants. Once Tab hands
+        // Compose to native controls, their activation and navigation keys must stay native too.
+        if leadingContent != nil, usesNativeTraversal, !isFilterFocused, press.key != .escape {
             return .ignored
         }
         if !isFocused && !isFilterFocused && press.key != .escape { return .ignored }
