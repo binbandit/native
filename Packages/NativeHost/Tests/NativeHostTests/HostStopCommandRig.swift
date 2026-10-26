@@ -29,7 +29,7 @@ final class HostStopCommandRig {
 
     /// A pending cleanup in the initial snapshot. Its release lets that drain pass finish after
     /// another client's Stop is accepted, without adding a hook to the host's process termination.
-    func holdCleanup() -> AsyncStream<Void>.Continuation {
+    func holdCleanup() -> Cleanup {
         let barrier = HostSession(
             record: StoredSession(
                 id: HostSessionID(), agentID: "fake", agentSessionID: nil, cwd: harness.root.path,
@@ -41,7 +41,17 @@ final class HostStopCommandRig {
             for await _ in stream {}
             core.stoppingSessions[barrier.id] = nil
         }
-        return release
+        return Cleanup(session: barrier, release: release)
+    }
+
+    @HostActor
+    struct Cleanup {
+        let session: HostSession
+        let release: AsyncStream<Void>.Continuation
+
+        var wasDrained: Bool { session.stopRequestedAt == .distantPast }
+
+        func finish() { release.finish() }
     }
 
     func cleanup() {

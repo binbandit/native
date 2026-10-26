@@ -35,11 +35,15 @@ struct HostStopCommandTests {
         #expect(rig.core.isRestartingImmediately)
         #expect(rig.exits.values.isEmpty)
         try await second.client.cancel(later.id)
-        let pending = try #require(rig.core.stoppingSessions[later.id])
-        // Only the next drain pass can accelerate this Stop, so the first pass cannot cover it
-        // accidentally just because process cleanup ran quickly on this machine.
-        pending.stopRequestedAt = .distantFuture
+        // Keep a later cleanup pending even if the real command exits quickly. Only a second
+        // snapshot can find this gate, and it cannot disappear before that snapshot is observed.
+        let laterCleanup = rig.holdCleanup()
+        defer { laterCleanup.finish() }
+        #expect(!laterCleanup.wasDrained)
         release.finish()
+        try await second.wait("the second cleanup snapshot") { _ in await laterCleanup.wasDrained }
+        #expect(rig.exits.values.isEmpty)
+        laterCleanup.finish()
         try await second.wait("the restart to finish both stops") { _ in !rig.exits.values.isEmpty }
         #expect(rig.exits.values == [75])
         #expect(rig.core.stoppingSessions.isEmpty)
