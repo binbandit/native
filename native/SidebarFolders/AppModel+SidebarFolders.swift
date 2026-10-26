@@ -50,7 +50,10 @@ extension AppModel {
         let resolved = await PlatformFolderAccess.inspect(urls, policy: folderPolicy)
         let added = finishOpeningFolders(resolved, undoManager: undoManager)
         // Existing task drafts stay in their sessions; opening a folder only lists saved sessions.
-        for project in added { _ = await addProject(project.url, focus: false) }
+        for runtime in agents where !added.isEmpty && runtime.status == .idle {
+            Task { await ensureRunning(runtime.agent.id) }
+        }
+        for project in added where projects.project(project.id) != nil { await refreshSessions(in: project) }
     }
 
     /// A synchronous commit rechecks live policy after asynchronous access resolution.
@@ -68,9 +71,12 @@ extension AppModel {
             let failure =
                 item.failure
                 ?? (policy.allowsFolder(item.url.path, canonicalRoots: roots)
-                    ? nil : "Only approved folders can be added.")
+                    ? nil : .notAllowed)
             if let failure {
-                sidebarFolders.failures.append(.init(name: item.url.lastPathComponent, reason: failure))
+                sidebarFolders.failures.append(
+                    .init(
+                        name: item.url.lastPathComponent,
+                        reason: failure.message(for: item.url.lastPathComponent), needsLocation: failure == .missing))
                 if item.hasSecurityScope { item.original.stopAccessingSecurityScopedResource() }
                 continue
             }

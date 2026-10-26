@@ -45,10 +45,12 @@ enum SidebarFolderPreviewFixtures {
             app.sidebarFolders.hovered = ["atlas"]
             app.sidebarFolders.acceptsDrop = true
         }
-        if state == "F4" {
+        if state == "F4" || state == "F10" {
             let project = app.projects.add(URL(filePath: "/Development/atlas"))
             app.focusProject(project.id)
-            app.sidebarFolders.receipt = .init(projects: [project], previousProject: nil, previousSelection: nil)
+            if state == "F4" {
+                app.sidebarFolders.receipt = .init(projects: [project], previousProject: nil, previousSelection: nil)
+            }
         }
         if state == "F6" {
             app.sidebarFolders.failures = [.init(name: "Can’t open atlas", reason: "Folder access expired.")]

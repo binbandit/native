@@ -3,11 +3,24 @@ import NativePolicy
 
 /// Files access stays local and never searches or mounts a stale bookmark's location.
 nonisolated enum PlatformFolderAccess {
+    enum Failure: Equatable, Sendable {
+        case notFolder, unreadable, missing, notAllowed
+
+        func message(for name: String) -> String {
+            switch self {
+            case .notFolder: "Choose a folder to add a project."
+            case .unreadable: "Native can’t read \(name). Choose Folder…"
+            case .missing: "Can’t find \(name). Locate Folder…"
+            case .notAllowed: "Only approved folders can be added."
+            }
+        }
+    }
+
     struct Resolved: Sendable {
         let original: URL
         let url: URL
         let hasSecurityScope: Bool
-        let failure: String?
+        let failure: Failure?
     }
 
     static func bookmark(_ url: URL) -> Data? {
@@ -38,26 +51,25 @@ nonisolated enum PlatformFolderAccess {
             return urls.map { url in
                 guard url.isFileURL, url.host == nil || url.host == "" || url.host == "localhost" else {
                     return Resolved(
-                        original: url, url: url, hasSecurityScope: false, failure: "Choose a folder to add a project.")
+                        original: url, url: url, hasSecurityScope: false, failure: .notFolder)
                 }
                 let scoped = url.startAccessingSecurityScopedResource()
                 let canonical = url.resolvingSymlinksInPath().standardizedFileURL
-                var failure: String?
+                var failure: Failure?
                 do {
                     let values = try url.resourceValues(forKeys: [.isDirectoryKey, .isPackageKey, .isReadableKey])
                     if values.isDirectory != true || values.isPackage == true {
-                        failure = "Choose a folder to add a project."
+                        failure = .notFolder
                     } else if values.isReadable == false {
-                        failure = "Native can’t read \(url.lastPathComponent). Choose Folder…"
+                        failure = .unreadable
                     } else if !policy.allowsFolder(canonical.path, canonicalRoots: roots) {
-                        failure = "Only approved folders can be added."
+                        failure = .notAllowed
                     }
                 } catch {
                     let error = error as NSError
                     failure =
                         error.code == NSFileReadNoPermissionError
-                        ? "Native can’t read \(url.lastPathComponent). Choose Folder…"
-                        : "Can’t find \(url.lastPathComponent). Locate Folder…"
+                        ? .unreadable : .missing
                 }
                 if failure != nil, scoped { url.stopAccessingSecurityScopedResource() }
                 return Resolved(

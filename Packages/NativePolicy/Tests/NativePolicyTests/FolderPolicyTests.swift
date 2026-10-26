@@ -8,6 +8,7 @@ import Testing
         #expect(policy.allowsFolder("/work/atlas", canonicalRoots: policy.foldersAllowedRoots))
         #expect(policy.allowsFolder("/work", canonicalRoots: policy.foldersAllowedRoots))
         #expect(!policy.allowsFolder("/work-private/atlas", canonicalRoots: policy.foldersAllowedRoots))
+        #expect(!policy.allowsFolder("/work/atlas", canonicalRoots: nil))
     }
 
     @Test func malformedOrEmptyRootsDenyAdditions() {

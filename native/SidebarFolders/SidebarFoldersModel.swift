@@ -18,6 +18,7 @@ final class SidebarFoldersModel {
     struct Failure: Equatable {
         let name: String
         let reason: String
+        var needsLocation = false
         var message: String {
             if name.isEmpty || reason.hasPrefix("Can’t") || reason.hasPrefix("Native") { return reason }
             return "\(name). \(reason)"

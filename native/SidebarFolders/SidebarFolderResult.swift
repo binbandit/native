@@ -16,14 +16,14 @@ struct SidebarFolderResult: View {
                 }
                 .accessibilityLabel("Opening \(state.opening.joined(separator: ", "))")
             }
-            if let receipt = state.receipt {
+            if let receipt = state.receipt, state.opening.isEmpty {
                 Text(
                     receipt.projects.count == 1
                         ? "Added \(receipt.projects[0].name)." : "Added \(receipt.projects.count) folders.")
                 HStack(spacing: DS.Space.lg) {
                     Button("Undo") { model.undoOfferedFolderAddition(receipt) }
                         .accessibilityLabel("Undo Add Folder")
-                    dismiss
+                    if state.failures.isEmpty { dismiss }
                 }
             }
             ForEach(Array(state.failures.enumerated()), id: \.offset) { _, failure in
@@ -32,7 +32,7 @@ struct SidebarFolderResult: View {
             if !state.failures.isEmpty {
                 HStack(spacing: DS.Space.lg) {
                     Button(
-                        state.failures.contains { $0.reason.contains("Can’t find") }
+                        state.failures.contains { $0.needsLocation }
                             ? "Locate Folder…" : "Choose Folder…",
                         action: model.requestOpenFolder)
                     dismiss
@@ -93,7 +93,7 @@ struct SidebarFolderResult: View {
 #Preview("Folder result - Missing, unreadable and rejected") {
     let app = AppModel.preview()
     app.sidebarFolders.failures = [
-        .init(name: "atlas", reason: "Can’t find atlas. Locate Folder…"),
+        .init(name: "atlas", reason: "Can’t find atlas. Locate Folder…", needsLocation: true),
         .init(name: "pier", reason: "Native can’t read pier. Choose Folder…"),
         .init(name: "notes.txt", reason: "Choose a folder to add a project."),
     ]

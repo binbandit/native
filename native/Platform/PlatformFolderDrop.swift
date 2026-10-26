@@ -58,16 +58,8 @@ private struct FolderURLDropDelegate: DropDelegate {
         var urls: [URL] = []
         for provider in providers {
             let url: URL? = await withCheckedContinuation { continuation in
-                provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
-                    let url: URL?
-                    if let value = item as? URL {
-                        url = value
-                    } else if let data = item as? Data {
-                        url = URL(dataRepresentation: data, relativeTo: nil)
-                    } else {
-                        url = nil
-                    }
-                    continuation.resume(returning: url)
+                _ = provider.loadObject(ofClass: NSURL.self) { item, _ in
+                    continuation.resume(returning: item as? URL)
                 }
             }
             if let url { urls.append(url) }

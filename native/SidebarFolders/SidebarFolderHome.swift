@@ -8,14 +8,19 @@ struct SidebarFolderHome: View {
 
     var body: some View {
         let project = model.currentProject
+        let isOpening = project.map { model.sidebarFolders.opening.contains($0.folderName) } == true
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 Text(project?.name ?? "Choose a folder")
                     .font(DS.SidebarFolders.titleFont).tracking(DS.SidebarFolders.titleTracking)
                     .foregroundStyle(.dsTextPrimary)
                     .padding(.bottom, DS.Space.xl)
-                Text(project == nil ? "Open the project you want to work in." : "What would you like to work on?")
-                    .font(DS.SidebarFolders.ledeFont).foregroundStyle(.dsTextSecondary)
+                Text(
+                    project == nil
+                        ? "Open the project you want to work in."
+                        : isOpening ? "Opening your folder." : "What would you like to work on?"
+                )
+                .font(DS.SidebarFolders.ledeFont).foregroundStyle(.dsTextSecondary)
                 if project == nil {
                     Button(action: model.requestOpenFolder) {
                         HStack(spacing: DS.Space.md) {
