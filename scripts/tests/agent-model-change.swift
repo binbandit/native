@@ -167,6 +167,10 @@ private struct AgentModelChangeRegression {
             app.sessions.services.modelContinuations.context(for: current.key)?.contains(
                 "Final context at the idle boundary") == true,
             "Busy selection captured stale context")
+        let reverse = app.agentModels(for: current).first { $0.agent == source.agent.id }
+        try require(
+            reverse != nil && reverse?.unavailable == nil,
+            "A prepared continuation cannot choose another agent before sending")
         let userText = "Only answer this explicit message"
         _ = try await current.submit(userText, .queue)
         let sent = await process.accepted

@@ -23,7 +23,9 @@ extension AppModel {
         else {
             return "Open the current task to change its agent."
         }
-        guard source.hasStarted else { return "Send a message in this task first." }
+        guard source.hasStarted || sessions.services.modelContinuations.hasPending(source.key) else {
+            return "Send a message in this task first."
+        }
         if source.phase == .prompting || source.isRetryScheduled || source.isRunningHiddenCommand {
             return "Finish or stop the running turn before changing agents."
         }

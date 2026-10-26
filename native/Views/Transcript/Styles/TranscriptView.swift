@@ -94,10 +94,14 @@ struct TranscriptView: View {
             .animation(.dsStandard, value: showsJumpToLatest)
             .focusedSceneValue(\.transcriptJumpToLatest, jumpCommand)
             .overlay {
-                if !session.isRestoringHistory, session.isTranscriptEmpty {
+                if !session.isRestoringHistory, session.isTranscriptEmpty, !isAgentContinuation {
                     NewSessionEmptyState(session: session)
                 }
             }
+    }
+
+    private var isAgentContinuation: Bool {
+        model.earlierConversations.conversation(before: session.key).map { $0.agent != session.agent.id } ?? false
     }
 
     private var disclosures: TranscriptDisclosures {
