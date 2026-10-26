@@ -582,6 +582,8 @@ in Git, for example). No shortcuts change.
 | Keys | Action |
 | --- | --- |
 | ⇧⌘H in Hosts | Add Host: enter an SSH destination or paste a pairing link |
+| Return in Add Host when the organization stops pairing | Close the sheet |
+| ⇧⌘C in Add Host when the organization stops pairing | Copy the organization's help contact, when configured |
 | ⌘F | Focus the search field |
 | ↑ / ↓ | Move through the search results |
 | Return | Open the highlighted result |

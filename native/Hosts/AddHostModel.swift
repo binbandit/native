@@ -1,6 +1,7 @@
 import Foundation
 import NativeHostProtocol
 import NativeLink
+import NativePolicy
 import Observation
 
 /// Add Host: pairs this Mac with a host that has no screen (a Mac mini in a closet), from the link
@@ -72,7 +73,8 @@ final class AddHostModel {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         stop()
-        lastDestination = nil
+        // Keep the recovery route even if policy stops Continue before SSH can start.
+        lastDestination = canUseSSH && LinkSSHPairing.isDestination(text) ? text : nil
         guard policy.isEnabled else { return fail(turnedOff) }
         if text.hasPrefix("\(PairingInvite.scheme):") {
             do {
@@ -128,18 +130,47 @@ final class AddHostModel {
 
     /// Runs the same attempt again: a new link over SSH, or back to the field to paste a new one.
     func retry() {
+        guard canRetryPairing else { return }
         stop()
-        guard case .failed(let failure) = phase, failure.isWorthRetrying, let destination = lastDestination else {
+        guard let destination = lastDestination else {
             phase = .entering
             return
         }
         reach(destination)
     }
 
+    /// Recovery becomes useful again only after this Mac can pair.
+    var canRetryPairing: Bool {
+        guard policy.isEnabled, case .failed(let failure) = phase else { return false }
+        if case .organizationTurnedOff = failure { return true }
+        return failure.isWorthRetrying
+    }
+
+    var isBlockedByOrganization: Bool {
+        guard case .failed(.organizationTurnedOff) = phase else { return false }
+        return !canRetryPairing
+    }
+
+    var organizationContact: String? { policy.center.policy.organizationContact }
+
+    func copyOrganizationContact() {
+        guard let organizationContact else { return }
+        DSPasteboard.copy(organizationContact)
+    }
+
+    func suggestion(for failure: AddHostFailure) -> String {
+        if case .organizationTurnedOff = failure, canRetryPairing {
+            return "Remote hosts are allowed again. "
+                + (wasOverSSH
+                    ? "Try again for a new pairing link."
+                    : "Run pair on that Mac again and paste its new link.")
+        }
+        return failure.suggestion(overSSH: wasOverSSH, organizationContact: organizationContact)
+    }
+
     /// Whether Try Again can run the same attempt: over SSH, a new link comes with it.
     var canTryAgain: Bool {
-        guard case .failed(let failure) = phase else { return false }
-        return failure.isWorthRetrying && lastDestination != nil
+        canRetryPairing && lastDestination != nil
     }
 
     /// Whether the last attempt ran pair over SSH, rather than using a pasted link.
@@ -239,7 +270,9 @@ final class AddHostModel {
     }
 
     private var turnedOff: AddHostFailure {
-        .unexpected(policy.offReason)
+        policy.center.policy.remoteHostsEnabled
+            ? .unexpected(policy.offReason)
+            : .organizationTurnedOff(name: policy.center.policy.organizationName)
     }
 
     #if os(macOS)
