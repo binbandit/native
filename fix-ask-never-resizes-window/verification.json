@@ -45,21 +45,25 @@
     "failed_start_and_expanded_output": []
   },
   "checks": {
-    "final_debug_build": "pending rebuild after the companion guard fix",
+    "final_debug_build": "passed on 13f482e0",
     "final_swift_lint": "passed",
-    "final_peek_and_home_routing": "passed",
-    "release_and_nightly_builds": "passed before the final main rebase; app layout source unchanged by that rebase",
+    "final_peek_and_home_routing": "passed on 13f482e0",
+    "release_and_nightly_builds": "passed on 13f482e0 with no repository warnings",
     "size_MB": {
       "release_update": 47.7,
       "nightly_update": 47.8,
       "update_budget": 48,
-      "release_installed": 117.2,
-      "nightly_installed": 117.3,
+      "release_installed": 117.3,
+      "nightly_installed": 117.4,
       "installed_budget": 118
     },
     "focused_ipad_scroll_layout_typecheck": "passed with real token and platform dependencies",
     "full_shared_view_ipad_check": "blocked by unchanged Mac-only dependencies including AgentProcess and LocalCommandRunner",
-    "companion_simulator_debug_build": "passed after scoping the Mac-only width adapter call to macOS"
+    "companion_simulator_debug_build": "passed after scoping the Mac-only width adapter call to macOS",
+    "pullfrog_review": "approved 13f482e0 with no findings",
+    "final_release_build": "passed on 13f482e0",
+    "final_nightly_build": "passed on 13f482e0",
+    "all_ci_checks": "passed on 13f482e0, including the iOS companion, simulator packages and platform iPad typecheck"
   },
   "pending_visual_checks": [
     "final-rebase UI rerun",
@@ -68,6 +72,5 @@
     "failed start and expanded output in light and dark"
   ],
   "environment_limit": "Screen lock checked before measurements and screenshots. Captures could be covered by another app. Later runs found the isolated window off-screen without an AX window; no foregrounding or Space switching was attempted.",
-  "layout_validation_revision": "e4453c4a62bc0d1c51d2f2c429d693fe174c9778",
   "current_revision": "13f482e0ce610dd50dffdce91a43671c3fcb5257"
 }
