@@ -30,7 +30,7 @@ public struct HostEvent: Codable, Hashable, Sendable {
         /// A message Native delivered to the agent: a turn's prompt (shown or not) or a steer.
         case prompt(PromptEcho)
         /// The agent asks the user to approve a tool call. `request` is the ACP
-        /// `session/request_permission` params, verbatim.
+        /// ACP permission params with host-scoped option ids and an approval occurrence reference.
         case permissionRequested(toolCallID: String, request: JSONValue)
         /// Answered (by any client) or withdrawn (the turn was cancelled, or the agent went away).
         case permissionResolved(toolCallID: String, optionID: String?)
