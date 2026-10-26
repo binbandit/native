@@ -44,6 +44,21 @@ private struct TaskPeekChecks {
         require(
             app.taskPeek.request == nil && routine.permissionRequests.count == 1, "Default gate blocks both actions")
         app.experiments.set(true, for: .sidebarNext)
+        app.peekTask(current.key)
+        let firstRequest = app.taskPeek.request?.id
+        app.peekTask(current.key)
+        require(app.taskPeek.request?.id != firstRequest, "Equal-content Peek replacement has a fresh identity")
+        app.closeTaskPeek(restoringSidebarFocus: false)
+        require(
+            app.taskPeek.request == nil && !app.taskPeek.restoresSidebarFocus && app.selection == current.key,
+            "Pointer dismissal preserves the clicked control's focus even on the current task")
+        app.peekTask(current.key)
+        require(app.taskPeek.restoresSidebarFocus, "A new Peek resets the previous pointer dismissal")
+        app.closeTaskPeek()
+        require(app.taskPeek.restoresSidebarFocus, "Keyboard dismissal can restore the originating list")
+        app.peekTask(current.key)
+        app.openPeekedTask(current.key)
+        require(!app.taskPeek.restoresSidebarFocus, "Open Task preserves the task's focus")
         require(!app.legacyAskShortcutEnabled(in: registry), "Global task ask withdraws every legacy fallback")
         require(commands.allSatisfy { $0.showsInSettings() }, "Enabled experiment exposes its shortcut settings")
         require(app.oldestTaskAsk?.task == routine.key, "Oldest ask is chosen across tasks")

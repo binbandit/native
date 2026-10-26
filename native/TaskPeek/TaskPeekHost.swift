@@ -17,10 +17,6 @@ private struct TaskPeekHost: ViewModifier {
     @Environment(AppModel.self) private var model
     @Environment(SettingsPresentation.self) private var settings
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// Peek's size at its width, measured once it's laid out; nil until then, so it never shows in
-    /// the wrong place for a frame.
-    @State private var measured: CGSize?
-
     private var presented: TaskPeekPresentation.Request? {
         model.offersTaskPeek && !model.taskPeek.showsAttentionList ? model.taskPeek.request : nil
     }
@@ -29,7 +25,8 @@ private struct TaskPeekHost: ViewModifier {
         content
             .environment(\.legacyAskShortcutEnabled, model.legacyAskShortcutEnabled(in: .shared))
             .simultaneousGesture(
-                TapGesture().onEnded { model.closeTaskPeek() }, including: presented == nil ? .subviews : .all
+                TapGesture().onEnded { model.closeTaskPeek(restoringSidebarFocus: false) },
+                including: presented == nil ? .subviews : .all
             )
             .overlayPreferenceValue(TaskPeekAnchors.self) { anchors in
                 GeometryReader { geometry in
@@ -39,7 +36,6 @@ private struct TaskPeekHost: ViewModifier {
                 }
                 .animation(reduceMotion ? nil : .dsQuick, value: presented?.id)
             }
-            .onChange(of: presented?.id) { measured = nil }
     }
 
     private func card(
@@ -50,43 +46,12 @@ private struct TaskPeekHost: ViewModifier {
             let clipped = rect.intersection(bounds)
             return clipped.isNull || clipped.isEmpty ? nil : clipped
         }
-        let width = min(DS.Peek.width, geometry.size.width - DS.Peek.windowInset * 2)
-        let frame = measured.map { TaskPeekFrame(anchor: anchor, size: $0, in: bounds) }
-        let maxBodyHeight = min(
-            DS.Peek.maxBodyHeight,
-            max(
-                DS.Peek.headerHeight,
-                geometry.size.height - DS.Peek.toolbarGap - DS.Peek.windowInset - DS.Peek.headerHeight))
-        return ZStack(alignment: .topLeading) {
-            TaskPeekView(
-                request: request, maxBodyHeight: maxBodyHeight,
-                openTask: { key in
-                    settings.close(); model.openPeekedTask(key)
-                }
-            )
-            .id(request.id)
-            .frame(width: width)
-            .fixedSize(horizontal: false, vertical: true)
-            .onGeometryChange(for: CGSize.self, of: \.size) { measured = $0 }
-            .frame(height: frame?.card.height, alignment: .top)
-            .clipShape(.rect(cornerRadius: DS.Peek.radius))
-            .overlay {
-                RoundedRectangle(cornerRadius: DS.Peek.radius).strokeBorder(.dsOverlayEdge, lineWidth: 1)
-            }
-            .offset(x: frame?.card.minX ?? 0, y: frame?.card.minY ?? 0)
-            if let arrow = frame?.arrow {
-                let view = TaskPeekArrow(edge: arrow.edge)
-                let center = view.center(for: arrow.base)
-                view.offset(x: center.x - view.size.width / 2, y: center.y - view.size.height / 2)
-            }
+        // The identity covers the measurement observer and its state, so a new request gets an
+        // initial measurement even when its rendered size matches the previous request.
+        return TaskPeekCard(request: request, anchor: anchor, bounds: bounds) { key in
+            settings.close(); model.openPeekedTask(key)
         }
-        .compositingGroup()
-        .dsShadow(.modal)
-        .opacity(frame == nil ? 0 : 1)
-        .transition(reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 0.98)))
-        .accessibilityElement(children: .contain)
-        .accessibilityAddTraits(.isModal)
-        .accessibilityAction(.escape) { model.closeTaskPeek() }
+        .id(request.id)
     }
 }
 

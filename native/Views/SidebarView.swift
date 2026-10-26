@@ -26,8 +26,8 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
     @State private var folding = SidebarDayFolding()
     @State private var selection = SidebarSelectionModel()
     @Experiment(.sidebarNext) private var usesSidebarNext
-    /// The open task when Peek opened from the focused list, so closing Peek (Escape, a click
-    /// outside) gives the list its keys back, unless Peek opened another task.
+    /// Return keyboard dismissal to the originating list. Pointer dismissal keeps the clicked
+    /// control's focus, even when it belongs to the same task.
     @State private var peekReturn: SessionKey??
 
     private let navigationItems: NavigationItems
@@ -159,7 +159,7 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
             if !isClosed {
                 peekReturn = isListFocused ? .some(model.selection) : nil
             } else if let selection = peekReturn {
-                if selection == model.selection { isListFocused = true }
+                if model.taskPeek.restoresSidebarFocus, selection == model.selection { isListFocused = true }
                 peekReturn = nil
             }
         }
