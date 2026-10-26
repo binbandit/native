@@ -4,7 +4,8 @@ import Foundation
 extension AppModel {
     /// An in-app adapter may forget a conversation that has never received a prompt. Restore the
     /// confirmed selection before moving the locally prepared context to its replacement id.
-    func recoverAgentModel(_ old: SessionKey, in replacement: SessionModel) async throws {
+    func recoverAgentModel(_ old: SessionKey, in replacement: SessionModel, original: SessionModel? = nil) async throws
+    {
         let oldTitle = SessionTitles.Key(agent: old.agent, session: old.id)
         let chosen = titles.configChoices(for: oldTitle)
         await replacement.adoptConfigChoices(chosen)
@@ -28,7 +29,15 @@ extension AppModel {
         sessionHooks.taskRecovered(old, replacement)
         sessions.services.modelContinuations.replace(old, with: replacement.key)
         earlierConversations.replace(old, with: replacement.key)
-        if let original = sessions.session(old) {
+        for session in sessions.loadedSessions {
+            session.modelChange?.replaceReference(old, with: replacement.key)
+        }
+        if unsentSessions.contains(old) {
+            let draft = original?.draft ?? unsentSessions.draft(for: old) ?? ""
+            unsentSessions.forget(old)
+            unsentSessions.started(replacement.key, draft: draft)
+        }
+        if let original = original ?? sessions.session(old) {
             replacement.continuedTaskKey = original.taskPresentationKey
             replacement.modelChange = original.modelChange
             original.modelChange?.replace(original, with: replacement)

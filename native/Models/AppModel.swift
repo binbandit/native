@@ -491,7 +491,7 @@ final class AppModel {
         else { return nil }
         await session.adoptConfigChoices(of: old)
         if continuation {
-            do { try await recoverAgentModel(old.key, in: session) } catch {
+            do { try await recoverAgentModel(old.key, in: session, original: old) } catch {
                 deletedSessions.insert(session.key)
                 discardAgentChange(session)
                 return nil

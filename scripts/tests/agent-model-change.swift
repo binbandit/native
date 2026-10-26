@@ -264,7 +264,8 @@ private struct AgentModelChangeRegression {
         guard let script = ProcessInfo.processInfo.environment["NATIVE_AGENT_MODEL_FIXTURE_SCRIPT"] else {
             throw ChangeFailure("No in-app fixture script")
         }
-        for draft in ["Unsent draft survives", ""] {
+        for scenario in ["draft", "empty", "repeated"] {
+            let draft = scenario == "empty" ? "" : "Unsent draft survives"
             let scratch = FileManager.default.temporaryDirectory.appending(path: "agent-model-in-app-\(UUID())")
             try FileManager.default.createDirectory(at: scratch, withIntermediateDirectories: true)
             defer { try? FileManager.default.removeItem(at: scratch) }
@@ -320,7 +321,27 @@ private struct AgentModelChangeRegression {
             guard let change = source.modelChange else { throw ChangeFailure("No in-app choice") }
             try await wait("in-app commit") { change.stage == .applied || change.stage == .failed }
             try require(change.stage == .applied, change.error ?? "In-app choice failed")
-            guard let old = first.selection else { throw ChangeFailure("No selected in-app task") }
+            guard let selected = first.selection, let prepared = first.session(selected),
+                let runtime = first.runtimes[prepared.agent.id]
+            else { throw ChangeFailure("No selected in-app task") }
+            if scenario == "repeated" {
+                let next = ComposerAgentModel(
+                    agent: .init(rawValue: "fixture"), agentName: "Fixture",
+                    choice: .init(value: "sonnet", name: "Sonnet 5.5"), kind: .model("sonnet"))
+                first.chooseAgentModel(next, for: prepared)
+                guard let second = prepared.modelChange else { throw ChangeFailure("No repeated choice") }
+                try await wait("repeated unsent choice") { second.stage == .applied || second.stage == .failed }
+                try require(second.stage == .applied, second.error ?? "Repeated choice failed")
+            } else {
+                first.sessions.remove(prepared)
+                guard let recovered = await first.replaceEmptySession(prepared, on: runtime) else {
+                    throw ChangeFailure("Unsent choice failed crash recreation")
+                }
+                try require(
+                    !first.unsentSessions.contains(selected) && first.unsentSessions.contains(recovered.key),
+                    "Crash recreation left the recovery record under its old key")
+            }
+            guard let old = first.selection else { throw ChangeFailure("No selected continuation") }
             first.keepDrafts()
             first.stopAgents()
             try Data("agent-full-access".utf8).write(to: scratch.appending(path: "agent/default-mode"))
@@ -335,6 +356,28 @@ private struct AgentModelChangeRegression {
             }
             try require(
                 key != old && reopened.draft == draft, "Recovery lost the draft or reused an unsaved conversation")
+            if scenario == "repeated" {
+                guard let undo = reopened.modelChange else { throw ChangeFailure("No restored repeated Undo") }
+                undo.undo()
+                try await wait("Undo recreates unsent predecessor") { undo.stage == .reversed }
+                guard let undoneKey = again.selection, let undone = again.session(undoneKey) else {
+                    throw ChangeFailure("No restored predecessor")
+                }
+                try require(
+                    undoneKey.agent.rawValue == "target" && undoneKey != selected && undone.draft == draft,
+                    "Repeated Undo lost the recreated predecessor or current draft")
+                again.keepDrafts()
+                again.stopAgents()
+                let third = launch()
+                defer { third.stopAgents() }
+                _ = await third.checkForAgents()
+                third.selection = undoneKey
+                await third.loadSession(undoneKey)
+                try require(
+                    third.selection.flatMap { third.session($0)?.draft } == draft,
+                    "Undo's recreated predecessor did not survive another launch")
+                continue
+            }
             try require(
                 ComposerSettings(reopened.configOptions).model?.value == "gpt-6-sol"
                     && ComposerSettings(reopened.configOptions).autonomy?.value == "read-only",
@@ -354,7 +397,7 @@ private struct AgentModelChangeRegression {
             again.stopAgents()
         }
         print(
-            "PASS: in-app relaunch restores empty and nonempty unsent selections, settings, receipt, links and context")
+            "PASS: in-app crash/relaunch restores unsent choices; repeated Undo follows recreated predecessors")
     }
 
 }

@@ -7,7 +7,7 @@ final class AgentModelContinuations {
     private let defaults: UserDefaults
     private static let storageKey = "agentModelContinuations"
     struct Receipt: Codable {
-        let source: SessionKey
+        var source: SessionKey
         let sourceName: String
         let sourceModel: String
         var sourceModelValue: String?
@@ -56,6 +56,13 @@ final class AgentModelContinuations {
         if let context = earlierContext.removeValue(forKey: key(old)) { earlierContext[key(replacement)] = context }
         defaults.set(earlierContext, forKey: Self.storageKey + ".earlier")
         if let receipt = receipts.removeValue(forKey: key(old)) { receipts[key(replacement)] = receipt }
+        for (id, data) in receipts {
+            guard var receipt = try? JSONDecoder().decode(Receipt.self, from: data), receipt.source == old else {
+                continue
+            }
+            receipt.source = replacement
+            receipts[id] = try? JSONEncoder().encode(receipt)
+        }
         defaults.set(pending, forKey: Self.storageKey)
         defaults.set(receipts, forKey: Self.storageKey + ".receipts")
     }

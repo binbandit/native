@@ -22,7 +22,7 @@ final class ComposerAgentChange {
     private let earlierName: String
     private let earlierModel: String
     private let earlierModelValue: String?
-    private let earlierKey: SessionKey
+    private var earlierKey: SessionKey
     private(set) var undoIsClosed = false
     private weak var source: SessionModel?
     private weak var current: SessionModel?
@@ -219,7 +219,13 @@ final class ComposerAgentChange {
         else { throw Failure("The task's permissions changed. Choose a model again.") }
     }
 
+    func replaceReference(_ old: SessionKey, with replacement: SessionKey) {
+        if earlierKey == old { earlierKey = replacement }
+        priorChoice?.replaceReference(old, with: replacement)
+    }
+
     func replace(_ old: SessionModel, with replacement: SessionModel) {
+        replaceReference(old.key, with: replacement.key)
         if source === old { source = replacement }
         if previous === old { previous = replacement }
         if current === old { current = replacement }

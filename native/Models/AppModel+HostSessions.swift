@@ -57,6 +57,9 @@ extension AppModel {
         session.modelChange = old.modelChange
         old.modelChange?.replace(old, with: session)
         sessions.services.modelContinuations.replace(old.key, with: session.key)
+        for loaded in sessions.loadedSessions {
+            loaded.modelChange?.replaceReference(old.key, with: session.key)
+        }
         session.quoteSelection = old.quoteSelection
         session.quoteSelectionSource = old.quoteSelectionSource
         session.isChangingWorkspace = old.isChangingWorkspace
