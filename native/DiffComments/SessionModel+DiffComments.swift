@@ -177,8 +177,8 @@ extension SessionModel {
 
     func reconcileDiffCommentDelivery() {
         guard let packet = unresolvedCommentPacket, !diffCommentSending else { return }
-        let ids = Set(PromptQuote.split(packet).quotes.compactMap { $0.comment?.id })
-        guard !ids.isEmpty else { return }
+        let expected = PromptQuote.split(packet)
+        guard expected.quotes.contains(where: { $0.comment != nil }) else { return }
         let texts =
             queuedPrompts.map(\.text)
             + state.items.compactMap { item -> String? in
@@ -186,8 +186,10 @@ extension SessionModel {
                 return message.text
             }
         if texts.contains(where: { text in
-            ids.isSubset(of: Set(PromptQuote.split(text).quotes.compactMap { $0.comment?.id }))
-                && PromptQuote.trimmed(text) == PromptQuote.trimmed(packet)
+            let received = PromptQuote.split(text)
+            return received.quotes == expected.quotes
+                && received.message.trimmingCharacters(in: .whitespacesAndNewlines)
+                    == expected.message.trimmingCharacters(in: .whitespacesAndNewlines)
         }) {
             acceptDiffCommentPacket(packet)
         }

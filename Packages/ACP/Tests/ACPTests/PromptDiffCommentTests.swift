@@ -56,6 +56,14 @@ import Testing
         #expect(try JSONDecoder().decode(PromptQuote.self, from: JSONEncoder().encode(snapshot)) == snapshot)
     }
 
+    @Test func commentMetadataHasStableSerialization() {
+        let original = quote()
+        let representations = Set((0..<50).map { _ in original.prompt })
+        #expect(representations.count == 1)
+        let packet = PromptQuote.draft(quotes: [original], message: "Follow up")
+        #expect(PromptQuote.trimmed(packet) == PromptQuote.trimmed(packet))
+    }
+
     @Test func incompleteAnnotationRemainsEditableText() {
         let invalid = "> Quoted from \"a.swift\" (new file)\n> 1 | text\n> Comment: unfinished"
         #expect(PromptQuote.split(invalid).quotes.isEmpty)

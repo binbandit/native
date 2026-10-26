@@ -69,7 +69,9 @@ public struct PromptQuote: Equatable, Sendable, Codable {
     }
 
     private static func encoded(_ comment: PromptDiffComment) -> String {
-        (try? JSONEncoder().encode(comment)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        return (try? encoder.encode(comment)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
     }
 
     public static func draft(quotes: [Self], message: String) -> String {
