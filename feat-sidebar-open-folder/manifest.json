@@ -1,0 +1,203 @@
+{
+  "testedRevision": "6cdb02a3d8cc1b7ddcd6b7f6826f77956ec7a975",
+  "base": "f984fd4e833eb9e408fbd97e2b96d1bbd4e7991e",
+  "folderImplementationMatchesCaptureRevision": "17475290",
+  "finalCaptureRefresh": "pending: screen locked before F1 dark",
+  "captures": [
+    {
+      "state": "F1",
+      "theme": "dark",
+      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "actual": "F1-dark.png",
+      "mock": "mocks/F1-dark.png",
+      "comparison": "compare-F1-dark.png",
+      "sha256": "f6b86d38cebe7062da74a94d265765a2f85b8a99677e743375cdc6bb437a3cc5"
+    },
+    {
+      "state": "F1",
+      "theme": "light",
+      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "actual": "F1-light.png",
+      "mock": "mocks/F1-light.png",
+      "comparison": "compare-F1-light.png",
+      "sha256": "295cb6db7c16fb6827ed01b46d8438fab555a3d23b002f6499cd7f8ed035f3b5"
+    },
+    {
+      "state": "F2",
+      "theme": "dark",
+      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "actual": "F2-dark.png",
+      "mock": "mocks/F2-dark.png",
+      "comparison": "compare-F2-dark.png",
+      "sha256": "7174b43f1761ca279ee2e21fde4657416feb6c0fc1e87f00c4f1ea6d0796c157"
+    },
+    {
+      "state": "F2",
+      "theme": "light",
+      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "actual": "F2-light.png",
+      "mock": "mocks/F2-light.png",
+      "comparison": "compare-F2-light.png",
+      "sha256": "3d1e393142d5bb3bfda51ff2cb7773d585f1356c50ee5f01334a2819c41442cb"
+    },
+    {
+      "state": "F3",
+      "theme": "dark",
+      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "actual": "F3-dark.png",
+      "mock": "mocks/F3-dark.png",
+      "comparison": "compare-F3-dark.png",
+      "sha256": "fdfc6513dc82237ca4d00c9eea5223aa776767ce0af12304f43f111863e66631"
+    },
+    {
+      "state": "F3",
+      "theme": "light",
+      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "actual": "F3-light.png",
+      "mock": "mocks/F3-light.png",
+      "comparison": "compare-F3-light.png",
+      "sha256": "20a5ac605bfc4e1357e60ff64a02d54e65389b274722c9c38fb94814abff6643"
+    },
+    {
+      "state": "F4",
+      "theme": "dark",
+      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "actual": "F4-dark.png",
+      "mock": "mocks/F4-dark.png",
+      "comparison": "compare-F4-dark.png",
+      "sha256": "487c9b2bf8231b1531c033afaadea310a581e3de15718e338f14911111a3c0ab"
+    },
+    {
+      "state": "F4",
+      "theme": "light",
+      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "actual": "F4-light.png",
+      "mock": "mocks/F4-light.png",
+      "comparison": "compare-F4-light.png",
+      "sha256": "db3df74c3b29a4d60a982c6601be7aa8f4a6e960be0ffaf083be27e22462fc5c"
+    },
+    {
+      "state": "F5",
+      "theme": "dark",
+      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "actual": "F5-dark.png",
+      "mock": "mocks/F5-dark.png",
+      "comparison": "compare-F5-dark.png",
+      "sha256": "2c2471aecfe4bfed50d4b602a0898712b7f4fcddb3967556950606e0a62f14e1"
+    },
+    {
+      "state": "F5",
+      "theme": "light",
+      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "actual": "F5-light.png",
+      "mock": "mocks/F5-light.png",
+      "comparison": "compare-F5-light.png",
+      "sha256": "2eef1e58565969b68af910587992bc86a21f83aa9643c34f3ce1542ee415c385"
+    },
+    {
+      "state": "F6",
+      "theme": "dark",
+      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "actual": "F6-dark.png",
+      "mock": "mocks/F6-dark.png",
+      "comparison": "compare-F6-dark.png",
+      "sha256": "41c3f3d2f5905568890d88fbbf4b55d76b3bfe1e62c295b86b460be97173b75a"
+    },
+    {
+      "state": "F6",
+      "theme": "light",
+      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "actual": "F6-light.png",
+      "mock": "mocks/F6-light.png",
+      "comparison": "compare-F6-light.png",
+      "sha256": "a9ed9c6b4591171db90048b4fdd96a4c1e864d5ecaa9bcb839fe9e80889e7c6e"
+    },
+    {
+      "state": "F7",
+      "theme": "dark",
+      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "actual": "F7-dark.png",
+      "mock": "mocks/F7-dark.png",
+      "comparison": "compare-F7-dark.png",
+      "sha256": "ddb04e04f5ca1bc1d581ed17f426ef0ca6b91f94736c942ff646e8f6ab398a8b"
+    },
+    {
+      "state": "F7",
+      "theme": "light",
+      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "actual": "F7-light.png",
+      "mock": "mocks/F7-light.png",
+      "comparison": "compare-F7-light.png",
+      "sha256": "2372074761a2283cedcc47b21aff2bfe66ae6f0be21f350b0aeabea37e990112"
+    },
+    {
+      "state": "F8",
+      "theme": "dark",
+      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "actual": "F8-dark.png",
+      "mock": "mocks/F8-dark.png",
+      "comparison": "compare-F8-dark.png",
+      "sha256": "f6b86d38cebe7062da74a94d265765a2f85b8a99677e743375cdc6bb437a3cc5"
+    },
+    {
+      "state": "F8",
+      "theme": "light",
+      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "actual": "F8-light.png",
+      "mock": "mocks/F8-light.png",
+      "comparison": "compare-F8-light.png",
+      "sha256": "295cb6db7c16fb6827ed01b46d8438fab555a3d23b002f6499cd7f8ed035f3b5"
+    },
+    {
+      "state": "F9",
+      "theme": "dark",
+      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "actual": "F9-dark.png",
+      "mock": "mocks/F9-dark.png",
+      "comparison": "compare-F9-dark.png",
+      "sha256": "1b2124be7d55b9de7aae567b8c2b8a0f240f3f8c51dc294a8663569f86e67623"
+    },
+    {
+      "state": "F9",
+      "theme": "light",
+      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "actual": "F9-light.png",
+      "mock": "mocks/F9-light.png",
+      "comparison": "compare-F9-light.png",
+      "sha256": "8a1b0e2e1be3e35c656be3845353ab84490aec21cd08773674f8f0b853deb2e9"
+    },
+    {
+      "state": "F10",
+      "theme": "dark",
+      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "actual": "F10-dark.png",
+      "mock": "mocks/F10-dark.png",
+      "comparison": "compare-F10-dark.png",
+      "sha256": "6732057aef02dedc0382d8d3ab287b624100cd32ef1ad0cb669544516b26602c"
+    },
+    {
+      "state": "F10",
+      "theme": "light",
+      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "actual": "F10-light.png",
+      "mock": "mocks/F10-light.png",
+      "comparison": "compare-F10-light.png",
+      "sha256": "8c1a0481d33f70faa6820a931e3e443f4c26e62be056233f8674f64e5d302389"
+    }
+  ],
+  "pending": [
+    "F8 active system focus ring: background app did not draw an active ring",
+    "F11 dark and light public chooser captures: personal system sidebar locations excluded",
+    "F1-F10 dark and light refresh on latest integration revision: screen locked"
+  ],
+  "validation": {
+    "debug": "pass, no repository warnings",
+    "modelHarness": "pass",
+    "homeHarness": "pass",
+    "FolderHistoryTests": "2 passed",
+    "FolderPolicyTests_and_PolicyCoverageTests": "9 passed",
+    "format": "pass",
+    "iPad": "failed: dependency graph errors and SidebarView timeout; not verified",
+    "releaseAndNightly": "pending"
+  }
+}
