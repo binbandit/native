@@ -69,6 +69,19 @@ struct SidebarFolderResult: View {
                 || model.folderPolicy.isManaged(.foldersAllowedRoots) ? DS.SidebarFolders.noticeTop : 0
         )
         .padding(.horizontal, DS.Sidebar.inset)
+        .onChange(of: state.receipt?.id) {
+            if let receipt = state.receipt {
+                AccessibilityNotification.Announcement(
+                    receipt.projects.count == 1
+                        ? "Added \(receipt.projects[0].name)" : "Added \(receipt.projects.count) folders"
+                ).post()
+            }
+        }
+        .onChange(of: state.failures) {
+            if !state.failures.isEmpty {
+                AccessibilityNotification.Announcement(state.failures.map(\.message).joined(separator: " ")).post()
+            }
+        }
     }
 
     private var dismiss: some View { Button("Dismiss", action: model.dismissFolderResult) }

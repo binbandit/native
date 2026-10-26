@@ -99,8 +99,9 @@ extension AppModel {
             if let failure {
                 sidebarFolders.failures.append(
                     .init(
-                        name: item.url.lastPathComponent,
-                        reason: failure.message(for: item.url.lastPathComponent), needsLocation: failure == .missing))
+                        name: item.original.lastPathComponent,
+                        reason: failure.message(for: item.original.lastPathComponent),
+                        needsLocation: failure == .missing))
                 if item.hasSecurityScope { item.original.stopAccessingSecurityScopedResource() }
                 continue
             }
