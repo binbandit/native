@@ -146,6 +146,8 @@ struct TaskWellToolsPanel<Destination: View>: View {
                         .foregroundStyle(.dsTextSecondary)
                         .frame(width: DS.TaskWell.rowIconWidth, alignment: .leading)
                     Text(tool.title)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                         .foregroundStyle(detail.unavailableReason == nil ? .dsTextPrimary : .dsTextTertiary)
                         .frame(width: DS.TaskWell.rowTitleWidth, alignment: .leading)
                     HStack(spacing: DS.Space.sm) {
@@ -196,6 +198,7 @@ struct TaskWellToolsPanel<Destination: View>: View {
                     })
             )
             .dsHitTarget(DS.TaskWell.rowHeight)
+            .help("\(tool.title): \(detail.text)")
             .accessibilityIdentifier("taskWell.\(tool.title)")
             if let reason = detail.unavailableReason ?? detail.note {
                 VStack(alignment: .leading, spacing: DS.Space.md) {
