@@ -14,6 +14,7 @@ for map in "$derived"/Build/Intermediates.noindex/GeneratedModuleMaps*/*.modulem
 done
 if [ "${2:-}" = --before ]; then flags+=(-D BEFORE); fi
 nice -n 10 xcrun swiftc "${flags[@]}" "$root/scripts/tests/settings-regression.swift" \
+    "$root/scripts/tests/settings-theme-try-on-regression.swift" \
     "$app/Contents/MacOS/Native.debug.dylib" \
     -Xlinker -rpath -Xlinker "$app/Contents/Frameworks" \
     -Xlinker -rpath -Xlinker "$app/Contents/MacOS" -o "$work/settings-regression"

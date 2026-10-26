@@ -115,6 +115,20 @@ struct ThemeTryOnDetail<Detail: View>: View {
             ThemeTryOnSampleTask()
         } else {
             detail
+                .disabled(tryOn?.isActive == true)
+                .opacity(tryOn?.stage == .findingTask ? 0 : 1)
+                .accessibilityHidden(tryOn?.stage == .findingTask)
+                .overlay {
+                    if tryOn?.stage == .findingTask {
+                        LoadingStateView("Finding a task with code…")
+                    }
+                }
         }
     }
 }
+
+#if DEBUG
+#Preview("Try On - Finding a task with code") {
+    DSPreviewPair { LoadingStateView("Finding a task with code…") }
+}
+#endif

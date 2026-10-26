@@ -23,6 +23,7 @@ final class ThemeTryOnModel {
     /// What Try On shows the themes on.
     enum Stage: Equatable {
         case task(SessionKey)
+        case findingTask
         /// A read-only sample, when there's no task to show.
         case sample
     }
@@ -57,11 +58,14 @@ final class ThemeTryOnModel {
     @ObservationIgnored private let appearance: AppearanceModeController
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let policy: () -> NativePolicy
+    @ObservationIgnored private let loadSession: (SessionKey) async -> Void
+    @ObservationIgnored private var taskSearch: Task<Void, Never>?
 
     init(
         app: AppModel, settings: SettingsPresentation, appearance: AppearanceModeController,
         plugins: PluginRegistry? = nil, defaults: UserDefaults = .standard,
-        policy: @escaping () -> NativePolicy = { PolicyCenter.shared.policy }
+        policy: @escaping () -> NativePolicy = { PolicyCenter.shared.policy },
+        loadSession: ((SessionKey) async -> Void)? = nil
     ) {
         self.app = app
         self.plugins = plugins ?? app.plugins
@@ -69,6 +73,7 @@ final class ThemeTryOnModel {
         self.appearance = appearance
         self.defaults = defaults
         self.policy = policy
+        self.loadSession = loadSession ?? { await app.loadSession($0) }
     }
 
     /// Whether Try On can open: not while an organization sets the code theme, and not twice.
@@ -97,14 +102,24 @@ final class ThemeTryOnModel {
             dark: CodeTheme.ID(rawValue: stored(AppearancePreferences.darkCodeThemeKey)),
             backgrounds: storedBackgrounds)
         keptNote = nil
-        let shown: SessionKey? =
-            if let task { app.session(task).map(Self.showsCode) == true ? task : nil } else { latestTask() }
-        let stage = shown.map(Stage.task) ?? .sample
         settings.close()
-        if case .task(let key) = stage { app.selection = key }
-        self.stage = stage
         trial = Trial(
             kept: kept, mode: scheme, light: Self.themes(.light, in: catalog), dark: Self.themes(.dark, in: catalog))
+        if let task {
+            showTask(app.session(task).map(Self.showsCode) == true ? task : nil)
+        } else if app.sessionList.isEmpty {
+            showTask(nil)
+        } else {
+            stage = .findingTask
+            taskSearch = Task { [weak self] in
+                guard let self else { return }
+                let task = await latestTask()
+                guard !Task.isCancelled, isActive else { return }
+                guard !isLockedByPolicy else { return policyChanged() }
+                showTask(task)
+                taskSearch = nil
+            }
+        }
     }
 
     // MARK: Trying
@@ -149,6 +164,7 @@ final class ThemeTryOnModel {
 
     /// Writes both modes' themes and the backgrounds, and returns to where Try On opened.
     func keep(undoManager: UndoManager?) {
+        guard !isLockedByPolicy else { return policyChanged() }
         guard let trial, let choice = trial.writes(.keep) else { return }
         guard trial.hasChanges else { return finish() }
         let message = Self.message(for: trial)
@@ -211,6 +227,8 @@ final class ThemeTryOnModel {
     }
 
     private func end() {
+        taskSearch?.cancel()
+        taskSearch = nil
         trial = nil
         stage = nil
         origin = nil
@@ -247,21 +265,30 @@ final class ThemeTryOnModel {
             dark: defaults.string(forKey: AppearancePreferences.darkToneKey).flatMap(DSDarkTone.init) ?? .standard)
     }
 
-    /// The sidebar's most recently active task that shows code, among those open.
-    private func latestTask() -> SessionKey? {
-        app.sessionList
+    private func showTask(_ key: SessionKey?) {
+        stage = key.map(Stage.task) ?? .sample
+        if let key { app.selection = key }
+    }
+
+    /// Completed tasks load lazily after relaunch. Inspect the catalog in activity order, loading
+    /// history through the normal model path, so an older open task doesn't hide a newer candidate.
+    private func latestTask() async -> SessionKey? {
+        let candidates = app.sessionList
             .map { (key: $0.id, activity: app.lastActivity(for: $0) ?? .distantPast) }
             .sorted { $0.activity > $1.activity }
-            .first { candidate in
-                guard let session = app.session(candidate.key), session.parentID == nil, session.origin == .user
-                else { return false }
-                return Self.showsCode(session)
-            }?
-            .key
+        for candidate in candidates {
+            guard !Task.isCancelled, !isLockedByPolicy else { return nil }
+            if app.session(candidate.key) == nil { await loadSession(candidate.key) }
+            guard !Task.isCancelled else { return nil }
+            guard let session = app.session(candidate.key), session.parentID == nil, session.origin == .user
+            else { continue }
+            if Self.showsCode(session) { return candidate.key }
+        }
+        return nil
     }
 
     /// Whether the task shows code the themes recolor: captured changes, a diff in a tool call, or a
-    /// code block in a reply. A task that isn't open yet can't be known to, so it doesn't count.
+    /// code block in a reply.
     private static func showsCode(_ session: SessionModel) -> Bool {
         guard GitChangesReview.previewDiffs(of: session).isEmpty else { return true }
         return session.state.items.contains { item in

@@ -243,8 +243,7 @@ struct SessionToolsScreen: View {
         if requested == nil, openSubagent != nil {
             openSubagent = nil
         } else if let id = requested ?? session.state.subagents.first?.id {
-            tools.close(.side)
-            inspectorRoom.open(DS.SessionTools.sidePanelIdealWidth) { openSubagent = id }
+            openSubagentInspector(id)
         }
     }
 

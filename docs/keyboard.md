@@ -656,7 +656,8 @@ them one in Settings ▸ Keyboard Shortcuts.
 
 Try On (Settings ▸ Appearance ▸ Try On…, or View ▸ Appearance ▸ Try On Themes…) turns the sidebar into
 the theme list and recolors the window as the highlight moves. Focus starts in the list, on the theme
-in use. It's unavailable while an organization sets the code theme.
+in use. Task controls are disabled while trying; agents keep running. It's unavailable while an
+organization sets the code theme.
 
 | Keys | Action |
 | --- | --- |
