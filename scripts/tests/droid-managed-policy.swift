@@ -44,10 +44,12 @@ private final class Reached: Sendable {
 private final class ScratchPolicy: PolicySource, Sendable {
     private let value: Mutex<Bool?>
     private let organizationName: String?
+    private let organizationContact: String?
 
-    init(_ value: Bool?, organizationName: String? = nil) {
+    init(_ value: Bool?, organizationName: String? = nil, organizationContact: String? = nil) {
         self.value = Mutex(value)
         self.organizationName = organizationName
+        self.organizationContact = organizationContact
     }
 
     func set(_ value: Bool?) {
@@ -59,6 +61,9 @@ private final class ScratchPolicy: PolicySource, Sendable {
         if key == PolicyKey.organizationName.rawValue {
             return organizationName.map(ManagedEntry.value) ?? .absent
         }
+        if key == PolicyKey.organizationContact.rawValue {
+            return organizationContact.map(ManagedEntry.value) ?? .absent
+        }
         guard key == PolicyKey.remoteHostsEnabled.rawValue else { return .absent }
         return value.withLock { $0 }.map(ManagedEntry.value) ?? .absent
     }
@@ -68,6 +73,7 @@ private final class ScratchPolicy: PolicySource, Sendable {
     var managedKeys: [String]? {
         (value.withLock { $0 } == nil ? [] : [PolicyKey.remoteHostsEnabled.rawValue])
             + (organizationName == nil ? [] : [PolicyKey.organizationName.rawValue])
+            + (organizationContact == nil ? [] : [PolicyKey.organizationContact.rawValue])
     }
 }
 
@@ -385,6 +391,7 @@ private struct DroidManagedPolicyRegression {
         try await noPairedDevices()
         try await offWhilePairingByLink()
         try await offWhilePairingByLink(organizationName: "Northwind Federal IT")
+        try await offWhilePairingByLink(organizationName: "Northwind Federal IT", organizationContact: "#it-help")
         try await offWhilePairingOverSSH()
         try await offWhileReconnecting()
         try await offWithOpenTask()
@@ -416,10 +423,11 @@ private struct DroidManagedPolicyRegression {
     }
 
     static func fixture(
-        policy value: Bool?, isFeatureOn: Bool = true, paired: Bool = true, organizationName: String? = nil
+        policy value: Bool?, isFeatureOn: Bool = true, paired: Bool = true, organizationName: String? = nil,
+        organizationContact: String? = nil
     ) -> Fixture {
         let network = FixtureNetwork()
-        let source = ScratchPolicy(value, organizationName: organizationName)
+        let source = ScratchPolicy(value, organizationName: organizationName, organizationContact: organizationContact)
         let center = PolicyCenter(source: source)
         center.start()
         let policy = RemoteHostsPolicy(center: center, isFeatureOn: isFeatureOn, reach: network.reach)
@@ -506,8 +514,10 @@ private struct DroidManagedPolicyRegression {
         print("PASS: with no paired host nothing reaches out until Add Host pairs one")
     }
 
-    static func offWhilePairingByLink(organizationName: String? = nil) async throws {
-        let fixture = fixture(policy: nil, paired: false, organizationName: organizationName)
+    static func offWhilePairingByLink(organizationName: String? = nil, organizationContact: String? = nil) async throws
+    {
+        let fixture = fixture(
+            policy: nil, paired: false, organizationName: organizationName, organizationContact: organizationContact)
         fixture.hosts.start()
         let model = fixture.addHost()
         model.input = fixture.network.invite.url.absoluteString
@@ -518,12 +528,30 @@ private struct DroidManagedPolicyRegression {
         fixture.source.set(false)
         try await wait("pairing stops") { isFailed(model) }
         try requireOrganizationStopped(model, organizationName: organizationName)
+        try require(model.organizationContact == organizationContact, "Lost the configured help contact")
+        if let organizationContact {
+            guard case .failed(let failure) = model.phase else { throw PolicyFailure("Missing policy failure") }
+            try require(
+                model.suggestion(for: failure).contains("Ask in \(organizationContact) to turn remote hosts on."),
+                "Didn't show where to ask for help")
+        }
         fixture.network.pairing.release()
         try await settle()
         try require(isFailed(model), "A pairing that finished after the policy turned off was shown as paired")
         try require(fixture.hosts.all.isEmpty && (try fixture.store.hosts()).isEmpty, "Kept a pairing made after off")
         try require(fixture.reached.count("connect") == 0, "Connected to a pairing made after off")
-        print("PASS: turning off during a link pairing stops it and keeps nothing it finished")
+        try require(!model.canRetryPairing && model.isBlockedByOrganization, "Offered link recovery while blocked")
+        let input = model.input
+        fixture.source.set(true)
+        try await wait("link recovery allowed again") { model.canRetryPairing }
+        try require(!model.isBlockedByOrganization && !model.canTryAgain, "Offered SSH retry for a pasted link")
+        guard case .failed(let failure) = model.phase else { throw PolicyFailure("Lost the pairing failure") }
+        try require(
+            model.suggestion(for: failure).contains("Remote hosts are allowed again."),
+            "Still said remote hosts were off after the organization allowed pairing")
+        model.edit()
+        try require(model.phase == .entering && model.input == input, "Lost the original link after policy allowed it")
+        print("PASS: a policy stop keeps nothing paired, preserves the link and allows recovery only when on again")
     }
 
     static func requireOrganizationStopped(_ model: AddHostModel, organizationName: String? = nil) throws {
@@ -537,10 +565,16 @@ private struct DroidManagedPolicyRegression {
             failure.title == "Turned off by your organization",
             "Policy stop showed the wrong title: \(failure.title)")
         try require(failure.recovery == "Nothing was paired.", "Policy stop didn't explain that nothing was paired")
+        try require(!failure.isWorthRetrying, "A policy stop offered retry before the organization allowed pairing")
+        try require(!model.canTryAgain, "SSH retry was available while the organization blocked pairing")
+        let input = model.input
+        model.retry()
+        try require(model.phase == .failed(failure), "Retry left the policy failure while hosts were blocked")
+        try require(model.input == input, "A policy stop lost the original destination or link")
         for overSSH in [false, true] {
             try require(
                 failure.suggestion(overSSH: overSSH)
-                    == "\(organizationName ?? "Your organization") turned off remote hosts on this Mac. Ask them to turn remote hosts on, then try again.",
+                    == "\(organizationName ?? "Your organization") turned off remote hosts on this Mac. Ask them to turn remote hosts on.",
                 "Policy stop didn't explain who turned hosts off and what to do next")
         }
     }
@@ -555,9 +589,12 @@ private struct DroidManagedPolicyRegression {
         fixture.source.set(false)
         try await wait("ssh stops while reaching") { isFailed(model) && fixture.reached.count("sshStopped") == 1 }
         try requireOrganizationStopped(model)
+        try require(model.isBlockedByOrganization && !model.canRetryPairing, "Offered SSH recovery while blocked")
         // On again, as far as the link: pair printed it and is waiting.
         fixture.source.set(true)
         try await wait("on again") { fixture.hosts.isEnabled }
+        try require(model.canTryAgain && !model.isBlockedByOrganization, "Didn't offer SSH retry when allowed again")
+        try require(model.input == "me@fixture.local", "Lost the SSH destination while policy blocked pairing")
         fixture.network.sshInvite = fixture.network.invite
         model.retry()
         try await wait("link over ssh") { if case .confirming = model.phase { true } else { false } }

@@ -89,7 +89,7 @@ nonisolated enum AddHostFailure: Hashable, Sendable {
 
     /// What the user can do. A new link comes from Try Again when Add Host ran pair over SSH, and
     /// from running pair again when the user pasted the link.
-    func suggestion(overSSH: Bool) -> String {
+    func suggestion(overSSH: Bool, organizationContact: String? = nil) -> String {
         let newLink = overSSH ? "Try again for a new one." : "Run pair on that Mac again and paste its new link."
         return switch self {
         case .notALinkOrDestination:
@@ -118,7 +118,9 @@ nonisolated enum AddHostFailure: Hashable, Sendable {
         case .notAllowed:
             "The organization that manages it turned paired devices off. Ask them to turn on the companion, then try again."
         case .organizationTurnedOff(let name):
-            "\(name ?? "Your organization") turned off remote hosts on this Mac. Ask them to turn remote hosts on, then try again."
+            "\(name ?? "Your organization") turned off remote hosts on this Mac. "
+                + (organizationContact.map { "Ask in \($0) to turn remote hosts on." }
+                    ?? "Ask them to turn remote hosts on.")
         case .versionMismatch(let host, let theirs, let theirProtocol):
             theirProtocol < HostProtocol.version
                 ? "It has Native \(theirs.version). Update Native on \(host), then try again."
@@ -146,7 +148,7 @@ nonisolated enum AddHostFailure: Hashable, Sendable {
     /// Whether running the same attempt again can help, rather than changing what was typed first.
     var isWorthRetrying: Bool {
         switch self {
-        case .notALinkOrDestination, .newerLink, .notAMac, .sshUnknownHost: false
+        case .notALinkOrDestination, .newerLink, .notAMac, .sshUnknownHost, .organizationTurnedOff: false
         default: true
         }
     }

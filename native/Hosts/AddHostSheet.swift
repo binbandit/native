@@ -15,6 +15,7 @@ struct AddHostSheet: View {
     @Bindable var model: AddHostModel
     let close: () -> Void
     @State private var copiedCommand = false
+    @State private var copiedContact = false
     @FocusState private var isFieldFocused: Bool
     @Environment(\.openURL) private var openURL
 
@@ -258,21 +259,36 @@ struct AddHostSheet: View {
         Group {
             header("Add Host")
             ErrorState(
-                failure.title, recovery: failure.recovery, suggestion: failure.suggestion(overSSH: model.wasOverSSH),
+                failure.title, recovery: failure.recovery, suggestion: model.suggestion(for: failure),
                 details: failure.details,
-                primary: nextStep(failure),
-                secondary: model.canTryAgain ? .init("Edit", perform: model.edit) : nil)
-            footer {
-                Button("Close", action: close).buttonStyle(.ds(.secondary, size: .large))
+                primary: nextStep,
+                secondary: secondaryStep)
+            if !model.isBlockedByOrganization {
+                footer {
+                    Button("Close", action: close).buttonStyle(.ds(.secondary, size: .large))
+                }
             }
         }
     }
 
     /// Over SSH, trying again brings a new link; a pasted link needs a new one pasted.
-    private func nextStep(_ failure: AddHostFailure) -> ErrorState.Action {
+    private var nextStep: ErrorState.Action {
+        if model.isBlockedByOrganization { return .init("Close", shortcut: .defaultAction, perform: close) }
         if model.canTryAgain { return .init("Try Again", perform: model.retry) }
-        if !model.wasOverSSH, failure.isWorthRetrying { return .init("Paste a New Link", perform: model.startOver) }
+        if !model.wasOverSSH, model.canRetryPairing { return .init("Paste a New Link", perform: model.startOver) }
         return .init("Edit", perform: model.edit)
+    }
+
+    private var secondaryStep: ErrorState.Action? {
+        if model.isBlockedByOrganization, model.organizationContact != nil {
+            return .init(
+                copiedContact ? "Copied" : "Copy Contact", shortcut: .init("c", modifiers: [.command, .shift])
+            ) {
+                model.copyOrganizationContact()
+                copiedContact = true
+            }
+        }
+        return model.canTryAgain ? .init("Edit", perform: model.edit) : nil
     }
 
     private func header(_ title: String, detail: String? = nil) -> some View {
@@ -319,82 +335,3 @@ extension String {
         .joined(separator: " ")
     }
 }
-
-#if DEBUG
-/// Fixtures for the previews.
-private enum AddHostPreview {
-    static let offer = AddHostOffer(
-        invite: PairingInvite(
-            hostID: RemoteHostID(), hostKey: LinkIdentity().publicKey, secret: Data(repeating: 1, count: 32),
-            hostName: "Mac mini", expiresAt: .now.addingTimeInterval(272),
-            addresses: [
-                LinkAddress(kind: .lan, host: "192.168.1.20", port: 47_118),
-                LinkAddress(kind: .tailnet, host: "mac-mini.tail1234.ts.net", port: 47_118),
-                LinkAddress(kind: .bonjour, host: "Mac mini"),
-            ],
-            grants: AddHostModel.sshOffer),
-        sshDestination: "me@mac-mini.local", hostBuild: PeerInfo(name: "Native Host", version: "1.4.0", build: "140"))
-
-    static func model(_ phase: AddHostModel.Phase, approvalPage: URL? = nil) -> AddHostModel {
-        AddHostModel(
-            register: { _ in }, environment: { [:] }, input: "me@mac-mini.local", phase: phase,
-            approvalPage: approvalPage)
-    }
-}
-
-#Preview("Add Host") {
-    DSPreviewPair {
-        AddHostSheet(model: AddHostPreview.model(.entering), close: {})
-    }
-}
-
-#Preview("Confirm") {
-    DSPreviewPair {
-        AddHostSheet(model: AddHostPreview.model(.confirming(AddHostPreview.offer)), close: {})
-    }
-}
-
-#Preview("Approve") {
-    DSPreviewPair {
-        AddHostSheet(
-            model: AddHostPreview.model(
-                .reaching(destination: "me@mac-mini.local"),
-                approvalPage: URL(string: "https://login.tailscale.com/a/l1b2c3")),
-            close: {})
-    }
-}
-
-#Preview("Pairing") {
-    DSPreviewPair {
-        AddHostSheet(model: AddHostPreview.model(.pairing(AddHostPreview.offer)), close: {})
-    }
-}
-
-#Preview("Paired") {
-    DSPreviewPair {
-        AddHostSheet(
-            model: AddHostPreview.model(
-                .paired(name: "Mac mini", grants: LinkGrants(manageHost: true, runCommands: true))),
-            close: {})
-    }
-}
-
-#Preview("Failed") {
-    DSPreviewPair {
-        AddHostSheet(model: AddHostPreview.model(.failed(.sshSignIn(destination: "me@mac-mini.local"))), close: {})
-    }
-}
-
-#Preview("Add Host - Turned off by organization") {
-    DSPreviewPair {
-        AddHostSheet(
-            model: AddHostPreview.model(.failed(.organizationTurnedOff(name: "Northwind Federal IT"))), close: {})
-    }
-}
-
-#Preview("Add Host - Turned off by unnamed organization") {
-    DSPreviewPair {
-        AddHostSheet(model: AddHostPreview.model(.failed(.organizationTurnedOff(name: nil))), close: {})
-    }
-}
-#endif

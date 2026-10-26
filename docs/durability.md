@@ -289,6 +289,11 @@ destination. Only the embedded helper has `pair`: a host without it
 (Linux, later) needs `native-host` moved into a package that depends on both NativeHost and
 NativeLink, with its `serve` starting a `LinkGateway`.
 
+If this Mac's organization turns remote hosts off during Add Host, the sheet says who manages
+it and that nothing was paired. It offers Close and, when configured, Copy Contact for
+`policy.organization.contact`. It keeps the destination or link and offers retry again only
+after policy allows remote hosts; changing the destination or link cannot override that policy.
+
 **Plugins reach every client** (docs/decisions.md, "Plugins live on hosts and reach every client").
 Host-side contributions (agents, MCP servers, engines) run on the host; client-side data (themes,
 icon sets, celebrations, experiments) travels as manifests and assets. `NativeHostClient.PluginAssets`
