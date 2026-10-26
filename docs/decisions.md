@@ -615,3 +615,12 @@ secrets, so signing, notarization, publication and the Mac runner stay in one pi
 with GITHUB_TOKEN cannot trigger Release on its own. Direct Release dispatch remains a rehearsal;
 Beta's dry run only prints its decision. Automatic notes start at the previous beta, including when
 a stable tag intervenes. Daily Nightly, manual version tags and TestFlight keep their own triggers.
+
+## 2026-10-26: .tar.xz for updates, ZIP for first installs
+
+Sparkle's full update download is a `.tar.xz` instead of a ZIP: repacking the current public beta
+cuts 47.25 MB to 31.94 MB with the app unchanged. First installs keep the ZIP, outside the appcast
+folder so Sparkle sees one archive per version. Finder's `.tar.xz` path has not been verified in
+this change; removing the ZIP can follow a separate first-install check. Delta seeds prefer
+`.tar.xz` and fall back to earlier releases' ZIPs. Signing, notarization and the local disk image
+keep their existing behavior. Evidence and the remaining signing gate are in `docs/releasing.md`.

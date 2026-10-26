@@ -107,17 +107,47 @@ require_tool() {
     command -v "$1" >/dev/null 2>&1 || die "$1 isn't installed. $2"
 }
 
+# pack_update_archive <app> <archive>: Sparkle's update download. First installs keep a ZIP.
+# xz at level 9 makes it about a third smaller than ditto's ZIP. Only contents, modes and symlinks go
+# in: the signature and the stapled ticket live in files, and Sparkle unpacks with tar as the user,
+# which restores no extended attributes, so local ones (com.apple.provenance) stay out.
+pack_update_archive() {
+    run /usr/bin/tar -c -J --options xz:compression-level=9 --no-mac-metadata --no-xattrs --no-acls --no-fflags \
+        -f "$2" -C "$(dirname "$1")" "$(basename "$1")"
+}
+
+# update_archive_in <name without extension>: reads a release's asset names and prints its update
+# archive, the .tar.xz, or the ZIP that releases before it shipped.
+update_archive_in() {
+    local names
+    names=$(cat)
+    grep -xF "$1.tar.xz" <<<"$names" || grep -xF "$1.zip" <<<"$names" || true
+}
+
+# One update archive per nightly build, preferring .tar.xz over its first-install ZIP.
+nightly_update_archives() {
+    local asset_base=$1
+    { grep -E "^$asset_base-[0-9]+\\.(tar\\.xz|zip)$" || true; } |
+        sort -t- -k3,3nr | awk -F '[-.]' '!seen[$3]++'
+}
+
 # Prints all but the last two lines: the old assets to prune, oldest first.
 keep_all_but_two() {
     awk '{ a[NR] = $0 } END { for (i = 1; i <= NR - 2; i++) print a[i] }'
 }
 
-# Reads nightly asset names and prints only obsolete files. Keep the previous ZIP and host for
-# in-flight downloads; icons always come from latest stable, and the ZIP replaces the public DMG.
+# Reads nightly asset names and prints only obsolete files. Keep the previous archive (a .tar.xz, or
+# a ZIP from before), first-install ZIP and host for in-flight downloads. Icons come from latest
+# stable. Retain two builds, rather than counting the two formats as separate builds.
 obsolete_nightly_assets() {
     local asset_base=$1 current_deltas=$2 names
     names=$(cat)
-    { grep -E "^$asset_base-[0-9]+\.zip$" <<<"$names" || true; } | sort -t- -k3 -n | keep_all_but_two
+    local builds old
+    builds=$({ grep -E "^$asset_base-[0-9]+\\.(tar\\.xz|zip)$" <<<"$names" || true; } |
+        sed -E "s/^$asset_base-([0-9]+)\\..*/\\1/" | sort -nu | keep_all_but_two)
+    while read -r old; do
+        [ -z "$old" ] || { grep -E "^$asset_base-$old\\.(tar\\.xz|zip)$" <<<"$names" || true; }
+    done <<<"$builds"
     { grep -E '^native-host-[0-9]+-' <<<"$names" || true; } | sort -t- -k3 -n | keep_all_but_two
     grep -E '^(Native-Nightly\.dmg|celebration-.*\.json(\.sig)?)$' <<<"$names" || true
     { grep -E '\.delta$' <<<"$names" || true; } | while read -r name; do

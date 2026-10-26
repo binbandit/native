@@ -58,6 +58,7 @@ jobs:
           gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs"
           -f "ref=refs/tags/v${VERSION}" -f "sha=$SHA"
 
+  # Reuse Release's .tar.xz update and first-install ZIP packaging and checks.
   release:
     needs: plan
     if: needs.plan.outputs.skip == 'false' && !inputs.dry_run

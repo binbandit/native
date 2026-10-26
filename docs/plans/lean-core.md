@@ -489,7 +489,8 @@ With every in-process module included, measured against 2026-10-19's 107.5 MB an
 | Icons: per-channel catalogs and lossy alternates | about -3.5 MB | about -3.5 MB |
 | **Target** | **under 60 MB** | **under 25 MB** |
 
-`size-check.sh`'s budgets come down with each step (today 118 MB installed, 47 MB download). The
+`size-check.sh`'s budgets come down with each step (today 118 MB installed, 35 MB download; the
+downloads above are ZIP measurements, and the archive has been a `.tar.xz` since 2026-10-26). The
 app binary's own target is under 50 MB; the stretch, with fewer grammars, is a 20 MB download.
 
 ### Why people pick Native

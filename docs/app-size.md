@@ -7,19 +7,19 @@ It belongs with `docs/performance.md`.
 ## Budgets
 
 MB here are 10^6 bytes, as Finder counts them. "Installed" is the bytes in the app bundle;
-"download" is Sparkle's update archive (what every update fetches) and the disk image (a first
-install rehearsal). Public releases now attach only the ZIP for both first installs and updates;
-the DMG still builds locally with the existing signing, notarization and size checks. The asset
-inventory and retention limits are in `docs/releasing.md`. This changes file count, not the app
-bundle or its size budgets. The budgets sit about 10% above where the app was when they were set,
-so growth gets noticed while there's still room to choose what to cut; lower them as the cuts in "Still to do" land.
+"download" is Sparkle's full update archive, the first-install ZIP and the local disk image.
+Updates use `.tar.xz`; first installs keep ZIP until Finder extraction of `.tar.xz` is verified
+(`docs/releasing.md`, "The update archive"). The asset inventory and retention limits are in
+`docs/releasing.md`. The update budget sits about 10% above the measured archive so growth gets
+noticed while there is still room to choose what to cut.
 
-| What | Budget | 2026-10-25, after the -Osize and Sparkle cut (Release) |
+| What | Budget | Measurement |
 | --- | --- | --- |
-| Download, update archive | 47.5 MB | 46.9 MB |
-| Download, disk image | 49 MB | not remeasured |
-| Installed app | 118 MB | 115.1 MB |
-| App binary (`Contents/MacOS/Native`) | 70 MB | 58.9 MB |
+| Download, update archive | 35 MB | 31.94 MB, public v0.2.0-beta.14 repacked as `.tar.xz` (2026-10-26) |
+| Download, first-install ZIP | 47.5 MB | 47.25 MB, public v0.2.0-beta.14 |
+| Download, disk image | 49 MB | unchanged in this change |
+| Installed app | 118 MB | 116.8 MB, public v0.2.0-beta.14 |
+| App binary (`Contents/MacOS/Native`) | 70 MB | 59.3 MB, public v0.2.0-beta.14 |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
 `scripts/release/size-check.sh` holds the same numbers and fails when anything is over. It also
@@ -28,17 +28,22 @@ integration in its resources) or the script runtime: Xcode's build phases only w
 build them, and such an app looks 12 to 40 MB smaller than what ships.
 
 - `scripts/release/check.sh` (every pull request, through `check.yml`) builds the terminal and the
-  script runtime, then Release and Nightly, and checks both apps. It compresses each one the way a
-  release packs its update archive, so the download is measured without a release.
+  script runtime, then Release and Nightly, and checks both apps. It packs each one the way a
+  release packs its update archive (`pack_update_archive`), so the download is measured without a
+  release.
 - `scripts/release/release.sh` checks the app, update archive and disk image it's about to publish,
   dry runs included, and stops before publishing when they're over.
 
 Raise a budget only with the reason written here, in the same change.
 
+2026-10-26: switch Sparkle's full update archive to xz level 9. Repacking the public
+v0.2.0-beta.14 ZIP reduces 47,249,137 bytes to 31,936,384 bytes without changing the app.
+The update budget drops from 47.5 to 35 MB (9.6% above that measurement). The first-install ZIP
+keeps the existing 47.5 MB budget; installed, binary, runtime and disk-image budgets are unchanged.
+
 2026-10-26: approved by Brayden, the disk-image budget rises from 48 MB to 49 MB to unblock
 the beta. The disk image measured 48.2 MB in the beta release check at `f7e707d9` and is not
-published (releases attach only the ZIP). The planned move to a `.tar.xz` update archive will
-reset the download budgets.
+published (at that point releases attached only the ZIP). The `.tar.xz` change above resets the update budget.
 
 2026-10-25: the 0.5 MB installed raise below is reverted after #154's size cuts. Main at `e82527b2`
 measures 115.9 MB installed for Release and 116.0 MB for Nightly (Check run 40178138472), so the
@@ -305,7 +310,7 @@ icon catalogues remain a separate opportunity below. The safe cuts here target c
 
 ```sh
 scripts/release/size-check.sh <Native.app>                    # any build: sizes against the budget
-scripts/release/release.sh --channel stable --version 0.0.1    # a dry run: the real archive, zip and DMG
+scripts/release/release.sh --channel stable --version 0.0.1    # a dry run: the real app, update archive and DMG
 ```
 
 To see where the app binary's bytes come from, have the linker write a map and sum it:
@@ -527,7 +532,6 @@ Largest first.
 
 | What | Saves, installed / download | Owner |
 | --- | --- | --- |
-| The update archive as `.tar.xz`, which Sparkle reads, instead of ZIP: measured 47.4 to 32.8 MB on 2026-10-25 | 14.6 MB of download, nothing installed | Release pipeline; first installs would need a format Finder opens |
 | Sparkle's own binary without x86_64 (0.49 MB), its Downloader and Installer services, which only sandboxed apps use, and its 35 localizations, which an English-only app never loads (0.24 MB): each changes what Xcode's embed step produces or signs, so it needs that step replaced or the framework signed again | about 0.9 / 0.33 MB | Release pipeline (signing) |
 | libghostty without its embedded fonts (3.05 MB; the Nerd Font symbols render prompt icons) or custom shaders (glslang and SPIRV-Cross, 3.5 MB) | up to 6.5 / 2.5 MB | Terminal; needs a patch on the pinned Ghostty, since its build has no option |
 | Lossy compression for the 24 alternate icons (lossless 1024 px images, 4.4 MB that zip can't shrink) | perhaps half of that, both | Icon artwork |
