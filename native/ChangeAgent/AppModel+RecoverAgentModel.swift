@@ -42,6 +42,8 @@ extension AppModel {
             replacement.modelChange = original.modelChange
             original.modelChange?.replace(original, with: replacement)
             original.attachmentReads.move(to: replacement)
+            replacement.quoteSelection = original.quoteSelection
+            replacement.quoteSelectionSource = original.quoteSelectionSource
         }
         restoreAgentModelChoice(for: replacement)
     }
