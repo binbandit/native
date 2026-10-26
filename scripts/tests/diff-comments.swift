@@ -63,6 +63,14 @@ private struct DiffCommentChecks {
         require(PromptQuote.split(session.queuedPrompts[0].text).quotes.count == 2, "Both files remain together")
         require(session.diffComments.isEmpty && session.draft.isEmpty, "Only accepted packet clears")
         session.draft = oldDraft
+        var changed = session.composerQuotes
+        changed[0].comment?.body = "A newer observation with the same comment identity"
+        let newerPacket = PromptQuote.draft(quotes: changed, message: session.composerMessage)
+        session.unresolvedCommentPacket = newerPacket
+        session.reconcileDiffCommentDelivery()
+        require(
+            session.unresolvedCommentPacket == newerPacket, "Older evidence cannot acknowledge edited comment contents")
+        session.allowDiffCommentResend()
         session.unresolvedCommentPacket = oldDraft
         require(session.diffCommentSendBlock != nil, "Unresolved delivery blocks a second send")
         session.diffCommentSending = false
