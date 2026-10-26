@@ -112,5 +112,15 @@ preflight. No authenticate or browser request was sent. This is a qualification 
 invitation to inject an OpenAI key or use a real account. Endpoint/model/auth failure, redirects,
 TLS/proxy/bypass and auxiliary cases are blocked by session startup, not passing negative tests.
 
-The fixture report pins the exact revision and binary hashes. A future adapter change needs a fresh
+The [committed fixture report](../../scripts/tests/enterprise-private-routing/evidence.json) pins implementation
+revision `3370a26f674a42c9dcef7079a95cf4937bd87d09` with an empty tracked diff, Darwin 27.2.0 arm64,
+Node v26.12.1, and these installed artifacts:
+
+- Codex CLI SHA-256: `d8990e3ee7acfbc26f91265b12a1a83f0fee40d0e0f8f1f40a37d4ec21f499cf`.
+- codex-acp entry SHA-256: `6b1bb4e7e9caaf4aeca1042ae4aec2dc2433b0b0e4b1614b38a4d41699902aaa`.
+- Node SHA-256: `7296c3dda88793e08d1089d839a782178c4bba6bb22f5c40ab2a75263fb071bd`.
+
+Positive and negative fixture-port probes passed before the adapter ran. No real provider, user's
+configuration or credential store was contacted. Subsequent documentation/evidence-only commits
+do not change the qualification implementation. A future adapter change needs a fresh
 full fixture run and host/executable/environment qualification before any approval is added.
