@@ -196,16 +196,13 @@ struct MCPSessionPanel: View {
                 }
                 .padding(DS.Space.lg)
             } else {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
-                        ForEach(entries) { entry in
-                            row(entry)
-                        }
-                    }
-                    .padding(DS.Space.xs)
+                if isPage {
+                    serverRows
+                } else {
+                    ScrollView { serverRows }
+                        .frame(maxHeight: StatusBarMetrics.panelListHeight)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .frame(maxHeight: StatusBarMetrics.panelListHeight)
-                .fixedSize(horizontal: false, vertical: true)
             }
             if let note {
                 Text(note)
@@ -228,6 +225,13 @@ struct MCPSessionPanel: View {
             .padding(.horizontal, DS.Space.lg)
             .padding(.vertical, DS.Space.sm)
         }
+    }
+
+    private var serverRows: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(entries) { entry in row(entry) }
+        }
+        .padding(isPage ? DS.ComposerSettings.popoverInset : DS.Space.xs)
     }
 
     @ViewBuilder

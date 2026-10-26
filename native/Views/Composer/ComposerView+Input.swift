@@ -53,6 +53,7 @@ extension ComposerView {
                 if !open { settingsOpenedByCommand = false }
             }
         }
+        .coordinateSpace(name: ComposerSettingsFieldSpace.name)
         .frame(minHeight: composerNext ? DS.ComposerSettings.inputHeight : DS.Size.composerInputMinHeight)
         .background {
             // Stop's shortcut (⌘. unless remapped) stops the turn too; a button takes one shortcut,

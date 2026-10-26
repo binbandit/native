@@ -3,7 +3,7 @@ import SwiftUI
 
 extension ComposerSettingsPopover {
     var modelList: ModelChoiceList? {
-        settings.model.map { ModelChoiceList(choices: $0.choices, current: $0.value, query: query) }
+        settings.model.map { ModelChoiceList(choices: $0.choices, current: $0.value, query: query, slots: modelSlots) }
     }
 
     /// The Fast mode switch, on the Model header's trailing edge.
@@ -11,13 +11,13 @@ extension ComposerSettingsPopover {
         settings.modelSwitches.first
     }
 
-    var modelSection: some View {
+    func modelSection(slots: Int, showsCaption: Bool) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             if let model = settings.model {
                 if DS.isTouchPlatform {
                     modelPageRow(model)
                 } else {
-                    modelRows(model)
+                    modelRows(model, slots: slots, showsCaption: showsCaption)
                 }
             } else {
                 Text("\(agentName) picks its own model.")
@@ -52,8 +52,10 @@ extension ComposerSettingsPopover {
 
     /// The models: a header, or past eight a filter in its place, the rows and their caption. On the
     /// touch page the page's own header names the list.
-    @ViewBuilder func modelRows(_ model: SelectSetting, isPage: Bool = false) -> some View {
-        let list = ModelChoiceList(choices: model.choices, current: model.value, query: query)
+    @ViewBuilder func modelRows(
+        _ model: SelectSetting, isPage: Bool = false, slots: Int = ModelChoiceList.slots, showsCaption: Bool = true
+    ) -> some View {
+        let list = ModelChoiceList(choices: model.choices, current: model.value, query: query, slots: slots)
         if list.isFilterable {
             filterLine(count: model.choices.uniqued.count)
         } else if !isPage {
@@ -70,9 +72,9 @@ extension ComposerSettingsPopover {
             modelRow(row, setting: model, isFirstMatch: !list.query.isEmpty && row.id == list.rows.first?.id)
         }
         if list.isFilterable {
-            filterFooter(list)
+            filterFooter(list, slots: slots)
         }
-        if !isStopped { modelCaption(model, list: list) }
+        if !isStopped && (showsCaption || failure != nil) { modelCaption(model) }
     }
 
     private func modelRow(_ row: ModelChoiceList.Row, setting: SelectSetting, isFirstMatch: Bool) -> some View {
@@ -159,7 +161,7 @@ extension ComposerSettingsPopover {
 
     /// The slots a filtered list keeps, so typing never changes the popover's height: what didn't
     /// fit, or that nothing matched.
-    @ViewBuilder private func filterFooter(_ list: ModelChoiceList) -> some View {
+    @ViewBuilder private func filterFooter(_ list: ModelChoiceList, slots: Int) -> some View {
         let used = list.rows.count + (list.overflow > 0 || list.rows.isEmpty ? 1 : 0)
         if list.overflow > 0 {
             slotNote("\(list.overflow) more match. Keep typing.")
@@ -171,7 +173,7 @@ extension ComposerSettingsPopover {
             }
             .modifier(SlotNote())
         }
-        ForEach(0..<max(ModelChoiceList.slots - used, 0), id: \.self) { _ in
+        ForEach(0..<max(slots - used, 0), id: \.self) { _ in
             Color.clear.frame(height: DS.ComposerSettings.rowHeight)
         }
     }
@@ -180,10 +182,10 @@ extension ComposerSettingsPopover {
         Text(text).modifier(SlotNote())
     }
 
-    private func modelCaption(_ model: SelectSetting, list: ModelChoiceList) -> some View {
+    private func modelCaption(_ model: SelectSetting) -> some View {
         let failed = failure.flatMap { [model.option.id, settings.effort?.option.id].contains($0.optionID) ? $0 : nil }
-        let shown = list.rows.map(\.choice) + (model.current.map { [$0] } ?? [])
-        let purposes = shown.compactMap(Self.caption(of:))
+        // Reserve from the entire section, independent of the query and the current choice.
+        let purposes = model.choices.compactMap(Self.caption(of:))
         let previewed: SelectSetting.Choice? =
             switch highlighted ?? hovered ?? firstMatch {
             case .model(let value): model.choices.first { $0.value == value }
@@ -235,6 +237,7 @@ extension ComposerSettingsPopover {
             }
         }
         .padding(.bottom, DS.ComposerSettings.sectionInset)
+        .onAppear { modelSlots = ModelChoiceList.slots }
     }
 }
 

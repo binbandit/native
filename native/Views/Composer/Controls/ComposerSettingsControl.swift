@@ -25,6 +25,7 @@ struct ComposerSettingsControl: View {
     @State private var showsMCP = false
     @State private var showsGoalEditor = false
     @State private var isHovered = false
+    @State private var fieldFrame = CGRect.zero
     @State private var changes = ConfigOptionChangeQueue()
     @State private var pending: ComposerSettingsPopover.Pending?
     @State private var failure: ComposerSettingsPopover.Failure?
@@ -61,7 +62,18 @@ struct ComposerSettingsControl: View {
         .accessibilityIdentifier("composer-settings")
         .help(CommandRegistry.shared.help("Task Settings", for: .sessionChooseModel))
         .focusedSceneValue(\.mcpServersPopover, mcpPresentation)
-        .popover(isPresented: $isPresented, arrowEdge: .top) {
+        .onGeometryChange(for: CGRect.self) { proxy in
+            proxy.frame(in: .named(ComposerSettingsFieldSpace.name))
+        } action: {
+            fieldFrame = $0
+        }
+        .popover(
+            isPresented: $isPresented,
+            attachmentAnchor: .rect(
+                .rect(
+                    CGRect(
+                        x: 0, y: -fieldFrame.minY, width: fieldFrame.width, height: 0))), arrowEdge: .bottom
+        ) {
             content.dsPopoverBackground()
         }
         .task(id: session.clientID) { await library?.track(session.context) }

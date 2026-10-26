@@ -1,4 +1,5 @@
 import ACP
+import AppKit
 import Experiments
 import Foundation
 import NativeHostClient
@@ -63,6 +64,11 @@ private actor SettingsHost: HostTransport {
 private struct ComposerSettingsRegression {
     static func main() async {
         do {
+            if CommandLine.arguments.contains("--geometry") {
+                try popoverGeometry()
+            } else {
+                print("SKIP: popover geometry requires --geometry on an unlocked desktop")
+            }
             try capturedModels()
             try composeChoicesAndDismissal()
             try keyboardTargets()
@@ -83,6 +89,45 @@ private struct ComposerSettingsRegression {
             if ContinuousClock.now > deadline { throw SettingsFailure(message: "Timed out") }
             try await Task.sleep(for: .milliseconds(1))
         }
+    }
+
+    private static func popoverGeometry() throws {
+        var options = try GatewayWire.options()
+        guard let index = options.firstIndex(where: { $0.category == "model" }),
+            case .select(_, var choices) = options[index].kind
+        else {
+            throw SettingsFailure(message: "No model section")
+        }
+        choices += try JSONDecoder().decode(
+            [ConfigOption.SelectOption].self,
+            from: Data(
+                """
+                [
+                    {"value":"short-caption","name":"Short caption","description":"Quick answers."},
+                    {"value":"long-caption","name":"Long caption","description":"Careful analysis across large projects with a generous context window and detailed reasoning for difficult work."}
+                ]
+                """.utf8))
+        options[index].kind = .select(currentValue: "short-caption", options: choices)
+        let settings = ComposerSettings(options)
+        func height(_ query: String, extraRows: Int = 0) -> CGFloat {
+            let rows =
+                ComposerSettingsPreviewFixtures.rows()
+                + (0..<extraRows).map { index in
+                    ComposerSettingsTaskRow(
+                        id: "extra-\(index)", title: "Project setting", value: "Default", kind: .page
+                    ) { _ in }
+                }
+            let view = ComposerSettingsPopover(
+                settings: settings, agentName: "Claude Code", rows: rows, onSet: { _, _ in }, query: query)
+            return NSHostingView(rootView: view).fittingSize.height
+        }
+        let heights = ["", "short caption", "long caption", "no-such-model"].map { height($0) }
+        print("Popover query heights: \(heights)")
+        try expect(Set(heights).count == 1, "Filtering moved the popover frame")
+        let tall = height("", extraRows: 5)
+        print("Popover with extra settings: \(tall)")
+        try expect(tall <= DS.ComposerSettings.popoverMaxHeight, "Popover exceeded its height budget")
+        print("PASS: actual popover layout keeps caption/filter height stable and fits its height budget")
     }
 
     private static func capturedModels() throws {
@@ -146,7 +191,8 @@ private struct ComposerSettingsRegression {
         guard let permissions = settings.autonomy else { throw SettingsFailure(message: "No permissions") }
         app.composeTask.choose(permissions, value: "default")
         app.quickEntry.picker = .agent
-        guard let popover = ComposeAgentPicker(model: app).body as? ComposerSettingsPopover,
+        let popover = ComposeAgentPicker(model: app).popover
+        guard
             let mode = popover.rows.first(where: { $0.id == "compose-mode" })
         else { throw SettingsFailure(message: "Compose lost its Mode row") }
         mode.perform("build")
@@ -157,7 +203,8 @@ private struct ComposerSettingsRegression {
         popover.onClose()
         app.quickEntry.picker = .agent
         try expect(app.composeTask.choices["mode"] == "plan", "Compose cannot start in Plan")
-        guard let updated = ComposeAgentPicker(model: app).body as? ComposerSettingsPopover,
+        let updated = ComposeAgentPicker(model: app).popover
+        guard
             let updatedMode = updated.rows.first(where: { $0.id == "compose-mode" })
         else { throw SettingsFailure(message: "Compose lost its selected Mode row") }
         try expect(updatedMode.value == "Plan", "Compose did not reflect Plan")
