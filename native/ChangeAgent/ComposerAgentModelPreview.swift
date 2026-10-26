@@ -41,10 +41,42 @@ struct ComposerAgentModelPreview: View {
     }
 
     var body: some View {
+        HStack(spacing: 0) {
+            sidebar
+            stage
+        }
+    }
+
+    private var sidebar: some View {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            Label("New Task", systemImage: "plus").padding(.top, DS.Space.xl)
+            Label("Home", systemImage: "house")
+            Text("native").font(.dsCaption).padding(.top, DS.Space.xl)
+            Text("Keep edited messages in place")
+                .padding(DS.Space.sm)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(.dsSelected, in: .rect(cornerRadius: DS.Radius.row))
+            Text("Wrap diff lines at word boundaries").lineLimit(1)
+            Text("Show context use in the well").lineLimit(1)
+            Text("Earlier · 12 tasks").foregroundStyle(.dsTextTertiary)
+            Spacer()
+            Label("Open Folder…", systemImage: "folder")
+            SeparatorLine()
+            Text("Alex Morgan").padding(.bottom, DS.Space.xl)
+        }
+        .font(.dsBody)
+        .foregroundStyle(.dsTextSecondary)
+        .padding(.horizontal, DS.Sidebar.inset)
+        .frame(width: DS.Size.sidebarWidth)
+        .frame(maxHeight: .infinity)
+        .background(.dsSidebarSolid)
+    }
+
+    private var stage: some View {
         VStack(alignment: .leading, spacing: DS.Space.xl) {
             HStack {
                 VStack(alignment: .leading, spacing: DS.Space.xs) {
-                    Text("Keep edited messages in place").font(.dsTitle)
+                    Text("Keep edited messages in place").font(.dsCallout.weight(.semibold))
                     Text("native · fix/queue-order").font(.dsCaption).foregroundStyle(.dsTextTertiary)
                 }
                 Spacer()
@@ -99,7 +131,6 @@ struct ComposerAgentModelPreview: View {
         .frame(maxWidth: DS.ComposerSettings.width + DS.Space.xxl * 2)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.dsBackground)
-        .padding(.leading, DS.Size.sidebarWidth)
     }
 
     private var receiptText: String? {
