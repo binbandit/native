@@ -19,7 +19,6 @@ extension DS {
         public static let tickHeight: CGFloat = 9
         public static let tickRadius: CGFloat = 0.6
         public static let maxTicks = 12
-        public static let titleMaxWidth: CGFloat = 220
         public static let titleMinWidth: CGFloat = 40
         /// Room occupied by the window controls, sidebar and search before the task title.
         public static let leadingToolbarWidth: CGFloat = 180
@@ -42,6 +41,10 @@ extension DS {
         public static let seenDelay: Duration = .seconds(1)
         public static let body = DSTypography.font(size: 12, weight: .book)
         public static let object = DSTypography.font(size: 11.5, weight: .book, design: .mono)
+        /// The open well's quiet facts: context use and the checkout.
+        public static let caption = DSTypography.font(size: 11.5, weight: .book)
+        /// Steps not yet done, dimmer than the quaternary text they're drawn in.
+        public static let tickPendingOpacity = 0.55
         public static let row = DSTypography.font(size: 12.5, weight: .book)
         public static let rowDetail = DSTypography.font(size: 12.5)
         public static let shortcut = DSTypography.font(size: 10.5, design: .mono)

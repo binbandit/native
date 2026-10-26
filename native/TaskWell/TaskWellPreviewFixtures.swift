@@ -17,7 +17,7 @@ enum TaskWellPreviewFixtures {
                 object: "Sources/Native/PromptQueueTests.swift"),
             TaskWellContent(
                 status: .needsPermission, agent: "Codex", verb: "Waiting on you",
-                object: "Overwrite main on github.com", attentionSince: .now),
+                object: "to overwrite main on github.com", attentionSince: .now),
             TaskWellContent(status: .done, agent: "Codex", outcome: outcome, showsReview: true),
             TaskWellContent(status: .idle, agent: "Codex", outcome: outcome, showsReview: true),
             TaskWellContent(status: .failed, agent: "Codex", verb: "Turn failed", object: "See the conversation"),
@@ -47,6 +47,7 @@ enum TaskWellPreviewFixtures {
         model: "Sonnet 5.5")
     static let managedTitle = TaskWellTitleFacts(
         title: "Round half-even in quarterly totals", project: "ledger-core", branch: "rounding-half-even",
-        agent: "Codex", model: "gpt-6.1-sol", isWorkerManaged: true, management: "Managed by Northwind Federal IT")
+        agent: "Codex", model: "gpt-6.1-sol", isWorkerManaged: true,
+        management: "Managed by Northwind Federal IT · #it-help")
 }
 #endif

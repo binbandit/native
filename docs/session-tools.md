@@ -26,7 +26,11 @@ cannot approve or reject anything. A stop says Stopping until
 the host confirms it ended; a scheduled retry says Reconnecting.
 
 The latest turn's detected or reported file changes supply the landed outcome. Its status settles
-within a second; Review opens that same turn in Changes and returns the capsule to rest. The turn
+within a second; Review opens that same turn in Changes, and the outcome stays in the capsule
+without Review while Changes is open (the turn's card says "Reviewing"). Closing Changes returns
+the capsule to rest. A waiting ask's reason is its own words as a lowercase reason ("to write
+notes.txt"), never a softer verb. The title takes the toolbar's room up to the well, which gives
+way first: its agent name goes, then it narrows to its compact width, before the title truncates. The turn
 card becomes a record that opens Changes, with Commit only in the pane. A one-second light runs at
 turn start and landing, never throughout work, and is absent with Reduce Motion.
 
