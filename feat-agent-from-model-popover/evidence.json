@@ -1,0 +1,260 @@
+{
+  "pr": 202,
+  "binarySourceRevision": "91d47095",
+  "captureSurface": "Actual components in an inert fixture scaffold, not a complete live task. Native left, mock right in comparisons.",
+  "actualIPadVerification": "pending; local iOS dependency graph fails on host-only app types",
+  "states": [
+    {
+      "state": "A0",
+      "name": "Rest",
+      "screenshots": {
+        "dark": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A0-dark.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A0-dark.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A0-dark.png",
+          "status": "captured"
+        },
+        "light": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A0-light.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A0-light.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A0-light.png",
+          "status": "captured"
+        }
+      }
+    },
+    {
+      "state": "A1",
+      "name": "Open list",
+      "screenshots": {
+        "dark": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A1-dark.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A1-dark.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A1-dark.png",
+          "status": "captured"
+        },
+        "light": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A1-light.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A1-light.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A1-light.png",
+          "status": "captured"
+        }
+      }
+    },
+    {
+      "state": "A2",
+      "name": "Foreign hover",
+      "screenshots": {
+        "dark": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A2-dark.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A2-dark.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A2-dark.png",
+          "status": "captured"
+        },
+        "light": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A2-light.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A2-light.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A2-light.png",
+          "status": "captured"
+        }
+      }
+    },
+    {
+      "state": "A3",
+      "name": "Preparing",
+      "screenshots": {
+        "dark": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A3-dark.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A3-dark.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A3-dark.png",
+          "status": "captured"
+        },
+        "light": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A3-light.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A3-light.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A3-light.png",
+          "status": "captured"
+        }
+      }
+    },
+    {
+      "state": "A4",
+      "name": "Applied and Undo",
+      "screenshots": {
+        "dark": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A4-dark.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A4-dark.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A4-dark.png",
+          "status": "captured"
+        },
+        "light": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A4-light.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A4-light.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A4-light.png",
+          "status": "captured"
+        }
+      }
+    },
+    {
+      "state": "A5",
+      "name": "No other agent ready",
+      "screenshots": {
+        "dark": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A5-dark.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A5-dark.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A5-dark.png",
+          "status": "captured"
+        },
+        "light": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A5-light.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A5-light.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A5-light.png",
+          "status": "captured"
+        }
+      }
+    },
+    {
+      "state": "A6",
+      "name": "Start failure",
+      "screenshots": {
+        "dark": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A6-dark.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A6-dark.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A6-dark.png",
+          "status": "captured"
+        },
+        "light": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A6-light.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A6-light.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A6-light.png",
+          "status": "captured"
+        }
+      }
+    },
+    {
+      "state": "A7",
+      "name": "Managed choices",
+      "screenshots": {
+        "dark": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A7-dark.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A7-dark.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A7-dark.png",
+          "status": "captured"
+        },
+        "light": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A7-light.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A7-light.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A7-light.png",
+          "status": "captured"
+        }
+      }
+    },
+    {
+      "state": "A8",
+      "name": "Waiting for turn",
+      "screenshots": {
+        "dark": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A8-dark.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A8-dark.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A8-dark.png",
+          "status": "captured"
+        },
+        "light": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A8-light.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A8-light.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A8-light.png",
+          "status": "captured"
+        }
+      }
+    },
+    {
+      "state": "A9",
+      "name": "Keyboard focus",
+      "screenshots": {
+        "dark": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A9-dark.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A9-dark.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A9-dark.png",
+          "status": "captured"
+        },
+        "light": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A9-light.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A9-light.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A9-light.png",
+          "status": "captured"
+        }
+      }
+    },
+    {
+      "state": "A10",
+      "name": "Reversed",
+      "screenshots": {
+        "dark": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A10-dark.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A10-dark.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A10-dark.png",
+          "status": "captured"
+        },
+        "light": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A10-light.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A10-light.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A10-light.png",
+          "status": "captured"
+        }
+      }
+    },
+    {
+      "state": "A11",
+      "name": "Filter across agents",
+      "screenshots": {
+        "dark": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A11-dark.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A11-dark.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A11-dark.png",
+          "status": "captured"
+        },
+        "light": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A11-light.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A11-light.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A11-light.png",
+          "status": "captured"
+        }
+      }
+    },
+    {
+      "state": "A12",
+      "name": "No matches",
+      "screenshots": {
+        "dark": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A12-dark.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A12-dark.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A12-dark.png",
+          "status": "captured"
+        },
+        "light": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A12-light.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A12-light.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A12-light.png",
+          "status": "captured"
+        }
+      }
+    },
+    {
+      "state": "A13",
+      "name": "Model page (Mac rendering; iPad pending)",
+      "screenshots": {
+        "dark": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A13-dark.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A13-dark.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A13-dark.png",
+          "status": "captured; iPad verification pending"
+        },
+        "light": {
+          "native": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/A13-light.png",
+          "comparison": "/Users/brayden/Library/Caches/NativeDevShots/cx-build-agent-in-popover/comparisons/A13-light.png",
+          "mock": "/Users/brayden/native-work/shots/claude-design/requests-1026-evidence/A13-light.png",
+          "status": "captured; iPad verification pending"
+        }
+      }
+    }
+  ]
+}
