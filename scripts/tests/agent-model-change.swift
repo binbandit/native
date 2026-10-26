@@ -233,7 +233,9 @@ private struct AgentModelChangeRegression {
         try require(
             reopened.take(for: source.key) != nil && reopened.take(for: source.key) == nil,
             "Pending context didn't survive reload or was reused")
-        print("PASS: locally prepared context survives relaunch and is consumed once")
+        try require(reopened.context(for: source.key) == "Context fixture", "A later selection lost earlier context")
+        print(
+            "PASS: locally prepared context survives relaunch, is consumed once and remains available to later choices")
         await client.stop()
     }
 
@@ -291,12 +293,12 @@ private struct AgentModelChangeRegression {
             let first = launch()
             _ = await first.checkForAgents()
             let project = first.projects.add(scratch)
+            let sourceSettings = ComposerSettingsPreviewFixtures.claude(mode: "default")
+            let sourceOptions = [sourceSettings.model?.option, sourceSettings.autonomy?.option].compactMap { $0 }
             guard
                 let source = SessionModel.preview(
                     in: first, agent: "fixture", id: "source", cwd: scratch.path,
-                    configOptions: ComposerSettingsPreviewFixtures.claude(mode: "default").model.map { _ in
-                        ComposerSettingsPreviewFixtures.claude(mode: "default")
-                    }.map { [$0.model?.option, $0.autonomy?.option].compactMap { $0 } } ?? [])
+                    configOptions: sourceOptions)
             else { throw ChangeFailure("No in-app source") }
             source.previewExchange("Keep this task", reply: "Recorded progress before changing the agent")
             first.catalog.add(
@@ -313,6 +315,7 @@ private struct AgentModelChangeRegression {
             guard let old = first.selection else { throw ChangeFailure("No selected in-app task") }
             first.keepDrafts()
             first.stopAgents()
+            try Data("agent-full-access".utf8).write(to: scratch.appending(path: "agent/default-mode"))
             let again = launch()
             _ = await again.checkForAgents()
             try require(again.catalog.contains(old), "An empty unsent model selection was dropped at launch")

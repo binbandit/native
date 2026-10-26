@@ -21,6 +21,7 @@ final class ComposerAgentChange {
     var isReceiptDismissed = false { didSet { persistReceipt() } }
     private let earlierName: String
     private let earlierModel: String
+    private let earlierModelValue: String?
     private let earlierKey: SessionKey
     private(set) var undoIsClosed = false
     private weak var source: SessionModel?
@@ -36,6 +37,7 @@ final class ComposerAgentChange {
         priorChoice = source.modelChange
         earlierName = source.agentName
         earlierModel = ComposerSettings(source.configOptions).model?.shortModelName ?? source.agentName
+        earlierModelValue = ComposerSettings(source.configOptions).model?.value
         earlierKey = source.key
         self.choice = choice
         self.app = app
@@ -50,6 +52,7 @@ final class ComposerAgentChange {
     init(restoring record: AgentModelContinuations.Receipt, current: SessionModel, app: AppModel) {
         earlierName = record.sourceName
         earlierModel = record.sourceModel
+        earlierModelValue = record.sourceModelValue
         earlierKey = record.source
         choice = .init(
             agent: record.agent, agentName: record.agentName,
@@ -67,6 +70,7 @@ final class ComposerAgentChange {
         app.sessions.services.modelContinuations.keep(
             .init(
                 source: earlierKey, sourceName: earlierName, sourceModel: earlierModel,
+                sourceModelValue: earlierModelValue,
                 agent: choice.agent, agentName: choice.agentName, modelValue: value,
                 modelName: choice.choice.name, isDismissed: isReceiptDismissed,
                 confirmedChoices: Dictionary(
@@ -269,7 +273,9 @@ final class ComposerAgentChange {
 
     func continueWithSource() {
         guard !canUndo, stage == .applied, let current, let app else { return }
-        // Open the same model list, including when the old adapter needs initialization again.
-        app.requestAgentChange(current)
+        let choice = ComposerAgentModel(
+            agent: earlierKey.agent, agentName: earlierName,
+            choice: .init(value: earlierModelValue ?? "", name: earlierModel), kind: .model(earlierModelValue))
+        app.chooseAgentModel(choice, for: current)
     }
 }

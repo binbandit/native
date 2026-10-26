@@ -485,10 +485,13 @@ final class AppModel {
     /// yet) and so can't reopen. Internal only for AppModel+Recovery.swift.
     func replaceEmptySession(_ old: SessionModel, on runtime: AgentRuntime) async -> SessionModel? {
         let project = catalog.lookup(old.key)?.project
-        guard let session = try? await launcher.start(on: runtime, cwd: old.cwd, project: project, continuing: old)
+        let continuation = sessions.services.modelContinuations.hasPending(old.key)
+        guard
+            let session = try? await launcher.start(
+                on: runtime, cwd: old.cwd, project: project, continuing: old, preparingModel: continuation)
         else { return nil }
         await session.adoptConfigChoices(of: old)
-        if sessions.services.modelContinuations.hasPending(old.key) {
+        if continuation {
             do { try await recoverAgentModel(old.key, in: session) } catch {
                 deletedSessions.insert(session.key)
                 discardAgentChange(session)
