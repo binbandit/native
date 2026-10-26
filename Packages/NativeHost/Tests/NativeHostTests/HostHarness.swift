@@ -49,6 +49,11 @@ final class HostHarness: @unchecked Sendable {
     }
 
     deinit {
+        cleanup()
+    }
+
+    /// Called from a test defer so cleanup does not depend on the harness being released.
+    func cleanup() {
         kill()
         // Killing the host leaves what agents started in groups of their own (the case the host
         // handles when it stops agents itself); tests mustn't leave those behind.
@@ -59,6 +64,8 @@ final class HostHarness: @unchecked Sendable {
     }
 
     func start() throws {
+        // A restart after a failed exit check must not lose the only handle to a live host.
+        kill()
         let process = Process()
         process.executableURL = Self.products.appending(path: "native-host")
         process.arguments = [
@@ -72,12 +79,15 @@ final class HostHarness: @unchecked Sendable {
 
     /// SIGKILL, as a crash or `kill -9` would: no chance to clean up.
     func kill() {
-        guard let process, process.isRunning else { return }
-        sendSignal(SIGKILL, to: process.processIdentifier)
+        guard let process else { return }
+        let pid = process.processIdentifier
+        if process.isRunning { sendSignal(SIGKILL, to: pid) }
         // Polled: `waitUntilExit` waits on the run loop for a wakeup that sometimes never came while
         // other harnesses stopped their hosts at once (`swift test --parallel`), hanging the run.
         while process.isRunning { usleep(10_000) }
         self.process = nil
+        #expect(sendSignal(0, to: pid) == -1)
+        #expect(errno == ESRCH)
     }
 
     /// Waits (up to `timeout`) for the host to exit on its own and returns its exit status.
@@ -189,6 +199,11 @@ actor Recorder {
         payloads(session).compactMap { if case .turnEnded(let reason) = $0 { reason } else { nil } }
     }
 
+    /// The session as the host lists it now (`session/list`), whatever this client has heard.
+    func listed(_ session: HostSessionID) async -> HostSessionSummary? {
+        try? await client.sessions().first { $0.id == session }
+    }
+
     /// Polls until `condition` holds, failing the test after `timeout`.
     @discardableResult
     func wait(
@@ -214,6 +229,9 @@ final class CuttableTransport: HostTransport, @unchecked Sendable {
     private let base: LocalSocketTransport
     private let lock = NSLock()
     private var current: (any ByteStream)?
+    private var isOffline = false
+
+    struct Offline: Error {}
 
     init(location: HostLocation) {
         base = LocalSocketTransport(location: location)
@@ -222,6 +240,7 @@ final class CuttableTransport: HostTransport, @unchecked Sendable {
     var displayName: String { "Cuttable" }
 
     func connect() async throws -> any ByteStream {
+        guard !lock.withLock({ isOffline }) else { throw Offline() }
         let stream = try await base.connect()
         lock.withLock { current = stream }
         return stream
@@ -229,6 +248,19 @@ final class CuttableTransport: HostTransport, @unchecked Sendable {
 
     func cut() {
         lock.withLock { current }?.close()
+    }
+
+    /// Cuts the connection and refuses new ones until `goOnline()`, as a Mac asleep or off the
+    /// network would: the host carries on without this client meanwhile.
+    func goOffline() {
+        lock.withLock {
+            isOffline = true
+            return current
+        }?.close()
+    }
+
+    func goOnline() {
+        lock.withLock { isOffline = false }
     }
 }
 
@@ -246,6 +278,7 @@ struct InProcessTransport: HostTransport {
 }
 
 /// `kill(2)`, under a name `HostHarness.kill()` doesn't hide, on any platform's C library.
-private func sendSignal(_ signal: Int32, to pid: pid_t) {
-    _ = kill(pid, signal)
+@discardableResult
+private func sendSignal(_ signal: Int32, to pid: pid_t) -> Int32 {
+    kill(pid, signal)
 }

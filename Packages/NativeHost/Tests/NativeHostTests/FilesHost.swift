@@ -73,7 +73,7 @@ final class FilesHost: Sendable {
 final class ScriptedFileWatching: FileWatching {
     private let watches = Mutex<[UUID: (root: String, continuation: AsyncStream<FileWatchBatch>.Continuation)]>([:])
 
-    func changes(under root: String) -> AsyncStream<FileWatchBatch> {
+    func changes(under root: String) async -> AsyncStream<FileWatchBatch> {
         let (stream, continuation) = AsyncStream.makeStream(of: FileWatchBatch.self)
         let id = UUID()
         watches.withLock { $0[id] = (root, continuation) }
