@@ -25,7 +25,7 @@ struct ComposerSettingsControl: View {
     @State private var showsMCP = false
     @State private var showsGoalEditor = false
     @State private var isHovered = false
-    @State private var applying: ComposerSettingsPopover.Pending?
+    @State private var changes = ConfigOptionChangeQueue()
     @State private var pending: ComposerSettingsPopover.Pending?
     @State private var failure: ComposerSettingsPopover.Failure?
     @State private var lastChange: (optionID: String, value: String)?
@@ -112,7 +112,7 @@ struct ComposerSettingsControl: View {
                 rows: taskRows(openGoal: { showsGoalEditor = true }, openMCP: openMCP),
                 resumedAutonomy: resumedAutonomy, pending: pending, failure: failure,
                 isStopped: session.phase == .disconnected,
-                onRestart: { Task { await app.restart(session.agent.id) } },
+                onRestart: { Task { await app.restartAgent(for: session) } },
                 highlightsCurrent: highlightsCurrent,
                 onClose: { isPresented = false },
                 onUndo: undo,
@@ -139,21 +139,22 @@ struct ComposerSettingsControl: View {
     // MARK: - Changing a setting
 
     func set(_ setting: SelectSetting, _ value: String) {
-        guard applying?.optionID != setting.option.id else { return }
+        guard !changes.contains(setting.option.id) else { return }
         let change = ComposerSettingsPopover.Pending(optionID: setting.option.id, value: value)
-        let previous = setting.value
         let name = setting.choices.first { $0.value == value }?.name ?? value
-        applying = change
         failure = nil
-        Task {
+        changes.enqueue(setting.option.id) {
+            // Earlier replies replace complete snapshots. Read the undo value only after they finish.
+            let previous =
+                session.configOptions.first { $0.id == setting.option.id }
+                .flatMap(SelectSetting.init)?.value ?? setting.value
             // The loader shows only once the agent's confirmation is slow enough to notice.
             let loader = Task {
                 try await Task.sleep(for: DS.ComposerSettings.applyingDelay)
-                if applying == change { pending = change }
+                pending = change
             }
             await session.pick(setting.option, value: value)
             loader.cancel()
-            applying = nil
             pending = nil
             let actual = session.configOptions.first { $0.id == setting.option.id }.flatMap(SelectSetting.init)
             if let actual, actual.value != value {
@@ -169,7 +170,7 @@ struct ComposerSettingsControl: View {
 
     /// ⌘Z in the popover takes back its last change.
     private func undo() {
-        guard let lastChange,
+        guard changes.isEmpty, let lastChange,
             let setting = session.configOptions.first(where: { $0.id == lastChange.optionID })
                 .flatMap(SelectSetting.init)
         else { return }

@@ -8,7 +8,7 @@ extension ComposerSettingsPopover {
             }
             if let failed = failure, rows.contains(where: { $0.id == failed.optionID }) {
                 ComposerSettingsCaption(
-                    text: AttributedString(failed.message), isFailure: true,
+                    text: AttributedString(failed.message), isFailure: true, isKeyboardFocused: highlighted == .retry,
                     action: failed.retry.map { ComposerSettingsTaskRow.Command(title: "Try Again", action: $0) })
             }
         }
@@ -78,7 +78,7 @@ extension ComposerSettingsPopover {
     /// A menu row's choices as a page, so the keyboard and touch reach them like any other list.
     func choicesPage(_ row: ComposerSettingsTaskRow) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            ComposerSettingsPageHeader(title: row.title) { page = nil }
+            ComposerSettingsPageHeader(title: row.title, isKeyboardFocused: highlighted == .back) { page = nil }
             if case .menu(let choices, let commands) = row.kind {
                 ForEach(choices) { choice in
                     let target = Target.row("\(row.id)/\(choice.id)")
@@ -109,7 +109,11 @@ extension ComposerSettingsPopover {
                     VStack(alignment: .leading, spacing: 0) {
                         ForEach(commands) { command in
                             Button(action: command.action) {
-                                ComposerSettingsRow { Text(command.title) }
+                                ComposerSettingsRow(
+                                    highlight: highlight(
+                                        of: .command(
+                                            row: row.id, index: commands.firstIndex { $0.id == command.id } ?? 0))
+                                ) { Text(command.title) }
                             }
                             .buttonStyle(.plain)
                         }
@@ -124,8 +128,8 @@ extension ComposerSettingsPopover {
 
     /// Choice targets on a menu row's page, in order.
     func pageTargets(_ row: ComposerSettingsTaskRow) -> [Target] {
-        guard case .menu(let choices, _) = row.kind else { return [] }
-        return choices.map { .row("\(row.id)/\($0.id)") }
+        guard case .menu(let choices, let commands) = row.kind else { return [] }
+        return choices.map { .row("\(row.id)/\($0.id)") } + commands.indices.map { .command(row: row.id, index: $0) }
     }
 }
 

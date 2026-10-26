@@ -119,6 +119,7 @@ struct ComposerSettingsCaption: View {
     let text: AttributedString?
     var reserving: [AttributedString] = []
     var isFailure = false
+    var isKeyboardFocused = false
     var action: ComposerSettingsTaskRow.Command?
 
     var body: some View {
@@ -131,6 +132,7 @@ struct ComposerSettingsCaption: View {
                     Text(text)
                     if let action {
                         Button(action.title, action: action.action)
+                            .composerSettingsCommandFocus(isKeyboardFocused)
                             .buttonStyle(.plain)
                             .font(DS.ComposerSettings.detailMediumFont)
                             .foregroundStyle(.dsTextPrimary)
@@ -156,6 +158,7 @@ struct ComposerSettingsCaption: View {
 /// The first line of a page that opens in place: back to Task Settings, and the page's title.
 struct ComposerSettingsPageHeader: View {
     let title: String
+    var isKeyboardFocused = false
     let onBack: () -> Void
 
     @State private var isHovered = false
@@ -179,6 +182,7 @@ struct ComposerSettingsPageHeader: View {
                     .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
+                .composerSettingsCommandFocus(isKeyboardFocused)
                 .trackHover($isHovered)
                 .dsHitTarget(DS.ComposerSettings.rowHeight)
                 .accessibilityLabel("Back to Task Settings")
@@ -217,5 +221,18 @@ struct ComposerSettingsRule: View {
             .frame(height: 1)
             .padding(.horizontal, DS.ComposerSettings.ruleInset)
             .accessibilityHidden(true)
+    }
+}
+
+extension View {
+    /// Auxiliary commands take the same visible keyboard ring as choice rows.
+    func composerSettingsCommandFocus(_ isFocused: Bool) -> some View {
+        background(isFocused ? Color.dsSelected : .clear, in: .rect(cornerRadius: DS.Radius.control))
+            .overlay {
+                if isFocused {
+                    RoundedRectangle(cornerRadius: DS.Radius.control)
+                        .strokeBorder(.dsKeyboardFocusIndicator, lineWidth: 2)
+                }
+            }
     }
 }

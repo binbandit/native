@@ -19,28 +19,38 @@ struct ComposerSettingsTypeAhead {
 extension ComposerSettingsPopover {
     /// The rows the keyboard reaches, by section, skipping headers and locked levels.
     var sections: [[Target]] {
+        if isStopped { return onRestart == nil ? [] : [[.restart]] }
         switch page {
         case .choices(let id):
-            return [rows.first { $0.id == id }.map(pageTargets) ?? []]
+            return [[.back] + (rows.first { $0.id == id }.map(pageTargets) ?? [])]
         case .model:
-            return [modelList?.rows.map { .model($0.id) } ?? []]
+            return [[.back] + (fastMode == nil ? [] : [.fastMode]) + (modelList?.rows.map { .model($0.id) } ?? [])]
         case nil:
             var sections: [[Target]] = []
             if let model = settings.model {
                 sections.append(
                     DS.isTouchPlatform ? [.model(model.value)] : modelList?.rows.map { .model($0.id) } ?? [])
             }
+            if fastMode != nil, !DS.isTouchPlatform { sections.append([.fastMode]) }
             if settings.effort != nil { sections.append([.effort]) }
             let levels = settings.autonomyLevels.filter { !isForbidden($0.value) }
             if !levels.isEmpty { sections.append(levels.map { .autonomy($0.value) }) }
             let reachable = rows.filter { if case .note = $0.kind { false } else { true } }
             if !reachable.isEmpty { sections.append(reachable.map { .row($0.id) }) }
+            if failure?.retry != nil { sections.append([.retry]) }
             return sections.filter { !$0.isEmpty }
         }
     }
 
     func handleKey(_ press: KeyPress) -> KeyPress.Result {
-        guard !isStopped || press.key == .escape else { return .ignored }
+        // Compose has native controls before the settings. Preserve a native Tab route through
+        // those controls and all the settings, including switches and retry actions.
+        let isTab = press.key == .tab || press.key == KeyEquivalent("\u{19}")
+        if isTab, leadingContent != nil {
+            highlighted = nil
+            return .ignored
+        }
+        if !isFocused && !isFilterFocused && press.key != .escape { return .ignored }
         // The keyboard takes over from the pointer until it moves again, as in menus.
         hovered = nil
         switch press.key {
@@ -86,6 +96,7 @@ extension ComposerSettingsPopover {
 
     /// ← and → change Effort's level, open a row's page or menu, and come back from a page.
     private func step(_ direction: Int) -> KeyPress.Result {
+        guard !isStopped else { return .ignored }
         if highlighted == .effort, let effort = settings.effort {
             let levels = effort.choices
             if let index = levels.firstIndex(where: { $0.value == effort.value }),
@@ -167,6 +178,7 @@ extension ComposerSettingsPopover {
 
     /// Chooses what `target` stands for; Return also closes the popover after a choice.
     func choose(_ target: Target, closing: Bool) {
+        guard !isStopped || target == .restart else { return }
         switch target {
         case .model(let value):
             if DS.isTouchPlatform, page == nil {
@@ -179,6 +191,24 @@ extension ComposerSettingsPopover {
             if let autonomy = settings.autonomy, value != autonomy.value { onSet(autonomy, value) }
         case .effort:
             break
+        case .fastMode:
+            if let fastMode { onSet(fastMode, fastMode.isOn ? "off" : "on") }
+            return
+        case .retry:
+            failure?.retry?()
+            return
+        case .restart:
+            onRestart?()
+            return
+        case .back:
+            leavePage()
+            return
+        case .command(let rowID, let index):
+            guard let row = rows.first(where: { $0.id == rowID }),
+                case .menu(_, let commands) = row.kind, commands.indices.contains(index)
+            else { return }
+            commands[index].action()
+            return
         case .row(let id):
             let parts = id.split(separator: "/", maxSplits: 1).map(String.init)
             guard let row = rows.first(where: { $0.id == parts.first }) else { return }
@@ -221,6 +251,8 @@ extension ComposerSettingsPopover {
         case .model(let value): value == settings.model?.value
         case .autonomy(let value): value == shownAutonomy
         case .effort: true
+        case .fastMode: fastMode?.isOn == true
+        case .retry, .restart, .back, .command: false
         case .row(let id):
             pageChoice(id)?.isCurrent ?? false
         }
@@ -231,6 +263,18 @@ extension ComposerSettingsPopover {
         case .model(let value): modelList?.rows.first { $0.id == value }?.name
         case .autonomy(let value): settings.autonomyLevels.first { $0.value == value }?.askingTitle
         case .effort: "Effort"
+        case .fastMode: fastMode?.option.name
+        case .retry: "Try Again"
+        case .restart: "Restart"
+        case .back: "Task Settings"
+        case .command(let rowID, let index):
+            if let row = rows.first(where: { $0.id == rowID }), case .menu(_, let commands) = row.kind,
+                commands.indices.contains(index)
+            {
+                commands[index].title
+            } else {
+                nil
+            }
         case .row(let id): pageChoice(id)?.name ?? rows.first { $0.id == id }?.title
         }
     }
