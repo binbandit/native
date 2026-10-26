@@ -1,3 +1,4 @@
+import NativeHostClient
 import NativeHostProtocol
 import SwiftUI
 
