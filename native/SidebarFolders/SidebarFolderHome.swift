@@ -53,7 +53,7 @@ struct SidebarFolderHome: View {
         .scrollBounceBehavior(.basedOnSize)
         .safeAreaInset(edge: .bottom) {
             if project != nil {
-                HomeNextStartField { task in model.openHomeNextTask(task.id) }
+                HomeNextStartField(maximumWidth: DS.ComposerSettings.width) { task in model.openHomeNextTask(task.id) }
                     .onAppear { model.homeNext.startFieldFocusRequests &+= 1 }
             }
         }
