@@ -126,6 +126,7 @@ struct ComposerEditor: View {
         .accessibilityLabel(inputLabel)
         // Files and images dropped on the text attach instead (the composer's drop area).
         .textViewTakesOnlyTextDrops()
+        .textInputKeepsLiteralQuotes()
         .background {
             PlatformComposerReferenceBackground(ranges: referenceRanges)
         }
