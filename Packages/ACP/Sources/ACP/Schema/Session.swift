@@ -265,6 +265,12 @@ public struct ConfigOption: Decodable, Hashable, Sendable, Identifiable {
         public var description: String?
 
         public var id: String { value }
+
+        public init(value: String, name: String, description: String? = nil) {
+            self.value = value
+            self.name = name
+            self.description = description
+        }
     }
 
     private struct SelectGroup: Decodable {

@@ -15,6 +15,7 @@ struct CommandContext {
     /// The window's sidebar multi-selection, for the bulk commands.
     var sidebarSelection: SidebarSelectionModel?
     var mcpServersPopover: Binding<Bool>?
+    var contextUsePopover: Binding<Bool>?
     var changesInspector: Binding<Bool>?
     /// The window's session tools, while it shows a task with them (`docs/session-tools.md`).
     var sessionTools: SessionToolsScreenModel?
@@ -42,6 +43,7 @@ struct FocusedCommandContext: DynamicProperty {
     @FocusedValue(\.sidebarNeedsYouFilter) private var needsYouFilter
     @FocusedValue(\.sidebarSelection) private var sidebarSelection
     @FocusedValue(\.mcpServersPopover) private var mcpServersPopover
+    @FocusedValue(\.contextUsePopover) private var contextUsePopover
     @FocusedValue(\.gitChangesInspector) private var changesInspector
     @FocusedValue(\.sessionTools) private var sessionTools
     @FocusedValue(\.showsPullRequests) private var pullRequestsPage
@@ -58,6 +60,7 @@ struct FocusedCommandContext: DynamicProperty {
             needsYouFilter: needsYouFilter,
             sidebarSelection: sidebarSelection,
             mcpServersPopover: mcpServersPopover,
+            contextUsePopover: contextUsePopover,
             changesInspector: changesInspector,
             sessionTools: sessionTools,
             pullRequestsPage: pullRequestsPage,

@@ -113,6 +113,7 @@ private struct ViewCommands: Commands {
                 }
             }
             CommandMenuItem(.viewMCPServers, in: menu)
+            CommandMenuItem(.viewContextUse, in: menu)
             CommandMenuItem(.viewNeedsYouFilter, in: menu)
 
             Divider()
@@ -189,6 +190,10 @@ private struct SessionCommands: Commands {
             CommandMenuItem(.sessionNextPermissionMode, in: menu)
             ModeMenuItems(menu: menu)
             CommandMenuItem(.sessionChooseModel, in: menu)
+            if model.offersAgentModels {
+                CommandMenuItem(.sessionCancelModelChange, in: menu)
+                CommandMenuItem(.sessionUndoModelChange, in: menu)
+            }
             CommandMenuItem(.sessionChangeWorkspace, in: menu)
 
             Divider()

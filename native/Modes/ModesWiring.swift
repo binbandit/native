@@ -15,6 +15,9 @@ enum ModesWiring {
         model.sessionHooks.taskStarted = { session, earlier in
             await modes.taskStarted(session, continuing: earlier)
         }
+        model.sessionHooks.taskRecovered = { old, replacement in
+            modes.recoverSelection(from: old, to: replacement)
+        }
         registry.register(NativeCommand.modes(modes, settings: settings))
         var registered: Set<CommandID> = []
         let sync = {

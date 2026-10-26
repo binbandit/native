@@ -1,4 +1,5 @@
 import ACP
+import Modes
 import NativeAutomation
 import SwiftUI
 
@@ -35,6 +36,10 @@ struct ComposerView: View {
     @State var mentionSource: FileMentionSource?
     @State var isPlanExpanded = false
     @State var isModelPickerOpen = false
+    /// Fine print's Task Settings was opened by Choose Model (⇧⌘E), so it highlights the current model.
+    @State var settingsOpenedByCommand = false
+    /// Fine print's context breakdown, which View ▸ Show Context Use opens below 70% too.
+    @State var isContextUseOpen = false
     @State var isDropTargeted = false
     /// The file picker, from the "+" chip or File ▸ Attach Files….
     @State var isPickingFiles = false
@@ -173,6 +178,7 @@ struct ComposerView: View {
         // Only a brand-new session takes focus on its own (⌘N, then type). Others wait for ⌘L or a
         // click, so arrowing through the sidebar doesn't hand Return to a composer.
         .onAppear {
+            app.restoreAgentModelChoice(for: session)
             if session.isTranscriptEmpty, session.phase != .loading {
                 isFocused = true
             }
@@ -209,7 +215,12 @@ struct ComposerView: View {
         .onChange(of: session.wantsComposerFocus) { takeFocusIfWanted() }
         .onChange(of: session.isModelPickerRequested, initial: true) { _, isRequested in
             guard isRequested else { return }
-            if let page { page.openSettings() } else { isModelPickerOpen = true }
+            if let page {
+                page.openSettings()
+            } else {
+                settingsOpenedByCommand = true
+                isModelPickerOpen = true
+            }
             session.isModelPickerRequested = false
         }
         .onChange(of: drops?.items.isEmpty == false) { _, hasDrops in
@@ -274,6 +285,9 @@ struct ComposerView: View {
                 )
             }
             VStack(spacing: 0) {
+                if composerNext, let change = session.modelChange {
+                    ComposerAgentReceiptSection(change: change)
+                }
                 if composerNext, !session.composerQuotes.isEmpty {
                     ComposerQuotesSection(quotes: session.composerQuotes) {
                         session.removeQuote(at: $0, undoManager: undoManager)
@@ -335,7 +349,10 @@ struct ComposerView: View {
 
     /// Invites a message, or explains what the session is waiting for.
     var placeholder: String {
-        if composerNext, session.phase == .idle { return "Message \(session.agentName)" }
+        if composerNext, session.phase == .idle {
+            return ComposerNextField.placeholder(
+                mode: TaskModeControl(session: session, modes: taskModes).current, agent: session.agentName)
+        }
         return ComposerPlaceholder(
             phase: session.phase,
             agentName: session.agentName,
@@ -349,7 +366,7 @@ struct ComposerView: View {
 
     /// Takes focus when the app asks (⌘L, a click on the session in the sidebar), then clears the ask.
     func takeFocusIfWanted() {
-        guard session.wantsComposerFocus, !asksInPlace else { return }
+        guard session.wantsComposerFocus, !asksInPlace, !isModelPickerOpen else { return }
         isFocused = true
         session.wantsComposerFocus = false
     }

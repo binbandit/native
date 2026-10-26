@@ -521,29 +521,43 @@ The behavior, tool order and remaining slices are described in `docs/session-too
 
 ### Changing a task's agent (Labs)
 
-`change-agent` is off by default. Change Agent prepares an unsent ACP conversation on another
-installed plugin agent in the task's existing folder. The user chooses from the new agent's live
-model choices and reviews an editable handoff before the first prompt. `TaskHandoff` in ACP
-assembles bounded visible-message excerpts, the goal, latest plan, reported edits, branch and
-working-tree paths and the latest explicit question locally. It never sends reasoning or calls another model.
+`change-agent` is off by default. With Fine print enabled, the composer's Model list includes
+other plugin agents' reported choices on the task's existing host. Opening the list reads live
+options or Native-owned cached options; only Load Models explicitly initializes an unknown catalog.
+Model names never imply agent identity. The reporting adapter owns each choice, including gateway
+models. The list retains its opening order until closed, and filters names, IDs and agent names.
 
-The model rejects running turns, retries, queued messages, pending approvals and active goals.
-Cancel closes the unsent replacement. A failed preparation or send keeps the original task.
-After an accepted handoff, the existing conversation chain preserves the original transcript,
-sidebar position and pin, title, branch, worktree and unsent draft. A quiet divider names the new
-agent; Earlier Conversation opens the original transcript read-only. Links survive relaunch.
+`ComposerAgentChange` prepares an unused conversation in the same folder, validates the exact model
+and a supported permission level no broader than the source, then publishes the selection. It does
+not allocate a worktree, run task-start defaults or send a working prompt. The source remains checked
+until commit. Normal running turns finish first; approvals, questions, queued messages, coordinator
+work and goals that cannot migrate safely block the choice with a specific recovery instruction.
+Goal controllers cannot migrate transactionally yet, so any existing goal must be cleared first.
 
-A task on a paired host (`NativeRemoteHosts`) changes only to another agent that host runs, found
-through the task's current pairing (`AppModel+RemoteAgentChange.swift`). The replacement starts
-there, in the task's exact folder: nothing is cloned, no worktree is made and nothing starts on this
-Mac. The host's listing publishes it, never this Mac's catalog or unsent drafts, and the same guards,
-review and single send apply. An offline host, a pairing removed or replaced by another key, no
-eligible agent, or an agent that fails to start leaves the original as it was; Cancel closes the
-unsent candidate on its host. Pairing the same host again during review moves both conversations to
-the new client. Moving a task between devices, a single combined transcript, and carrying goal
-automation and its budgets across agents remain follow-up work. Pause a goal before switching; its
-objective goes in the handoff, but its controller stays in the earlier conversation. Disable the
-gate to hide entry points; existing conversation links stay readable.
+`TaskHandoff` in ACP assembles bounded excerpts locally, without another model request. Native keeps
+that context until the next explicit submission, where it becomes an internal content block ahead
+of the unchanged user echo. The context and receipt survive relaunch in Native-owned storage. Taking
+the pending context consumes it before delivery; uncertain-send recovery never invents a second
+submission. Bounded earlier excerpts stay local for a later model choice. In-app agents that never
+saved the empty conversation recreate it with the confirmed settings, receipt and history link;
+new-task defaults and hooks do not run again. Accepted attachment reads follow the continuing draft
+through preparation, commit, Undo and recovery.
+The existing conversation chain preserves earlier history, title, sidebar position, pin, branch and
+worktree. Draft text, attachments and bare quotes move together. The task presentation key retains
+the editor, caret and open popover while the transport conversation changes.
+
+A persistent composer receipt and transcript divider offer Undo before the next submission. Undo
+restores the earlier conversation and current unsent draft in place, then closes only the unused
+candidate owned by this choice. Task > Undo Model Change remains available after receipt dismissal.
+After submission, Continue with the earlier agent opens the same Model list for a new choice.
+Pending choices have Cancel in the composer and Task menu. The title has no agent button.
+
+Paired-host choices stay on that host, using its runtimes, reported catalogs and connection. Policy
+is rechecked before preparation, commit and normal submission. Forbidden agents' known models stay
+legible with locks. Unknown permission semantics fail closed. With Fine print off, the existing
+review-sheet path remains available behind Change Agent. Disabling the gate hides the entry points;
+earlier conversation links stay readable. Combined transcripts, cross-device moves and transactional
+goal migration remain separate work.
 
 ### Transcript styles
 

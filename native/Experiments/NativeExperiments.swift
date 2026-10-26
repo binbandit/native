@@ -84,7 +84,7 @@ extension Gate {
     static let changeAgent = Gate(
         id: "change-agent", title: "Change Agent",
         summary:
-            "Continue a task on this Mac with another agent and an editable handoff. Earlier transcripts stay a click away.",
+            "Choose another agent in the model list with Fine print enabled. Keep the draft and undo the choice before sending.",
         site: "Task > Change Agent", stage: .labs, owner: "tasks",
         reviewBy: ReviewDate(year: 2026, month: 12, day: 15), default: false
     )

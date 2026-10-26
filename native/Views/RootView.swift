@@ -407,7 +407,7 @@ struct RootView: View {
                     .id(key)
             } else if let session = model.session(key) {
                 SessionView(session: session)
-                    .id(key)
+                    .id(session.taskPresentationKey)
             } else {
                 openingSession(key)
             }

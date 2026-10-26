@@ -94,10 +94,14 @@ struct TranscriptView: View {
             .animation(.dsStandard, value: showsJumpToLatest)
             .focusedSceneValue(\.transcriptJumpToLatest, jumpCommand)
             .overlay {
-                if !session.isRestoringHistory, session.isTranscriptEmpty {
+                if !session.isRestoringHistory, session.isTranscriptEmpty, !isAgentContinuation {
                     NewSessionEmptyState(session: session)
                 }
             }
+    }
+
+    private var isAgentContinuation: Bool {
+        model.earlierConversations.conversation(before: session.key).map { $0.agent != session.agent.id } ?? false
     }
 
     private var disclosures: TranscriptDisclosures {
@@ -140,10 +144,20 @@ struct TranscriptView: View {
         }
     }
 
+    private func modelChoiceUndo(_ change: ComposerAgentChange) -> (() -> Void)? {
+        guard change.canUndo else { return nil }
+        return { change.undo() }
+    }
+
     /// The rows in a centered column, as wide as the width setting allows with a margin each side.
     private func column(_ transcript: TranscriptStyleConfiguration, in containerWidth: CGFloat) -> some View {
         VStack(spacing: 0) {
-            if let earlier = model.earlierConversations.conversation(before: session.key),
+            if let change = session.modelChange, change.stage == .applied || change.stage == .reversed {
+                ChangeAgentDivider(
+                    agentName: session.agentName,
+                    modelName: ComposerSettings(session.configOptions).model?.shortModelName,
+                    isReversed: change.stage == .reversed, onUndo: modelChoiceUndo(change))
+            } else if let earlier = model.earlierConversations.conversation(before: session.key),
                 earlier.agent != session.agent.id
             {
                 ChangeAgentDivider(agentName: session.agentName)

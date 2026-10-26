@@ -56,22 +56,26 @@ extension ComposerView {
         let accepted = loaders.prefix(room)
         let pending = accepted.map { ComposerPendingAttachment(name: $0.name) }
         pendingAttachments += pending
+        let reads = session.attachmentReads
+        reads.begin(pending.count, in: session)
         Task {
             var added: [PromptAttachment] = []
             var problems: [any Error] = []
             for (loader, placeholder) in zip(accepted, pending) {
                 do {
-                    let attachment = try await Self.run(loader.load)
-                    try session.attach(attachment)
+                    let attachment: PromptAttachment
+                    do { attachment = try await Self.run(loader.load) } catch { reads.failed(); throw error }
+                    try reads.complete(attachment)
                     added.append(attachment)
                 } catch {
                     problems.append(error)
                 }
                 pendingAttachments.removeAll { $0.id == placeholder.id }
             }
+            let destination = reads.destination ?? session
             if let note = ComposerAttachmentNote.feedback(
                 added: added, refused: loaders.count - accepted.count, problems: problems,
-                capabilities: session.promptCapabilities, agentName: session.agentName)
+                capabilities: destination.promptCapabilities, agentName: destination.agentName)
             {
                 feedback = note
             }
