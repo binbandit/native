@@ -55,6 +55,7 @@ struct RootView: View {
                 StatusBar(registry: statusBar)
             }
         }
+        .hostRestartConfirmation(durableHost)
         .taskPeekHost()
         .onPreferenceChange(HomePresentedTaskAskKey.self) { homeNeeds = $0 }
         .onGeometryChange(for: CGSize.self, of: \.size) { contentSize = $0 }

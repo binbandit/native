@@ -118,6 +118,24 @@ for both) with `HostVersionStatus` and shows `HostVersionNotice` above the detai
 | Restart Now… | asks first, naming the tasks it would interrupt (`hostRestartConfirmation`; waiting is the default), then `shutdown {stopAgents: false, immediately: true}`: the host exits 75 at once; the new binary resumes interrupted turns as `hostUpdated` | in each transcript: "Native's background host restarted at 2:14 PM to update. Native restarted Claude Code and asked it to pick up where it left off." |
 | Newer host (an older copy of Native was opened) | nothing; the host stays | "This copy of Native (1.3) is older than its background host (1.4)" with **Check for Updates** |
 
+**Manual restart.** Settings > Background and Native > Restart Background Host… ask once before
+restarting this Mac's own background host for this channel. Idle tasks reconnect. While tasks run or
+wait, the same confirmation as Restart Now… names them: Wait Until They Finish schedules the
+idle shutdown, Interrupt and Restart sends the immediate shutdown, and Cancel sends nothing.
+Waiting is the default. `DurableHost.requestHostRestart` and `confirmHostRestart` own the action;
+views never use the connection. A session-only attached host restarts through its existing recovery path. Paired hosts are never eligible.
+
+`BackgroundHostRestartModel` in `NativeHostClient` tracks confirmation, waiting, restarting, done
+with a time, and failure with Try Again. A shutdown reply alone is not success: the same client must
+reconnect to a different host epoch. Waiting for busy tasks has no deadline; the shutdown request
+and reconnection after it each allow 30 seconds. Native keeps reconnecting after a timeout. Running
+turns resume through the update recovery path above; shell commands are interrupted, not replayed.
+While waiting, Settings names the blocking tasks and offers Restart Now… through the same confirmation.
+Cancelling that confirmation keeps the scheduled restart; cancelling a scheduled host restart is not supported.
+Failures use the shared inline error with technical details behind Show Details.
+`BackgroundHostRestartTests` checks cancellation, idle restart, busy-task recovery, waiting, escalation and failure
+against a real host in a scratch directory.
+
 **The guarantee: updating never stops work in progress.** A new build arrives three ways, and none
 of them stops a running agent unless the user says so:
 

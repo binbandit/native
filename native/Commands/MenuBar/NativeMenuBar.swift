@@ -33,6 +33,7 @@ struct NativeMenuBar: Commands {
         ViewCommands(menu: menu, model: model)
         AppearanceCommands(menu: menu)
         SettingsCommands(settings: settings)
+        HostRestartCommands(menu: menu)
         GoCommands(menu: menu)
         SessionCommands(model: model, menu: menu)
         ProjectActionCommands(

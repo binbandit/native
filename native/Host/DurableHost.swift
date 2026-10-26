@@ -26,6 +26,8 @@ final class DurableHost {
     private(set) var sessions: [HostSessionSummary] = []
     /// The host process changed under a live connection, for a short while (`DurableHost+Activity`).
     var restart: HostRestart?
+    /// Feedback for a manual restart, shared by Settings, menus and the confirmation.
+    let manualRestart = BackgroundHostRestartModel()
     /// The host has been out of reach long enough to say so, rather than a blip while it restarts.
     private(set) var isUnavailable = false
     /// What agents did while Native was closed ("while you were away"), until dismissed.
