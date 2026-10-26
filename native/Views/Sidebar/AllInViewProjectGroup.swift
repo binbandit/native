@@ -36,7 +36,10 @@ struct AllInViewProjectGroup<MenuContent: View, Content: View>: View {
                 } label: {
                     HStack(spacing: DS.Space.sm) {
                         if isRefreshing && taskCount == 0 {
-                            ProjectRefreshIndicator().padding(.trailing, DS.Space.xxs)
+                            DotGridLoader(pattern: .settingUp)
+                                .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
+                                .foregroundStyle(.dsTextTertiary)
+                                .padding(.trailing, DS.Space.xxs)
                         }
                         Text(name)
                             .font(DS.Sidebar.projectFont)
