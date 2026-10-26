@@ -113,7 +113,7 @@ invitation to inject an OpenAI key or use a real account. Endpoint/model/auth fa
 TLS/proxy/bypass and auxiliary cases are blocked by session startup, not passing negative tests.
 
 The [committed fixture report](../../scripts/tests/enterprise-private-routing/evidence.json) pins implementation
-revision `a63235605cb08c81e9620f3121d74c6097f56088` with an empty tracked diff, Darwin 27.2.0 arm64,
+revision `bdfd654de5270b3adb035151ec4cc111e6367fe6` with an empty tracked diff, Darwin 27.2.0 arm64,
 Node v26.12.1, and these installed artifacts:
 
 - Codex CLI SHA-256: `d8990e3ee7acfbc26f91265b12a1a83f0fee40d0e0f8f1f40a37d4ec21f499cf`.
