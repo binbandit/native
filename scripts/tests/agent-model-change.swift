@@ -121,6 +121,12 @@ private struct AgentModelChangeRegression {
         guard let pending = source.modelChange else { throw ChangeFailure("No waiting choice") }
         try await wait("waiting state") { pending.stage == .waiting }
         let starts = await process.started.count
+        let waitingDraft = source.draft
+        await source.submit(.queue)
+        let promptsWhileWaiting = await process.accepted
+        try require(
+            source.draft == waitingDraft && promptsWhileWaiting.isEmpty,
+            "Draft submission bypassed a pending model choice")
         pending.cancel()
         source.phase = .idle
         try await Task.sleep(for: .milliseconds(40))
