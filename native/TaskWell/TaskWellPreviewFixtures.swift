@@ -40,8 +40,8 @@ enum TaskWellPreviewFixtures {
     static var pluginTool: SessionToolContribution {
         var tool = SessionToolContribution(
             spec: SessionToolSpec(id: "acme.tickets", places: [.side, .fact, .off], defaultPlace: .side),
-            title: "Ticket", systemImage: "ticket",
-            summary: "The ticket this task works on, beside the conversation.",
+            title: "Release verification and acceptance checks", systemImage: "checklist",
+            summary: "Check narrow Changes layouts and keyboard navigation before landing.",
             fact: { _ in SessionToolFact(text: "ACME-142 · In review") })
         tool.pluginName = "Acme Tickets"
         return tool
