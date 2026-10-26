@@ -56,7 +56,7 @@ public struct MacHostPolicySource: HostPolicySource {
     /// for the same feature, so an invalid managed value denies it here as it does there.
     static func hostPolicy(from policy: NativePolicy, channel: String) -> HostPolicy {
         if let lockdown = policy.deployment.lockdown {
-            return .blocked(reason(lockdown))
+            return .blocked(reason(lockdown), revision: policy.deployment.revision?.description)
         }
         func permits(_ capability: PolicyCapability) -> Bool {
             policy.decision(for: capability).isPermitted
@@ -68,7 +68,8 @@ public struct MacHostPolicySource: HostPolicySource {
         guard !policy.isRestricted else {
             return HostPolicy(
                 mode: .restricted, capabilities: permits(.pairing) ? [.companion] : [],
-                reason: "It's in a restricted deployment, where this isn't available yet.")
+                reason: "It's in a restricted deployment, where this isn't available yet.",
+                revision: policy.deployment.revision?.description)
         }
         var capabilities = Set(HostCapability.allCases)
         let decided: [(HostCapability, Bool)] = [
@@ -79,7 +80,9 @@ public struct MacHostPolicySource: HostPolicySource {
             capabilities.remove(capability)
         }
         // The app filters its catalog by the same list; the host holds to it for every client.
-        return HostPolicy(mode: .ordinary, capabilities: capabilities, allowedAgents: policy.agents.allowed)
+        return HostPolicy(
+            mode: .ordinary, capabilities: capabilities, allowedAgents: policy.agents.allowed,
+            revision: policy.deployment.revision?.description)
     }
 
     /// Why a locked-down policy blocks the host, without any of its values.

@@ -35,8 +35,10 @@ struct HostTurnEndingTests {
         _ = try await recorder.client.prompt(PromptParams(sessionID: session, text: "permission"))
         try await recorder.wait("the approval") { await !$0.mirror(session).state.pendingPermissions.isEmpty }
         let toolCall = try #require(await recorder.mirror(session).state.pendingPermissions.first?.toolCallID)
+        let advertisedOption = try #require(
+            await recorder.mirror(session).state.pendingPermissions.first?.permission.options.first)
         try await recorder.client.respondPermission(
-            RespondPermissionParams(sessionID: session, toolCallID: toolCall, optionID: "allow"))
+            RespondPermissionParams(sessionID: session, toolCallID: toolCall, optionID: advertisedOption.optionId))
         try await recorder.wait("the turn") { await $0.turnsEnded(session) == ["end_turn"] }
 
         let call = try #require(calls(await recorder.mirror(session)).first)

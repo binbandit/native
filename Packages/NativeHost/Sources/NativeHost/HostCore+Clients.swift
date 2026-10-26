@@ -35,6 +35,7 @@ final class ClientLink {
 
     let id: ID
     let peer: JSONRPCPeer
+    let identity: HostClientIdentity
     let grants: ClientGrants
     var info: PeerInfo?
     var attached: Set<HostSessionID> = []
@@ -44,10 +45,11 @@ final class ClientLink {
     /// Folders this client watches, by `watchID` (`HostCore+FileWatches.swift`).
     var fileWatches: [UUID: HostFileWatch] = [:]
 
-    init(id: ID, peer: JSONRPCPeer, grants: ClientGrants) {
+    init(id: ID, peer: JSONRPCPeer, grants: ClientGrants, identity: HostClientIdentity) {
         self.id = id
         self.peer = peer
         self.grants = grants
+        self.identity = identity
     }
 
     /// Sends a notification. Writes queue on the channel, so this never waits on the client.
@@ -81,12 +83,14 @@ final class ClientLink {
 extension HostCore {
     /// Takes a new connection and serves it until it closes. Local clients (this user's own, checked
     /// by `PeerVerifier`) and SSH bridges are the owner; paired devices get what their pairing grants.
-    public func accept(_ stream: any ByteStream, grants: ClientGrants = .owner) {
+    public func accept(
+        _ stream: any ByteStream, grants: ClientGrants = .owner, identity: HostClientIdentity = .unknown
+    ) {
         let id = ClientLink.ID()
         let peer = JSONRPCPeer(channel: stream, label: "client") { [weak self] event in
             await self?.receive(event, fromClient: id)
         }
-        let client = ClientLink(id: id, peer: peer, grants: grants)
+        let client = ClientLink(id: id, peer: peer, grants: grants, identity: identity)
         clients[id] = client
         peer.start()
     }
@@ -211,7 +215,7 @@ extension HostCore {
             await cancel(try session(try message.params(as: SessionParams.self).sessionID))
             try reply(EmptyMessage())
         case Method.respondPermission:
-            try respondPermission(try message.params(as: RespondPermissionParams.self))
+            try respondPermission(try message.params(as: RespondPermissionParams.self), by: client.identity)
             try reply(EmptyMessage())
         case Method.respondQuestion:
             try respondQuestion(try message.params(as: RespondQuestionParams.self))
@@ -255,6 +259,11 @@ extension HostCore {
             client.attached.remove(params.sessionID)
             sessions[params.sessionID]?.subscribers.remove(client.id)
             try reply(EmptyMessage())
+        case Method.exportApprovalAudit:
+            guard client.grants.isLocal, client.grants.manageHost, client.identity.kind == .localPeer else {
+                throw HostError.notAuthorized("export approval records")
+            }
+            try reply(store.exportApprovalAudit(try message.params(as: ExportApprovalAuditParams.self), hostID: hostID))
         case Method.listActivity:
             let params = try message.params(as: ListActivityParams.self)
             if params.includeCommands == true { try requireCommandsGrant(client, to: "see the commands run here") }
