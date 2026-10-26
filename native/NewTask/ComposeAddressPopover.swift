@@ -17,16 +17,21 @@ extension View {
 extension View {
     /// The highlight behind an address control while its popover is open, reaching a little past
     /// its text so the text stays put.
-    func composeFocus(_ isOpen: Bool) -> some View {
+    func composeFocus(_ isOpen: Bool, height: CGFloat = DS.ComposeTask.focusHeight) -> some View {
         background {
             if isOpen {
                 RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                     .fill(.dsSelected)
                     .padding(.horizontal, -DS.ComposeTask.focusInset)
-                    .frame(height: DS.ComposeTask.focusHeight)
+                    .frame(height: height)
             }
         }
     }
+}
+
+/// A held letter keeps its ink while its controls stop accepting actions.
+struct ComposeAddressButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View { configuration.label }
 }
 
 extension CoordinateSpaceProtocol where Self == NamedCoordinateSpace {

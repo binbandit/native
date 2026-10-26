@@ -19,12 +19,12 @@ struct ComposeTaskAddress: View {
                             model: ComposerSettings(compose.options).model?.currentName ?? model.quickEntryModelName
                         ) {
                             // Two agents read as two recipients, without pickers' chevrons.
-                            if compose.second == nil {
+                            if compose.second == nil && !compose.isHeld {
                                 Image(systemName: "chevron.down").font(.dsMicro).foregroundStyle(.dsTextTertiary)
                             }
                         }
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(ComposeAddressButtonStyle())
                     .disabled(compose.isHeld)
                     .dsHitTarget(DS.ComposeTask.rowHeight)
                     .frame(minHeight: DS.ComposeTask.rowHeight)
@@ -34,7 +34,8 @@ struct ComposeTaskAddress: View {
                     }
                     if let second = compose.second {
                         ComposeSecondRecipient(model: model, compose: compose, second: second)
-                    } else if model.composeOffersSecondAgent, !model.composeSecondAgentChoices.isEmpty {
+                    } else if !compose.isHeld, model.composeOffersSecondAgent, !model.composeSecondAgentChoices.isEmpty
+                    {
                         addRecipient
                     }
                     if compose.second != nil {
@@ -56,9 +57,9 @@ struct ComposeTaskAddress: View {
                         entry.toggle(.device)
                     } label: {
                         HStack(spacing: DS.Space.sm) {
-                            Image(systemName: entry.device == .thisMac ? "laptopcomputer" : "desktopcomputer")
+                            Image(systemName: deviceLook.symbol.systemImage)
                                 .foregroundStyle(isOffline ? .dsTextTertiary : .dsTextSecondary)
-                            Text(deviceName)
+                            Text(deviceName).foregroundStyle(.dsTextPrimary)
                             if model.composeDeviceOption?.availability == .connecting {
                                 Text("Connecting…").foregroundStyle(.dsTextTertiary)
                             } else if model.composeDeviceOption?.availability == .online,
@@ -76,7 +77,9 @@ struct ComposeTaskAddress: View {
                         }
                         .composeFocus(entry.picker == .device)
                     }
-                    .buttonStyle(.plain).dsHitTarget(DS.ComposeTask.rowHeight).disabled(compose.isHeld)
+                    .buttonStyle(ComposeAddressButtonStyle()).dsHitTarget(DS.ComposeTask.rowHeight).disabled(
+                        compose.isHeld
+                    )
                     .frame(minHeight: DS.ComposeTask.rowHeight)
                     .accessibilityLabel("Choose task device")
                     .composeAddressPopover(isPresented: entry.picker == .device, dismiss: { entry.picker = nil }) {
@@ -109,12 +112,12 @@ struct ComposeTaskAddress: View {
                             Text(workspaceBranch).font(.dsMono).foregroundStyle(.dsTextSecondary)
                             if compose.workspace == .newWorktree {
                                 Text("→").font(.dsMono).foregroundStyle(.dsTextTertiary)
-                                Text("new branch").font(.dsMono)
+                                Text("a new branch").foregroundStyle(.dsTextSecondary)
                             }
                             Text(workspaceDetail).foregroundStyle(.dsTextTertiary)
                         }
                     }
-                    .buttonStyle(.plain).dsHitTarget(DS.ComposeTask.rowHeight)
+                    .buttonStyle(ComposeAddressButtonStyle()).dsHitTarget(DS.ComposeTask.rowHeight)
                     .disabled(entry.project == nil || compose.isHeld)
                     .accessibilityLabel("Choose task workspace")
                 }
@@ -153,7 +156,7 @@ struct ComposeTaskAddress: View {
                 .frame(width: DS.ComposeTask.tokenHeight, height: DS.ComposeTask.tokenHeight)
                 .contentShape(.rect)
         }
-        .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
+        .menuStyle(.button).buttonStyle(ComposeAddressButtonStyle()).menuIndicator(.hidden).fixedSize()
         .disabled(compose.isHeld)
         .dsHitTarget(DS.ComposeTask.rowHeight)
         .help("Send the same task to a second agent, in its own worktree")
@@ -164,8 +167,8 @@ struct ComposeTaskAddress: View {
         HStack(spacing: DS.Space.sm) {
             Text(workspaceBranch).font(.dsMono).foregroundStyle(.dsTextSecondary)
             Text("→").font(.dsMono).foregroundStyle(.dsTextTertiary)
-            Text("new branch").font(.dsMono)
-            Text("\(agent)'s own worktree").foregroundStyle(.dsTextTertiary)
+            Text("a new branch").foregroundStyle(.dsTextSecondary)
+            Text("for \(agent)").foregroundStyle(.dsTextSecondary)
         }
         .frame(height: DS.ComposeTask.tokenHeight)
         .accessibilityElement(children: .combine)
@@ -186,7 +189,7 @@ struct ComposeTaskAddress: View {
             Text(
                 compose.isHeld
                     ? "Held for \(deviceName). Starts when it reconnects. You can cancel the hold and keep writing."
-                    : model.composeDeviceOption?.unavailableReason
+                    : model.composeDeviceNote
                         ?? "Native can hold this task until the device is back."
             )
             .font(.dsBody).lineSpacing(DS.ComposeTask.noteLineSpacing).foregroundStyle(.dsTextTertiary)
@@ -219,6 +222,10 @@ struct ComposeTaskAddress: View {
         return true
     }
 
+    @Environment(\.hostLookStore) private var injectedLooks
+    private var deviceLook: HostLook {
+        (injectedLooks ?? .shared).look(for: entry.device, named: deviceName)
+    }
     private var deviceName: String { model.composeDeviceOption?.name ?? model.deviceName(entry.device) }
     private var isOffline: Bool {
         if case .offline = model.composeDeviceOption?.availability { return true }

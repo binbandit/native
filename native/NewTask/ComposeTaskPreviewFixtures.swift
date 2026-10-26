@@ -26,13 +26,15 @@ enum ComposeTaskPreviewFixtures {
     static func configure(_ model: AppModel, state: String) {
         let compose = model.composeTask
         let entry = model.quickEntry
+        entry.agent = AgentDefinition.ID(rawValue: state == "firstLaunch" ? "claude-code" : "codex")
+        model.prepareComposeEditor()
         compose.previewState = state
         compose.isPresented = true
         compose.previewBranch = "main"
         compose.workspace = .newWorktree
         compose.editor?.draft = state == "firstLaunch" || state == "empty" ? "" : prompt
-        compose.options = options
-        compose.defaults = ["model": "gpt-6.1-sol", "thought_level": "low", "mode": "workspace-write"]
+        compose.options = state == "firstLaunch" ? claudeOptions : options
+        compose.defaults = ComposeTaskModel.addressedChoices(in: compose.options)
         if state == "attachments" {
             compose.editor?.attachments = [
                 PromptAttachment(
@@ -51,6 +53,7 @@ enum ComposeTaskPreviewFixtures {
         if state == "failure" {
             entry.failure = "The folder is unavailable. Restore it or choose another folder. Your draft is kept."
         }
+        if state == "project" { entry.picker = .project }
         if state == "agents" { entry.picker = .agent }
         if state == "twoAgents" {
             compose.workspaces = [
@@ -63,12 +66,14 @@ enum ComposeTaskPreviewFixtures {
             compose.previewOfflineSince = Calendar.current.date(bySettingHour: 14, minute: 14, second: 0, of: .now)
             let remote = SessionDevice.remote(RemoteHostID())
             entry.previewDeviceOptions = [
-                .init(device: .thisMac, name: "This Mac", availability: .online, checkout: .present(path: "native")),
+                .init(
+                    device: .thisMac, name: "This Mac", availability: .online,
+                    checkout: .present(path: "~/Developer/native")),
                 .init(
                     device: remote, name: "elara",
                     availability: .offline(
-                        reason: "elara is offline. Native can hold the task and start it when elara is back."),
-                    checkout: .present(path: "native")),
+                        reason: "Nothing has answered at elara.tail4c2e.ts.net for 6 minutes."),
+                    checkout: .present(path: "~/code/native")),
             ]
             if state != "devices" { entry.device = remote } else { entry.picker = .device }
             compose.isHeld = state == "held"
@@ -91,7 +96,7 @@ enum ComposeTaskPreviewFixtures {
 
     static var claudeOptions: [ConfigOption] {
         let json = """
-            [{"id":"model","name":"Model","category":"model","type":"select","currentValue":"opus","options":[{"value":"opus","name":"Opus 5.5"},{"value":"sonnet","name":"Sonnet 5.5"}]}]
+            [{"id":"model","name":"Model","category":"model","type":"select","currentValue":"sonnet","options":[{"value":"opus","name":"Opus 5.5"},{"value":"sonnet","name":"Sonnet 5.5"}]}]
             """
         return (try? JSONDecoder().decode([ConfigOption].self, from: Data(json.utf8))) ?? []
     }

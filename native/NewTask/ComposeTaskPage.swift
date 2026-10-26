@@ -20,6 +20,7 @@ struct ComposeTaskPage: View {
             }
         }
         .background(.dsBackground)
+        .focusedSceneValue(\.composeDraft, compose.commandDraft)
         .navigationTitle("New Task")
         .toolbar(removing: .title)
         .toolbar {
@@ -126,6 +127,7 @@ struct ComposeTaskPage: View {
                     page: .init(
                         allowsFileMentions: entry.project != nil && entry.device == .thisMac,
                         needsFolder: entry.project == nil,
+                        isSealed: compose.isHeld,
                         openSettings: { entry.toggle(.agent) },
                         start: submitOrClosePicker,
                         attachmentsPending: { compose.pendingAttachments = $0 })
@@ -138,7 +140,6 @@ struct ComposeTaskPage: View {
                     \.composerOverlayDismissal,
                     entry.picker == nil ? nil : ComposerOverlayDismissal { entry.picker = nil }
                 )
-                .focusedSceneValue(\.composeDraft, compose.commandDraft)
                 .disabled(compose.isHeld || compose.stage != .writing)
             }
             if let failure = entry.failure {
@@ -174,11 +175,14 @@ struct ComposeTaskPage: View {
                     Text(projectName).font(.dsDisplay).tracking(DS.Tracking.display)
                         .foregroundStyle(entry.project == nil ? .dsTextTertiary : .dsTextPrimary)
                         .padding(.leading, -DSTypography.displayIndent(of: projectName))
-                    Image(systemName: "chevron.up.chevron.down").font(.dsCallout).foregroundStyle(.dsTextTertiary)
+                    if !compose.isHeld {
+                        Image(systemName: "chevron.up.chevron.down").font(.dsCallout).foregroundStyle(.dsTextTertiary)
+                    }
                 }
                 .frame(height: DS.ComposeTask.titleHeight)
+                .composeFocus(entry.picker == .project, height: DS.ComposeTask.titleHeight)
             }
-            .buttonStyle(.plain).disabled(compose.isHeld || compose.stage != .writing)
+            .buttonStyle(ComposeAddressButtonStyle()).disabled(compose.isHeld || compose.stage != .writing)
             .accessibilityLabel("Choose task project")
             .composeAddressPopover(isPresented: entry.picker == .project, dismiss: { entry.picker = nil }) {
                 QuickEntryPicker(model: model, entry: entry)
@@ -186,7 +190,18 @@ struct ComposeTaskPage: View {
             }
             .zIndex(entry.picker == .project ? 1 : 0)
             if entry.project == nil {
-                Button("Open Folder…") { entry.isChoosingFolder = true }.buttonStyle(.ds(.ghost))
+                Button {
+                    entry.isChoosingFolder = true
+                } label: {
+                    HStack(spacing: DS.Space.sm) {
+                        Text("Open Folder…").foregroundStyle(.dsTextSecondary)
+                        Kbd("⌘O")
+                    }
+                    .font(.dsBody)
+                    .frame(height: DS.ComposeTask.rowHeight)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
             }
         }
     }

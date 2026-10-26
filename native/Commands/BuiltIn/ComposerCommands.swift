@@ -14,70 +14,82 @@ extension CommandID {
 
 extension NativeCommand {
     /// The visible task's composer and its agent's settings.
-    static let composer: [NativeCommand] = [
-        NativeCommand(
-            .sessionChangeWorkspace, title: "Change Workspace…", category: .tasks, systemImage: "arrow.triangle.branch",
-            keywords: ["branch", "worktree", "folder"]
-        ) { $0.session?.requestWorkspaceChange() }
-        .available { $0.session?.canChangeWorkspace == true },
+    static func composer(model: AppModel) -> [NativeCommand] {
+        [
+            NativeCommand(
+                .sessionChangeWorkspace, title: "Change Workspace…", category: .tasks,
+                systemImage: "arrow.triangle.branch",
+                keywords: ["branch", "worktree", "folder"]
+            ) { $0.session?.requestWorkspaceChange() }
+            .available { $0.session?.canChangeWorkspace == true },
 
-        NativeCommand(.composerFocus, title: "Focus Composer", category: .composer, systemImage: "text.cursor") {
-            if let instruction = $0.taskPeekInstructionFocus {
-                instruction.wrappedValue = true
-            } else {
-                if let session = $0.session, ExperimentStore.shared.value(of: .composerNext),
-                    session.permissionRequests.isEmpty, session.pendingQuestion == nil
-                {
-                    let quotes = PlatformQuoteSelection.capture(task: session.clientID) ?? session.quoteSelection
-                    session.quote(quotes)
-                    if let source = session.quoteSelectionSource { session.clearQuoteSelection(source: source) }
+            NativeCommand(.composerFocus, title: "Focus Composer", category: .composer, systemImage: "text.cursor") {
+                if let instruction = $0.taskPeekInstructionFocus {
+                    instruction.wrappedValue = true
+                } else {
+                    if let session = $0.session, ExperimentStore.shared.value(of: .composerNext),
+                        session.permissionRequests.isEmpty, session.pendingQuestion == nil
+                    {
+                        let quotes = PlatformQuoteSelection.capture(task: session.clientID) ?? session.quoteSelection
+                        session.quote(quotes)
+                        if let source = session.quoteSelectionSource { session.clearQuoteSelection(source: source) }
+                    }
+                    ($0.session ?? $0.composeDraft)?.wantsComposerFocus = true
                 }
-                ($0.session ?? $0.composeDraft)?.wantsComposerFocus = true
             }
-        }
-        .available {
-            $0.taskPeekInstructionFocus != nil || (($0.session ?? $0.composeDraft).map { !$0.isSubagent } ?? false)
-        },
+            .available {
+                $0.taskPeekInstructionFocus != nil || (($0.session ?? $0.composeDraft).map { !$0.isSubagent } ?? false)
+            },
 
-        NativeCommand(
-            .composerAttachFiles, title: "Attach Files…", category: .composer, systemImage: "paperclip",
-            keywords: ["image", "upload"]
-        ) {
-            ($0.session ?? $0.composeDraft)?.isAttachmentPickerRequested = true
-        }
-        .available { context in
-            guard let session = context.session ?? context.composeDraft else { return false }
-            return session.acceptsPrompts && session.phase != .disconnected
-        },
+            NativeCommand(
+                .composerAttachFiles, title: "Attach Files…", category: .composer, systemImage: "paperclip",
+                keywords: ["image", "upload"]
+            ) {
+                ($0.session ?? $0.composeDraft)?.isAttachmentPickerRequested = true
+            }
+            .available { context in
+                guard let session = context.session ?? context.composeDraft else { return false }
+                return session.acceptsPrompts && session.phase != .disconnected
+            },
 
-        NativeCommand(
-            .sessionStop, title: "Stop", category: .composer, systemImage: "stop.circle", keywords: ["cancel", "turn"]
-        ) { context in
-            Task { await context.session?.cancel() }
-        }
-        .available { $0.session?.canCancel == true },
+            NativeCommand(
+                .sessionStop, title: "Stop", category: .composer, systemImage: "stop.circle",
+                keywords: ["cancel", "turn"]
+            ) { context in
+                Task { await context.session?.cancel() }
+            }
+            .available { $0.session?.canCancel == true },
 
-        NativeCommand(
-            .sessionNextPermissionMode, title: "Next Permission Mode", category: .composer, systemImage: "lock.shield",
-            keywords: ["autonomy", "approvals"]
-        ) { context in
-            guard let session = context.session else { return }
-            Task { await nextPermissionMode(of: session) }
-        }
-        .available { context in
-            context.session.map { ComposerSettings($0.configOptions).autonomy != nil } ?? false
-        },
+            NativeCommand(
+                .sessionNextPermissionMode, title: "Next Permission Mode", category: .composer,
+                systemImage: "lock.shield",
+                keywords: ["autonomy", "approvals"]
+            ) { context in
+                guard let session = context.session else { return }
+                Task { await nextPermissionMode(of: session) }
+            }
+            .available { context in
+                context.session.map { ComposerSettings($0.configOptions).autonomy != nil } ?? false
+            },
 
-        NativeCommand(.sessionChooseModel, title: "Choose Model…", category: .composer, systemImage: "cpu") {
-            ($0.session ?? $0.composeDraft)?.isModelPickerRequested = true
-        }
-        .available { context in
-            if context.composeDraft != nil { return true }
-            return context.session.map {
-                ExperimentStore.shared.value(of: .composerNext) || ComposerSettings($0.configOptions).model != nil
-            } ?? false
-        },
-    ]
+            NativeCommand(.sessionChooseModel, title: "Choose Model…", category: .composer, systemImage: "cpu") {
+                if model.quickEntry.isEnabled, model.composeTask.isPresented {
+                    model.quickEntry.toggle(.agent)
+                } else {
+                    ($0.session ?? $0.composeDraft)?.isModelPickerRequested = true
+                }
+            }
+            .available { context in
+                if model.quickEntry.isEnabled, model.composeTask.isPresented {
+                    return model.composeTask.commandDraft != nil
+                }
+                if context.composeDraft != nil { return true }
+                return context.session.map {
+                    ExperimentStore.shared.value(of: .composerNext) || ComposerSettings($0.configOptions).model != nil
+                } ?? false
+            },
+        ]
+    }
 
     /// Moves the permission mode one step up the autonomy scale, wrapping around; Plan Mode isn't a step.
     private static func nextPermissionMode(of session: SessionModel) async {

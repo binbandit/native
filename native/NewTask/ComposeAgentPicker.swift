@@ -64,7 +64,7 @@ struct ComposeAgentPicker: View {
                 model.chooseComposeAgent(runtime.agent.id)
             } label: {
                 HStack(spacing: DS.Space.sm) {
-                    Image(systemName: "checkmark")
+                    Image(systemName: "checkmark").font(DS.ComposerSettings.rowFont)
                         .opacity(selected ? 1 : 0)
                         .frame(width: DS.ComposerSettings.selectionWidth)
                     Text(runtime.agent.displayName).font(DS.ComposerSettings.rowFont).lineLimit(1).layoutPriority(1)
@@ -102,7 +102,7 @@ struct ComposeAgentPicker: View {
             model.isAddingAgent = true
         } label: {
             HStack(spacing: DS.Space.sm) {
-                Image(systemName: "plus").foregroundStyle(.dsTextSecondary)
+                Image(systemName: "plus").font(DS.ComposerSettings.rowFont).foregroundStyle(.dsTextSecondary)
                     .frame(width: DS.ComposerSettings.selectionWidth)
                 Text("Add Agent…").font(DS.ComposerSettings.rowFont)
                 Spacer(minLength: 0)
