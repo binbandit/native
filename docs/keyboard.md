@@ -106,7 +106,8 @@ only while the card has focus; ⌘1 – ⌘9 stay task navigation.
 
 With Fine print (`NativeComposerNext`) enabled, the question takes the composer's place, in the
 approval's frame: "Claude Code asks", a `1 of 2` pager, choices on digit keycaps (a choice the agent
-recommends is tagged and starts picked, so Return accepts it), Skip and Next (Return). The composer's field below becomes "Or answer in your
+recommends is tagged and starts picked, so Return accepts it), Skip and Send for a single question,
+or Next / Send Answers for several (Return). The composer's field below becomes "Or answer in your
 own words"; Return there answers the shown question with what you typed. The draft waits
 underneath until the questions are answered, and ⌘L focuses the answer field. Peek and Home show
 the same question with the same keys; on Home, Open Task (⌘↩) sits at the field's trailing edge.
@@ -359,7 +360,8 @@ On iPad, the corner Dismiss button is always visible and swiping down dismisses 
 With Next enabled in Settings > Labs, Home shows one ask at a time. The visible approval owns
 the usual permission keys: Cmd-Y allows once, Option-Cmd-Y always allows when offered, and
 Shift-Cmd-Delete rejects. Tab and Space reach Up next, Open Task, the ordering menu, and Show
-more. Up next opens Peek; its Open Task action enters the conversation. Cmd-Return opens the
+more. Tab / Shift-Tab leave the instruction and answer fields without inserting a tab.
+Up next opens Peek; its Open Task action enters the conversation. Cmd-Return opens the
 current ask's task; Shift-Cmd-Down shows the next five rows.
 Cmd-N focuses the start field at the bottom of Home; Cmd-O opens a folder, including before the
 first project exists. The start field writes Quick Entry's draft to Quick Entry's address: Return

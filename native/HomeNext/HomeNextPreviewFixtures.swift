@@ -229,7 +229,7 @@ enum HomeNextPreviewFixtures {
             schema = #"{"type":"object","properties":{"answer":{"type":"string"}}}"#
         } else {
             schema =
-                #"{"type":"object","properties":{"size":{"type":"string","title":"Thumbnail sizes","oneOf":[{"const":"both","title":"1x and 2x","description":"Sharp on Retina screens. About 1.4 GB more storage at today's library size."},{"const":"single","title":"Only 1x","description":"Today's behavior. Thumbnails look soft on Retina screens."}]},"size_custom":{"type":"string"}}}"#
+                #"{"type":"object","properties":{"size":{"type":"string","title":"Thumbnail sizes","oneOf":[{"const":"both","title":"1x and 2x (Recommended)","description":"Sharp on Retina screens. About 1.4 GB more storage at today's library size."},{"const":"single","title":"Only 1x","description":"Today's behavior. Thumbnails look soft on Retina screens."}]},"size_custom":{"type":"string"}}}"#
         }
         let json = """
             {"sessionId":"\(session.id.rawValue)","mode":"form","message":"Should thumbnails cover 2x sizes too, or only 1x?","requestedSchema":\(schema)}

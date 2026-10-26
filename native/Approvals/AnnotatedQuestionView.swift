@@ -190,7 +190,7 @@ struct AnnotatedQuestionView: View {
                     Button {
                         submit()
                     } label: {
-                        actionLabel(isLast ? (questions.count == 1 ? "Answer" : "Send Answers") : "Next")
+                        actionLabel(isLast ? (questions.count == 1 ? "Send" : "Send Answers") : "Next")
                     }
                     .buttonStyle(ApprovalActionStyle(primary: true))
                 }
@@ -214,7 +214,12 @@ struct AnnotatedQuestionView: View {
                     isFocused: $wordsFocused, inputLabel: "Answer \(agentName) in your own words",
                     insets: DS.Approval.editorInsets, maximumHeight: DS.Approval.instructionMaximumHeight
                 ) { press in
-                    guard press.key == .return, press.modifiers.isEmpty, !PlatformTextInput.isComposing else {
+                    guard !PlatformTextInput.isComposing else { return .ignored }
+                    if press.key == .tab, press.modifiers.isSubset(of: [.shift]) {
+                        return ComposerPlatform.moveKeyFocus(forward: !press.modifiers.contains(.shift))
+                            ? .handled : .ignored
+                    }
+                    guard press.key == .return, press.modifiers.isEmpty else {
                         return .ignored
                     }
                     submit()
