@@ -51,7 +51,7 @@ struct HostNotificationTests {
         let permission = try await heard.waitForPosted { $0.kind == .permission }
         #expect(permission.detail == "Write notes.txt")
         #expect(permission.actions == [.allow, .reject])
-        #expect(permission.allowOptionID == "allow")
+        #expect(permission.allowOptionID.flatMap(UUID.init(uuidString:)) != nil)
         try await first.client.acknowledgeNotifications([permission.id])
         let acknowledged = try await heard.waitForCleared { $0.ids == [permission.id] }
         #expect(acknowledged.state == .acknowledged)

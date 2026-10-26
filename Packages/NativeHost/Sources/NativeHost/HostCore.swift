@@ -52,6 +52,11 @@ public final class HostCore {
         /// Keys the host keeps for agents' sign-in methods (`HostCredentials`): the keychain on a Mac
         /// (`MacHost`), else `credentials.json` in the host's directory.
         public var credentials: HostCredentials
+        /// The organization's policy for this host, read from the machine itself
+        /// (`HostCore+Policy.swift`): managed preferences on a Mac (`MacHost`). Unrestricted unless set.
+        public var policy: any HostPolicySource
+        /// How often the host reads its policy again, to follow a profile installed or removed while it runs.
+        public var policyRefreshInterval: Duration
 
         public init(
             location: HostLocation, hostInfo: PeerInfo, machineName: String, bootTime: Date?,
@@ -60,7 +65,9 @@ public final class HostCore {
             exit: @escaping @Sendable (Int32) -> Void, commands: (any CommandRunner)? = nil,
             fileWatching: (any FileWatching)? = nil, nativeSkills: [NativeSkill] = [],
             titleGenerator: (any SessionTitleGenerator)? = nil, keepAwake: (any HostPowerBackend)? = nil,
-            systemInfo: HostSystemInfo? = nil, doctor: HostDoctor? = nil, credentials: (any HostCredentialStore)? = nil
+            systemInfo: HostSystemInfo? = nil, doctor: HostDoctor? = nil, credentials: (any HostCredentialStore)? = nil,
+            policy: any HostPolicySource = FixedHostPolicySource(.unrestricted),
+            policyRefreshInterval: Duration = .seconds(10)
         ) {
             self.updates =
                 updates
@@ -88,6 +95,8 @@ public final class HostCore {
             self.systemInfo = systemInfo
             self.doctor = doctor
             self.credentials = HostCredentials(store: credentials ?? HostCredentialFile(directory: location.directory))
+            self.policy = policy
+            self.policyRefreshInterval = policyRefreshInterval
         }
     }
 
@@ -127,6 +136,8 @@ public final class HostCore {
     /// A standalone build to switch to when the host next exits for a restart.
     var pendingActivation: String?
     var updateChecks: Task<Void, Never>?
+    /// The standalone check running now, which a revoked policy cancels.
+    var updateCheck: Task<Void, Never>?
     /// Checks for sessions to unload while idle (`HostCore+IdleUnload.swift`).
     var idleUnloadChecks: Task<Void, Never>?
     /// Set once a restart was asked for, to exit when nothing is running.
@@ -145,6 +156,12 @@ public final class HostCore {
     /// only while it runs, so a development host with any never stops for being idle.
     public var hasPairedDevices = false
     let logger = HostLogger(category: "Host")
+    /// What the organization allows this host, read before anything starts (`HostCore+Policy.swift`).
+    public internal(set) var policy: HostPolicy
+    var policyObservers: [@HostActor (HostPolicy) -> Void] = []
+    var policyRefresh: Task<Void, Never>?
+    /// The doctor's checks running now, which a revoked policy cancels (`HostCore+Doctor.swift`).
+    var doctorRuns: [UUID: Task<HostDoctorReport, Never>] = [:]
     /// The login-shell environment agents start with, read once (again after a sync asks).
     private var environment: Task<[String: String], Never>?
     private var heartbeat: Task<Void, Never>?
@@ -154,6 +171,7 @@ public final class HostCore {
 
     public init(configuration: Configuration) throws {
         self.configuration = configuration
+        policy = configuration.policy.current()
         updateState = Self.initialUpdateState(configuration.updates)
         try configuration.location.prepare()
         store = try HostStore(url: configuration.location.databaseURL)
@@ -162,6 +180,11 @@ public final class HostCore {
         } else {
             hostID = HostID()
             try store.setMeta(MetaKey.hostID, hostID.description)
+        }
+        do {
+            try store.recoverApprovalAudit(policy: policy, epoch: epoch)
+        } catch {
+            throw ApprovalAuditFailure.unavailable
         }
         if let saved = try store.meta(Self.coordinatorsKey) {
             coordinators = try JSONDecoder().decode([HostCoordinator].self, from: Data(saved.utf8))
@@ -184,10 +207,12 @@ public final class HostCore {
         try store.pruneActivity(.commandRun, olderThan: .now.addingTimeInterval(-30 * 24 * 3600))
     }
 
-    /// Picks up what the previous run left unfinished, then keeps a heartbeat.
+    /// Picks up what the previous run left unfinished, then keeps a heartbeat. The policy read at
+    /// `init` decides what of it happens.
     public func start() {
+        refreshPolicyPeriodically()
         // Before recovery: the sessions it reloads get the tools' address.
-        tasks.start()
+        if allows(.agentTools) { tasks.start() }
         resolveNotificationsOfPreviousRun()
         resumeTitles()
         do {
@@ -243,15 +268,26 @@ public final class HostCore {
 
     // MARK: - Environment and agents
 
-    /// The login-shell environment, read once and shared.
+    /// The login-shell environment, read once and shared. Empty where the policy doesn't allow
+    /// reading the login shell: its startup files never run.
     func agentEnvironment() async -> [String: String] {
+        guard allows(.loginShell) else { return [:] }
+        let task: Task<[String: String], Never>
         if let environment {
-            return await environment.value
+            task = environment
+        } else {
+            let provider = configuration.environment
+            task = Task { await provider() }
+            environment = task
         }
-        let provider = configuration.environment
-        let task = Task { await provider() }
-        environment = task
-        return await task.value
+        let read = await task.value
+        // Revoked while it was read: what it read isn't used.
+        return allows(.loginShell) ? read : [:]
+    }
+
+    /// A revoked login shell isn't read again from a cache, either.
+    func forgetEnvironment() {
+        environment = nil
     }
 
     func syncAgents(_ specs: [AgentSpec], refreshEnvironment: Bool = false) throws {
@@ -290,17 +326,30 @@ public final class HostCore {
         return link
     }
 
-    /// The running agent for `agentID`, started if needed.
+    /// The running agent for `agentID`, started if needed. Every agent launch comes through here,
+    /// whoever asked (a client, recovery, a queue, another task), so this is where the policy holds:
+    /// before the launch, right before the process spawns, and once it's ready.
     func readyAgent(_ agentID: String) async throws -> AgentLink {
+        do {
+            try require(agent: agentID)
+        } catch {
+            // Whatever wanted the agent may have committed a turn first; it ends with the reason.
+            Task { [weak self] in self?.endDeniedAgentTurns() }
+            throw error
+        }
         guard let link = agents[agentID] else { throw HostError.unknownAgent(agentID) }
         let environment: @Sendable () async -> [String: String] = { [weak self] in
             await self?.launchEnvironment(of: agentID) ?? [:]
         }
         let clientInfo = Implementation(name: "native-host", title: "Native", version: configuration.hostInfo.version)
-        try await link.ensureStarted(environment: environment, clientInfo: clientInfo) {
-            [weak self] generation, event in
+        try await link.ensureStarted(
+            environment: environment, clientInfo: clientInfo,
+            admit: { [weak self] in try self?.require(agent: agentID) }
+        ) { [weak self] generation, event in
             await self?.receive(event, from: agentID, generation: generation)
         }
+        // Revoked while it started: what it started for doesn't go ahead.
+        try require(agent: agentID)
         return link
     }
 

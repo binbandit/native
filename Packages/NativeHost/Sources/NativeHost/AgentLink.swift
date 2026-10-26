@@ -101,10 +101,12 @@ final class AgentLink {
     }
 
     /// Launches the agent if it isn't running and waits until it's initialized. Concurrent callers
-    /// share one launch.
+    /// share one launch. `admit` is asked right before the process spawns, in the same actor turn,
+    /// so nothing that revoked the launch while its environment was read can slip in between.
     func ensureStarted(
         environment: @escaping @Sendable () async -> [String: String],
         clientInfo: Implementation,
+        admit: @escaping @HostActor () throws -> Void = {},
         onEvent: @escaping @Sendable (Int, JSONRPCPeer.Event) async -> Void
     ) async throws {
         try await waitForCommandStop()
@@ -123,6 +125,10 @@ final class AgentLink {
         }
         let task = Task {
             let command = AgentLaunch.command(for: spec, environment: await environment())
+            // Ended while its environment was read (`noteExit`): this launch is over, even if the
+            // agent may start again by now; that's a launch of its own.
+            guard generation == self.generation else { throw PeerError.closed }
+            try admit()
             guard AgentLaunch.isInstalled(command) else {
                 throw AgentLaunch.Failure.notInstalled(command.executable)
             }
@@ -340,10 +346,10 @@ enum AgentLaunch {
         process.standardInput = stdin
         process.standardOutput = stdout
         process.standardError = stderrPipe
-        let stderr = try StderrTail(reading: stderrPipe.fileHandleForReading)
+        // The tail and the channel get their own copies of our ends; closing the originals means that
+        // when the channel closes stdin, the agent sees EOF. Close-on-exec copies, like the pipes.
+        let stderr = try StderrTail(reading: fcntl(stderrPipe.fileHandleForReading.fileDescriptor, F_DUPFD_CLOEXEC, 0))
         try process.run()
-        // The channel gets its own copies of our ends; closing the originals means that when the
-        // channel closes stdin, the agent sees EOF. Close-on-exec copies, like the pipes themselves.
         let channel = ByteChannel(
             reading: fcntl(stdout.fileHandleForReading.fileDescriptor, F_DUPFD_CLOEXEC, 0),
             writing: fcntl(stdin.fileHandleForWriting.fileDescriptor, F_DUPFD_CLOEXEC, 0),
@@ -351,6 +357,7 @@ enum AgentLaunch {
         )
         try? stdout.fileHandleForReading.close()
         try? stdin.fileHandleForWriting.close()
+        try? stderrPipe.fileHandleForReading.close()
         return (process, channel, stderr)
     }
 

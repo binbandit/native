@@ -2,6 +2,7 @@ import Darwin
 import Foundation
 import NativeHost
 import NativeHostProtocol
+import NativePolicy
 import SessionTitling
 import UserShell
 
@@ -16,10 +17,13 @@ public enum MacHost {
         )
     }
 
+    /// The organization's policy comes from the managed preferences of this host's domain
+    /// (`MacHostPolicySource.domain`); a host with no domain is unmanaged.
     public static func configuration(
         location: HostLocation, info: PeerInfo, inheritEnvironment: Bool = false, pluginsDirectory: URL? = nil
     ) -> HostCore.Configuration {
-        HostCore.Configuration(
+        let policy = policySource(location: location)
+        return HostCore.Configuration(
             location: location,
             hostInfo: info,
             machineName: Host.current().localizedName ?? ProcessInfo.processInfo.hostName,
@@ -31,7 +35,7 @@ public enum MacHost {
             // A development build's host shouldn't outlive interest in it.
             idleExit: location.isDevelopment ? .seconds(15 * 60) : nil,
             pluginsDirectory: pluginsDirectory,
-            updates: MacHostUpdates.environment(location: location),
+            updates: MacHostUpdates.environment(location: location, mirror: { policy?.updateFeedURL() }),
             exit: { status in Darwin.exit(status) },
             fileWatching: FSEventsFileWatching(),
             nativeSkills: bundledSkills(),
@@ -39,8 +43,19 @@ public enum MacHost {
             titleGenerator: OnDeviceTitleGenerator(),
             keepAwake: MacPowerBackend(), systemInfo: systemInfo(),
             doctor: HostDoctor(machine: HostDoctorMacMachine(), platform: HostDoctorMac()),
-            credentials: credentialStore(for: location)
+            credentials: credentialStore(for: location),
+            policy: policy ?? FixedHostPolicySource(.unrestricted)
         )
+    }
+
+    /// The managed preferences this process's host follows, or nil when no organization can manage it.
+    /// A restricted enrollment is kept beside the host's store, apart from any preference.
+    public static func policySource(location: HostLocation, bundle: Bundle = .main) -> MacHostPolicySource? {
+        let channel = MacHostUpdates.channel(location: location, bundle: bundle)
+        let enrollment = FilePolicyEnrollmentStore(url: location.directory.appending(path: "policy-enrollment.json"))
+        return MacHostPolicySource.domain(bundle: bundle, channel: channel).map {
+            MacHostPolicySource(domain: $0, channel: channel, enrollment: enrollment)
+        }
     }
 
     /// When the Mac booted, to tell a restart from the host stopping.

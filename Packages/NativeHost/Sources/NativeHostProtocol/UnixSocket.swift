@@ -111,8 +111,8 @@ public enum UnixSocket {
         var on: Int32 = 1
         setsockopt(descriptor, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
         #else
-        // There's no such socket option here, and DispatchIO's writes can't pass MSG_NOSIGNAL, so
-        // the process ignores SIGPIPE instead (native-host does from its first line).
+        // There's no such socket option here, and `ByteChannel` writes with write(2), which can't pass
+        // MSG_NOSIGNAL, so the process ignores SIGPIPE instead (native-host does from its first line).
         signal(SIGPIPE, SIG_IGN)
         #endif
     }

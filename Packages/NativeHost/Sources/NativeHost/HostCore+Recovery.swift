@@ -7,7 +7,8 @@ import NativeHostProtocol
 // to send the prompt again or tell the agent it was interrupted. Tool calls are never re-run.
 extension HostCore {
     /// At startup: every turn the previous run left unfinished is recovered, and queues that were
-    /// waiting on a turn start draining once their session is back.
+    /// waiting on a turn start draining once their session is back. For an agent the policy doesn't
+    /// allow, those turns end with the reason and the queues stay paused (`concludeBlockedTurns`).
     func resumeInterruptedWork() throws {
         let previousBoot = try store.meta(MetaKey.bootTime).flatMap(Double.init).map(Date.init(timeIntervalSince1970:))
         let lastSeenAlive = try store.meta(MetaKey.heartbeat).flatMap(Double.init).map(
@@ -26,12 +27,18 @@ extension HostCore {
         for (sessionID, _) in try store.approvals() {
             try store.removeApprovals(sessionID: sessionID)
         }
-        let turns = try store.unfinishedTurns()
-        if !turns.isEmpty || (previousRun != nil && previousRun != .stopped) {
+        let unfinished = try store.unfinishedTurns()
+        // A turn whose session is gone is finished below, whatever its agent.
+        let blocked = unfinished.filter {
+            sessions[$0.sessionID].map { !policy.allows(agent: $0.record.agentID) } ?? false
+        }
+        let turns = unfinished.filter { turn in !blocked.contains { $0.sessionID == turn.sessionID } }
+        if !unfinished.isEmpty || (previousRun != nil && previousRun != .stopped) {
             let detail =
                 turns.isEmpty ? nil : "Resuming \(turns.count) interrupted \(turns.count == 1 ? "task" : "tasks")"
             journal(.hostStarted, session: nil, detail: detail, previousRun: previousRun)
         }
+        try concludeBlockedTurns(blocked, cause: cause, lastSeenAlive: lastSeenAlive)
         for turn in turns {
             guard let session = sessions[turn.sessionID] else {
                 try store.finishTurn(turn.sessionID)
@@ -63,6 +70,7 @@ extension HostCore {
         let now = Date.now
         for session in sessions.values where session.record.agentID == agentID {
             if session.record.origin == .announced {
+                withdrawPermissions(of: session)
                 // Quiet resume does not replay child history, so idle unloading keeps its log and id.
                 // Other exits use a full parent replay, which reconstructs the child tree.
                 if !session.reloadsQuietly {

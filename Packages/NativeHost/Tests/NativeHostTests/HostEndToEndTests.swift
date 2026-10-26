@@ -19,6 +19,7 @@ struct HostEndToEndTests {
     @Test("A prompt runs through the host and its reply streams back")
     func promptRoundTrip() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         try harness.start()
         let recorder = try await harness.connect()
         let session = try await startSession(recorder, harness: harness)
@@ -33,6 +34,7 @@ struct HostEndToEndTests {
     @Test("The turn keeps going with no client attached, and a new client sees it finished")
     func survivesTheClientQuitting() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         try harness.start()
         let first = try await harness.connect()
         let session = try await startSession(first, harness: harness)
@@ -50,6 +52,7 @@ struct HostEndToEndTests {
     @Test("A prompt sent twice with one request id is delivered once")
     func idempotentPrompts() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         try harness.start()
         let recorder = try await harness.connect()
         let session = try await startSession(recorder, harness: harness)
@@ -65,6 +68,7 @@ struct HostEndToEndTests {
     @Test("Killing the host mid-turn: the new host reloads the session and tells the agent to continue")
     func hostKilledMidTurn() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         try harness.start()
         let first = try await harness.connect()
         let session = try await startSession(first, harness: harness)
@@ -96,6 +100,7 @@ struct HostEndToEndTests {
     @Test("A prompt that never reached the agent is sent again after the host dies")
     func lostPromptIsResent() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         try harness.start()
         let first = try await harness.connect()
         let session = try await startSession(first, harness: harness)
@@ -119,6 +124,7 @@ struct HostEndToEndTests {
     @Test("An agent that crashes mid-turn is restarted and resumes, and the user is told")
     func agentCrashMidTurn() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         try harness.start()
         let recorder = try await harness.connect()
         let session = try await startSession(recorder, harness: harness)
@@ -140,6 +146,7 @@ struct HostEndToEndTests {
     @Test("Permission requests reach the client and the answer reaches the agent")
     func permissions() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         try harness.start()
         let recorder = try await harness.connect()
         let session = try await startSession(recorder, harness: harness)
@@ -148,8 +155,10 @@ struct HostEndToEndTests {
         let toolCall = try #require(await recorder.mirror(session).state.pendingPermissions.first?.toolCallID)
         let summary = try await recorder.client.sessions().first { $0.id == session }
         #expect(summary?.needsApproval == true)
+        let advertisedOption = try #require(
+            await recorder.mirror(session).state.pendingPermissions.first?.permission.options.first)
         try await recorder.client.respondPermission(
-            RespondPermissionParams(sessionID: session, toolCallID: toolCall, optionID: "allow"))
+            RespondPermissionParams(sessionID: session, toolCallID: toolCall, optionID: advertisedOption.optionId))
         try await recorder.wait("the turn to end") { await $0.turnsEnded(session) == ["end_turn"] }
         #expect(await recorder.agentText(session).contains("permission: allow"))
         await recorder.stop()
@@ -158,6 +167,7 @@ struct HostEndToEndTests {
     @Test("Messages sent while a turn runs are queued, and steering joins the running turn")
     func queueAndSteer() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         try harness.start()
         let recorder = try await harness.connect()
         let session = try await startSession(recorder, harness: harness)
@@ -176,6 +186,7 @@ struct HostEndToEndTests {
     @Test("Restart Host Now exits for the new binary, which resumes the turn as an update")
     func restartNow() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         try harness.start()
         let first = try await harness.connect()
         let session = try await startSession(first, harness: harness)
@@ -201,6 +212,7 @@ struct HostEndToEndTests {
     @Test("Restarting once idle waits for the running turn to end")
     func restartWhenIdle() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         try harness.start()
         let recorder = try await harness.connect()
         let session = try await startSession(recorder, harness: harness)

@@ -4,9 +4,10 @@ import NativeHostProtocol
 /// How a host watches folders for `_native/fs/watch`: FSEvents on a Mac (`NativeHostMac`), polling
 /// where a platform has nothing better. Set in `HostCore.Configuration.fileWatching`.
 public protocol FileWatching: Sendable {
-    /// Changes under `root` (absolute, symbolic links resolved) until the consumer stops iterating,
-    /// which stops the watching.
-    func changes(under root: String) -> AsyncStream<FileWatchBatch>
+    /// Changes under `root` (absolute, symbolic links resolved) from the moment this returns until the
+    /// consumer stops iterating, which stops the watching. A client told its watch has started can
+    /// rely on seeing every change it makes from then on.
+    func changes(under root: String) async -> AsyncStream<FileWatchBatch>
 }
 
 /// Paths that changed together, as the watcher reports them.
@@ -37,12 +38,14 @@ public struct PollingFileWatching: FileWatching {
         self.entryLimit = entryLimit
     }
 
-    public func changes(under root: String) -> AsyncStream<FileWatchBatch> {
+    public func changes(under root: String) async -> AsyncStream<FileWatchBatch> {
+        let (interval, entryLimit) = (interval, entryLimit)
+        // Later walks are compared with this one, so a change made after this returns can't be in it.
+        let baseline = await Self.walk(root, entryLimit: entryLimit)
         let (stream, continuation) = AsyncStream.makeStream(
             of: FileWatchBatch.self, bufferingPolicy: .bufferingNewest(16))
-        let (interval, entryLimit) = (interval, entryLimit)
         let polling = Task.detached {
-            var previous = FolderSnapshot(root: root, entryLimit: entryLimit)
+            var previous = baseline
             while !Task.isCancelled {
                 try? await Task.sleep(for: interval)
                 guard !Task.isCancelled else { break }
@@ -56,6 +59,12 @@ public struct PollingFileWatching: FileWatching {
         }
         continuation.onTermination = { _ in polling.cancel() }
         return stream
+    }
+
+    /// Off the caller's executor: a big tree takes a while, and the host actor has sessions to run.
+    @concurrent
+    private static func walk(_ root: String, entryLimit: Int) async -> FolderSnapshot {
+        FolderSnapshot(root: root, entryLimit: entryLimit)
     }
 }
 

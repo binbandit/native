@@ -114,6 +114,7 @@ Launch arguments go after `--`: `scripts/dev/run-isolated.sh playtest --no-build
 | `-agentDefaults.claude-code.effort <id>` | Claude Code's effort; already `low` |
 | `-nativeOpenSession <agent>/<session id>` | Opens that session at launch (`docs/performance.md`) |
 | `-pluginsDirectory <folder>` | Loads plugins from there; `seed` already points it at its plugins |
+| `-experiment.<id> YES` | Turns a Labs switch on for this launch only (`NO` turns it off), e.g. `-experiment.NativeSidebarNext YES`; the id is the experiment's `id` in `native/Experiments/NativeExperiments.swift` |
 | `-nativeHostRefused YES` | Acts as if background running were refused, to see the fallback (`docs/durability.md`) |
 | `-quickEntryFixture selection` | With `NativeComposeTask` on, Cmd-N renders a Quick Entry preview state. Also accepts `empty`, `firstLaunch`, `failure`, `offline`, `narrow`, `devices`, `agents`, `projects`. Debug only; the device fixtures never connect to a paired host. Omit this argument for behavior checks. |
 | `-composeTaskFixture ready` | With `NativeComposeTask` on, Shift-Command-N renders the Compose page with inert fixture content. Also accepts `empty`, `firstLaunch`, `failure`, `offline`, `held`, `narrow`, `agents`, `devices`, `twoAgents`, `folding`, `message`, `settled`. Omit for behavior checks. |
@@ -228,8 +229,8 @@ $D action "Add sentence to contributing" AXShowMenu --item Unarchive
 $D key cmd+,                                    # or: $D press Settings
 $D press Appearance                             # a page, by its name in the list
 
-# Quit and relaunch, to test durability (the host keeps running turns)
-$D menu Native "Quit Native"
+# Stop the instance and its host, then relaunch
+scripts/dev/run-isolated.sh playtest --quit
 scripts/dev/run-isolated.sh playtest --no-build
 ```
 
@@ -246,6 +247,9 @@ scripts/dev/run-isolated.sh playtest --no-build
 - **Menus take the person's mouse and keys.** An open menu captures input from whoever is at the Mac,
   so the driver never leaves one open: `press` on a menu button lists the items and closes it, and
   `--item` picks one in the same breath. Prefer `menu` for the menu bar, which never opens anything.
+- **Background instances may have no menu bar.** To stop an instance, use
+  `scripts/dev/run-isolated.sh <name> --quit`, which also stops its host and agents. When testing
+  the quit shortcut or app-only durability, use `drive.sh <name> key cmd+q` to leave the host running.
 - **Anything that opens another app or a system panel is out of bounds**: Open In, Sign in, links,
   Add Project and other file pickers. Projects come from `seed`.
 - **A covered window isn't redrawn.** `shot` captures the window's own pixels, but parts another
@@ -309,7 +313,7 @@ state (seeded, or `--reset` for a first launch) and write down the commit you bu
    network error, agent not installed, signed out, the project folder deleted or moved, a turn that
    won't stop, the host killed.
 6. **Durability.** Start a turn (`slow 60` on Fake Agent, or a real one), then quit the app with ⌘Q
-   (`menu Native "Quit Native"`) and relaunch: is the turn still going, and does Native say what
+   (`drive.sh <name> key cmd+q`) and relaunch: is the turn still going, and does Native say what
    happened while it was closed? Then the same with the host killed, and with Quit Native and Stop
    Agents.
 7. **Settings sweep.** Every Settings page (⌘,): each control does what it says, takes effect without

@@ -91,13 +91,13 @@ struct FileWatchingTests {
         let folder = try scratchFolder()
         defer { try? FileManager.default.removeItem(atPath: folder) }
         let heard = Recorded<FileWatchBatch>()
+        // Watching has started once this returns.
+        let changes = await watching.changes(under: folder)
         let following = Task {
-            for await batch in watching.changes(under: folder) {
+            for await batch in changes {
                 heard.append(batch)
             }
         }
-        // Both watchers start from what's there once they're running.
-        try await Task.sleep(for: .milliseconds(300))
         try Data("new".utf8).write(to: URL(filePath: folder + "/new.txt"))
         try await pollUntil("the new file") { heard.values.flatMap(\.paths).contains(folder + "/new.txt") }
         following.cancel()

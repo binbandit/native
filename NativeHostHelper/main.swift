@@ -46,24 +46,35 @@ Task { @HostActor in
             ParentWatch.stopWithParent(core)
         }
         logger.info("Serving at \(location.socketPath, privacy: .public)")
-        // Paired devices (docs/companion.md): nothing listens on the network until one is paired.
+        // Paired devices (docs/companion.md): nothing listens on the network until one is paired,
+        // and nothing at all unless the host's policy allows devices (docs/enterprise/host-policy.md).
         let gateway = try LinkGateway(
             configuration: .init(
                 directory: LinkGateway.Configuration.directory(inHostDirectory: location.directory),
                 hostID: core.hostID, machineName: serving.machineName,
                 includesLoopback: location.isDevelopment),
-            accept: { stream, grants in
+            allowedByPolicy: core.policy.allows(.companion),
+            accept: { stream, grants, identity in
                 Task { @HostActor in
+                    // The gateway hears a revocation a moment after the host does.
+                    guard core.policy.allows(.companion) else { return stream.close() }
                     core.accept(
                         stream,
                         grants: ClientGrants(
                             managePlugins: grants.managePlugins, manageHost: grants.manageHost, isLocal: false,
-                            runCommands: grants.runCommands))
+                            runCommands: grants.runCommands), identity: identity)
                 }
             },
             paired: { record in
                 Task { @HostActor in core.journalDevicePaired(record.device.name, detail: record.summary) }
             })
+        // Registered before the gateway starts, in the same actor turn as reading the policy above,
+        // and applied in order.
+        let (companionPolicy, companionPolicyChanged) = AsyncStream.makeStream(of: Bool.self)
+        core.observePolicy { companionPolicyChanged.yield($0.allows(.companion)) }
+        Task {
+            for await allowed in companionPolicy { await gateway.setAllowedByPolicy(allowed) }
+        }
         try await gateway.start(verifyPeer: { try CodeSignatureVerifier().verify(socket: $0) })
         core.doctorGateway = {
             let status = await gateway.status

@@ -12,7 +12,7 @@ public struct FSEventsFileWatching: FileWatching {
         self.latency = latency
     }
 
-    public func changes(under root: String) -> AsyncStream<FileWatchBatch> {
+    public func changes(under root: String) async -> AsyncStream<FileWatchBatch> {
         guard let watcher = FolderWatcher(root: root, latency: latency) else {
             return AsyncStream { $0.finish() }
         }

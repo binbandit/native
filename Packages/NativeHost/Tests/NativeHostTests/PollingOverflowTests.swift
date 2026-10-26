@@ -61,8 +61,8 @@ struct PollingOverflowTests {
         try await withThrowingTaskGroup(of: Void.self) { group in
             group.addTask {
                 var received = 0
-                for await batch in PollingFileWatching(interval: .milliseconds(20), entryLimit: 2).changes(under: root)
-                {
+                let changes = await PollingFileWatching(interval: .milliseconds(20), entryLimit: 2).changes(under: root)
+                for await batch in changes {
                     #expect(batch == FileWatchBatch(paths: [], isOverflow: true))
                     received += 1
                     if received == 2 { return }
