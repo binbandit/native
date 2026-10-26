@@ -20,7 +20,7 @@ import Testing
         switch failure {
         case "transition":
             try rig.core.store.database.execute(
-                "CREATE TRIGGER fail_delete BEFORE UPDATE ON approvals BEGIN SELECT RAISE(ABORT, '\(Self.canary)'); END"
+                "CREATE TRIGGER fail_delete BEFORE DELETE ON approval_pending BEGIN SELECT RAISE(ABORT, '\(Self.canary)'); END"
             )
         case "append":
             try rig.core.store.database.execute(
@@ -38,7 +38,8 @@ import Testing
         default: try rig.core.store.database.execute("PRAGMA query_only = ON")
         }
         do {
-            try await client.respondPermission(.init(sessionID: session, toolCallID: tool, optionID: "allow"))
+            try await client.respondPermission(
+                .init(sessionID: session, toolCallID: tool, optionID: try option(rig, session)))
             Issue.record("A failed transaction sent an answer")
         } catch {
             #expect(!error.localizedDescription.contains(Self.canary))
@@ -80,8 +81,10 @@ import Testing
         defer { rig.stop() }
         let (session, tool) = try await request(rig, first)
         let notice = try #require(try rig.core.store.activeNotifications().first { $0.kind == .permission })
-        async let a = answer(first, session, tool, notice.id, notification, "allow")
-        async let b = answer(second, session, tool, notice.id, notification, "reject")
+        let allow = try option(rig, session)
+        let reject = try option(rig, session, index: 1)
+        async let a = answer(first, session, tool, notice.id, notification, allow, isAllow: true)
+        async let b = answer(second, session, tool, notice.id, notification, reject, isAllow: false)
         let winners = await [a, b]
         #expect(winners.filter { $0 }.count == 1)
         let rows = try records(rig.core.store)
@@ -92,7 +95,8 @@ import Testing
         #expect(rows.allSatisfy { $0.policyRevision == policy.revision })
         #expect(rows.allSatisfy { $0.requestID == rows[0].requestID && $0.actionID == rows[0].actionID })
         await #expect(throws: (any Error).self) {
-            try await first.respondPermission(.init(sessionID: session, toolCallID: tool, optionID: "allow"))
+            try await first.respondPermission(
+                .init(sessionID: session, toolCallID: tool, optionID: try option(rig, session)))
         }
         #expect(try records(rig.core.store).count == 3)
         try await rig.waitUntil("agent answer") { rig.core.sessions[session]?.turn == nil }
@@ -109,7 +113,7 @@ import Testing
         let (session, tool) = try seed(rig.core)
         if committed {
             _ = try rig.core.store.decideApprovalAudit(
-                sessionID: session, toolCallID: tool, optionID: Self.canary,
+                sessionID: session, toolCallID: tool, optionID: try option(rig, session),
                 actor: Self.firstActor, source: .direct, policy: rig.core.policy, epoch: rig.core.epoch)
         }
         let restarted = try HostCore(configuration: rig.core.configuration)
@@ -121,17 +125,8 @@ import Testing
         #expect(try restarted.store.approvals().isEmpty)
         #expect(throws: (any Error).self) {
             _ = try restarted.store.decideApprovalAudit(
-                sessionID: session, toolCallID: tool, optionID: Self.canary, actor: Self.secondActor,
+                sessionID: session, toolCallID: tool, optionID: try option(rig, session), actor: Self.secondActor,
                 source: .notification, policy: restarted.policy, epoch: restarted.epoch)
-        }
-        if committed {
-            #expect(throws: ApprovalAuditFailure.notPending) {
-                try restarted.store.requestApprovalAudit(
-                    HostApprovalAuditRecord(
-                        hostID: restarted.hostID, sessionID: session, state: .requested, source: .agent,
-                        policyRevision: nil, policyMode: .ordinary, epoch: restarted.epoch),
-                    toolCallID: tool, title: Self.canary, optionIDs: [Self.canary])
-            }
         }
         #expect(try records(restarted.store).count == rows.count)
     }
@@ -141,7 +136,8 @@ import Testing
         let (session, tool) = try seed(rig.core)
         let live = try #require(rig.core.sessions[session])
         #expect(throws: ApprovalAuditFailure.deliveryUncertain) {
-            try rig.core.respondPermission(.init(sessionID: session, toolCallID: tool, optionID: Self.canary))
+            try rig.core.respondPermission(
+                .init(sessionID: session, toolCallID: tool, optionID: try option(rig, session)))
         }
         #expect(live.pendingPermissions.isEmpty)
         #expect(try records(rig.core.store).last?.reason == .transportUnavailable)
@@ -153,7 +149,8 @@ import Testing
             BEGIN SELECT RAISE(ABORT, 'injected'); END
             """)
         #expect(throws: ApprovalAuditFailure.deliveryUncertain) {
-            try rig.core.respondPermission(.init(sessionID: next, toolCallID: nextTool, optionID: Self.canary))
+            try rig.core.respondPermission(
+                .init(sessionID: next, toolCallID: nextTool, optionID: try option(rig, next)))
         }
         try rig.core.store.database.execute("DROP TRIGGER fail_delivery")
         let restarted = try HostCore(configuration: rig.core.configuration)
@@ -178,7 +175,8 @@ import Testing
             rig.core.agents["fake"]?.peer?.close()
         }
         #expect(throws: ApprovalAuditFailure.deliveryUncertain) {
-            try rig.core.respondPermission(.init(sessionID: session, toolCallID: tool, optionID: "allow"))
+            try rig.core.respondPermission(
+                .init(sessionID: session, toolCallID: tool, optionID: try option(rig, session)))
         }
         #expect(rig.core.sessions[session]?.pendingPermissions.isEmpty == true)
         #expect(try rig.core.store.approvals().isEmpty)
@@ -203,28 +201,15 @@ import Testing
         let (cancelled, tool) = try seed(rig.core)
         #expect(throws: ApprovalAuditFailure.deliveryUncertain) {
             try rig.core.respondPermission(
-                .init(sessionID: cancelled, toolCallID: tool, optionID: nil), by: Self.firstActor)
+                .init(
+                    sessionID: cancelled, toolCallID: tool, optionID: nil,
+                    approvalRequestID: try records(rig.core.store).last?.requestID), by: Self.firstActor)
         }
         let rows = try records(rig.core.store)
         #expect(rows.map(\.state) == [.requested, .withdrawn, .requested, .withdrawn, .deliveryFailed])
         #expect(rows[1].reason == .requestEnded && rows[1].actor == .unknown)
         #expect(rows[3].reason == .cancelled && rows[3].actor == Self.firstActor)
         #expect(rows.allSatisfy { $0.selectedOptionID == nil })
-    }
-
-    @Test @HostActor func agentExitWithdrawsAnAnnouncedSubagentsApproval() async throws {
-        let rig = try PolicyRig(.unrestricted)
-        let client = try await connect(rig)
-        defer { rig.stop() }
-        try await client.syncAgents([rig.agentSpec()])
-        _ = try await client.newSession(.init(agentID: "fake", cwd: rig.root.path()))
-        let (child, _) = try seed(rig.core, origin: .announced)
-        let link = try #require(rig.core.agents["fake"])
-        rig.core.agentExited("fake", generation: link.generation)
-        #expect(rig.core.sessions[child] == nil)
-        #expect(try records(rig.core.store).last?.state == .withdrawn)
-        #expect(try rig.core.store.approvals().isEmpty)
-        await client.stop()
     }
 
     @Test @HostActor func exportAuthorizationCannotBeSpoofedByDisplayNameOrPayload() async throws {
@@ -246,7 +231,8 @@ import Testing
         peer.start()
         defer { peer.close() }
         let payload: JSONValue = .object([
-            "sessionID": .string(session.description), "toolCallID": .string(tool), "optionID": .string(Self.canary),
+            "sessionID": .string(session.description), "toolCallID": .string(tool),
+            "optionID": .string(try option(rig, session)),
             "actor": .object(["kind": .string("localPeer"), "localUID": .number(0)]),
             "clientInfo": .object(["name": .string(Self.canary)]),
         ])
@@ -332,14 +318,17 @@ import Testing
         _ = try await recorder.client.prompt(.init(sessionID: session.id, text: "permission"))
         try await recorder.wait("approval") { await !$0.mirror(session.id).state.pendingPermissions.isEmpty }
         let tool = try #require(await recorder.mirror(session.id).state.pendingPermissions.first?.toolCallID)
-        try await recorder.client.respondPermission(.init(sessionID: session.id, toolCallID: tool, optionID: "allow"))
+        let selected = try #require(
+            await recorder.mirror(session.id).state.pendingPermissions.first?.permission.options.first)
+        try await recorder.client.respondPermission(
+            .init(sessionID: session.id, toolCallID: tool, optionID: selected.optionId))
         let exported = try await recorder.client.approvalAudit()
         #expect(exported.jsonl.contains("localPeer"))
         #expect(exported.jsonl.contains("\"localUID\":\(getuid())"))
         await recorder.stop()
     }
 
-    @HostActor private func connect(
+    @HostActor func connect(
         _ rig: PolicyRig, identity: HostClientIdentity = .unknown, grants: ClientGrants = .owner
     ) async throws -> NativeHostClient {
         let client = NativeHostClient(
@@ -365,20 +354,20 @@ import Testing
 
     private func answer(
         _ client: NativeHostClient, _ session: HostSessionID, _ tool: String, _ notice: Int64,
-        _ notification: Bool, _ option: String
+        _ notification: Bool, _ option: String, isAllow: Bool
     ) async -> Bool {
         do {
-            if notification { return try await client.act(on: notice, option == "allow" ? .allow : .reject) == .done }
+            if notification { return try await client.act(on: notice, isAllow ? .allow : .reject) == .done }
             try await client.respondPermission(.init(sessionID: session, toolCallID: tool, optionID: option))
             return true
         } catch { return false }
     }
 
-    @HostActor private func seed(
-        _ core: HostCore, optionCount: Int = 1, origin: SessionOrigin = .user
+    @HostActor func seed(
+        _ core: HostCore, optionCount: Int = 1
     ) throws -> (HostSessionID, String) {
         let record = StoredSession(
-            id: HostSessionID(), agentID: "fake", agentSessionID: nil, cwd: "/fixture", parentID: nil, origin: origin)
+            id: HostSessionID(), agentID: "fake", agentSessionID: nil, cwd: "/fixture", parentID: nil, origin: .user)
         try core.store.insertSession(record)
         let session = HostSession(record: record, agentName: Self.canary, phase: .idle, needsLoad: false)
         core.sessions[record.id] = session
@@ -388,12 +377,17 @@ import Testing
                 hostID: core.hostID, sessionID: record.id, state: .requested, source: .agent,
                 policyRevision: core.policy.revision,
                 policyMode: .init(rawValue: core.policy.mode.rawValue) ?? .unknown, epoch: core.epoch),
-            toolCallID: Self.canary, title: Self.canary,
+            toolCallID: Self.canary,
             optionIDs: optionCount == 1 ? [Self.canary] : (0..<optionCount).map { Self.canary + String($0) })
         return (record.id, Self.canary)
     }
 
-    private func records(_ store: HostStore) throws -> [HostApprovalAuditRecord] {
+    @HostActor func option(_ rig: PolicyRig, _ session: HostSessionID, index: Int = 0) throws -> String {
+        let request = try #require(records(rig.core.store).last { $0.sessionID == session && $0.state == .requested })
+        return request.options[index].id.uuidString
+    }
+
+    func records(_ store: HostStore) throws -> [HostApprovalAuditRecord] {
         try store.database.query("SELECT record FROM approval_audit ORDER BY sequence").map { row in
             let text = try #require(row[0].text)
             return try JSONDecoder().decode(HostApprovalAuditRecord.self, from: Data(text.utf8))

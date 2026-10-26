@@ -12,16 +12,24 @@ extension HostStore {
         );
         """
 
-    /// Content-bearing option ids stay in the pre-existing pending-approval table, never in audit.
+    static let approvalPendingTable = """
+        CREATE TABLE approval_pending (
+            session_id TEXT NOT NULL, tool_call_id TEXT NOT NULL, request_id TEXT NOT NULL UNIQUE,
+            options TEXT NOT NULL, PRIMARY KEY (session_id, tool_call_id)
+        );
+        """
+
+    /// Content-bearing option ids live only in the pending binding table, never in audit.
     private struct ApprovalOption: Codable {
         let wireID: String
         let auditID: UUID
     }
 
+    @discardableResult
     func requestApprovalAudit(
-        _ value: HostApprovalAuditRecord, toolCallID: String, title: String?, optionIDs: [String],
+        _ value: HostApprovalAuditRecord, toolCallID: String, optionIDs: [String],
         optionKinds: [HostApprovalAuditRecord.OptionKind] = []
-    ) throws {
+    ) throws -> HostApprovalAuditRecord {
         guard optionIDs.count <= 64, Set(optionIDs).count == optionIDs.count else {
             throw ApprovalAuditFailure.invalidOption
         }
@@ -30,47 +38,56 @@ extension HostStore {
             .init(kind: index < optionKinds.count ? optionKinds[index] : .unknown)
         }
         let bindings = zip(optionIDs, record.options).map { ApprovalOption(wireID: $0, auditID: $1.id) }
-        try transaction {
+        return try transaction {
             // Never overwrite a still-waiting request with the same tool id.
             guard
                 try database.query(
-                    "SELECT 1 FROM approvals WHERE session_id = ? AND tool_call_id = ?",
+                    "SELECT 1 FROM approval_pending WHERE session_id = ? AND tool_call_id = ?",
                     .text(record.sessionID.description), .text(toolCallID)
                 ).isEmpty
             else { throw ApprovalAuditFailure.notPending }
-            try appendApprovalAudit(record, deliveryPending: false)
+            let stored = try appendApprovalAudit(record, deliveryPending: false)
+            // Announced children are ephemeral, so this pending table deliberately has no session FK.
             try database.run(
-                """
-                INSERT INTO approvals (session_id, tool_call_id, title, requested_at, audit_request_id, audit_options)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                .text(record.sessionID.description), .text(toolCallID), .text(title), .date(record.wallTime),
-                .text(record.requestID.uuidString),
+                "INSERT INTO approval_pending (session_id, tool_call_id, request_id, options) VALUES (?, ?, ?, ?)",
+                .text(record.sessionID.description), .text(toolCallID), .text(record.requestID.uuidString),
                 try JSONColumn.encode(bindings))
+            return stored
         }
+    }
+
+    struct ApprovalDecision {
+        let record: HostApprovalAuditRecord
+        let wireOptionID: String?
     }
 
     /// Transitioning the pending row and committing the decision are a single durable first-wins claim.
     func decideApprovalAudit(
-        sessionID: HostSessionID, toolCallID: String, optionID: String?, actor: HostClientIdentity,
+        sessionID: HostSessionID, toolCallID: String, optionID: String?, approvalRequestID: UUID? = nil,
+        actor: HostClientIdentity,
         source: HostApprovalAuditRecord.Source, policy: HostPolicy, epoch: UUID
-    ) throws -> HostApprovalAuditRecord {
+    ) throws -> ApprovalDecision {
         try transaction {
             guard
                 let row = try database.query(
-                    "SELECT audit_request_id, audit_options FROM approvals WHERE session_id = ? AND tool_call_id = ? AND audit_decided = 0",
+                    "SELECT request_id, options FROM approval_pending WHERE session_id = ? AND tool_call_id = ?",
                     .text(sessionID.description), .text(toolCallID)
                 ).first,
                 let requestID = row[0].text,
                 var record = try approvalAuditHead(requestID)
             else { throw ApprovalAuditFailure.notPending }
+            guard approvalRequestID.map({ $0 == record.requestID }) ?? (optionID != nil) else {
+                throw ApprovalAuditFailure.notPending
+            }
             var selected: UUID?
+            var wireOptionID: String?
             if let optionID {
                 guard let text = row[1].text,
                     let option = try JSONDecoder().decode([ApprovalOption].self, from: Data(text.utf8))
-                        .first(where: { $0.wireID == optionID })
+                        .first(where: { $0.auditID.uuidString == optionID })
                 else { throw ApprovalAuditFailure.invalidOption }
                 selected = option.auditID
+                wireOptionID = option.wireID
             }
             record.state = optionID == nil ? .withdrawn : .decided
             record.selectedOptionID = selected
@@ -79,21 +96,17 @@ extension HostStore {
             record.reason = optionID == nil ? .cancelled : nil
             stampApprovalAudit(&record, policy: policy, epoch: epoch)
             record = try appendApprovalAudit(record, deliveryPending: true)
-            // Retain only the action key so a reused tool id cannot receive a second decision.
             try database.run(
-                """
-                UPDATE approvals SET audit_decided = 1, title = NULL, audit_options = NULL
-                WHERE session_id = ? AND tool_call_id = ?
-                """, .text(sessionID.description), .text(toolCallID))
-            return record
+                "DELETE FROM approval_pending WHERE request_id = ?", .text(record.requestID.uuidString))
+            return ApprovalDecision(record: record, wireOptionID: wireOptionID)
         }
     }
 
     func finishApprovalDelivery(
-        _ decision: HostApprovalAuditRecord, failure: HostApprovalAuditRecord.Reason?, policy: HostPolicy, epoch: UUID
+        _ decision: ApprovalDecision, failure: HostApprovalAuditRecord.Reason?, policy: HostPolicy, epoch: UUID
     ) throws {
         try transaction {
-            var record = decision
+            var record = decision.record
             record.state = failure == nil ? .deliveryAccepted : .deliveryFailed
             record.reason = failure
             stampApprovalAudit(&record, policy: policy, epoch: epoch)
@@ -107,7 +120,7 @@ extension HostStore {
         try transaction {
             guard
                 let id = try database.query(
-                    "SELECT audit_request_id FROM approvals WHERE session_id = ? AND tool_call_id = ? AND audit_decided = 0",
+                    "SELECT request_id FROM approval_pending WHERE session_id = ? AND tool_call_id = ?",
                     .text(sessionID.description), .text(toolCallID)
                 ).first?.first?.text,
                 var record = try approvalAuditHead(id)
@@ -118,7 +131,7 @@ extension HostStore {
             record.source = .host
             stampApprovalAudit(&record, policy: policy, epoch: epoch)
             try appendApprovalAudit(record, deliveryPending: false)
-            try removeApproval(sessionID: sessionID, toolCallID: toolCallID)
+            try database.run("DELETE FROM approval_pending WHERE request_id = ?", .text(id))
         }
     }
 
@@ -143,7 +156,8 @@ extension HostStore {
                 try appendApprovalAudit(record, deliveryPending: false)
             }
             // Includes legacy approvals, for which provenance is unavailable. No invented audit events.
-            try database.run("DELETE FROM approvals WHERE audit_decided = 0")
+            try database.run("DELETE FROM approval_pending")
+            try database.run("DELETE FROM approvals")
         }
     }
 

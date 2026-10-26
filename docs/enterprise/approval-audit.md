@@ -24,11 +24,12 @@ no upload or UI action.
 
 There is no tool title, command, prompt, path, argument, output, credential, option label, arbitrary
 error string or client-supplied display text in these audit rows or exports. Raw option and tool-call
-ids stay in the existing content-bearing approval table; UUID references keep them out of the audit.
-After a decision, that table clears the title and option bindings and retains the session/tool-call
-key as a first-wins tombstone until the session is deleted. Reusing a decided tool-call id in that
-session receives a fixed RPC error, never a replayed decision. An agent must use a fresh tool-call id
-for a new approval occurrence. Each request permits at most 64 distinct options. Unsupported option kinds
+ids live in the content-bearing `approval_pending` table only while the occurrence is unresolved;
+UUID references keep them out of audit. The pending table has no session foreign key because announced
+subagents are ephemeral and have no durable session row. Winning decisions delete their pending
+bindings atomically. A later request for the same tool-call id gets fresh request and option UUIDs.
+Clients see those opaque option ids; the host maps the selected id back to the agent's original id
+only after committing the decision. Stale option ids cannot decide a later occurrence. Each request permits at most 64 distinct options. Unsupported option kinds
 are explicitly unknown. A cancellation is a withdrawal, not a rejection or a selected approval.
 
 The Unix accepting transport obtains the uid from the kernel, checks the same account, and retains
@@ -41,14 +42,15 @@ person holding or using it. Notification actions use the same decision routine a
 ## Commit and failure boundary
 
 SQLite uses the host's existing WAL, `synchronous=FULL`, fullfsync and checkpoint_fullfsync settings.
-Schema migration 11 adds approval audit event and head tables, and references in the existing
-pending-approval table. No approval history is inferred for pre-migration rows.
+Schema migrations 11 and 12 add audit event/head tables and an independent pending-binding table.
+The legacy approval table remains for migration; no existing table or foreign key is weakened.
+A database created by the initial audit revision upgrades without losing its events. No approval history is inferred for pre-migration rows.
 
 1. The request audit event and pending row commit together before an approvable session event or
    notification is forwarded to any client.
 2. The winning decision (or explicit client cancellation), pending-row transition and delivery-pending
    marker commit in one transaction before the selected answer is handed to the ACP peer. Competing
-   or duplicate answers cannot claim that pending row again, including after a crash.
+   or duplicate answers cannot claim that occurrence again, including after a crash.
 3. `deliveryAccepted` means the local transport accepted the write into its queue. It does not mean
    the agent received, acknowledged or executed it. A failed write records `deliveryFailed` with a
    fixed transport reason. No exception text is stored in audit or returned from these storage paths.
@@ -70,6 +72,16 @@ Host policy remains authoritative: decisions require agent permission. Export us
 files capability and local `manageHost`/`isLocal` grants, plus authenticated local-peer provenance.
 No MDM keys or device grants are added. Under today's policy qualification, files and agents remain
 unavailable in restricted mode; this slice does not qualify them for restricted execution.
+
+## Approval occurrence protocol
+
+Host protocol version 3 advertises host-generated option references in approval events and notification
+actions. Option ids are opaque; clients must return the advertised id rather than assume an agent's
+usual spelling such as `allow`. Request JSON also carries `approvalRequestID`; `SessionMirror` retains
+it as the pending permission's request id. Explicit nil-option cancellation must supply that UUID in
+`RespondPermissionParams.approvalRequestID`. A supplied occurrence id is always checked. Responses
+never accept actor identity from these parameters. The frozen handshake is unchanged; clients and
+hosts with differing protocol versions use the existing restart/upgrade flow.
 
 ## Local JSONL export
 

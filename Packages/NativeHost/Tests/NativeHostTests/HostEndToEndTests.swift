@@ -155,8 +155,10 @@ struct HostEndToEndTests {
         let toolCall = try #require(await recorder.mirror(session).state.pendingPermissions.first?.toolCallID)
         let summary = try await recorder.client.sessions().first { $0.id == session }
         #expect(summary?.needsApproval == true)
+        let advertisedOption = try #require(
+            await recorder.mirror(session).state.pendingPermissions.first?.permission.options.first)
         try await recorder.client.respondPermission(
-            RespondPermissionParams(sessionID: session, toolCallID: toolCall, optionID: "allow"))
+            RespondPermissionParams(sessionID: session, toolCallID: toolCall, optionID: advertisedOption.optionId))
         try await recorder.wait("the turn to end") { await $0.turnsEnded(session) == ["end_turn"] }
         #expect(await recorder.agentText(session).contains("permission: allow"))
         await recorder.stop()

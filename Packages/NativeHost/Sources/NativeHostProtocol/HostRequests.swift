@@ -214,13 +214,18 @@ public struct PromptResult: Codable, Sendable {
 public struct RespondPermissionParams: Codable, Sendable {
     public var sessionID: HostSessionID
     public var toolCallID: String
-    /// Nil cancels the request.
+    /// The opaque option id advertised for this occurrence. Nil cancels it only with approvalRequestID.
     public var optionID: String?
+    /// The host's occurrence UUID, required for cancellation and checked whenever supplied.
+    public var approvalRequestID: UUID?
 
-    public init(sessionID: HostSessionID, toolCallID: String, optionID: String?) {
+    public init(
+        sessionID: HostSessionID, toolCallID: String, optionID: String?, approvalRequestID: UUID? = nil
+    ) {
         self.sessionID = sessionID
         self.toolCallID = toolCallID
         self.optionID = optionID
+        self.approvalRequestID = approvalRequestID
     }
 }
 

@@ -63,30 +63,47 @@ extension HostCore {
         let kinds: [HostApprovalAuditRecord.OptionKind]
         if case .array(let values) = raw["options"] {
             let valid = values.filter { $0["optionId"]?.stringValue != nil }
+            guard valid.count == values.count else {
+                try? link.peer?.respond(to: id, with: RequestPermissionResponse.cancelled)
+                return
+            }
             options = valid.compactMap { $0["optionId"]?.stringValue }
             kinds = valid.map { .init(rawValue: $0["kind"]?.stringValue ?? "") ?? .unknown }
         } else {
-            options = []
-            kinds = []
+            try? link.peer?.respond(to: id, with: RequestPermissionResponse.cancelled)
+            return
         }
         let record = HostApprovalAuditRecord(
             hostID: hostID, sessionID: session.id, state: .requested, source: .agent,
             policyRevision: policy.revision, policyMode: .init(rawValue: policy.mode.rawValue) ?? .unknown, epoch: epoch
         )
+        let stored: HostApprovalAuditRecord
         do {
-            try store.requestApprovalAudit(
-                record, toolCallID: toolCallID, title: request.toolCall.title, optionIDs: options, optionKinds: kinds)
+            stored = try store.requestApprovalAudit(
+                record, toolCallID: toolCallID, optionIDs: options, optionKinds: kinds)
         } catch ApprovalAuditFailure.notPending {
             try? link.peer?.respond(
-                to: id, error: RPCError(code: -32000, message: "A decision for this action was already recorded."))
+                to: id, error: RPCError(code: -32000, message: "An approval for this tool call is already pending."))
             return
         } catch {
             // Fail closed in every mode. The agent still waits; no approvable event was forwarded.
             logger.error("Couldn't durably record an approval request. No answer was sent.")
             return
         }
+        // Opaque option references bind existing clients' selected answers to this occurrence.
+        var forwarded = raw
+        if case .object(var fields) = raw, case .array(let values) = raw["options"] {
+            fields["options"] = .array(
+                zip(values, stored.options).map { value, option in
+                    guard case .object(var item) = value else { return value }
+                    item["optionId"] = .string(option.id.uuidString)
+                    return .object(item)
+                })
+            fields["approvalRequestID"] = .string(stored.requestID.uuidString)
+            forwarded = .object(fields)
+        }
         session.pendingPermissions[toolCallID] = id
-        append(.permissionRequested(toolCallID: toolCallID, request: raw), to: session)
+        append(.permissionRequested(toolCallID: toolCallID, request: forwarded), to: session)
         journal(.approvalNeeded, session: session, detail: request.toolCall.title)
         publish(session)
     }
@@ -121,11 +138,11 @@ extension HostCore {
         guard let requestID = session.pendingPermissions[params.toolCallID] else {
             throw HostError.permissionNotPending
         }
-        let decision: HostApprovalAuditRecord
+        let decision: HostStore.ApprovalDecision
         do {
             decision = try store.decideApprovalAudit(
                 sessionID: session.id, toolCallID: params.toolCallID, optionID: params.optionID,
-                actor: actor, source: source, policy: policy, epoch: epoch)
+                approvalRequestID: params.approvalRequestID, actor: actor, source: source, policy: policy, epoch: epoch)
         } catch let failure as ApprovalAuditFailure {
             throw failure
         } catch {
@@ -137,7 +154,7 @@ extension HostCore {
             append(.permissionResolved(toolCallID: params.toolCallID, optionID: params.optionID), to: session)
             publish(session)
         }
-        let response = params.optionID.map { RequestPermissionResponse.selected(optionId: $0) } ?? .cancelled
+        let response = decision.wireOptionID.map { RequestPermissionResponse.selected(optionId: $0) } ?? .cancelled
         let failure: HostApprovalAuditRecord.Reason?
         if let peer = agents[session.record.agentID]?.peer {
             do {

@@ -11,7 +11,7 @@ public enum HostProtocol {
     /// The handshake never changes, whatever the version: `initialize`, the `protocolVersion` and
     /// `hostInfo` of its result (`FrozenHandshake`), and `_native/host/shutdown` with
     /// `stopAgents: false`. That's what lets any newer app move any older host onto its binary.
-    public static let version = 2
+    public static let version = 3
 
     public enum Method {
         // Client → host requests.

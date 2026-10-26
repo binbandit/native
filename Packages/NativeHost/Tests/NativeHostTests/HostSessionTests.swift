@@ -155,8 +155,10 @@ struct HostSessionTests {
         let summary = try await second.client.attach(session)
         #expect(summary.needsApproval)
         let toolCall = try #require(await second.mirror(session).state.pendingPermissions.first?.toolCallID)
+        let advertisedOption = try #require(
+            await second.mirror(session).state.pendingPermissions.first?.permission.options.first)
         try await second.client.respondPermission(
-            RespondPermissionParams(sessionID: session, toolCallID: toolCall, optionID: "allow"))
+            RespondPermissionParams(sessionID: session, toolCallID: toolCall, optionID: advertisedOption.optionId))
         try await second.wait("the turn") { await $0.turnsEnded(session) == ["end_turn"] }
         #expect(await second.agentText(session).contains("permission: allow"))
         await second.stop()
