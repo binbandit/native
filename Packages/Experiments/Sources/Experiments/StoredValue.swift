@@ -31,11 +31,19 @@ public enum StoredValue: Hashable, Sendable {
     }
 
     /// Reads a property-list object as `kind`. Property lists store every number as `NSNumber`, so
-    /// the expected kind, not the object, decides how a number is read.
+    /// the expected kind, not the object, decides how a number is read. Launch arguments
+    /// (`-experiment.<id> YES`) arrive as strings, so a switch also reads the words
+    /// `UserDefaults.bool(forKey:)` accepts; anything else is unset, never on.
     public init?(propertyList object: Any, as kind: Kind) {
         switch (kind, object) {
         case (.string, let string as String): self = .string(string)
         case (.bool, let number as NSNumber): self = .bool(number.boolValue)
+        case (.bool, let text as String):
+            switch text.lowercased() {
+            case "yes", "true", "1": self = .bool(true)
+            case "no", "false", "0": self = .bool(false)
+            default: return nil
+            }
         case (.int, let number as NSNumber): self = .int(number.intValue)
         case (.double, let number as NSNumber): self = .double(number.doubleValue)
         default: return nil

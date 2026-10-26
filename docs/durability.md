@@ -388,7 +388,8 @@ the URL outlasts the app:
   (`_native/session/set_mcp_servers` with `replacingNamed`, which upserts the `native` entry and
   writes nothing when it's unchanged), so the next load brings the tools back, also for sessions
   from before URLs lasted. A session loaded right now keeps the old address until it reloads; after
-  a move, `OrchestrationServerNotice` says so once and offers Restart Host.
+  a move, `OrchestrationServerNotice` says so once and offers Restart Host. Cancelling the restart
+  confirmation keeps the notice visible; a new host process or handover to host-served tools clears it.
 
 What this changes in the threat model. Before, tokens were 256 random bits per session per launch,
 held only in memory, and worthless once the app quit. Now a token lasts as long as the install's
@@ -703,7 +704,11 @@ how it reads an agent's replay), folded only when it reads it. Clients get each 
 handlers run in order, and a response returns only after the events before it were handled. Attach
 replays only what a client missed (same epoch, `afterSeq`) or the whole log from its `reset`, as
 notifications before the response, like `session/load`. So a client never misses or doubles an
-event, across reconnects and host restarts. Unknown event types and enum values decode as
+event, across reconnects and host restarts. `session/changed` reaches only the clients connected
+when it's sent, so after a reconnect `NativeHostClient` passes on each re-attach's answer as a
+`sessionChanged`, unless the new connection already brought that session's summary: a turn that
+ended, asked or failed while the client was away (a Mac asleep, a droid out of reach) shows as it
+is, not as it was when the connection dropped. Unknown event types and enum values decode as
 `unsupported`/`unknown`, so an older client survives a newer host.
 
 **Streaming cost.** The host keeps each session's log as encoded events. An agent's update is
@@ -799,7 +804,7 @@ reloads the session from the agent (`session/load`), then `RecoveryPlanner` deci
 | A session the agent never saved can't load | `session/load` fails for a session started here that never finished a turn | starts a fresh agent session under the same host id; recovery then resends the message | the message, answered (nothing was lost: the agent had nothing) |
 | The prompt fails for a passing reason (network, overloaded provider) | the agent's error reads like an outage, and the turn got nowhere | puts the message back at the queue's front, unshown, and sends it again after 5, 20, then 60 s (`retryAt`); Stop cancels the retry | "Codex couldn't be reached (…). Native kept your message and will try again in 5 seconds. Use Stop to cancel." The same notice then says how it went: "Reconnected to Codex, and your message went through on retry." |
 | The agent never confirms a stop | no answer 10 s after `session/cancel`, or Stop again after a second | ends the turn as cancelled on the host's side; a late answer is ignored | "Codex didn't confirm it stopped, so Native stopped waiting. It may still be finishing its last step." Whatever it sends after that shows below the stopped turn, under "The agent kept going after the stop." |
-| Client disconnects mid-turn | socket closes | nothing: the turn runs on; the client re-attaches from its last event | the finished turn, as if it never left |
+| Client disconnects mid-turn | socket closes | nothing: the turn runs on; the client re-attaches from its last event and takes the session's state from the answer | the finished turn, as if it never left |
 | Client quits while an approval or question waits | socket closes | nothing: the agent keeps waiting, and the request stays in the session's log | the next client to attach (the app relaunched, an iPad) shows it and can answer it |
 
 The interruption time comes from the host's heartbeat (written every 30 s), so "at 2:14" is within

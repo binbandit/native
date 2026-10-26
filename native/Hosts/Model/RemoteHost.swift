@@ -21,7 +21,10 @@ final class RemoteHost: Identifiable {
     let id: RemoteHostID
     /// The pairing: the host's pinned key, its addresses and this Mac's key for it alone.
     private(set) var paired: PairedHost
-    private(set) var phase = PairedHostPhase.connecting
+    private(set) var phase = PairedHostPhase.connecting {
+        // The connection was there until now: "Last connected" counts from here, not from its start.
+        didSet { if oldValue.isConnected, !phase.isConnected { lastConnected = .now } }
+    }
     /// The host's agents as runtimes, with their status, capabilities and sign-in methods, kept
     /// current from its events: the same `AgentRuntimeStatus` every other agent row shows.
     private(set) var runtimes: [AgentRuntime] = []

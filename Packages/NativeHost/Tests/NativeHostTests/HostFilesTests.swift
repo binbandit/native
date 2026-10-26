@@ -267,16 +267,15 @@ struct HostFilesTests {
                 heard.append(change)
             }
         }
+        // The host counts a watch once its watcher is running.
         try await pollUntil("the watch to start") { await FilesHost.watchCount(core) == 1 }
-        // A watcher reports from when it starts; give it a moment.
-        try await Task.sleep(for: .milliseconds(300))
         try Data("new".utf8).write(to: project.appending(path: "new.txt"))
         try await pollUntil("the new file") { heard.values.flatMap(\.paths).contains(plainPath(project) + "/new.txt") }
 
-        // A dropped connection loses the host's watch; the client watches again and says to rescan.
+        // A dropped connection loses the host's watch; the client watches again and says to rescan,
+        // once the new watch is running.
         transport.cut()
         try await pollUntil("an overflow after reconnecting") { heard.values.contains(where: \.isOverflow) }
-        try await Task.sleep(for: .milliseconds(300))
         try Data("after".utf8).write(to: project.appending(path: "after.txt"))
         try await pollUntil("a change after reconnecting") {
             heard.values.flatMap(\.paths).contains(plainPath(project) + "/after.txt")
