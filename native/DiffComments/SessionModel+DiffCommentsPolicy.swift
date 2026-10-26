@@ -16,7 +16,11 @@ extension SessionModel {
 
     var diffCommentSendBlock: String? {
         if diffCommentSending { return "Checking whether your comments arrived…" }
-        if unresolvedCommentPacket != nil { return "Delivery is unresolved. Check the transcript before resending." }
+        if unresolvedCommentPacket != nil {
+            return hasLocallyQueuedDiffComments
+                ? "Your comments are waiting to send."
+                : "Delivery is unresolved. Check the transcript before resending."
+        }
         return sourceExcerptBlock(for: draft)
     }
 

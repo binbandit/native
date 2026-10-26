@@ -172,9 +172,11 @@ extension SessionModel {
     func removeQueued(_ id: QueuedPrompt.ID, undoManager: UndoManager? = nil) {
         guard host == nil else { return removeQueuedOnHost(id, undoManager: undoManager) }
         guard let index = queue.index(of: id), let item = queue.remove(id) else { return }
+        let wasPendingComment = removeLocallyQueuedDiffComments(item.text)
         undoManager?.registerUndo(withTarget: self) { session in
             MainActor.assumeIsolated {
                 session.queue.restore(item, at: index)
+                if wasPendingComment { session.keepLocallyQueuedDiffComments(item.text) }
             }
         }
         undoManager?.setActionName("Delete Queued Message")
@@ -285,6 +287,7 @@ extension SessionModel {
         // A mode's instructions, say, which the transcript shows as a marker (`SessionHooks`).
         let preamble = services.hooks.preamble(for: self, prompt: text)
         if echo {
+            finishHeldDiffComments(text, attachments: attachments)
             let startedAt = Date.now
             state.appendUserMessage(
                 text, attachments: MessageAttachment.shown(attachments, capabilities: promptCapabilities),

@@ -512,6 +512,7 @@ final class AppModel {
         session.attachments = old.attachments
         retainPrivateFiles(of: old, for: session.key)
         catalog.swap(old.key, for: SessionInfo(sessionId: session.id, cwd: old.cwd.folderPath, updatedAt: .now))
+        session.adoptDiffCommentDrafts(from: old, moving: true)
         if selection == old.key {
             selection = session.key
         }

@@ -37,8 +37,10 @@ struct DiffCommentsDeliveryStatus: View {
                     }
                 }
                 if !session.diffCommentSending, session.unresolvedCommentPacket != nil {
-                    Button("Allow Resend - May Send Duplicates") { session.allowDiffCommentResend() }
-                        .buttonStyle(.ds(.ghost))
+                    Button(
+                        session.hasLocallyQueuedDiffComments ? "Return to Draft" : "Allow Resend - May Send Duplicates"
+                    ) { session.allowDiffCommentResend() }
+                    .buttonStyle(.ds(.ghost))
                 }
             }
         }
@@ -57,6 +59,7 @@ struct DiffCommentsDeliveryStatus: View {
             DiffCommentsPreviewHost("C8") { DiffCommentsDeliveryStatus(session: $0, retry: {}) }
             DiffCommentsPreviewHost("C11") { DiffCommentsDeliveryStatus(session: $0, retry: {}) }
             DiffCommentsPreviewHost("C13") { DiffCommentsDeliveryStatus(session: $0, retry: {}) }
+            DiffCommentsPreviewHost("C14") { DiffCommentsDeliveryStatus(session: $0, retry: {}) }
         }.frame(width: 548)
     }
 }

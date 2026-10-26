@@ -125,6 +125,7 @@ extension SessionModel {
         let phase = Self.phase(of: summary, isSettingBackConfig: isSettingBackConfig)
         if self.phase != phase { self.phase = phase }
         sendHeldPrompts()
+        reconcileDiffCommentDelivery()
     }
 
     /// Applies one of the host's events. History (what happened before this model followed the
@@ -250,11 +251,20 @@ extension SessionModel {
         heldPrompts = []
         Task {
             for prompt in held {
+                let isCommentPacket = beginHeldDiffComments(prompt.text)
+                defer {
+                    if isCommentPacket {
+                        diffCommentSending = false
+                        reconcileDiffCommentDelivery()
+                    }
+                }
                 do {
                     try await sendToHost(
                         prompt.text, attachments: prompt.attachments, behavior: prompt.behavior,
                         echo: prompt.isEchoed)
+                    finishHeldDiffComments(prompt.text, attachments: prompt.attachments)
                 } catch {
+                    finishHeldDiffComments(prompt.text, attachments: prompt.attachments, error: error)
                     addNotice(
                         "Couldn't send a message that was waiting: \(error.localizedDescription)", isError: true)
                 }
@@ -336,9 +346,11 @@ extension SessionModel {
     func removeQueuedOnHost(_ id: QueuedPrompt.ID, undoManager: UndoManager?) {
         if let index = heldPrompts.firstIndex(where: { $0.id == id }) {
             let item = heldPrompts.remove(at: index)
+            let wasPendingComment = removeLocallyQueuedDiffComments(item.text)
             undoManager?.registerUndo(withTarget: self) { session in
                 MainActor.assumeIsolated {
                     session.heldPrompts.insert(item, at: min(index, session.heldPrompts.count))
+                    if wasPendingComment { session.keepLocallyQueuedDiffComments(item.text) }
                 }
             }
             undoManager?.setActionName("Delete Queued Message")

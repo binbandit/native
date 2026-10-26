@@ -13,8 +13,13 @@ extension SessionModel {
     /// An edited packet remains in the composer until the queue owner acknowledges the update.
     @discardableResult
     func saveQueuedDiffComments(_ id: QueuedPrompt.ID) async -> Bool {
-        guard !diffCommentSending, unresolvedCommentPacket == nil,
-            prepareDiffCommentsSubmission(), diffCommentSendBlock == nil
+        let isLocal = host == nil || heldPrompts.contains(where: { $0.id == id })
+        let ownsPending =
+            queuedPrompts.first(where: { $0.id == id }).map { item in
+                unresolvedCommentPacket.map { PromptQuote.trimmed($0) == PromptQuote.trimmed(item.text) } == true
+            } == true
+        guard acceptsPrompts, !diffCommentSending, unresolvedCommentPacket == nil || (isLocal && ownsPending),
+            prepareDiffCommentsSubmission(), sourceExcerptBlock(for: draft) == nil
         else { return false }
         guard queuedPrompts.contains(where: { $0.id == id }) else {
             diffCommentStatus = "The queued message has already left. Your edited comments are kept."
@@ -38,7 +43,20 @@ extension SessionModel {
             } else {
                 queue.update(id, text: packet)
             }
-            acceptDiffCommentPacket(packet)
+            if isLocal {
+                keepLocallyQueuedDiffComments(packet)
+                editingQueuedPrompt = nil
+            } else {
+                // Older hosts return an empty success even when the item has already drained.
+                // The owner's published packet, or its transcript receipt, establishes storage.
+                for _ in 0..<100 {
+                    reconcileDiffCommentDelivery(whileSending: true)
+                    if unresolvedCommentPacket == nil { return true }
+                    try await Task.sleep(for: .milliseconds(20))
+                }
+                diffCommentStatus = "Delivery is unresolved. Your comments are kept. Resending may send duplicates."
+                return false
+            }
             return true
         } catch {
             if error is RPCError || error is SendError {
@@ -49,5 +67,54 @@ extension SessionModel {
             }
             return false
         }
+    }
+
+    var hasLocallyQueuedDiffComments: Bool {
+        guard let packet = unresolvedCommentPacket else { return false }
+        return heldPrompts.contains { $0.text == packet }
+            || (host == nil && queue.visible.contains { $0.text == packet })
+    }
+
+    func keepLocallyQueuedDiffComments(_ packet: String) {
+        unresolvedCommentPacket = packet
+        diffCommentStatus = "Your comments are kept while this task waits to send them."
+    }
+
+    func finishHeldDiffComments(_ text: String, attachments files: [PromptAttachment], error: Error? = nil) {
+        if error == nil, PromptQuote.split(text).quotes.contains(where: { $0.comment != nil }) {
+            attachments.removeAll { files.contains($0) }
+        }
+        guard let pending = unresolvedCommentPacket, PromptQuote.trimmed(text) == PromptQuote.trimmed(pending) else {
+            return
+        }
+        if let error {
+            if error is RPCError || error is SendError {
+                unresolvedCommentPacket = nil
+                diffCommentStatus = "Couldn’t send the waiting message. Your comments are kept."
+            } else {
+                diffCommentStatus = "Delivery is unresolved. Your comments are kept. Resending may send duplicates."
+            }
+        } else {
+            acceptDiffCommentPacket(text)
+        }
+    }
+
+    func beginHeldDiffComments(_ text: String) -> Bool {
+        guard let pending = unresolvedCommentPacket, PromptQuote.trimmed(text) == PromptQuote.trimmed(pending) else {
+            return false
+        }
+        diffCommentSending = true
+        diffCommentStatus = "Checking whether your comments arrived…"
+        return true
+    }
+
+    @discardableResult
+    func removeLocallyQueuedDiffComments(_ text: String) -> Bool {
+        guard let pending = unresolvedCommentPacket, PromptQuote.trimmed(text) == PromptQuote.trimmed(pending) else {
+            return false
+        }
+        unresolvedCommentPacket = nil
+        diffCommentStatus = nil
+        return true
     }
 }

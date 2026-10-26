@@ -61,39 +61,41 @@ private struct DiffCommentChecks {
         await session.submitDiffComments(.queue)
         require(session.queuedPrompts.count == 1, "One submission queues one packet")
         require(PromptQuote.split(session.queuedPrompts[0].text).quotes.count == 2, "Both files remain together")
-        require(session.diffComments.isEmpty && session.draft.isEmpty, "Only accepted packet clears")
-        session.draft = oldDraft
+        require(
+            session.draft == oldDraft && session.unresolvedCommentPacket != nil, "A local queue keeps durable words")
+        let queuedID = session.queuedPrompts[0].id
         var changed = session.composerQuotes
         changed[0].comment?.body = "A newer observation with the same comment identity"
         let newerPacket = PromptQuote.draft(quotes: changed, message: session.composerMessage)
-        session.unresolvedCommentPacket = newerPacket
-        session.reconcileDiffCommentDelivery()
-        require(
-            session.unresolvedCommentPacket == newerPacket, "Older evidence cannot acknowledge edited comment contents")
-        session.allowDiffCommentResend()
-        session.unresolvedCommentPacket = oldDraft
-        require(session.diffCommentSendBlock != nil, "Unresolved delivery blocks a second send")
-        session.diffCommentSending = false
-        session.reconcileDiffCommentDelivery()
-        require(
-            session.unresolvedCommentPacket == nil && session.draft.isEmpty,
-            "Queue evidence resolves the original packet")
-        let queuedID = session.queuedPrompts[0].id
         session.editingQueuedPrompt = queuedID
         session.draft = newerPacket
         let savedQueueEdit = await session.saveQueuedDiffComments(queuedID)
-        require(savedQueueEdit, "Queue edit is acknowledged")
+        require(savedQueueEdit, "Local queue edit is stored")
         require(
             session.queuedPrompts.count == 1
                 && PromptQuote.split(session.queuedPrompts[0].text).quotes == changed,
             "Queue edit replaces the packet without adding a message")
-        require(session.draft.isEmpty && session.editingQueuedPrompt == nil, "Accepted queue edit clears the editor")
+        require(
+            session.draft == newerPacket && session.unresolvedCommentPacket != nil, "Local edit retains recovery copy")
+        session.reconcileDiffCommentDelivery()
+        require(session.unresolvedCommentPacket != nil, "An ephemeral queue is not acceptance evidence")
+        session.state.appendUserMessage(oldDraft)
+        session.reconcileDiffCommentDelivery()
+        require(session.unresolvedCommentPacket != nil, "Older evidence cannot acknowledge edited comment contents")
+        session.queue.remove(queuedID)
+        session.state.appendUserMessage(newerPacket)
+        session.reconcileDiffCommentDelivery()
+        require(
+            session.unresolvedCommentPacket == nil && session.draft.isEmpty, "Actual receipt clears the edited packet")
         session.draft = oldDraft
         session.editingQueuedPrompt = UUID()
         let savedMissingItem = await session.saveQueuedDiffComments(UUID())
-        require(!savedMissingItem, "Missing queue item is not acknowledged")
-        require(session.draft == oldDraft, "Missing queue item preserves the edited packet")
+        require(!savedMissingItem && session.draft == oldDraft, "Missing queue item preserves the edited packet")
         session.editingQueuedPrompt = nil
+        let spaced = PromptQuote.draft(quotes: source, message: "  Please fix this.\n\n")
+        session.draft = spaced
+        session.acceptDiffCommentPacket(PromptQuote.trimmed(spaced))
+        require(session.draft.isEmpty, "Acceptance clears unchanged message text with surrounding whitespace")
         session.draft = oldDraft
         var denied = NativePolicy()
         denied.sourceExcerptsSendingEnabled = false
@@ -124,11 +126,17 @@ private struct DiffCommentChecks {
         session.diffCommentsPolicy = { NativePolicy() }
         session.draft = oldDraft
         session.diffCommentEditors = source
+        session.unresolvedCommentPacket = oldDraft
         successor.adoptDiffCommentDrafts(from: session)
+        require(
+            session.diffCommentEditors == source && session.unresolvedCommentPacket == oldDraft,
+            "Candidate preparation leaves source-owned comments intact")
+        successor.adoptDiffCommentDrafts(from: session, moving: true)
         require(
             successor.diffCommentEditors == source && session.diffCommentEditors.isEmpty,
             "Conversation replacement moves unfinished comments")
         require(successor.draft == oldDraft, "Conversation replacement preserves the complete comment packet")
+        try await DiffCommentsHostChecks.run()
         print(
             "PASS: add, cancel, edit, undo/redo, clear, unfinished guard, one queued packet, acknowledgement evidence, managed send, retention, durable recovery and conversation replacement"
         )

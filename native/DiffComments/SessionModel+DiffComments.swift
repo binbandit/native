@@ -4,14 +4,15 @@ import NativeHostClient
 import NativeHostProtocol
 
 extension SessionModel {
-    /// Conversation replacement keeps these Native-owned drafts with the task, alongside its quotes.
-    func adoptDiffCommentDrafts(from source: SessionModel) {
+    /// Preparation copies the draft; only a committed replacement retires its previous owner.
+    func adoptDiffCommentDrafts(from source: SessionModel, moving: Bool = false) {
         if draft.isEmpty { draft = source.draft }
         diffCommentEditors = source.diffCommentEditors
         activeDiffComment = source.activeDiffComment
         diffCommentsExpanded = source.diffCommentsExpanded
         unresolvedCommentPacket = source.unresolvedCommentPacket
         diffCommentStatus = source.diffCommentStatus
+        guard moving else { return }
         source.diffCommentEditors = []
         source.activeDiffComment = nil
         source.unresolvedCommentPacket = nil
@@ -176,12 +177,12 @@ extension SessionModel {
         }
     }
 
-    func reconcileDiffCommentDelivery() {
-        guard let packet = unresolvedCommentPacket, !diffCommentSending else { return }
+    func reconcileDiffCommentDelivery(whileSending: Bool = false) {
+        guard let packet = unresolvedCommentPacket, !diffCommentSending || whileSending else { return }
         let expected = PromptQuote.split(packet)
         guard !packet.isEmpty else { return }
         let texts =
-            queuedPrompts.map(\.text)
+            (hostSummary?.queue.map(\.text) ?? [])
             + state.items.compactMap { item -> String? in
                 guard case .message(let message) = item, message.role == .user else { return nil }
                 return message.text
@@ -235,13 +236,17 @@ extension SessionModel {
             } else {
                 delivery = try await submit(packet, attaching: files, behavior)
             }
-            acceptDiffCommentPacket(packet)
+            if delivery == .queued, host == nil || heldPrompts.contains(where: { $0.text == packet }) {
+                keepLocallyQueuedDiffComments(packet)
+            } else {
+                acceptDiffCommentPacket(packet)
+                attachments.removeAll { files.contains($0) }
+            }
             if delivery == .queued {
                 let count = PromptQuote.split(packet).quotes.filter { $0.comment != nil }.count
                 diffCommentAnnouncement =
                     "\(count) \(count == 1 ? "comment" : "comments") queued for \(agentName)"
             }
-            attachments.removeAll { files.contains($0) }
         } catch {
             // RPC rejections establish non-delivery. Connection loss after dispatch does not.
             if error is RPCError || error is SendError {
@@ -266,7 +271,9 @@ extension SessionModel {
             quotes: current.quotes.filter { quote in
                 if let id = quote.comment?.id { return !ids.contains(id) || !accepted.quotes.contains(quote) }
                 return !accepted.quotes.contains(quote)
-            }, message: current.message == accepted.message ? "" : current.message)
+            },
+            message: current.message.trimmingCharacters(in: .whitespacesAndNewlines)
+                == accepted.message.trimmingCharacters(in: .whitespacesAndNewlines) ? "" : current.message)
         unresolvedCommentPacket = nil
         diffCommentStatus = nil
         diffCommentAnnouncement =
@@ -278,6 +285,12 @@ extension SessionModel {
 
     func allowDiffCommentResend() {
         guard !diffCommentSending else { return }
+        if let packet = unresolvedCommentPacket {
+            heldPrompts.removeAll { $0.text == packet }
+            if host == nil {
+                for item in queue.visible where item.text == packet { queue.remove(item.id) }
+            }
+        }
         unresolvedCommentPacket = nil
         diffCommentStatus = nil
     }
