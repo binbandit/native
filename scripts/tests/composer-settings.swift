@@ -2,6 +2,7 @@ import ACP
 import AppKit
 import Experiments
 import Foundation
+import MCPClient
 import NativeHostClient
 import NativeHostProtocol
 import SwiftUI
@@ -18,6 +19,9 @@ private actor SettingsHost: HostTransport {
     private let epoch = UUID()
     private var peer: JSONRPCPeer?
     private(set) var restarts: [String] = []
+    private var isStopping = false
+
+    func prepareToStop() { isStopping = true }
 
     func connect() throws -> any ByteStream {
         let (clientEnd, hostEnd) = try UnixSocket.pair()
@@ -52,6 +56,9 @@ private actor SettingsHost: HostTransport {
             default:
                 try peer.respond(to: id, error: .methodNotFound(message.method))
             }
+        } catch PeerError.closed where isStopping {
+            // Requests queued before intentional teardown can arrive after the client disconnects.
+            return
         } catch {
             print("FAIL: fixture response: \(error)")
             exit(1)
@@ -66,6 +73,7 @@ private struct ComposerSettingsRegression {
         do {
             if CommandLine.arguments.contains("--geometry") {
                 try popoverGeometry()
+                try await mcpPageGeometry()
             } else {
                 print("SKIP: popover geometry requires --geometry on an unlocked desktop")
             }
@@ -128,6 +136,56 @@ private struct ComposerSettingsRegression {
         print("Popover with extra settings: \(tall)")
         try expect(tall <= DS.ComposerSettings.popoverMaxHeight, "Popover exceeded its height budget")
         print("PASS: actual popover layout keeps caption/filter height stable and fits its height budget")
+    }
+
+    private static func mcpPageGeometry() async throws {
+        let app = AppModel.preview(.empty)
+        guard let session = SessionModel.preview(in: app, cwd: "/fixture") else {
+            throw SettingsFailure(message: "No MCP preview session")
+        }
+        let library = MCPLibrary(storeURL: nil)
+        let entries: [MCPSessionEntry] = (1...18).map { index in
+            let server = ManagedServer(
+                name: "Server \(index)",
+                transport: .stdio(command: "/usr/bin/false", arguments: [], environmentNames: [], workingDirectory: nil)
+            )
+            library.reports[.managed(server.id)] = MCPProbeReport(
+                status: index.isMultiple(of: 3)
+                    ? .failed(
+                        MCPProbeFailure(
+                            stage: .launch, message: "The server could not start. Check its configuration and retry."))
+                    : .connected, startedAt: .now, duration: .zero)
+            return .managed(server, .deliver)
+        }
+        let page = ComposerSettingsPageFrame(title: "MCP Servers", scrollsOverflow: true, onBack: {}) {
+            MCPSessionPanel(library: library, session: session, entries: entries, isPage: true)
+        }
+        let host = NSHostingView(rootView: page)
+        let height = host.fittingSize.height
+        print("Long MCP page height: \(height)")
+        try expect(height <= DS.ComposerSettings.popoverMaxHeight, "Long MCP page has no bounded overflow path")
+        host.setFrameSize(NSSize(width: DS.ComposerSettings.popoverWidth, height: 300))
+        for _ in 0..<10 {
+            host.layoutSubtreeIfNeeded()
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        func scrollViews(in view: NSView) -> [NSScrollView] {
+            let own = (view as? NSScrollView).map { [$0] } ?? []
+            return own + view.subviews.flatMap { scrollViews(in: $0) }
+        }
+        let scrolling = scrollViews(in: host)
+        try expect(scrolling.count == 1, "MCP page must have exactly one outer scroll region")
+        if let scroll = scrolling.first, let document = scroll.documentView {
+            print("MCP viewport: \(scroll.contentView.bounds); document: \(document.frame)")
+            try expect(scroll.contentView.bounds.height < 300, "MCP content ignored the short presentation")
+            if document.frame.height == 0 {
+                print("SKIP: scroll-document layout and recovery-control reachability require an attached window")
+            } else {
+                try expect(
+                    document.frame.height > scroll.contentView.bounds.height, "Long MCP content is not scrollable")
+            }
+        }
+        print("PASS: long MCP page, including failed servers, has a bounded height and one short-page scroll viewport")
     }
 
     private static func capturedModels() throws {
@@ -255,6 +313,7 @@ private struct ComposerSettingsRegression {
         await app.restartAgent(for: session)
         try expect(await remote.restarts == ["fixture"], "Restart missed the task's host")
         try expect(await local.restarts.isEmpty, "Restart reached this Mac for a remote task")
+        await remote.prepareToStop()
         host.stop()
         await remoteClient.stop()
         await app.restartAgent(for: session)
@@ -265,6 +324,8 @@ private struct ComposerSettingsRegression {
                 if case .notice(let notice) = $0 { return notice.text.contains("Reconnect the task's host") }
                 return false
             }, "Unavailable host did not explain how to reconnect")
+        await local.prepareToStop()
+        await localClient.stop()
         print("PASS: Restart stays on the task's host; unavailable hosts never fall back to this Mac")
     }
 }
