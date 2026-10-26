@@ -34,6 +34,7 @@ struct HostAgentNamesTests {
     @Test("A new session is named before its first message, and its title follows Native's from then on")
     func namesAheadOfTurns() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         let recorder = try await connect(harness)
         let session = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
 
@@ -62,6 +63,7 @@ struct HostAgentNamesTests {
     @Test("An agent that answers the rename with a model's turn isn't asked again, and nothing of it shows")
     func stopsWhenAModelAnswers() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         harness.agentEnvironment["FAKE_AGENT_RENAME_ASKS_MODEL"] = "1"
         let recorder = try await connect(harness)
         let first = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
@@ -79,6 +81,7 @@ struct HostAgentNamesTests {
         arguments: [false, true])
     func stopDuringNaming(ignoresCancel: Bool) async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         let gate = harness.root.appending(path: "release-rename")
         harness.agentEnvironment["FAKE_AGENT_RENAME_GATE"] = gate.path(percentEncoded: false)
         harness.agentEnvironment["FAKE_AGENT_RENAME_IGNORES_CANCEL"] = ignoresCancel ? "1" : "0"
@@ -107,6 +110,7 @@ struct HostAgentNamesTests {
     @Test("Restart during naming recovers once and leaves the replacement connection alive")
     func restartDuringNaming() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         let gate = harness.root.appending(path: "release-rename")
         harness.agentEnvironment["FAKE_AGENT_RENAME_GATE"] = gate.path(percentEncoded: false)
         let recorder = try await connect(harness)
@@ -130,6 +134,7 @@ struct HostAgentNamesTests {
     @Test("Stopping during naming ends the process without sending the cancelled prompt")
     func stoppedDuringNaming() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         let gate = harness.root.appending(path: "release-rename")
         harness.agentEnvironment["FAKE_AGENT_RENAME_GATE"] = gate.path(percentEncoded: false)
         harness.agentEnvironment["FAKE_AGENT_RENAME_IGNORES_CANCEL"] = "1"
