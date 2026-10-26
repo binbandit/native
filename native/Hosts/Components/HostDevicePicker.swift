@@ -19,6 +19,7 @@ struct HostDevicePicker: View {
     /// Nil when embedded across a containing panel, as in Quick Entry.
     var width: CGFloat? = HostsMetrics.pickerWidth
     var allowsOfflineHold = false
+    var offlineSince: ((SessionDevice) -> String?)?
     let dismiss: () -> Void
 
     @Environment(\.hostLookStore) private var injectedLooks
@@ -30,6 +31,27 @@ struct HostDevicePicker: View {
     }
 
     var body: some View {
+        Group {
+            if allowsOfflineHold {
+                addressRows
+            } else {
+                standardRows
+            }
+        }
+        .frame(width: width)
+        .focusable()
+        .focused($isFocused)
+        .focusEffectDisabled()
+        .onKeyPress(phases: [.down, .repeat]) { press in handleKey(press) }
+        .onAppear {
+            highlighted = selection
+            isFocused = true
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Run on")
+    }
+
+    private var standardRows: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Run on")
                 .font(.dsCaption)
@@ -59,19 +81,41 @@ struct HostDevicePicker: View {
                 .padding(DS.Space.xs)
             }
         }
-        .frame(width: width)
-        .focusable()
-        .focused($isFocused)
-        .focusEffectDisabled()
-        .onKeyPress(phases: [.down, .repeat]) { press in
-            handleKey(press)
+    }
+
+    private var addressRows: some View {
+        VStack(alignment: .leading, spacing: DS.Space.xs) {
+            Text("Run on").font(.dsCaption).foregroundStyle(.dsTextTertiary)
+                .accessibilityAddTraits(.isHeader)
+            VStack(spacing: 0) {
+                ForEach(Array(options.enumerated()), id: \.element.id) { index, option in
+                    row(option, number: index + 1)
+                }
+                if let onAddHost {
+                    SeparatorLine().padding(.vertical, DS.Space.xs)
+                    Button {
+                        dismiss()
+                        onAddHost()
+                    } label: {
+                        HStack(spacing: DS.Space.sm) {
+                            Image(systemName: "plus").font(DS.ComposerSettings.rowFont).foregroundStyle(
+                                .dsTextSecondary
+                            )
+                            .frame(width: DS.ComposerSettings.selectionWidth)
+                            Text("Add Host…").font(DS.ComposerSettings.rowFont)
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.horizontal, DS.Space.xs)
+                        .frame(height: DS.ComposerSettings.rowHeight)
+                        .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.dsTextPrimary)
+                }
+            }
         }
-        .onAppear {
-            highlighted = selection
-            isFocused = true
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Run on")
+        .padding(DS.ComposerSettings.sectionInset)
+        .padding(DS.ComposerSettings.popoverInset)
     }
 
     private func row(_ option: SessionDeviceOption, number: Int) -> some View {
@@ -80,10 +124,16 @@ struct HostDevicePicker: View {
         return Button {
             choose(option)
         } label: {
-            HostDevicePickerRow(
-                option: option, look: look(of: option), projectName: projectName,
-                isSelected: isSelected
-            )
+            Group {
+                if allowsOfflineHold {
+                    HostDeviceAddressRow(
+                        option: option, look: look(of: option), projectName: projectName,
+                        isSelected: isSelected, offlineSince: offlineSince?(option.device))
+                } else {
+                    HostDevicePickerRow(
+                        option: option, look: look(of: option), projectName: projectName, isSelected: isSelected)
+                }
+            }
             .background(
                 isHighlighted && canChoose(option) ? Color.dsSelected : .clear,
                 in: .rect(cornerRadius: DS.Radius.control, style: .continuous)
@@ -152,95 +202,4 @@ struct HostDevicePicker: View {
         return true
     }
 
-}
-
-/// One device in the picker: its glyph and name, its state, and its checkout or what keeps it from
-/// taking the session.
-struct HostDevicePickerRow: View {
-    let option: SessionDeviceOption
-    let look: HostLook
-    let projectName: String
-    let isSelected: Bool
-
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: DS.Space.md) {
-            // A symbol sits on the text's baseline, like a letter.
-            HostGlyph(look: look, size: HostsMetrics.calloutGlyph, isDimmed: !option.canStart)
-                .frame(width: DS.Size.rowLeading)
-            VStack(alignment: .leading, spacing: DS.Space.xxs) {
-                HStack(spacing: DS.Space.md) {
-                    Text(option.name)
-                        .font(.dsCallout)
-                        .foregroundStyle(option.canStart ? .dsTextPrimary : .dsTextTertiary)
-                        .lineLimit(1)
-                    Spacer(minLength: DS.Space.md)
-                    // This Mac is always there, so only hosts say whether they're reachable.
-                    if showsAvailability {
-                        HStack(spacing: DS.Space.xs) {
-                            HostAvailabilityMark(availability: option.availability)
-                            Text(option.availability.statusTitle)
-                        }
-                        .font(.dsCaption)
-                        .foregroundStyle(.dsTextTertiary)
-                        .fixedSize()
-                    }
-                }
-                subtitleText
-            }
-            // The accent can be monochrome, so the chosen device gets a check too.
-            Image(systemName: "checkmark")
-                .font(.dsCaption)
-                .foregroundStyle(.dsAccentText)
-                .opacity(isSelected ? 1 : 0)
-                .accessibilityHidden(true)
-        }
-        .padding(.horizontal, DS.Space.md)
-        .padding(.vertical, DS.Space.sm)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(option.name)
-        .accessibilityValue(
-            (showsAvailability ? [option.availability.statusTitle, subtitle] : [subtitle]).joined(separator: ", "))
-    }
-
-    private var showsAvailability: Bool {
-        option.device != .thisMac
-    }
-
-    /// A checkout on one line, cut in the middle of its path (the whole path is in the tooltip); a
-    /// reason it can't take the session in full, up to two lines.
-    @ViewBuilder private var subtitleText: some View {
-        let text = Text(subtitle)
-            .font(.dsCaption)
-            .foregroundStyle(.dsTextTertiary)
-        if case .present(let path) = option.checkout, shownPath != nil {
-            text
-                .lineLimit(1)
-                .truncationMode(.middle)
-                .help(path)
-        } else {
-            text
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    /// The checkout's path when the line shows it, with the home folder as ~.
-    private var shownPath: String? {
-        guard case .present(let path) = option.checkout, !isOffline else { return nil }
-        return (path as NSString).abbreviatingWithTildeInPath
-    }
-
-    private var isOffline: Bool {
-        if case .offline = option.availability { true } else { false }
-    }
-
-    /// The checkout it would work in, or why it can't take the session.
-    private var subtitle: String {
-        if case .offline(let reason) = option.availability { return reason }
-        return switch option.checkout {
-        case .present: "Has \(projectName) · \(shownPath ?? "")"
-        case .willClone: "Clones \(projectName) here first"
-        case .cannotClone(let reason): reason
-        }
-    }
 }

@@ -1,6 +1,27 @@
+import ACP
 import Foundation
+import NativeHostProtocol
 
 extension AppModel {
+    /// There is deliberately no settings surface or enabled route yet. All uses of an admitted
+    /// agent (including generated text and recovery) select the same host-checked spec identity.
+    func composingPrivateRoute(_ route: AgentPrivateRoute, for spec: AgentSpec) throws -> AgentSpec {
+        let id = AgentDefinition.ID(rawValue: spec.id)
+        guard let declaration = plugins.agents.first(where: { $0.id == id })?.manifest.networkCapabilities,
+            declaration.qualified, declaration.declarationID == route.identity.declarationID,
+            declaration.cliVersion == route.identity.cliVersion,
+            declaration.adapterVersion == route.identity.adapterVersion,
+            !declaration.controls.contains(.unknown),
+            route.requiredControls.isSubset(of: declaration.controls),
+            let translator = plugins.policyTranslator(for: id) as? any AgentPrivateRouteTranslator
+        else { throw AgentRouteFailure.unqualified }
+        guard spec.env.isEmpty else { throw AgentRouteFailure.conflictingConfiguration }
+        var spec = spec
+        spec.env = try translator.privateRouteEnvironment(for: plugins.launchPolicy(for: id), route: route)
+        spec.routeIdentity = route.identity
+        return spec
+    }
+
     /// Agents running with a launch policy older than plugins' current one (an MCP server switched
     /// off for all projects, say, on an agent that applies that at launch).
     var agentsWithPendingLaunchPolicy: [AgentRuntime] {

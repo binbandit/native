@@ -20,8 +20,21 @@ extension HostCore {
     func require(agent id: String) throws {
         try require(.agents)
         guard policy.allows(agent: id) else {
-            throw HostPolicyDenial("start \(agents[id]?.spec.name ?? id)", policy: policy)
+            let action = agents[id]?.spec.routeIdentity == nil ? "start \(agents[id]?.spec.name ?? id)" : "start agents"
+            throw HostPolicyDenial(action, policy: policy)
         }
+        if let spec = agents[id]?.spec {
+            do {
+                try HostAgentRouteAdmission.check(spec, policy: policy)
+            } catch {
+                // Route/configuration values and raw adapter failures never enter denial messages.
+                throw HostPolicyDenial("start agents", policy: policy)
+            }
+        }
+    }
+
+    private func allowsAgentRoute(_ id: String) -> Bool {
+        (try? require(agent: id)) != nil
     }
 
     /// Refuses a request the policy doesn't allow, before its params are read. Outside ordinary
@@ -69,7 +82,7 @@ extension HostCore {
             "Policy is \(newPolicy.mode.rawValue) now, allowing \(newPolicy.capabilities.map(\.rawValue).sorted())")
         let revoked = previous.capabilities.subtracting(newPolicy.capabilities)
         let granted = newPolicy.capabilities.subtracting(previous.capabilities)
-        if revoked.contains(.agents) || newPolicy.allowedAgents != previous.allowedAgents { endDeniedAgentWork() }
+        endDeniedAgentWork()
         if revoked.contains(.loginShell) { forgetEnvironment() }
         if !allowsDoctorChecks {
             for run in doctorRuns.values { run.cancel() }
@@ -95,13 +108,13 @@ extension HostCore {
         endDeniedAgentTurns()
         // A Stop already owns its turn's processes: it ends them now, without waiting out its grace
         // period, and sends nothing after.
-        for session in stoppingSessions.values where !policy.allows(agent: session.record.agentID) {
+        for session in stoppingSessions.values where !allowsAgentRoute(session.record.agentID) {
             session.stopRequestedAt = .distantPast
             session.sendAfterStop = nil
         }
         // A starting agent ends too: its launch checks the policy again before it spawns anything.
         for link in agents.values
-        where !policy.allows(agent: link.spec.id) && (link.status == .ready || link.status == .starting) {
+        where !allowsAgentRoute(link.spec.id) && (link.status == .ready || link.status == .starting) {
             let generation = link.generation
             link.end()
             agentExited(link.spec.id, generation: generation)
@@ -114,7 +127,7 @@ extension HostCore {
     /// (a task handing another a message, a queue draining) can't run, so it ends now instead of
     /// waiting for a restart.
     func endDeniedAgentTurns() {
-        for session in sessions.values where !policy.allows(agent: session.record.agentID) {
+        for session in sessions.values where !allowsAgentRoute(session.record.agentID) {
             let denial = denial(forAgentOf: session)
             session.isRecoveryCancelled = true
             let wasRetrying = session.retryAt != nil
@@ -150,14 +163,16 @@ extension HostCore {
             append(.recovered(note), to: session)
             journal(.recovered, session: session, recovery: note)
         }
-        for session in sessions.values where !policy.allows(agent: session.record.agentID) {
+        for session in sessions.values where !allowsAgentRoute(session.record.agentID) {
             pauseQueue(of: session)
         }
     }
 
     private func denial(forAgentOf session: HostSession) -> HostPolicyDenial {
-        allows(.agents)
-            ? HostPolicyDenial("start \(session.agentName)", policy: policy)
+        let action =
+            agents[session.record.agentID]?.spec.routeIdentity == nil ? "start \(session.agentName)" : "start agents"
+        return allows(.agents)
+            ? HostPolicyDenial(action, policy: policy)
             : HostPolicyDenial(HostCapability.agents.action, policy: policy)
     }
 

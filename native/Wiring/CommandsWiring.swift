@@ -62,7 +62,7 @@ enum CommandsWiring {
         #endif
         // Try On takes ⌘. while it runs (docs/keyboard.md), so Stop steps aside rather than ending the turn.
         registry.register(
-            NativeCommand.composer.map { command in
+            NativeCommand.composer(model: model).map { command in
                 command.id == .sessionStop ? command.stepsAside { _ in features.tryOn.isActive } : command
             })
         registry.register(NativeCommand.clearConversation(model: model))

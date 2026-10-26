@@ -92,7 +92,8 @@ enum BuiltInPlugins {
                             kind: .link)
                     ],
                     // Its home, a CODEX_HOME override, and a trusted project's own settings.
-                    settingsFiles: ["~/.codex/config.toml", "$CODEX_HOME/config.toml", ".codex/config.toml"]
+                    settingsFiles: ["~/.codex/config.toml", "$CODEX_HOME/config.toml", ".codex/config.toml"],
+                    networkCapabilities: .codexCandidate
                 )
             ]
         ), policyTranslator: CodexPolicyTranslator(), historyReader: CodexHistoryReader.standard())

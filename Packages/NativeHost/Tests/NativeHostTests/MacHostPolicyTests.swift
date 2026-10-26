@@ -83,10 +83,10 @@ struct MacHostPolicyTests {
         let userAsksOrdinary = Self.policy(
             user: ["policy.deployment.mode": "ordinary"], enrollment: FilePolicyEnrollmentStore(url: file))
         #expect(userAsksOrdinary.mode == .blocked)
-        #expect(
-            Self.policy(
-                managed: ["policy.deployment.mode": "ordinary"], enrollment: FilePolicyEnrollmentStore(url: file))
-                == .unrestricted)
+        let ordinary = Self.policy(
+            managed: ["policy.deployment.mode": "ordinary"], enrollment: FilePolicyEnrollmentStore(url: file))
+        #expect(ordinary.mode == .ordinary && ordinary.capabilities == HostPolicy.unrestricted.capabilities)
+        #expect(ordinary.revision != nil)
         #expect(Self.policy(enrollment: FilePolicyEnrollmentStore(url: file)) == .unrestricted)
     }
 

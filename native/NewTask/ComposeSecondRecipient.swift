@@ -32,7 +32,7 @@ struct ComposeSecondRecipient: View {
             .background(.dsFill, in: .rect(cornerRadius: DS.Radius.control))
             .contentShape(.rect)
         }
-        .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize()
+        .menuStyle(.button).buttonStyle(ComposeAddressButtonStyle()).menuIndicator(.hidden).fixedSize()
         .dsHitTarget(DS.ComposeTask.rowHeight)
         .disabled(compose.isHeld || compose.stage != .writing)
         .help("Send to another agent instead, or remove \(name)")

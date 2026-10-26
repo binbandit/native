@@ -212,7 +212,10 @@ The move is mechanical and happens in small PRs once the current feature work la
 New Task's `NativeComposeTask` gate adds Quick Entry over the selected task and a Compose page
 opened by Shift-Command-N or Quick Entry's expand. Both keep drafts without creating agent
 conversations or worktrees. Compose lays out the existing composer at page size, with To / On /
-From controls and the shared toolbar well's readiness. Start snapshots text, files, settings and
+From controls and the shared toolbar well's readiness. The project, agent and device popovers are
+drawn in the page (`composeAddressPopover`), left-aligned under their control, where a system
+popover would center on it; the agent popover is the composer's settings popover at the page's
+scale. Start snapshots text, files, settings and
 workspace into the existing `StartingTask` pipeline. Address lines fold, the shared message renderer
 appears at the transcript's final width, and the composer settles below it. Startup failure uses
 the existing retry view with the snapshot intact. An explicitly held offline draft persists in
@@ -482,7 +485,8 @@ to keep the file's kind; anything else stays a location without contents. Lines 
 credential show the key alone, and lines holding a URL password, bearer header or well-known token
 are hidden whole. A fix-it is applied only on the user's click: `AgentStartFile` checks that
 the line still holds the rejected value, keeps the original as `<file>.native-backup`, and keeps
-the file's permissions and symbolic links.
+the file's permissions and symbolic links. The window's undo toast (and ⌘Z) takes the fix back
+with `AgentStartFile.restore`, the same way, and only while the file still holds what the fix wrote.
 
 Irreversible requests use the tested `ApprovalHold` state machine: 0.6 seconds, early release
 cancels, 0.4 seconds of acknowledgement, five-second accessibility confirmation, and no Always
