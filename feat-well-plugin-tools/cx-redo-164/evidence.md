@@ -31,3 +31,8 @@ The capture driver can report occlusion by another app. Screenshots are inspecte
 [Verification results, exact limits and follow-ups](verification.txt).
 
 Side-by-side review sheets: [sheet 0](comparison-0.png), [sheet 1](comparison-1.png), [sheet 2](comparison-2.png), [sheet 3](comparison-3.png), [sheet 4](comparison-4.png).
+
+PR #205 remains open: the final-head Nightly update archive exceeded its budget,
+and two confirmed Pullfrog findings remain unresolved (close-hook delivery on
+plugin removal and overflow of a many-tools list). See verification.txt for exact
+size figures and finding links. Work stopped under the job's size-budget rule.

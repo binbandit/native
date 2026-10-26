@@ -27,10 +27,11 @@ Checks on final head: isolated Debug build passed without repository warnings;
 26 SessionTools tests passed; strict format lint passed for all 25 changed Swift
 files; git diff --check passed. The fixture uses the scripted agent, no real model.
 
-Release and Nightly compilation and size checks passed before the latest-main
-rebase, without repository warnings. Release: 47.8 MB download, 117.3 MB installed.
-Nightly: 47.9 MB download, 117.4 MB installed. Limits: 48 MB and 118 MB.
-Current Release/Nightly results belong to PR CI, not those pre-rebase local checks.
+Release and Nightly compilation passed on final head without repository warnings.
+The final-head size gate failed: Nightly update archive: 48,025,648 bytes; budget: 48,000,000 bytes; overage: 25,648 bytes.
+Release archive: 47.9 MB (within 48 MB). Installed: 117.6 MB Release and
+117.7 MB Nightly (within 118 MB). No budget was raised. Work stopped under the
+job's explicit size-budget stop rule.
 
 iPad typecheck attempt on the pre-rebase head failed in dependency collection and
 unchanged source locations: missing host/process types (AgentCommand, AgentProcess),
@@ -52,3 +53,11 @@ the fixture setup. That restoration mismatch is separate from the fixed layout s
 
 Separate coordinator design review is still required. Visual check pending.
 The isolated app is quit. Do not merge this PR from this job.
+
+PR #205 review findings confirmed and left unresolved after the size stop:
+- Removed tools lose their original didClose hook because registry lookup is nil.
+  https://github.com/binbandit/native/pull/205#discussion_r4379212689
+- The extensible well list needs bounded scrolling and keyboard reveal.
+  https://github.com/binbandit/native/pull/205#discussion_r4379212696
+These are follow-up work, not fixed behavior. The original reopening stall fix
+and the 34 current captures are present. Visual check pending remains.
