@@ -2,54 +2,63 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// External file URLs use their own drop delegate. Native's private reorder type remains with rows.
-struct PlatformFolderDrop: ViewModifier {
+struct PlatformFolderDrop<Feedback: View>: ViewModifier {
     let enabled: Bool
-    let model: AppModel
-    let undoManager: UndoManager?
+    let excludedTypes: [UTType]
+    let accepts: () -> Bool
+    let begin: () -> UUID
+    let preview: ([URL], UUID) async -> Void
+    let end: () -> Void
+    let open: ([URL]) async -> Void
+    @ViewBuilder let feedback: () -> Feedback
 
     func body(content: Content) -> some View {
         content
             .onDrop(
-                of: enabled ? [.fileURL] : [], delegate: FolderURLDropDelegate(model: model, undoManager: undoManager)
+                of: enabled ? [.fileURL] : [],
+                delegate: FolderURLDropDelegate(
+                    excludedTypes: excludedTypes, accepts: accepts, begin: begin, preview: preview, end: end, open: open
+                )
             )
             .overlay {
-                if enabled, model.sidebarFolders.acceptsDrop {
-                    SidebarFolderDropFeedback(names: model.sidebarFolders.hovered)
-                        .allowsHitTesting(false)
-                }
+                if enabled, accepts() { feedback().allowsHitTesting(false) }
             }
     }
 }
 
 private struct FolderURLDropDelegate: DropDelegate {
-    let model: AppModel
-    let undoManager: UndoManager?
+    let excludedTypes: [UTType]
+    let accepts: () -> Bool
+    let begin: () -> UUID
+    let preview: ([URL], UUID) async -> Void
+    let end: () -> Void
+    let open: ([URL]) async -> Void
 
     func validateDrop(info: DropInfo) -> Bool {
-        !info.hasItemsConforming(to: [SidebarDragState.contentType]) && info.hasItemsConforming(to: [.fileURL])
+        !info.hasItemsConforming(to: excludedTypes) && info.hasItemsConforming(to: [.fileURL])
     }
 
     func dropEntered(info: DropInfo) {
-        let request = model.beginFolderDrop()
+        let request = begin()
         Task {
             let urls = await load(info.itemProviders(for: [.fileURL]))
-            await model.previewFolderDrop(urls, request: request)
+            await preview(urls, request)
         }
     }
 
     func dropUpdated(info: DropInfo) -> DropProposal? {
-        DropProposal(operation: model.sidebarFolders.acceptsDrop ? .copy : .forbidden)
+        DropProposal(operation: accepts() ? .copy : .forbidden)
     }
 
-    func dropExited(info: DropInfo) { model.endFolderDrop() }
+    func dropExited(info: DropInfo) { end() }
 
     func performDrop(info: DropInfo) -> Bool {
         let providers = info.itemProviders(for: [.fileURL])
-        model.endFolderDrop()
+        end()
         guard !providers.isEmpty else { return false }
         Task {
             let urls = await load(providers)
-            await model.openSidebarFolders(urls, undoManager: undoManager)
+            await open(urls)
         }
         return true
     }

@@ -127,7 +127,16 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
                 }
 
             }
-            .modifier(PlatformFolderDrop(enabled: usesSidebarNext, model: model, undoManager: undoManager))
+            .modifier(
+                PlatformFolderDrop(
+                    enabled: usesSidebarNext, excludedTypes: [SidebarDragState.contentType],
+                    accepts: { model.sidebarFolders.acceptsDrop }, begin: model.beginFolderDrop,
+                    preview: model.previewFolderDrop, end: model.endFolderDrop,
+                    open: { await model.openSidebarFolders($0, undoManager: undoManager) }
+                ) {
+                    SidebarFolderDropFeedback(names: model.sidebarFolders.hovered)
+                }
+            )
 
             if selection.isActive {
                 SidebarSelectionBar(selection: selection)

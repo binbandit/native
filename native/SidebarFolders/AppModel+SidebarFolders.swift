@@ -118,6 +118,7 @@ extension AppModel {
         }
         let added = opened.filter { !existing.contains($0.id) }
         if let first = (added.first ?? opened.first) {
+            closeComposeTask()
             focusProject(first.id)
             sidebarFolders.focusRequests &+= 1
             homeNext.startFieldFocusRequests &+= 1

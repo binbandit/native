@@ -104,6 +104,13 @@ struct RootView: View {
                 expeditions.isPageShown = false
             }
         }
+        // Opening a folder can begin from a page with no selected session to observe.
+        .onChange(of: model.sidebarFolders.focusRequests) {
+            settings.close()
+            showsPullRequests = false
+            automationPage = nil
+            expeditions.isPageShown = false
+        }
         .onChange(of: expeditions.isPageShown) { _, shows in
             if shows {
                 model.closeComposeTask()
