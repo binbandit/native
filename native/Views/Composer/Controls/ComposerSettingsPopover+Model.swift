@@ -30,14 +30,23 @@ extension ComposerSettingsPopover {
                 + DS.ComposerSettings.modelCaptionHeight + DS.ComposerSettings.sectionInset * 2
                 + DS.ComposerSettings.popoverInset * 2 > DS.ComposerSettings.popoverMaxHeight
         }
+        return estimatedSettingsHeight(models: count) > DS.ComposerSettings.popoverMaxHeight
+    }
+
+    var omitsModelCaptions: Bool {
+        agentModels != nil && page != .model && needsCompactModelList
+            && estimatedSettingsHeight(models: 5) > DS.ComposerSettings.popoverMaxHeight
+    }
+
+    private func estimatedSettingsHeight(models: Int) -> CGFloat {
         let autonomy = settings.autonomy == nil ? 0 : settings.autonomyLevels.count + 2
         let effort = settings.effort == nil ? 0 : 1
         let footer = manager == nil ? 0 : DS.ComposerSettings.managedFooterReserve
-        let empty = agentModels.contains { $0.agent != currentAgentID } ? 0 : DS.ComposerSettings.emptyModelsReserve
-        let height =
-            CGFloat(count + autonomy + effort + rows.count) * DS.ComposerSettings.rowHeight
+        let empty =
+            agentModels?.contains { $0.agent != currentAgentID } == true
+            ? 0 : DS.ComposerSettings.emptyModelsReserve
+        return CGFloat(models + autonomy + effort + rows.count) * DS.ComposerSettings.rowHeight
             + DS.ComposerSettings.sectionsReserve + footer + empty
-        return height > DS.ComposerSettings.popoverMaxHeight
     }
 
     var hasOtherAgentModels: Bool {

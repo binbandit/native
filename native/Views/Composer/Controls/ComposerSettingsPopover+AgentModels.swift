@@ -33,7 +33,9 @@ extension ComposerSettingsPopover {
                 .composerSettingsTextEdge()
                 .padding(.vertical, DS.Space.sm)
             }
-            agentModelCaption
+            if !omitsModelCaptions || failure != nil || modelChange?.stage == .failed {
+                agentModelCaption
+            }
         }
     }
 
@@ -77,7 +79,7 @@ extension ComposerSettingsPopover {
         .disabled(entry.unavailable != nil || stopped)
         .composerSettingsHover(target, hovered: $hovered)
         .help(
-            [entry.choice.description, entry.choice.value, entry.agentName, entry.unavailable]
+            [entry.choice.description, entry.choice.value, entry.agentName, entry.caption]
                 .compactMap { $0 }.joined(separator: "\n")
         )
         .accessibilityLabel("\(entry.choice.displayName), \(entry.agentName)")

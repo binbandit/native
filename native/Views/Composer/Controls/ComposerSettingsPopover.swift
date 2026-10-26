@@ -195,7 +195,9 @@ struct ComposerSettingsPopover: View {
                 ForEach(settings.autonomyLevels) { choice in
                     autonomyRow(choice, setting: autonomy)
                 }
-                if !isStopped { autonomyCaption(autonomy) }
+                if !isStopped, !omitsModelCaptions || failure?.optionID == autonomy.option.id {
+                    autonomyCaption(autonomy)
+                }
             }
         }
     }
