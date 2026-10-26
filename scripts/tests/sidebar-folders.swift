@@ -80,6 +80,14 @@ private struct SidebarFolderChecks {
             from: StaticPolicySource(managed: ["policy.folders.allowedRoots": [String]()]))
         require(app.finishOpeningFolders(inspected, undoManager: nil).isEmpty, "policy is revalidated at commit")
         require(app.projects.all.count == total, "a denied addition leaves projects intact")
+        await app.addQuickEntryProject(pier, choosing: true)
+        require(app.projects.all.count == total, "Quick Entry cannot bypass managed folder roots")
+        require(app.quickEntry.failure != nil, "Quick Entry explains a policy refusal")
+        await app.addProject(pier)
+        require(
+            app.projects.all.count == total && app.actionFailure != nil,
+            "the legacy picker cannot bypass managed roots with Labs off")
+        app.actionFailure = nil
         app.sidebarFolders.policyOverride = .default
         app.dismissFolderResult()
         let invalid = FolderHistory.Entry(url: atlas, bookmark: Data([1, 2, 3]))

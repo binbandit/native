@@ -36,6 +36,9 @@ struct SidebarFolderFixtureView: View {
                     }
                 }
                 .sidebarPreviewEnvironment(model)
+                .environment(GitHubAccountPreviewFixtures.model(.single))
+            } else {
+                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .task { if model == nil { model = SidebarFolderPreviewFixtures.model(state) } }

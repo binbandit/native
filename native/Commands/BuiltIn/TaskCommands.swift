@@ -51,7 +51,7 @@ extension NativeCommand {
             ) { _ in
                 model.requestOpenFolder()
             }
-            .available { _ in !model.offersSidebarFolders || model.canOpenFolders },
+            .available { _ in model.canOpenFolders },
         ]
     }
 

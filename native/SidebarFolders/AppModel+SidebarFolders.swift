@@ -19,9 +19,33 @@ extension AppModel {
 
     /// Every visible entry point, including Command-O, uses the same admission and chooser.
     func requestOpenFolder() {
-        guard offersSidebarFolders else { isAddingProject = true; return }
         guard canOpenFolders, sidebarFolders.opening.isEmpty else { return }
         isAddingProject = true
+    }
+
+    /// Legacy and Quick Entry additions consult the same managed roots even with Labs off.
+    /// With no folder restriction, their shipped behavior stays unchanged.
+    func admittedProjectFolder(_ url: URL) async -> URL? {
+        guard folderPolicy.foldersAllowedRoots != nil || !canOpenFolders else { return url }
+        let resolved = await PlatformFolderAccess.inspect([url], policy: folderPolicy)
+        guard let item = resolved.first, item.failure == nil else {
+            actionFailure = ActionFailure(
+                "Can’t Open Folder",
+                resolved.first?.failure?.message(for: url.lastPathComponent)
+                    ?? "Only approved folders can be added.")
+            return nil
+        }
+        // Policy may have changed while access was being resolved.
+        let roots = folderPolicy.foldersAllowedRoots?.map {
+            URL(filePath: $0).resolvingSymlinksInPath().standardizedFileURL.path
+        }
+        guard folderPolicy.allowsFolder(item.url.path, canonicalRoots: roots) else {
+            if item.hasSecurityScope { item.original.stopAccessingSecurityScopedResource() }
+            actionFailure = ActionFailure("Can’t Open Folder", "Only approved folders can be added.")
+            return nil
+        }
+        if item.hasSecurityScope { sidebarFolders.access.append(item.original) }
+        return item.url
     }
 
     func openRecentFolder(_ entry: FolderHistory.Entry, undoManager: UndoManager?) async {

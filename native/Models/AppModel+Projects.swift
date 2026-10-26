@@ -4,6 +4,7 @@ import Foundation
 extension AppModel {
     /// Opens a folder as a project, or finds it if it's open already, and lists its sessions.
     func addProject(_ url: URL) async {
+        guard let url = await admittedProjectFolder(url) else { return }
         _ = await addProject(url, focus: true)
     }
 
