@@ -76,9 +76,13 @@ private final class ReferenceBackgroundView: NSView {
             else { continue }
             layout.enumerateTextSegments(
                 in: textRange, type: .standard, options: .rangeNotRequired
-            ) { _, rect, _, _ in
-                var rect = rect.offsetBy(dx: editor.textContainerOrigin.x, dy: editor.textContainerOrigin.y)
-                rect = self.convert(rect, from: editor).insetBy(dx: 0, dy: -DS.ComposerReference.verticalInset)
+            ) { _, rect, baseline, _ in
+                let font = DSTypography.platformFont(size: DS.ComposerReference.fontSize, design: .mono)
+                let ink = CGRect(
+                    x: rect.minX, y: baseline - font.ascender - DS.ComposerReference.verticalInset,
+                    width: rect.width, height: font.ascender - font.descender + 2 * DS.ComposerReference.verticalInset)
+                let rect = self.convert(
+                    ink.offsetBy(dx: editor.textContainerOrigin.x, dy: editor.textContainerOrigin.y), from: editor)
                 NSBezierPath(roundedRect: rect, xRadius: DS.Radius.control, yRadius: DS.Radius.control).fill()
                 return true
             }
@@ -101,6 +105,7 @@ private struct ReferenceBackground: UIViewRepresentable {
     func makeUIView(context: Context) -> ReferenceBackgroundView {
         let view = ReferenceBackgroundView()
         view.backgroundColor = .clear
+        view.isOpaque = false
         view.isUserInteractionEnabled = false
         return view
     }
@@ -112,6 +117,10 @@ private struct ReferenceBackground: UIViewRepresentable {
 
 private final class ReferenceBackgroundView: UIView {
     var ranges: [NSRange] = []
+    private weak var observedEditor: UITextView?
+    private var scrolling: NSKeyValueObservation?
+
+    isolated deinit { scrolling?.invalidate() }
 
     override func draw(_ rect: CGRect) {
         var ancestor = superview
@@ -123,6 +132,12 @@ private final class ReferenceBackgroundView: UIView {
             ancestor = view.superview
         }
         guard let editor else { return }
+        if observedEditor !== editor {
+            observedEditor = editor
+            scrolling = editor.observe(\.contentOffset) { [weak self] _, _ in
+                MainActor.assumeIsolated { self?.setNeedsDisplay() }
+            }
+        }
         UIColor(Color.dsFill).setFill()
         for range in ranges {
             guard let start = editor.position(from: editor.beginningOfDocument, offset: range.location),
@@ -130,7 +145,10 @@ private final class ReferenceBackgroundView: UIView {
                 let textRange = editor.textRange(from: start, to: end)
             else { continue }
             for segment in editor.selectionRects(for: textRange) {
-                let rect = convert(segment.rect, from: editor).insetBy(dx: 0, dy: -DS.ComposerReference.verticalInset)
+                let font = DSTypography.platformFont(size: DS.ComposerReference.fontSize, design: .mono)
+                let height = font.ascender - font.descender + 2 * DS.ComposerReference.verticalInset
+                let rect = convert(segment.rect, from: editor)
+                    .insetBy(dx: 0, dy: (segment.rect.height - height) / 2)
                 UIBezierPath(roundedRect: rect, cornerRadius: DS.Radius.control).fill()
             }
         }

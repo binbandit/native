@@ -5,12 +5,12 @@ import Testing
 struct FileReferenceProjectionTests {
     @Test func chipPaddingStaysOutOfCanonicalDraftAndUndo() {
         let raw = "@folder/File.swift next"
-        let padded = FileReferenceProjection(raw, tokenPadding: "\u{2002}")
-        #expect(padded.display == "\u{2002}File.swift\u{2002} next")
+        let padded = FileReferenceProjection(raw, tokenPadding: "\u{00A0}")
+        #expect(padded.display == "\u{00A0}File.swift\u{00A0} next")
         #expect(padded.rawOffset(padded.display.utf8.count) == raw.utf8.count)
         #expect(padded.replacingDisplay(with: padded.display + "!").text == raw + "!")
         #expect(padded.replacingDisplay(with: String(padded.display.dropFirst())).text == " next")
-        let removed = FileReferenceProjection(" next", tokenPadding: "\u{2002}")
+        let removed = FileReferenceProjection(" next", tokenPadding: "\u{00A0}")
         let restored = padded.tokens.map {
             FileReferenceProjection.RestoredToken(display: $0.display, raw: "@" + $0.path)
         }
