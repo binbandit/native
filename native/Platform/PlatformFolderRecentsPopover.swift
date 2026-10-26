@@ -35,18 +35,25 @@ private struct SidebarFolderRecentsAnchor: NSViewRepresentable {
     @Binding var isPresented: Bool
     let popup: AnyView
 
-    func makeNSView(context: Context) -> NSView { NSView() }
+    func makeNSView(context: Context) -> SidebarFolderRecentsAnchorView { SidebarFolderRecentsAnchorView() }
     func makeCoordinator() -> Coordinator { Coordinator() }
 
-    func updateNSView(_ view: NSView, context: Context) {
+    func updateNSView(_ view: SidebarFolderRecentsAnchorView, context: Context) {
+        view.onReady = { [weak view, weak coordinator = context.coordinator] in
+            guard isPresented, let view else { return }
+            coordinator?.show(from: view, popup: popup) { isPresented = false }
+        }
         if isPresented {
-            context.coordinator.show(from: view, popup: popup) { isPresented = false }
+            if view.window != nil { view.onReady?() }
         } else {
             context.coordinator.hide(notify: false, restoreFocus: true)
         }
     }
 
-    static func dismantleNSView(_ view: NSView, coordinator: Coordinator) { coordinator.hide(notify: false) }
+    static func dismantleNSView(_ view: SidebarFolderRecentsAnchorView, coordinator: Coordinator) {
+        view.onReady = nil
+        coordinator.hide(notify: false)
+    }
 
     final class Coordinator {
         private var panel: SidebarFolderRecentsPanel?
@@ -138,6 +145,16 @@ private struct SidebarFolderRecentsAnchor: NSViewRepresentable {
             dismiss = nil
             if notify { action?() }
         }
+    }
+}
+
+private final class SidebarFolderRecentsAnchorView: NSView {
+    var onReady: (() -> Void)?
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        guard window != nil else { return }
+        DispatchQueue.main.async { [weak self] in self?.onReady?() }
     }
 }
 
