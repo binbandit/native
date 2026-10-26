@@ -125,6 +125,8 @@ extension HostCore {
             try? client.peer.respond(to: requestID, error: error)
         } catch let error as HostError {
             try? client.peer.respond(to: requestID, error: error.rpcError)
+        } catch let error as HostPolicyDenial {
+            try? client.peer.respond(to: requestID, error: error.rpcError)
         } catch let error as AgentLaunch.Failure {
             try? client.peer.respond(to: requestID, error: error.rpcError)
         } catch let error as DecodingError {
@@ -135,11 +137,13 @@ extension HostCore {
     }
 
     /// Handles one request. `reply` must be called, once, in the same actor turn as the state the
-    /// result describes, so nothing slips in between (see `attach`).
+    /// result describes, so nothing slips in between (see `attach`). The host's policy comes first,
+    /// whoever the client is and whatever it was granted; the grants then narrow what's left.
     private func answer(
         _ message: JSONRPCPeer.Message, from client: ClientLink, reply: (any Encodable & Sendable) throws -> Void
     ) async throws {
         typealias Method = HostProtocol.Method
+        try admit(message.method)
         switch message.method {
         case Method.initialize:
             let params = try message.params(as: InitializeParams.self)
@@ -200,7 +204,9 @@ extension HostCore {
             sessions[params.sessionID]?.subscribers.remove(client.id)
             try reply(EmptyMessage())
         case Method.prompt:
-            try reply(PromptResult(delivery: try await prompt(try message.params(as: PromptParams.self))))
+            // Checked again where the delivery starts: the policy may change before it does.
+            let params = try message.params(as: PromptParams.self)
+            try reply(PromptResult(delivery: try await prompt(params) { [weak self] in try self?.require(.agents) }))
         case Method.cancel:
             await cancel(try session(try message.params(as: SessionParams.self).sessionID))
             try reply(EmptyMessage())
@@ -340,7 +346,8 @@ extension HostCore {
         session.subscribers.insert(client.id)
         client.attached.insert(session.id)
         try reply(AttachResult(summary: session.summary))
-        if session.turn == nil {
+        // Where agents can't run, following a session reads only what the host has.
+        if session.turn == nil, policy.allows(agent: session.record.agentID) {
             loadInBackground(session)
         }
     }

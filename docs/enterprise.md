@@ -53,7 +53,7 @@ maps every key to the capabilities it governs and the code that honors it.
 | `policy.companion.enabled` / `policy.remoteHosts.enabled` | Pairing devices; connecting to hosts other than this Mac (see [remote hosts](#remote-hosts)). |
 | `policy.updates.feedURL` / `policy.updates.enabled` / `policy.updates.channels` | An internal update feed, or updates off; which channels are allowed. |
 | `policy.celebrations.downloadsEnabled` / `policy.celebrations.baseURL` | Disable celebration artwork downloads (including index and signature), or mirror Native-signed packs internally. Cached and bundled icons remain available. See [celebration artwork](celebrations-artwork.md). |
-| `policy.search.retentionDays` | How long the search index keeps tasks. |
+| `policy.search.retentionDays` | How long the search index keeps tasks, in days since a task's newest known time; a task with no time is kept. A removed task's text, messages and history-file checkpoints all go, and the index file is compacted (at most once a day) so none of it stays on disk. |
 | `policy.shortcuts.bindings` | Keyboard shortcuts by command id, as Settings ▸ Keyboard Shortcuts exports them (`docs/commands.md`); they replace the user's changes and lock the page. |
 | `policy.ai.instructions` | Instructions added to what Native writes with AI (titles, branch names, commit messages, pull request drafts, the prompts behind "Ask an Agent"), by purpose id: `title`, `branchName`, `commitMessage`, `commitGrouping`, `pullRequest`, `reviewRequest`, `pullRequestQuestions`. Native's format rules still come first. They replace the user's own instructions and lock Settings ▸ AI Instructions; a purpose it doesn't name gets none. |
 | `policy.telemetry.native` | `on`, `off`, or `user` (the user chooses; the default). |
@@ -83,8 +83,11 @@ keys and problems but never values. `NativePolicy.inspection` reports all of it 
 
 A managed value Native can't use is logged (subsystem "Native", category "Policy") and the key takes
 its most restrictive value: switches turn off, allowlists become empty, an unusable mirror or feed
-turns its download off, unusable retention keeps one day, unusable instructions or shortcuts lock
-Native's own. It never falls back to the user's value or Native's permissive default. When the
+turns its download off, unusable instructions or shortcuts lock Native's own. It never falls back
+to the user's value or Native's permissive default. Retention fails closed by deleting nothing:
+any period Native picked could remove what the organization meant to keep, so an unusable
+`policy.search.retentionDays` keeps every task, ignores the user's own period and is reported
+(and in a lockdown, with nothing readable, search keeps everything too). When the
 value shapes agent sessions (`policy.agents.environment`, `policy.permissions.forbiddenModes`,
 `policy.skills.blocked`, `policy.mcp.required`), agents are denied until it's fixed, and an unusable
 `policy.mcp.blocked` blocks every server. Ordinary mode still keeps the usable entries of a list

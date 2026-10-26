@@ -79,10 +79,9 @@ the hold revision it honored.
   an unreadable source, an empty revision, an empty or duplicated id, or a hold naming nothing makes
   every due copy unknown.
 - **Policy.** An unavailable or locked-down policy plans nothing destructive. A retention value the
-  organization set badly is `unusable`, and nothing is due by it. This differs from the policy
-  layer, which gives an unusable `policy.search.retentionDays` one day (the most restrictive value
-  for keeping data); for deletion that is the most destructive, so the planner refuses it. The
-  search integration has to reconcile the two.
+  organization set badly is `unusable`, and nothing is due by it. The policy layer agrees: an
+  unusable `policy.search.retentionDays` sets no period (the key is reported as failed), so search
+  deletes nothing by it either, where a shorter stand-in period would delete the most.
 - **Time.** Age is the newest timestamp the owner knows, in whole days of 86,400 seconds, as search
   counts them. A record last active exactly at the cutoff is kept. A record with no timestamp, one
   newer than the planning time, or any record while the clock is behind the last trusted time is
@@ -149,8 +148,9 @@ Each step is its own change, with its own tests, in this order. None of them is 
 1. `lifecycle-host-database`: the host's SQLite and WAL, its automatic pruning made hold-aware, and
    the conflict between erasure and the approval audit.
 2. `lifecycle-search`: the search index with tombstones, so a reindex from agent histories can't
-   restore an erased task; retention that also removes `sources` rows, checkpoints and vacuums, and
-   treats unknown times and unusable policy as the planner does.
+   restore an erased task, and an adapter for the planner. Search's own retention already agrees
+   with the planner (unknown times and unusable policy delete nothing) and removes `sources` rows,
+   then compacts.
 3. `lifecycle-automation`: automation, workflow and expedition files and expedition documents.
 4. `lifecycle-app-records`: the session catalog, drafts and other content-bearing preferences,
    usage, attachments, temporary files, pull request artifacts, skills trash and caches.
@@ -428,9 +428,9 @@ Searchable copies of transcripts: titles, folders, message text, and how far eac
 
 - **Owner:** Native (verified in source). **Records:** session. **Holds:** user content, paths, commands.
 - **Copies:** primary `AppSupport/search-index.sqlite`, SQLite (sessions, items, items_fts, sources, meta); write-ahead log `AppSupport/search-index.sqlite-wal`, SQLite; shared memory `AppSupport/search-index.sqlite-shm`, SQLite.
-- **Retention:** `policy.search.retentionDays`. **Today:** Retention deletes sessions last active before the cutoff (one without a time counts as oldest) but keeps their `sources` rows and doesn't vacuum. Excluding a folder removes its sessions; clearing the index drops and vacuums it.
+- **Retention:** `policy.search.retentionDays`. **Today:** Retention deletes sessions last active before the cutoff (one without a time is kept) with their `sources` rows, then compacts and vacuums the file, at most once a day. Excluding a folder removes its sessions without vacuuming; clearing the index drops and vacuums it.
 - **Export:** adapter pending. **Delete:** adapter pending. **Hold:** pruned automatically, ignoring holds. **Tombstones:** reimported from `agents.histories`, `app.sessionCatalog`.
-- **Follow-up:** `lifecycle-search`. **Code:** `Packages/Search/Sources/Search/SearchStore.swift`, `native/Search/TranscriptSearchBackfill.swift`.
+- **Follow-up:** `lifecycle-search`. **Code:** `Packages/Search/Sources/Search/SearchStore.swift`, `Packages/Search/Sources/Search/SearchStore+Retention.swift`, `native/Search/TranscriptSearchBackfill.swift`.
 
 ### `automation.store`
 

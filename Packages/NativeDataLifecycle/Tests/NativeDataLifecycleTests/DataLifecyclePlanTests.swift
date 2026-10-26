@@ -72,10 +72,10 @@ import Testing
 
     @Test func unusableRetentionPolicyDeletesNothingByIt() throws {
         let twoDaysOld = [W.searchRecord(W.alpha, lastActive: W.ago(days: 2))]
-        // The policy layer fails closed to one day for an unusable value; for deletion that would
-        // delete more, so the planner treats it as unknown instead.
+        // The policy layer keeps everything for an unusable value and marks the key failed; the
+        // planner reports that rather than reading it as no period at all.
         let native = PolicyLoader.load(from: StaticPolicySource(managed: ["policy.search.retentionDays": "thirty"]))
-        #expect(native.searchRetentionDays == 1)
+        #expect(native.searchRetentionDays == nil)
         let unusable = W.planner(policy: DataLifecyclePolicy(native)).plan(
             try W.retention(), reports: [.searchIndex: .listed(twoDaysOld)], clock: W.clock)
         #expect(unusable.reasons(W.alpha) == [.retentionPolicyUnusable])

@@ -121,7 +121,7 @@ import Testing
         ])
         #expect(!policy.scriptsEnabled)
         #expect(policy.updates.feedURL == nil && !policy.updates.isEnabled)
-        #expect(policy.searchRetentionDays == 1)
+        #expect(policy.searchRetentionDays == nil)
         #expect(policy.telemetry.native == .off)
         // Ordinary mode keeps the usable part of a collection; restricted mode wouldn't.
         #expect(policy.updates.allowedChannels == ["stable"])
@@ -139,12 +139,27 @@ import Testing
         #expect(policy.deployment.state == .invalid)
     }
 
+    @Test func unusableRetentionKeepsEverythingAndIsReported() {
+        // A shorter period deletes more, so failing closed keeps everything rather than one day.
+        for value: Any in [0, -3, 1.5, "thirty", true, [30]] {
+            let policy = load(managed: [.searchRetentionDays: value], user: [.searchRetentionDays: 7])
+            #expect(policy.searchRetentionDays == nil, "\(value)")
+            #expect(policy.keyStatus[.searchRetentionDays] == PolicyKeyStatus(validity: .invalid, origin: .failClosed))
+            #expect(policy.isManaged(.searchRetentionDays) && policy.deployment.state == .invalid)
+            #expect(policy.diagnostics.map(\.key) == [PolicyKey.searchRetentionDays.rawValue])
+        }
+        // The user's own unusable value is reported and ignored.
+        let user = load(user: [.searchRetentionDays: 0])
+        #expect(user.searchRetentionDays == nil && !user.isManaged(.searchRetentionDays))
+        #expect(user.diagnostics.map(\.origin) == [.user])
+    }
+
     @Test func numbersAreNotBooleans() {
         let policy = load(managed: [.labsEnabled: NSNumber(value: 1), .searchRetentionDays: true])
         // A plist integer isn't a Boolean, and a Boolean isn't a number of days.
         #expect(policy.diagnostics.map(\.key).contains(PolicyKey.searchRetentionDays.rawValue))
         #expect(!policy.labsEnabled)
-        #expect(policy.searchRetentionDays == 1)
+        #expect(policy.searchRetentionDays == nil)
     }
 
     @Test func organizationThenUserThenDefault() {

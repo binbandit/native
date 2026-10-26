@@ -49,7 +49,10 @@ struct Menus {
 
     private func bar() throws(DriveError) -> AXUIElement {
         guard let bar = Accessibility.element(Accessibility.attribute(app, kAXMenuBarAttribute)) else {
-            throw DriveError("no menu bar")
+            throw DriveError(
+                "no menu bar (background instances may not expose one); stop the instance with "
+                    + "scripts/dev/run-isolated.sh <name> --quit, or quit only the app with "
+                    + "drive.sh <name> key cmd+q")
         }
         return bar
     }
