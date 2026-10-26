@@ -1,3 +1,4 @@
+import Experiments
 import Git
 import SwiftUI
 
@@ -16,6 +17,7 @@ struct GitChangesInspector: View {
     /// Opens the GitHub feature's pull request flow; the button is hidden without it.
     var onCreatePullRequest: (() -> Void)?
 
+    @Experiment(.composerNext) private var composerNext
     @Environment(\.gitChangesCompact) private var compact
     @State private var isCommitting = false
     @State private var pendingDiscard: [FileChange] = []
@@ -60,6 +62,13 @@ struct GitChangesInspector: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.dsBackground)
+        .environment(\.diffCommentsSession, session)
+        .environment(\.diffCommentsScope, (review?.scope ?? .uncommitted).title)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if composerNext, let session {
+                DiffCommentsFooter(session: session)
+            }
+        }
         // This Turn follows the latest turn as the agent works.
         .onChange(of: session?.phase) { followLatestTurn() }
         .onChange(of: session?.completedWriteCount) { followLatestTurn() }

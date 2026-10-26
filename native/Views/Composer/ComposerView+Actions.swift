@@ -41,6 +41,7 @@ extension ComposerView {
             Task { await goal.perform(command) }
             return
         }
+        if !session.prepareDiffCommentsSubmission() { return }
         if let blocked = session.sendBlockedReason ?? attachmentsBlockedReason {
             feedback = .blocked(blocked)
             return
@@ -57,6 +58,10 @@ extension ComposerView {
         }
         // The queued message may have gone out while it was being edited; then it's a new message.
         session.editingQueuedPrompt = nil
+        if !session.diffComments.isEmpty {
+            Task { await session.submitDiffComments(behavior) }
+            return
+        }
         if session.canSend, !session.queuedPrompts.isEmpty {
             // After a cancelled turn paused the queue: the draft API sends the waiting messages
             // first, then this one; each turn shows in the transcript.

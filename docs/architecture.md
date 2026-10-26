@@ -782,3 +782,22 @@ the separate method safely. Move to Project reopens the same agent
 conversation at an admitted project folder. A unique Task Files child receives files only when
 the user opts in; originals remain owned until task deletion. Failure preserves the original
 location and draft. Paired-host scratch allocation is not supported.
+
+## Inline comments on Changes
+
+With Fine print enabled, `native/DiffComments` anchors task comments in the Changes diff. The
+shared ACP `PromptQuote` format carries an optional `PromptDiffComment`: stable identity, task,
+side, scope, content fingerprint, exact numbered source and body. It remains one text packet in
+the existing composer draft, queue and user transcript. Bare quotes keep their existing format.
+`PromptDiffCommentSelection` refuses cross-hunk or cross-side anchors. Fingerprints are stable
+version identifiers rather than cryptographic security claims; no fuzzy line remapping occurs.
+
+`SessionModel` owns collection, unfinished editors, review and undo. `ComposerDrafts` retains
+unfinished editors separately from added quotes and keeps a pending packet before submission.
+Acceptance removes only matching accepted snapshots, preserving later edits. Existing host request
+identifiers provide reconnect deduplication within a submission. A lost acknowledgement remains
+unresolved across relaunch until matching transcript/queue evidence or explicit user-controlled
+resend; no timer implies failure. Comments use the public task submission API and retain its queue
+and steer behavior. No GitHub review is created. Source excerpt policy grants apply at collection
+and submission; they introduce no new endpoint. Inert Debug fixtures cover C1 through C13.
+

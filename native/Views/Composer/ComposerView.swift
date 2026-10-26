@@ -1,6 +1,7 @@
 import ACP
 import Modes
 import NativeAutomation
+import NativePolicy
 import SwiftUI
 
 /// The prompt composer: one surface pinned under the transcript that stacks queued
@@ -294,13 +295,28 @@ struct ComposerView: View {
                     ComposerAgentReceiptSection(change: change)
                 }
                 if composerNext, !session.composerQuotes.isEmpty {
-                    ComposerQuotesSection(quotes: session.composerQuotes) {
-                        session.removeQuote(at: $0, undoManager: undoManager)
+                    if !session.diffComments.isEmpty {
+                        DiffCommentsComposerSection(session: session)
+                    } else {
+                        ComposerQuotesSection(quotes: session.composerQuotes) {
+                            session.removeQuote(at: $0, undoManager: undoManager)
+                        }
                     }
                     SeparatorLine()
                 }
                 // Keep the editor mounted when a turn changes the footer, preserving focus and selection.
                 inputSection(suggestions: suggestions)
+                if composerNext, !session.diffComments.isEmpty || session.diffCommentStatus != nil {
+                    if session.diffCommentEditsInComposer,
+                        let editor = session.diffCommentEditors.first(where: {
+                            $0.comment?.id == session.activeDiffComment
+                        })
+                    {
+                        DiffCommentsEditor(session: session, quote: editor, isInline: false)
+                            .padding(.horizontal, DS.ComposerQuote.inset)
+                    }
+                    DiffCommentsDeliveryStatus(session: session, retry: { submit(followUp) })
+                }
                 if !composerNext {
                     Rectangle().fill(.dsBorder).frame(height: DS.Composer.separatorWidth)
                     currentControls(settings)
@@ -312,6 +328,9 @@ struct ComposerView: View {
             return !items.isEmpty
         } isTargeted: {
             isDropTargeted = $0
+        }
+        .onChange(of: PolicyCenter.shared.policy.sourceExcerptsRetentionEnabled) {
+            session.enforceDiffCommentRetention()
         }
         .animation(.dsStandard, value: plan.isActive)
         .animation(.dsStandard, value: session.attachments.isEmpty && pendingAttachments.isEmpty)

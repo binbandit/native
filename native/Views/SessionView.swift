@@ -53,6 +53,7 @@ struct SessionView: View {
         .onChange(of: canQuote) { _, enabled in
             if !enabled, let source = session.quoteSelectionSource { session.clearQuoteSelection(source: source) }
         }
+        .environment(\.diffCommentsSession, session)
         .environment(
             \.composerQuoteContext,
             canQuote

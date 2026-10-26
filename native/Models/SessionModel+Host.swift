@@ -278,7 +278,11 @@ extension SessionModel {
             behavior: behavior == .steer ? .steer : .queue, echo: echo, origin: origin == .task ? .task : .user)
         services.post(.promptSent(context, text: text))
         nameAfterPrompt(text, attachments: attachments, isFirstPrompt: isFirstPrompt)
-        return switch try await host.prompt(params) {
+        let delivery = try await host.prompt(params)
+        if delivery == .unknown, PromptQuote.split(text).quotes.contains(where: { $0.comment != nil }) {
+            throw DiffCommentsUnresolvedDelivery()
+        }
+        return switch delivery {
         case .prompted: .prompted
         case .steered: .steered
         case .queued, .unknown: .queued

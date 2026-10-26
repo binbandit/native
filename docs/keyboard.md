@@ -796,3 +796,20 @@ selecting across old and new numbers includes both versions separately. Line but
 and touch. Remove Quote is beside each quoted source; ⌘Z restores a removed quote. Quotes are
 snapshots of the selected text, including old/new line identity. File references in the draft and
 @ list show the current known additions and removals; unknown counts stay absent.
+
+## Inline diff comments (Fine print)
+
+| Keys | Action | Menu | Command |
+| --- | --- | --- | --- |
+| ⇧⌘L | Add a comment to selected diff lines, or the current line | Task | `changes.addComment` |
+| | Review the task's collected comments in the composer | Task | `changes.reviewComments` |
+| Up / Down | Move the current diff line; Shift extends the range within one side and hunk | | |
+| Left / Right | Choose Before / After on a context line | | |
+| Return in a diff comment | New line | | |
+| ⌘Return in a diff comment | Add Comment to Draft and return to its anchor | | |
+| Escape in a diff comment | Collapse the editor, keeping its text | | |
+
+Comment and Quote are separate actions. Command-L keeps quoting selected lines without adding a
+comment. Touch users can extend a selection through the line menu. Review Draft Comments expands
+the shared quote section; the normal composer sends the collection as one message. Remove, clear,
+discard and re-anchor support Undo. Comments and unfinished text survive closing Changes.

@@ -81,11 +81,15 @@ extension ComposerView {
         let isEditingQueued =
             session.queuedPrompts.contains { $0.id == session.editingQueuedPrompt }
             && !session.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        return ComposerSendButton(disabledReason: session.sendBlockedReason ?? attachmentsBlockedReason) {
+        return ComposerSendButton(
+            disabledReason: session.diffCommentSendBlock ?? session.sendBlockedReason ?? attachmentsBlockedReason
+        ) {
             submit(followUp)
         }
         .accessibilityLabel(
-            isEditingQueued ? "Save Queued Message" : isWorking ? "\(behavior.title) Message" : "Send Message"
+            (isEditingQueued ? "Save Queued Message" : isWorking ? "\(behavior.title) Message" : "Send Message")
+                + (session.diffComments.isEmpty
+                    ? "" : " and \(session.diffComments.count) Comments to \(session.agentName)")
         )
         .help(
             isEditingQueued

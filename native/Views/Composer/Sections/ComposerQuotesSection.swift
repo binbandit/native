@@ -4,6 +4,7 @@ import SwiftUI
 struct ComposerQuotesSection: View {
     let quotes: [PromptQuote]
     let remove: (Int) -> Void
+    var edit: ((PromptQuote) -> Void)?
 
     var body: some View {
         CappedHeightScrollView(maxHeight: DS.ComposerQuote.maxHeight) {
@@ -20,63 +21,30 @@ struct ComposerQuotesSection: View {
     }
 
     private func quote(_ quote: PromptQuote, index: Int) -> some View {
-        let lines = quote.displayLines
-        return VStack(alignment: .leading, spacing: DS.Space.xs) {
-            HStack(spacing: DS.Space.sm) {
-                Image(systemName: "text.quote")
-                Text(quote.source.split(separator: "/").last.map(String.init) ?? quote.source)
-                    .font(DS.ComposerQuote.codeFont)
-                    .foregroundStyle(.dsTextSecondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .help(quote.source)
-                Text(lineLabel(quote))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                Spacer(minLength: DS.Space.xs)
-                Button {
-                    remove(index)
-                } label: {
-                    Image(systemName: "xmark")
+        VStack(alignment: .leading, spacing: DS.Space.xs) {
+            DiffCommentsSourceQuote(quote: quote)
+                .padding(.trailing, DS.Size.controlXS)
+                .overlay(alignment: .topTrailing) {
+                    Button {
+                        remove(index)
+                    } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.dsTextTertiary)
+                    .dsHitTarget(DS.ComposerSettings.controlHeight)
+                    .accessibilityLabel("Remove \(quote.comment == nil ? "Quote" : "Comment") from \(quote.source)")
                 }
-                .buttonStyle(.plain)
-                .dsHitTarget(DS.ComposerSettings.controlHeight)
-                .accessibilityLabel("Remove Quote from \(quote.source)")
-            }
-            .font(DS.ComposerQuote.headerFont)
-            .foregroundStyle(.dsTextTertiary)
-            VStack(alignment: .leading, spacing: 0) {
-                ForEach(lines.indices, id: \.self) { offset in
-                    Text(verbatim: lines[offset].text.isEmpty ? " " : lines[offset].text)
-                        .font(DS.ComposerQuote.codeFont)
-                        .foregroundStyle(.dsTextPrimary)
-                        .frame(minHeight: DS.ComposerQuote.lineHeight, alignment: .topLeading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .overlay(alignment: .topLeading) {
-                            Text(verbatim: String(lines[offset].number))
-                                .font(DS.ComposerQuote.numberFont)
-                                .foregroundStyle(.dsTextQuaternary)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.6)
-                                .frame(width: DS.ComposerQuote.inset - DS.ComposerQuote.numberGap, alignment: .trailing)
-                                .offset(x: -DS.ComposerQuote.inset)
-                                .accessibilityHidden(true)
-                        }
-                        .accessibilityLabel("Line \(lines[offset].number), \(lines[offset].text)")
+                .contextMenu {
+                    if quote.comment != nil, let edit {
+                        Button("Edit Comment") { edit(quote) }
+                    }
+                    Button("Remove") { remove(index) }
                 }
-            }
+
         }
     }
 
-    private func lineLabel(_ quote: PromptQuote) -> String {
-        guard let first = quote.lines.first?.number, let last = quote.lines.last?.number else { return "" }
-        let range = first == last ? "line \(first)" : "lines \(first)-\(last)"
-        switch quote.side {
-        case .transcript: return range
-        case .new: return "\(range), after the change"
-        case .old: return "\(range), before the change"
-        }
-    }
 }
 
 #if DEBUG
