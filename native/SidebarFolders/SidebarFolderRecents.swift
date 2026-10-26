@@ -30,7 +30,9 @@ struct SidebarFolderRecents: View {
                             .foregroundStyle(.dsTextTertiary)
                             .frame(width: DS.Size.navIcon)
                         VStack(alignment: .leading, spacing: 0) {
-                            Text(entry.url.lastPathComponent).font(DS.ComposerSettings.rowFont).foregroundStyle(
+                            Text(entry.url.lastPathComponent).font(
+                                DS.isTouchPlatform ? .dsCallout : DS.ComposerSettings.rowFont
+                            ).foregroundStyle(
                                 .dsTextPrimary)
                             Text(entry.url.deletingLastPathComponent().lastPathComponent)
                                 .font(.dsCaption).foregroundStyle(.dsTextTertiary)
@@ -66,7 +68,7 @@ struct SidebarFolderRecents: View {
                     Spacer()
                     if let key = CommandRegistry.shared.keyboardShortcut(for: .projectOpen) { Kbd(key) }
                 }
-                .font(.dsBody).foregroundStyle(.dsTextPrimary)
+                .font(DS.isTouchPlatform ? .dsCallout : .dsBody).foregroundStyle(.dsTextPrimary)
                 .padding(.leading, DS.SidebarFolders.textLeading)
                 .padding(.trailing, DS.Space.md)
                 .frame(minHeight: DS.isTouchPlatform ? DS.Size.minimumHitTarget : DS.Size.controlSM)
