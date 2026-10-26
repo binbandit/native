@@ -4,6 +4,7 @@ import NativeAutomation
 import NativeHostClient
 import NativeHostProtocol
 import SwiftUI
+import TaskList
 import Undo
 import UniformTypeIdentifiers
 
@@ -104,6 +105,13 @@ struct RootView: View {
                 expeditions.isPageShown = false
             }
         }
+        // Opening a folder can begin from a page with no selected session to observe.
+        .onChange(of: model.sidebarFolders.focusRequests) {
+            settings.close()
+            showsPullRequests = false
+            automationPage = nil
+            expeditions.isPageShown = false
+        }
         .onChange(of: expeditions.isPageShown) { _, shows in
             if shows {
                 model.closeComposeTask()
@@ -138,8 +146,11 @@ struct RootView: View {
             }
             // Every agent with its state; a system dialog shows only three choices.
             .agentPicker(isPresented: $model.isChoosingAgent)
-            .fileImporter(
-                isPresented: $model.isAddingProject, allowedContentTypes: [.folder], onCompletion: importProject
+            .modifier(
+                PlatformFolderPicker(
+                    isPresented: $model.isAddingProject, enabled: model.offersSidebarFolders,
+                    directory: model.offersSidebarFolders ? model.sidebarFolders.history.entries.first?.url : nil,
+                    completion: importProject)
             )
             .actionFailureAlert()
             .alert(
@@ -162,8 +173,10 @@ struct RootView: View {
             }
     }
 
-    private func importProject(_ result: Result<URL, any Error>) {
-        if case .success(let url) = result {
+    private func importProject(_ result: Result<URL?, any Error>) {
+        if model.offersSidebarFolders {
+            model.folderPickerFinished(result, undoManager: undoManager)
+        } else if case .success(let url?) = result {
             Task { await model.addProject(url) }
         }
     }
@@ -222,7 +235,15 @@ struct RootView: View {
             )
             .modifier(QuickEntryPresentation(model: model, git: git))
         } else {
+            #if DEBUG
+            if let state = SidebarFolderPreviewFixtures.requested {
+                SidebarFolderFixtureView(state: state)
+            } else {
+                splitView
+            }
+            #else
             splitView
+            #endif
         }
     }
 
