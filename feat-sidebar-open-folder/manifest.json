@@ -198,6 +198,6 @@
     "FolderPolicyTests_and_PolicyCoverageTests": "9 passed",
     "format": "pass",
     "iPad": "failed: dependency graph errors and SidebarView timeout; not verified",
-    "releaseAndNightly": "pending"
+    "releaseAndNightly": "pass, compilation and unchanged size budgets; Release 47.9 MB archive / 117.5 MB installed, Nightly 48.0 MB archive / 117.6 MB installed"
   }
 }
