@@ -19,7 +19,6 @@ import TaskList
 /// Each window keeps its own filters (`TaskFilter`, restored on relaunch) and its own picks.
 struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View>: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.undoManager) private var undoManager
     @Environment(\.sidebarTaskInsights) private var insights
     @FocusState private var isListFocused: Bool
     @SceneStorage("sidebar.taskFilter") private var storedFilter = ""
@@ -108,22 +107,6 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
             }
             .accessibilityLabel("Projects")
             .onAppear { LaunchMetrics.markOnScreen(.sidebarInteractive) }
-            .confirmationDialog(
-                "Delete “\(selection.deletionRequest.map(model.titleOfSession) ?? "")”?",
-                isPresented: Binding(
-                    get: { selection.deletionRequest != nil },
-                    set: { if !$0 { selection.deletionRequest = nil } }),
-                presenting: selection.deletionRequest
-            ) { key in
-                Button("Delete Task", role: .destructive) {
-                    model.deleteSession(key, undoManager: undoManager)
-                }
-            } message: { key in
-                let agent = model.runtime(key.agent)?.agent.displayName ?? "the agent"
-                Text(
-                    "Its history goes from Native and, if \(agent) supports it, from \(agent) too. You can undo for a few seconds. To keep it out of sight instead, archive it."
-                )
-            }
 
             if selection.isActive {
                 SidebarSelectionBar(selection: selection)
@@ -163,19 +146,6 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
         .task(id: filter.requiresUncommittedChanges || filter.requiresPullRequest) {
             guard filter.requiresUncommittedChanges || filter.requiresPullRequest else { return }
             await insights.prepare(model.projects.all.flatMap { model.allSessions(in: $0.id) })
-        }
-        .confirmationDialog(
-            "Delete \(selection.keys.count) Tasks?", isPresented: Bindable(selection).isConfirmingDelete
-        ) {
-            Button("Delete \(selection.keys.count) Tasks", role: .destructive) {
-                let keys = selection.keys
-                selection.clear()
-                model.deleteSessions(keys, undoManager: undoManager)
-            }
-        } message: {
-            Text(
-                "Their history goes from Native and, where the agent supports it, from the agent too. You can undo for a few seconds. To keep them out of sight instead, archive them."
-            )
         }
         .focusedSceneValue(\.sidebarReorder, reorder)
         .focusedSceneValue(\.sidebarNeedsYouFilter, needsYouBinding)

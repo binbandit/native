@@ -88,7 +88,7 @@ struct SessionRow<Accessory: View>: View {
                     leading: [readAction, pinAction],
                     trailing: [
                         SidebarSwipeAction("Archive", systemImage: "archivebox", tint: .dsInfo, action: archive),
-                        SidebarSwipeAction("Delete", systemImage: "trash", tint: .dsDanger, action: requestDeletion),
+                        SidebarSwipeAction("Delete", systemImage: "trash", tint: .dsDanger, action: delete),
                     ]
                 )
                 .accessibilityLabel(accessibilityLabel)
@@ -217,7 +217,7 @@ struct SessionRow<Accessory: View>: View {
         } else {
             Button("Archive", action: archive)
         }
-        Button("Delete…", role: .destructive, action: requestDeletion)
+        Button("Delete", role: .destructive, action: delete)
     }
 
     private var readAction: SidebarSwipeAction {
@@ -277,9 +277,8 @@ struct SessionRow<Accessory: View>: View {
         model.setPinned(summary.id, !isPinned, undoManager: undoManager)
     }
 
-    /// The sidebar asks first, in its one deletion dialog.
-    private func requestDeletion() {
-        picking?.deletionRequest = summary.id
+    private func delete() {
+        model.deleteSession(summary.id, undoManager: undoManager)
     }
 
     private func archive() {

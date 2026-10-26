@@ -42,7 +42,10 @@ struct SidebarBulkMenu: View {
                 Task { await model.unarchiveSessions(keys) }
             }
         }
-        Button("Delete \(count)…", systemImage: "trash", role: .destructive) { selection.isConfirmingDelete = true }
+        Button("Delete \(count)", systemImage: "trash", role: .destructive) {
+            selection.clear()
+            model.deleteSessions(keys, undoManager: undoManager)
+        }
         Divider()
         Button("Deselect All", systemImage: "xmark.circle") { selection.clear() }
     }
