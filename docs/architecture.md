@@ -526,7 +526,11 @@ Goal controllers cannot migrate transactionally yet, so any existing goal must b
 `TaskHandoff` in ACP assembles bounded excerpts locally, without another model request. Native keeps
 that context until the next explicit submission, where it becomes an internal content block ahead
 of the unchanged user echo. The context and receipt survive relaunch in Native-owned storage. Taking
-the context consumes it before delivery; uncertain-send recovery never invents a second submission.
+the pending context consumes it before delivery; uncertain-send recovery never invents a second
+submission. Bounded earlier excerpts stay local for a later model choice. In-app agents that never
+saved the empty conversation recreate it with the confirmed settings, receipt and history link;
+new-task defaults and hooks do not run again. Accepted attachment reads follow the continuing draft
+through preparation, commit, Undo and recovery.
 The existing conversation chain preserves earlier history, title, sidebar position, pin, branch and
 worktree. Draft text, attachments and bare quotes move together. The task presentation key retains
 the editor, caret and open popover while the transport conversation changes.

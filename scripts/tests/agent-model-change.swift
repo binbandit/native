@@ -291,6 +291,7 @@ private struct AgentModelChangeRegression {
                     catalogURL: scratch.appending(path: "catalog.json"), experiments: experiments)
             }
             let first = launch()
+            defer { first.stopAgents() }
             _ = await first.checkForAgents()
             let project = first.projects.add(scratch)
             let sourceSettings = ComposerSettingsPreviewFixtures.claude(mode: "default")
@@ -317,6 +318,7 @@ private struct AgentModelChangeRegression {
             first.stopAgents()
             try Data("agent-full-access".utf8).write(to: scratch.appending(path: "agent/default-mode"))
             let again = launch()
+            defer { again.stopAgents() }
             _ = await again.checkForAgents()
             try require(again.catalog.contains(old), "An empty unsent model selection was dropped at launch")
             again.selection = old

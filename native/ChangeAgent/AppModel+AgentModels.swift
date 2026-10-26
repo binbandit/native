@@ -44,7 +44,8 @@ extension AppModel {
                     let id = AgentDefinition.ID(rawValue: agent.id)
                     let options = AgentSessionDefaults.offeredOptions(for: id)
                     result += modelEntries(
-                        agent: id, name: agent.name, options: options, reason: "Not allowed", isManaged: true)
+                        agent: id, name: agent.name, options: options.isEmpty ? nil : options, reason: "Not allowed",
+                        isManaged: true)
                 }
             }
         }
