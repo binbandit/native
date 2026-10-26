@@ -134,6 +134,8 @@ plugin id (`playtest-fake-agent` for `seed`). Remove `review-kit` from that allo
 or over-conversation pane is open. Review Kit follows that policy live, as an installed plugin does.
 Check that its pane and well rows disappear, its commands leave Keyboard Shortcuts, and reallowing
 it leaves the old pane closed. This avoids Settings navigation closing the pane before revocation.
+In a background instance, edit an unsent draft after changing defaults to trigger a preferences
+notification, wait for the removal, then clear the draft without sending it.
 
 ### Silent instances
 
