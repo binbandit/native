@@ -17,6 +17,7 @@ struct ComposerAgentReceipt: View {
                     .frame(width: DS.ComposerSettings.selectionWidth, height: DS.ComposerSettings.selectionWidth)
             }
             Text(text)
+                .contentTransition(.opacity)
                 .foregroundStyle(isFailure ? .dsDanger : .dsTextSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
@@ -36,11 +37,12 @@ struct ComposerAgentReceipt: View {
                     .dsHitTarget(DS.ComposerSettings.controlHeight)
             }
         }
-        .font(DS.ComposerSettings.rowFont)
+        .font(.dsBody)
         .padding(.horizontal, DS.ComposerQuote.inset)
         .padding(.vertical, DS.Space.sm)
         .frame(minHeight: DS.ComposerSettings.agentReceiptMinHeight)
         .overlay(alignment: .bottom) { SeparatorLine() }
+        .animation(.dsQuick, value: text)
     }
 }
 
