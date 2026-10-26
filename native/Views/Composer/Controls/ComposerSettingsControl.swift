@@ -111,7 +111,7 @@ struct ComposerSettingsControl: View {
                 SessionGoalEditor(controller: controller, agentName: session.agentName) { isPresented = false }
             }
         } else if showsMCP, let library {
-            ComposerSettingsPageFrame(title: "MCP Servers", onBack: backFromPage) {
+            ComposerSettingsPageFrame(title: "MCP Servers", scrollsOverflow: true, onBack: backFromPage) {
                 MCPSessionPanel(
                     library: library, session: session, entries: library.entries(forSession: session.clientID),
                     onManage: {
@@ -227,6 +227,7 @@ struct ComposerSettingsDoorLabel: View {
 /// Escape goes back too, never closing the popover.
 struct ComposerSettingsPageFrame<Content: View>: View {
     let title: String
+    var scrollsOverflow = false
     let onBack: () -> Void
     @ViewBuilder let content: () -> Content
 
@@ -235,7 +236,13 @@ struct ComposerSettingsPageFrame<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ComposerSettingsPageHeader(title: title, onBack: onBack)
-            content()
+            if scrollsOverflow {
+                ComposerSettingsPageBody {
+                    content()
+                }
+            } else {
+                content()
+            }
         }
         .padding(.top, DS.ComposerSettings.popoverInset)
         .frame(minWidth: DS.ComposerSettings.popoverWidth)
