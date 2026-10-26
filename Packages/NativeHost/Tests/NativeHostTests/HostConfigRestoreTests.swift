@@ -60,6 +60,7 @@ struct HostConfigRestoreTests {
     @Test("Killing the host mid-turn keeps the chosen model and effort")
     func hostKilledMidTurn() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         let (first, session) = try await started(harness)
         try await first.client.setConfigOption(
             SetConfigOptionParams(sessionID: session, configID: "model", value: "beta"))
@@ -79,6 +80,7 @@ struct HostConfigRestoreTests {
         arguments: [false, true])
     func noDefaultsOnReload(notifications: Bool) async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         if notifications { harness.agentEnvironment["FAKE_AGENT_RELOAD_UPDATES"] = "1" }
         let (first, session) = try await started(harness)
         try await first.client.setConfigOption(
@@ -94,6 +96,7 @@ struct HostConfigRestoreTests {
     @Test("A choice the agent refuses after the host restarts is said once, and the session carries on")
     func refusedAfterRestart() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         harness.agentEnvironment["FAKE_AGENT_LOCKED_ON_RELOAD"] = "effort"
         let (first, session) = try await started(harness)
         try await first.client.setConfigOption(
@@ -115,6 +118,7 @@ struct HostConfigRestoreTests {
     @Test("An agent that answers but keeps its own value after a restart is caught too")
     func keptAfterRestart() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         harness.agentEnvironment["FAKE_AGENT_LOCKED_ON_RELOAD"] = "model=keep"
         let (first, session) = try await started(harness)
         try await first.client.setConfigOption(
@@ -138,6 +142,7 @@ struct HostConfigRestoreTests {
     @Test("Settings nobody chose come back too, when the agent reopens the session on other defaults")
     func pinnedDefaultsComeBack() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         // As codex-acp coming back on its built-in defaults: the session ran on Medium, never chosen.
         harness.agentEnvironment["FAKE_AGENT_RELOAD_DEFAULTS"] = "effort=low"
         let (first, session) = try await started(harness)
@@ -154,6 +159,7 @@ struct HostConfigRestoreTests {
     @Test("Settings or values removed on reload are explained", arguments: ["effort", "effort=high"])
     func unavailableAfterRestart(missing: String) async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         harness.agentEnvironment["FAKE_AGENT_RELOAD_MISSING"] = missing
         let (first, session) = try await started(harness)
         try await first.client.setConfigOption(
@@ -167,6 +173,7 @@ struct HostConfigRestoreTests {
     @Test("A new session after a restart starts on the agent's defaults, not on what another session ran with")
     func newSessionAfterRestart() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         harness.agentEnvironment["FAKE_AGENT_RELOAD_DEFAULTS"] = "effort=low"
         let (first, session) = try await started(harness)
         try await first.client.setConfigOption(
@@ -183,6 +190,7 @@ struct HostConfigRestoreTests {
     @Test("A setting the agent changed itself isn't undone by a reload")
     func agentsOwnChangeStands() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         let (recorder, session) = try await started(harness)
         try await recorder.client.setConfigOption(
             SetConfigOptionParams(sessionID: session, configID: "mode", value: "plan"))
