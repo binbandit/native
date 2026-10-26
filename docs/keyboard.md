@@ -206,11 +206,17 @@ narrowing as you type. A folder shows with a folder icon and a trailing `/`. The
 the draft as `@path` (`@src/components/` for a folder) and reaches the agent as a link to the file
 or folder. Pasted or dictated `@` text opens the list the same way ([accessibility.md](accessibility.md)).
 
+`@./` lists the project root's immediate folders and files, folders first. Continue with a partial
+name to filter, or a folder path such as `@docs/` to browse there. Hidden paths are included when
+they are in the project's file index; ignored paths stay out. `..` cannot browse outside the project.
+Paths with spaces use straight quotes (`@"My Docs/"`); folder completion leaves the caret inside
+the closing quote so the next characters continue the child name.
+
 | Keys | Action |
 | --- | --- |
 | @ | Open the file list |
 | ↑ / ↓ | Move the selection |
-| Return or Tab | Insert the selected file or folder, then a space, with the caret after it |
+| Return or Tab | Insert the selected file and a space; for a folder, leave the caret after its `/` to continue the path |
 | Escape | Close the list |
 
 ## Attachments
