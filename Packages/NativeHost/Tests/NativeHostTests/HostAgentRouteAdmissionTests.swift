@@ -1,10 +1,13 @@
 import ACP
 import Foundation
 import NativeHostProtocol
-import NativePolicy
 import Testing
 
 @testable import NativeHost
+
+#if os(macOS)
+import NativePolicy
+#endif
 
 @Suite(.serialized, .timeLimit(.minutes(2)))
 @HostActor
@@ -28,6 +31,7 @@ struct HostAgentRouteAdmissionTests {
             purposes: Set(AgentRoutePurpose.allCases))
     }
 
+    #if os(macOS)
     private var network: NativePolicy.Network {
         var network = NativePolicy.Network()
         if let origin = NetworkOrigin(route.origin) {
@@ -44,7 +48,8 @@ struct HostAgentRouteAdmissionTests {
         try HostAgentRouteAdmission.check(
             declaration.spec, policy: .unrestricted, network: network, declarations: [declaration])
         #expect(throws: AgentRouteFailure.networkDenied) {
-            try HostAgentRouteAdmission.check(declaration.spec, policy: .unrestricted, declarations: [declaration])
+            try HostAgentRouteAdmission.check(
+                declaration.spec, policy: .unrestricted, network: nil, declarations: [declaration])
         }
         var revoked = network
         revoked.services[.agentProvider] = .init(enabled: false)
@@ -126,6 +131,8 @@ struct HostAgentRouteAdmissionTests {
             }
         }
     }
+
+    #endif
 
     @Test func interruptedPrivateRouteNeverRecoversIntoAnOrdinaryLaunch() async throws {
         let previous = try PolicyRig(.unrestricted)

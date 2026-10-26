@@ -24,7 +24,8 @@ Enabling this later also requires trusted executable/version/hash and controlled
 admission (B1), offline verified adapter provisioning (B3/B4), a host-owned route/network policy
 source, and preventing session-level model/provider/MCP changes. This PR does not supply those
 controls and must not be enabled simply by changing `qualified` or populating a client declaration.
-There is deliberately no production API for adding approvals.
+There is deliberately no production API for adding approvals. Linux rejects every private route
+identity before launch; this job does not qualify its transport or import the Mac policy dependencies.
 
 ## Candidate configuration
 

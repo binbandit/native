@@ -42,8 +42,8 @@ let package = Package(
             name: "NativeHost",
             dependencies: [
                 "NativeHostProtocol", "ACP", .product(name: "Exec", package: "Exec"),
-                .product(name: "NativePolicy", package: "NativePolicy"),
-                .product(name: "NativeNetwork", package: "NativeNetwork"),
+                .product(name: "NativePolicy", package: "NativePolicy", condition: .when(platforms: [.macOS])),
+                .product(name: "NativeNetwork", package: "NativeNetwork", condition: .when(platforms: [.macOS])),
                 .product(name: "NativeOrchestration", package: "Orchestration"),
                 .product(name: "MCP", package: "MCPServer"),
                 .product(name: "SessionTitling", package: "SessionTitling"),

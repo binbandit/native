@@ -1,8 +1,11 @@
 import ACP
 import Foundation
 import NativeHostProtocol
+
+#if os(macOS)
 import NativeNetwork
 import NativePolicy
+#endif
 
 /// Admission only, never containment of arbitrary agent descendants. The production list is empty
 /// until reviewed fixture evidence AND executable/environment admission qualify a route on this host.
@@ -16,10 +19,23 @@ enum HostAgentRouteAdmission {
 
     static let approved: [Declaration] = []
 
+    static func check(_ spec: AgentSpec, policy: HostPolicy) throws {
+        #if os(macOS)
+        try check(spec, policy: policy, network: nil)
+        #else
+        // This job qualifies no Linux transport. Do not import a Mac policy source or promote a
+        // stored/client identity into permission on another platform.
+        guard policy.allows(agent: spec.id), policy.mode == .ordinary, spec.routeIdentity == nil else {
+            throw AgentRouteFailure.unqualified
+        }
+        #endif
+    }
+
+    #if os(macOS)
     /// The host's current network snapshot must be supplied independently of client data when a
     /// production route is qualified. Nil is unavailable, never an unrestricted default.
     static func check(
-        _ spec: AgentSpec, policy: HostPolicy, network: NativePolicy.Network? = nil,
+        _ spec: AgentSpec, policy: HostPolicy, network: NativePolicy.Network?,
         declarations: [Declaration] = approved
     ) throws {
         guard policy.allows(agent: spec.id) else { throw AgentRouteFailure.unqualified }
@@ -59,4 +75,5 @@ enum HostAgentRouteAdmission {
             throw AgentRouteFailure.networkDenied
         }
     }
+    #endif
 }
