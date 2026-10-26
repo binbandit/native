@@ -21,7 +21,7 @@ extension ComposerSettingsPopover {
             }
             if list.isFilterable { filterFooter(list) }
             if offersAgentsSettings, let onAgentsSettings {
-                HStack(spacing: DS.Space.sm) {
+                VStack(alignment: .leading, spacing: 0) {
                     Text("No other agent is ready.")
                     Button("Agents Settings…", action: onAgentsSettings).buttonStyle(.plain)
                         .foregroundStyle(.dsTextPrimary)
@@ -31,7 +31,7 @@ extension ComposerSettingsPopover {
                 .font(DS.ComposerSettings.detailFont)
                 .foregroundStyle(.dsTextSecondary)
                 .composerSettingsTextEdge()
-                .padding(.vertical, DS.Space.sm)
+                .padding(.vertical, DS.Space.xs)
             }
             if !omitsModelCaptions || failure != nil || modelChange?.stage == .failed {
                 agentModelCaption

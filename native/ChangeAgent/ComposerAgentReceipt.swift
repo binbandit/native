@@ -19,6 +19,7 @@ struct ComposerAgentReceipt: View {
             Text(text)
                 .foregroundStyle(isFailure ? .dsDanger : .dsTextSecondary)
                 .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
             if let actionTitle, let action {
                 Button(actionTitle, action: action)
                     .buttonStyle(.plain)
@@ -26,7 +27,6 @@ struct ComposerAgentReceipt: View {
                     .dsHitTarget(DS.ComposerSettings.controlHeight)
                     .accessibilityLabel(actionLabel ?? actionTitle)
             }
-            Spacer(minLength: 0)
             if let onDismiss {
                 Button("Dismiss Model Change", systemImage: "xmark", action: onDismiss)
                     .labelStyle(.iconOnly)
