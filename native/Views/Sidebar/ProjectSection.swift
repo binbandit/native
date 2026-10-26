@@ -88,7 +88,10 @@ struct ProjectSection<TaskAccessory: View>: View {
         .projectDeletionConfirmation(project, isPresented: $isConfirmingDelete)
         .task(id: project.id) { await iconStore.resolve(project) }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(project.name)
+        .accessibilityLabel(
+            isAllInView && model.sidebarFolders.opening.contains(project.folderName)
+                ? "Opening \(project.name)" : project.name
+        )
         .accessibilityActions {
             Button("New Task") { Task { await model.newSession(in: project.id) } }
             Button("Refresh") { Task { await model.refreshProject(project.id) } }

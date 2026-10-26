@@ -48,6 +48,7 @@ struct SidebarFolderRecents: View {
                         highlighted == index ? Color.dsSelected : .clear, in: .rect(cornerRadius: DS.Radius.control))
                 }
                 .buttonStyle(.plain)
+                .focusable()
                 .focused($focusedItem, equals: index)
                 .dsFocusShape(.rect(cornerRadius: DS.Radius.control))
                 .disabled(!model.canOpenRecentFolder(entry))
@@ -77,12 +78,15 @@ struct SidebarFolderRecents: View {
             }
             .buttonStyle(.plain)
             .disabled(!model.canOpenFolders)
+            .focusable()
             .focused($focusedItem, equals: entries.count)
             .dsFocusShape(.rect(cornerRadius: DS.Radius.control))
         }
         .padding(DS.Space.sm)
         .frame(width: DS.SidebarFolders.recentsWidth)
-        .background(.dsOverlay)
+        .background(.dsOverlay, in: .rect(cornerRadius: DS.Radius.card))
+        .clipShape(.rect(cornerRadius: DS.Radius.card))
+        .overlay { RoundedRectangle(cornerRadius: DS.Radius.card).strokeBorder(.dsBorder) }
         .onAppear {
             highlighted = navigable.first ?? entries.count; focusedItem = highlighted
         }

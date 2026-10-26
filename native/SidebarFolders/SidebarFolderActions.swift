@@ -36,6 +36,7 @@ struct SidebarFolderActions: View {
                 .buttonStyle(.plain)
                 .dsFocusShape(.rect(cornerRadius: DS.Radius.control))
                 .disabled(!model.canOpenFolders || !model.sidebarFolders.opening.isEmpty)
+                .focusable()
                 .focused($isOpenFocused)
                 .accessibilityLabel("Open Folder")
                 .accessibilityHint("Choose a folder to add to Native")
@@ -55,6 +56,7 @@ struct SidebarFolderActions: View {
                 }
                 .buttonStyle(.plain)
                 .dsFocusShape(.rect(cornerRadius: DS.Radius.control))
+                .focusable()
                 .accessibilityLabel("Recent Folders")
                 .accessibilityValue("\(model.sidebarFolders.history.entries.count) folders")
 
@@ -74,7 +76,7 @@ struct SidebarFolderActions: View {
                 arrowEdge: .top
             ) {
                 SidebarFolderRecents { showsRecents = false }
-                    .dsPopoverBackground()
+                    .presentationBackground(.clear)
                     .presentationCornerRadius(DS.Radius.card)
             }
             .padding(.horizontal, DS.Sidebar.inset)

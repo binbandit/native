@@ -8,18 +8,15 @@ struct SidebarFolderResult: View {
 
     var body: some View {
         let state = model.sidebarFolders
+        let hasReceipt = state.receipt != nil && state.opening.isEmpty
+        let hasNotice = hasReceipt || !state.failures.isEmpty || model.folderPolicy.isManaged(.foldersAllowedRoots)
         VStack(alignment: .leading, spacing: DS.Space.sm) {
-            if !state.opening.isEmpty {
-                HStack(spacing: DS.Space.md) {
-                    DotGridLoader(pattern: .settingUp).frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
-                    Text("Opening \(state.opening.joined(separator: ", "))")
-                }
-                .accessibilityLabel("Opening \(state.opening.joined(separator: ", "))")
-            }
             if let receipt = state.receipt, state.opening.isEmpty {
                 Text(
                     receipt.projects.count == 1
-                        ? "Added \(receipt.projects[0].name)." : "Added \(receipt.projects.count) folders.")
+                        ? "Added \(receipt.projects[0].name)." : "Added \(receipt.projects.count) folders."
+                )
+                .frame(minHeight: DS.SidebarFolders.noticeLineHeight, alignment: .leading)
                 HStack(spacing: DS.Space.lg) {
                     Button("Undo") { model.undoOfferedFolderAddition(receipt) }
                         .accessibilityLabel("Undo Add Folder")
@@ -63,12 +60,12 @@ struct SidebarFolderResult: View {
         .fixedSize(horizontal: false, vertical: true)
         .padding(.leading, DS.Sidebar.headerLeading)
         .padding(.trailing, DS.Sidebar.trailing)
-        .padding(
-            .vertical,
-            state.receipt != nil || !state.failures.isEmpty || !state.opening.isEmpty
-                || model.folderPolicy.isManaged(.foldersAllowedRoots) ? DS.SidebarFolders.noticeTop : 0
-        )
+        .padding(.vertical, hasNotice ? DS.SidebarFolders.noticeTop : 0)
         .padding(.horizontal, DS.Sidebar.inset)
+        .overlay(alignment: .top) {
+            if hasReceipt { SeparatorLine().padding(.horizontal, DS.Sidebar.inset) }
+        }
+        .padding(.bottom, hasNotice ? DS.Space.xs : 0)
         .onChange(of: state.receipt?.id) {
             if let receipt = state.receipt {
                 AccessibilityNotification.Announcement(
@@ -99,10 +96,10 @@ struct SidebarFolderResult: View {
     app.sidebarFolders.failures = [.init(name: "Can’t open atlas", reason: "Folder access expired.")]
     return DSPreviewPair { SidebarFolderResult().frame(width: DS.Size.sidebarWidth) }.sidebarPreviewEnvironment(app)
 }
-#Preview("Folder result - Opening") {
+#Preview("Folder actions - While opening") {
     let app = AppModel.preview()
     app.sidebarFolders.opening = ["atlas"]
-    return DSPreviewPair { SidebarFolderResult().frame(width: DS.Size.sidebarWidth) }.sidebarPreviewEnvironment(app)
+    return DSPreviewPair { SidebarFolderActions().frame(width: DS.Size.sidebarWidth) }.sidebarPreviewEnvironment(app)
 }
 #Preview("Folder result - Missing, unreadable and rejected") {
     let app = AppModel.preview()
