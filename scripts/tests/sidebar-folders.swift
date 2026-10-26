@@ -50,7 +50,10 @@ private struct SidebarFolderChecks {
         require(added.count == 2, "aliases deduplicate and files/packages are rejected")
         require(app.projects.all.count == previous.count + 2, "the batch adds exactly two projects")
         require(app.currentProject?.id == added.first?.id, "the first newly added folder opens its home")
-        require(app.sidebarFolders.failures.count == 2, "rejected names remain in the result")
+        require(
+            app.sidebarFolders.failures.count == 2,
+            "rejected names remain in the result: \(app.sidebarFolders.failures.count) \(app.sidebarFolders.failures.map(\.message))"
+        )
         require(app.sidebarFolders.history.entries.count == 2, "only successful canonical folders enter recents")
         require(session.draft == "Keep this draft", "opening preserves the old task draft")
         require(app.sessionList.count == count, "opening creates no task")

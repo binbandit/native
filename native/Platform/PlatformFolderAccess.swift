@@ -57,7 +57,7 @@ nonisolated enum PlatformFolderAccess {
                 let canonical = url.resolvingSymlinksInPath().standardizedFileURL
                 var failure: Failure?
                 do {
-                    let values = try url.resourceValues(forKeys: [.isDirectoryKey, .isPackageKey, .isReadableKey])
+                    let values = try canonical.resourceValues(forKeys: [.isDirectoryKey, .isPackageKey, .isReadableKey])
                     if values.isDirectory != true || values.isPackage == true {
                         failure = .notFolder
                     } else if values.isReadable == false {
