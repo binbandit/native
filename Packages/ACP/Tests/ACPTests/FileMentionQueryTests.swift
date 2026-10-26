@@ -40,6 +40,40 @@ struct FileMentionQueryTests {
         #expect(file.cursor == file.text.endIndex)
     }
 
+    @Test(arguments: ["", "\u{00A0}"])
+    func quotedFolderContinuationStaysEditableInTheReferenceProjection(padding: String) throws {
+        let draft = "@README.md @./My next"
+        let cursor = try #require(draft.range(of: " next")?.lowerBound)
+        let query = try #require(FileMentionQuery(draft: draft, cursor: cursor))
+        let folder = query.draft(draft, inserting: "My Docs/")
+        var raw = folder.text
+        var caret = raw.utf8.distance(from: raw.startIndex, to: folder.cursor)
+        var projection = FileReferenceProjection(raw, editingAt: caret, tokenPadding: padding)
+        for character in "guide" {
+            let displayCaret = projection.displayOffset(caret)
+            let index = projection.display.utf8.index(projection.display.startIndex, offsetBy: displayCaret)
+            var typed = projection.display
+            typed.insert(character, at: index)
+            let edit = projection.replacingDisplay(with: typed)
+            raw = edit.text
+            caret = edit.caret
+            projection = FileReferenceProjection(raw, editingAt: caret, tokenPadding: padding)
+            let typedCaret = displayCaret + String(character).utf8.count
+            #expect(projection.rawSelection(typedCaret..<typedCaret, showing: typed) == caret..<caret)
+            #expect(projection.rawOffset(projection.displayOffset(caret)) == caret)
+            let rawCursor = raw.utf8.index(raw.startIndex, offsetBy: caret)
+            #expect(FileMentionQuery(draft: raw, cursor: rawCursor) != nil)
+            #expect(projection.tokens.map(\.path) == ["README.md"])
+        }
+        #expect(raw == "@README.md @\"My Docs/guide\" next")
+        let rawCursor = raw.utf8.index(raw.startIndex, offsetBy: caret)
+        let fileQuery = try #require(FileMentionQuery(draft: raw, cursor: rawCursor))
+        let file = fileQuery.draft(raw, inserting: "My Docs/guide.md")
+        let fileCaret = file.text.utf8.distance(from: file.text.startIndex, to: file.cursor)
+        let finished = FileReferenceProjection(file.text, editingAt: fileCaret, tokenPadding: padding)
+        #expect(finished.tokens.map(\.path) == ["README.md", "My Docs/guide.md"])
+    }
+
     @Test(arguments: ["hello@example.com", "@docs/ ", "@\"My Docs/\" "])
     func completedWordsDoNotOpenTheList(draft: String) {
         #expect(FileMentionQuery(draft: draft, cursor: draft.endIndex) == nil)

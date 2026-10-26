@@ -163,11 +163,11 @@ struct ComposerEditor: View {
             let edit = projection.replacingDisplay(
                 with: typed, restored: ComposerFileReferenceAttribute.restoredTokens(in: styled))
             guard edit.text != text else { return }
-            let next = makeProjection(edit.text)
+            let next = makeProjection(edit.text, editingAt: edit.caret)
             let caret = editorDisplaySelection.flatMap { next.rawSelection($0, showing: typed) }
             text = edit.text
             projection = next
-            styled = styledString(text)
+            styled = styledString(text, projection: next)
             select(caret ?? edit.caret..<edit.caret)
             editorSelectionChanged()
             return
@@ -259,8 +259,8 @@ struct ComposerEditor: View {
     // MARK: - Styling
 
     /// `text` with its code styled.
-    private func styledString(_ text: String) -> AttributedString {
-        let projected = makeProjection(text)
+    private func styledString(_ text: String, projection: FileReferenceProjection? = nil) -> AttributedString {
+        let projected = projection ?? makeProjection(text)
         var styled = AttributedString(projected.display)
         applyCodeStyle(to: &styled, from: projected.display)
         for token in projected.tokens {
@@ -325,9 +325,11 @@ struct ComposerEditor: View {
         return [NSItemProvider(object: result as NSString)]
     }
 
-    private func makeProjection(_ text: String) -> FileReferenceProjection {
-        FileReferenceProjection(
+    private func makeProjection(_ text: String, editingAt caret: Int? = nil) -> FileReferenceProjection {
+        let caret = caret ?? Self.offsets(of: selection, in: text)?.upperBound
+        return FileReferenceProjection(
             text, counts: referenceCounts, enabled: referencesEnabled,
+            editingAt: caret,
             tokenPadding: DS.ComposerReference.padding, formatCount: DSFormat.lineCount)
     }
 
