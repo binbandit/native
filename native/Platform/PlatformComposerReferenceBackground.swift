@@ -76,11 +76,10 @@ private final class ReferenceBackgroundView: NSView {
             else { continue }
             layout.enumerateTextSegments(
                 in: textRange, type: .standard, options: .rangeNotRequired
-            ) { _, rect, baseline, _ in
+            ) { _, rect, _, _ in
                 let font = DSTypography.platformFont(size: DS.ComposerReference.fontSize, design: .mono)
-                let ink = CGRect(
-                    x: rect.minX, y: baseline - font.ascender - DS.ComposerReference.verticalInset,
-                    width: rect.width, height: font.ascender - font.descender + 2 * DS.ComposerReference.verticalInset)
+                let height = font.ascender - font.descender + 2 * DS.ComposerReference.verticalInset
+                let ink = rect.insetBy(dx: 0, dy: (rect.height - height) / 2)
                 let rect = self.convert(
                     ink.offsetBy(dx: editor.textContainerOrigin.x, dy: editor.textContainerOrigin.y), from: editor)
                 NSBezierPath(roundedRect: rect, xRadius: DS.Radius.control, yRadius: DS.Radius.control).fill()
