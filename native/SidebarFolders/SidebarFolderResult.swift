@@ -39,13 +39,14 @@ struct SidebarFolderResult: View {
                 }
             }
             if model.folderPolicy.isManaged(.foldersAllowedRoots) {
-                HStack(alignment: .top, spacing: DS.Space.md) {
+                Text(
+                    model.canOpenFolders
+                        ? "Managed by \(model.folderPolicy.organizationName ?? "your organization").\nOnly approved folders can be added."
+                        : "Adding folders is managed by \(model.folderPolicy.organizationName ?? "your organization")."
+                )
+                .overlay(alignment: .topLeading) {
                     Image(systemName: "lock").font(.dsCaption)
-                    Text(
-                        model.canOpenFolders
-                            ? "Managed by \(model.folderPolicy.organizationName ?? "your organization").\nOnly approved folders can be added."
-                            : "Adding folders is managed by \(model.folderPolicy.organizationName ?? "your organization")."
-                    )
+                        .offset(x: -(DS.Size.rowLeading + DS.Space.sm))
                 }
                 if let contact = model.folderPolicy.organizationContact {
                     Button("Request a Change…") { showsContact.toggle() }

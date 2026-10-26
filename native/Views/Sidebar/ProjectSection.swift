@@ -137,7 +137,8 @@ struct ProjectSection<TaskAccessory: View>: View {
             AllInViewProjectGroup(
                 name: project.name, isFirst: position.index == 0, isExpanded: isExpanded,
                 taskCount: sessions.count + earlier.count,
-                isRefreshing: model.refreshingProjects.contains(project.id), activity: activity,
+                isRefreshing: model.refreshingProjects.contains(project.id)
+                    || model.sidebarFolders.opening.contains(project.folderName), activity: activity,
                 note: hasNoMatches ? "No matching tasks" : nil, onNewTask: onNewTask,
                 menu: { projectMenu }, content: content)
         } else {
@@ -187,7 +188,12 @@ private struct ProjectEmptyRow: View {
     @State private var isHovered = false
 
     var body: some View {
-        if model.canCreateSession(in: project.id) || model.agentStartupFailure != nil {
+        if isAllInView {
+            Text(model.sidebarFolders.opening.contains(project.folderName) ? "Opening folder…" : "No tasks yet.")
+                .font(.dsBody).foregroundStyle(.dsTextSecondary)
+                .frame(maxWidth: .infinity, minHeight: DS.Sidebar.foldHeight, alignment: .leading)
+                .padding(.leading, DS.Sidebar.headerLeading)
+        } else if model.canCreateSession(in: project.id) || model.agentStartupFailure != nil {
             Button {
                 Task { await model.newSession(in: project.id) }
             } label: {
