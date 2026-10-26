@@ -177,7 +177,7 @@ struct TaskWellWiring: View {
             }
             let panel = terminal.panel(for: session)
             let shells = panel.tabs.tabs.filter { $0.job == nil }
-            let label = shells.first.map { panel.tabs.label(of: $0) } ?? "Shell"
+            let label = URL(fileURLWithPath: terminal.jobShell).lastPathComponent
             return TaskWellToolDetail(
                 text: "\(label) · \(session.cwd.abbreviatedPath)",
                 isSelected: panel.isVisible && panel.tabs.selected?.job == nil,
