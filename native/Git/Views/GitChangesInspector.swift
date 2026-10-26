@@ -66,7 +66,10 @@ struct GitChangesInspector: View {
         .environment(\.diffCommentsSession, session)
         .environment(\.diffCommentsScope, (review?.scope ?? .uncommitted).title)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if composerNext, let session {
+            if composerNext, let session,
+                model.status?.isClean == false || (review?.scope ?? .uncommitted) != .uncommitted
+                    || !session.diffComments.isEmpty
+            {
                 DiffCommentsFooter(session: session)
             }
         }

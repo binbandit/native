@@ -76,7 +76,10 @@ struct DiffCommentsEditor: View {
                 if let id { session.discardDiffComment(id, undoManager: undoManager) }
             }
         }
-        .onAppear { focused = true }
+        .task {
+            await Task.yield()
+            focused = true
+        }
         .onChange(of: session.diffCommentFocusRequest) { focused = true }
     }
 }

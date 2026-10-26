@@ -8,8 +8,13 @@ struct DiffCommentsComposerSection: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: DS.Space.md) {
-                Image(systemName: "text.bubble")
-                Text("\(session.diffComments.count) comments from Changes")
+                Image(systemName: "text.bubble").accessibilityHidden(true)
+                Text(
+                    "\(session.diffComments.count) \(session.diffComments.count == 1 ? "comment" : "comments") from Changes"
+                )
+                .accessibilityLabel(
+                    "\(session.diffComments.count) draft \(session.diffComments.count == 1 ? "comment" : "comments") from Changes"
+                )
                 Spacer(minLength: DS.Space.xs)
                 Button(session.diffCommentsExpanded ? "Collapse" : "Review") { session.toggleDiffCommentsReview() }
                     .buttonStyle(.ds(.ghost))
@@ -24,7 +29,6 @@ struct DiffCommentsComposerSection: View {
                 Button("Review Draft Comments") { session.reviewDiffComments() }
                 Button("Clear Comments") { session.clearDiffComments(undoManager: undoManager) }
             }
-            .accessibilityLabel("\(session.diffComments.count) draft comments from Changes")
             if session.diffCommentsExpanded {
                 SeparatorLine()
                 ComposerQuotesSection(

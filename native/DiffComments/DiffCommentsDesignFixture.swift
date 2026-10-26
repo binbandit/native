@@ -20,115 +20,113 @@ import ACP
 
 struct DiffCommentsDesignFixture: View {
     let state: String
-    private let experiments: ExperimentStore
-    @State private var app: AppModel
-    @State private var session: SessionModel?
+    @State private var fixture: DiffCommentsFixtureModel?
 
-    init(state: String) {
-        self.state = state
-        experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
-        experiments.set(true, for: .composerNext)
-        let app = AppModel.preview()
-        _app = State(initialValue: app)
-        _session = State(initialValue: DiffCommentsPreviewFixtures.session(state, in: app))
-    }
+    init(state: String) { self.state = state }
 
     var body: some View {
-        if let session {
-            HStack(spacing: 0) {
-                AllInViewPreviewList(app: app)
-                    .frame(width: DS.Size.sidebarWidth)
-                SeparatorLine(axis: .vertical)
-                VStack(spacing: 0) {
-                    HStack {
-                        Text("Wrap diff lines at word boundaries").font(.dsHeadline)
-                        Spacer()
-                        Text("Claude Code").font(.dsCallout).foregroundStyle(.dsTextSecondary)
-                    }
-                    .padding(DS.Space.xl)
-                    SeparatorLine()
-                    HStack(spacing: 0) {
-                        VStack(alignment: .leading, spacing: DS.Space.xl) {
-                            ScrollView {
-                                VStack(alignment: .leading, spacing: DS.Space.xl) {
-                                    Text("Wrap the diff lines at word boundaries.").font(.dsBody)
-                                    Text("The code wraps inside its column. Line numbers stay in their gutter.")
-                                        .font(.dsBody).foregroundStyle(.dsTextSecondary)
-                                    if state == "C6" {
-                                        DiffCommentsTranscriptPacket(
-                                            quotes: DiffCommentsPreviewFixtures.quotes(task: session.clientID),
-                                            message: "")
-                                    }
-                                }
-                                .padding(DS.Space.xl)
-                            }
-                            ComposerView(session: session)
+        Group {
+            if let fixture, let session = fixture.session {
+                let app = fixture.app
+                HStack(spacing: 0) {
+                    AllInViewPreviewList(app: app)
+                        .frame(width: DS.Size.sidebarWidth)
+                    SeparatorLine(axis: .vertical)
+                    VStack(spacing: 0) {
+                        HStack {
+                            Text("Wrap diff lines at word boundaries").font(.dsHeadline)
+                            Spacer()
+                            Text("Claude Code").font(.dsCallout).foregroundStyle(.dsTextSecondary)
                         }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        SeparatorLine(axis: .vertical)
-                        VStack(spacing: 0) {
-                            HStack {
-                                Text("Changes").font(.dsHeadline)
-                                Text("This turn").font(.dsCallout).foregroundStyle(.dsTextSecondary)
-                                Spacer()
-                            }
-                            .padding(.horizontal, DS.Space.xl)
-                            .frame(height: DS.TaskWell.changesHeaderHeight)
-                            SeparatorLine()
-                            if state == "C10" {
-                                EmptyStateView(
-                                    "No changes yet", systemImage: "checkmark.circle",
-                                    message: "Files appear here after they’re edited."
-                                ) {
-                                    Button("Back to Task") { session.wantsComposerFocus = true }
-                                        .buttonStyle(.ds(.secondary))
-                                }
-                            } else {
-                                VStack(spacing: 0) {
-                                    ForEach(["DiffRow.swift", "DiffLayoutTests.swift"], id: \.self) { name in
-                                        HStack {
-                                            Text("M").font(DS.ComposerQuote.numberFont).foregroundStyle(.dsTextTertiary)
-                                            Text(name).font(.dsCallout)
-                                            Spacer()
-                                            DiffStatLabel(
-                                                added: name == "DiffRow.swift" ? 8 : 23,
-                                                removed: name == "DiffRow.swift" ? 5 : 4)
+                        .padding(DS.Space.xl)
+                        SeparatorLine()
+                        HStack(spacing: 0) {
+                            VStack(alignment: .leading, spacing: DS.Space.xl) {
+                                ScrollView {
+                                    VStack(alignment: .leading, spacing: DS.Space.xl) {
+                                        Text("Wrap the diff lines at word boundaries.").font(.dsBody)
+                                        Text("The code wraps inside its column. Line numbers stay in their gutter.")
+                                            .font(.dsBody).foregroundStyle(.dsTextSecondary)
+                                        if state == "C6" {
+                                            DiffCommentsTranscriptPacket(
+                                                quotes: DiffCommentsPreviewFixtures.quotes(task: session.clientID),
+                                                message: "")
                                         }
-                                        .padding(.horizontal, DS.Space.md).frame(height: DS.Size.controlSM)
-                                        .background(name == "DiffRow.swift" ? Color.dsSelected : .clear)
                                     }
-                                }.padding(DS.Space.md)
-                                DiffCommentsView(
-                                    session: session, path: DiffCommentsPreviewFixtures.path,
-                                    oldText: DiffCommentsPreviewFixtures.old,
-                                    newText: state == "C7"
-                                        ? DiffCommentsPreviewFixtures.new + "\n// Changed again"
-                                        : DiffCommentsPreviewFixtures.new,
-                                    layout: nil,
-                                    initialSelection: ["C2", "C3", "C9", "C12"].contains(state)
-                                        ? DiffCommentsPreviewFixtures.quotes(task: session.clientID).first : nil,
-                                    initiallyFocusesComment: state == "C2")
-                                DiffCommentsFooter(session: session)
+                                    .padding(DS.Space.xl)
+                                }
+                                ComposerView(session: session)
                             }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            SeparatorLine(axis: .vertical)
+                            VStack(spacing: 0) {
+                                HStack {
+                                    Text("Changes").font(.dsHeadline)
+                                    Text("This turn").font(.dsCallout).foregroundStyle(.dsTextSecondary)
+                                    Spacer()
+                                }
+                                .padding(.horizontal, DS.Space.xl)
+                                .frame(height: DS.TaskWell.changesHeaderHeight)
+                                SeparatorLine()
+                                if state == "C10" {
+                                    EmptyStateView(
+                                        "No changes yet", systemImage: "checkmark.circle",
+                                        message: "Files appear here after they’re edited."
+                                    ) {
+                                        Button("Back to Task") { session.wantsComposerFocus = true }
+                                            .buttonStyle(.ds(.secondary))
+                                    }
+                                } else {
+                                    VStack(spacing: 0) {
+                                        ForEach(["DiffRow.swift", "DiffLayoutTests.swift"], id: \.self) { name in
+                                            HStack {
+                                                Text("M").font(DS.ComposerQuote.numberFont).foregroundStyle(
+                                                    .dsTextTertiary)
+                                                Text(name).font(.dsCallout)
+                                                Spacer()
+                                                DiffStatLabel(
+                                                    added: name == "DiffRow.swift" ? 8 : 23,
+                                                    removed: name == "DiffRow.swift" ? 5 : 4)
+                                            }
+                                            .padding(.horizontal, DS.Space.md).frame(height: DS.Size.controlSM)
+                                            .background(name == "DiffRow.swift" ? Color.dsSelected : .clear)
+                                        }
+                                    }.padding(DS.Space.md)
+                                    DiffCommentsView(
+                                        session: session, path: DiffCommentsPreviewFixtures.path,
+                                        oldText: DiffCommentsPreviewFixtures.old,
+                                        newText: state == "C7"
+                                            ? DiffCommentsPreviewFixtures.new + "\n// Changed again"
+                                            : DiffCommentsPreviewFixtures.new,
+                                        layout: nil,
+                                        initialSelection: ["C2", "C3", "C9", "C12"].contains(state)
+                                            ? DiffCommentsPreviewFixtures.quotes(task: session.clientID).first : nil,
+                                        initiallyFocusesComment: state == "C2")
+                                    DiffCommentsFooter(session: session)
+                                }
+                            }
+                            .frame(width: DS.DiffComments.referencePaneWidth)
                         }
-                        .frame(width: DS.DiffComments.referencePaneWidth)
                     }
                 }
+                .background(.dsBackground)
+                .environment(\.experimentStore, fixture.experiments)
+                .focusedSceneValue(\.activeSession, session)
+                .environment(BuiltInPlugins.automation.center)
+                .environment(app)
+                .sidebarPreviewEnvironment(app)
+                .environment(
+                    \.composerQuoteContext,
+                    ComposerQuoteContext(
+                        task: session.clientID,
+                        quotes: session.composerQuotes, selectedSource: session.quoteSelectionSource,
+                        select: { session.selectQuote($1, source: $0) }, quote: session.quote,
+                        clear: session.clearQuoteSelection))
+            } else {
+                Color.dsBackground
             }
-            .background(.dsBackground)
-            .environment(\.experimentStore, experiments)
-            .focusedSceneValue(\.activeSession, session)
-            .environment(BuiltInPlugins.automation.center)
-            .environment(app)
-            .sidebarPreviewEnvironment(app)
-            .environment(
-                \.composerQuoteContext,
-                ComposerQuoteContext(
-                    task: session.clientID,
-                    quotes: session.composerQuotes, selectedSource: session.quoteSelectionSource,
-                    select: { session.selectQuote($1, source: $0) }, quote: session.quote,
-                    clear: session.clearQuoteSelection))
         }
+        .task { if fixture == nil { fixture = DiffCommentsFixtureModel(state) } }
     }
 }
 

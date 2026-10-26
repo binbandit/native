@@ -10,7 +10,7 @@ struct DiffCommentsSourceQuote: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.xs) {
             HStack(spacing: DS.Space.sm) {
-                Image(systemName: "text.quote")
+                Image(systemName: "text.quote").accessibilityHidden(true)
                 Button {
                     showsEarlierSnapshot = session?.focusDiffCommentSource(quote) != true
                 } label: {

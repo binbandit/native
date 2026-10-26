@@ -12,6 +12,9 @@ struct DiffCommentsFooter: View {
                             ? "Select a line number, or drag to select a range."
                             : "Saving source comments is restricted by your organization.")
                     Spacer(minLength: DS.Space.xs)
+                    if let shortcut = CommandRegistry.shared.keyboardShortcut(for: .changesAddComment) {
+                        Kbd(shortcut, compact: true)
+                    }
                 } else {
                     Image(systemName: "text.bubble")
                     Text(

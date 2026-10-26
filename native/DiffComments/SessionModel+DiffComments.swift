@@ -6,6 +6,7 @@ import NativeHostProtocol
 extension SessionModel {
     /// Conversation replacement keeps these Native-owned drafts with the task, alongside its quotes.
     func adoptDiffCommentDrafts(from source: SessionModel) {
+        if draft.isEmpty { draft = source.draft }
         diffCommentEditors = source.diffCommentEditors
         activeDiffComment = source.activeDiffComment
         diffCommentsExpanded = source.diffCommentsExpanded
@@ -200,7 +201,9 @@ extension SessionModel {
             })
         else { return true }
         activeDiffComment = editor.comment?.id
-        diffCommentEditsInComposer = true
+        diffCommentEditsInComposer =
+            diffCommentSelection?.source != editor.source
+            || diffCommentSelection?.comment?.fingerprint != editor.comment?.fingerprint
         diffCommentsExpanded = true
         diffCommentFocusRequest += 1
         diffCommentStatus = "Add this comment before sending"

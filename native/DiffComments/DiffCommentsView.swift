@@ -54,7 +54,13 @@ struct DiffCommentsView: View {
                     }
                     .padding(.top, DS.Space.md)
                     .coordinateSpace(name: sourceID)
-                    .onPreferenceChange(DiffCommentsRowFrames.self) { rowFrames = $0 }
+                    .onPreferenceChange(DiffCommentsRowFrames.self) { frames in
+                        if rowFrames != frames { rowFrames = frames }
+                    }
+                    .focusable()
+                    .focused($lineFocused)
+                    .dsFocusShape(Rectangle())
+                    .onKeyPress(keys: [.upArrow, .downArrow, .leftArrow, .rightArrow], action: moveLine)
                 }
                 .onChange(of: session.diffCommentRequestedSource) { _, quote in
                     guard let quote, isCurrent(quote), let last = lastIndex(quote) else { return }
@@ -215,27 +221,31 @@ struct DiffCommentsView: View {
             GeometryReader { proxy in
                 Color.clear.preference(
                     key: DiffCommentsRowFrames.self,
-                    value: [index: proxy.frame(in: .named(sourceID))])
+                    value: [index: proxy.frame(in: .named(sourceID)).integral])
             }
         }
-        .focusable(index == current)
-        .focused($lineFocused)
-        .dsFocusShape(Rectangle())
-        .onKeyPress(keys: [.upArrow, .downArrow, .leftArrow, .rightArrow]) { press in
-            let newSide: PromptQuote.Side = press.key == .leftArrow ? .old : press.key == .rightArrow ? .new : side
-            let step = press.key == .upArrow ? -1 : press.key == .downArrow ? 1 : 0
-            var next = current + step
-            while rows.indices.contains(next), rows[next].kind != .gap {
-                let available = newSide == .old ? rows[next].oldNumber != nil : rows[next].kind != .removed
-                if available {
-                    select(next, side: newSide, extend: press.modifiers.contains(.shift))
-                    break
-                }
-                if step == 0 { break }
-                next += step
+        .overlay(alignment: .leading) {
+            if row.kind == .added || row.kind == .removed {
+                Rectangle().fill(row.kind == .added ? Color.dsSuccess : Color.dsDanger)
+                    .frame(width: DS.Space.xxs)
             }
-            return .handled
         }
+    }
+
+    private func moveLine(_ press: KeyPress) -> KeyPress.Result {
+        let newSide: PromptQuote.Side = press.key == .leftArrow ? .old : press.key == .rightArrow ? .new : side
+        let step = press.key == .upArrow ? -1 : press.key == .downArrow ? 1 : 0
+        var next = current + step
+        while rows.indices.contains(next), rows[next].kind != .gap {
+            let available = newSide == .old ? rows[next].oldNumber != nil : rows[next].kind != .removed
+            if available {
+                select(next, side: newSide, extend: press.modifiers.contains(.shift))
+                break
+            }
+            if step == 0 { break }
+            next += step
+        }
+        return .handled
     }
 
     private func gutter(_ index: Int, number: Int?, side: PromptQuote.Side) -> some View {

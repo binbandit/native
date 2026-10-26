@@ -96,9 +96,19 @@ private struct DiffCommentChecks {
         require(restored.draft(for: session.key) == oldDraft, "Packet survives relaunch")
         require(restored.commentEditors(for: session.key) == source, "Unfinished snapshots survive relaunch")
         require(restored.commentDelivery(for: session.key) == oldDraft, "Unresolved send survives relaunch")
+        guard let successor = SessionModel.preview(in: app) else { throw MissingFixture() }
+        session.diffCommentsPolicy = { NativePolicy() }
+        session.draft = oldDraft
+        session.diffCommentEditors = source
+        successor.adoptDiffCommentDrafts(from: session)
+        require(
+            successor.diffCommentEditors == source && session.diffCommentEditors.isEmpty,
+            "Conversation replacement moves unfinished comments")
+        require(successor.draft == oldDraft, "Conversation replacement preserves the complete comment packet")
         print(
-            "PASS: add, cancel, edit, undo/redo, clear, unfinished guard, one queued packet, acknowledgement evidence, managed send, retention and durable recovery"
+            "PASS: add, cancel, edit, undo/redo, clear, unfinished guard, one queued packet, acknowledgement evidence, managed send, retention, durable recovery and conversation replacement"
         )
+
     }
 
     private static func require(_ value: @autoclosure () -> Bool, _ message: String) { precondition(value(), message) }

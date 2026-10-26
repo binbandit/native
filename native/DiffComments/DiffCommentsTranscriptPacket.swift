@@ -7,8 +7,10 @@ struct DiffCommentsTranscriptPacket: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
-            Text("\(quotes.filter { $0.comment != nil }.count) comments on changes")
-                .font(DS.ComposerQuote.headerFont).foregroundStyle(.dsTextSecondary)
+            Text(
+                "\(quotes.filter { $0.comment != nil }.count) \(quotes.filter { $0.comment != nil }.count == 1 ? "comment" : "comments") on changes"
+            )
+            .font(DS.ComposerQuote.headerFont).foregroundStyle(.dsTextSecondary)
             ForEach(quotes.indices, id: \.self) { index in
                 DiffCommentsSourceQuote(quote: quotes[index])
                     .padding(.leading, DS.ComposerQuote.inset)
