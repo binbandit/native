@@ -178,6 +178,65 @@ extension SettingsRegression {
             expect(!searching.isActive && searching.stage == nil, "A late history result cannot reopen an ended trial")
             expect(populated.selection == selection, "Ending a history search preserves task selection")
         }
+
+        var replaying: SessionModel?
+        var replayPolicy = NativePolicy()
+        let replaySearch = ThemeTryOnModel(
+            app: populated, settings: SettingsPresentation(),
+            appearance: AppearanceModeController(defaults: PreviewUserDefaults()),
+            plugins: PluginRegistry(previewing: []), defaults: PreviewUserDefaults(), policy: { replayPolicy },
+            loadSession: { key in
+                let session = SessionModel.preview(
+                    in: populated, agent: key.agent.rawValue, id: key.id.rawValue,
+                    phase: key == newest ? .loading : .idle)
+                if key == newest {
+                    replaying = session
+                } else if key == next {
+                    session?.previewExchange("Show it", reply: "```swift\nlet older = true\n```", endedAgo: 0)
+                }
+            })
+        replaySearch.start()
+        for _ in 0..<1_000 {
+            if replaying != nil { break }
+            await Task.yield()
+        }
+        expect(replaySearch.stage == .findingTask, "A host open can return before its replay finishes")
+        replaying?.previewExchange("Show it", reply: "```swift\nlet newest = true\n```", endedAgo: 0)
+        replaying?.phase = .idle
+        await finishTaskSearch(replaySearch)
+        expect(replaySearch.stage == .task(newest), "Replayed code in the newest task beats the older candidate")
+        replaySearch.cancel()
+
+        // Models already loading must wait too, even if an early replay chunk contains code.
+        replaying?.phase = .loading
+        replaySearch.start()
+        for _ in 0..<10 { await Task.yield() }
+        expect(replaySearch.stage == .findingTask, "An already-loading model isn't inspected until replay finishes")
+        replaySearch.cancel()
+        replaying?.phase = .idle
+        for _ in 0..<10 { await Task.yield() }
+        expect(!replaySearch.isActive && replaySearch.stage == nil, "Cancel also ends a wait for host replay")
+
+        if let replaying { populated.sessions.remove(replaying) }
+        replaying = nil
+        replaySearch.start()
+        for _ in 0..<1_000 {
+            if replaying != nil { break }
+            await Task.yield()
+        }
+        replaying?.phase = .disconnected
+        await finishTaskSearch(replaySearch)
+        expect(replaySearch.stage == .task(next), "A failed replay with no code lets the next candidate load")
+        replaySearch.cancel()
+
+        replaying?.phase = .loading
+        replaySearch.start()
+        for _ in 0..<10 { await Task.yield() }
+        replayPolicy.appearanceCodeTheme = "nord"
+        replaySearch.policyChanged()
+        replaying?.phase = .idle
+        for _ in 0..<10 { await Task.yield() }
+        expect(!replaySearch.isActive && replaySearch.stage == nil, "Policy also cancels a wait for host replay")
     }
 
     private static func finishTaskSearch(_ tryOn: ThemeTryOnModel) async {

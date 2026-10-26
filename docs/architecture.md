@@ -626,8 +626,9 @@ window root's `themeTryOnPreview` overrides the code themes and backgrounds from
 `appearancePreferences(plugins:)`, and `AppearanceModeController.preview(_:)` shows the other mode
 without saving it. `ThemeTryOnModel` opens the latest task with code from Settings, or the task in
 view from View ▸ Appearance when it has code, otherwise a read-only sample. Settings searches
-`sessionList` newest first, loading unopened history through `AppModel.loadSession` as needed. This
-can start an agent to replay history, but sends no prompts. A cancellable loading state covers that
+`sessionList` newest first, loading unopened history through `AppModel.loadSession` as needed and
+waiting for host replay to finish before inspecting its code. This can start an agent to replay
+history, but sends no prompts. A cancellable loading state covers that
 search. The panel takes the sidebar's column and returns there on Keep or Cancel. The task view is
 disabled and Stop is unavailable while trying; narrow windows suspend inspectors and restore them
 afterwards. A newly managed code theme immediately suppresses the preview and ends Try On without
