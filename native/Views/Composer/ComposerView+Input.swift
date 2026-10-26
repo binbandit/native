@@ -50,7 +50,10 @@ extension ComposerView {
             .padding(composerNext ? DS.ComposerSettings.trailingInset : DS.Space.md)
             .focusedSceneValue(\.contextUsePopover, composerNext ? $isContextUseOpen : nil)
             .onChange(of: isModelPickerOpen) { _, open in
-                if !open { settingsOpenedByCommand = false }
+                if !open {
+                    settingsOpenedByCommand = false
+                    takeFocusIfWanted()
+                }
             }
         }
         .frame(minHeight: composerNext ? DS.ComposerSettings.inputHeight : DS.Size.composerInputMinHeight)

@@ -44,6 +44,7 @@ private struct AgentModelChangeRegression {
         _ = try await client.connected()
         app.connectHost(client: client)
         await app.followHost()
+        _ = await app.checkForAgents()
         for agent in await process.agents { app.runtime(.init(rawValue: agent.id))?.apply(agent) }
         let project = app.projects.add(URL(filePath: "/fixture"))
         let summary = await process.summaries[0]
@@ -72,8 +73,7 @@ private struct AgentModelChangeRegression {
         app.taskWorkspaces = tripwire
         var hooks = 0
         app.sessionHooks.taskStarted = { _, earlier in
-            guard earlier === source else { throwaway(); return }
-            hooks += 1
+            if earlier === source { hooks += 1 }
         }
         let choice = ComposerAgentModel(
             agent: .init(rawValue: "droid"), agentName: "Droid",
@@ -81,10 +81,18 @@ private struct AgentModelChangeRegression {
         try require(
             app.agentModels(for: source).contains { $0.agent.rawValue == "droid" && $0.kind == .load },
             "An unreported model catalog was invented")
-        try require(await process.started.isEmpty && process.accepted.isEmpty, "Opening the list did work")
+        let initialStarts = await process.started
+        let initialPrompts = await process.accepted
+        try require(initialStarts.isEmpty && initialPrompts.isEmpty, "Opening the list did work")
         app.chooseAgentModel(choice, for: source)
         guard let first = source.modelChange else { throw ChangeFailure("No pending choice") }
-        try await wait("model prepared") { first.stage == .applied || first.stage == .failed }
+        do {
+            try await wait("model prepared") { first.stage == .applied || first.stage == .failed }
+        } catch {
+            print(
+                "Fixture stage: \(first.stage), calls: \(await process.calls), starts: \(await process.started.count)")
+            throw error
+        }
         try require(first.stage == .applied, first.error ?? "Not applied")
         guard let key = app.selection, let target = app.sessions.session(key) else { throw ChangeFailure("No target") }
         try require(await process.accepted.isEmpty, "Choosing a model submitted a working prompt")

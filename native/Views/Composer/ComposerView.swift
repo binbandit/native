@@ -366,7 +366,7 @@ struct ComposerView: View {
 
     /// Takes focus when the app asks (⌘L, a click on the session in the sidebar), then clears the ask.
     func takeFocusIfWanted() {
-        guard session.wantsComposerFocus, !asksInPlace else { return }
+        guard session.wantsComposerFocus, !asksInPlace, !isModelPickerOpen else { return }
         isFocused = true
         session.wantsComposerFocus = false
     }
