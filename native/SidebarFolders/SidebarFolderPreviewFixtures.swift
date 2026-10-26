@@ -11,6 +11,14 @@ enum SidebarFolderPreviewFixtures {
         return UserDefaults.standard.string(forKey: "sidebarFolderFixture")
     }
 
+    static var agents: [HomeAgent<AgentDefinition.ID>] {
+        [
+            HomeAgent(
+                id: AgentDefinition.ID(rawValue: "claude-code"), name: "Claude Code", symbolName: "sparkles",
+                availability: .available)
+        ]
+    }
+
     static func model(_ state: String) -> AppModel {
         let app = AppModel(
             plugins: PluginRegistry(builtIns: [BuiltInPlugins.claudeCode]), defaults: PreviewUserDefaults(),
@@ -29,7 +37,9 @@ enum SidebarFolderPreviewFixtures {
                 let project = index == 3 ? pier : native
                 let id = SessionID("folder-fixture-\(index)")
                 app.catalog.add(
-                    SessionInfo(sessionId: id, cwd: project.path, title: title, updatedAt: .now),
+                    SessionInfo(
+                        sessionId: id, cwd: project.path, title: title,
+                        updatedAt: .now.addingTimeInterval(-Double(index) * 60)),
                     for: AgentDefinition.ID(rawValue: "claude-code"),
                     in: project.id)
             }
@@ -37,8 +47,8 @@ enum SidebarFolderPreviewFixtures {
                 agent: AgentDefinition.ID(rawValue: "claude-code"), id: SessionID("folder-fixture-0"))
         }
         if state == "F2" {
-            for name in ["native", "pier", "atlas"] {
-                app.sidebarFolders.remember(URL(filePath: "/Development/\(name)"))
+            for path in ["/Research/native", "/Development/pier", "/Development/atlas"] {
+                app.sidebarFolders.remember(URL(filePath: path))
             }
         }
         if state == "F3" {

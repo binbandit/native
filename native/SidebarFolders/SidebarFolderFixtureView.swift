@@ -13,7 +13,7 @@ struct SidebarFolderFixtureView: View {
                     SidebarView().frame(width: DS.Size.sidebarWidth)
                     SeparatorLine(axis: .vertical)
                     if state == "F4" || state == "F5" || state == "F10" {
-                        SidebarFolderHome(agents: [])
+                        SidebarFolderHome(agents: SidebarFolderPreviewFixtures.agents)
                     } else {
                         VStack(alignment: .leading, spacing: DS.Space.xl) {
                             Text(
