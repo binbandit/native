@@ -236,6 +236,7 @@ final class ComposerAgentChange {
     func closeUndo() {
         undoIsClosed = true
         previous?.isModelChangeSource = false
+        previous = nil
     }
 
     func retry(undoManager: UndoManager?) {
