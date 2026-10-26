@@ -63,6 +63,12 @@ public struct FileReferenceProjection: Equatable, Sendable {
                 // The word being typed remains text until a completion or space finishes it.
                 guard let boundary = raw[after...].firstIndex(where: \.isWhitespace) else { continue }
                 path = String(raw[after..<boundary]); end = boundary
+                if let caret,
+                    caret > raw.utf8.distance(from: raw.startIndex, to: start),
+                    caret <= raw.utf8.distance(from: raw.startIndex, to: end)
+                {
+                    continue
+                }
             }
             if raw[after] != "\"", counts[path] == nil {
                 var candidate = path

@@ -207,7 +207,7 @@ struct ComposerEditor: View {
     }
 
     /// The composer changed the draft or the selection itself (a completion, a recalled prompt, a
-    /// code edit). A new draft without a new selection puts the caret at its end.
+    /// code edit). A nil selection puts the caret at the end of a new draft.
     private func textChangedOutside() {
         // Update text and caret together: a completion's new caret can exceed the old text's end.
         guard showsCode else {
@@ -215,7 +215,7 @@ struct ComposerEditor: View {
             if plain != text {
                 plain = text
                 let end = text.utf8.count
-                let caret = wanted.flatMap { $0 == syncedSelection ? nil : $0 } ?? end..<end
+                let caret = wanted ?? end..<end
                 plainSelection = Self.textSelection(caret, in: plain)
                 syncedSelection = caret
             } else if let wanted, wanted != syncedSelection {
@@ -229,12 +229,11 @@ struct ComposerEditor: View {
         }
         let wanted = Self.offsets(of: selection, in: text)
         let next = makeProjection(text)
-        let rawChanged = projection.raw != text
         if String(styled.characters) != next.display {
             projection = next
             styled = styledString(text)
             let end = text.utf8.count
-            let caret = wanted.flatMap { rawChanged && $0 == syncedSelection ? nil : $0 } ?? end..<end
+            let caret = wanted ?? end..<end
             select(caret)
         } else {
             projection = next

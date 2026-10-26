@@ -44,3 +44,19 @@ for folder in 'docs/' 'My Docs/'; do
     fi
     echo "PASS: $folder continuation, completion and subsequent typing"
 done
+
+# A same-length completion must retain a caret before existing suffix text, in both editors.
+"${drive[@]}" set Message ' next'
+"${drive[@]}" key cmd+left
+"${drive[@]}" type '@./doc'
+"${drive[@]}" press 'docs/, folder'
+"${drive[@]}" type g
+"${drive[@]}" type u
+value=$("${drive[@]}" text Message)
+if [[ $value != '@docs/gu next' ]]; then
+    echo "FAIL: mid-draft folder continuation: [$value]" >&2
+    exit 1
+fi
+name=middle
+capture gu
+echo 'PASS: same-length folder completion preserves the mid-draft caret'
