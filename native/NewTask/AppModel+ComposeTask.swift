@@ -289,4 +289,43 @@ extension AppModel {
         #endif
         return quickEntry.project.flatMap { id in deviceOptions(for: id).first { $0.device == quickEntry.device } }
     }
+
+    var composeDeviceNote: String? {
+        guard let option = composeDeviceOption else { return nil }
+        guard case .offline(let reason) = option.availability else { return option.unavailableReason }
+        let observation =
+            reason.hasPrefix("Not reachable. ") ? String(reason.dropFirst("Not reachable. ".count)) : reason
+        return observation + " Native can hold the task and start it the moment \(option.name) is back."
+    }
+
+    /// When the chosen device went offline, as the On line and the well say it: "2:14 PM",
+    /// "yesterday, 6:40 PM", or the day for anything older. Nil when it isn't offline.
+    var composeDeviceOfflineSince: String? {
+        composeOfflineSince(for: quickEntry.device)
+    }
+
+    func composeOfflineSince(for device: SessionDevice) -> String? {
+        let options: [SessionDeviceOption]
+        #if DEBUG
+        if let preview = quickEntry.previewDeviceOptions {
+            options = preview
+        } else {
+            options = quickEntry.project.map(deviceOptions(for:)) ?? []
+        }
+        #else
+        options = quickEntry.project.map(deviceOptions(for:)) ?? []
+        #endif
+        let option = options.first { $0.device == device }
+        guard case .offline = option?.availability else { return nil }
+        var since: Date?
+        #if DEBUG
+        since = composeTask.previewOfflineSince
+        #endif
+        if since == nil, case .remote(let id) = device { since = hosts.host(id)?.offlineSince }
+        guard let since else { return nil }
+        let time = since.formatted(date: .omitted, time: .shortened)
+        if Calendar.current.isDateInToday(since) { return time }
+        if Calendar.current.isDateInYesterday(since) { return "yesterday, \(time)" }
+        return "\(since.formatted(.dateTime.month(.abbreviated).day())), \(time)"
+    }
 }

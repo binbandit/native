@@ -1,0 +1,70 @@
+{
+  "revision": "ab49b17a4eef577e68265d0281da44373a1d0588",
+  "diffSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "qualified": false,
+  "cases": {
+    "allowed": {
+      "stage": "session",
+      "succeeded": false,
+      "failure": "adapter-authentication-required",
+      "requests": []
+    },
+    "failed-auth": {
+      "status": "blocked-by-session-start"
+    },
+    "failed-model": {
+      "status": "blocked-by-session-start"
+    },
+    "redirect": {
+      "status": "blocked-by-session-start"
+    },
+    "failed-endpoint": {
+      "status": "blocked-by-session-start"
+    },
+    "proxy": {
+      "status": "blocked-by-session-start"
+    },
+    "proxy-bypass": {
+      "status": "blocked-by-session-start"
+    },
+    "valid-ca": {
+      "status": "blocked-by-session-start"
+    },
+    "invalid-ca": {
+      "status": "blocked-by-session-start"
+    },
+    "title": {
+      "status": "blocked-by-session-start"
+    },
+    "commit": {
+      "status": "blocked-by-session-start"
+    },
+    "pull-request": {
+      "status": "blocked-by-session-start"
+    },
+    "workflow": {
+      "status": "blocked-by-session-start"
+    },
+    "recovery": {
+      "status": "blocked-by-session-start"
+    }
+  },
+  "blockers": [
+    "adapter-authentication-required"
+  ],
+  "environment": {
+    "system": "Darwin",
+    "release": "27.2.0",
+    "machine": "arm64"
+  },
+  "artifacts": {
+    "cliVersion": "codex-cli 0.164.0",
+    "adapterVersion": "2.2.2",
+    "nodeVersion": "v26.12.1",
+    "cliSHA256": "d8990e3ee7acfbc26f91265b12a1a83f0fee40d0e0f8f1f40a37d4ec21f499cf",
+    "adapterSHA256": "6b1bb4e7e9caaf4aeca1042ae4aec2dc2433b0b0e4b1614b38a4d41699902aaa",
+    "nodeSHA256": "7296c3dda88793e08d1089d839a782178c4bba6bb22f5c40ab2a75263fb071bd"
+  },
+  "stage": "actual-adapter-cases",
+  "egress": "sandbox denies network; only exact fixture loopback ports allowed; positive and negative local-port probes passed"
+}

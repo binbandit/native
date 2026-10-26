@@ -191,13 +191,16 @@ struct AgentManifest: Codable, Hashable, Sendable {
     /// (Fine print): `~/…`, `$VARIABLE/…` in the agent's environment, or a path in the task's
     /// folder. Native opens no other file an agent's error names.
     var settingsFiles: [String] = []
+    /// A declaration for qualification, never a grant supplied to the host. Missing means unsupported.
+    var networkCapabilities: AgentNetworkCapabilities?
 
     init(
         id: String, name: String, symbol: String? = nil, command: String, args: [String] = [],
         env: [String: String] = [:], resolveExecutables: [String: String] = [:], mcpConfig: String? = nil,
         icon: AgentIconSource? = nil, requires: [String] = [], setup: AgentSetupGuide? = nil,
         idleSessionTimeout: Int? = nil, idleUnloadTimeout: Int? = nil, renameCommand: String? = nil,
-        authMethods: [AuthMethod] = [], settingsFiles: [String] = []
+        authMethods: [AuthMethod] = [], settingsFiles: [String] = [],
+        networkCapabilities: AgentNetworkCapabilities? = nil
     ) {
         self.id = id
         self.name = name
@@ -215,6 +218,7 @@ struct AgentManifest: Codable, Hashable, Sendable {
         self.renameCommand = renameCommand
         self.authMethods = authMethods
         self.settingsFiles = settingsFiles
+        self.networkCapabilities = networkCapabilities
     }
 
     init(from decoder: any Decoder) throws {
@@ -235,6 +239,7 @@ struct AgentManifest: Codable, Hashable, Sendable {
         renameCommand = try container.decodeIfPresent(String.self, forKey: .renameCommand)
         authMethods = try container.decodeIfPresent([AuthMethod].self, forKey: .authMethods) ?? []
         settingsFiles = try container.decodeIfPresent([String].self, forKey: .settingsFiles) ?? []
+        networkCapabilities = try container.decodeIfPresent(AgentNetworkCapabilities.self, forKey: .networkCapabilities)
     }
 }
 
@@ -409,4 +414,9 @@ struct TitleRequest: Hashable, Sendable {
     /// The user's own instructions for titles (Settings ▸ AI Instructions), which a titler adds
     /// after its own rules.
     var instructions: AIInstructionAddition?
+}
+
+/// Translation is plugin-owned. An absent implementation is unsupported in managed routing.
+protocol AgentPrivateRouteTranslator: SessionPolicyTranslator {
+    func privateRouteEnvironment(for policy: SessionPolicy, route: AgentPrivateRoute) throws -> [String: String]
 }

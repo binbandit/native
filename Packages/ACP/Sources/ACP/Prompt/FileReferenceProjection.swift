@@ -28,7 +28,7 @@ public struct FileReferenceProjection: Equatable, Sendable {
 
     public init(
         _ raw: String, counts: [String: Counts] = [:], enabled: Bool = true,
-        formatCount: (Int) -> String = { String($0) }
+        tokenPadding: String = "", formatCount: (Int) -> String = { String($0) }
     ) {
         self.raw = raw
         guard enabled else { display = raw; tokens = []; return }
@@ -70,11 +70,13 @@ public struct FileReferenceProjection: Equatable, Sendable {
             output += raw[copied..<start]
             let displayStart = output.utf8.count
             let count = counts[path]
+            output += tokenPadding
             output += path.split(separator: "/").last.map(String.init) ?? path
             if let count {
                 if count.added > 0 { output += " +\(formatCount(count.added))" }
                 if count.removed > 0 { output += " −\(formatCount(count.removed))" }
             }
+            output += tokenPadding
             tokens.append(
                 Token(
                     path: path,

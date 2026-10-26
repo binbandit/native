@@ -65,9 +65,9 @@ public struct SessionMirror: Sendable {
             state.apply(update, at: event.at)
         case (.prompt(let prompt), _):
             receive(prompt, at: event.at)
-        case (.permissionRequested(let toolCallID, _), .permission(let request)):
-            // The id only has to be unique within the transcript; answers go to the host by tool call.
-            state.requestPermission(request, id: .string(toolCallID), at: event.at)
+        case (.permissionRequested(let toolCallID, let raw), .permission(let request)):
+            let occurrence = raw["approvalRequestID"]?.stringValue.flatMap(UUID.init(uuidString:))
+            state.requestPermission(request, id: .string(occurrence?.uuidString ?? toolCallID), at: event.at)
         case (.permissionResolved(let toolCallID, _), _):
             state.resolvePermission(toolCallID: toolCallID)
         case (.questionAsked(let questionID, _), .question(let request)):

@@ -13,6 +13,7 @@ struct HostAgentFailureTests {
         ])
     func failedStartup(command: String) async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         try harness.start()
         let recorder = try await harness.connect()
         let broken = AgentSpec(id: "fake", name: "Fake Agent", command: "/bin/sh", args: ["-c", command])

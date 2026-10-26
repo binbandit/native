@@ -18,14 +18,23 @@ struct TaskWellLabel: View {
             )
             .frame(width: DS.TaskWell.signal, height: DS.TaskWell.signal)
             .accessibilityHidden(true)
-            headline
+            if let outcome = content.outcome {
+                ViewThatFits(in: .horizontal) {
+                    if !isCompact {
+                        outcomeLine(outcome, includesVerb: true, showsReview: content.showsReview)
+                        outcomeLine(outcome, includesVerb: false, showsReview: content.showsReview)
+                    }
+                    outcomeLine(outcome, includesVerb: false, showsReview: false)
+                }
                 .frame(maxWidth: .infinity, alignment: .leading)
-            if content.progress != nil || ((content.showsReview || waitingSince != nil) && !isCompact)
-                || content.exitKey != nil
-            {
-                trailing
-                    .dsTrailingSegment(inset: DS.TaskWell.dividerInset, dividerHeight: DS.TaskWell.signal)
-                    .fixedSize()
+            } else {
+                headline
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if content.progress != nil || (waitingSince != nil && !isCompact) || content.exitKey != nil {
+                    trailing
+                        .dsTrailingSegment(inset: DS.TaskWell.dividerInset, dividerHeight: DS.TaskWell.signal)
+                        .fixedSize()
+                }
             }
         }
         .font(DS.TaskWell.body)
@@ -38,17 +47,29 @@ struct TaskWellLabel: View {
         .accessibilityLabel(content.accessibilityText)
     }
 
-    @ViewBuilder private var headline: some View {
-        if let outcome = content.outcome {
+    /// Use the space this capsule actually received, including when a long title narrowed it
+    /// without changing the window's layout. Counts and statistics never truncate to keep a verb.
+    private func outcomeLine(_ outcome: TurnSummary, includesVerb: Bool, showsReview: Bool) -> some View {
+        HStack(spacing: DS.TaskWell.gap) {
             HStack(spacing: DS.TaskWell.textGap) {
-                Text(content.changedFiles(of: outcome, includesVerb: !isCompact))
-                    .lineLimit(1)
+                Text(content.changedFiles(of: outcome, includesVerb: includesVerb))
+                    .fixedSize()
                 DiffStatsText(stats: DiffStats(added: outcome.linesAdded, removed: outcome.linesRemoved))
                     .font(DS.TaskWell.object)
                     .fixedSize()
                     .contentTransition(.numericText())
             }
-        } else if content.verb.isEmpty {
+            Spacer(minLength: 0)
+            if showsReview {
+                trailing
+                    .dsTrailingSegment(inset: DS.TaskWell.dividerInset, dividerHeight: DS.TaskWell.signal)
+                    .fixedSize()
+            }
+        }
+    }
+
+    @ViewBuilder private var headline: some View {
+        if content.verb.isEmpty {
             Text(content.agent)
                 .foregroundStyle(.dsTextSecondary)
                 .lineLimit(1)
@@ -70,7 +91,8 @@ struct TaskWellLabel: View {
             if includesAgent, !content.agent.isEmpty {
                 Text(content.agent)
                     .font(.dsBody)
-                    .foregroundStyle(.dsTextTertiary)
+                    .foregroundStyle(content.verbIsState ? .dsTextSecondary : .dsTextTertiary)
+                if content.verbIsState { Text("·").font(.dsBody).foregroundStyle(.dsTextTertiary) }
             }
             Text(content.verb)
                 .font(content.isWaiting ? DS.TaskWell.body : .dsBody)
@@ -129,6 +151,7 @@ struct TaskWellLabel: View {
             ForEach(Array(TaskWellPreviewFixtures.states.enumerated()), id: \.offset) { _, content in
                 HStack(spacing: DS.Space.lg) {
                     TaskWellLabel(content: content)
+                    TaskWellLabel(content: content, width: DS.TaskWell.compactWidth)
                     TaskWellLabel(content: content, isCompact: true)
                 }
             }
