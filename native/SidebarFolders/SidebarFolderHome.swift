@@ -35,7 +35,9 @@ struct SidebarFolderHome: View {
                 Text(
                     project == nil
                         ? "You can also drop a folder onto the sidebar."
-                        : "Start a task below, or return to any task in the sidebar."
+                        : isOpening
+                            ? "Your current task stays available in the sidebar."
+                            : "Start a task below, or return to any task in the sidebar."
                 )
                 .font(.dsBody).foregroundStyle(.dsTextTertiary)
                 .padding(.top, DS.Space.lg)

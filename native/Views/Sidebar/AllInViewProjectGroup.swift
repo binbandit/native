@@ -35,12 +35,15 @@ struct AllInViewProjectGroup<MenuContent: View, Content: View>: View {
                     withAnimation(.dsDisclosure) { isExpanded.toggle() }
                 } label: {
                     HStack(spacing: DS.Space.sm) {
+                        if isRefreshing && taskCount == 0 {
+                            ProjectRefreshIndicator().padding(.trailing, DS.Space.xxs)
+                        }
                         Text(name)
                             .font(DS.Sidebar.projectFont)
                             .tracking(DS.Sidebar.headerTracking)
                             .foregroundStyle(.dsTextSecondary)
                             .lineLimit(1)
-                        if isRefreshing {
+                        if isRefreshing && taskCount > 0 {
                             ProjectRefreshIndicator()
                         }
                         if !isExpanded {
