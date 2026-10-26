@@ -1,0 +1,71 @@
+{
+  "before_app_revision": "72c78d5381c68bb28f461f97a11e88570745d725",
+  "captured_after_app_revision": "ecee6860",
+  "final_revision": "e4453c4a62bc0d1c51d2f2c429d693fe174c9778",
+  "mock": "No matching mock supplied or present in the worktree. Existing shared card layout and tokens are the reference.",
+  "observations": {
+    "question_before_light_and_dark": {
+      "before_frame": [
+        100,
+        100,
+        1000,
+        700
+      ],
+      "after_frame": [
+        100,
+        39,
+        1000,
+        15859
+      ]
+    },
+    "question_after_light": "Frame unchanged at 1000x700; choice 9 scrolled inside its viewport and accepted.",
+    "question_after_dark": "Frame unchanged at 1000x700; digit 9 revealed its choice. Window moved off-screen before Return and the final screenshot.",
+    "approval_after_light": "Frame unchanged at 1000x620; scrolled to Allow and delivered approval.",
+    "confirmation_after_light": "Frame unchanged at 1000x700 through Continue and the delivered response.",
+    "earlier_approval_reproduction": "A vertically fixed capped scroll view still grew 1000x620 to 1000x735 before ApprovalScrollView."
+  },
+  "screenshots": {
+    "question_before": [
+      "question-before-light.png",
+      "question-before-dark.png"
+    ],
+    "question_after": [
+      "question-after-light.png",
+      "question-after-dark.png"
+    ],
+    "question_last_choice": [
+      "question-last-choice-light.png"
+    ],
+    "approval": [
+      "approval-light.png",
+      "approval-actions-light.png"
+    ],
+    "confirmation": [
+      "confirmation-light.png"
+    ],
+    "failed_start_and_expanded_output": []
+  },
+  "checks": {
+    "final_debug_build": "passed",
+    "final_swift_lint": "passed",
+    "final_peek_and_home_routing": "passed",
+    "release_and_nightly_builds": "passed before the final main rebase; app layout source unchanged by that rebase",
+    "size_MB": {
+      "release_update": 47.7,
+      "nightly_update": 47.8,
+      "update_budget": 48,
+      "release_installed": 117.2,
+      "nightly_installed": 117.3,
+      "installed_budget": 118
+    },
+    "focused_ipad_scroll_layout_typecheck": "passed with real token and platform dependencies",
+    "full_shared_view_ipad_check": "blocked by unchanged Mac-only dependencies including AgentProcess and LocalCommandRunner"
+  },
+  "pending_visual_checks": [
+    "final-rebase UI rerun",
+    "complete final dark keyboard answer",
+    "dark approval and confirmation",
+    "failed start and expanded output in light and dark"
+  ],
+  "environment_limit": "Screen lock checked before measurements and screenshots. Captures could be covered by another app. Later runs found the isolated window off-screen without an AX window; no foregrounding or Space switching was attempted."
+}
