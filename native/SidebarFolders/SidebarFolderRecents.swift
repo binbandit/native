@@ -76,6 +76,7 @@ struct SidebarFolderRecents: View {
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
+            .disabled(!model.canOpenFolders)
             .focused($focusedItem, equals: entries.count)
             .dsFocusShape(.rect(cornerRadius: DS.Radius.control))
         }
@@ -84,6 +85,10 @@ struct SidebarFolderRecents: View {
         .background(.dsOverlay)
         .onAppear {
             highlighted = navigable.first ?? entries.count; focusedItem = highlighted
+        }
+        .onChange(of: navigable) { _, items in
+            highlighted = items.first ?? entries.count
+            focusedItem = items.first
         }
         .onChange(of: focusedItem) { _, item in if let item { highlighted = item } }
         .onKeyPress(.upArrow) {
@@ -106,7 +111,8 @@ struct SidebarFolderRecents: View {
 
     private var navigable: [Int] {
         let entries = model.sidebarFolders.history.entries
-        return entries.indices.filter { model.canOpenRecentFolder(entries[$0]) } + [entries.count]
+        return entries.indices.filter { model.canOpenRecentFolder(entries[$0]) }
+            + (model.canOpenFolders ? [entries.count] : [])
     }
 
     private func move(_ offset: Int) {
@@ -116,6 +122,7 @@ struct SidebarFolderRecents: View {
     }
 
     private func activate() {
+        guard model.canOpenFolders else { return }
         let entries = model.sidebarFolders.history.entries
         if entries.indices.contains(highlighted) { open(entries[highlighted]) } else { chooseFolder() }
     }
