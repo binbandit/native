@@ -64,13 +64,24 @@ struct SidebarAccountButton: View {
             .accessibilityLabel(accessibilityLabel)
             .accessibilityHint(hasAccount ? "Shows your GitHub accounts" : "Shows what your organization manages")
             .help(accessibilityLabel)
-            .dsPopover(isPresented: $isPresented, arrowEdge: .top) {
+            // Centered on a point that lines its leading edge up with the sidebar's rows, so it opens
+            // over the window rather than hanging off its edge.
+            .dsPopover(
+                isPresented: $isPresented,
+                attachmentAnchor: .rect(.rect(CGRect(x: popoverWidth / 2 + popoverLead, y: 0, width: 0, height: 0))),
+                arrowEdge: .top
+            ) {
                 popover
             }
         } else {
             Spacer(minLength: 0)
         }
     }
+
+    private var popoverWidth: CGFloat { isManaged ? DS.Account.managedWidth : DS.Account.menuWidth }
+
+    /// From this button's leading edge to the rows' (the footer insets the button a little less).
+    private var popoverLead: CGFloat { DS.Sidebar.inset - (DS.Account.footerLeading - DS.Space.sm) }
 
     private var hasAccount: Bool {
         #if os(macOS)
@@ -131,6 +142,6 @@ struct SidebarAccountButton: View {
                 SidebarManagedDetails(center: policy)
             }
         }
-        .frame(width: isManaged ? DS.Account.managedWidth : DS.Account.menuWidth)
+        .frame(width: popoverWidth)
     }
 }

@@ -15,6 +15,8 @@ extension DS {
         static let menuAvatarSize: CGFloat = 26
         static let menuInset: CGFloat = 6
         static let menuRowHeight: CGFloat = 24
+        /// Menu lines leave a checkmark's column empty, as a menu's do.
+        static let menuItemLeading: CGFloat = 26
         static let menuRowRadius: CGFloat = 8
         static let menuLoginFont = Font.ds(11.5, weight: .book, design: .mono)
         static let managedInset: CGFloat = 16

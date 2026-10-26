@@ -33,15 +33,13 @@ struct GitHubAccountMenu: View {
                 dismiss()
                 settings.open(.general, revealing: GitHubAccountsSettingsSection.accountsRow)
             }
-            if let guidance = accounts.guidance {
-                Text(guidance)
-                    .font(.dsCaption)
-                    .foregroundStyle(.dsTextTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, DS.Space.md)
-                    .padding(.top, DS.Space.md)
-                    .padding(.bottom, DS.Space.xs)
-            }
+            Text(accounts.guidance ?? "Account choices apply only to Native. Your terminal's gh keeps its own.")
+                .font(.dsCaption)
+                .foregroundStyle(.dsTextTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, DS.Space.md)
+                .padding(.top, DS.Space.md)
+                .padding(.bottom, DS.Space.xs)
         }
         .padding(DS.Account.menuInset)
         .accessibilityElement(children: .contain)
@@ -124,7 +122,8 @@ private struct GitHubAccountMenuItem: View {
                     Text(shortcut).font(.dsCallout).foregroundStyle(.dsTextTertiary)
                 }
             }
-            .padding(.horizontal, DS.Space.md)
+            .padding(.leading, DS.Account.menuItemLeading)
+            .padding(.trailing, DS.Space.md)
             .frame(height: DS.Account.menuRowHeight)
             .background(isHovered ? Color.dsSelected : .clear, in: .rect(cornerRadius: DS.Radius.row))
             .contentShape(.rect)

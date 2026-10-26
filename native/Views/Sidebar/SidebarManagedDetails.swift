@@ -66,8 +66,6 @@ struct SidebarManagedDetails: View {
                     }
                 }
                 .padding(.top, DS.Space.lg)
-                .overlay(alignment: .top) { SeparatorLine() }
-                .padding(.top, DS.Space.lg)
             }
             Text(contactLine(count: facts.count))
                 .font(.dsCaption)
@@ -82,7 +80,7 @@ struct SidebarManagedDetails: View {
     }
 
     private func contactLine(count: Int) -> String {
-        let what = count == 1 ? "it" : count == 2 ? "either" : "them"
+        let what = count == 0 ? "managed settings" : count == 1 ? "it" : count == 2 ? "either" : "them"
         return center.policy.organizationContact.map { "Ask in \($0) to change \(what)." }
             ?? "Ask your administrator to change \(what)."
     }
