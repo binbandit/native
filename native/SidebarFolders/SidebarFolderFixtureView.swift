@@ -41,6 +41,14 @@ struct SidebarFolderFixtureView: View {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+        #if os(macOS)
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                SidebarCollapseButton(isExpanded: true) {}
+            }.sharedBackgroundVisibility(.hidden)
+        }
+        .toolbar(removing: .title)
+        #endif
         .task { if model == nil { model = SidebarFolderPreviewFixtures.model(state) } }
     }
 }

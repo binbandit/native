@@ -8,6 +8,7 @@ struct SidebarFolderActions: View {
     @FocusState private var isOpenFocused: Bool
     @State private var showsRecents = false
     @State private var isHovered = false
+    @State private var actionWidth = DS.Size.sidebarWidth - 2 * DS.Sidebar.inset
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -56,11 +57,7 @@ struct SidebarFolderActions: View {
                 .dsFocusShape(.rect(cornerRadius: DS.Radius.control))
                 .accessibilityLabel("Recent Folders")
                 .accessibilityValue("\(model.sidebarFolders.history.entries.count) folders")
-                .popover(isPresented: $showsRecents, arrowEdge: .top) {
-                    SidebarFolderRecents {
-                        showsRecents = false
-                    }.dsPopoverBackground()
-                }
+
             }
             .foregroundStyle(.dsTextSecondary)
             .background(
@@ -68,6 +65,18 @@ struct SidebarFolderActions: View {
                 in: .rect(cornerRadius: DS.Radius.row)
             )
             .trackHover($isHovered)
+            .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { actionWidth = $0 }
+            .popover(
+                isPresented: $showsRecents,
+                attachmentAnchor: .point(
+                    UnitPoint(
+                        x: min(1, (DS.SidebarFolders.recentsWidth / 2 + DS.Space.xxs) / max(1, actionWidth)), y: 0)),
+                arrowEdge: .top
+            ) {
+                SidebarFolderRecents { showsRecents = false }
+                    .dsPopoverBackground()
+                    .presentationCornerRadius(DS.Radius.card)
+            }
             .padding(.horizontal, DS.Sidebar.inset)
             .padding(.top, DS.Space.sm)
             .padding(.bottom, DS.Space.md)

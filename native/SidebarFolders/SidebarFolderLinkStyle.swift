@@ -4,7 +4,7 @@ import SwiftUI
 struct SidebarFolderLinkStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(DS.ComposerSettings.detailFont)
+            .font(.dsBodyMedium)
             .foregroundStyle(configuration.isPressed ? .dsTextSecondary : .dsTextPrimary)
             .frame(minHeight: DS.isTouchPlatform ? DS.Size.minimumHitTarget : DS.SidebarFolders.noticeLineHeight)
             .contentShape(.rect)

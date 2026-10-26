@@ -58,6 +58,7 @@ enum SidebarFolderPreviewFixtures {
         if state == "F4" || state == "F10" {
             let project = app.projects.add(URL(filePath: "/Development/atlas"))
             app.focusProject(project.id)
+            app.catalog.replace(AgentDefinition.ID(rawValue: "claude-code"), in: project.id, with: []) { _ in false }
             if state == "F4" {
                 app.sidebarFolders.receipt = .init(projects: [project], previousProject: nil, previousSelection: nil)
             }
