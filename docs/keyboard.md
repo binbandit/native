@@ -10,6 +10,10 @@ shortcut there. The keys here are the defaults. `DefaultShortcuts` (`Packages/Na
 mirrors them, and its tests fail when the two disagree, so change a key here first, then there.
 Rows without an id are keys a view answers itself; they can't be changed.
 
+On Mac, double-clicking empty title bar or toolbar space follows Desktop & Dock's title bar action
+(Zoom, Fill, Minimize or Do Nothing). Zoom and Fill restore the previous window size on the next
+double-click. Toolbar buttons, the task title and the well keep their own interactions.
+
 Standard macOS behavior comes for free and must not be broken: Tab / Shift-Tab move focus through
 controls (with Full Keyboard Access on), arrow keys move within lists and menus, Space activates the
 focused control, Escape dismisses popovers and sheets, ⌘W closes the frontmost window or sheet, ⌘Q quits, ⌘, opens
@@ -383,7 +387,8 @@ With The well enabled (`NativeTaskWell`, off by default), Cmd-I opens the center
 Its tools appear in this fixed key order. Missing tools leave no row; their keys stay reserved.
 Clicking a waiting well focuses the composer, where the full request can be answered.
 Dev reveals the latest project action in the workbench, or its action chooser before the first run.
-Subagents opens a roster; Return or Space on a row opens that worker. Escape returns from a
+Up and Down move through the tool list and Return or Space opens the highlighted tool, as in a
+menu. Subagents opens a roster; Return or Space on a row opens that worker. Escape returns from a
 chooser to the tool list, then closes the well. Terminal and Dev keep their existing run, stop,
 new-tab and hide commands in the workbench under the composer. A tool turned off in Settings ▸
 Task Tools has no row and its key does nothing. Task ▸ Rename Task… (no default keys) opens the
@@ -582,6 +587,8 @@ in Git, for example). No shortcuts change.
 | Keys | Action |
 | --- | --- |
 | ⇧⌘H in Hosts | Add Host: enter an SSH destination or paste a pairing link |
+| Return in Add Host when the organization stops pairing | Close the sheet |
+| ⇧⌘C in Add Host when the organization stops pairing | Copy the organization's help contact, when configured |
 | ⌘F | Focus the search field |
 | ↑ / ↓ | Move through the search results |
 | Return | Open the highlighted result |

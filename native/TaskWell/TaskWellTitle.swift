@@ -20,6 +20,7 @@ struct TaskWellTitleFacts: Equatable {
 struct TaskWellTitle: View {
     let facts: TaskWellTitleFacts
     @Binding var isPresented: Bool
+    var reportsIdealWidth: (CGFloat) -> Void = { _ in }
     let rename: (String) -> Void
     @State private var isHovered = false
 
@@ -39,6 +40,10 @@ struct TaskWellTitle: View {
         }
         // Where the window draws its own title.
         .padding(.leading, DS.Space.xl)
+        .background {
+            label.fixedSize().hidden()
+                .onGeometryChange(for: CGFloat.self, of: \.size.width) { reportsIdealWidth($0 + DS.Space.xl) }
+        }
     }
 
     private var label: some View {
