@@ -113,6 +113,8 @@ approval's frame: "Claude Code asks", a `1 of 2` pager, choices on digit keycaps
 recommends is tagged), Skip and Next (Return). The composer's field below becomes "Or answer in your
 own words"; Return there answers the shown question with what you typed. The draft waits
 underneath until the questions are answered, and ⌘L focuses the answer field.
+Long prompts and choices scroll inside the card. The pager, Skip / Next and answer field stay
+visible; digit and arrow keys reveal the choice they select or highlight.
 
 ### A task that couldn't start (Fine print)
 
