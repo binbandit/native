@@ -286,6 +286,7 @@ extension SessionModel {
     func allowDiffCommentResend() {
         guard !diffCommentSending else { return }
         if let packet = unresolvedCommentPacket {
+            draft = PromptQuote.restoring(packet, into: draft)
             heldPrompts.removeAll { $0.text == packet }
             if host == nil {
                 for item in queue.visible where item.text == packet { queue.remove(item.id) }

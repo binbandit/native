@@ -79,4 +79,17 @@ import Testing
         let bare = PromptQuote(source: "a.swift", lines: [.init(number: 1, text: "source")]).prompt
         #expect(PromptQuote.summary(bare) == bare)
     }
+
+    @Test func recoveryRestoresAnEmptyDraftAndPreservesNewerWords() {
+        let original = quote()
+        let packet = PromptQuote.draft(quotes: [original], message: "Original instruction")
+        #expect(PromptQuote.split(PromptQuote.restoring(packet, into: "")).quotes == [original])
+        var edited = original
+        edited.comment?.body = "A newer comment body"
+        let current = PromptQuote.draft(quotes: [edited], message: "New instruction")
+        let restored = PromptQuote.split(PromptQuote.restoring(packet, into: current))
+        #expect(restored.quotes == [edited])
+        #expect(restored.message == "Original instruction\n\nNew instruction")
+        #expect(PromptQuote.restoring(packet, into: packet) == packet)
+    }
 }

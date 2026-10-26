@@ -183,4 +183,12 @@ struct DiffCommentsDesignFixture: View {
 #Preview("Diff comments - C13") {
     DSPreviewPair { DiffCommentsDesignFixture(state: "C13").frame(width: 1440, height: 900) }
 }
+
+#Preview("Diff comments - Locally held") {
+    DSPreviewPair { DiffCommentsDesignFixture(state: "C14").frame(width: 1440, height: 900) }
+}
+
+#Preview("Diff comments - Edit locally held") {
+    DSPreviewPair { DiffCommentsDesignFixture(state: "C15").frame(width: 1440, height: 900) }
+}
 #endif

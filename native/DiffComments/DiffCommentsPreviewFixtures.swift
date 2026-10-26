@@ -71,7 +71,7 @@ enum DiffCommentsPreviewFixtures {
             return nil
         }
         let quotes = quotes(task: session.clientID)
-        if ["C4", "C5", "C7", "C8", "C11", "C13", "C14"].contains(state) {
+        if ["C4", "C5", "C7", "C8", "C11", "C13", "C14", "C15"].contains(state) {
             session.draft = PromptQuote.draft(quotes: quotes, message: "")
         }
         if ["C3", "C12"].contains(state), let first = quotes.first {
@@ -91,11 +91,12 @@ enum DiffCommentsPreviewFixtures {
             session.diffCommentSending = true
             session.diffCommentStatus = "Checking whether your comments arrived…"
         }
-        if state == "C14" {
+        if state == "C14" || state == "C15" {
             session.phase = .prompting
             let packet = PromptQuote.trimmed(session.draft)
             session.queue.append(packet)
             session.keepLocallyQueuedDiffComments(packet)
+            if state == "C15" { session.editingQueuedPrompt = session.queue.visible.first?.id }
         }
         if state == "C9", var first = quotes.first {
             first.comment = nil

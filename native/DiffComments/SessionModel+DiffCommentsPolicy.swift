@@ -16,7 +16,7 @@ extension SessionModel {
 
     var diffCommentSendBlock: String? {
         if diffCommentSending { return "Checking whether your comments arrived…" }
-        if unresolvedCommentPacket != nil {
+        if unresolvedCommentPacket != nil, !isEditingPendingLocalDiffComments {
             return hasLocallyQueuedDiffComments
                 ? "Your comments are waiting to send."
                 : "Delivery is unresolved. Check the transcript before resending."

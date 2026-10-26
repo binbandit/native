@@ -3,6 +3,17 @@ import NativeHostClient
 import NativeHostProtocol
 
 extension SessionModel {
+    var isEditingPendingLocalDiffComments: Bool {
+        editingQueuedPrompt.map(ownsPendingLocalDiffComments) == true
+    }
+
+    private func ownsPendingLocalDiffComments(_ id: QueuedPrompt.ID) -> Bool {
+        guard host == nil || heldPrompts.contains(where: { $0.id == id }),
+            let pending = unresolvedCommentPacket, let item = queuedPrompts.first(where: { $0.id == id })
+        else { return false }
+        return PromptQuote.trimmed(pending) == PromptQuote.trimmed(item.text)
+    }
+
     func isEditingDiffCommentPacket(_ id: QueuedPrompt.ID) -> Bool {
         !diffComments.isEmpty
             || queuedPrompts.first(where: { $0.id == id }).map {
@@ -14,11 +25,7 @@ extension SessionModel {
     @discardableResult
     func saveQueuedDiffComments(_ id: QueuedPrompt.ID) async -> Bool {
         let isLocal = host == nil || heldPrompts.contains(where: { $0.id == id })
-        let ownsPending =
-            queuedPrompts.first(where: { $0.id == id }).map { item in
-                unresolvedCommentPacket.map { PromptQuote.trimmed($0) == PromptQuote.trimmed(item.text) } == true
-            } == true
-        guard acceptsPrompts, !diffCommentSending, unresolvedCommentPacket == nil || (isLocal && ownsPending),
+        guard acceptsPrompts, !diffCommentSending, unresolvedCommentPacket == nil || ownsPendingLocalDiffComments(id),
             prepareDiffCommentsSubmission(), sourceExcerptBlock(for: draft) == nil
         else { return false }
         guard queuedPrompts.contains(where: { $0.id == id }) else {

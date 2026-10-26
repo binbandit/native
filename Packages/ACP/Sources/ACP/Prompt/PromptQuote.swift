@@ -88,6 +88,28 @@ public struct PromptQuote: Equatable, Sendable, Codable {
         return message.isEmpty ? title : "\(title) · \(message)"
     }
 
+    /// Recovery merges with ongoing typing rather than replacing the user's newer draft.
+    public static func restoring(_ packet: String, into draft: String) -> String {
+        let saved = split(packet)
+        var current = split(draft)
+        for quote in saved.quotes {
+            let exists = current.quotes.contains {
+                if let id = quote.comment?.id { return $0.comment?.id == id }
+                return $0 == quote
+            }
+            if !exists { current.quotes.append(quote) }
+        }
+        if current.message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            current.message = saved.message
+        } else if !saved.message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+            current.message.trimmingCharacters(in: .whitespacesAndNewlines)
+                != saved.message.trimmingCharacters(in: .whitespacesAndNewlines)
+        {
+            current.message = saved.message + "\n\n" + current.message
+        }
+        return Self.draft(quotes: current.quotes, message: current.message)
+    }
+
     /// Trims a prompt for sending like any other, except its leading quotes: their lines are source
     /// text, so a quote-only prompt keeps a final blank line or trailing spaces and still reads back.
     public static func trimmed(_ prompt: String) -> String {

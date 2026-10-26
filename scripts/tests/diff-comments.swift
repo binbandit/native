@@ -64,12 +64,35 @@ private struct DiffCommentChecks {
         require(
             session.draft == oldDraft && session.unresolvedCommentPacket != nil, "A local queue keeps durable words")
         let queuedID = session.queuedPrompts[0].id
+        session.editingQueuedPrompt = queuedID
+        require(session.diffCommentSendBlock == nil, "The owning local queue edit enables its save control")
+        session.diffCommentSending = true
+        require(session.diffCommentSendBlock != nil, "Concurrent local delivery still blocks saving")
+        session.diffCommentSending = false
+        session.diffCommentsPolicy = {
+            var policy = NativePolicy()
+            policy.sourceExcerptsSendingEnabled = false
+            return policy
+        }
+        require(session.diffCommentSendBlock != nil, "Managed source restrictions still block local queue saves")
+        session.diffCommentsPolicy = { NativePolicy() }
+        session.editingQueuedPrompt = UUID()
+        require(session.diffCommentSendBlock != nil, "An unrelated queued edit cannot bypass the pending packet")
+        session.editingQueuedPrompt = nil
+        session.draft = ""
+        session.allowDiffCommentResend()
+        require(
+            session.diffComments.count == 2 && session.queuedPrompts.isEmpty, "Escape then Return restores the packet")
+        require(session.composerMessage == "Keep the draft.", "Return restores the message before deleting recovery")
+        session.phase = .prompting
+        await session.submitDiffComments(.queue)
+        let restoredQueueID = session.queuedPrompts[0].id
         var changed = session.composerQuotes
         changed[0].comment?.body = "A newer observation with the same comment identity"
         let newerPacket = PromptQuote.draft(quotes: changed, message: session.composerMessage)
-        session.editingQueuedPrompt = queuedID
+        session.editingQueuedPrompt = restoredQueueID
         session.draft = newerPacket
-        let savedQueueEdit = await session.saveQueuedDiffComments(queuedID)
+        let savedQueueEdit = await session.saveQueuedDiffComments(restoredQueueID)
         require(savedQueueEdit, "Local queue edit is stored")
         require(
             session.queuedPrompts.count == 1
@@ -82,7 +105,7 @@ private struct DiffCommentChecks {
         session.state.appendUserMessage(oldDraft)
         session.reconcileDiffCommentDelivery()
         require(session.unresolvedCommentPacket != nil, "Older evidence cannot acknowledge edited comment contents")
-        session.queue.remove(queuedID)
+        session.queue.remove(restoredQueueID)
         session.state.appendUserMessage(newerPacket)
         session.reconcileDiffCommentDelivery()
         require(

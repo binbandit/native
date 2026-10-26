@@ -20,7 +20,10 @@ struct DiffCommentsDeliveryStatus: View {
             } else if let status =
                 (session.diffCommentSending ? "Checking whether your comments arrived…" : session.diffCommentStatus)
                 ?? (session.unresolvedCommentPacket == nil
-                    ? nil : "Delivery is unresolved. Your comments are kept. Resending may send duplicates.")
+                    ? nil
+                    : session.hasLocallyQueuedDiffComments
+                        ? "Your comments are kept while this task waits to send them."
+                        : "Delivery is unresolved. Your comments are kept. Resending may send duplicates.")
             {
                 HStack(spacing: DS.Space.md) {
                     if session.diffCommentSending {
