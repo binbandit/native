@@ -68,17 +68,16 @@ struct SidebarFolderActions: View {
             )
             .trackHover($isHovered)
             .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { actionWidth = $0 }
-            .popover(
-                isPresented: $showsRecents,
-                attachmentAnchor: .point(
-                    UnitPoint(
-                        x: min(1, (DS.SidebarFolders.recentsWidth / 2 + DS.Space.xxs) / max(1, actionWidth)), y: 0)),
-                arrowEdge: .top
-            ) {
-                SidebarFolderRecents { showsRecents = false }
-                    .presentationBackground(.clear)
-                    .presentationCornerRadius(DS.Radius.card)
-            }
+            .modifier(
+                PlatformFolderRecentsPopover(
+                    isPresented: $showsRecents,
+                    attachmentAnchor: .point(
+                        UnitPoint(
+                            x: min(1, (DS.SidebarFolders.recentsWidth / 2 + DS.Space.xxs) / max(1, actionWidth)), y: 0))
+                ) {
+                    SidebarFolderRecents { showsRecents = false }
+                }
+            )
             .padding(.horizontal, DS.Sidebar.inset)
             .padding(.top, DS.Space.sm)
             .padding(.bottom, DS.Space.md)
