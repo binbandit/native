@@ -46,7 +46,16 @@ extension ComposerSettingsPopover {
         let starting =
             (modelChange?.stage == .preparing && modelChange?.showsLoader == true
                 && modelChange?.choice.id == entry.id) || loadingModelID == entry.id
-        let mark: ComposerSettingsMark = entry.isManaged ? .lock : starting ? .loading : selected ? .check : .none
+        let changingCurrent =
+            entry.agent == currentAgentID && pending?.optionID == settings.model?.option.id
+            && pending != nil
+        let ordinaryLoader = changingCurrent && pending?.value == entry.choice.value
+        let mark: ComposerSettingsMark =
+            entry.isManaged
+            ? .lock
+            : starting || ordinaryLoader
+                ? .loading
+                : changingCurrent ? .none : selected ? .check : .none
         let stopped = isStopped && entry.agent == currentAgentID
         return Button {
             choose(target, closing: false)
@@ -88,7 +97,9 @@ extension ComposerSettingsPopover {
             default: currentModelID
             }
         let entry = agentModels?.first { $0.id == rowID }
-        let modelFailure = failure.flatMap { $0.optionID == "agent-model" ? $0 : nil }
+        let modelFailure = failure.flatMap {
+            ["agent-model", settings.model?.option.id, settings.effort?.option.id].contains($0.optionID) ? $0 : nil
+        }
         let failed = modelChange?.stage == .failed ? modelChange?.error : modelFailure?.message
         let text: String? =
             if let failed {

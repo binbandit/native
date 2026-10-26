@@ -73,6 +73,7 @@ struct ComposerSettingsControl: View {
         .task(id: session.clientID) { await library?.track(session.context) }
         .onChange(of: session.modelChange?.stage) { _, stage in
             if stage == .applied {
+                lastChange = nil
                 AccessibilityNotification.Announcement("Using \(session.agentName). Undo available.").post()
             } else if stage == .failed, let message = session.modelChange?.error {
                 AccessibilityNotification.Announcement(message).post()
@@ -234,13 +235,16 @@ struct ComposerSettingsControl: View {
 
     /// ⌘Z in the popover takes back its last change.
     private func undo() {
-        if session.modelChange?.canUndo == true { session.modelChange?.undo(); return }
-        guard changes.isEmpty, let lastChange,
-            let setting = session.configOptions.first(where: { $0.id == lastChange.optionID })
-                .flatMap(SelectSetting.init)
-        else { return }
-        self.lastChange = nil
-        set(setting, lastChange.value)
+        guard changes.isEmpty else { return }
+        if let lastChange,
+            let setting = session.configOptions.first(where: { $0.id == lastChange.optionID }).flatMap(
+                SelectSetting.init)
+        {
+            self.lastChange = nil
+            set(setting, lastChange.value)
+        } else {
+            session.modelChange?.undoSelection?.undo()
+        }
     }
 }
 
