@@ -393,6 +393,7 @@ private struct DroidManagedPolicyRegression {
         try await offWhilePairingByLink(organizationName: "Northwind Federal IT")
         try await offWhilePairingByLink(organizationName: "Northwind Federal IT", organizationContact: "#it-help")
         try await offWhilePairingOverSSH()
+        try await offBeforeSubmitting()
         try await offWhileReconnecting()
         try await offWithOpenTask()
         try await offAtLaunchThenAllowed()
@@ -605,6 +606,24 @@ private struct DroidManagedPolicyRegression {
         try await settle()
         try require(fixture.reached.count("pair") == 0, "Paired after the policy turned off")
         print("PASS: turning off during SSH pairing ends ssh, reaching or confirming")
+    }
+
+    static func offBeforeSubmitting() async throws {
+        let fixture = fixture(policy: nil, paired: false)
+        let model = fixture.addHost()
+        model.input = "me@fixture.local"
+        fixture.source.set(false)
+        try await wait("off before Continue") { !fixture.policy.isEnabled }
+        model.submit()
+        try requireOrganizationStopped(model)
+        try require(fixture.reached.attempts == 0, "Reached a host while Continue was blocked")
+        fixture.source.set(true)
+        try await wait("Continue allowed again") { model.canRetryPairing }
+        try require(model.canTryAgain, "Mistook the blocked SSH destination for a pasted link")
+        model.retry()
+        try await wait("retried original destination") { fixture.reached.count("ssh") == 1 }
+        model.stop()
+        print("PASS: a policy stop before Continue preserves the SSH destination for retry when allowed")
     }
 
     static func offWhileReconnecting() async throws {

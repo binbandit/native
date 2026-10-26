@@ -73,7 +73,8 @@ final class AddHostModel {
         let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         stop()
-        lastDestination = nil
+        // Keep the recovery route even if policy stops Continue before SSH can start.
+        lastDestination = canUseSSH && LinkSSHPairing.isDestination(text) ? text : nil
         guard policy.isEnabled else { return fail(turnedOff) }
         if text.hasPrefix("\(PairingInvite.scheme):") {
             do {
