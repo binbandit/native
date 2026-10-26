@@ -42,7 +42,7 @@ private struct SidebarFolderRecentsAnchor: NSViewRepresentable {
         if isPresented {
             context.coordinator.show(from: view, popup: popup) { isPresented = false }
         } else {
-            context.coordinator.hide(notify: false)
+            context.coordinator.hide(notify: false, restoreFocus: true)
         }
     }
 
@@ -83,6 +83,7 @@ private struct SidebarFolderRecentsAnchor: NSViewRepresentable {
             self.hosting = hosting
             position(panel, hosting: hosting, anchor: anchor, parent: parent)
             parent.addChildWindow(panel, ordered: .above)
+            panel.order(.above, relativeTo: parent.windowNumber)
             // Opening an inactive fixture must not take the person's keyboard or raise its app.
             if NSApp.isActive && parent.isKeyWindow { panel.makeKey() }
             monitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) {
@@ -119,7 +120,7 @@ private struct SidebarFolderRecentsAnchor: NSViewRepresentable {
             panel.setFrame(NSRect(origin: origin, size: size), display: true)
         }
 
-        func hide(notify: Bool = true) {
+        func hide(notify: Bool = true, restoreFocus: Bool = false) {
             guard let panel else { return }
             self.panel = nil
             if let monitor { NSEvent.removeMonitor(monitor) }
@@ -129,7 +130,7 @@ private struct SidebarFolderRecentsAnchor: NSViewRepresentable {
             parent?.removeChildWindow(panel)
             panel.close()
             hosting = nil
-            if NSApp.isActive, let parent, parent.isVisible {
+            if restoreFocus, NSApp.isActive, let parent, parent.isVisible, parent.attachedSheet == nil {
                 parent.makeKey()
                 if let previousResponder { parent.makeFirstResponder(previousResponder) }
             }
