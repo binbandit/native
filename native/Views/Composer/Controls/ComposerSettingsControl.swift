@@ -125,6 +125,7 @@ struct ComposerSettingsControl: View {
         } else {
             ComposerSettingsPopover(
                 settings: settings, agentName: session.agentName, workspace: workspace, manager: manager,
+                managementExplanation: policy.isManaged(.agentsAllowed) ? "Only approved agents are available." : nil,
                 permissionsManaged: permissionsManaged, forbiddenModes: policy.forbiddenPermissionModes,
                 rows: taskRows(openGoal: { showsGoalEditor = true }, openMCP: openMCP),
                 agentModels: app.offersAgentModels ? refreshedCatalog : nil,

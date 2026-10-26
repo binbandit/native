@@ -34,6 +34,7 @@ extension AppModel {
         if place == .thisMac {
             for agent in plugins.agents where !runtimes.contains(where: { $0.agent.id == agent.id }) {
                 let cached = AgentSessionDefaults.offeredOptions(for: agent.id)
+                guard !cached.isEmpty else { continue }
                 result += modelEntries(
                     agent: agent.id, name: agent.displayName, options: cached.isEmpty ? nil : cached,
                     reason: "Not available on this Mac. Open Agents Settings to check this agent.", isManaged: false)
