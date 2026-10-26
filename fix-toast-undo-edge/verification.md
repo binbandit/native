@@ -1,0 +1,45 @@
+# PR 100 visual check
+
+Revision: 8972b612e4016c87bf99e4043f73b6c2d760dd46, clean working tree, including main at 7347ad34. All nine screenshots, archive Undo and Cmd-Z, composer-edit shortcut refresh, both Task Tools appearances, and Hosts Cmd-Z were repeated after the latest main merge. The isolated Debug build, repository-warning gate, 22 Undo tests, changed-file lint and diff checks passed again.
+
+Earlier detailed edge checks were performed at 11b8abe94410cc6e4af930ac97e1c59148c25ea7. Subsequent merges brought release packaging, sidebar and celebrations/settings changes from main; the toast implementation itself is unchanged.
+
+Environment: macOS 27.2 (26B5091g), isolated Debug instance vc-100.
+Reference: supplied polish.html item 03 and polish-spec.md section 03. The self-contained mock-toast.html preserves the supplied toast CSS, tokens, state definitions and fixture content, with local font references embedded. It is a mock source artifact, not a screenshot of the app.
+
+## Observed on the running app
+
+- Rest, Hover, Pressed, Keyboard focus, One line, Without Cmd-Z, Three lines and iPad appearance captured together in light and dark through the existing undo-toast gallery. Text does not clip, the action fills the trailing edge, and close/focus treatments match the written spec. The focus close button follows the written spec rather than the HTML's omission.
+- Standard task layout checked at 1440 x 900 dark and 1000 x 850 light. The initial integrated revision f62c22f8 left 20 points between visible toast and composer. c95501a4 excludes the shared 8-point top margin from measurement, leaving the specified 12 points. The Task Tools layout was also captured at 1000 x 850 in both appearances, after setting its Boolean preference with defaults write. A launch-argument attempt had left this gate off; those captures were replaced.
+- Archive: named Undo restores the task. Dismiss removes the toast. Escape leaves it in place. A newer composer edit removes the Cmd-Z hint while keeping the toast's direct Undo effective. An untouched offer expires after five seconds.
+- Cmd-Z archive check used the existing long-session scripted ACP plugin in the normal app model. Edit changed from Undo Archive Task to Redo Archive Task after Cmd-Z, the archived row returned, and its toast disappeared. No real model session was used.
+- Hosts: removal stays anchored in the Settings pane above the status bar in both appearances. The Edit menu offers Undo Remove Host; Cmd-Z restores it. Removing two hosts replaces the first toast; Undo restores the second, then Cmd-Z restores the first in order.
+- Accessibility exposes one toast element with named Undo and Dismiss actions; both were exercised through drive.sh.
+- No instance crash reports. The screen was unlocked before every capture. Captures were checked against the live labels after animation settled; the driver reported covered windows, so stale captures were discarded. The final captures used uncovered windows at x=2400 or x=2700.
+
+One five-second Hosts confirmation wait timed out in the batch. Repeating the same actions from a fresh launch with a fifteen-second wait passed in both appearances. No app crash was reported.
+
+## Scope limits
+
+The hover, pressed, keyboard focus and iPad appearances use the existing inert gallery. Physical pointer hover, keyboard focus retention, reduced-motion animation and iPad swipe dismissal were not driven: the permitted Mac driver has no pointer/touch gesture API, its background instance cannot prove active-app focus behavior, and no system accessibility settings were changed. The three lifetime tests cover holding, resumption and the three-second minimum. These are runtime coverage limits, not observed failures. No pre-PR application build was run; the visual regression found during this check was reproduced at f62c22f8 before the spacing correction.
+
+All screenshots use source-defined fixture content. The /fixture/native label and account/host names are fictional fixture values.
+
+## Commands
+
+- scripts/dev/run-isolated.sh vc-100 --build
+- scripts/check-warnings.sh /tmp/native-dd/vc-100/build.log
+- nice -n 10 swift test -j 4 --package-path Packages/Undo --filter 'UndoHistoryTests|UndoableActionTests|UndoToastLifetimeTests' (22 tests passed)
+- swift format lint --strict on all 17 changed Swift files
+- defaults write dev.binbandit.native.dev.vc-100 experiment.session-tools -bool YES (deleted after Task Tools checks)
+- scripts/check-ios.sh native/DesignSystem/Patterns/UndoToastBottomInset.swift (passed, including DesignSystem dependencies)
+- git diff --check
+- scripts/dev/run-isolated.sh vc-100 --no-build -- -nativeSidebarFixture undo-toast -nativeWindowFrame '2700 300 900 1250' -appearance.mode dark
+- scripts/dev/run-isolated.sh vc-100 --no-build -- -nativeSidebarFixture busy -nativeWindowFrame '2400 1000 1440 900' -appearance.mode dark
+- scripts/dev/run-isolated.sh vc-100 --no-build -- -nativeSidebarFixture busy -nativeWindowFrame '2700 1000 1000 850' -appearance.mode light
+- scripts/dev/run-isolated.sh vc-100 --no-build -- -NativeHostsFixtures all -nativeWindowFrame '2700 1000 1100 900' -appearance.mode light (and dark)
+- All actions used scripts/dev/drive.sh vc-100; each scenario ended with run-isolated.sh vc-100 --quit.
+
+## Handoff
+
+The 60-minute CI polling limit was reached. Pullfrog approval, lint and path checks pass at 8972b612; Mac build, iOS build and both package-test shards were still pending after the latest required main merge. No check had failed. PR 100 remains open until required checks pass.

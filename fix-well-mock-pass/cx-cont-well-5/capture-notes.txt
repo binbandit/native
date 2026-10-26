@@ -1,0 +1,16 @@
+Revisions: c6e50561 (rest, waiting, tools, dark keyboard); 2fbea486 (remaining states).
+Instance: cx-cont-well-5, isolated Debug, Fake Agent and a private sample repository.
+NativeTaskWell and NativeComposerNext were enabled with Boolean defaults before launch.
+1440 x 900pt: rest, waiting, landed, reviewing, well, title popovers, Settings.
+900 x 850pt: landed, Changes, one-file Changes, returned conversation.
+700 x 850pt: record card with well on; Review and Commit with well off.
+Keyboard: Up/Down highlight a row; Return opens Terminal; both appearances captured.
+Managed: policy.network contains a real Boolean false for github.cli.enabled.
+Integer 0 is invalid and denies the entire network snapshot. Confirmed valid policy after correction.
+The managed footer includes Northwind Federal IT and #it-help on one line.
+Account/sidebar is cropped away. The Terminal fixture path is visibly redacted.
+Screenshots were normalized to one pixel per point before cropping. Originals remain in the cache.
+The driver reported partial coverage by other windows on later captures; no other window was moved.
+Captured theme, counts, panes and highlights were inspected against the expected current states.
+No application was brought to the front. The isolated app was quit after each check.
+Plugin-tool retakes belong to the separate feat-well-plugin-tools evidence folder.

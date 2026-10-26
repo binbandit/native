@@ -1,0 +1,9 @@
+Tested head: f22e9d2c148146c673ca51d739c39b52d7702107
+Integrated main: 004b345ebc52bbf3e564c88f4175ca258da3927f
+Before unread rename fix: 6ddedfb39c7301755b102e031ba5764b2192c402
+Date: 2026-10-24
+Isolated Debug instance: vc-90
+Fixture: nativeSidebarFixture trio
+Both appearances, standard sidebar and experiment.NativeSidebarNext.
+macOS background-window captures, fixture data only.
+Reference: sidebar.html All in view mock.

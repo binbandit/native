@@ -1,0 +1,3 @@
+Static captures: a4c0baa99e7d8ecef47a63de3345325ee82b2c90, isolated Debug, 1440x900, 2026-10-23.
+Motion captures: 0ce7e5d67913f6847a98ac70587c4ef67671a89e, before the restored-window clock fix. These include window shadows.
+Static captures may be covered by another window and are not motion evidence.

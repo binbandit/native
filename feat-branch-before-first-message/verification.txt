@@ -1,0 +1,28 @@
+PR #110 visual verification
+Visual revision: f4c1aa2ecc22405112791a0dbdc28511eab993dc
+Final integration revision: 4828c8c3891fcc9524f87cb5fb8f18f6690c209c
+The workspace picker, New Task views and workspace design tokens are unchanged between these revisions.
+Build: isolated Debug, instance vc-110, macOS, Codex gpt-6.1-sol at low effort
+Viewports: 1200x840 and 760x700 points, light and dark
+
+Verified through the running app:
+- New-task workspace link and current workspace state.
+- Local branches, an existing checkout, a detached worktree, the project folder, and a new worktree.
+- Search results, no matches, long branch names, and narrow layout.
+- Removing a branch after opening the picker shows a recovery message and retains the draft.
+- Changing workspace keeps the draft and selected model; Plan mode preservation was also checked on f7e0f89d, before the unrelated main merges.
+- Untouched task worktrees are removed, while fixture-owned checkouts remain.
+- First submission hides the workspace action, including after relaunch.
+- No crashes. No visual defects requiring code changes.
+
+Passed local checks on the final integration revision:
+scripts/dev/run-isolated.sh vc-110 --build
+scripts/check-warnings.sh /tmp/native-dd/vc-110/build.log
+scripts/tests/task-workspace.sh vc-110
+scripts/tests/worktree-setup.sh vc-110
+nice -n 10 swift test --package-path Packages/Git -j 4 --filter UnusedTaskWorktreeTests
+swift format lint --strict on the PR's changed Swift files
+
+The controlled-host regression covers attachment/configuration transfer, notice-only tasks, remote routing, cleanup ownership, and the Task menu command. Background menu commands are not interactive through the driver. File-picker attachment interaction was not attempted because system panels are outside the permitted test surface.
+
+All captures contain fixture content only. The screenshot captures were visually inspected against the expected state, including where the driver reported possible window coverage. A temporary local driver adjustment focused only text-field accessibility elements so search could be typed without activating the window; it was reverted and is not part of the PR.

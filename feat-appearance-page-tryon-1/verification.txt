@@ -1,0 +1,40 @@
+PR 114 visual follow-up, 2026-10-24, macOS Debug, isolated instance vc-114.
+
+Final revision: cf0b50fe0311ba1157d6352faae279c22e7219a4, clean worktree. Main integration: fba70f94, 01e3eae7 and cf0b50fe, through main f0fa4e08. The last merge uses main's shared rowReveal navigation, preserving explicit plugin targets. Main's 70 MB binary allowance is retained; the PR has no remaining budget change. The merge also deduplicates the organization policy shared with Celebrations.
+
+Most screenshots: 01e3eae7 plus the temporary fixture attached here. The fixture renders the real SettingsScreen and AppearanceSettingsContent, using a completed in-memory ACP task with captured fictional edits, Lantern's existing preview plugin, and the isolated instance's preferences. It suppresses normal startup tasks. The Reduce Transparency images inject only the existing row override and footer condition; macOS accessibility preferences were not changed. This fixture and its source injection are removed from the PR.
+
+Code font correction: b4021219 keeps the family and size controls at their intrinsic width and adds a narrow preview. The before image is page-narrow-dark.png; narrow-fix-dark.png shows the full Geist Mono label after the fix. The app clamps a requested 700-point window to 795 points. That initial after capture reported an occlusion warning. The final-plainly-narrow-dark.png image is from the clean final build with no covering-window warning. The final-plainly-narrow-light.png image is also the final build, but its capture warned that Chrome covered part of the window. Both show the full Geist Mono label. The final-narrow pair additionally covers the normal Settings layout without Plainly.
+
+Observed:
+- Window rows, latest captured change and sample source, Native and alternate theme cards in light and dark.
+- Palette-chip native menus and Lantern grouping. The light screenshot shows the dark-mode picker in a light window.
+- Policy banner, two locked rows and lock popovers in both appearances. Copy Details matched the exact fictional organization, reason, key, value and contact text.
+- Paper and Wool, Standard and True Black; the tone variants were also shown with policy set.
+- Disabled plugin fallback. Turn On Lantern navigated to Features; enabling its switch and returning restored Dusk and Linen. Verified through Accessibility; the later dark screenshots carry an occlusion warning.
+- Reduce Transparency disabled control/footer and Ghostty color note in light and dark.
+- 18-point code at 1.2 and 1.8 line height in both appearances. No text collisions or vertical clipping; the trailing fade remains.
+
+Not verified and still required before merge:
+- Selecting native theme menu items by keyboard or pointer, live recoloring from that selection, Undo/Redo, Use for Both Modes, Reset to Native, and persistence after a UI selection. On this Mac the inactive app opens native menus, but their items are missing from its Accessibility tree. drive.sh press --item returns an empty item list. Both AXPress and AXShowMenu were tried, along with targeted type-select and Return. No theme preference changed. The same limitation affects the existing background selectors. No app was activated or brought forward to bypass it. Menus were closed by quitting only the isolated instance.
+- The exact 700-point layout from B4, because Settings clamps to 795 points.
+- Final unobscured light inspection of the small font-control correction; the last light capture reports another app overlapping the window. Dark was captured unobscured.
+
+Final-runtime recheck at cf0b50fe, with no source fixture:
+- Loaded the attached data-only Lantern manifest from an isolated temp folder, with Dusk/Linen saved and the plugin disabled.
+- Opened Settings from its Native menu, opened Appearance, pressed Turn On Lantern, observed the Lantern checkbox, enabled it, returned to Appearance and observed Dusk/Linen restored.
+- Repeated with Plainly enabled by writing the Boolean experiment.NativeSettingsPlainly to the isolated defaults. Both navigation paths passed.
+- Captured light/dark at 795 points and inspected the full Geist Mono label and trailing fade. Light has the occlusion limitation described above.
+- Local Debug build, warnings check, changed-file strict lint, diff check and both focused package suites passed at final head.
+- scripts/tests/settings-regression.sh vc-114 passed: navigation, account links, sound migration, live switching and disabled playback.
+- Pullfrog and pullfrog-approval passed at cf0b50fe. CI/iOS/Check were still queued or running when the visual block was recorded; no merge was attempted.
+
+Commands:
+- scripts/dev/run-isolated.sh vc-114 --build
+- scripts/check-warnings.sh /tmp/native-dd/vc-114/build.log
+- nice -n 10 swift test -j 4 --filter 'SpecimenSourceTests|SpecimenLineTests|CodeThemeTests|ThemeContributionsTests' in Packages/CodeThemes: 22 passed.
+- nice -n 10 swift test -j 4 --filter 'AppearancePolicyTests|NativePolicyTests|SampleProfileTests|CatalogPolicyTests|CelebrationManagedPolicyTests' in Packages/NativePolicy: 39 passed.
+- swift format lint --strict on changed Swift files; git diff --check.
+- All UI actions through scripts/dev/drive.sh vc-114. screenlocked was checked before screenshots. Only the instance's windows were captured.
+
+Reference images are local headless renders of the supplied themes.html, B1, CB1, CB2, B4 and B5. They are design references, not app screenshots. App images use only fictional fixture content. Native App's default page was also checked without the fixture, using the ordinary Settings menu.
