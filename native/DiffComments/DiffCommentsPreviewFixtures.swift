@@ -46,18 +46,26 @@ enum DiffCommentsPreviewFixtures {
                     body: "Keep long identifiers inside the code column too.")),
             PromptQuote(
                 source: "Tests/DiffLayoutTests.swift", side: .new,
-                lines: [.init(number: 27, text: "expect(wrappedLines.count == 2)")],
+                lines: [.init(number: 81, text: "#expect(row.gutterWidth == originalGutterWidth)")],
                 comment: PromptDiffComment(
                     task: task, scope: "Uncommitted", fingerprint: "tests",
-                    body: "Add a case for a single long identifier, not only a sentence.")),
+                    body: "Add a test that keeps the gutter width when the window narrows.")),
         ]
     }
 
     static func session(_ state: String, in app: AppModel) -> SessionModel? {
+        var configOptions = ComposerPreviewFixtures.configOptions
+        for index in configOptions.indices where configOptions[index].category == "model" {
+            if case .select(_, let models) = configOptions[index].kind,
+                let haiku = models.first(where: { $0.name == "Haiku 5.5" })
+            {
+                configOptions[index].kind = .select(currentValue: haiku.value, options: models)
+            }
+        }
         guard
             let session = SessionModel.preview(
                 in: app, title: "Wrap diff lines at word boundaries",
-                configOptions: ComposerPreviewFixtures.configOptions)
+                configOptions: configOptions)
         else {
             return nil
         }
@@ -84,7 +92,7 @@ enum DiffCommentsPreviewFixtures {
         if state == "C9", var first = quotes.first {
             first.comment = nil
             session.draft = PromptQuote.draft(
-                quotes: [first], message: "Will this keep long identifiers inside the code column?")
+                quotes: [first], message: "Why is fixedSize needed here?")
         }
         if state == "C6" {
             session.previewExchange(

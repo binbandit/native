@@ -25,7 +25,7 @@ struct DiffCommentsAnnotation: View {
                     Text("These lines changed. Your original selection is kept.")
                         .font(DS.ComposerQuote.headerFont).foregroundStyle(.dsDanger)
                 }
-                DiffCommentsSourceQuote(quote: quote)
+                DiffCommentsSourceQuote(quote: PromptQuote(source: quote.source, side: quote.side, lines: quote.lines))
                 if let id = quote.comment?.id, quote.comment?.isEarlierVersion != true {
                     HStack(spacing: DS.Space.md) {
                         Button("Keep Original") { session.keepOriginalDiffComment(id, undoManager: undoManager) }

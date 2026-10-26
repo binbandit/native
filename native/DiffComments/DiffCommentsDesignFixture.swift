@@ -48,9 +48,9 @@ struct DiffCommentsDesignFixture: View {
                                         Text("The code wraps inside its column. Line numbers stay in their gutter.")
                                             .font(.dsBody).foregroundStyle(.dsTextSecondary)
                                         if state == "C6" {
-                                            DiffCommentsTranscriptPacket(
-                                                quotes: DiffCommentsPreviewFixtures.quotes(task: session.clientID),
-                                                message: "")
+                                            ForEach(session.state.items) { item in
+                                                if case .message(let message) = item { MessageView(message: message) }
+                                            }
                                         }
                                     }
                                     .padding(DS.Space.xl)

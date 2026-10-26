@@ -4,16 +4,19 @@ import SwiftUI
 struct DiffCommentsDeliveryStatus: View {
     let session: SessionModel
     let retry: () -> Void
+    var showsAttribution = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.sm) {
-            if let block = session.sourceExcerptBlock(for: session.draft) {
-                Text(block)
+            if showsAttribution {
                 Text(session.diffCommentManagedExplanation).foregroundStyle(.dsTextSecondary)
                 if let contact = session.diffCommentsPolicy().organizationContact, let url = URL(string: contact) {
                     Link("Request a Change…", destination: url)
                 }
-            } else if let status = session.diffCommentStatus
+            } else if let block = session.sourceExcerptBlock(for: session.draft) {
+                Label(block, systemImage: "lock")
+            } else if let status =
+                (session.diffCommentSending ? "Checking whether your comments arrived…" : session.diffCommentStatus)
                 ?? (session.unresolvedCommentPacket == nil
                     ? nil : "Delivery is unresolved. Your comments are kept. Resending may send duplicates.")
             {
@@ -38,7 +41,7 @@ struct DiffCommentsDeliveryStatus: View {
         .font(DS.ComposerQuote.headerFont)
         .foregroundStyle(.dsTextSecondary)
         .padding(.horizontal, DS.ComposerQuote.inset)
-        .padding(.bottom, DS.Space.md)
+        .padding(.vertical, DS.Space.md)
     }
 }
 

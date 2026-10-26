@@ -294,6 +294,14 @@ struct ComposerView: View {
                 if let change = session.modelChange {
                     ComposerAgentReceiptSection(change: change)
                 }
+                if composerNext,
+                    session.diffCommentStatus != nil || session.unresolvedCommentPacket != nil
+                        || session.sourceExcerptBlock(for: session.draft) != nil
+                {
+                    DiffCommentsDeliveryStatus(session: session, retry: { submit(followUp) })
+                    SeparatorLine()
+                }
+
                 if composerNext, !session.composerQuotes.isEmpty {
                     if !session.diffComments.isEmpty {
                         DiffCommentsComposerSection(session: session)
@@ -315,7 +323,9 @@ struct ComposerView: View {
                         DiffCommentsEditor(session: session, quote: editor, isInline: false)
                             .padding(.horizontal, DS.ComposerQuote.inset)
                     }
-                    DiffCommentsDeliveryStatus(session: session, retry: { submit(followUp) })
+                }
+                if composerNext, session.sourceExcerptBlock(for: session.draft) != nil {
+                    DiffCommentsDeliveryStatus(session: session, retry: { submit(followUp) }, showsAttribution: true)
                 }
                 if !composerNext {
                     Rectangle().fill(.dsBorder).frame(height: DS.Composer.separatorWidth)

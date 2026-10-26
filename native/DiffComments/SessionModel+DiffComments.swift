@@ -82,7 +82,8 @@ extension SessionModel {
             }
         }
         undoManager?.setActionName("Add Diff Comment")
-        diffCommentAnnouncement = "Comment added. \(diffComments.count) comments in draft."
+        diffCommentAnnouncement =
+            "Comment added. \(diffComments.count) \(diffComments.count == 1 ? "comment" : "comments") in draft."
         diffCommentAnnouncementGeneration += 1
     }
 
@@ -244,7 +245,8 @@ extension SessionModel {
             // RPC rejections establish non-delivery. Connection loss after dispatch does not.
             if error is RPCError || error is SendError {
                 unresolvedCommentPacket = nil
-                diffCommentStatus = "Couldn’t send. Your \(diffComments.count) comments are kept."
+                diffCommentStatus =
+                    "Couldn’t send. Your \(diffComments.count) \(diffComments.count == 1 ? "comment is" : "comments are") kept."
             } else {
                 diffCommentStatus = "Delivery is unresolved. Your comments are kept. Resending may send duplicates."
             }
@@ -264,7 +266,7 @@ extension SessionModel {
             }, message: current.message == accepted.message ? "" : current.message)
         unresolvedCommentPacket = nil
         diffCommentStatus = nil
-        diffCommentAnnouncement = "\(ids.count) comments sent to \(agentName)"
+        diffCommentAnnouncement = "\(ids.count) \(ids.count == 1 ? "comment" : "comments") sent to \(agentName)"
         diffCommentAnnouncementGeneration += 1
     }
 

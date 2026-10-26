@@ -89,7 +89,8 @@ extension ComposerView {
         .accessibilityLabel(
             (isEditingQueued ? "Save Queued Message" : isWorking ? "\(behavior.title) Message" : "Send Message")
                 + (session.diffComments.isEmpty
-                    ? "" : " and \(session.diffComments.count) Comments to \(session.agentName)")
+                    ? ""
+                    : " and \(session.diffComments.count) \(session.diffComments.count == 1 ? "Comment" : "Comments") to \(session.agentName)")
         )
         .help(
             isEditingQueued
