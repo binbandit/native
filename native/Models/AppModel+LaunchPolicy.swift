@@ -11,6 +11,7 @@ extension AppModel {
             declaration.qualified, declaration.declarationID == route.identity.declarationID,
             declaration.cliVersion == route.identity.cliVersion,
             declaration.adapterVersion == route.identity.adapterVersion,
+            !declaration.controls.contains(.unknown),
             route.requiredControls.isSubset(of: declaration.controls),
             let translator = plugins.policyTranslator(for: id) as? any AgentPrivateRouteTranslator
         else { throw AgentRouteFailure.unqualified }
