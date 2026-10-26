@@ -17,6 +17,7 @@ public struct HostPolicy: Equatable, Sendable {
         case blocked
     }
 
+    public let revision: String?
     public let mode: Mode
     /// What the host may do now.
     public let capabilities: Set<HostCapability>
@@ -28,8 +29,10 @@ public struct HostPolicy: Equatable, Sendable {
     /// A restricted policy keeps only `HostCapability.qualifiedWhenRestricted`, and a blocked one
     /// keeps nothing, whatever `capabilities` asks for.
     public init(
-        mode: Mode, capabilities: Set<HostCapability>, allowedAgents: Set<String>? = nil, reason: String? = nil
+        mode: Mode, capabilities: Set<HostCapability>, allowedAgents: Set<String>? = nil, reason: String? = nil,
+        revision: String? = nil
     ) {
+        self.revision = revision
         self.mode = mode
         self.allowedAgents = allowedAgents
         self.reason = reason
@@ -44,8 +47,8 @@ public struct HostPolicy: Equatable, Sendable {
     /// No managed policy: everything, as before host policy existed.
     public static let unrestricted = HostPolicy(mode: .ordinary, capabilities: Set(HostCapability.allCases))
 
-    public static func blocked(_ reason: String) -> HostPolicy {
-        HostPolicy(mode: .blocked, capabilities: [], reason: reason)
+    public static func blocked(_ reason: String, revision: String? = nil) -> HostPolicy {
+        HostPolicy(mode: .blocked, capabilities: [], reason: reason, revision: revision)
     }
 
     public func allows(_ capability: HostCapability) -> Bool {
@@ -176,7 +179,8 @@ enum HostMethodAdmission: Equatable {
             self = .needs(.agentTools)
         case Method.execRun, Method.execInput:
             self = .needs(.commands)
-        case Method.fsRead, Method.fsList, Method.fsStat, Method.fsWatch, Method.listProjects, Method.addProject,
+        case Method.exportApprovalAudit, Method.fsRead, Method.fsList, Method.fsStat, Method.fsWatch,
+            Method.listProjects, Method.addProject,
             Method.removeProject:
             self = .needs(.files)
         case Method.setPluginEnabled:

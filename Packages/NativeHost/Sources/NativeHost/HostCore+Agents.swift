@@ -55,9 +55,38 @@ extension HostCore {
             return
         }
         let toolCallID = request.toolCall.toolCallId
+        guard session.pendingPermissions[toolCallID] == nil else {
+            try? link.peer?.respond(to: id, error: RPCError(code: -32000, message: "An approval is already pending."))
+            return
+        }
+        let options: [String]
+        let kinds: [HostApprovalAuditRecord.OptionKind]
+        if case .array(let values) = raw["options"] {
+            let valid = values.filter { $0["optionId"]?.stringValue != nil }
+            options = valid.compactMap { $0["optionId"]?.stringValue }
+            kinds = valid.map { .init(rawValue: $0["kind"]?.stringValue ?? "") ?? .unknown }
+        } else {
+            options = []
+            kinds = []
+        }
+        let record = HostApprovalAuditRecord(
+            hostID: hostID, sessionID: session.id, state: .requested, source: .agent,
+            policyRevision: policy.revision, policyMode: .init(rawValue: policy.mode.rawValue) ?? .unknown, epoch: epoch
+        )
+        do {
+            try store.requestApprovalAudit(
+                record, toolCallID: toolCallID, title: request.toolCall.title, optionIDs: options, optionKinds: kinds)
+        } catch ApprovalAuditFailure.notPending {
+            try? link.peer?.respond(
+                to: id, error: RPCError(code: -32000, message: "A decision for this action was already recorded."))
+            return
+        } catch {
+            // Fail closed in every mode. The agent still waits; no approvable event was forwarded.
+            logger.error("Couldn't durably record an approval request. No answer was sent.")
+            return
+        }
         session.pendingPermissions[toolCallID] = id
         append(.permissionRequested(toolCallID: toolCallID, request: raw), to: session)
-        try? store.addApproval(sessionID: session.id, toolCallID: toolCallID, title: request.toolCall.title)
         journal(.approvalNeeded, session: session, detail: request.toolCall.title)
         publish(session)
     }
@@ -83,16 +112,50 @@ extension HostCore {
         publish(session)
     }
 
-    func respondPermission(_ params: RespondPermissionParams) throws {
+    func respondPermission(
+        _ params: RespondPermissionParams, by actor: HostClientIdentity = .unknown,
+        source: HostApprovalAuditRecord.Source = .direct
+    ) throws {
+        try require(.agents)
         let session = try session(params.sessionID)
-        guard let requestID = session.pendingPermissions.removeValue(forKey: params.toolCallID) else {
+        guard let requestID = session.pendingPermissions[params.toolCallID] else {
             throw HostError.permissionNotPending
         }
+        let decision: HostApprovalAuditRecord
+        do {
+            decision = try store.decideApprovalAudit(
+                sessionID: session.id, toolCallID: params.toolCallID, optionID: params.optionID,
+                actor: actor, source: source, policy: policy, epoch: epoch)
+        } catch let failure as ApprovalAuditFailure {
+            throw failure
+        } catch {
+            throw ApprovalAuditFailure.unavailable
+        }
+        // No suspension between the durable claim and sending: competing clients cannot win twice.
+        session.pendingPermissions[params.toolCallID] = nil
+        defer {
+            append(.permissionResolved(toolCallID: params.toolCallID, optionID: params.optionID), to: session)
+            publish(session)
+        }
         let response = params.optionID.map { RequestPermissionResponse.selected(optionId: $0) } ?? .cancelled
-        try? agents[session.record.agentID]?.peer?.respond(to: requestID, with: response)
-        append(.permissionResolved(toolCallID: params.toolCallID, optionID: params.optionID), to: session)
-        try? store.removeApproval(sessionID: session.id, toolCallID: params.toolCallID)
-        publish(session)
+        let failure: HostApprovalAuditRecord.Reason?
+        if let peer = agents[session.record.agentID]?.peer {
+            do {
+                try peer.respond(to: requestID, with: response)
+                failure = nil
+            } catch {
+                failure = .transportWriteFailed
+            }
+        } else {
+            failure = .transportUnavailable
+        }
+        do {
+            try store.finishApprovalDelivery(decision, failure: failure, policy: policy, epoch: epoch)
+        } catch {
+            // The decision stays claimed with delivery pending; restart records uncertainty.
+            throw ApprovalAuditFailure.deliveryUncertain
+        }
+        if failure != nil { throw ApprovalAuditFailure.deliveryUncertain }
     }
 
     /// Answers a question with the client's response, verbatim. The first client to answer wins.
@@ -110,10 +173,16 @@ extension HostCore {
     /// Drops permission requests that can't be answered any more (the turn ended, or the agent died).
     func withdrawPermissions(of session: HostSession) {
         for toolCallID in session.pendingPermissions.keys.sorted() {
+            do {
+                try store.withdrawApprovalAudit(
+                    sessionID: session.id, toolCallID: toolCallID, policy: policy, epoch: epoch)
+            } catch {
+                // The stale request cannot be answered. Startup will retry its durable withdrawal.
+                logger.error("Couldn't durably record an approval withdrawal.")
+            }
             append(.permissionResolved(toolCallID: toolCallID, optionID: nil), to: session)
         }
         session.pendingPermissions = [:]
-        try? store.removeApprovals(sessionID: session.id)
     }
 
     /// Withdraws open questions, answering them as cancelled where the agent can still hear it.

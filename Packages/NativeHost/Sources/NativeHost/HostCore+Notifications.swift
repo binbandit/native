@@ -80,13 +80,13 @@ extension HostCore {
         guard let notification = try store.notification(params.id) else {
             return ActOnNotificationResult(outcome: .expired)
         }
-        let outcome = try perform(params, on: notification)
+        let outcome = try perform(params, on: notification, by: client)
         try acknowledgeNotifications([notification.id], by: client)
         return ActOnNotificationResult(outcome: outcome)
     }
 
     private func perform(
-        _ params: ActOnNotificationParams, on notification: HostNotification
+        _ params: ActOnNotificationParams, on notification: HostNotification, by client: ClientLink?
     ) throws
         -> ActOnNotificationResult.Outcome
     {
@@ -101,7 +101,8 @@ extension HostCore {
             let option = params.action == .allow ? notification.allowOptionID : notification.rejectOptionID
             guard let option else { return .openTask }
             try respondPermission(
-                RespondPermissionParams(sessionID: session.id, toolCallID: toolCallID, optionID: option))
+                RespondPermissionParams(sessionID: session.id, toolCallID: toolCallID, optionID: option),
+                by: client?.identity ?? .unknown, source: .notification)
             return .done
         case (.reply, .question):
             guard let questionID = notification.questionID,

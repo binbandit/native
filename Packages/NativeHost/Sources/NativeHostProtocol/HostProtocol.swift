@@ -35,6 +35,7 @@ public enum HostProtocol {
         public static let restoreQueued = "_native/queue/restore"
         public static let moveQueued = "_native/queue/move"
         public static let sendQueuedNow = "_native/queue/send_now"
+        public static let exportApprovalAudit = "_native/audit/approvals/export"
         public static let listActivity = "_native/activity/list"
         public static let shutdown = "_native/host/shutdown"
 

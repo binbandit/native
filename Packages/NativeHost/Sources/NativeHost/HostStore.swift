@@ -14,7 +14,7 @@ final class HostStore {
     /// Extensions that keep an engine's tables use it directly (HostStore+Notifications.swift).
     let database: SQLiteDatabase
 
-    static let schemaVersion: Int64 = 10
+    static let schemaVersion: Int64 = 11
 
     init(url: URL) throws {
         database = try SQLiteDatabase(url: url)
@@ -87,6 +87,9 @@ final class HostStore {
                     ALTER TABLE titles ADD COLUMN retry_count INTEGER NOT NULL DEFAULT 0;
                     ALTER TABLE titles ADD COLUMN prompt_id TEXT;
                     """)
+            }
+            if version < 11 {
+                try database.execute(Self.approvalAuditTables)
             }
             try database.execute("PRAGMA user_version = \(Self.schemaVersion)")
         }
@@ -335,14 +338,15 @@ final class HostStore {
     }
 
     func removeApprovals(sessionID: HostSessionID) throws {
-        try database.run("DELETE FROM approvals WHERE session_id = ?", .text(sessionID.description))
+        try database.run(
+            "DELETE FROM approvals WHERE session_id = ? AND audit_decided = 0", .text(sessionID.description))
     }
 
     /// Approvals that were waiting when the host last stopped, by session. Their requests died with
     /// the agent; the agent asks again once the session resumes.
     func approvals() throws -> [HostSessionID: [String]] {
         var approvals: [HostSessionID: [String]] = [:]
-        for row in try database.query("SELECT session_id, tool_call_id FROM approvals") {
+        for row in try database.query("SELECT session_id, tool_call_id FROM approvals WHERE audit_decided = 0") {
             guard let session = row[0].text.flatMap(UUID.init(uuidString:)).map(HostSessionID.init),
                 let toolCall = row[1].text
             else { continue }

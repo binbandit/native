@@ -325,3 +325,15 @@ public struct ListActivityParams: Codable, Sendable {
         self.includeCommands = includeCommands
     }
 }
+
+/// Local administrators only; no upload, destination or arbitrary query is accepted.
+public struct ExportApprovalAuditParams: Codable, Sendable {
+    public var cursor: HostApprovalAuditCursor?
+    /// Clamped to 1...200 by the host.
+    public var limit: Int
+
+    public init(cursor: HostApprovalAuditCursor? = nil, limit: Int = 100) {
+        self.cursor = cursor
+        self.limit = limit
+    }
+}
