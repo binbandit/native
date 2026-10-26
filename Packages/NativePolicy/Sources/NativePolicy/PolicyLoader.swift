@@ -79,10 +79,11 @@ public enum PolicyLoader {
         policy.updates.allowedChannels = resolver.resolve(
             .updatesChannels, expecting: "an array of stable, beta or nightly", ordinary: nil, restricted: [],
             PolicyParse.channels)
-        // Unusable retention keeps the least, since the organization meant to limit it.
+        // Unusable retention keeps everything: any period Native picked could delete what the
+        // organization meant to keep, and the key is still reported and counted as failed.
         policy.searchRetentionDays = resolver.resolve(
             .searchRetentionDays, expecting: "a whole number of days, 1 or more", ordinary: nil, restricted: nil,
-            invalid: 1, PolicyParse.positiveInt)
+            PolicyParse.positiveInt)
         // Unusable shortcuts or instructions lock Native's own, rather than leaving the user's.
         policy.shortcutBindings = resolver.resolve(
             .shortcutBindings, expecting: "a dictionary of command ids to shortcuts", ordinary: nil, restricted: nil,

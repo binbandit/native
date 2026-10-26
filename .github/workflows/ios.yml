@@ -3,8 +3,8 @@
 # compile for iPad (scripts/check-ios.sh). Our own files build without warnings there too.
 #
 # Daily and on demand (`gh workflow run ios.yml --ref <branch>`), and on pull requests that touch code
-# the iPad or iPhone compiles. Not on pushes: those already take most of the repository's five macOS
-# runners (docs/releasing.md, "How CI stays quick").
+# the iPad or iPhone compiles. Not on pushes: the pull request that changed these inputs already ran
+# it, and the daily run catches the rest (docs/releasing.md, "iOS checks").
 name: iOS
 
 on:
@@ -39,9 +39,10 @@ concurrency:
 
 jobs:
   ios:
-    # One runner for all three, so a pull request that runs this takes one more at most.
+    # One runner for all three, so a pull request that runs this takes one more at most. GitHub-hosted,
+    # like the package tests (docs/releasing.md, "Where CI runs").
     name: Build for iOS
-    runs-on: ${{ vars.CI_MACOS_RUNNER || vars.MACOS_RUNNER || 'macos-26' }}
+    runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
     timeout-minutes: 60
     env:
       DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR || '/Applications/Xcode_27.1.app/Contents/Developer' }}
@@ -50,6 +51,8 @@ jobs:
       ICON_ARTWORK: design/app-icon/channel-themes/*/stable.icon/**,design/app-icon/celebrations/*/stable.icon/**
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Xcode
+        run: xcodebuild -version
       - name: Test the iPad typecheck tooling
         run: >-
           NATIVE_IOS_CHECK_INTEGRATION=1 PYTHONDONTWRITEBYTECODE=1
@@ -67,11 +70,11 @@ jobs:
           restore-keys: lfs-icon-artwork-
       - name: Fetch the icon artwork
         run: git lfs pull --include "$ICON_ARTWORK"
-      # The Mac builds' package checkouts, which pin everything these builds use (tree-sitter and its
-      # grammars, Sentry) at the same versions. Restored only: the repository's caches are full of the
-      # Mac builds' own, and a daily build's would only push theirs out.
+      # The Mac project's package checkouts, which pin everything these builds use (tree-sitter and its
+      # grammars, Sentry) at the same versions. The Mac builds run on the persistent runners, which
+      # don't cache, so the daily build saves them and pull requests only read them.
       - name: Restore Swift package checkouts
-        if: runner.environment == 'github-hosted'
+        id: source-packages
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.SOURCE_PACKAGES }}
@@ -107,6 +110,13 @@ jobs:
           # native/DesignSystem always comes along.
           scripts/check-ios.sh native/Platform 2>&1 | tee "$RUNNER_TEMP/ipad.log"
           scripts/check-warnings.sh "$RUNNER_TEMP/ipad.log"
+
+      - name: Save Swift package checkouts
+        if: success() && github.event_name != 'pull_request' && steps.source-packages.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.SOURCE_PACKAGES }}
+          key: ${{ steps.source-packages.outputs.cache-primary-key }}
 
       - name: Upload the build logs
         if: failure()

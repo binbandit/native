@@ -8,20 +8,40 @@ struct ComposeAgentPicker: View {
     private var policy: NativePolicy { PolicyCenter.shared.policy }
     private var isManaged: Bool { policy.isManaged(.agentsAllowed) || policy.isManaged(.forbiddenPermissionModes) }
 
+    private var settings: ComposerSettings {
+        ComposerSettings(
+            model.composeTask.options.filter { ["model", "thought_level", "mode"].contains($0.category ?? "") })
+    }
+
     var body: some View {
         ComposerSettingsPopover(
-            settings: ComposerSettings(
-                model.composeTask.options.filter { ["model", "thought_level", "mode"].contains($0.category ?? "") }),
+            settings: settings,
             agentName: model.composeTask.editor?.agentName ?? "The agent",
             manager: isManaged ? policy.organizationName ?? "your organization" : nil,
-            forbiddenModes: policy.forbiddenPermissionModes,
-            leadingContent: AnyView(agentChoices), showsExtras: false,
             managementExplanation: policy.isManaged(.agentsAllowed)
                 ? "Your organization chooses which agents and permissions you can use."
                 : "Your organization chooses which permissions you can use.",
-            showsLockedConsequences: false,
-            source: { _ in .user }, onSet: { model.composeTask.choose($0, value: $1) },
-            connections: { EmptyView() }, actions: { EmptyView() })
+            forbiddenModes: policy.forbiddenPermissionModes,
+            showsLockedConsequences: false, leadingContent: AnyView(agentChoices),
+            rows: modeRows, resumedAutonomy: model.composeTask.permissionBeforePlan,
+            onClose: { model.quickEntry.picker = nil }, onSet: { model.composeTask.choose($0, value: $1) })
+    }
+
+    /// Before a task exists, Plan still needs a Mode row of its own.
+    private var modeRows: [ComposerSettingsTaskRow] {
+        guard let plan = settings.plan else { return [] }
+        let choices: [ComposerSettingsTaskRow.Choice] = [
+            .init(id: "build", name: "Build", isCurrent: !plan.isOn),
+            .init(id: "plan", name: "Plan", isCurrent: plan.isOn),
+        ].filter { $0.id != "plan" || !policy.forbiddenPermissionModes.contains(plan.plan.value) }
+        return [
+            ComposerSettingsTaskRow(
+                id: "compose-mode", title: "Mode", value: plan.isOn ? "Plan" : "Build",
+                kind: .menu(choices, commands: [])
+            ) { value in
+                if let value { model.composeTask.setPlanning(value == "plan") }
+            }
+        ]
     }
 
     private var agentChoices: some View {

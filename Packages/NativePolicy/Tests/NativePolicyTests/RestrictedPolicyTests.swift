@@ -86,7 +86,7 @@ import Testing
             #expect(policy.telemetry.native == .off || policyKey != .telemetryNative)
             #expect(policy.agents.allowed == [] || ![.agentsAllowed, .mcpRequired].contains(policyKey))
             #expect(policy.allowedPlugins == [] || policyKey != .pluginsAllowed)
-            #expect(policy.searchRetentionDays == 1 || policyKey != .searchRetentionDays)
+            #expect(policy.searchRetentionDays == nil || policyKey != .searchRetentionDays)
             #expect(!policy.updates.isEnabled || policyKey != .updatesFeedURL)
             for capability in policyKey.capabilities {
                 #expect(policy.decision(for: capability) == .disabled(.invalidValue(policyKey)), "\(capability)")
@@ -173,6 +173,8 @@ import Testing
         #expect(policy.deployment.state == (status == .malformed ? .invalid : .unavailable))
         #expect(policy.deploymentMode == .airGapped && !policy.network.isValid && !policy.network.localIPC)
         #expect(!policy.scriptsEnabled && !policy.labsEnabled && policy.allowedPlugins == [])
+        // Nothing it can read sets a retention period, so search keeps everything.
+        #expect(policy.searchRetentionDays == nil)
         #expect(policy.managedKeys == Set(PolicyKey.allCases))
         for capability in PolicyCapability.allCases where capability != .audit {
             #expect(!policy.decision(for: capability).isPermitted, "\(capability)")

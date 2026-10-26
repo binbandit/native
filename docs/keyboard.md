@@ -482,7 +482,7 @@ Settings, as Escape does.
 | --- | --- |
 | ↑ / ↓ | Every row, top to bottom, across sections; skips headers and locked rows. The caption under a list describes the highlighted row |
 | ← / → | On Effort, change its level (applies at once). On Mode, Goal, MCP servers or the agent's own settings, → opens its page or its choices in place; ← comes back |
-| Tab / ⇧Tab | Next / previous section: Model, Effort, When it asks, the task's rows. A section lands on its current choice |
+| Tab / ⇧Tab | Next / previous section: Model (including Fast mode), Effort, When it asks, the task's rows, and any retry action. A section lands on its current choice. In Compose, Tab follows native focus through agents, Add Agent and every settings control |
 | Letters | Up to 8 models: jump to the row whose name starts with what's typed (as in menus). 9 or more: type into the model filter, which matches names, then values |
 | Return | Choose and close. On a menu row, list its choices in place |
 | Space | Choose and keep the popover open |

@@ -100,6 +100,11 @@ final class SQLiteDatabase {
         sqlite3_last_insert_rowid(handle)
     }
 
+    /// Rows the last insert, update or delete changed, not counting those a cascade or trigger did.
+    var changes: Int {
+        Int(sqlite3_changes(handle))
+    }
+
     func transaction<T>(_ body: () throws -> T) throws -> T {
         try execute("BEGIN IMMEDIATE")
         do {

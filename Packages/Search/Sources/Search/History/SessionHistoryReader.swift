@@ -73,4 +73,10 @@ public struct HistorySession: Sendable {
         self.updatedAt = updatedAt
         self.documents = documents
     }
+
+    /// Its newest recorded time, which is its age for retention; nil when it records none, and an
+    /// unknown age is never old.
+    public var lastActive: Date? {
+        [createdAt, updatedAt].compactMap(\.self).max()
+    }
 }

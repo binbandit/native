@@ -31,6 +31,8 @@ struct ComposerSettingsPopover: View {
         case effort
         case autonomy(String)
         case row(String)
+        case fastMode, retry, restart, back
+        case command(row: String, index: Int)
     }
 
     let settings: ComposerSettings
@@ -63,6 +65,7 @@ struct ComposerSettingsPopover: View {
     @State var hovered: Target?
     @State var highlighted: Target?
     @State var page: Page?
+    @State var usesNativeTraversal = false
     @State var typeAhead = ComposerSettingsTypeAhead()
     @FocusState var isFocused: Bool
     @FocusState var isFilterFocused: Bool
@@ -131,6 +134,7 @@ struct ComposerSettingsPopover: View {
             if let onRestart {
                 Button("Restart", action: onRestart)
                     .buttonStyle(.ds(.secondary, size: .small))
+                    .composerSettingsCommandFocus(highlighted == .restart)
             }
         }
         .composerSettingsTextEdge()
@@ -242,7 +246,7 @@ struct ComposerSettingsPopover: View {
         let reserving =
             levels.compactMap { styled(caption(for: $0)) } + (isPlanning ? [planningCaption(then: current)] : [])
         return ComposerSettingsCaption(
-            text: text, reserving: reserving, isFailure: failed != nil,
+            text: text, reserving: reserving, isFailure: failed != nil, isKeyboardFocused: highlighted == .retry,
             action: failed?.retry.map { ComposerSettingsTaskRow.Command(title: "Try Again", action: $0) })
     }
 
@@ -311,21 +315,5 @@ extension View {
                 }
             }
         }
-    }
-}
-
-extension ComposerSettingsPopover {
-    /// The Compose page's settings before a task exists (`ComposeAgentPicker`): its agents above,
-    /// no task rows, so its empty `connections` and `actions` have nothing to add.
-    init(
-        settings: ComposerSettings, agentName: String, manager: String?, forbiddenModes: Set<String>,
-        leadingContent: AnyView?, showsExtras _: Bool, managementExplanation: String?, showsLockedConsequences: Bool,
-        source _: (ConfigOption) -> SettingsSourceLabel.Source, onSet: @escaping (SelectSetting, String) -> Void,
-        connections _: () -> some View, actions _: () -> some View
-    ) {
-        self.init(
-            settings: settings, agentName: agentName, manager: manager, managementExplanation: managementExplanation,
-            forbiddenModes: forbiddenModes,
-            showsLockedConsequences: showsLockedConsequences, leadingContent: leadingContent, onSet: onSet)
     }
 }

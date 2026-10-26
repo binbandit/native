@@ -194,7 +194,7 @@ extension ComposerSettingsPopover {
             if failed != nil || !purposes.isEmpty {
                 ComposerSettingsCaption(
                     text: text.map { AttributedString($0) }, reserving: purposes.map { AttributedString($0) },
-                    isFailure: failed != nil,
+                    isFailure: failed != nil, isKeyboardFocused: highlighted == .retry,
                     action: failed?.retry.map { ComposerSettingsTaskRow.Command(title: "Try Again", action: $0) })
             }
         }
@@ -219,6 +219,7 @@ extension ComposerSettingsPopover {
                 .labelsHidden()
                 .controlSize(DS.isTouchPlatform ? .regular : .mini)
             }
+            .composerSettingsCommandFocus(highlighted == .fastMode)
             .disabled(isStopped)
         }
     }
@@ -228,7 +229,7 @@ extension ComposerSettingsPopover {
     /// The model list on its own page (touch).
     var modelPage: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ComposerSettingsPageHeader(title: "Model") { page = nil }
+            ComposerSettingsPageHeader(title: "Model", isKeyboardFocused: highlighted == .back) { page = nil }
             if let model = settings.model {
                 modelRows(model, isPage: true)
             }

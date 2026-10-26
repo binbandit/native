@@ -42,6 +42,21 @@ struct ModelChoiceListTests {
         }
     }
 
+    /// Every captured model keeps its name/value pairing through display and selection, including
+    /// gateway ids that contain reversed text. Display cleanup never changes the outbound value.
+    @Test func sendsTheCapturedValueForEveryDisplayedModel() throws {
+        let (current, choices) = try Self.gateway()
+        let list = ModelChoiceList(choices: choices, current: current, query: "", slots: choices.count)
+        #expect(list.rows.map(\.choice) == choices)
+        for row in list.rows {
+            #expect(row.name == row.choice.displayName)
+            let request = SetConfigOptionRequest(sessionId: SessionID("fixture"), configId: "model", value: row.id)
+            let encoded = try JSONEncoder().encode(request)
+            let params = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: String])
+            #expect(params["value"] == row.choice.value)
+        }
+    }
+
     @Test func showsAShortListWholeWithoutValues() throws {
         let (current, choices) = try Self.models(ConfigChoicesTests.options())
         let list = ModelChoiceList(choices: choices, current: current)

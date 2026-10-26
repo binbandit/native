@@ -5,7 +5,7 @@ import Testing
 
 @Suite("Stop owns command termination", .serialized, .timeLimit(.minutes(1)))
 struct HostStopCommandTests {
-    @Test("Immediate restart includes another client's Stop arriving during cleanup")
+    @Test("Immediate restart finishes another client's Stop that is still in its grace period")
     func restartWithConcurrentStop() async throws {
         let harness = try HostHarness()
         try harness.start()
@@ -24,9 +24,10 @@ struct HostStopCommandTests {
         try await first.wait("the first command") { await $0.agentText(initial.id).contains("tick 1") }
         try await second.wait("the second command") { await $0.agentText(later.id).contains("tick 1") }
         try await first.client.cancel(initial.id)
-        // Shutdown replies before awaiting cleanup. The other connection can still submit Stop.
-        try await first.client.shutdownHost(stopAgents: false, immediately: true)
+        // Before the restart: a Stop sent after shutdown's reply can lose the race to the host's exit,
+        // and then reads as a lost connection, which clients answer by sending it again.
         try await second.client.cancel(later.id)
+        try await first.client.shutdownHost(stopAgents: false, immediately: true)
         let exit = try await harness.waitForExit(timeout: .seconds(5))
         if exit == nil {
             try await second.client.shutdownHost(stopAgents: true)
