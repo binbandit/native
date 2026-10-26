@@ -41,6 +41,9 @@ struct ComposerEditor: View {
     @State private var refocusRichEditor = false
     /// The draft as the rich-text editor holds it: `text`'s characters, with code styled.
     @State private var styled = AttributedString()
+    // Fine print's message binding derives a new String from the canonical quoted draft. Binding
+    // TextEditor to that projection can reapply an old caret as its storage changes during typing.
+    @State private var plain = ""
     @State private var styledSelection = AttributedTextSelection()
     /// The selection both sides last agreed on, as UTF-8 offsets, so a change to `text` from outside
     /// can tell whether a new selection came with it.
@@ -76,6 +79,9 @@ struct ComposerEditor: View {
             .padding(.top, insets.top)
             .padding(.bottom, insets.bottom)
             .onAppear(perform: textChangedOutside)
+            .onChange(of: plain) {
+                if !showsCode, plain != text { text = plain }
+            }
             .onChange(of: styled, editorChanged)
             .onChange(of: styledSelection, editorSelectionChanged)
             .onChange(of: text, textChangedOutside)
@@ -105,7 +111,7 @@ struct ComposerEditor: View {
                         }
                     }
             } else {
-                TextEditor(text: $text, selection: $selection)
+                TextEditor(text: $plain, selection: $selection)
                     .lineSpacing(lineSpacing)
             }
         }
@@ -191,8 +197,9 @@ struct ComposerEditor: View {
     /// The composer changed the draft or the selection itself (a completion, a recalled prompt, a
     /// code edit). A new draft without a new selection puts the caret at its end.
     private func textChangedOutside() {
-        // The plain editor is bound to the draft itself, until code may appear.
+        // Keep the plain editor in step until code or a completed reference needs rich text.
         guard showsCode else {
+            if plain != text { plain = text }
             if Self.mayHaveCode(text) || !makeProjection(text).tokens.isEmpty {
                 switchToRichText()
             }
