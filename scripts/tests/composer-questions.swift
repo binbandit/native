@@ -46,7 +46,29 @@ private struct ComposerQuestionChecks {
             "Multi-select keeps both choices")
         answers.choose(red, in: several)
         require(answers.content(for: multiple) == ["color": .array([.string("Blue")])], "Picking again toggles off")
-        print("PASS: suggested and explicit picks, typed replacements, companion notes, whitespace and multi-select")
+        let app = AppModel.preview(.empty)
+        let agent = AgentDefinition.ID(rawValue: "question-check")
+        app.quickEntry.agent = agent
+        let key = "agentDefaults.\(agent.rawValue).model"
+        let defaults = UserDefaults.standard
+        defer {
+            for suffix in ["", ".offered", ".option"] { defaults.removeObject(forKey: key + suffix) }
+            defaults.removeObject(forKey: "agentDefaults.\(agent.rawValue).offeredConfig")
+        }
+        defaults.set("haiku", forKey: key)
+        require(app.homeNextModelName == nil, "An unknown model id is not shown as a display name")
+        let offered = try JSONDecoder().decode(
+            ConfigOption.self,
+            from: Data(
+                #"{"id":"model","name":"Model","category":"model","type":"select","currentValue":"haiku","options":[{"value":"haiku","name":"Haiku 4.5"}]}"#
+                    .utf8))
+        AgentSessionDefaults.remember([offered], for: agent)
+        require(app.homeNextModelName == "Haiku 4.5", "Home uses the model name reported by the agent")
+        app.quickEntry.draft = " \t\n "
+        require(!app.quickEntry.hasMessage, "A whitespace-only start draft cannot send")
+        print(
+            "PASS: suggested and explicit picks, typed replacements, companion notes, whitespace, multi-select and Home model names"
+        )
     }
 
     private static func questionnaire(custom: Bool, multiple: Bool) throws -> AgentQuestionnaire {
