@@ -5,11 +5,20 @@ import Search
 import SessionTitling
 
 enum BuiltInPlugins {
-    static let all: [any NativePlugin] = [
-        claudeCode, codex, cursor, openCode, pi, copilot, OnDeviceTitlesPlugin(), SoundsPlugin(),
-        OrchestrationPlugin(), MCPServersPlugin(), SkillsPlugin(), usage, automation, automations, expeditions, search,
-        CelebrationsPlugin(),
-    ]
+    static let all: [any NativePlugin] = {
+        let plugins: [any NativePlugin] = [
+            claudeCode, codex, cursor, openCode, pi, copilot, OnDeviceTitlesPlugin(), SoundsPlugin(),
+            OrchestrationPlugin(), MCPServersPlugin(), SkillsPlugin(), usage, automation, automations, expeditions,
+            search,
+            CelebrationsPlugin(),
+        ]
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: "taskWellPluginFixture") {
+            return plugins + [TaskWellFixturePlugin()]
+        }
+        #endif
+        return plugins
+    }()
 
     /// Claude Code through its ACP adapter, running the user's own `claude`. Adapter versions are
     /// pinned so upgrades are deliberate; the adapters move fast.
