@@ -61,7 +61,7 @@ enum CommandsWiring {
         #endif
         registry.register(NativeCommand.composer(model: model))
         registry.register(NativeCommand.clearConversation(model: model))
-        registry.register([.changeAgent(model: model)])
+        registry.register([.changeAgent(model: model)] + NativeCommand.modelChanges(model: model))
         registry.register(NativeCommand.automation(BuiltInPlugins.automation.center))
         registry.register(NativeCommand.windowView)
         registry.register(NativeCommand.appearance(features.appearance))

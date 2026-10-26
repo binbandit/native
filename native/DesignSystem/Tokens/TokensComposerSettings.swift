@@ -36,6 +36,11 @@ extension DS {
         public static let segmentedHeight: CGFloat = isTouch ? DS.Size.controlMD : DS.Size.controlXS
         /// A change the agent confirms within this shows no loader.
         public static let applyingDelay: Duration = .milliseconds(150)
+        public static let agentReceiptMinHeight: CGFloat = 40
+        public static let managedFooterReserve: CGFloat = 76
+        public static let emptyModelsReserve: CGFloat = 40
+        public static let sectionsReserve: CGFloat = 124
+        public static let modelCaptionHeight: CGFloat = lineHeight * 2 + DS.Space.xxs
         public static let rowFont = DSTypography.font(size: isTouch ? 13 : 12.5)
         /// The characters a filter matched in a name.
         public static let rowMatchFont = DSTypography.font(size: isTouch ? 13 : 12.5, weight: .semibold)

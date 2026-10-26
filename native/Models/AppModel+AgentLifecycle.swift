@@ -214,6 +214,7 @@ extension AppModel {
 
     private func isBusy(_ session: SessionModel) -> Bool {
         session.key == selection || changingAgent?.candidate === session
+            || session.isChangingAgent || session.isModelChangeSource || session.modelChange?.canUndo == true
             || session.phase == .loading || session.phase == .prompting
             || session.hasQueuedPrompts || session.isRetryScheduled || session.wait != nil || !session.draft.isEmpty
     }

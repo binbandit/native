@@ -178,6 +178,7 @@ struct ComposerView: View {
         // Only a brand-new session takes focus on its own (⌘N, then type). Others wait for ⌘L or a
         // click, so arrowing through the sidebar doesn't hand Return to a composer.
         .onAppear {
+            app.restoreAgentModelChoice(for: session)
             if session.isTranscriptEmpty, session.phase != .loading {
                 isFocused = true
             }
@@ -284,6 +285,9 @@ struct ComposerView: View {
                 )
             }
             VStack(spacing: 0) {
+                if composerNext, let change = session.modelChange {
+                    ComposerAgentReceiptSection(change: change)
+                }
                 if composerNext, !session.composerQuotes.isEmpty {
                     ComposerQuotesSection(quotes: session.composerQuotes) {
                         session.removeQuote(at: $0, undoManager: undoManager)

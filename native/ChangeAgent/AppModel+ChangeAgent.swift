@@ -47,7 +47,11 @@ extension AppModel {
 
     func requestAgentChange(_ source: SessionModel) {
         guard offersAgentChange, changingAgent == nil else { return }
-        changingAgent = ChangeAgentModel(source: source, app: self)
+        if offersAgentModels {
+            source.isModelPickerRequested = true
+        } else {
+            changingAgent = ChangeAgentModel(source: source, app: self)
+        }
     }
 
     func prepareAgentChange(_ source: SessionModel, to agent: AgentDefinition.ID) async throws -> SessionModel {

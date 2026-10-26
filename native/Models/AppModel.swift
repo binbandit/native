@@ -75,10 +75,12 @@ final class AppModel {
     /// Tasks Compose started from one brief to two agents (TaskPairs).
     let taskPairs: TaskPairs
     var changingAgent: ChangeAgentModel?
+    var agentModelCatalogs: [ObjectIdentifier: [ConfigOption]] = [:]
     var coordinatorEditor: CoordinatorTaskEditor?
     var coordinators: [HostCoordinator] = []
     @ObservationIgnored var followedCoordinatorClients: Set<ObjectIdentifier> = []
     @ObservationIgnored var agentChangeGoalBlock: @MainActor (SessionModel) -> String? = { _ in nil }
+    @ObservationIgnored var modelChangeGoalBlock: @MainActor (SessionModel) -> String? = { _ in nil }
     @ObservationIgnored var changeAgentHandoff: @MainActor (SessionModel) async -> String = { source in
         TaskHandoff.draft(title: source.displayTitle, state: source.state)
     }
@@ -226,7 +228,8 @@ final class AppModel {
         self.sendGate = sendGate
         services = SessionServices(
             plugins: plugins, titles: titles, sendGate: sendGate, earlierConversations: earlierConversations,
-            workingSpinners: workingSpinners, drafts: ComposerDrafts(defaults: defaults)
+            workingSpinners: workingSpinners, drafts: ComposerDrafts(defaults: defaults),
+            modelContinuations: AgentModelContinuations(defaults: defaults)
         ) {
             continuation.yield($0)
         } titleLanded: { key, folder, title in

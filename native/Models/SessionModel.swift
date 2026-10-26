@@ -72,6 +72,12 @@ final class SessionModel {
         didSet { services.drafts.keep(draft, for: key) }
     }
     var quoteSelection: [PromptQuote] = []
+    /// The current or latest model selection, shared by its source and replacement conversations.
+    var modelChange: ComposerAgentChange?
+    /// A model change replaces the transport conversation while retaining the task's view tree.
+    var isModelChangeSource = false
+    var continuedTaskKey: SessionKey?
+    var taskPresentationKey: SessionKey { continuedTaskKey ?? key }
     var quoteSelectionSource: UUID?
     /// Files and images going out with the draft (SessionModel+Attachments.swift).
     var attachments: [PromptAttachment] = []

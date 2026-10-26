@@ -42,9 +42,12 @@ public struct ModelChoiceList: Equatable, Sendable {
     ///   - choices: The agent's models, in its order (first of each value, `uniqued`).
     ///   - current: The value the session runs on, kept in view when the filter is empty.
     ///   - slots: Row slots for a filterable list; fewer when the popover runs out of height.
-    public init(choices: [Choice], current: String, query: String = "", slots: Int = Self.slots) {
+    public init(
+        choices: [Choice], current: String, query: String = "", slots: Int = Self.slots,
+        searchTerms: [String: [String]] = [:], forceFilter: Bool = false
+    ) {
         let choices = choices.uniqued
-        isFilterable = choices.count > Self.filterThreshold
+        isFilterable = forceFilter || choices.count > Self.filterThreshold
         self.query = isFilterable ? query : ""
         let words = Self.words(in: self.query)
         let duplicates = Dictionary(grouping: choices, by: \.displayName).filter { $0.value.count > 1 }
@@ -84,6 +87,9 @@ public struct ModelChoiceList: Equatable, Sendable {
             if Self.contains(words, in: choice.displayName) { return row(choice) }
             if Self.contains(words, in: choice.value) {
                 return row(choice, valueMatches: Self.ranges(of: words, in: choice.value))
+            }
+            if searchTerms[choice.value]?.contains(where: { Self.contains(words, in: $0) }) == true {
+                return row(choice)
             }
             return nil
         }

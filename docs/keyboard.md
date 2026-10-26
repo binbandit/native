@@ -488,7 +488,7 @@ Settings, as Escape does.
 | ↑ / ↓ | Every row, top to bottom, across sections; skips headers and locked rows. The caption under a list describes the highlighted row |
 | ← / → | On Effort, change its level (applies at once). On Mode, Goal, MCP servers or the agent's own settings, → opens its page or its choices in place; ← comes back |
 | Tab / ⇧Tab | Next / previous section: Model (including Fast mode), Effort, When it asks, the task's rows, and any retry action. A section lands on its current choice. In Compose, Tab follows native focus through agents, Add Agent and every settings control |
-| Letters | Up to 8 models: jump to the row whose name starts with what's typed (as in menus). 9 or more: type into the model filter, which matches names, then values |
+| Letters | Up to 8 models: jump to the row whose name starts with what's typed (as in menus). 9 or more: type into the model filter, which matches names, values and agent names |
 | Return | Choose and close. On a menu row, list its choices in place |
 | Space | Choose and keep the popover open |
 | Escape | Clear the filter; else leave a page; else close |
@@ -507,12 +507,25 @@ Settings, as Escape does.
 
 ## Choosing an agent
 
-With Change Agent enabled in Settings > Labs, Task > Change Agent and the command palette
-(`session.changeAgent`) prepare a handoff to another installed agent. The task's agent control
-and sidebar menu offer the same action. Review and edit the handoff, choose the agent and model,
-then use Change Agent and Send. Cancel keeps the current task. A running turn must finish first.
-This first slice supports tasks on this Mac; earlier transcripts stay under Earlier Conversation.
-There is no default shortcut.
+With Change Agent and Fine print enabled in Settings > Labs, Task > Change Agent…
+(`session.changeAgent`) opens the composer's Model list, as Choose Model does. Other agents'
+reported models follow the current agent's models, with the agent named beside each model.
+Return chooses and closes; Space chooses and keeps the list open. Selecting another agent
+prepares it without sending a message. Context goes with the next message you explicitly send.
+The task keeps its folder, branch, draft, attachments and quoted sources. Earlier conversations
+stay accessible. While a normal turn runs, the choice waits for it to finish. Answer pending
+requests and send or remove queued messages first. Goals that cannot move safely must be cleared.
+
+| Keys | Action | Menu | Command |
+| --- | --- | --- | --- |
+| | Cancel a waiting or preparing model choice | Task | `session.cancelModelChange` |
+| | Undo the latest reversible model choice, including after dismissing its receipt | Task | `session.undoModelChange` |
+| ⌘Z | Undo the choice in normal window undo order; text edits keep precedence | Edit | |
+
+The persistent receipt above the field and the transcript divider offer Undo before the next
+message. After submission, Continue with the earlier agent makes a new choice; it cannot unsend
+a message. Escape dismisses the list without cancelling preparation. No title-bar agent button
+or review sheet is part of this path. Without Fine print, Change Agent retains its existing path.
 
 New Task With… (⌥⌘N) opens the agent picker in a sheet: every agent Native runs, each with
 its state (ready, starting, needs sign-in, not installed, stopped) and, when it can't start a

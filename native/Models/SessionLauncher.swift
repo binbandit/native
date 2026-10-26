@@ -46,11 +46,12 @@ final class SessionLauncher {
     /// wants the user to sign in.
     func start(
         on runtime: AgentRuntime, cwd: URL, project: Project.ID?, origin: SessionModel.Origin = .user,
-        parent: SessionModel? = nil, continuing earlier: SessionModel? = nil
+        parent: SessionModel? = nil, continuing earlier: SessionModel? = nil, preparingModel: Bool = false
     ) async throws -> SessionModel {
         if let host = runtime.host {
             let session = try await startOnHost(
                 host, on: runtime, cwd: cwd, origin: origin, parent: parent)
+            if preparingModel { return session }
             return await prepare(
                 session, on: runtime, project: project, origin: origin, parent: parent, earlier: earlier)
         }
@@ -74,6 +75,7 @@ final class SessionLauncher {
             configOptions: response.configOptions ?? [], origin: origin, parent: parent
         )
         store.register(session)
+        if preparingModel { return session }
         return await prepare(session, on: runtime, project: project, origin: origin, parent: parent, earlier: earlier)
     }
 
