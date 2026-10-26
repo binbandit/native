@@ -5,25 +5,42 @@ extension View {
     /// Asks before restarting the background host while tasks work, naming the ones a restart now
     /// would interrupt (`DurableHost.interruptedByRestart`). Waiting is the default: the host
     /// restarts by itself once they finish.
-    func hostRestartConfirmation(_ host: DurableHost, isPresented: Binding<Bool>) -> some View {
-        modifier(HostRestartConfirmation(host: host, isPresented: isPresented))
+    @ViewBuilder
+    func hostRestartConfirmation(_ host: DurableHost?) -> some View {
+        if let host {
+            modifier(HostRestartConfirmation(host: host))
+        } else {
+            self
+        }
     }
 }
 
 private struct HostRestartConfirmation: ViewModifier {
     let host: DurableHost
-    @Binding var isPresented: Bool
 
     @Environment(AppModel.self) private var model
 
     func body(content: Content) -> some View {
         let names = host.interruptedByRestart.map(title)
         content.confirmationDialog(
-            "Restart the background host now?", isPresented: $isPresented, titleVisibility: .visible
+            "Restart the background host?",
+            isPresented: Binding(
+                get: { host.manualRestart.state == .confirming },
+                set: { if !$0 { host.cancelHostRestart() } }
+            ), titleVisibility: .visible
         ) {
-            Button(Self.waitLabel(for: names.count), role: .cancel) {}
-            Button(Self.restartLabel(interrupting: names.count), role: .destructive) {
-                Task { await host.restartHost() }
+            Button("Cancel", role: .cancel) { host.cancelHostRestart() }
+            if !names.isEmpty {
+                Button(Self.waitLabel(for: names.count)) {
+                    Task { await host.confirmHostRestart(whenIdle: true) }
+                }
+                .keyboardShortcut(.defaultAction)
+                Button(Self.restartLabel(interrupting: names.count), role: .destructive) {
+                    Task { await host.confirmHostRestart() }
+                }
+            } else {
+                Button("Restart") { Task { await host.confirmHostRestart() } }
+                    .keyboardShortcut(.defaultAction)
             }
         } message: {
             Text(Self.message(interrupting: names))
@@ -57,7 +74,7 @@ private struct HostRestartConfirmation: ViewModifier {
 
     /// Names at most three tasks. The tasks can finish while it's open, leaving nothing to interrupt.
     private static func message(interrupting names: [String]) -> String {
-        guard !names.isEmpty else { return "Your tasks have finished, so restarting interrupts nothing." }
+        guard !names.isEmpty else { return "Your tasks will reconnect." }
         let shown = names.prefix(3).map { "“\($0)”" }
         let more = names.count > shown.count ? ["\(names.count - shown.count) more"] : []
         let tasks = (shown + more).formatted(.list(type: .and))

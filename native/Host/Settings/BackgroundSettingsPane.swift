@@ -31,6 +31,9 @@ extension SettingsPane {
                     id: BackgroundSettingsPage.hostRow, title: "Background host",
                     keywords: ["restart", "status", "login items"], plainly: .backgroundHelper),
                 SettingsSearchEntry(
+                    id: BackgroundSettingsPage.restartRow, title: "Restart Background Host",
+                    keywords: ["restart", "background", "host", "this mac"]),
+                SettingsSearchEntry(
                     id: BackgroundSettingsPage.checkRow, title: "Check this Mac",
                     keywords: ["doctor", "droid", "mac mini", "health", "diagnose"]),
             ]
@@ -44,6 +47,7 @@ extension SettingsPane {
 struct BackgroundSettingsPage: View {
     static let keepRunningRow = SettingsRowID("background.keepRunning")
     static let hostRow = SettingsRowID("background.host")
+    static let restartRow = SettingsRowID("background.restart")
     static let checkRow = SettingsRowID("background.check")
 
     @Environment(DurableHost.self) private var host: DurableHost?
@@ -80,12 +84,32 @@ struct BackgroundSettingsPage: View {
                 }
                 if let host {
                     hostRow(host)
+                    restartRow(host)
                 }
                 if let client = host?.client, HostDoctorSheet.isAvailable {
                     checkRow(client)
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private func restartRow(_ host: DurableHost) -> some View {
+        #if DEBUG
+        if let state = HostRestartPreviewFixtures.rowState {
+            HostRestartSettingsRow(state: state, isAvailable: true, request: {})
+        } else {
+            liveRestartRow(host)
+        }
+        #else
+        liveRestartRow(host)
+        #endif
+    }
+
+    private func liveRestartRow(_ host: DurableHost) -> some View {
+        HostRestartSettingsRow(
+            state: host.manualRestart.state, isAvailable: host.canRequestHostRestart,
+            request: host.requestHostRestart)
     }
 
     private var quitAndStopHint: String {

@@ -420,6 +420,11 @@ being hit by accident, since it ends work in progress.
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
 | ⌃⌥⌘Q | Quit Native and stop its agents: ends known commands, reports unverified stops, and exits the background host until Native opens again | Native | `app.quitAndStopAgents` |
+| None | Restart Background Host…: confirms before restarting this Mac's host; offers to wait for busy tasks or interrupt and resume them | Native | `app.restartBackgroundHost` |
+
+Restart Background Host… is also in Settings > Background. Cancel leaves the host alone. With tasks
+running or waiting, Return chooses Wait Until They Finish; Escape cancels. The action is unavailable
+while a restart is in progress or this Mac has no background host. It never restarts a paired host.
 
 ## Picking tasks in the sidebar
 
