@@ -81,4 +81,10 @@ struct SidebarFolderHome: View {
     return DSPreviewPair { SidebarFolderHome(agents: []).frame(width: 1000, height: 800) }.sidebarPreviewEnvironment(
         app)
 }
+#Preview("Folder home - Narrow and long name") {
+    let app = AppModel.preview(.empty)
+    let project = app.projects.add(URL(filePath: "/Development/atlas-workspace-with-a-long-folder-name"))
+    app.focusProject(project.id)
+    return DSPreviewPair { SidebarFolderHome(agents: []).frame(width: 420, height: 600) }.sidebarPreviewEnvironment(app)
+}
 #endif

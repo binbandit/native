@@ -22,6 +22,7 @@ struct SidebarFolderDropFeedback: View {
                 .padding(DS.Space.xl)
                 .background(.dsOverlay, in: .rect(cornerRadius: DS.Radius.row))
                 .overlay { RoundedRectangle(cornerRadius: DS.Radius.row).strokeBorder(.dsBorder) }
+                .dsShadow(.modal)
                 .padding(DS.Space.xl)
             }
             .accessibilityLabel(names.count == 1 ? "Add \(names[0]) to Native" : "Add \(names.count) folders to Native")
