@@ -78,7 +78,7 @@ extension HostStore {
             record.source = source
             record.reason = optionID == nil ? .cancelled : nil
             stampApprovalAudit(&record, policy: policy, epoch: epoch)
-            try appendApprovalAudit(record, deliveryPending: true)
+            record = try appendApprovalAudit(record, deliveryPending: true)
             // Retain only the action key so a reused tool id cannot receive a second decision.
             try database.run(
                 """
@@ -168,7 +168,8 @@ extension HostStore {
                 }
                 guard seq == expected + 1 else {
                     return HostApprovalAuditPage(
-                        status: .missingRange, cursor: cursor, highWater: high,
+                        status: .missingRange, jsonl: jsonl,
+                        cursor: .init(hostID: hostID, sequence: expected), highWater: high,
                         missingRange: .init(first: expected + 1, last: seq - 1))
                 }
                 let record = try JSONDecoder().decode(HostApprovalAuditRecord.self, from: Data(text.utf8))
@@ -187,7 +188,8 @@ extension HostStore {
             }
             if rows.count < min(max(params.limit, 1), 200), expected < high {
                 return HostApprovalAuditPage(
-                    status: .missingRange, cursor: cursor, highWater: high,
+                    status: .missingRange, jsonl: jsonl,
+                    cursor: .init(hostID: hostID, sequence: expected), highWater: high,
                     missingRange: .init(first: expected + 1, last: high))
             }
             return HostApprovalAuditPage(
@@ -211,7 +213,10 @@ extension HostStore {
     }
 
     /// Called only inside a transaction. The separate high water also exposes deleted trailing rows.
-    private func appendApprovalAudit(_ value: HostApprovalAuditRecord, deliveryPending: Bool) throws {
+    @discardableResult
+    private func appendApprovalAudit(
+        _ value: HostApprovalAuditRecord, deliveryPending: Bool
+    ) throws -> HostApprovalAuditRecord {
         var record = value
         record.sequence = try approvalAuditSequence() + 1
         let json = try JSONColumn.encode(record)
@@ -222,6 +227,7 @@ extension HostStore {
             ON CONFLICT(request_id) DO UPDATE SET record = excluded.record, delivery_pending = excluded.delivery_pending
             """, .text(record.requestID.uuidString), json, .bool(deliveryPending))
         try setMeta("approval_audit_sequence", String(record.sequence))
+        return record
     }
 
     private func stampApprovalAudit(_ record: inout HostApprovalAuditRecord, policy: HostPolicy, epoch: UUID) {

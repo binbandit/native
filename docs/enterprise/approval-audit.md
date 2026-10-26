@@ -18,7 +18,7 @@ no upload or UI action.
 - Actor provenance: `localPeer` with the kernel-authenticated account uid, `pairedDevice` with the
   complete public device key proven by the handshake, or `unknown`. No display name is an identity.
 - Source (`agent`, `direct`, `notification`, `host`), fixed reason codes, the host's existing managed
-  policy revision (null when unavailable or unmanaged), and policy mode.
+  policy revision (absent when unavailable or unmanaged), and policy mode.
 - Wall time, host-process epoch and monotonic uptime in nanoseconds. Sequence orders records across
   process restarts. Uptime is comparable only within an epoch; wall clocks can change.
 
@@ -84,7 +84,9 @@ and sequences survive restart. The separate durable high-water counter lets expo
 trailing rows as well as holes between records. A wrong-host, negative or future cursor returns
 `invalidCursor`. Missing rows return `missingRange` with explicit inclusive bounds. A corrupt or
 unreadable record returns `unavailable`, with no raw database or decoding error. Neither status
-silently advances the caller's cursor. A caller may explicitly resume after a reported missing range;
+silently skips records: a gap page includes any verified prefix and its cursor stops at the last
+exported event; an unavailable page returns the original cursor. A caller may explicitly resume
+after a reported missing range;
 that choice does not repair it. Export never queries content-rich activity/command journal rows.
 
 No automatic audit retention, deletion or upload is introduced. Rows remain in the host database

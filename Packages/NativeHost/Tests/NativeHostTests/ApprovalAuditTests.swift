@@ -272,6 +272,7 @@ import Testing
         try restarted.store.database.run("DELETE FROM approval_audit WHERE sequence = 2")
         let gap = restarted.store.exportApprovalAudit(.init(), hostID: restarted.hostID)
         #expect(gap.status == .missingRange && gap.missingRange?.first == 2 && gap.missingRange?.last == 2)
+        #expect(gap.cursor.sequence == 1 && gap.jsonl.split(separator: "\n").count == 1)
         try restarted.store.database.run("DELETE FROM approval_audit WHERE sequence = 6")
         let tail = restarted.store.exportApprovalAudit(
             .init(cursor: .init(hostID: restarted.hostID, sequence: 5)), hostID: restarted.hostID)
