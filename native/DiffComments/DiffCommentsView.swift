@@ -235,15 +235,16 @@ struct DiffCommentsView: View {
     private func moveLine(_ press: KeyPress) -> KeyPress.Result {
         let newSide: PromptQuote.Side = press.key == .leftArrow ? .old : press.key == .rightArrow ? .new : side
         let step = press.key == .upArrow ? -1 : press.key == .downArrow ? 1 : 0
-        var next = current + step
-        while rows.indices.contains(next), rows[next].kind != .gap {
-            let available = newSide == .old ? rows[next].oldNumber != nil : rows[next].kind != .removed
-            if available {
-                select(next, side: newSide, extend: press.modifiers.contains(.shift))
-                break
-            }
-            if step == 0 { break }
-            next += step
+        let sourceRows = rows.map { row in
+            PromptDiffCommentSelection.Row(
+                before: row.oldNumber.map { .init(number: $0, text: row.text) },
+                after: row.kind == .removed ? nil : row.number.map { .init(number: $0, text: row.text) })
+        }
+        if let next = PromptDiffCommentSelection.nextIndex(
+            in: sourceRows, from: current, step: step,
+            side: newSide, extending: press.modifiers.contains(.shift))
+        {
+            select(next, side: newSide, extend: press.modifiers.contains(.shift))
         }
         return .handled
     }

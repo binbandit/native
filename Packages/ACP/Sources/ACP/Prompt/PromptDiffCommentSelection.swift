@@ -9,6 +9,25 @@ public struct PromptDiffCommentSelection: Sendable {
         }
     }
 
+    public static func nextIndex(
+        in rows: [Row], from current: Int, step: Int,
+        side: PromptQuote.Side, extending: Bool
+    ) -> Int? {
+        guard rows.indices.contains(current), (-1...1).contains(step), side != .transcript else { return nil }
+        var next = current + step
+        while rows.indices.contains(next) {
+            let row = rows[next]
+            if row.before == nil && row.after == nil {
+                if extending || step == 0 { return nil }
+            } else if (side == .old ? row.before : row.after) != nil {
+                return next
+            }
+            if step == 0 { return nil }
+            next += step
+        }
+        return nil
+    }
+
     public static func quote(
         source: String, rows: [Row], range: ClosedRange<Int>, side: PromptQuote.Side
     ) -> PromptQuote? {

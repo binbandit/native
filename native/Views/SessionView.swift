@@ -120,7 +120,12 @@ struct SessionView: View {
                 SubagentInspector(subagent: subagent, child: session.child(id))
                     .sessionInspectorColumn(min: 340, ideal: Self.subagentInspectorWidth, max: 640)
             } else if showsChanges {
-                GitChangesInspector(model: repository, review: changesReview, session: session) {
+                GitChangesInspector(
+                    model: repository, review: changesReview, session: session,
+                    onBackToTask: {
+                        showsChanges = false; session.wantsComposerFocus = true
+                    }
+                ) {
                     Task { await GitHubGitWiring.createPullRequest(from: repository, gitHub: gitHub) }
                 }
                 .sessionInspectorColumn(

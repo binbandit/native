@@ -14,6 +14,7 @@ struct GitChangesInspector: View {
     var session: SessionModel?
     /// Adaptive hosts move the pane between containers without ending the review.
     var resetsReviewOnDisappear = true
+    var onBackToTask: (@MainActor () -> Void)? = nil
     /// Opens the GitHub feature's pull request flow; the button is hidden without it.
     var onCreatePullRequest: (() -> Void)?
 
@@ -141,12 +142,12 @@ struct GitChangesInspector: View {
                     }
                 }
             }
-        } else if composerNext, compact {
+        } else if composerNext {
             EmptyStateView(
                 "No changes yet", systemImage: "checkmark.circle", message: "Files appear here after they’re edited."
             ) {
-                if let closeChanges {
-                    Button("Back to Task", action: closeChanges.close).buttonStyle(.ds(.secondary))
+                if let action = onBackToTask ?? closeChanges?.close {
+                    Button("Back to Task", action: action).buttonStyle(.ds(.secondary))
                 }
             }
         } else {
