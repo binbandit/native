@@ -1,5 +1,5 @@
 #!/bin/bash
-# Uses the existing socket host fixture without starting agents, apps, network or file tools.
+# Uses a socket host and local ACP fixtures without provider calls, apps, network or file tools.
 set -euo pipefail
 instance=${1:?usage: agent-model-change.sh instance}
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
