@@ -17,6 +17,9 @@ private struct AgentModelChangeRegression {
     }
 
     static func main() async {
+        let domain = ProcessInfo.processInfo.processName
+        UserDefaults.standard.removePersistentDomain(forName: domain)
+        defer { UserDefaults.standard.removePersistentDomain(forName: domain) }
         do { try await run() } catch { print("FAIL: \(error)"); exit(1) }
     }
 

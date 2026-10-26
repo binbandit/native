@@ -137,6 +137,12 @@ private struct ComposerSettingsRegression {
         print("PASS: Fast mode, retry, Edit Modes and Restart have working keyboard targets")
     }
 
+    private static func composePopover(_ app: AppModel) -> ComposerSettingsPopover? {
+        let body = ComposeAgentPicker(model: app).body
+        if let capped = body as? CappedHeightScrollView<ComposerSettingsPopover> { return capped.content }
+        return body as? ComposerSettingsPopover
+    }
+
     private static func composeChoicesAndDismissal() throws {
         let app = AppModel.preview(.empty)
         let settings = ComposerSettingsPreviewFixtures.claude()
@@ -146,7 +152,7 @@ private struct ComposerSettingsRegression {
         guard let permissions = settings.autonomy else { throw SettingsFailure(message: "No permissions") }
         app.composeTask.choose(permissions, value: "default")
         app.quickEntry.picker = .agent
-        guard let popover = ComposeAgentPicker(model: app).body as? ComposerSettingsPopover,
+        guard let popover = composePopover(app),
             let mode = popover.rows.first(where: { $0.id == "compose-mode" })
         else { throw SettingsFailure(message: "Compose lost its Mode row") }
         mode.perform("build")
@@ -157,7 +163,7 @@ private struct ComposerSettingsRegression {
         popover.onClose()
         app.quickEntry.picker = .agent
         try expect(app.composeTask.choices["mode"] == "plan", "Compose cannot start in Plan")
-        guard let updated = ComposeAgentPicker(model: app).body as? ComposerSettingsPopover,
+        guard let updated = composePopover(app),
             let updatedMode = updated.rows.first(where: { $0.id == "compose-mode" })
         else { throw SettingsFailure(message: "Compose lost its selected Mode row") }
         try expect(updatedMode.value == "Plan", "Compose did not reflect Plan")

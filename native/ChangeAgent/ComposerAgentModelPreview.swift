@@ -54,7 +54,12 @@ struct ComposerAgentModelPreview: View {
             if !closed {
                 HStack {
                     Spacer()
-                    popover.dsPopoverBackground()
+                    popover
+                        .background(.dsOverlay, in: .rect(cornerRadius: DS.Radius.card))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: DS.Radius.card)
+                                .strokeBorder(.dsSeparator, lineWidth: DS.AgentChange.dividerHeight)
+                        }
                 }
             } else {
                 Text("The queue now preserves its order. Tests cover editing, moving and sending a queued message.")
@@ -94,6 +99,7 @@ struct ComposerAgentModelPreview: View {
         .frame(maxWidth: DS.ComposerSettings.width + DS.Space.xxl * 2)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.dsBackground)
+        .padding(.leading, DS.Size.sidebarWidth)
     }
 
     private var receiptText: String? {
