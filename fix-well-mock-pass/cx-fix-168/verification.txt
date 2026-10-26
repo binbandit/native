@@ -1,0 +1,28 @@
+Job: cx-fix-168
+Instance: cx-fix-168, isolated Debug, NativeTaskWell Boolean true.
+Reference: session-top.html #N compact outcome anatomy and #C/#T tool states.
+
+Before: merged-main parent of cb84e937, exact SHA in before-sha.txt in the local evidence directory.
+Observed at 1180pt with sidebar collapsed and title:
+Wrap diff lines at word boundaries in narrow windows
+The capsule reads Change... +1 | Review in both appearances, losing the file count.
+Captures: before-long-title-dark.png and before-long-title-light.png.
+The matching accessibility tree reports Changed 1 file, +1, Review despite the visible truncated count.
+The scripted agent used a private checkout and a local session-list cwd correction.
+
+Source fixes: cb84e937 (#168), 7ac78510 (#164).
+Debug build and all 22 base / 26 dependent SessionTools tests passed.
+Strict formatting and git diff --check passed.
+The temporary Review Kit plugin compiled with working and failed facts, a long name/summary,
+a default-Off side tool and an over-conversation tool. It was removed from the final tree.
+
+After UI evidence remains pending. Following the build, the app's own CG window was reported
+as off screen and its Accessibility tree contained no windows. Both screen-lock checks said
+unlocked. The View menu omitted task-scoped tools, and selecting Light did not redraw the
+captured dark image. These stale after images are excluded from the published evidence.
+No enabling, live removal or keyboard success is claimed from that state.
+The isolated app was quit after each attempt. No window was raised or another app driven.
+
+Local diagnostics and fixture: /tmp/cx-fix-168-evidence (not public assets).
+Existing light/dark six-fix evidence remains in #168's description as historical evidence.
+Visual check pending remains on both PRs. No merge.
