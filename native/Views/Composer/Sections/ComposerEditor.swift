@@ -44,6 +44,7 @@ struct ComposerEditor: View {
     // Fine print's message binding derives a new String from the canonical quoted draft. Binding
     // TextEditor to that projection can reapply an old caret as its storage changes during typing.
     @State private var plain = ""
+    @State private var plainSelection: TextSelection?
     @State private var styledSelection = AttributedTextSelection()
     /// The selection both sides last agreed on, as UTF-8 offsets, so a change to `text` from outside
     /// can tell whether a new selection came with it.
@@ -81,7 +82,9 @@ struct ComposerEditor: View {
             .onAppear(perform: textChangedOutside)
             .onChange(of: plain) {
                 if !showsCode, plain != text { text = plain }
+                plainSelectionChanged()
             }
+            .onChange(of: plainSelection, plainSelectionChanged)
             .onChange(of: styled, editorChanged)
             .onChange(of: styledSelection, editorSelectionChanged)
             .onChange(of: text, textChangedOutside)
@@ -111,7 +114,7 @@ struct ComposerEditor: View {
                         }
                     }
             } else {
-                TextEditor(text: $plain, selection: $selection)
+                TextEditor(text: $plain, selection: $plainSelection)
                     .lineSpacing(lineSpacing)
             }
         }
@@ -187,6 +190,14 @@ struct ComposerEditor: View {
         editorSelectionChanged()
     }
 
+    private func plainSelectionChanged() {
+        guard !showsCode, plain == text, let offsets = Self.offsets(of: plainSelection, in: plain) else { return }
+        syncedSelection = offsets
+        if offsets != Self.offsets(of: selection, in: text) {
+            selection = Self.textSelection(offsets, in: text)
+        }
+    }
+
     private func editorSelectionChanged() {
         guard String(styled.characters) == projection.display, let offsets = editorSelection else { return }
         syncedSelection = offsets
@@ -198,9 +209,19 @@ struct ComposerEditor: View {
     /// The composer changed the draft or the selection itself (a completion, a recalled prompt, a
     /// code edit). A new draft without a new selection puts the caret at its end.
     private func textChangedOutside() {
-        // Keep the plain editor in step until code or a completed reference needs rich text.
+        // Update text and caret together: a completion's new caret can exceed the old text's end.
         guard showsCode else {
-            if plain != text { plain = text }
+            let wanted = Self.offsets(of: selection, in: text)
+            if plain != text {
+                plain = text
+                let end = text.utf8.count
+                let caret = wanted.flatMap { $0 == syncedSelection ? nil : $0 } ?? end..<end
+                plainSelection = Self.textSelection(caret, in: plain)
+                syncedSelection = caret
+            } else if let wanted, wanted != syncedSelection {
+                plainSelection = Self.textSelection(wanted, in: plain)
+                syncedSelection = wanted
+            }
             if Self.mayHaveCode(text) || !makeProjection(text).tokens.isEmpty {
                 switchToRichText()
             }
