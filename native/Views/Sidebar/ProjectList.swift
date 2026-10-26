@@ -57,8 +57,11 @@ struct ProjectList<TaskAccessory: View>: View {
             }
             ForEach(Array(listing.groups.enumerated()), id: \.element.project.id) { index, group in
                 let project = group.project
+                let revealsEmptyHome =
+                    isAllInView && model.selection == nil && model.focusedProjectID == project.id && group.all.isEmpty
                 let hasNoMatches =
-                    isNarrowing && group.visible.isEmpty && model.startingTasks(in: project.id).isEmpty
+                    isNarrowing && !revealsEmptyHome && group.visible.isEmpty
+                    && model.startingTasks(in: project.id).isEmpty
                 ProjectSection(
                     project: project,
                     sessions: group.current,
@@ -68,7 +71,7 @@ struct ProjectList<TaskAccessory: View>: View {
                         set: { folding?.setExpanded(project.id, $0) }),
                     order: Self.positions(group.all),
                     position: (index, listing.groups.count),
-                    isFiltered: isNarrowing,
+                    isFiltered: isNarrowing && !revealsEmptyHome,
                     hasNoMatches: hasNoMatches,
                     isExpanded: Binding(
                         get: { isNarrowing ? !hasNoMatches : !collapsed.contains(project.id) },
@@ -210,6 +213,16 @@ private struct NothingMatches: View {
         ProjectListPreview(app: app, filter: TaskFilter())
     }
     .sidebarPreviewEnvironment(app)
+}
+
+#Preview("Project list - Empty folder with filters") {
+    let app = AppModel.preview(.empty)
+    let project = app.projects.add(URL(filePath: "/Development/atlas"))
+    app.focusProject(project.id)
+    return DSPreviewPair {
+        ProjectListPreview(app: app, filter: TaskFilter(statuses: [.needsYou]))
+            .environment(\.sidebarAllInView, true)
+    }.sidebarPreviewEnvironment(app)
 }
 
 /// The list as the sidebar builds it, with the filter in state so its chips and menu work.
