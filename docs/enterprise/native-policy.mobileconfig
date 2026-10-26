@@ -52,6 +52,8 @@
             <string>Native settings</string>
 
             <!-- Who manages Appearance, and the code theme used in both modes. -->
+            <key>policy.folders.allowedRoots</key>
+            <array><string>/Developer</string></array>
             <key>policy.organization.name</key><string>Northwind Federal IT</string>
             <key>policy.organization.contact</key><string>#it-help</string>
             <key>policy.appearance.codeTheme</key><string>native</string>

@@ -106,6 +106,7 @@ import Testing
                 "policy.network": ["localIPC": true, "services": services],
                 "policy.approvals.knowledge": #"{"version":1,"programs":[],"locations":[]}"#,
                 "policy.approvals.countUnknownPrograms": true,
+                "policy.folders.allowedRoots": ["/work"],
                 "policy.agents.allowed": ["codex"], "policy.agents.environment": ["codex": ["A": "1"]],
                 "policy.mcp.allowed": ["*"], "policy.mcp.blocked": [String](), "policy.mcp.required": [[String: Any]](),
                 "policy.plugins.allowed": ["acme"], "policy.celebrations.downloadsEnabled": true,

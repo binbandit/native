@@ -647,3 +647,14 @@ or discard context. File tokens are a display projection of canonical `@path` re
 `FileReferenceProjection` maps edits and selections back to those paths. Displayed counts never
 enter the prompt. The existing repository monitor supplies uncommitted counts, with the latest
 reported turn edits as a fallback for committed files; unavailable or binary counts stay absent.
+
+### Opening folders in All in view
+
+`SidebarFolders` owns the fixed Open Folder action, device-local successful recents, batch results
+and addition Undo. `project.open` remains the Command-O entry point. `AppModel+SidebarFolders`
+resolves a whole batch before committing, revalidates live folder policy, delegates identity to
+`Projects` and opens the first new folder's home without creating a task. Existing sessions retain
+their drafts. `PlatformFolderPicker`, `PlatformFolderAccess` and `PlatformFolderDrop` adapt system
+selection, security-scoped access and external file URLs; private sidebar drags still reorder.
+Recents use non-mounting bookmark resolution and never contain paired-host paths. The new surface
+is gated by `NativeSidebarNext`; the default remains unchanged.

@@ -21,6 +21,7 @@ final class AppModel {
     let runtimes: AgentRuntimes
     /// Paired hosts sessions can run on besides this Mac (AppModel+Hosts.swift).
     let hosts: RemoteHosts
+    let sidebarFolders: SidebarFoldersModel
     let projects: Projects
     let catalog: SessionCatalog
     let ordering: SessionOrdering
@@ -234,6 +235,7 @@ final class AppModel {
         }
         runtimes = AgentRuntimes(plugins: plugins)
         sendGate.runtimes = runtimes
+        sidebarFolders = SidebarFoldersModel(defaults: defaults)
         projects = Projects(defaults: defaults)
         composeTask = ComposeTaskModel(defaults: defaults)
         taskPairs = TaskPairs(defaults: defaults)

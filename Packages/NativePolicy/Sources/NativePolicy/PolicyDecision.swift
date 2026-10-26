@@ -175,6 +175,7 @@ extension NativePolicy {
     private func gate(_ capability: PolicyCapability) -> CapabilityDecision.Reason? {
         func off(_ isOn: Bool, _ key: PolicyKey) -> CapabilityDecision.Reason? { isOn ? nil : .turnedOff(key) }
         return switch capability {
+        case .folderAdd: off(foldersAllowedRoots?.isEmpty != true, .foldersAllowedRoots)
         case .agentExecution: off(agents.allowed?.isEmpty != true, .agentsAllowed)
         case .mcpExecution: off(mcp.allowed?.isEmpty != true || !mcp.required.isEmpty, .mcpAllowed)
         case .pluginCatalog: off(catalog.isEnabled, .catalogEnabled)

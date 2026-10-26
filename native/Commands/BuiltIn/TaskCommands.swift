@@ -47,10 +47,11 @@ extension NativeCommand {
 
             NativeCommand(
                 .projectOpen, title: "Open Folder…", category: .tasks, systemImage: "folder.badge.plus",
-                keywords: ["project", "add"]
+                keywords: ["project", "add", "add folder"]
             ) { _ in
-                model.isAddingProject = true
-            },
+                model.requestOpenFolder()
+            }
+            .available { _ in !model.offersSidebarFolders || model.canOpenFolders },
         ]
     }
 

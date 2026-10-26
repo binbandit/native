@@ -44,7 +44,14 @@ struct ProjectList<TaskAccessory: View>: View {
                 SidebarFilterChips(filter: $filter)
             }
             if model.projects.all.isEmpty {
-                AddProjectPrompt()
+                if isAllInView {
+                    Text("Your folders and tasks will appear here.")
+                        .font(.dsBody).foregroundStyle(.dsTextSecondary)
+                        .padding(.leading, DS.Sidebar.headerLeading)
+                        .padding(.top, DS.Space.xxxl)
+                } else {
+                    AddProjectPrompt()
+                }
             } else if isNarrowing, listing.isEmpty, model.startingTasks.isEmpty {
                 NothingMatches { filter.clearFilters() }
             }
@@ -72,6 +79,13 @@ struct ProjectList<TaskAccessory: View>: View {
                     select: select
                 )
             }
+            if isAllInView {
+                ForEach(Array(model.sidebarFolders.opening.enumerated()), id: \.offset) { _, name in
+                    if !model.projects.all.contains(where: { $0.folderName == name }) {
+                        SidebarFolderOpeningRow(name: name)
+                    }
+                }
+            }
             // Archived tasks show in their projects while the filter includes them.
             if !isNarrowing, !filter.includesArchived {
                 ArchivedSection(select: select)
@@ -83,7 +97,7 @@ struct ProjectList<TaskAccessory: View>: View {
             if isAllInView {
                 SidebarOptionsMenu(preferences: model.sidebarPreferences)
                 Divider()
-                Button("Add Project…") { model.isAddingProject = true }
+                Button("Open Folder…") { model.requestOpenFolder() }
                 Menu("Filter Tasks") {
                     ForEach(SidebarFilterOption.all(filter: $filter, agents: model.agents.map(\.agent))) { option in
                         Toggle(option.title, isOn: option.isOn)
@@ -96,6 +110,10 @@ struct ProjectList<TaskAccessory: View>: View {
                     .pickerStyle(.inline)
                 }
             }
+        }
+        .onChange(of: model.sidebarFolders.focusRequests) {
+            guard let id = model.focusedProjectID else { return }
+            collapsed.set(id, collapsed: false)
         }
         .onChange(of: model.selection) {
             guard let selection = model.selection,

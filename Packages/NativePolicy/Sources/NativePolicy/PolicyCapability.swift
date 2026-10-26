@@ -3,6 +3,7 @@
 /// The coverage map below names the keys and network services behind each one and the code that
 /// has to honor it. Policy docs list every case (docs/enterprise/policy-coverage.md).
 public enum PolicyCapability: String, CaseIterable, Hashable, Codable, Sendable {
+    case folderAdd = "folders.add"
     case agentExecution = "agents.execution"
     case auxiliaryGeneration = "agents.auxiliaryGeneration"
     case agentInstall = "agents.install"
@@ -102,6 +103,10 @@ extension PolicyCapability {
                 enforcement: enforcement)
         }
         return switch self {
+        case .folderAdd:
+            entry(
+                .local, [.foldersAllowedRoots], owners: ["native/SidebarFolders/AppModel+SidebarFolders.swift"],
+                .converted)
         case .agentExecution:
             entry(
                 .execution,
@@ -246,7 +251,8 @@ extension PolicyKey {
             .updatesEnabled, .telemetryNative, .telemetryEndpoints:
             .grant
         case .celebrationAssetsBaseURL, .catalogIndexURL, .updatesFeedURL: .destination
-        case .mcpBlocked, .skillsBlocked, .forbiddenPermissionModes, .searchRetentionDays, .updatesChannels:
+        case .foldersAllowedRoots, .mcpBlocked, .skillsBlocked, .forbiddenPermissionModes, .searchRetentionDays,
+            .updatesChannels:
             .restriction
         case .commandKnowledge, .agentsEnvironment, .organizationName, .organizationContact, .appearanceCodeTheme,
             .appearanceCodeThemeReason, .shortcutBindings, .aiInstructions:
@@ -262,6 +268,7 @@ extension PolicyKey {
     /// Where the key's effective value is read today, relative to the repository root.
     public var owners: [String] {
         switch self {
+        case .foldersAllowedRoots: ["native/SidebarFolders/AppModel+SidebarFolders.swift"]
         case .deploymentMode, .network: ["Packages/NativeNetwork/Sources/NativeNetwork/NetworkAdmission.swift"]
         case .commandKnowledge, .agentsAllowed, .agentsEnvironment, .pluginsAllowed:
             ["native/Plugins/PluginRegistry.swift"]

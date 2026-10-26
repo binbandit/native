@@ -210,3 +210,11 @@ tools. `policy.approvals.countUnknownPrograms` = `false` disables local unknown-
 when the user enabled them. True permits the user choice; neither policy enables Fine print itself.
 Counts never enter telemetry or exports and can be purged from Settings > Privacy. See
 [command knowledge](command-knowledge.md) for the format, limits, and privacy contract.
+
+### Local folder additions
+
+`policy.folders.allowedRoots` is an array of absolute local folder paths. Missing permits all
+local folders in ordinary mode; empty denies additions. Restricted mode defaults to empty.
+Malformed values deny additions. Native resolves symlinks before testing component boundaries
+and checks policy again before committing a chooser, recent or drop addition. Existing projects
+remain visible. This restriction does not replace the host's filesystem or agent access policy.

@@ -71,6 +71,7 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
                 .padding(.horizontal, usesSidebarNext ? DS.Sidebar.inset : DS.Space.sm)
                 .padding(.vertical, usesSidebarNext ? 0 : DS.Space.md)
             }
+            .modifier(PlatformFolderDrop(enabled: usesSidebarNext, model: model, undoManager: undoManager))
             .scrollIndicators(.automatic)
             .focusable()
             .focused($isListFocused)
@@ -129,6 +130,7 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
                 SidebarSelectionBar(selection: selection)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
+            if usesSidebarNext { SidebarFolderActions() }
             SidebarFooter()
         }
         .background(usesSidebarNext ? Color.dsSidebarSolid : Color.clear)

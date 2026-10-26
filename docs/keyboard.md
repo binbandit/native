@@ -427,6 +427,20 @@ being hit by accident, since it ends work in progress.
 | --- | --- | --- | --- |
 | ⌃⌥⌘Q | Quit Native and stop its agents: ends known commands, reports unverified stops, and exits the background host until Native opens again | Native | `app.quitAndStopAgents` |
 
+## Opening folders (All in view)
+
+File > Open Folder… (⌘O, `project.open`) opens the system folder-only chooser directly,
+including before the first project and with the sidebar hidden. The permanent Open Folder…
+action above the account does the same. Its separate Recent Folders disclosure and File >
+Open Recent list up to six successfully opened folders on this device. Arrow keys move through
+recents, Return opens one, and Escape returns to the disclosure. Tab reaches Open Folder,
+Recent Folders, then the account controls. Return or Space activates each control.
+
+Drop one or several folders anywhere in the sidebar list to add them without starting a task.
+The persistent addition receipt offers Undo; ⌘Z undoes that addition when it is the applicable
+window action. Text editing keeps its normal undo precedence. Choosing an already open folder
+focuses its home without adding another project or another undo action.
+
 ## Picking tasks in the sidebar
 
 With All in view on, View > Sidebar and the list context menu offer task ages, finished-task
