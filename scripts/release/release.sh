@@ -116,7 +116,7 @@ output=${output%/}
 archive="$output/$asset_base.xcarchive"
 app="$output/$product.app"
 # Nightly archives carry the build number so a download in flight never meets a replaced file.
-if [ "$channel" = nightly ]; then zip_name="$asset_base-$build_number.zip" dmg_name="$asset_base.dmg"; else zip_name="$asset_base-$version.zip" dmg_name="$asset_base-$version.dmg"; fi
+if [ "$channel" = nightly ]; then archive_name="$asset_base-$build_number.tar.xz" dmg_name="$asset_base.dmg"; else archive_name="$asset_base-$version.tar.xz" dmg_name="$asset_base-$version.dmg"; fi
 
 # A rehearsal checks everything publishing needs, so it fails where the real run would.
 if [ "$MODE" = publish ] || [ "$MODE" = rehearse ]; then
@@ -167,7 +167,7 @@ run mkdir -p "$output"
 build_embedded
 # arm64 only: macOS 27 doesn't run on Intel, and without this the packages (which still support macOS
 # 15) also compile an x86_64 slice nothing links. The standalone host is built universal on its own.
-run xcodebuild archive \
+run "$ROOT/scripts/dev/build-slot.sh" archive \
     -project native.xcodeproj -scheme native -configuration "$configuration" \
     -archivePath "$archive" -derivedDataPath "$output/DerivedData" -destination 'generic/platform=macOS' \
     -disableAutomaticPackageResolution \
@@ -207,8 +207,24 @@ run rm -f "$output/notarize.zip"
 log "Packaging"
 run rm -rf "$output/appcast" "$output/$dmg_name"
 run mkdir -p "$output/appcast"
-# The update archive Sparkle installs, next to its notes; generate_appcast reads both.
-run ditto -c -k --sequesterRsrc --keepParent "$app" "$output/appcast/$zip_name"
+# The update archive, next to its notes; generate_appcast reads both.
+pack_update_archive "$app" "$output/appcast/$archive_name"
+# What comes out of it, unpacked with tar as Sparkle does, must be the app as signed and
+# stapled: its symlinks, modes and ticket all made it into the archive.
+unpacked="$output/unpacked"
+run rm -rf "$unpacked"
+run mkdir -p "$unpacked"
+run /usr/bin/tar -x -f "$output/appcast/$archive_name" -C "$unpacked"
+run codesign --verify --deep --strict --verbose=2 "$unpacked/$product.app"
+notary xcrun stapler validate "$unpacked/$product.app"
+notary spctl --assess --type execute --verbose=2 "$unpacked/$product.app"
+run rm -rf "$unpacked"
+# Keep the established Finder path for first installs, outside the appcast folder so Sparkle
+# sees exactly one archive for this version.
+run rm -rf "$output/installer"
+run mkdir -p "$output/installer"
+installer_zip="$output/installer/${archive_name%.tar.xz}.zip"
+run ditto -c -k --sequesterRsrc --keepParent "$app" "$installer_zip"
 previous_tag=""
 case $channel in
     stable) previous_tag=$(last_stable_tag "$sha^") ;;
@@ -219,7 +235,7 @@ esac
 if [ "$channel" = beta ] && [ -n "${NATIVE_RELEASE_NOTES_FROM:-}" ]; then
     previous_tag=$NATIVE_RELEASE_NOTES_FROM
 fi
-notes="$output/appcast/${zip_name%.zip}.md"
+notes="$output/appcast/${archive_name%.tar.xz}.md"
 if [ "$MODE" = plan ]; then
     printf '  [plan] release notes since %s > %s\n' "${previous_tag:-the first commit}" "$notes" >&2
 else
@@ -242,7 +258,7 @@ if [ "$make_dmg" = 1 ]; then
 fi
 
 # What users download and install, against the budgets in docs/app-size.md; over budget stops here.
-size_args=(--zip "$output/appcast/$zip_name")
+size_args=(--archive "$output/appcast/$archive_name" --installer-zip "$installer_zip")
 [ "$make_dmg" = 1 ] && size_args+=(--dmg "$output/$dmg_name")
 run "$ROOT/scripts/release/size-check.sh" "$app" "${size_args[@]}"
 
@@ -274,17 +290,22 @@ replace_in_appcast() {
 
 # Sparkle makes a delta update from every earlier archive in the folder to this one: a few MB instead
 # of the whole app. Seed it with the archives users are most likely to have: the last few v* releases'
-# for stable and beta, or the ones the rolling nightly release still holds (it keeps two). Prints
+# for stable and beta, or the ones the rolling nightly release still holds (it keeps two). Older
+# releases' archives are ZIPs: a delta is between the apps inside, whatever they came in. Prints
 # "<tag> <asset>" for each.
 delta_seed_assets() {
     if [ "$channel" = nightly ]; then
         gh release view nightly --repo "$repo" --json assets --jq '.assets[].name' |
-            grep -E "^$asset_base-[0-9]+\.zip$" | grep -vxF "$zip_name" | sort -t- -k3 -n | tail -n "$delta_seeds" |
-            sed 's/^/nightly /'
+            nightly_update_archives "$asset_base" | grep -vxF "$archive_name" |
+            head -n "$delta_seeds" | sed 's/^/nightly /'
     else
         gh release list --repo "$repo" --limit 30 --json tagName,isDraft --jq '.[] | select(.isDraft | not) | .tagName' |
             grep -E '^v[0-9]' | grep -vxF "$tag" | head -n "$delta_seeds" |
-            while read -r seed_tag; do echo "$seed_tag $asset_base-${seed_tag#v}.zip"; done
+            while read -r seed_tag; do
+                seed_name=$(gh release view "$seed_tag" --repo "$repo" --json assets --jq '.assets[].name' |
+                    update_archive_in "$asset_base-${seed_tag#v}")
+                [ -z "$seed_name" ] || echo "$seed_tag $seed_name"
+            done
     fi
 }
 
@@ -337,7 +358,7 @@ if [ "$can_sign" = 1 ] && [ "$MODE" != plan ]; then
     done
     # Seeds can produce deltas to older feed items too. Only publish this build's deltas;
     # older items retain their original downloads or fall back to their full archive.
-    selected_deltas=$(python3 "$ROOT/scripts/release/deltas.py" "$appcast" "$zip_name" "$url_prefix" "$delta_seeds")
+    selected_deltas=$(python3 "$ROOT/scripts/release/deltas.py" "$appcast" "$archive_name" "$url_prefix" "$delta_seeds")
     deltas=()
     while IFS= read -r delta; do
         [ -z "$delta" ] || deltas+=("$delta")
@@ -350,8 +371,8 @@ if [ "$can_sign" = 1 ] && [ "$MODE" != plan ]; then
     # generate_appcast only warns when the app's SUPublicEDKey doesn't match the signing key, and then
     # leaves the archive unsigned, which no installed copy would accept.
     if [ -n "$public_key" ]; then
-        signed=$(xmllint --xpath "count(//item/enclosure[contains(@url, '/$zip_name')][@*[local-name()='edSignature']])" "$appcast")
-        [ "$signed" = 1 ] || die "the appcast has no EdDSA signature for $zip_name: is the signing key the one NATIVE_SPARKLE_PUBLIC_KEY belongs to?"
+        signed=$(xmllint --xpath "count(//item/enclosure[contains(@url, '/$archive_name')][@*[local-name()='edSignature']])" "$appcast")
+        [ "$signed" = 1 ] || die "the appcast has no EdDSA signature for $archive_name: is the signing key the one NATIVE_SPARKLE_PUBLIC_KEY belongs to?"
     fi
 fi
 
@@ -407,10 +428,10 @@ esac
 # MARK: - Publish
 
 log "Publishing to $repo"
-assets=("$output/appcast/$zip_name" "$output/host/native-host-$build_number-macos-universal"
+assets=("$output/appcast/$archive_name" "$installer_zip" "$output/host/native-host-$build_number-macos-universal"
     ${deltas[@]+"${deltas[@]}"})
-# The ZIP serves first installs and Sparkle. The DMG remains available locally for rehearsals,
-# with its existing signing and notarization checks, but is not a second public app download.
+# Sparkle gets .tar.xz; first installs keep the Finder-compatible ZIP. The DMG remains local
+# with its existing signing and notarization checks.
 notes_flag=(--notes-file "$notes")
 
 if [ "$channel" = nightly ]; then

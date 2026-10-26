@@ -4,25 +4,27 @@
 # also fails when the app has no terminal (libghostty) or no script runtime: Xcode's build phases
 # only warn when they can't build them, and such an app would look small and ship broken.
 #
-#   scripts/release/size-check.sh <app> [--zip <file>] [--dmg <file>]   # one app, e.g. a release's
+#   scripts/release/size-check.sh <app> [--archive <file>] [--installer-zip <file>] [--dmg <file>]   # one app, e.g. a release's
 #   scripts/release/size-check.sh --built <derived data> <configuration>...   # what check.sh built
 #
-# Without --zip it compresses the app the way release.sh packs Sparkle's update archive, so the
+# Without --archive it packs the app the way release.sh packs the update archive (.tar.xz), so the
 # download is measured from a plain build too.
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"
 
 # Budgets in MB (10^6 bytes, as Finder counts). Raise one only with a reason in docs/app-size.md.
-BUDGET_DOWNLOAD=47.5
+BUDGET_DOWNLOAD=35
+BUDGET_INSTALLER_ZIP=47.5
 BUDGET_DMG=49
 BUDGET_INSTALLED=118
 BUDGET_BINARY=70
 BUDGET_SCRIPT_RUNTIME=42
 
-apps=() zip="" dmg="" derived=""
+apps=() archive="" installer_zip="" dmg="" derived=""
 while [ $# -gt 0 ]; do
     case $1 in
-        --zip) zip=$2; shift ;;
+        --archive) archive=$2; shift ;;
+        --installer-zip) installer_zip=$2; shift ;;
         --dmg) dmg=$2; shift ;;
         --built) derived=$2; shift ;;
         -h | --help) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
@@ -41,7 +43,7 @@ if [ -n "$derived" ]; then
     done
 fi
 [ ${#apps[@]} -gt 0 ] || die "no app given (see --help)"
-[ ${#apps[@]} = 1 ] || [ -z "$zip$dmg" ] || die "--zip and --dmg go with one app"
+[ ${#apps[@]} = 1 ] || [ -z "$archive$installer_zip$dmg" ] || die "--archive, --installer-zip and --dmg go with one app"
 
 # The bytes in a file or folder, not the blocks they take on disk.
 bytes() {
@@ -67,16 +69,17 @@ row() {
 }
 
 check() {
-    local app=$1 name executable archive=$zip runtime host
+    local app=$1 name executable packed=$archive runtime host
     [ -d "$app/Contents" ] || die "not an app bundle: $app"
     name=$(basename "$app" .app)
     executable=$(plutil -extract CFBundleExecutable raw "$app/Contents/Info.plist")
-    if [ -z "$archive" ]; then
-        archive="$scratch/$name.zip"
-        ditto -c -k --sequesterRsrc --keepParent "$app" "$archive"
+    if [ -z "$packed" ]; then
+        packed="$scratch/$name.tar.xz"
+        pack_update_archive "$app" "$packed"
     fi
     log "Size of $name"
-    row "Download (update archive)" "$(bytes "$archive")" "$BUDGET_DOWNLOAD"
+    row "Download (update archive)" "$(bytes "$packed")" "$BUDGET_DOWNLOAD"
+    [ -z "$installer_zip" ] || row "Download (first-install ZIP)" "$(bytes "$installer_zip")" "$BUDGET_INSTALLER_ZIP"
     [ -z "$dmg" ] || row "Download (disk image)" "$(bytes "$dmg")" "$BUDGET_DMG"
     row "Installed" "$(bytes "$app")" "$BUDGET_INSTALLED"
     row "  App binary" "$(bytes "$app/Contents/MacOS/$executable")" "$BUDGET_BINARY"

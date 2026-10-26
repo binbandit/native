@@ -233,7 +233,8 @@ workflows do not upload or control.
 
 | Asset before this change | Purpose | Publication now |
 | --- | --- | --- |
-| `Native-<version>.zip`, or `Native-Nightly-<build>.zip` | Complete signed, stapled app; Sparkle's fallback download | Keep as the single app download, also for first installs |
+| `Native-<version>.zip`, or `Native-Nightly-<build>.zip` | Complete signed, stapled app; Sparkle's fallback download | Keep for first installs; Sparkle uses a separate `.tar.xz` ("The update archive") |
+| `Native-<version>.tar.xz`, or `Native-Nightly-<build>.tar.xz` | Complete signed, stapled app, compressed for Sparkle | Keep as the full update download |
 | `Native-<version>.dmg`, or `Native-Nightly.dmg` | A second copy of the same app, with an Applications shortcut | Keep local packaging/signing checks; stop attaching |
 | `appcast.xml` | Sparkle versions, signatures, embedded notes and download URLs | Keep; beta also refreshes latest stable's copy |
 | `Native<new>-<old>.delta`, or `Native-Nightly<new>-<old>.delta` | Smaller Sparkle updates from earlier builds | Cap at two patches to the current build; remove unused seed-to-seed patches |
@@ -256,10 +257,10 @@ spring-festival, st-patricks-day, tet, tet-trung-thu, thanksgiving-canada,
 thanksgiving-us, timkat, us-independence-day, vaisakhi, valentines-day, vesak
 ```
 
-The observed beta `v0.2.0-beta.7` has 55 assets; future betas have at most **7**. The rolling
-nightly has 56; after pruning its unused icon copies and DMG it has at most **9**, including the
-previous ZIP and host for in-flight downloads. Stable drops the DMG and one delta slot: at most
-**53** with today's 44 packs, or **55** once a beta has added its two host feed files. Its icon
+The observed beta `v0.2.0-beta.7` has 55 assets; future betas have at most **8**. The rolling
+nightly has 56; after pruning its unused icon copies and DMG it has at most **11**, including the
+previous update archive, first-install ZIP and host for in-flight downloads. Stable drops the DMG
+and one delta slot: at most **54** with today's 44 packs, or **56** once a beta has added its two host feed files. Its icon
 files cannot be removed without breaking existing clients' downloads. Consolidating or relocating
 them needs a separate compatible icon-feed migration. Existing immutable releases are left alone.
 
@@ -278,6 +279,40 @@ scripts/release/release.sh --channel stable --version 9.9.0 --identity - --plan
 scripts/release/release.sh --channel beta --version 9.9.0-beta.1 --identity - --plan
 scripts/release/release.sh --channel nightly --identity - --plan
 ```
+
+## The update archive
+
+Sparkle downloads `Native-<version>.tar.xz` (Nightly: `Native-Nightly-<build>.tar.xz`).
+First installs keep `Native-<version>.zip`, outside the appcast folder so the generator sees one
+archive per version. Repacking public v0.2.0-beta.14 with xz level 9 reduces 47,249,137 bytes to
+31,936,384 bytes, about 32% less for every full update.
+
+- **Sparkle.** The pinned 2.10.0 supports `.tar.xz` in `SUPipedUnarchiver`, piping the archive into
+  `/usr/bin/tar -zxC <directory>`. The EdDSA signature covers the archive bytes. `generate_appcast`
+  reads the app and companion notes (`Native-<version>.md`) and can make deltas from earlier ZIPs;
+  deltas compare the apps inside. Earlier feed items keep their published URLs. See Sparkle's
+  [publishing documentation](https://sparkle-project.org/documentation/publishing/).
+- **First installs.** ZIP stays. Finder/Archive Utility extraction and quarantine propagation for
+  `.tar.xz` have not been verified here. CLI extraction proves the updater's unpacking path, not
+  the first-install UI. Removing the ZIP requires that separate check.
+- **What goes in** (`pack_update_archive` in `lib.sh`): contents, modes and symlinks. Extended
+  attributes, ACLs and file flags are excluded, following Sparkle's tar guidance. The signature and
+  stapled ticket are bundle files. `release.sh` unpacks its archive and runs
+  `codesign --verify --deep --strict`; notarized runs also validate the staple and Gatekeeper
+  assessment before publication.
+- **Notarization** still submits `notarize.zip`, never published. The ticket is stapled to the app
+  before packing. Signing identities, credentials and DMG format are unchanged.
+
+Verification on macOS 27.2, repacking public v0.2.0-beta.14: all 465 entries matched by file content,
+permission mode and symlink target (nine symlinks), including with Sparkle's piped tar command.
+The extracted app passed strict deep code-signature verification, `stapler validate` and Gatekeeper (`source=Notarized Developer ID`). Sparkle 2.10.0's
+`sign_update` signed and verified the `.tar.xz` with a throwaway file-based key, without keychain access.
+`generate_appcast` also extracted the unchanged app and generated the 31,936,384-byte enclosure;
+it correctly omitted its signature because the test key does not match the app. The published ZIP's
+EdDSA signature was verified against the app's embedded public key and correctly rejected the new
+archive bytes. This does not authenticate the repacked archive under Native's production key.
+Before merging, the signing agent must sign that archive with the existing production Sparkle key and verify it against
+the public key embedded in the unchanged release app. No fresh notarization or publication is needed.
 
 ## Cutting a release
 
@@ -305,10 +340,12 @@ keeps a release from shipping without them) → archives with `MARKETING_VERSION
 Sparkle.framework with the Developer ID (Xcode signs the framework it embeds but leaves them ad hoc,
 as Sparkle ships them, and notarization refuses ad hoc code), then the framework and the app again →
 notarizes and staples it (notarytool reports a rejection without failing, so `release.sh` reads the
-verdict and prints Apple's log when it isn't Accepted) → zips it for Sparkle (`ditto`) and builds a
-signed, notarized, stapled DMG for first installs (the app, an Applications link and `LICENSE.md`;
-the app also carries `LICENSE.md` in its resources) → checks sizes, and that the terminal and script runtime are in the app (`size-check.sh`) → drafts
-notes → runs `generate_appcast` on the zip, the published feed (so earlier items and the other
+verdict and prints Apple's log when it isn't Accepted) → packs the update archive (`.tar.xz`, "The
+update archive") and checks the app unpacked from it → packs the first-install ZIP
+with `ditto` → builds a signed, notarized, stapled DMG, kept
+locally (the app, an Applications link and `LICENSE.md`; the app also carries `LICENSE.md` in its
+resources) → checks sizes, and that the terminal and script runtime are in the app (`size-check.sh`) → drafts
+notes → runs `generate_appcast` on the archive, the published feed (so earlier items and the other
 channel's stay) and earlier archives for deltas → builds the standalone host → uploads symbols to
 Sentry → publishes.
 
@@ -371,7 +408,7 @@ or Sentry is printed instead. On CI:
   with `-f version=1.5.0-beta.1`. This direct dispatch never publishes; automatic betas use a
   separate reusable workflow call.
 
-Each uploads one workflow artifact, kept for a week: the new ZIP, selected deltas, appcast,
+Each uploads one workflow artifact, kept for a week: the new update archive, first-install ZIP, selected deltas, appcast,
 standalone host and its signed feed, plus celebration packs for stable. Downloaded seed archives,
 standalone notes (already embedded in the appcast), DMGs and dSYMs are excluded. The signed DMG
 still gets built and checked locally; signing and notarization steps are unchanged.
@@ -379,7 +416,7 @@ Check one before the first release of its kind:
 
 ```sh
 gh run download <run id> --dir rehearsal && cd rehearsal/native-nightly-<run number>
-ditto -x -k appcast/Native-Nightly-*.zip check
+mkdir check && tar -xf appcast/Native-Nightly-*.tar.xz -C check
 app="check/Native Nightly.app"               # Native.app for stable and beta
 codesign --verify --deep --strict --verbose=2 "$app"
 spctl -a -vv "$app"                          # accepted, source=Notarized Developer ID
@@ -392,15 +429,16 @@ plutil -extract SUPublicEDKey raw "$app/Contents/Info.plist"   # matches NATIVE_
 ### Delta updates
 
 Sparkle can update with a delta, the difference between two builds, instead of the whole app: a
-few MB where the update archive is over 40. `generate_appcast` makes a delta from every earlier
+few MB where the update archive is over 30. `generate_appcast` makes a delta from every earlier
 archive in its folder to the new one, so before running it `release.sh` downloads the archives
 users are most likely to have, at most two (`delta_seeds`): for stable and beta the last two
 `v*` releases' archives, for nightly the ones the rolling release still holds (it keeps two). The
 deltas are uploaded beside the archive and listed in the new item; a user on any other version gets
 the whole archive, as before. `deltas.py` selects at most two patches to the new archive and
 discards patches generated between seed archives. Any such patch references on older feed items
-are removed; their original remote deltas and full archives remain valid. Seed ZIPs are removed
-from the local output after generation so rehearsals do not attach old app downloads. Two details:
+are removed; their original remote deltas and full archives remain valid. A seed is the release's
+`.tar.xz`, or its ZIP for releases from before the switch. Seed archives are removed from the local
+output after generation so rehearsals do not attach old app downloads. Two details:
 
 - `generate_appcast` points every feed item whose archive is in the folder at the new release, so
   `release.sh` puts each earlier item's original URL back.
@@ -736,7 +774,7 @@ common=(--channel stable --no-dmg --ed-key-file $work/sparkle.key --download-url
   --build-setting NATIVE_BUNDLE_IDENTIFIER_BASE=dev.native.updatetest)
 scripts/release/release.sh "${common[@]}" --version 1.0.0 --build-number 1000 --output $work/old
 scripts/release/release.sh "${common[@]}" --version 1.1.0 --build-number 1001 --output $work/new
-cp $work/new/appcast/appcast.xml $work/new/appcast/*.zip $work/feed/
+cp $work/new/appcast/appcast.xml $work/new/appcast/*.tar.xz $work/feed/
 (cd $work/feed && python3 -m http.server 8765 --bind 127.0.0.1) &
 ditto $work/old/Native.app $work/install/Native.app && open -n $work/install/Native.app
 ```

@@ -2,7 +2,7 @@
 """Select this release's Sparkle deltas and discard unused generated patches.
 
 generate_appcast can also generate patches between the downloaded seed archives. Those
-are not updates to this release, so older items use their existing remote patches or ZIP.
+are not updates to this release, so older items use their existing remote patches or full archive.
 Print the selected local paths for release.sh; never contact a publishing service.
 """
 
