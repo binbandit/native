@@ -157,6 +157,7 @@ extension AppModel {
         switch result {
         case .success(let url?): Task { await openSidebarFolders([url], undoManager: undoManager) }
         case .success(nil): break
+        case .failure(let error) where (error as? CocoaError)?.code == .userCancelled: break
         case .failure:
             sidebarFolders.dismissResult()
             sidebarFolders.failures = [.init(name: "", reason: "Can’t open this folder. Choose Folder…")]

@@ -106,6 +106,9 @@ private struct SidebarFolderChecks {
         app.selection = nil
         require(app.homeNextOwnsNewTask, "the folder home owns Command-N without requiring the Home switch")
         app.setHomeNextVisible(false)
+        let failuresBeforeCancellation = app.sidebarFolders.failures
+        app.folderPickerFinished(.failure(CocoaError(.userCancelled)), undoManager: nil)
+        require(app.sidebarFolders.failures == failuresBeforeCancellation, "Files picker cancellation is silent")
         app.folderPickerFinished(.success(nil), undoManager: nil)
         require(app.projects.all.count == total, "cancelling a chooser keeps the workspace")
         print(
