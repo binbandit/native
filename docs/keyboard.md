@@ -424,7 +424,9 @@ being hit by accident, since it ends work in progress.
 
 Restart Background Host… is also in Settings > Background. Cancel leaves the host alone. With tasks
 running or waiting, Return chooses Wait Until They Finish; Escape cancels. The action is unavailable
-while a restart is in progress or this Mac has no background host. It never restarts a paired host.
+while restarting or this Mac has no background host. While waiting, the row names the blocking tasks
+and Restart Now… opens the same confirmation. Escape preserves the scheduled restart. It never restarts
+a paired host.
 
 ## Picking tasks in the sidebar
 

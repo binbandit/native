@@ -24,17 +24,28 @@ public final class BackgroundHostRestartModel {
     }
 
     public private(set) var state: State
+    private var confirmsWaitingRestart = false
+    private var restartID = UUID()
+
+    public var isConfirmationPresented: Bool {
+        state == .confirming || (state == .waiting && confirmsWaitingRestart)
+    }
 
     public init(state: State = .idle) {
         self.state = state
     }
 
     public func request() {
-        guard !state.isBusy else { return }
-        state = .confirming
+        guard state != .restarting else { return }
+        if state == .waiting {
+            confirmsWaitingRestart = true
+        } else {
+            state = .confirming
+        }
     }
 
     public func cancel() {
+        confirmsWaitingRestart = false
         guard state == .confirming else { return }
         state = .idle
     }
@@ -44,21 +55,31 @@ public final class BackgroundHostRestartModel {
     public func restart(
         using client: NativeHostClient, whenIdle: Bool, timeout: Duration = .seconds(30)
     ) async {
-        guard !state.isBusy else { return }
+        confirmsWaitingRestart = false
+        guard state != .restarting, !(state == .waiting && whenIdle) else { return }
+        // Escalating a scheduled restart replaces its monitor. Its late reply must not overwrite
+        // the immediate restart's progress or result.
+        let id = UUID()
+        restartID = id
         state = whenIdle ? .waiting : .restarting
-        guard let before = await client.hostInfo else {
+        let before = await client.hostInfo
+        guard restartID == id else { return }
+        guard let before else {
             state = .failed("The background host isn't connected. Native keeps trying to reconnect.")
             return
         }
         do {
             try await requestRestart(client, whenIdle: whenIdle, timeout: timeout)
+            guard restartID == id else { return }
             var deadline: ContinuousClock.Instant? = whenIdle ? nil : .now + timeout
             while !Task.isCancelled {
-                if let after = await client.hostInfo, after.epoch != before.epoch {
+                let after = await client.hostInfo
+                guard restartID == id else { return }
+                if let after, after.epoch != before.epoch {
                     state = .done(.now)
                     return
                 }
-                if deadline == nil, await client.hostInfo == nil {
+                if deadline == nil, after == nil {
                     state = .restarting
                     deadline = .now + timeout
                 }
@@ -70,6 +91,7 @@ public final class BackgroundHostRestartModel {
             }
             throw CancellationError()
         } catch {
+            guard restartID == id else { return }
             state = .failed(error.localizedDescription)
         }
     }

@@ -130,7 +130,10 @@ with a time, and failure with Try Again. A shutdown reply alone is not success: 
 reconnect to a different host epoch. Waiting for busy tasks has no deadline; the shutdown request
 and reconnection after it each allow 30 seconds. Native keeps reconnecting after a timeout. Running
 turns resume through the update recovery path above; shell commands are interrupted, not replayed.
-`BackgroundHostRestartTests` checks cancellation, idle restart, busy-task recovery, waiting and failure
+While waiting, Settings names the blocking tasks and offers Restart Now… through the same confirmation.
+Cancelling that confirmation keeps the scheduled restart; cancelling a scheduled host restart is not supported.
+Failures use the shared inline error with technical details behind Show Details.
+`BackgroundHostRestartTests` checks cancellation, idle restart, busy-task recovery, waiting, escalation and failure
 against a real host in a scratch directory.
 
 **The guarantee: updating never stops work in progress.** A new build arrives three ways, and none

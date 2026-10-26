@@ -22,11 +22,11 @@ private struct HostRestartConfirmation: ViewModifier {
     @Environment(AppModel.self) private var model
 
     func body(content: Content) -> some View {
-        let names = host.interruptedByRestart.map(title)
+        let names = host.interruptedTaskNames(in: model)
         content.confirmationDialog(
             "Restart the background host?",
             isPresented: Binding(
-                get: { host.manualRestart.state == .confirming },
+                get: { host.manualRestart.isConfirmationPresented },
                 set: { if !$0 { host.cancelHostRestart() } }
             ), titleVisibility: .visible
         ) {
@@ -46,15 +46,6 @@ private struct HostRestartConfirmation: ViewModifier {
         } message: {
             Text(Self.message(interrupting: names))
         }
-    }
-
-    /// The title the sidebar shows for the task, else the agent's.
-    private func title(_ summary: HostSessionSummary) -> String {
-        let listed = summary.agentSessionID.flatMap { id in
-            let key = SessionKey(agent: AgentDefinition.ID(rawValue: summary.agentID), id: id)
-            return model.sessionList.first { $0.id == key }
-        }
-        return listed.map(model.title(for:)) ?? summary.title ?? "New Task"
     }
 
     private static func waitLabel(for count: Int) -> String {

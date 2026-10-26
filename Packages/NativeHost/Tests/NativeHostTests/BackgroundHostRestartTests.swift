@@ -68,12 +68,53 @@ struct BackgroundHostRestartTests {
         let restart = Task { await model.restart(using: recorder.client, whenIdle: true) }
         try await Task.sleep(for: .milliseconds(100))
         #expect(model.state == .waiting)
+        model.request()
+        #expect(model.isConfirmationPresented)
+        await model.restart(using: recorder.client, whenIdle: true)
+        #expect(!model.isConfirmationPresented)
+        #expect(model.state == .waiting)
+        model.request()
         #expect(try await harness.waitForExit(timeout: .milliseconds(150)) == nil)
         #expect(try await harness.waitForExit() == 75)
         try harness.start()
         await restart.value
         guard case .done = model.state else { Issue.record("Deferred restart did not finish"); return }
+        #expect(!model.isConfirmationPresented)
         #expect(await recorder.recoveries(session.id).isEmpty)
+        await recorder.stop()
+    }
+
+    @Test("A scheduled restart can be confirmed again and escalated without losing its result")
+    func restartNowWhileWaiting() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let session = try await recorder.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: harness.root.path, attach: true))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "slow 100"))
+        try await recorder.wait("working") { await $0.summaries[session.id]?.isWorking == true }
+        let model = BackgroundHostRestartModel()
+        model.request()
+        let waiting = Task { await model.restart(using: recorder.client, whenIdle: true) }
+        defer { waiting.cancel() }
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(model.state == .waiting)
+        model.request()
+        #expect(model.isConfirmationPresented)
+        model.cancel()
+        #expect(!model.isConfirmationPresented)
+        #expect(model.state == .waiting)
+        #expect(try await harness.waitForExit(timeout: .milliseconds(100)) == nil)
+        model.request()
+        let immediate = Task { await model.restart(using: recorder.client, whenIdle: false) }
+        defer { immediate.cancel() }
+        #expect(try await harness.waitForExit(timeout: .seconds(5)) == 75)
+        try harness.start()
+        await immediate.value
+        await waiting.value
+        guard case .done = model.state else { Issue.record("Escalated restart did not finish"); return }
+        try await recorder.wait("resumed task") { !(await $0.recoveries(session.id)).isEmpty }
         await recorder.stop()
     }
 

@@ -31,8 +31,9 @@ extension SettingsPane {
                     id: BackgroundSettingsPage.hostRow, title: "Background host",
                     keywords: ["restart", "status", "login items"], plainly: .backgroundHelper),
                 SettingsSearchEntry(
-                    id: BackgroundSettingsPage.restartRow, title: "Restart Background Host",
-                    keywords: ["restart", "background", "host", "this mac"]),
+                    id: BackgroundSettingsPage.restartRow, title: "Restart background host",
+                    keywords: ["restart", "background", "host", "this mac"],
+                    plainly: .init(title: "Restart background helper")),
                 SettingsSearchEntry(
                     id: BackgroundSettingsPage.checkRow, title: "Check this Mac",
                     keywords: ["doctor", "droid", "mac mini", "health", "diagnose"]),
@@ -51,6 +52,7 @@ struct BackgroundSettingsPage: View {
     static let checkRow = SettingsRowID("background.check")
 
     @Environment(DurableHost.self) private var host: DurableHost?
+    @Environment(AppModel.self) private var model
     @Environment(\.settingsPlainly) private var plainly
     @Environment(CommandRegistry.self) private var commands
     @AppStorage(HostSessions.defaultsKey) private var keepsRunning = HostSessions.defaultValue
@@ -97,7 +99,8 @@ struct BackgroundSettingsPage: View {
     private func restartRow(_ host: DurableHost) -> some View {
         #if DEBUG
         if let state = HostRestartPreviewFixtures.rowState {
-            HostRestartSettingsRow(state: state, isAvailable: true, request: {})
+            HostRestartSettingsRow(
+                state: state, isAvailable: true, request: {}, blockingTasks: ["Check the build"])
         } else {
             liveRestartRow(host)
         }
@@ -107,9 +110,11 @@ struct BackgroundSettingsPage: View {
     }
 
     private func liveRestartRow(_ host: DurableHost) -> some View {
-        HostRestartSettingsRow(
+        let isConnected = if case .connected = host.connection { true } else { false }
+        return HostRestartSettingsRow(
             state: host.manualRestart.state, isAvailable: host.canRequestHostRestart,
-            request: host.requestHostRestart)
+            request: host.requestHostRestart, blockingTasks: host.interruptedTaskNames(in: model),
+            isHostConnected: isConnected)
     }
 
     private var quitAndStopHint: String {

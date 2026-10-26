@@ -7,44 +7,70 @@ struct HostRestartSettingsRow: View {
     let isAvailable: Bool
     let request: () -> Void
 
+    var blockingTasks: [String] = []
+    var isHostConnected = false
+
+    @Environment(\.settingsPlainly) private var plainly
+
     var body: some View {
-        SettingsRow(
-            id: BackgroundSettingsPage.restartRow, "Restart background host",
-            description: Text(description)
-        ) {
-            if state.isBusy {
-                HStack(spacing: DS.Space.sm) {
-                    DotGridLoader(pattern: .waiting)
-                        .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
-                    SettingsValue(state == .waiting ? "Waiting for tasks…" : "Restarting…")
+        if case .failed(let reason) = state {
+            ErrorState(
+                plainly ? "Couldn't restart the background helper" : "Couldn't restart the background host",
+                recovery: isHostConnected
+                    ? (plainly ? "The helper is still connected." : "The host is still connected.")
+                    : "Native is still trying to reconnect.",
+                details: reason,
+                primary: isAvailable ? .init("Try Again…", perform: request) : nil
+            )
+            .settingsRevealTarget(BackgroundSettingsPage.restartRow)
+        } else {
+            SettingsRow(
+                id: BackgroundSettingsPage.restartRow, title: Text("Background host"), plainly: .backgroundHelper,
+                description: Text(description),
+                accessory: {
+                    if state == .waiting {
+                        DotGridLoader(pattern: .waiting)
+                            .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
+                            .accessibilityLabel("Waiting for tasks")
+                    }
                 }
-                .accessibilityElement(children: .combine)
-            } else {
-                Button(buttonTitle, action: request)
-                    .buttonStyle(.settings)
-                    .disabled(!isAvailable)
+            ) {
+                if state == .restarting {
+                    progress("Restarting…")
+                } else {
+                    Button(state == .waiting ? "Restart Now…" : "Restart…", action: request)
+                        .buttonStyle(.settings)
+                        .disabled(!isAvailable)
+                }
             }
         }
     }
 
-    private var buttonTitle: String {
-        if case .failed = state { "Try Again…" } else { "Restart Background Host…" }
+    private func progress(_ label: String) -> some View {
+        HStack(spacing: DS.Space.sm) {
+            DotGridLoader(pattern: .waiting)
+                .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
+            SettingsValue(label)
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private var description: String {
         switch state {
         case .idle, .confirming:
             isAvailable
-                ? "Restart this Mac's host. Your tasks reconnect and interrupted turns resume."
-                : "Available when this Mac runs agents in its background host."
+                ? "Tasks reconnect; interrupted turns resume."
+                : "Available when agents run in this Mac's background helper."
         case .waiting:
-            "The host restarts once running and waiting tasks finish. Your tasks keep working until then."
+            blockingTasks.isEmpty
+                ? "Waiting for tasks to finish before restarting."
+                : "Waiting for \(blockingTasks.map { "“\($0)”" }.formatted(.list(type: .and))) to finish."
         case .restarting:
-            "Restarting this Mac's host and reconnecting your tasks…"
+            "Reconnecting tasks."
         case .done(let at):
-            "Restarted at \(DSFormat.time(at, now: .now)). Your tasks reconnect and interrupted turns resume."
-        case .failed(let reason):
-            "Couldn't restart the background host. \(reason) Try again."
+            "Restarted at \(DSFormat.time(at, now: .now))."
+        case .failed:
+            ""
         }
     }
 }
@@ -59,7 +85,10 @@ struct HostRestartSettingsRow: View {
 }
 
 #Preview("Background host restart - Waiting") {
-    DSPreviewPair { HostRestartSettingsRow(state: .waiting, isAvailable: true, request: {}).settingsPreviewPage() }
+    DSPreviewPair {
+        HostRestartSettingsRow(state: .waiting, isAvailable: true, request: {}, blockingTasks: ["Check the build"])
+            .settingsPreviewPage()
+    }
 }
 
 #Preview("Background host restart - Restarting") {
@@ -76,5 +105,27 @@ struct HostRestartSettingsRow: View {
             state: .failed("The host hasn't reconnected. Native keeps trying."), isAvailable: true, request: {}
         ).settingsPreviewPage()
     }
+}
+#endif
+
+#if DEBUG
+#Preview("Background host restart - Waiting, narrow Plainly") {
+    DSPreviewPair {
+        HostRestartSettingsRow(
+            state: .waiting, isAvailable: true, request: {},
+            blockingTasks: ["Check the build", "Review the changes"]
+        ).settingsPreviewPage(width: 320)
+    }
+    .environment(\.settingsPlainly, true)
+}
+
+#Preview("Background host restart - Failed, narrow Plainly") {
+    DSPreviewPair {
+        HostRestartSettingsRow(
+            state: .failed("The background host didn't answer the restart request."),
+            isAvailable: true, request: {}
+        ).settingsPreviewPage(width: 320)
+    }
+    .environment(\.settingsPlainly, true)
 }
 #endif
