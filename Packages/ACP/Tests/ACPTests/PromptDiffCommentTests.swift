@@ -69,4 +69,14 @@ import Testing
         #expect(PromptQuote.split(invalid).quotes.isEmpty)
         #expect(PromptQuote.split(invalid).message == invalid)
     }
+
+    @Test func queueSummaryUsesCountAndMessageWithoutMetadata() {
+        let original = quote()
+        #expect(PromptQuote.summary(original.prompt) == "1 comment on changes")
+        let packet = PromptQuote.draft(quotes: [original, quote(side: .old)], message: "Please fix both.")
+        #expect(PromptQuote.summary(packet) == "2 comments on changes · Please fix both.")
+        #expect(PromptQuote.summary("Ordinary\nmessage") == "Ordinary\nmessage")
+        let bare = PromptQuote(source: "a.swift", lines: [.init(number: 1, text: "source")]).prompt
+        #expect(PromptQuote.summary(bare) == bare)
+    }
 }

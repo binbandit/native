@@ -27,7 +27,7 @@ struct DiffCommentsDeliveryStatus: View {
                     }
                     Text(status)
                     if !session.diffCommentSending, session.unresolvedCommentPacket == nil,
-                        status.hasPrefix("Couldn’t send")
+                        status.hasPrefix("Couldn’t")
                     {
                         Button("Try Again", action: retry).buttonStyle(.ds(.ghost))
                     }

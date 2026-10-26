@@ -50,6 +50,12 @@ extension ComposerView {
             return
         }
         if let id = session.editingQueuedPrompt, !text.isEmpty, session.queuedPrompts.contains(where: { $0.id == id }) {
+            if session.isEditingDiffCommentPacket(id) {
+                Task {
+                    if await session.saveQueuedDiffComments(id) { feedback = .updatedInQueue }
+                }
+                return
+            }
             session.updateQueued(id, text: text)
             session.editingQueuedPrompt = nil
             session.draft = ""
@@ -154,6 +160,12 @@ extension ComposerView {
         guard let route = session.sendNowRoute else { return }
         if session.editingQueuedPrompt == id {
             if savingDraft {
+                if session.isEditingDiffCommentPacket(id) {
+                    Task {
+                        if await session.saveQueuedDiffComments(id) { sendNow(id) }
+                    }
+                    return
+                }
                 session.updateQueued(id, text: session.draft)
             }
             stopEditingQueued()

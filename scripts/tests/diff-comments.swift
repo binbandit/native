@@ -78,6 +78,22 @@ private struct DiffCommentChecks {
         require(
             session.unresolvedCommentPacket == nil && session.draft.isEmpty,
             "Queue evidence resolves the original packet")
+        let queuedID = session.queuedPrompts[0].id
+        session.editingQueuedPrompt = queuedID
+        session.draft = newerPacket
+        let savedQueueEdit = await session.saveQueuedDiffComments(queuedID)
+        require(savedQueueEdit, "Queue edit is acknowledged")
+        require(
+            session.queuedPrompts.count == 1
+                && PromptQuote.split(session.queuedPrompts[0].text).quotes == changed,
+            "Queue edit replaces the packet without adding a message")
+        require(session.draft.isEmpty && session.editingQueuedPrompt == nil, "Accepted queue edit clears the editor")
+        session.draft = oldDraft
+        session.editingQueuedPrompt = UUID()
+        let savedMissingItem = await session.saveQueuedDiffComments(UUID())
+        require(!savedMissingItem, "Missing queue item is not acknowledged")
+        require(session.draft == oldDraft, "Missing queue item preserves the edited packet")
+        session.editingQueuedPrompt = nil
         session.draft = oldDraft
         var denied = NativePolicy()
         denied.sourceExcerptsSendingEnabled = false

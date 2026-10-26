@@ -179,7 +179,7 @@ extension SessionModel {
     func reconcileDiffCommentDelivery() {
         guard let packet = unresolvedCommentPacket, !diffCommentSending else { return }
         let expected = PromptQuote.split(packet)
-        guard expected.quotes.contains(where: { $0.comment != nil }) else { return }
+        guard !packet.isEmpty else { return }
         let texts =
             queuedPrompts.map(\.text)
             + state.items.compactMap { item -> String? in
@@ -237,8 +237,9 @@ extension SessionModel {
             }
             acceptDiffCommentPacket(packet)
             if delivery == .queued {
+                let count = PromptQuote.split(packet).quotes.filter { $0.comment != nil }.count
                 diffCommentAnnouncement =
-                    "\(PromptQuote.split(packet).quotes.filter { $0.comment != nil }.count) comments queued for \(agentName)"
+                    "\(count) \(count == 1 ? "comment" : "comments") queued for \(agentName)"
             }
             attachments.removeAll { files.contains($0) }
         } catch {
@@ -256,6 +257,8 @@ extension SessionModel {
     }
 
     func acceptDiffCommentPacket(_ packet: String) {
+        let wasEditingQueue = editingQueuedPrompt != nil
+        editingQueuedPrompt = nil
         let accepted = PromptQuote.split(packet)
         let ids = Set(accepted.quotes.compactMap { $0.comment?.id })
         let current = PromptQuote.split(draft)
@@ -266,7 +269,10 @@ extension SessionModel {
             }, message: current.message == accepted.message ? "" : current.message)
         unresolvedCommentPacket = nil
         diffCommentStatus = nil
-        diffCommentAnnouncement = "\(ids.count) \(ids.count == 1 ? "comment" : "comments") sent to \(agentName)"
+        diffCommentAnnouncement =
+            wasEditingQueue
+            ? "Queued message updated."
+            : "\(ids.count) \(ids.count == 1 ? "comment" : "comments") sent to \(agentName)"
         diffCommentAnnouncementGeneration += 1
     }
 

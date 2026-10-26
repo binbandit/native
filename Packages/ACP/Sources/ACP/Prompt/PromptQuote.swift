@@ -78,6 +78,16 @@ public struct PromptQuote: Equatable, Sendable, Codable {
         quotes.map(\.prompt).joined() + message
     }
 
+    /// Queue labels describe the packet without exposing its persistence metadata as user copy.
+    public static func summary(_ prompt: String) -> String {
+        let packet = split(prompt)
+        let count = packet.quotes.filter { $0.comment != nil }.count
+        guard count > 0 else { return prompt }
+        let title = "\(count) \(count == 1 ? "comment" : "comments") on changes"
+        let message = packet.message.trimmingCharacters(in: .whitespacesAndNewlines)
+        return message.isEmpty ? title : "\(title) · \(message)"
+    }
+
     /// Trims a prompt for sending like any other, except its leading quotes: their lines are source
     /// text, so a quote-only prompt keeps a final blank line or trailing spaces and still reads back.
     public static func trimmed(_ prompt: String) -> String {
