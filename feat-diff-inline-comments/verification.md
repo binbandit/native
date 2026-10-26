@@ -1,6 +1,6 @@
 # Inline diff comments verification
 
-Revision: `2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4`. All C1-C13 light and dark state captures use this PR revision. The normal app Haiku checks below were captured before the final visual polish and queue handling changes.
+Revision: `a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f`. All C1-C13 light and dark state captures use this PR revision. C14 adds the locally held recovery state; C13 is its layout reference because no dedicated mock was supplied. The normal app Haiku checks were captured before final visual polish; the queued-edit capture uses this revision.
 
 Native is on the left of every comparison; the approved HTML mock is on the right. The changed components use the live model and views. The inert fixture uses a reference frame around them; the real Haiku capture shows the normal app frame. Screenshots were taken while unlocked through the isolated instance driver. Covered-window warnings were emitted by the driver; captured content was inspected.
 
@@ -11,7 +11,7 @@ Native is on the left of every comparison; the approved HTML mock is on the righ
 - Verified a saved comment and an unfinished comment survive `/clear`, then add and send together from the fresh conversation. No working prompt was sent by clearing.
 - The model harness passed three consecutive runs after the queue changes, then passed again on the final visual revision, including acknowledged queue edits and missing-item retention. Packet recovery compares parsed contents. Older evidence with the same comment identity does not acknowledge edited content.
 - Package checks passed: 23 ACP quote/comment/range tests, 9 policy/coverage tests, and 16 command/keyboard tests. Strict lint passed for changed Swift files.
-- iPad checking is blocked by shared dependency diagnostics, including missing AgentProcess, LocalCommandRunner, and missing adapter initializers outside this change. One resolution pass also aborted in the Swift compiler. There were no diagnostics in DiffComments files.
+- The complete iOS CI build passed on the initial revision. Current-head iOS CI is rerunning. The local folder-only checker encountered shared resolver diagnostics; it is not the platform acceptance evidence.
 - Release and Nightly compiled at 9f1ab9dc and stayed within every size budget: Release download 47.9 MB, Nightly download 48.0 MB, both installed 117.6 MB. Final-revision checks are recorded in the PR status. No budget was changed.
 
 ## Captured states
@@ -38,6 +38,20 @@ Native is on the left of every comparison; the approved HTML mock is on the righ
 
 [Unfinished editor retained after a fresh conversation](captures/real-fresh-conversation-editor-dark.png)
 
-All 26 final-revision state captures were refreshed after the screen unlocked, then compared side by side with the approved mock. The earlier normal-app captures document the real Haiku packet and fresh-conversation checks. Queued-message labels have a light/dark preview and logic coverage; a final live queued-edit UI check is still pending.
+All 26 final-revision state captures were refreshed after the screen unlocked, then compared side by side with the approved mock. The earlier normal-app captures document the real Haiku packet and fresh-conversation checks. The final native host queue edit was also checked with the scripted agent: queue one packet, reopen with Up, change the message (including a trailing newline), save, observe the owner-confirmed queue contents, and verify the field clears.
 
 Visual check pending. A separate design review must approve the PR before merging.
+
+## Review regression checks
+
+- `HostQueueUpdateTests` passes both removal and drain races after a client snapshot.
+- `scripts/tests/diff-comments.sh cx-build-diff-comments` passes held-packet persistence, edited held packets, rejection after lifting a hold, empty legacy responses, editor-only unsent recovery, text plus editor recovery, normalized message clearing and the existing draft checks.
+- `scripts/tests/task-workspace.sh cx-build-diff-comments` passes candidate disconnection during configuration with source editors retained.
+- `scripts/tests/droid-change-agent.sh cx-build-diff-comments` passes committed editor/delivery transfer and its existing failure/reconnection checks.
+- Strict lint and isolated Debug compilation pass with no repository warnings.
+
+| Additional state | Native dark | Native light | Layout reference |
+| --- | --- | --- | --- |
+| C14: locally held packet, recovery copy retained | [Dark](captures/C14-dark.png) | [Light](captures/C14-light.png) | C13 [dark](comparisons/C14-dark.png), [light](comparisons/C14-light.png); layout reference only |
+
+[Owner-confirmed queue edit in the normal app](captures/real-queue-edit-dark.png). The scripted agent echoes fixture metadata; all IDs shown there are generated fixture IDs. The account sidebar is collapsed.

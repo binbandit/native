@@ -2,209 +2,253 @@
   {
     "state": "C1",
     "theme": "dark",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C1-dark.png",
     "mock": "mocks/C1-dark.png",
-    "comparison": "comparisons/C1-dark.png"
+    "comparison": "comparisons/C1-dark.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C1",
     "theme": "light",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C1-light.png",
     "mock": "mocks/C1-light.png",
-    "comparison": "comparisons/C1-light.png"
+    "comparison": "comparisons/C1-light.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C2",
     "theme": "dark",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C2-dark.png",
     "mock": "mocks/C2-dark.png",
-    "comparison": "comparisons/C2-dark.png"
+    "comparison": "comparisons/C2-dark.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C2",
     "theme": "light",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C2-light.png",
     "mock": "mocks/C2-light.png",
-    "comparison": "comparisons/C2-light.png"
+    "comparison": "comparisons/C2-light.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C3",
     "theme": "dark",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C3-dark.png",
     "mock": "mocks/C3-dark.png",
-    "comparison": "comparisons/C3-dark.png"
+    "comparison": "comparisons/C3-dark.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C3",
     "theme": "light",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C3-light.png",
     "mock": "mocks/C3-light.png",
-    "comparison": "comparisons/C3-light.png"
+    "comparison": "comparisons/C3-light.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C4",
     "theme": "dark",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C4-dark.png",
     "mock": "mocks/C4-dark.png",
-    "comparison": "comparisons/C4-dark.png"
+    "comparison": "comparisons/C4-dark.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C4",
     "theme": "light",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C4-light.png",
     "mock": "mocks/C4-light.png",
-    "comparison": "comparisons/C4-light.png"
+    "comparison": "comparisons/C4-light.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C5",
     "theme": "dark",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C5-dark.png",
     "mock": "mocks/C5-dark.png",
-    "comparison": "comparisons/C5-dark.png"
+    "comparison": "comparisons/C5-dark.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C5",
     "theme": "light",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C5-light.png",
     "mock": "mocks/C5-light.png",
-    "comparison": "comparisons/C5-light.png"
+    "comparison": "comparisons/C5-light.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C6",
     "theme": "dark",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C6-dark.png",
     "mock": "mocks/C6-dark.png",
-    "comparison": "comparisons/C6-dark.png"
+    "comparison": "comparisons/C6-dark.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C6",
     "theme": "light",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C6-light.png",
     "mock": "mocks/C6-light.png",
-    "comparison": "comparisons/C6-light.png"
+    "comparison": "comparisons/C6-light.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C7",
     "theme": "dark",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C7-dark.png",
     "mock": "mocks/C7-dark.png",
-    "comparison": "comparisons/C7-dark.png"
+    "comparison": "comparisons/C7-dark.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C7",
     "theme": "light",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C7-light.png",
     "mock": "mocks/C7-light.png",
-    "comparison": "comparisons/C7-light.png"
+    "comparison": "comparisons/C7-light.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C8",
     "theme": "dark",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C8-dark.png",
     "mock": "mocks/C8-dark.png",
-    "comparison": "comparisons/C8-dark.png"
+    "comparison": "comparisons/C8-dark.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C8",
     "theme": "light",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C8-light.png",
     "mock": "mocks/C8-light.png",
-    "comparison": "comparisons/C8-light.png"
+    "comparison": "comparisons/C8-light.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C9",
     "theme": "dark",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C9-dark.png",
     "mock": "mocks/C9-dark.png",
-    "comparison": "comparisons/C9-dark.png"
+    "comparison": "comparisons/C9-dark.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C9",
     "theme": "light",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C9-light.png",
     "mock": "mocks/C9-light.png",
-    "comparison": "comparisons/C9-light.png"
+    "comparison": "comparisons/C9-light.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C10",
     "theme": "dark",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C10-dark.png",
     "mock": "mocks/C10-dark.png",
-    "comparison": "comparisons/C10-dark.png"
+    "comparison": "comparisons/C10-dark.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C10",
     "theme": "light",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C10-light.png",
     "mock": "mocks/C10-light.png",
-    "comparison": "comparisons/C10-light.png"
+    "comparison": "comparisons/C10-light.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C11",
     "theme": "dark",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C11-dark.png",
     "mock": "mocks/C11-dark.png",
-    "comparison": "comparisons/C11-dark.png"
+    "comparison": "comparisons/C11-dark.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C11",
     "theme": "light",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C11-light.png",
     "mock": "mocks/C11-light.png",
-    "comparison": "comparisons/C11-light.png"
+    "comparison": "comparisons/C11-light.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C12",
     "theme": "dark",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C12-dark.png",
     "mock": "mocks/C12-dark.png",
-    "comparison": "comparisons/C12-dark.png"
+    "comparison": "comparisons/C12-dark.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C12",
     "theme": "light",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C12-light.png",
     "mock": "mocks/C12-light.png",
-    "comparison": "comparisons/C12-light.png"
+    "comparison": "comparisons/C12-light.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C13",
     "theme": "dark",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C13-dark.png",
     "mock": "mocks/C13-dark.png",
-    "comparison": "comparisons/C13-dark.png"
+    "comparison": "comparisons/C13-dark.png",
+    "mockRelationship": "approved state"
   },
   {
     "state": "C13",
     "theme": "light",
-    "revision": "2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
     "capture": "captures/C13-light.png",
     "mock": "mocks/C13-light.png",
-    "comparison": "comparisons/C13-light.png"
+    "comparison": "comparisons/C13-light.png",
+    "mockRelationship": "approved state"
+  },
+  {
+    "state": "C14",
+    "theme": "dark",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
+    "capture": "captures/C14-dark.png",
+    "mock": "mocks/C13-dark.png",
+    "comparison": "comparisons/C14-dark.png",
+    "mockRelationship": "layout reference only"
+  },
+  {
+    "state": "C14",
+    "theme": "light",
+    "revision": "a8b4ba6b8bb23e1a5dcb44e2845c6b4e7750804f",
+    "capture": "captures/C14-light.png",
+    "mock": "mocks/C13-light.png",
+    "comparison": "comparisons/C14-light.png",
+    "mockRelationship": "layout reference only"
   }
 ]
