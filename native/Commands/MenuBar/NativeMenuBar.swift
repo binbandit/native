@@ -109,6 +109,7 @@ private struct ViewCommands: Commands {
                 }
             }
             CommandMenuItem(.viewMCPServers, in: menu)
+            CommandMenuItem(.viewContextUse, in: menu)
             CommandMenuItem(.viewNeedsYouFilter, in: menu)
 
             Divider()

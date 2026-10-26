@@ -15,7 +15,8 @@ struct SelectSetting: Equatable {
         guard case .select(let value, let choices) = option.kind else { return nil }
         self.option = option
         self.value = value
-        self.choices = choices
+        // A gateway's long list can repeat a value; the value is a choice's identity.
+        self.choices = choices.uniqued
     }
 
     var current: Choice? {

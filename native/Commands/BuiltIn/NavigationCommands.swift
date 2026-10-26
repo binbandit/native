@@ -9,6 +9,7 @@ extension CommandID {
     static let viewToggleSidebar: Self = "view.toggleSidebar"
     static let viewToggleSubagentInspector: Self = "view.toggleSubagentInspector"
     static let viewMCPServers: Self = "view.mcpServers"
+    static let viewContextUse: Self = "view.contextUse"
     static let viewNeedsYouFilter: Self = "view.needsYouFilter"
     static let transcriptFoldEarlierTurns: Self = "transcript.foldEarlierTurns"
     static let transcriptJumpToLatest: Self = "transcript.jumpToLatest"
@@ -69,6 +70,14 @@ extension NativeCommand {
             $0.mcpServersPopover?.wrappedValue.toggle()
         }
         .available { $0.mcpServersPopover != nil },
+
+        NativeCommand(
+            .viewContextUse, title: "Show Context Use", category: .view, systemImage: "circle.dashed",
+            keywords: ["context", "tokens", "window"]
+        ) {
+            $0.contextUsePopover?.wrappedValue = true
+        }
+        .available { $0.contextUsePopover != nil },
 
         NativeCommand(
             .viewNeedsYouFilter, title: "Show Only Tasks That Need You", category: .view,
