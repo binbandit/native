@@ -207,6 +207,8 @@ or folder. Pasted or dictated `@` text opens the list the same way ([accessibili
 `@./` lists the project root's immediate folders and files, folders first. Continue with a partial
 name to filter, or a folder path such as `@docs/` to browse there. Hidden paths are included when
 they are in the project's file index; ignored paths stay out. `..` cannot browse outside the project.
+Paths with spaces use straight quotes (`@"My Docs/"`); folder completion leaves the caret inside
+the closing quote so the next characters continue the child name.
 
 | Keys | Action |
 | --- | --- |
