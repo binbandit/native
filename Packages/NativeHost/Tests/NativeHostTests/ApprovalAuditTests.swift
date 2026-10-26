@@ -212,6 +212,21 @@ import Testing
         #expect(rows.allSatisfy { $0.selectedOptionID == nil })
     }
 
+    @Test @HostActor func agentExitWithdrawsAnAnnouncedSubagentsApproval() async throws {
+        let rig = try PolicyRig(.unrestricted)
+        let client = try await connect(rig)
+        defer { rig.stop() }
+        try await client.syncAgents([rig.agentSpec()])
+        _ = try await client.newSession(.init(agentID: "fake", cwd: rig.root.path()))
+        let (child, _) = try seed(rig.core, origin: .announced)
+        let link = try #require(rig.core.agents["fake"])
+        rig.core.agentExited("fake", generation: link.generation)
+        #expect(rig.core.sessions[child] == nil)
+        #expect(try records(rig.core.store).last?.state == .withdrawn)
+        #expect(try rig.core.store.approvals().isEmpty)
+        await client.stop()
+    }
+
     @Test @HostActor func exportAuthorizationCannotBeSpoofedByDisplayNameOrPayload() async throws {
         let rig = try PolicyRig(.unrestricted)
         let (session, tool) = try seed(rig.core)
@@ -359,9 +374,11 @@ import Testing
         } catch { return false }
     }
 
-    @HostActor private func seed(_ core: HostCore, optionCount: Int = 1) throws -> (HostSessionID, String) {
+    @HostActor private func seed(
+        _ core: HostCore, optionCount: Int = 1, origin: SessionOrigin = .user
+    ) throws -> (HostSessionID, String) {
         let record = StoredSession(
-            id: HostSessionID(), agentID: "fake", agentSessionID: nil, cwd: "/fixture", parentID: nil, origin: .user)
+            id: HostSessionID(), agentID: "fake", agentSessionID: nil, cwd: "/fixture", parentID: nil, origin: origin)
         try core.store.insertSession(record)
         let session = HostSession(record: record, agentName: Self.canary, phase: .idle, needsLoad: false)
         core.sessions[record.id] = session
