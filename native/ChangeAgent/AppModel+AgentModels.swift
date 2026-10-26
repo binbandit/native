@@ -20,15 +20,14 @@ extension AppModel {
         guard offersAgentModels else { return [] }
         let place = agentChangePlace(of: source)
         let runtimes = agentChangeRuntimes(at: place)
-        let current = runtimes.first { $0.agent.id == source.agent.id }
-        let ordered = (current.map { [$0] } ?? []) + runtimes.filter { $0.agent.id != source.agent.id }
-        var result = ordered.flatMap { runtime -> [ComposerAgentModel] in
-            let isCurrent = runtime.agent.id == source.agent.id
-            let reported = isCurrent ? source.configOptions : agentModelOptions(runtime, place: place)
-            let reason: String? = isCurrent ? nil : agentModelBlock(source, runtime: runtime)
-            return modelEntries(
-                agent: runtime.agent.id, name: runtime.agent.displayName, options: reported,
-                reason: reason, isManaged: false)
+        var result = modelEntries(
+            agent: source.agent.id, name: source.agentName, options: source.configOptions,
+            reason: remoteAgentChangeBlock(for: source), isManaged: false)
+        result += runtimes.filter { $0.agent.id != source.agent.id }.flatMap { runtime -> [ComposerAgentModel] in
+            modelEntries(
+                agent: runtime.agent.id, name: runtime.agent.displayName,
+                options: agentModelOptions(runtime, place: place),
+                reason: agentModelBlock(source, runtime: runtime), isManaged: false)
         }
         // Admission removes forbidden agents from runtimes. Keep known model identities readable,
         // without making a denied agent executable or starting it to discover more.
