@@ -79,7 +79,7 @@ public actor LinkGateway {
     private var tailnetNames: [String: String] = [:]
     private var observers: [UUID: @Sendable (LinkStatus) -> Void] = [:]
     private var control: LinkControlServer?
-    let accept: @Sendable (any ByteStream, LinkGrants) -> Void
+    let accept: @Sendable (any ByteStream, LinkGrants, HostClientIdentity) -> Void
     let paired: @Sendable (LinkPairingRecord) -> Void
     let logger = HostLogger(category: "LinkGateway")
 
@@ -91,6 +91,17 @@ public actor LinkGateway {
     public init(
         configuration: Configuration, keyStore: (any LinkKeyStore)? = nil, allowedByPolicy: Bool = true,
         accept: @escaping @Sendable (any ByteStream, LinkGrants) -> Void,
+        paired: @escaping @Sendable (LinkPairingRecord) -> Void = { _ in }
+    ) throws {
+        try self.init(
+            configuration: configuration, keyStore: keyStore, allowedByPolicy: allowedByPolicy,
+            accept: { stream, grants, _ in accept(stream, grants) }, paired: paired)
+    }
+
+    /// Carries only the public key proven by the handshake, never device display information.
+    public init(
+        configuration: Configuration, keyStore: (any LinkKeyStore)? = nil, allowedByPolicy: Bool = true,
+        accept: @escaping @Sendable (any ByteStream, LinkGrants, HostClientIdentity) -> Void,
         paired: @escaping @Sendable (LinkPairingRecord) -> Void = { _ in }
     ) throws {
         try FileManager.default.createDirectory(
