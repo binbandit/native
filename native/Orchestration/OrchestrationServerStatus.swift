@@ -1,3 +1,4 @@
+import Foundation
 import MCP
 import Observation
 
@@ -13,10 +14,11 @@ final class OrchestrationServerStatus {
 
     /// The server's start, once it's listening.
     private(set) var launch: MCPServerLaunch?
-    /// A move that left sessions behind, until the user dismisses it.
+    /// A move that left sessions behind, until they reload or the user dismisses it.
     private(set) var move: Move?
     /// Native's host serves the tools to its sessions, so the app's server is stopped.
     private(set) var isServedByHost = false
+    private var hostEpoch: UUID?
 
     func started(_ launch: MCPServerLaunch) {
         self.launch = launch
@@ -30,6 +32,14 @@ final class OrchestrationServerStatus {
 
     func dismiss() {
         move = nil
+    }
+
+    /// A new host process reloads the stored URLs. Reconnecting to the same process doesn't.
+    func refreshedHost(epoch: UUID) {
+        if let hostEpoch, hostEpoch != epoch {
+            move = nil
+        }
+        hostEpoch = epoch
     }
 
     func servedByHost() {

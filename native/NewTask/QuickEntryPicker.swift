@@ -14,7 +14,8 @@ struct QuickEntryPicker: View {
                     projectName: entry.project.flatMap(model.projects.project)?.name ?? "the project",
                     selection: Binding(get: { entry.device }, set: model.chooseQuickEntryDevice),
                     onAddHost: openAddHost.map { action in { action() } }, width: nil,
-                    allowsOfflineHold: model.composeTask.isPresented
+                    allowsOfflineHold: model.composeTask.isPresented,
+                    offlineSince: { model.composeOfflineSince(for: $0) }
                 ) { entry.picker = nil }
             case .agent:
                 agents
@@ -51,7 +52,7 @@ struct QuickEntryPicker: View {
                             Text(runtime.status == .idle ? "Ready" : runtime.status.label)
                                 .font(.dsCaption)
                                 .foregroundStyle(.dsTextTertiary)
-                            Image(systemName: "checkmark")
+                            Image(systemName: "checkmark").font(DS.ComposerSettings.rowFont)
                                 .opacity(entry.agent == runtime.agent.id ? 1 : 0)
                         }
                         .contentShape(.rect)
@@ -86,29 +87,53 @@ struct QuickEntryPicker: View {
     }
 
     private var projects: some View {
-        VStack(alignment: .leading, spacing: DS.Space.xxs) {
-            heading("Project")
-            ForEach(model.projects.all) { project in
-                Button {
-                    model.chooseQuickEntryProject(project.id)
-                } label: {
-                    HStack(spacing: DS.Space.md) {
-                        Text(project.name)
-                        Spacer(minLength: DS.Space.md)
-                        if entry.project == project.id { Image(systemName: "checkmark") }
+        VStack(alignment: .leading, spacing: DS.Space.xs) {
+            Text("Project").font(.dsCaption).foregroundStyle(.dsTextTertiary)
+                .accessibilityAddTraits(.isHeader)
+            VStack(spacing: 0) {
+                ForEach(model.projects.all) { project in
+                    Button {
+                        model.chooseQuickEntryProject(project.id)
+                    } label: {
+                        HStack(spacing: DS.Space.sm) {
+                            Image(systemName: "checkmark").font(DS.ComposerSettings.rowFont)
+                                .opacity(entry.project == project.id ? 1 : 0)
+                                .frame(width: DS.ComposerSettings.selectionWidth)
+                            Text(project.name).font(DS.ComposerSettings.rowFont)
+                            Spacer(minLength: DS.Space.sm)
+                        }
+                        .padding(.horizontal, DS.Space.xs)
+                        .frame(height: DS.ComposerSettings.rowHeight)
+                        .contentShape(.rect)
                     }
-                    .font(.dsCallout)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.dsTextPrimary)
+                    .background(
+                        entry.project == project.id ? Color.dsSelected : .clear,
+                        in: .rect(cornerRadius: DS.Radius.control)
+                    )
+                    .accessibilityAddTraits(entry.project == project.id ? .isSelected : [])
+                }
+                SeparatorLine().padding(.vertical, DS.Space.xs)
+                Button {
+                    entry.isChoosingFolder = true
+                } label: {
+                    HStack(spacing: DS.Space.sm) {
+                        Image(systemName: "folder").font(DS.ComposerSettings.rowFont).foregroundStyle(.dsTextSecondary)
+                            .frame(width: DS.ComposerSettings.selectionWidth)
+                        Text("Choose a Folder…").font(DS.ComposerSettings.rowFont)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, DS.Space.xs)
+                    .frame(height: DS.ComposerSettings.rowHeight)
                     .contentShape(.rect)
                 }
-                .buttonStyle(.ds(.ghost))
-                .dsHitTarget(DS.Size.controlSM)
+                .buttonStyle(.plain)
+                .foregroundStyle(.dsTextPrimary)
             }
-            SeparatorLine()
-            Button("Choose a Folder…") { entry.isChoosingFolder = true }
-                .buttonStyle(.ds(.ghost))
         }
-        .padding(DS.Space.xs)
+        .padding(DS.ComposerSettings.sectionInset)
+        .padding(DS.ComposerSettings.popoverInset)
     }
 
     private func heading(_ title: String) -> some View {

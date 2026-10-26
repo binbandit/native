@@ -388,7 +388,8 @@ the URL outlasts the app:
   (`_native/session/set_mcp_servers` with `replacingNamed`, which upserts the `native` entry and
   writes nothing when it's unchanged), so the next load brings the tools back, also for sessions
   from before URLs lasted. A session loaded right now keeps the old address until it reloads; after
-  a move, `OrchestrationServerNotice` says so once and offers Restart Host.
+  a move, `OrchestrationServerNotice` says so once and offers Restart Host. Cancelling the restart
+  confirmation keeps the notice visible; a new host process or handover to host-served tools clears it.
 
 What this changes in the threat model. Before, tokens were 256 random bits per session per launch,
 held only in memory, and worthless once the app quit. Now a token lasts as long as the install's

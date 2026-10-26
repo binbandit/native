@@ -70,7 +70,8 @@ struct TaskWellLabel: View {
             if includesAgent, !content.agent.isEmpty {
                 Text(content.agent)
                     .font(.dsBody)
-                    .foregroundStyle(.dsTextTertiary)
+                    .foregroundStyle(content.verbIsState ? .dsTextSecondary : .dsTextTertiary)
+                if content.verbIsState { Text("·").font(.dsBody).foregroundStyle(.dsTextTertiary) }
             }
             Text(content.verb)
                 .font(content.isWaiting ? DS.TaskWell.body : .dsBody)

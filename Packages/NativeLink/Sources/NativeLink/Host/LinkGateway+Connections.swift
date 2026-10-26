@@ -194,7 +194,9 @@ extension LinkGateway {
         channel.onClose { [weak self] in
             Task { await self?.closed(channel, deviceID: device.id) }
         }
-        accept(LinkPolicyStream(channel: channel, grants: device.grants, deviceName: device.name), device.grants)
+        accept(
+            LinkPolicyStream(channel: channel, grants: device.grants, deviceName: device.name), device.grants,
+            .pairedDevice(publicKey: channel.remoteKey.rawRepresentation))
         publish()
     }
 

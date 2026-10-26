@@ -120,6 +120,9 @@ struct ComposerEditor: View {
         .accessibilityLabel(inputLabel)
         // Files and images dropped on the text attach instead (the composer's drop area).
         .textViewTakesOnlyTextDrops()
+        .background {
+            PlatformComposerReferenceBackground(ranges: referenceRanges)
+        }
         .modifier(
             ComposerReferenceClipboard(
                 enabled: referencesEnabled && !projection.tokens.isEmpty,
@@ -267,9 +270,12 @@ struct ComposerEditor: View {
             let rawEnd = text.utf8.index(text.startIndex, offsetBy: token.raw.upperBound)
             styled[lower..<upper][ComposerFileReferenceAttribute.self] = .init(
                 raw: String(text[rawStart..<rawEnd]), display: String(styled[lower..<upper].characters))
-            styled[lower..<upper].font = DS.ComposerQuote.codeFont
-            styled[lower..<upper].backgroundColor = .dsFill
-            styled[lower..<upper].foregroundColor = .dsTextSecondary
+            styled[lower..<upper].font = DS.ComposerReference.font
+            styled[lower..<upper].foregroundColor = .dsTextPrimary
+            let paddedStart = styled.index(afterCharacter: lower)
+            let paddedEnd = styled.index(beforeCharacter: upper)
+            styled[lower..<paddedStart].font = DS.ComposerReference.paddingFont
+            styled[paddedEnd..<upper].font = DS.ComposerReference.paddingFont
             if let counts = token.counts {
                 for (label, color) in [
                     ("+\(DSFormat.lineCount(counts.added))", Color.dsSuccess),
@@ -321,7 +327,16 @@ struct ComposerEditor: View {
 
     private func makeProjection(_ text: String) -> FileReferenceProjection {
         FileReferenceProjection(
-            text, counts: referenceCounts, enabled: referencesEnabled, formatCount: DSFormat.lineCount)
+            text, counts: referenceCounts, enabled: referencesEnabled,
+            tokenPadding: DS.ComposerReference.padding, formatCount: DSFormat.lineCount)
+    }
+
+    private var referenceRanges: [NSRange] {
+        projection.tokens.map { token in
+            let start = projection.display.utf8.index(projection.display.startIndex, offsetBy: token.display.lowerBound)
+            let end = projection.display.utf8.index(projection.display.startIndex, offsetBy: token.display.upperBound)
+            return NSRange(start..<end, in: projection.display)
+        }
     }
 
     private func applyCodeStyle(to styled: inout AttributedString, from text: String) {
@@ -344,57 +359,3 @@ struct ComposerEditor: View {
         }
     }
 }
-
-#if DEBUG
-#Preview("Editor") {
-    DSPreviewPair {
-        VStack(spacing: DS.Space.xl) {
-            ComposerSurface {
-                ComposerEditorPreview(text: "", placeholder: "What should Claude Code work on?")
-            }
-            ComposerSurface {
-                ComposerEditorPreview(
-                    text: """
-                        The queue test still flakes. Look at `PromptQueueTests` and fix the ordering:
-
-                        ```swift
-                        queue.move(id, .up)
-                        ```
-                        """,
-                    placeholder: "")
-            }
-        }
-        .frame(width: 560)
-    }
-}
-
-#Preview("Editor - Live references, unknown counts and narrow") {
-    DSPreviewPair {
-        ComposerSurface {
-            ComposerEditorPreview(
-                text: "Check @Packages/ACP/PromptQueue.swift and @\"folder/File with spaces.swift\" please.",
-                placeholder: "Message Codex", referencesEnabled: true,
-                referenceCounts: ["Packages/ACP/PromptQueue.swift": .init(added: 6, removed: 2)])
-        }.frame(width: 380)
-    }
-}
-
-/// Holds the editor's text, selection and focus, which a preview can't pass as plain values.
-private struct ComposerEditorPreview: View {
-    @State var text: String
-    let placeholder: String
-    var referencesEnabled = false
-    var referenceCounts: [String: FileReferenceProjection.Counts] = [:]
-    @State private var selection: TextSelection?
-    @FocusState private var isFocused: Bool
-
-    var body: some View {
-        ComposerEditor(
-            text: $text, selection: $selection, placeholder: placeholder, isFocused: $isFocused,
-            referencesEnabled: referencesEnabled, referenceCounts: referenceCounts
-        ) { _ in
-            .ignored
-        }
-    }
-}
-#endif
