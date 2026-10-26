@@ -75,7 +75,6 @@ final class AppModel {
     /// Tasks Compose started from one brief to two agents (TaskPairs).
     let taskPairs: TaskPairs
     var changingAgent: ChangeAgentModel?
-    var agentModelCatalogs: [ObjectIdentifier: [ConfigOption]] = [:]
     var coordinatorEditor: CoordinatorTaskEditor?
     var coordinators: [HostCoordinator] = []
     @ObservationIgnored var followedCoordinatorClients: Set<ObjectIdentifier> = []

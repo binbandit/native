@@ -52,7 +52,7 @@ extension AppModel {
     }
 
     private func agentModelOptions(_ runtime: AgentRuntime, place: AgentChangePlace) -> [ConfigOption]? {
-        if let options = agentModelCatalogs[ObjectIdentifier(runtime)] { return options }
+        if let options = runtime.modelCatalog { return options }
         if let session = sessions.loadedSessions.first(where: {
             $0.agent.id == runtime.agent.id && agentChangePlace(of: $0) == place && $0.phase == .idle
         }) {
@@ -114,7 +114,7 @@ extension AppModel {
                 $0.agent.id == row.agent
             })
         else { throw ComposerAgentChange.Failure("That agent is no longer available.") }
-        agentModelCatalogs[ObjectIdentifier(runtime)] = target.configOptions
+        runtime.rememberModels(target.configOptions)
     }
 
     /// Starting a candidate bypasses task-start hooks and defaults that belong to a working task.
