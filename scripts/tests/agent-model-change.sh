@@ -31,7 +31,7 @@ flags=(-I "$HOME/Library/Caches/native-build/libghostty/include" -parse-as-libra
 for map in "$derived"/Build/Intermediates.noindex/GeneratedModuleMaps*/*.modulemap; do
     [ ! -e "$map" ] || flags+=(-Xcc "-fmodule-map-file=$map")
 done
-nice -n 10 xcrun swiftc "${flags[@]}" "$work/combined.swift" "$app/Contents/MacOS/Native.debug.dylib" \
+nice -n 10 xcrun swiftc "${flags[@]}" "$work/combined.swift" "$root/Packages/ACP/Tests/ACPTests/GatewayWire.swift" "$app/Contents/MacOS/Native.debug.dylib" \
     -Xlinker -rpath -Xlinker "$app/Contents/Frameworks" -Xlinker -rpath -Xlinker "$app/Contents/MacOS" \
     -o "$work/agent-model-change"
-nice -n 10 "$work/agent-model-change"
+NATIVE_AGENT_MODEL_FIXTURE_SCRIPT="$root/scripts/tests/agent-model-agent.py" nice -n 10 "$work/agent-model-change"

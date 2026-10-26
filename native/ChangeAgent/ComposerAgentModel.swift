@@ -19,6 +19,19 @@ struct ComposerAgentModel: Identifiable, Equatable {
     var listChoice: ConfigOption.SelectOption {
         .init(value: id, name: choice.name)
     }
+    func distinction(in catalog: [Self]) -> String? {
+        let choices = catalog.filter { $0.agent == agent }.map(\.choice)
+        switch ModelChoiceList.distinguishingDetail(for: choice, among: choices) {
+        case .note(let note): return note
+        case .value(let value, _): return value
+        case nil: return nil
+        }
+    }
+
+    func accessibleLabel(in catalog: [Self]) -> String {
+        [choice.displayName, distinction(in: catalog), agentName].compactMap { $0 }.joined(separator: ", ")
+    }
+
     var searchTerms: [String] { [agentName, choice.value] }
     var caption: String {
         if let unavailable { return unavailable }

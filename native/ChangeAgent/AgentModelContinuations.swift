@@ -15,6 +15,7 @@ final class AgentModelContinuations {
         let modelValue: String?
         let modelName: String
         var isDismissed = false
+        var confirmedChoices: [String: String]?
     }
 
     private var pending: [String: String]

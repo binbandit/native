@@ -68,10 +68,14 @@ extension ComposerSettingsPopover {
             ) {
                 Text(Self.marked(row.name, row.nameMatches, font: DS.ComposerSettings.rowMatchFont))
             } trailing: {
-                Text(entry.agentName + (entry.isManaged ? " · Not allowed" : ""))
-                    .font(DS.ComposerSettings.detailFont)
-                    .foregroundStyle(.dsTextTertiary)
-                    .lineLimit(1)
+                HStack(spacing: DS.Space.sm) {
+                    if let distinction = entry.distinction(in: agentModels ?? []) {
+                        Text(distinction).font(.dsMonoCaption).lineLimit(1).truncationMode(.head)
+                    }
+                    Text(entry.agentName + (entry.isManaged ? " · Not allowed" : ""))
+                        .font(DS.ComposerSettings.detailFont).lineLimit(1).layoutPriority(1)
+                }
+                .foregroundStyle(.dsTextTertiary)
             }
         }
         .buttonStyle(.plain)
@@ -82,7 +86,7 @@ extension ComposerSettingsPopover {
             [entry.choice.description, entry.choice.value, entry.agentName, entry.caption]
                 .compactMap { $0 }.joined(separator: "\n")
         )
-        .accessibilityLabel("\(entry.choice.displayName), \(entry.agentName)")
+        .accessibilityLabel(entry.accessibleLabel(in: agentModels ?? []))
         .accessibilityValue(
             entry.isManaged
                 ? "Not allowed by \(manager ?? "your organization")"
@@ -90,6 +94,14 @@ extension ComposerSettingsPopover {
         )
         .accessibilityHint(entry.agent == currentAgentID ? entry.choice.purpose ?? "" : entry.caption)
         .accessibilityAddTraits(selected ? .isSelected : [])
+        .contextMenu {
+            if case .model(let value) = entry.kind, let value {
+                Button("Copy Model ID") { DSPasteboard.copy(value) }
+            }
+        }
+        .accessibilityAction(named: "Copy Model ID") {
+            if case .model(let value) = entry.kind, let value { DSPasteboard.copy(value) }
+        }
     }
 
     private var agentModelCaption: some View {

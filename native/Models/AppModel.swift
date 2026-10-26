@@ -488,7 +488,16 @@ final class AppModel {
         guard let session = try? await launcher.start(on: runtime, cwd: old.cwd, project: project, continuing: old)
         else { return nil }
         await session.adoptConfigChoices(of: old)
+        if sessions.services.modelContinuations.hasPending(old.key) {
+            do { try await recoverAgentModel(old.key, in: session) } catch {
+                deletedSessions.insert(session.key)
+                discardAgentChange(session)
+                return nil
+            }
+        }
+        old.attachmentReads.move(to: session)
         session.draft = old.draft
+        session.attachments = old.attachments
         catalog.swap(old.key, for: SessionInfo(sessionId: session.id, cwd: old.cwd.folderPath, updatedAt: .now))
         if selection == old.key {
             selection = session.key

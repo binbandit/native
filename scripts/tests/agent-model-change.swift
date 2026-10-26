@@ -1,6 +1,22 @@
 // The runner prepends the existing in-memory host fixture from droid-change-agent.swift.
 // Only fixture protocol responses are adapted to report a conservative permission mode.
 
+private actor AgentModelAttachmentGate {
+    private var value: PromptAttachment?
+    private var continuation: CheckedContinuation<PromptAttachment, Never>?
+
+    func read() async -> PromptAttachment {
+        if let value { return value }
+        return await withCheckedContinuation { continuation = $0 }
+    }
+
+    func release(_ attachment: PromptAttachment) {
+        value = attachment
+        continuation?.resume(returning: attachment)
+        continuation = nil
+    }
+}
+
 @main
 @MainActor
 private struct AgentModelChangeRegression {
@@ -20,7 +36,11 @@ private struct AgentModelChangeRegression {
         let domain = ProcessInfo.processInfo.processName
         UserDefaults.standard.removePersistentDomain(forName: domain)
         defer { UserDefaults.standard.removePersistentDomain(forName: domain) }
-        do { try await run() } catch { print("FAIL: \(error)"); exit(1) }
+        do {
+            try duplicateModels()
+            try await run()
+            try await inAppRecovery()
+        } catch { print("FAIL: \(error)"); exit(1) }
     }
 
     static func run() async throws {
@@ -72,6 +92,16 @@ private struct AgentModelChangeRegression {
         let attachment = PromptAttachment(
             url: URL(filePath: "/fixture/notes.txt"), content: .text("Fixture"), byteCount: 7)
         source.attachments = [attachment]
+        let reads = source.attachmentReads
+        reads.begin(2, in: source)
+        let firstRead = AgentModelAttachmentGate()
+        let secondRead = AgentModelAttachmentGate()
+        let firstFile = PromptAttachment(
+            url: URL(filePath: "/fixture/first.txt"), content: .text("First"), byteCount: 5)
+        let secondFile = PromptAttachment(
+            url: URL(filePath: "/fixture/second.txt"), content: .text("Second"), byteCount: 6)
+        let readingFirst = Task { try reads.complete(await firstRead.read()) }
+        let readingSecond = Task { try reads.complete(await secondRead.read()) }
         let tripwire = WorkspaceTripwire()
         app.taskWorkspaces = tripwire
         var hooks = 0
@@ -106,6 +136,11 @@ private struct AgentModelChangeRegression {
         try require(ComposerSettings(target.configOptions).model?.value == "large", "Exact model not confirmed")
         try require(ComposerSettings(target.configOptions).autonomy?.value == "read-only", "Permissions broadened")
         try require(tripwire.calls.isEmpty && hooks == 1, "Preparation allocated a worktree or duplicated task hooks")
+        await firstRead.release(firstFile)
+        try await readingFirst.value
+        try require(
+            target.attachments == [attachment, firstFile] && source.attachments.isEmpty,
+            "A suspended attachment read landed on the earlier conversation")
         target.draft = "Draft edited after selection"
         first.undo()
         try require(app.selection == source.key && !source.isEarlierConversation, "Undo didn't restore source identity")
@@ -113,7 +148,13 @@ private struct AgentModelChangeRegression {
             source.draft == "Draft edited after selection" && source.attachments == [attachment],
             "Undo lost current edits")
         try require(await process.accepted.isEmpty, "Undo submitted a prompt")
+        await secondRead.release(secondFile)
+        try await readingSecond.value
+        try require(
+            source.attachments == [attachment, firstFile, secondFile] && reads.count == 0,
+            "Pending reads didn't follow Undo back to the visible draft")
         print("PASS: exact model, permission preservation, no working prompt, one task, drafts and Undo")
+        print("PASS: suspended attachment reads follow the draft through selection and Undo")
 
         source.phase = .prompting
         source.lastStopReason = nil
@@ -172,9 +213,12 @@ private struct AgentModelChangeRegression {
             reverse != nil && reverse?.unavailable == nil,
             "A prepared continuation cannot choose another agent before sending")
         let userText = "Only answer this explicit message"
-        _ = try await current.submit(userText, .queue)
+        _ = try await current.submit(userText, attaching: current.attachments, .queue)
         let sent = await process.accepted
         try require(sent.count == 1 && sent[0].text == userText, "Context became an extra visible message")
+        try require(
+            sent[0].attachments.map(\.name).contains(firstFile.name),
+            "Outbound message omitted the attachment that finished after selection")
         let blocks = sent[0].content ?? []
         try require(blocks.count >= 2, "Next explicit message omitted context")
         try require(!applied.canUndo, "Undo promised to unsend an accepted message")
@@ -191,6 +235,114 @@ private struct AgentModelChangeRegression {
             "Pending context didn't survive reload or was reused")
         print("PASS: locally prepared context survives relaunch and is consumed once")
         await client.stop()
+    }
+
+    static func duplicateModels() throws {
+        let settings = ComposerSettings(try GatewayWire.options())
+        let catalog =
+            settings.model?.choices.map {
+                ComposerAgentModel(
+                    agent: .init(rawValue: "fixture"), agentName: "Fixture", choice: $0, kind: .model($0.value))
+            } ?? []
+        let groups = Dictionary(grouping: catalog, by: { $0.choice.displayName }).values.filter { $0.count > 1 }
+        try require(!groups.isEmpty, "Captured gateway lost its duplicate names")
+        for group in groups {
+            let details = group.compactMap { $0.distinction(in: catalog) }
+            try require(Set(details).count == group.count, "Combined rows cannot distinguish captured same-name models")
+            for row in group {
+                guard let detail = row.distinction(in: catalog) else { throw ChangeFailure("No distinction") }
+                try require(
+                    row.accessibleLabel(in: catalog).contains(detail), "VoiceOver omitted the distinguishing identity")
+            }
+        }
+        print("PASS: captured duplicate model names have visible and accessible distinctions")
+    }
+
+    static func inAppRecovery() async throws {
+        guard let script = ProcessInfo.processInfo.environment["NATIVE_AGENT_MODEL_FIXTURE_SCRIPT"] else {
+            throw ChangeFailure("No in-app fixture script")
+        }
+        for draft in ["Unsent draft survives", ""] {
+            let scratch = FileManager.default.temporaryDirectory.appending(path: "agent-model-in-app-\(UUID())")
+            try FileManager.default.createDirectory(at: scratch, withIntermediateDirectories: true)
+            defer { try? FileManager.default.removeItem(at: scratch) }
+            let defaults = PreviewUserDefaults()
+            let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
+            experiments.set(true, for: .changeAgent)
+            experiments.set(true, for: .composerNext)
+            let manifest = PluginManifest(
+                id: "in-app-fixture", name: "In-app fixture",
+                agents: [
+                    AgentManifest(id: "fixture", name: "Fixture", command: "/usr/bin/true"),
+                    AgentManifest(
+                        id: "target", name: "Target", command: "/usr/bin/python3",
+                        args: [
+                            script,
+                            "--kind", "target", "--store", scratch.appending(path: "agent").path,
+                            "--project", scratch.path, "--reject-unsent-load",
+                        ]),
+                ])
+            func launch() -> AppModel {
+                AppModel(
+                    plugins: PluginRegistry(builtIns: [ManifestPlugin(manifest: manifest)], defaults: defaults),
+                    titles: SessionTitles(defaults: defaults), defaults: defaults,
+                    catalogURL: scratch.appending(path: "catalog.json"), experiments: experiments)
+            }
+            let first = launch()
+            _ = await first.checkForAgents()
+            let project = first.projects.add(scratch)
+            guard
+                let source = SessionModel.preview(
+                    in: first, agent: "fixture", id: "source", cwd: scratch.path,
+                    configOptions: ComposerSettingsPreviewFixtures.claude(mode: "default").model.map { _ in
+                        ComposerSettingsPreviewFixtures.claude(mode: "default")
+                    }.map { [$0.model?.option, $0.autonomy?.option].compactMap { $0 } } ?? [])
+            else { throw ChangeFailure("No in-app source") }
+            source.previewExchange("Keep this task", reply: "Recorded progress before changing the agent")
+            first.catalog.add(
+                SessionInfo(sessionId: source.id, cwd: scratch.path), for: source.agent.id, in: project.id)
+            first.selection = source.key
+            source.draft = draft
+            let choice = ComposerAgentModel(
+                agent: .init(rawValue: "target"), agentName: "Target",
+                choice: .init(value: "gpt-6-sol", name: "6 Sol"), kind: .model("gpt-6-sol"))
+            first.chooseAgentModel(choice, for: source)
+            guard let change = source.modelChange else { throw ChangeFailure("No in-app choice") }
+            try await wait("in-app commit") { change.stage == .applied || change.stage == .failed }
+            try require(change.stage == .applied, change.error ?? "In-app choice failed")
+            guard let old = first.selection else { throw ChangeFailure("No selected in-app task") }
+            first.keepDrafts()
+            first.stopAgents()
+            let again = launch()
+            _ = await again.checkForAgents()
+            try require(again.catalog.contains(old), "An empty unsent model selection was dropped at launch")
+            again.selection = old
+            await again.loadSession(old)
+            guard let key = again.selection, let reopened = again.session(key) else {
+                throw ChangeFailure("In-app unsent choice couldn't reopen")
+            }
+            try require(
+                key != old && reopened.draft == draft, "Recovery lost the draft or reused an unsaved conversation")
+            try require(
+                ComposerSettings(reopened.configOptions).model?.value == "gpt-6-sol"
+                    && ComposerSettings(reopened.configOptions).autonomy?.value == "read-only",
+                "Recovery lost confirmed settings")
+            try require(
+                again.earlierConversations.conversation(before: key) == source.key,
+                "Recovery lost the earlier conversation")
+            try require(reopened.modelChange?.canUndo == true, "Recovery lost the reversible receipt")
+            _ = try await reopened.submit("Continue", .queue)
+            try await wait("first recovered turn ends") { reopened.phase == .idle }
+            _ = try await reopened.submit("Again", .queue)
+            try await wait("second recovered turn ends") { reopened.phase == .idle }
+            let deliveries = try JSONDecoder().decode(
+                [Bool].self,
+                from: Data(contentsOf: scratch.appending(path: "agent/context-deliveries.json")))
+            try require(deliveries == [true, false], "Recovered context didn't arrive exactly once")
+            again.stopAgents()
+        }
+        print(
+            "PASS: in-app relaunch restores empty and nonempty unsent selections, settings, receipt, links and context")
     }
 
 }

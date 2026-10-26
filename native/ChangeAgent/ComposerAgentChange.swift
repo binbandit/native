@@ -68,7 +68,14 @@ final class ComposerAgentChange {
             .init(
                 source: earlierKey, sourceName: earlierName, sourceModel: earlierModel,
                 agent: choice.agent, agentName: choice.agentName, modelValue: value,
-                modelName: choice.choice.name, isDismissed: isReceiptDismissed), for: current.key)
+                modelName: choice.choice.name, isDismissed: isReceiptDismissed,
+                confirmedChoices: Dictionary(
+                    uniqueKeysWithValues: current.configOptions.compactMap { option in
+                        guard option.category == "model" || option.category == "mode",
+                            case .select(let value, _) = option.kind
+                        else { return nil }
+                        return (option.id, value)
+                    })), for: current.key)
     }
 
     var receipt: String {

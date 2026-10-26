@@ -74,6 +74,7 @@ final class SessionModel {
     var quoteSelection: [PromptQuote] = []
     /// The current or latest model selection, shared by its source and replacement conversations.
     var modelChange: ComposerAgentChange?
+    var attachmentReads = ComposerAttachmentReads()
     /// A model change replaces the transport conversation while retaining the task's view tree.
     var isModelChangeSource = false
     var continuedTaskKey: SessionKey?

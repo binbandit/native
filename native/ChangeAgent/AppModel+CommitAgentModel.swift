@@ -13,12 +13,21 @@ extension AppModel {
         sessions.services.modelContinuations.prepare(context, for: target.key)
         if agentChangePlace(of: source) == .thisMac {
             deletedSessions.remove(target.key)
-            unsentSessions.forget(target.key)
+            if target.host == nil {
+                unsentSessions.started(target.key, draft: source.draft)
+            } else {
+                unsentSessions.forget(target.key)
+            }
             catalog.add(
                 SessionInfo(sessionId: target.id, cwd: source.cwd.folderPath, updatedAt: .now),
                 for: target.agent.id, in: project)
         } else {
             publishRemoteAgentChange(target, in: project)
+        }
+        sessions.services.titles.updateConfigChoices(for: target.titleKey) { saved in
+            for option in target.configOptions {
+                if case .select(let value, _) = option.kind { saved.choose(option, value: value) }
+            }
         }
         earlierConversations.record(target.key, after: source.key)
         earlierConversations.keep(target.key)
@@ -46,6 +55,7 @@ extension AppModel {
     }
 
     private func moveAgentModelDraft(from source: SessionModel, to target: SessionModel) {
+        source.attachmentReads.move(to: target)
         target.draft = source.draft
         target.attachments = source.attachments
         target.quoteSelection = source.quoteSelection

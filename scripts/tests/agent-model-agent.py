@@ -14,6 +14,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--kind', choices=['source', 'target'], required=True)
 parser.add_argument('--store', type=pathlib.Path, required=True)
 parser.add_argument('--project', required=True)
+parser.add_argument('--reject-unsent-load', action='store_true')
 args = parser.parse_args()
 args.store.mkdir(parents=True, exist_ok=True)
 source = args.kind == 'source'
@@ -35,9 +36,11 @@ def options():
               ('bypassPermissions', 'Bypass permissions')] if source else [
         ('read-only', 'Read only'), ('workspace-write', 'Workspace write'), ('agent', 'Auto review'),
         ('agent-full-access', 'Full access')]
+    mode_file = args.store / 'default-mode'
+    initial_mode = mode_file.read_text().strip() if mode_file.exists() else levels[0][0]
     return [option('model', 'model', models[0][0], models),
             option('effort', 'thought_level', 'low', [(v, v.title()) for v in ['default', 'low', 'medium', 'high', 'xhigh', 'max']]),
-            option('mode', 'mode', levels[0][0], levels)]
+            option('mode', 'mode', initial_mode, levels)]
 
 
 def send(message):
@@ -66,6 +69,9 @@ for line in sys.stdin:
                       title='Keep edited messages in place', updatedAt='2026-10-26T02:00:00Z')] if source else [])
     elif method in ('session/new', 'session/load'):
         current = params.get('sessionId', f'{args.kind}-{uuid.uuid4()}')
+        if method == 'session/load' and args.reject_unsent_load:
+            send(dict(id=identifier, error=dict(code=-32602, message='This unsent conversation was never saved')))
+            continue
         if method == 'session/load':
             update('Keep edited messages in place.', 'user_message_chunk')
             update('The queue now preserves its order. Tests cover editing, moving and sending a queued message.')
@@ -76,6 +82,10 @@ for line in sys.stdin:
         state[params['configId']] = params['value']
         result = dict(configOptions=options())
     elif method == 'session/prompt':
+        record = args.store / 'context-deliveries.json'
+        delivered = json.loads(record.read_text()) if record.exists() else []
+        delivered.append(any('task-continuation' in part.get('text', '') for part in params.get('prompt', [])))
+        record.write_text(json.dumps(delivered))
         update('Received your explicit message. The draft stayed with this task.')
         result = dict(stopReason='end_turn')
     send(dict(id=identifier, result=result))

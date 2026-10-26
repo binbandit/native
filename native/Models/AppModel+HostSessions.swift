@@ -49,6 +49,7 @@ extension AppModel {
         session.mirror = old.mirror
         session.draft = old.draft
         session.attachments = old.attachments
+        old.attachmentReads.move(to: session)
         session.heldPrompts = old.heldPrompts
         session.hasSubmittedPrompt = old.hasSubmittedPrompt
         session.isModelChangeSource = old.isModelChangeSource

@@ -102,6 +102,14 @@ public struct ModelChoiceList: Equatable, Sendable {
         }
     }
 
+    /// A same-named choice's distinction, using original adapter values, before a client gives
+    /// rows a combined identity across adapters.
+    public static func distinguishingDetail(for choice: Choice, among choices: [Choice]) -> Detail? {
+        let group = choices.filter { $0.displayName == choice.displayName }
+        guard group.count > 1 else { return nil }
+        return distinction(of: choice, among: group)
+    }
+
     /// What tells `choice` apart from the others with its name: its description when that's short and
     /// no other has it, else its value.
     private static func distinction(of choice: Choice, among group: [Choice]) -> Detail? {
