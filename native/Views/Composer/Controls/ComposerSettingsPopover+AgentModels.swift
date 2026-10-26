@@ -97,11 +97,13 @@ extension ComposerSettingsPopover {
                 "Starting \(modelChange?.choice.agentName ?? agentModels?.first(where: { $0.id == loadingModelID })?.agentName ?? "the agent"). Your task and draft are kept."
             } else if let entry, entry.agent != currentAgentID {
                 entry.caption
+            } else if let reason = entry?.unavailable {
+                reason
             } else {
                 settings.model == nil ? "\(agentName) picks its own model." : entry?.choice.purpose
             }
         return ComposerSettingsCaption(
-            text: text.map(AttributedString.init), isFailure: failed != nil,
+            text: text.map { AttributedString($0) }, isFailure: failed != nil,
             isKeyboardFocused: highlighted == .retry,
             action: modelFailure?.retry.map { .init(title: "Try Again", action: $0) }
         )
