@@ -10,7 +10,7 @@ struct DiffCommentsComposerSection: View {
             HStack(spacing: DS.Space.md) {
                 Image(systemName: "text.bubble").accessibilityHidden(true)
                 Text(
-                    "\(session.diffComments.count) \(session.diffComments.count == 1 ? "comment" : "comments") from Changes"
+                    "\(session.diffComments.count) \(session.diffComments.count == 1 ? "comment" : "comments")\(session.diffCommentsExpanded ? "" : " from Changes")"
                 )
                 .accessibilityLabel(
                     "\(session.diffComments.count) draft \(session.diffComments.count == 1 ? "comment" : "comments") from Changes"

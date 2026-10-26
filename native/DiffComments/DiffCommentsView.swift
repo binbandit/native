@@ -112,7 +112,7 @@ struct DiffCommentsView: View {
 
     private var header: some View {
         HStack(spacing: DS.Space.lg) {
-            Text(anchor == nil ? (path as NSString).lastPathComponent : sourceLabel)
+            Text(anchor == nil ? (path as NSString).lastPathComponent : "\(sourceLabel) selected")
                 .font(DS.ComposerQuote.headerFont)
                 .foregroundStyle(.dsTextSecondary)
                 .lineLimit(1)

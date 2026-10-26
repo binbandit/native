@@ -9,9 +9,11 @@ struct DiffCommentsDeliveryStatus: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.sm) {
             if showsAttribution {
-                Text(session.diffCommentManagedExplanation).foregroundStyle(.dsTextSecondary)
-                if let contact = session.diffCommentsPolicy().organizationContact, let url = URL(string: contact) {
-                    Link("Request a Change…", destination: url)
+                HStack(spacing: DS.Space.xs) {
+                    Label(session.diffCommentManagedExplanation, systemImage: "lock")
+                    if let contact = session.diffCommentsPolicy().organizationContact, let url = URL(string: contact) {
+                        Link("Request a Change…", destination: url)
+                    }
                 }
             } else if let block = session.sourceExcerptBlock(for: session.draft) {
                 Label(block, systemImage: "lock")
@@ -26,6 +28,8 @@ struct DiffCommentsDeliveryStatus: View {
                             .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
                     }
                     Text(status)
+                        .foregroundStyle(status.hasPrefix("Couldn’t") ? Color.dsDanger : Color.dsTextSecondary)
+                    Spacer(minLength: DS.Space.xs)
                     if !session.diffCommentSending, session.unresolvedCommentPacket == nil,
                         status.hasPrefix("Couldn’t")
                     {
@@ -38,6 +42,7 @@ struct DiffCommentsDeliveryStatus: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .font(DS.ComposerQuote.headerFont)
         .foregroundStyle(.dsTextSecondary)
         .padding(.horizontal, DS.ComposerQuote.inset)

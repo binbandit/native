@@ -56,10 +56,11 @@ enum DiffCommentsPreviewFixtures {
     static func session(_ state: String, in app: AppModel) -> SessionModel? {
         var configOptions = ComposerPreviewFixtures.configOptions
         for index in configOptions.indices where configOptions[index].category == "model" {
-            if case .select(_, let models) = configOptions[index].kind,
-                let haiku = models.first(where: { $0.name == "Haiku 5.5" })
-            {
-                configOptions[index].kind = .select(currentValue: haiku.value, options: models)
+            if case .select(_, var models) = configOptions[index].kind, !models.isEmpty {
+                models[0].value = "haiku"
+                models[0].name = "Haiku 5.5"
+                models[0].description = nil
+                configOptions[index].kind = .select(currentValue: "haiku", options: models)
             }
         }
         guard
@@ -80,6 +81,7 @@ enum DiffCommentsPreviewFixtures {
             var policy = NativePolicy()
             policy.sourceExcerptsSendingEnabled = false
             policy.organizationName = "Northwind Federal IT"
+            policy.organizationContact = "mailto:it@example.invalid"
             session.diffCommentsPolicy = { policy }
         }
         if state == "C5" { session.reviewDiffComments() }
