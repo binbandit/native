@@ -329,6 +329,12 @@ struct ComposerView: View {
         } isTargeted: {
             isDropTargeted = $0
         }
+        .onChange(of: session.diffCommentAnnouncementGeneration) {
+            AccessibilityNotification.Announcement(session.diffCommentAnnouncement).post()
+        }
+        .onChange(of: session.diffCommentStatus) { _, status in
+            if let status { AccessibilityNotification.Announcement(status).post() }
+        }
         .onChange(of: PolicyCenter.shared.policy.sourceExcerptsRetentionEnabled) {
             session.enforceDiffCommentRetention()
         }

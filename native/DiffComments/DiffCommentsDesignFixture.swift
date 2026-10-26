@@ -1,3 +1,4 @@
+import Experiments
 import SwiftUI
 
 extension View {
@@ -19,11 +20,14 @@ import ACP
 
 struct DiffCommentsDesignFixture: View {
     let state: String
+    private let experiments: ExperimentStore
     @State private var app: AppModel
     @State private var session: SessionModel?
 
     init(state: String) {
         self.state = state
+        experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
+        experiments.set(true, for: .composerNext)
         let app = AppModel.preview()
         _app = State(initialValue: app)
         _session = State(initialValue: DiffCommentsPreviewFixtures.session(state, in: app))
@@ -112,6 +116,7 @@ struct DiffCommentsDesignFixture: View {
                 }
             }
             .background(.dsBackground)
+            .environment(\.experimentStore, experiments)
             .focusedSceneValue(\.activeSession, session)
             .environment(BuiltInPlugins.automation.center)
             .environment(app)

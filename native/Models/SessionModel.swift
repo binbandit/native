@@ -83,6 +83,8 @@ final class SessionModel {
     var diffCommentRequestedSource: PromptQuote?
     var diffCommentSelection: PromptQuote?
     var diffCommentFocusRequest = 0
+    var diffCommentAnnouncement = ""
+    var diffCommentAnnouncementGeneration = 0
     var diffCommentStatus: String?
     var diffCommentSending = false
     var unresolvedCommentPacket: String? {

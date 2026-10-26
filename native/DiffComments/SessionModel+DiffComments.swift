@@ -4,6 +4,18 @@ import NativeHostClient
 import NativeHostProtocol
 
 extension SessionModel {
+    /// Conversation replacement keeps these Native-owned drafts with the task, alongside its quotes.
+    func adoptDiffCommentDrafts(from source: SessionModel) {
+        diffCommentEditors = source.diffCommentEditors
+        activeDiffComment = source.activeDiffComment
+        diffCommentsExpanded = source.diffCommentsExpanded
+        unresolvedCommentPacket = source.unresolvedCommentPacket
+        diffCommentStatus = source.diffCommentStatus
+        source.diffCommentEditors = []
+        source.activeDiffComment = nil
+        source.unresolvedCommentPacket = nil
+    }
+
     var diffComments: [PromptQuote] { composerQuotes.filter { $0.comment != nil } }
 
     func focusDiffCommentSource(_ quote: PromptQuote) -> Bool {
@@ -69,6 +81,8 @@ extension SessionModel {
             }
         }
         undoManager?.setActionName("Add Diff Comment")
+        diffCommentAnnouncement = "Comment added. \(diffComments.count) comments in draft."
+        diffCommentAnnouncementGeneration += 1
     }
 
     func editDiffComment(_ quote: PromptQuote, inComposer: Bool = false) {
@@ -205,15 +219,21 @@ extension SessionModel {
         unresolvedCommentPacket = packet
         diffCommentStatus = "Checking whether your comments arrived…"
         do {
+            let delivery: FollowUpDelivery
             if host == nil, canSend, !queuedPrompts.isEmpty {
                 hasSubmittedPrompt = true
                 queue.resume()
                 queue.append(packet, attachments: files)
                 drainQueue()
+                delivery = .queued
             } else {
-                _ = try await submit(packet, attaching: files, behavior)
+                delivery = try await submit(packet, attaching: files, behavior)
             }
             acceptDiffCommentPacket(packet)
+            if delivery == .queued {
+                diffCommentAnnouncement =
+                    "\(PromptQuote.split(packet).quotes.filter { $0.comment != nil }.count) comments queued for \(agentName)"
+            }
             attachments.removeAll { files.contains($0) }
         } catch {
             // RPC rejections establish non-delivery. Connection loss after dispatch does not.
@@ -225,6 +245,7 @@ extension SessionModel {
             }
         }
         diffCommentSending = false
+        reconcileDiffCommentDelivery()
     }
 
     func acceptDiffCommentPacket(_ packet: String) {
@@ -238,6 +259,8 @@ extension SessionModel {
             }, message: current.message == accepted.message ? "" : current.message)
         unresolvedCommentPacket = nil
         diffCommentStatus = nil
+        diffCommentAnnouncement = "\(ids.count) comments sent to \(agentName)"
+        diffCommentAnnouncementGeneration += 1
     }
 
     func allowDiffCommentResend() {

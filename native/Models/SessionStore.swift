@@ -112,6 +112,7 @@ final class SessionStore {
         // The draft carries on under the new key.
         services.drafts.keep("", for: old.key)
         register(new)
+        new.adoptDiffCommentDrafts(from: old)
     }
 
     /// Retains composers across a restart, including tasks reopened after a failed retry.

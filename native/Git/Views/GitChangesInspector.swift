@@ -18,6 +18,7 @@ struct GitChangesInspector: View {
     var onCreatePullRequest: (() -> Void)?
 
     @Experiment(.composerNext) private var composerNext
+    @Environment(\.gitChangesClose) private var closeChanges
     @Environment(\.gitChangesCompact) private var compact
     @State private var isCommitting = false
     @State private var pendingDiscard: [FileChange] = []
@@ -135,6 +136,14 @@ struct GitChangesInspector: View {
                         // Reads the selection and its diff itself, so a diff arriving redraws only the pane.
                         GitDiffPane(model: model)
                     }
+                }
+            }
+        } else if composerNext, compact {
+            EmptyStateView(
+                "No changes yet", systemImage: "checkmark.circle", message: "Files appear here after they’re edited."
+            ) {
+                if let closeChanges {
+                    Button("Back to Task", action: closeChanges.close).buttonStyle(.ds(.secondary))
                 }
             }
         } else {
