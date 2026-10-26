@@ -41,8 +41,10 @@ public struct CodexConfigOverrides: Hashable, Sendable {
         guard let origin = URLComponents(string: route.origin),
             origin.string == route.origin, origin.user == nil, origin.password == nil,
             origin.query == nil, origin.fragment == nil, origin.path.isEmpty || origin.path == "/",
-            let host = origin.host, Self.isProviderHost(host), origin.percentEncodedHost?.contains("%") == false,
+            let host = origin.host, !host.isEmpty, Self.isProviderHost(host),
+            origin.percentEncodedHost?.contains("%") == false,
             !route.origin.contains("\\"), !route.origin.contains(where: { $0.isWhitespace }),
+            !route.origin.trimmingCharacters(in: CharacterSet(charactersIn: "/")).hasSuffix(":"),
             origin.port.map({ (1...65535).contains($0) }) ?? true,
             origin.scheme == "https" || (origin.scheme == "http" && host == "127.0.0.1"),
             !route.model.isEmpty, !route.model.contains(where: { $0.isWhitespace })

@@ -37,7 +37,8 @@ import Testing
     @Test(arguments: [
         "https://user:secret@private.example", "https://private.example?key=secret", "https://private.example#secret",
         "http://private.example", "ftp://private.example", "https://private.example/v1", "https://private.example:0",
-        "https://*.example", "https://127.1", "https://0177.0.0.1", "https://private.example.",
+        "https://", "https://private.example:", "https://*.example", "https://127.1", "https://0177.0.0.1",
+        "https://private.example.",
         "https://%70rivate.example", "https://private.example\\evil", "https://private.example:65536",
     ])
     func invalidOrigins(origin: String) {
