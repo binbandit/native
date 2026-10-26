@@ -5,7 +5,11 @@ import NativePolicy
 extension AppModel {
     func holdComposeTask() {
         #if DEBUG
-        guard composeTask.previewState == nil else { return }
+        if composeTask.previewState != nil {
+            composeTask.isHeld = true
+            quickEntry.picker = nil
+            return
+        }
         #endif
         guard composeTask.stage == .writing, composeTask.hasContent, !composeTask.pendingAttachments,
             !composeTask.isHeld, let project = quickEntry.project, let agent = quickEntry.agent,

@@ -154,8 +154,10 @@ struct HostUpdateContinuityTests {
         #expect(try await harness.waitForExit(timeout: .milliseconds(500)) == nil)
         #expect(await reopened.recoveries(running).isEmpty)
         #expect(await reopened.failures(running).isEmpty)
+        let advertisedOption = try #require(
+            await reopened.mirror(approval).state.pendingPermissions.first?.permission.options.first)
         try await reopened.client.respondPermission(
-            RespondPermissionParams(sessionID: approval, toolCallID: tool, optionID: "allow"))
+            RespondPermissionParams(sessionID: approval, toolCallID: tool, optionID: advertisedOption.optionId))
         #expect(try await harness.waitForExit() == 75)
         #expect(await reopened.turnsEnded(approval) == ["end_turn"])
         await reopened.stop()

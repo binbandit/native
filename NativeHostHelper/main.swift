@@ -54,7 +54,7 @@ Task { @HostActor in
                 hostID: core.hostID, machineName: serving.machineName,
                 includesLoopback: location.isDevelopment),
             allowedByPolicy: core.policy.allows(.companion),
-            accept: { stream, grants in
+            accept: { stream, grants, identity in
                 Task { @HostActor in
                     // The gateway hears a revocation a moment after the host does.
                     guard core.policy.allows(.companion) else { return stream.close() }
@@ -62,7 +62,7 @@ Task { @HostActor in
                         stream,
                         grants: ClientGrants(
                             managePlugins: grants.managePlugins, manageHost: grants.manageHost, isLocal: false,
-                            runCommands: grants.runCommands))
+                            runCommands: grants.runCommands), identity: identity)
                 }
             },
             paired: { record in

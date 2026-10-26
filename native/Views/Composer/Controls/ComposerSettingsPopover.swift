@@ -61,6 +61,7 @@ struct ComposerSettingsPopover: View {
     var onUndo: (() -> Void)?
     let onSet: (SelectSetting, String) -> Void
 
+    @State var modelSlots = ModelChoiceList.slots
     @State var query = ""
     @State var hovered: Target?
     @State var highlighted: Target?
@@ -78,7 +79,13 @@ struct ComposerSettingsPopover: View {
             case .model:
                 modelPage
             case nil:
-                mainContent
+                ComposerSettingsHeightLayout {
+                    ViewThatFits(in: .vertical) {
+                        mainContent(slots: ModelChoiceList.slots, showsCaptions: true)
+                        mainContent(slots: ModelChoiceList.slots - 1, showsCaptions: true)
+                        mainContent(slots: ModelChoiceList.slots - 1, showsCaptions: false)
+                    }
+                }
             }
         }
         .padding(.vertical, DS.ComposerSettings.popoverInset)
@@ -96,28 +103,32 @@ struct ComposerSettingsPopover: View {
         .accessibilityLabel("Task Settings")
     }
 
-    @ViewBuilder private var mainContent: some View {
-        if isStopped {
-            stoppedNotice
-        }
-        if let leadingContent {
-            leadingContent
-        }
-        Group {
-            modelSection
-                .composerSettingsSection(ruled: isStopped || leadingContent != nil)
-            if settings.autonomy != nil {
-                autonomySection.composerSettingsSection(ruled: true)
+    @ViewBuilder private func mainContent(slots: Int, showsCaptions: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if isStopped {
+                stoppedNotice
             }
-            if !rows.isEmpty {
-                taskRows.composerSettingsSection(ruled: true)
+            if let leadingContent {
+                leadingContent
+            }
+            Group {
+                modelSection(slots: slots, showsCaption: showsCaptions)
+                    .composerSettingsSection(ruled: isStopped || leadingContent != nil)
+                if settings.autonomy != nil {
+                    autonomySection(showsCaption: showsCaptions).composerSettingsSection(ruled: true)
+                }
+                if !rows.isEmpty {
+                    taskRows.composerSettingsSection(ruled: true)
+                }
+            }
+            // Readable but not editable: dimmed by each row, so the headers keep their color.
+            .allowsHitTesting(!isStopped)
+            if let manager {
+                footer(manager)
             }
         }
-        // Readable but not editable: dimmed by each row, so the headers keep their color.
-        .allowsHitTesting(!isStopped)
-        if let manager {
-            footer(manager)
-        }
+        .fixedSize(horizontal: false, vertical: true)
+        .onAppear { modelSlots = slots }
     }
 
     // MARK: - Notice and footer
@@ -177,7 +188,7 @@ struct ComposerSettingsPopover: View {
         forbiddenModes.contains(value)
     }
 
-    private var autonomySection: some View {
+    private func autonomySection(showsCaption: Bool) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             ComposerSettingsHeader(title: "When \(agentName) asks") {
                 if permissionsManaged {
@@ -189,7 +200,7 @@ struct ComposerSettingsPopover: View {
                 ForEach(settings.autonomyLevels) { choice in
                     autonomyRow(choice, setting: autonomy)
                 }
-                if !isStopped { autonomyCaption(autonomy) }
+                if !isStopped && (showsCaption || failure?.optionID == autonomy.option.id) { autonomyCaption(autonomy) }
             }
         }
     }
@@ -215,6 +226,7 @@ struct ComposerSettingsPopover: View {
         .composerSettingsHover(target, hovered: $hovered)
         .accessibilityLabel(choice.askingTitle)
         .accessibilityValue(locked ? "Managed by \(manager ?? "your organization")" : "")
+        .help(caption(for: choice) ?? choice.askingTitle)
         .accessibilityHint(caption(for: choice) ?? "")
         .accessibilityAddTraits(choice.value == shownAutonomy ? .isSelected : [])
     }

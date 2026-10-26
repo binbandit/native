@@ -11,6 +11,7 @@ struct AttachButton: View {
     var isPage = false
     /// Fine print's paperclip among the field's trailing controls.
     var isField = false
+    var showsPageHint = false
 
     @State private var isPickingPhotos = false
     @State private var photo: PhotosPickerItem?
@@ -25,25 +26,26 @@ struct AttachButton: View {
                 } label: {
                     if isField {
                         paperclip
+                    } else if isPage {
+                        pageLabel
                     } else {
                         Label("Attach", systemImage: "plus")
-                            .labelStyle(.iconOnly)
-                            .pillChrome(isSquare: true)
+                            .labelStyle(.iconOnly).pillChrome(isSquare: true)
                     }
                 }
                 .menuStyle(.button)
                 .buttonStyle(.plain)
                 .menuIndicator(.hidden)
-            } else if isField {
+            } else if isField || isPage {
                 Button {
                     isPickingFiles = true
                 } label: {
-                    paperclip
+                    if isField { paperclip } else { pageLabel }
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Attach Files")
             } else {
-                Button("Attach Files", systemImage: isPage ? "paperclip" : "plus") { isPickingFiles = true }
+                Button("Attach Files", systemImage: "plus") { isPickingFiles = true }
                     .labelStyle(.iconOnly)
                     .buttonStyle(.pill(isSquare: true))
             }
@@ -65,6 +67,18 @@ struct AttachButton: View {
             onPick(.image(data, photo.supportedContentTypes.first ?? .image))
             self.photo = nil
         }
+    }
+    private var pageLabel: some View {
+        HStack(spacing: DS.Space.sm) {
+            Image(systemName: "paperclip").font(DS.ComposeTask.attachmentGlyph)
+            if showsPageHint { Text("Attach files, or drop them anywhere on the page").font(.dsBody) }
+        }
+        .foregroundStyle(.dsTextTertiary)
+        .padding(.horizontal, DS.ComposeTask.attachmentInset)
+        .frame(height: DS.ComposeTask.attachmentHeight)
+        .background(isHovered ? Color.dsHover : .clear, in: .rect(cornerRadius: DS.Radius.row))
+        .contentShape(.rect)
+        .accessibilityLabel("Attach Files")
     }
 }
 

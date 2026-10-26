@@ -20,7 +20,8 @@ extension NativeCommand {
                 model.quickEntry.toggle(.device)
             }
             .available { _ in
-                model.quickEntry.isEnabled && (model.quickEntry.isPresented || model.composeTask.isPresented)
+                model.quickEntry.isEnabled && !model.composeTask.isHeld
+                    && (model.quickEntry.isPresented || model.composeTask.isPresented)
             },
         ]
     }

@@ -30,8 +30,8 @@ public enum HostMain {
         try configuration.location.prepare()
         try acquireLock(at: configuration.location.lockPath)
         let core = try HostCore(configuration: configuration)
-        let server = try SocketServer(path: configuration.location.socketPath, verifier: verifier) { stream in
-            Task { @HostActor in core.accept(stream) }
+        let server = try SocketServer(path: configuration.location.socketPath, verifier: verifier) { stream, identity in
+            Task { @HostActor in core.accept(stream, identity: identity) }
         }
         core.retain(server)
         core.start()

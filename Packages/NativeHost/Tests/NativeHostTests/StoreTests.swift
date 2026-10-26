@@ -66,6 +66,12 @@ struct StoreTests {
                 DROP TABLE closed_session_config;
                 ALTER TABLE titles DROP COLUMN retry_count;
                 ALTER TABLE titles DROP COLUMN prompt_id;
+                ALTER TABLE approvals DROP COLUMN audit_request_id;
+                ALTER TABLE approvals DROP COLUMN audit_options;
+                ALTER TABLE approvals DROP COLUMN audit_decided;
+                DROP TABLE approval_pending;
+                DROP TABLE approval_audit;
+                DROP TABLE approval_audit_heads;
                 PRAGMA user_version = 8;
                 """)
         }

@@ -63,11 +63,14 @@ public struct AgentSpec: Codable, Hashable, Sendable, Identifiable {
     /// host sends ahead of turns to keep the agent's name for it in step with Native's title
     /// (`HostCore+AgentNames.swift`). Nil leaves names to the agent.
     public var renameCommand: String?
+    /// Nonsecret selection of a host-owned private route. Client claims never authorize a launch.
+    public var routeIdentity: AgentRouteIdentity?
 
     public init(
         id: String, name: String, command: String, args: [String] = [], env: [String: String] = [:],
         resolveExecutables: [String: String] = [:], requires: [String] = [], install: String? = nil,
-        authMethods: [AuthMethod] = [], idleUnloadTimeout: Int? = nil, renameCommand: String? = nil
+        authMethods: [AuthMethod] = [], idleUnloadTimeout: Int? = nil, renameCommand: String? = nil,
+        routeIdentity: AgentRouteIdentity? = nil
     ) {
         self.id = id
         self.name = name
@@ -80,11 +83,12 @@ public struct AgentSpec: Codable, Hashable, Sendable, Identifiable {
         self.authMethods = authMethods
         self.idleUnloadTimeout = idleUnloadTimeout
         self.renameCommand = renameCommand
+        self.routeIdentity = routeIdentity
     }
 
     private enum CodingKeys: String, CodingKey {
         case id, name, command, args, env, resolveExecutables, requires, install, authMethods, idleUnloadTimeout
-        case renameCommand
+        case renameCommand, routeIdentity
     }
 
     // `requires`, `install`, `authMethods`, `idleUnloadTimeout` and `renameCommand` came later: specs
@@ -102,6 +106,7 @@ public struct AgentSpec: Codable, Hashable, Sendable, Identifiable {
         authMethods = try container.decodeIfPresent([AuthMethod].self, forKey: .authMethods) ?? []
         idleUnloadTimeout = try container.decodeIfPresent(Int.self, forKey: .idleUnloadTimeout)
         renameCommand = try container.decodeIfPresent(String.self, forKey: .renameCommand)
+        routeIdentity = try container.decodeIfPresent(AgentRouteIdentity.self, forKey: .routeIdentity)
     }
 }
 

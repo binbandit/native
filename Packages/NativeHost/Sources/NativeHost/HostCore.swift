@@ -181,6 +181,11 @@ public final class HostCore {
             hostID = HostID()
             try store.setMeta(MetaKey.hostID, hostID.description)
         }
+        do {
+            try store.recoverApprovalAudit(policy: policy, epoch: epoch)
+        } catch {
+            throw ApprovalAuditFailure.unavailable
+        }
         if let saved = try store.meta(Self.coordinatorsKey) {
             coordinators = try JSONDecoder().decode([HostCoordinator].self, from: Data(saved.utf8))
         }
