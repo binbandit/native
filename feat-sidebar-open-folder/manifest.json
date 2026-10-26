@@ -1,13 +1,12 @@
 {
-  "testedRevision": "6cdb02a3d8cc1b7ddcd6b7f6826f77956ec7a975",
+  "testedRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
   "base": "f984fd4e833eb9e408fbd97e2b96d1bbd4e7991e",
-  "folderImplementationMatchesCaptureRevision": "17475290",
-  "finalCaptureRefresh": "pending: screen locked before F1 dark",
+  "finalCaptureRefresh": "F1-F10 complete on the tested revision in both themes",
   "captures": [
     {
       "state": "F1",
       "theme": "dark",
-      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
       "actual": "F1-dark.png",
       "mock": "mocks/F1-dark.png",
       "comparison": "compare-F1-dark.png",
@@ -16,7 +15,7 @@
     {
       "state": "F1",
       "theme": "light",
-      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
       "actual": "F1-light.png",
       "mock": "mocks/F1-light.png",
       "comparison": "compare-F1-light.png",
@@ -25,7 +24,7 @@
     {
       "state": "F2",
       "theme": "dark",
-      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
       "actual": "F2-dark.png",
       "mock": "mocks/F2-dark.png",
       "comparison": "compare-F2-dark.png",
@@ -34,7 +33,7 @@
     {
       "state": "F2",
       "theme": "light",
-      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
       "actual": "F2-light.png",
       "mock": "mocks/F2-light.png",
       "comparison": "compare-F2-light.png",
@@ -43,7 +42,7 @@
     {
       "state": "F3",
       "theme": "dark",
-      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
       "actual": "F3-dark.png",
       "mock": "mocks/F3-dark.png",
       "comparison": "compare-F3-dark.png",
@@ -52,7 +51,7 @@
     {
       "state": "F3",
       "theme": "light",
-      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
       "actual": "F3-light.png",
       "mock": "mocks/F3-light.png",
       "comparison": "compare-F3-light.png",
@@ -61,7 +60,7 @@
     {
       "state": "F4",
       "theme": "dark",
-      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
       "actual": "F4-dark.png",
       "mock": "mocks/F4-dark.png",
       "comparison": "compare-F4-dark.png",
@@ -70,7 +69,7 @@
     {
       "state": "F4",
       "theme": "light",
-      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
       "actual": "F4-light.png",
       "mock": "mocks/F4-light.png",
       "comparison": "compare-F4-light.png",
@@ -79,7 +78,7 @@
     {
       "state": "F5",
       "theme": "dark",
-      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
       "actual": "F5-dark.png",
       "mock": "mocks/F5-dark.png",
       "comparison": "compare-F5-dark.png",
@@ -88,7 +87,7 @@
     {
       "state": "F5",
       "theme": "light",
-      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
       "actual": "F5-light.png",
       "mock": "mocks/F5-light.png",
       "comparison": "compare-F5-light.png",
@@ -97,7 +96,7 @@
     {
       "state": "F6",
       "theme": "dark",
-      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
       "actual": "F6-dark.png",
       "mock": "mocks/F6-dark.png",
       "comparison": "compare-F6-dark.png",
@@ -106,7 +105,7 @@
     {
       "state": "F6",
       "theme": "light",
-      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
       "actual": "F6-light.png",
       "mock": "mocks/F6-light.png",
       "comparison": "compare-F6-light.png",
@@ -115,7 +114,7 @@
     {
       "state": "F7",
       "theme": "dark",
-      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
       "actual": "F7-dark.png",
       "mock": "mocks/F7-dark.png",
       "comparison": "compare-F7-dark.png",
@@ -124,7 +123,7 @@
     {
       "state": "F7",
       "theme": "light",
-      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
       "actual": "F7-light.png",
       "mock": "mocks/F7-light.png",
       "comparison": "compare-F7-light.png",
@@ -133,7 +132,7 @@
     {
       "state": "F8",
       "theme": "dark",
-      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
       "actual": "F8-dark.png",
       "mock": "mocks/F8-dark.png",
       "comparison": "compare-F8-dark.png",
@@ -142,7 +141,7 @@
     {
       "state": "F8",
       "theme": "light",
-      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
       "actual": "F8-light.png",
       "mock": "mocks/F8-light.png",
       "comparison": "compare-F8-light.png",
@@ -151,7 +150,7 @@
     {
       "state": "F9",
       "theme": "dark",
-      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
       "actual": "F9-dark.png",
       "mock": "mocks/F9-dark.png",
       "comparison": "compare-F9-dark.png",
@@ -160,7 +159,7 @@
     {
       "state": "F9",
       "theme": "light",
-      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
       "actual": "F9-light.png",
       "mock": "mocks/F9-light.png",
       "comparison": "compare-F9-light.png",
@@ -169,35 +168,35 @@
     {
       "state": "F10",
       "theme": "dark",
-      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
       "actual": "F10-dark.png",
       "mock": "mocks/F10-dark.png",
       "comparison": "compare-F10-dark.png",
-      "sha256": "6732057aef02dedc0382d8d3ab287b624100cd32ef1ad0cb669544516b26602c"
+      "sha256": "5005a486b8c7c92a3c1ea04455402be2f72c919b2e76855497082bcdc5e32320"
     },
     {
       "state": "F10",
       "theme": "light",
-      "captureRevision": "174752905f18747cc8ee1b7f93ec825a5c59b07a",
+      "captureRevision": "fa9faad9395499f114ecddd22a29581cf1a55723",
       "actual": "F10-light.png",
       "mock": "mocks/F10-light.png",
       "comparison": "compare-F10-light.png",
-      "sha256": "8c1a0481d33f70faa6820a931e3e443f4c26e62be056233f8674f64e5d302389"
+      "sha256": "9ee80cc5f45e8cc7ea85625579fddfa6c45370501b186667274f36fb0258b598"
     }
   ],
   "pending": [
     "F8 active system focus ring: background app did not draw an active ring",
     "F11 dark and light public chooser captures: personal system sidebar locations excluded",
-    "F1-F10 dark and light refresh on latest integration revision: screen locked"
+    "Root navigation from competing pages: final real-surface check pending"
   ],
   "validation": {
     "debug": "pass, no repository warnings",
-    "modelHarness": "pass",
+    "modelHarness": "pass, including reproduced navigation and search policy regressions",
     "homeHarness": "pass",
     "FolderHistoryTests": "2 passed",
     "FolderPolicyTests_and_PolicyCoverageTests": "9 passed",
     "format": "pass",
-    "iPad": "failed: dependency graph errors and SidebarView timeout; not verified",
-    "releaseAndNightly": "pass, compilation and unchanged size budgets; Release 47.9 MB archive / 117.5 MB installed, Nightly 48.0 MB archive / 117.6 MB installed"
+    "iPad": "native/Platform pass; broader SidebarFolders feature check still reaches unsupported app dependencies",
+    "releaseAndNightly": "rerunning after review fixes; preceding revision passed unchanged budgets"
   }
 }
