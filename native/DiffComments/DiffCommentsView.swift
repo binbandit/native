@@ -213,7 +213,9 @@ struct DiffCommentsView: View {
                 : row.kind == .removed ? Color.dsDanger.opacity(0.12) : .clear
         )
         .overlay {
-            if anchor != nil, range.contains(index), row.kind != .gap {
+            if anchor != nil, range.contains(index), row.kind != .gap,
+                side == .old ? row.oldNumber != nil : row.kind != .removed
+            {
                 Rectangle().fill(.dsSelected).allowsHitTesting(false)
             }
         }
@@ -223,6 +225,14 @@ struct DiffCommentsView: View {
                     key: DiffCommentsRowFrames.self,
                     value: [index: proxy.frame(in: .named(sourceID)).integral])
             }
+        }
+        .composerQuoteSource(
+            ComposerQuoteSource(
+                name: path, text: row.number == nil ? nil : row.text,
+                firstLine: row.number ?? 1, side: row.kind == .removed ? .old : .new)
+        )
+        .transformEnvironment(\.composerQuoteContext) { context in
+            if row.number == nil { context = nil }
         }
         .overlay(alignment: .leading) {
             if row.kind == .added || row.kind == .removed {
@@ -260,7 +270,9 @@ struct DiffCommentsView: View {
                 .buttonStyle(.plain)
                 .dsHitTarget(DS.DiffComments.lineHeight)
                 .accessibilityLabel("\(side == .old ? "Before" : "After"), line \(number), \(rows[index].text)")
-                .accessibilityValue(anchor != nil && range.contains(index) ? "\(sourceLabel) selected" : "")
+                .accessibilityValue(
+                    anchor != nil && range.contains(index) && side == self.side ? "\(sourceLabel) selected" : ""
+                )
                 .contextMenu {
                     Button("Extend Selection to Here") { select(index, side: side, extend: true) }
                     Button("Comment…") {
