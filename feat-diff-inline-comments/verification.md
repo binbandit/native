@@ -1,6 +1,6 @@
 # Inline diff comments verification
 
-Revision: `9f1ab9dc267cb2f61ff06779a63220a44f4512e7`. The captured state matrix uses this earlier revision. It is superseded by subsequent UI polish; see the PR head for current source.
+Revision: `2bf2de26fba14520d7f2fa887f3a558a0ecfd0a4`. All C1-C13 light and dark state captures use this PR revision. The normal app Haiku checks below were captured before the final visual polish and queue handling changes.
 
 Native is on the left of every comparison; the approved HTML mock is on the right. The changed components use the live model and views. The inert fixture uses a reference frame around them; the real Haiku capture shows the normal app frame. Screenshots were taken while unlocked through the isolated instance driver. Covered-window warnings were emitted by the driver; captured content was inspected.
 
@@ -9,8 +9,8 @@ Native is on the left of every comparison; the approved HTML mock is on the righ
 - Verified pointer Add, newline with Return, Add with Command-Return, Escape/cancel retention, and reopening the same unfinished editor.
 - Verified two files collected and submitted to Claude Code on Haiku 5.5 at low effort as one transcript message, with both snapshots and bodies. The agent replied OK and the accepted draft cleared.
 - Verified a saved comment and an unfinished comment survive `/clear`, then add and send together from the fresh conversation. No working prompt was sent by clearing.
-- The model harness passed three consecutive runs after fixing packet recovery to compare parsed contents. Older evidence with the same comment identity does not acknowledge edited content.
-- Package checks passed: 22 ACP quote/comment/range tests, 9 policy/coverage tests, and 16 command/keyboard tests. Strict lint passed for changed Swift files.
+- The model harness passed three consecutive runs after the queue changes, then passed again on the final visual revision, including acknowledged queue edits and missing-item retention. Packet recovery compares parsed contents. Older evidence with the same comment identity does not acknowledge edited content.
+- Package checks passed: 23 ACP quote/comment/range tests, 9 policy/coverage tests, and 16 command/keyboard tests. Strict lint passed for changed Swift files.
 - iPad checking is blocked by shared dependency diagnostics, including missing AgentProcess, LocalCommandRunner, and missing adapter initializers outside this change. One resolution pass also aborted in the Swift compiler. There were no diagnostics in DiffComments files.
 - Release and Nightly compiled at 9f1ab9dc and stayed within every size budget: Release download 47.9 MB, Nightly download 48.0 MB, both installed 117.6 MB. Final-revision checks are recorded in the PR status. No budget was changed.
 
@@ -38,6 +38,6 @@ Native is on the left of every comparison; the approved HTML mock is on the righ
 
 [Unfinished editor retained after a fresh conversation](captures/real-fresh-conversation-editor-dark.png)
 
-Final UI capture refresh is pending for C1-C13 in both light and dark. The screen locked after the earlier capture pass. Later changes fix stale snapshot duplication, notice placement, scrollbar visibility, single-comment accessibility copy, and the docked empty state. These historical images do not verify that later polish.
+All 26 final-revision state captures were refreshed after the screen unlocked, then compared side by side with the approved mock. The earlier normal-app captures document the real Haiku packet and fresh-conversation checks. Queued-message labels have a light/dark preview and logic coverage; a final live queued-edit UI check is still pending.
 
 Visual check pending. A separate design review must approve the PR before merging.
