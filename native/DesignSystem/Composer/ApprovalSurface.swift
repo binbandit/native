@@ -11,9 +11,11 @@ struct ApprovalSurface<Content: View>: View {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: DS.Radius.control)
         content
-            // Use the detail's width floor minus the composer's gutters, so AppKit's zero-width
-            // probe cannot inflate wrapping text or raise the existing minimum window width.
-            .platformMinimumContentWidth(DS.Window.detailMinWidth - DS.Space.xxl * 2)
+            #if os(macOS)
+        // Use the detail's width floor minus the composer's gutters, so AppKit's zero-width
+        // probe cannot inflate wrapping text or raise the existing minimum window width.
+        .platformMinimumContentWidth(DS.Window.detailMinWidth - DS.Space.xxl * 2)
+            #endif
             .modifier(
                 ApprovalBackground(
                     solid: transparency == .solid || reduceTransparency, shape: shape,
