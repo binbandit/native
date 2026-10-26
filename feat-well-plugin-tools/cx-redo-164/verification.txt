@@ -1,0 +1,54 @@
+Code: 1182d7dd, Debug, instance cx-redo-164, clean working tree.
+Base: 085cacfe (main, including #168, #190, #201 and #203).
+
+Verified: reopened the long-title scripted task, collapsed and expanded the sidebar,
+resized from 1400 to 900 points, searched for and reopened the task, and expanded
+the sidebar again. Three consecutive cold-launch runs passed on this head.
+
+Before: 60a13194, with the Debug fixture hook present but not enabled. After the
+collapse/reopen/resize sequence, the sidebar action stopped responding and the
+app remained at 96.3% CPU 78 seconds after launch. The process sample kept the
+main thread in AppKit/SwiftUI layout. The fix removes the toolbar item's measured
+origin from the calculation that determines that same item's width.
+
+Verified in light and dark: long contributed tool name and summary; keyboard
+highlight; working and failed facts; side and narrow panes with status and Close;
+Runbook initially Off, enabled in Settings, opened with Space, and turned Off;
+Return activation; Escape dismiss and back to tools; live policy revocation of
+side and over-conversation panes, reclaiming space and removing rows and commands;
+reallowing the plugin without restoring its old pane. Command registration and
+removal were observed in Keyboard Shortcuts, including the visible command rows.
+
+The well's AX button supplies entry. View > Tools and Command-I entry remain
+unverified: the inactive background instance has no focused task context in the
+menu. No Off-shortcut activation/suppression result is claimed from that menu.
+
+Checks on final head: isolated Debug build passed without repository warnings;
+26 SessionTools tests passed; strict format lint passed for all 25 changed Swift
+files; git diff --check passed. The fixture uses the scripted agent, no real model.
+
+Release and Nightly compilation and size checks passed before the latest-main
+rebase, without repository warnings. Release: 47.8 MB download, 117.3 MB installed.
+Nightly: 47.9 MB download, 117.4 MB installed. Limits: 48 MB and 118 MB.
+Current Release/Nightly results belong to PR CI, not those pre-rebase local checks.
+
+iPad typecheck attempt on the pre-rebase head failed in dependency collection and
+unchanged source locations: missing host/process types (AgentCommand, AgentProcess),
+shared transcript call signatures, and SidebarView typechecking. It also recovered
+from one compiler abort. No iPad pass is claimed. No reported error points to an
+added or edited line in this PR, including the existing AgentCommand helpers in
+Plugin.swift. Full local diagnostics: ios-final.log (not published).
+
+Visual self-check: current pairs compared with session-top.html #T and the shared
+pane/settings patterns. No separate plugin mock is required by the second review.
+Terminal is Off in well shots to keep runtime paths out of images. The sidebar
+and status bar are cropped. The screen lock check ran before every capture.
+The driver reports occlusion by Ghostty; changed content and AX states were checked.
+
+Follow-ups: focused menu/Command-I verification; iPad checker dependency failures;
+after a cold launch following narrow-window checks, the sidebar can restore hidden
+while its toggle initially reads Expanded. Cycling the toggle exposed Settings for
+the fixture setup. That restoration mismatch is separate from the fixed layout stall.
+
+Separate coordinator design review is still required. Visual check pending.
+The isolated app is quit. Do not merge this PR from this job.
