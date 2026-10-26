@@ -33,49 +33,64 @@ struct AnnotatedQuestionView: View {
     private var isLast: Bool { index >= questions.count - 1 }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        ScrollViewReader { scroll in
             VStack(alignment: .leading, spacing: 0) {
-                header
-                Text(question?.prompt ?? message)
-                    .font(DS.Approval.titleFont).foregroundStyle(.dsTextPrimary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, DS.Approval.questionTitleTop)
-                    .padding(.bottom, DS.Approval.questionTitleBottom)
-                if let question, !question.options.isEmpty {
-                    VStack(spacing: 0) {
-                        ForEach(Array(question.options.enumerated()), id: \.element.id) { offset, option in
-                            row(option, number: offset + 1, in: question)
+                VStack(alignment: .leading, spacing: 0) {
+                    header
+                    ApprovalScrollView(maxHeight: DS.Approval.questionMaximumHeight) {
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(question?.prompt ?? message)
+                                .font(DS.Approval.titleFont).foregroundStyle(.dsTextPrimary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.top, DS.Approval.questionTitleTop)
+                                .padding(.bottom, DS.Approval.questionTitleBottom)
+                                .id("question-title")
+                            if let question, !question.options.isEmpty {
+                                VStack(spacing: 0) {
+                                    ForEach(Array(question.options.enumerated()), id: \.element.id) { offset, option in
+                                        row(option, number: offset + 1, in: question)
+                                            .id(offset)
+                                    }
+                                }
+                            }
                         }
+                        .padding(.horizontal, DS.Approval.optionInset)
                     }
+                    .padding(.horizontal, -DS.Approval.optionInset)
+                    if !isAvailable {
+                        Text("Waiting for the task to reconnect before you can answer.")
+                            .font(.dsBody).foregroundStyle(.dsTextSecondary)
+                            .padding(.top, DS.Approval.footerTop)
+                    }
+                    footer.padding(.top, DS.Approval.footerTop)
                 }
-                if !isAvailable {
-                    Text("Waiting for the task to reconnect before you can answer.")
-                        .font(.dsBody).foregroundStyle(.dsTextSecondary)
-                        .padding(.top, DS.Approval.footerTop)
+                .padding(.horizontal, DS.Approval.inset)
+                .padding(.vertical, DS.Approval.askTop)
+                .focusable(isAvailable)
+                .focused($cardFocused)
+                .focusEffectDisabled()
+                .onKeyPress(phases: .down) { press in
+                    handleKey(press) { scroll.scrollTo($0, anchor: .top) }
                 }
-                footer.padding(.top, DS.Approval.footerTop)
+                .disabled(sending || !isAvailable)
+                if question != nil {
+                    Rectangle().fill(DS.Approval.separator(colorScheme)).frame(height: DS.Approval.rule)
+                    ownWords
+                }
             }
-            .padding(.horizontal, DS.Approval.inset)
-            .padding(.vertical, DS.Approval.askTop)
-            .focusable(isAvailable)
-            .focused($cardFocused)
-            .focusEffectDisabled()
-            .onKeyPress(phases: .down, action: handleKey)
-            .disabled(sending || !isAvailable)
-            if question != nil {
-                Rectangle().fill(DS.Approval.separator(colorScheme)).frame(height: DS.Approval.rule)
-                ownWords
+            .onAppear {
+                if let initialAnswers { answers = initialAnswers }
+                if takesFocus, isAvailable { cardFocused = true }
+            }
+            .onChange(of: focusRequested, initial: true) { _, requested in
+                if requested, question != nil { wordsFocused = true; didFocus() }
+            }
+            .onChange(of: index) {
+                highlighted = 0
+                scroll.scrollTo("question-title", anchor: .top)
             }
         }
-        .onAppear {
-            if let initialAnswers { answers = initialAnswers }
-            if takesFocus, isAvailable { cardFocused = true }
-        }
-        .onChange(of: focusRequested, initial: true) { _, requested in
-            if requested, question != nil { wordsFocused = true; didFocus() }
-        }
-        .onChange(of: index) { highlighted = 0 }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(
             questions.count > 1 ? "\(agentName) asks, question \(index + 1) of \(questions.count)" : "\(agentName) asks"
@@ -228,7 +243,7 @@ struct AnnotatedQuestionView: View {
 
     // MARK: - Actions
 
-    private func handleKey(_ press: KeyPress) -> KeyPress.Result {
+    private func handleKey(_ press: KeyPress, reveal: (Int) -> Void) -> KeyPress.Result {
         // ⌘1–9 and the like belong to the app; typing in the field stays typing.
         guard cardFocused, press.modifiers.isDisjoint(with: [.command, .option, .control]) else { return .ignored }
         let options = question?.options ?? []
@@ -237,6 +252,7 @@ struct AnnotatedQuestionView: View {
         {
             highlighted = digit - 1
             answers.pick(options[digit - 1], in: question)
+            reveal(highlighted)
             return .handled
         }
         switch press.key {
@@ -244,9 +260,12 @@ struct AnnotatedQuestionView: View {
         case .downArrow: highlighted = min(highlighted + 1, max(options.count - 1, 0))
         case .space where options.indices.contains(highlighted):
             if let question { answers.pick(options[highlighted], in: question) }
-        case .return: submit()
+        case .return:
+            submit()
+            return .handled
         default: return .ignored
         }
+        reveal(highlighted)
         return .handled
     }
 
@@ -309,6 +328,9 @@ struct AgentQuestionOptionLabel: Equatable {
                 AskPreviewFixtures.question(nil, message: "Ready to apply the store migration?")
                 AskPreviewFixtures.question(isAvailable: false)
                 AskPreviewFixtures.question().frame(width: 420)
+                AskPreviewFixtures.question(AskPreviewFixtures.longChoices).frame(width: 420)
+                AskPreviewFixtures.question(
+                    nil, message: String(repeating: "Review the migration before continuing. ", count: 80))
             }
             .frame(width: 808)
             .padding(DS.Space.xl)

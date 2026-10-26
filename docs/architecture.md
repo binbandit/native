@@ -451,6 +451,17 @@ Peek and Home hosts. `SessionApprovalView` connects it to model actions. Only th
 owns shortcuts; the primary transcript leaves its response controls to the composer while enabled.
 The ordinary composer and approvals are unchanged with the gate off.
 
+Fine print asks must not contribute an unbounded minimum height to the window. `ApprovalSurface`
+uses the same minimum-width adapter as `RootDetailColumn`, so AppKit's minimum-size probe cannot
+measure wrapping content at zero width. Questions cap and scroll their prompt and choices while
+keeping the pager, actions and free-text answer visible; keyboard navigation reveals its choice.
+Failed-start cards cap their complete body, including diagnostics and recovery actions. Annotated
+approvals already cap their body. Home questions stay in the page's scroll view, and Peek questions
+stay in its height-capped body; neither uses the Fine print question layout.
+`ApprovalScrollView` measures natural content height up to its cap, respects a smaller proposed
+height, and reports zero for a minimum-height probe. A vertically fixed scroll view would still
+raise the window's minimum to its ideal height, even with a cap.
+
 At rest the gated composer is one field and a model-name control. `ComposerSettingsControl`
 opens model, effort, permission consequences and the agent's extra options in one popover;
 its MCP page embeds `MCPSessionPanel`. Picks still go through `SessionModel.pick`, including
