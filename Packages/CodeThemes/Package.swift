@@ -5,7 +5,10 @@ let package = Package(
     name: "CodeThemes",
     platforms: [.macOS(.v15), .iOS(.v18)],
     products: [
-        .library(name: "CodeThemes", targets: ["CodeThemes"])
+        .library(name: "CodeThemes", targets: ["CodeThemes"]),
+        /// The themes and their palettes alone, without highlighting or its grammars: for code that
+        /// names themes but never highlights (`NativePolicy`, and the host through it).
+        .library(name: "CodeThemeCatalog", targets: ["CodeThemeCatalog"]),
     ],
     // Written out in full, not built from a list, so Dependabot can read and bump each pin.
     dependencies: [
@@ -33,9 +36,11 @@ let package = Package(
         .package(url: "https://github.com/tree-sitter/tree-sitter-java", exact: "0.23.5"),
     ],
     targets: [
+        .target(name: "CodeThemeCatalog"),
         .target(
             name: "CodeThemes",
             dependencies: [
+                "CodeThemeCatalog",
                 .product(name: "SwiftTreeSitter", package: "swift-tree-sitter"),
                 .product(name: "TreeSitter", package: "tree-sitter"),
                 .product(name: "TreeSitterSwift", package: "tree-sitter-swift"),

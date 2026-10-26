@@ -32,6 +32,7 @@ extension OrchestrationPlugin {
             // The app serves them: an older host has no say, and this one leaves the app's entry alone.
             try? await client.configureTasks(ConfigureTasksParams(servesTools: false))
             await refreshURLs(in: durableHost, plugins: model.plugins)
+            status.refreshedHost(epoch: epoch)
         }
     }
 

@@ -443,7 +443,8 @@ or four highlights per release; more page.
 
 ## CI
 
-`check.yml` runs `scripts/release/check.sh` on every pull request and push to `main`: it compiles
+`check.yml` runs `scripts/release/check.sh` on every push to `main` and on pull requests that change
+its build inputs: it compiles
 the Release and Nightly configurations without signing, as two jobs side by side, so a break that
 only shows up outside Debug (a `#Preview` calling a DEBUG-only fixture) is caught before a release
 needs it, then checks each app against the size budget (`docs/app-size.md`) and for warnings. Run it
@@ -454,8 +455,8 @@ since the last nightly. `beta.yml` plans a beta every six hours on Linux and cal
 only when needed. `release.yml` also runs on `v*` tags. Nightly and Release still rehearse on demand
 ("Rehearsing a release"). The Check, Nightly and Release jobs need Xcode with the macOS 27 SDK; set
 the `MACOS_RUNNER` and `XCODE_DEVELOPER_DIR` repository variables to point them at another runner or Xcode (defaults:
-`macos-26` and Xcode 27.1; the repository uses `xcode-27` and `/Applications/Xcode.app/Contents/Developer`,
-GitHub's preview image with the macOS 27 SDK). `ci-signing.sh` puts the certificate and notary
+`macos-26` and Xcode 27.1; the repository uses `xcode-27` and `/Applications/Xcode_27.1.app/Contents/Developer`,
+GitHub's preview image with the macOS 27 SDK). Which jobs use which runner is under "Where CI runs". `ci-signing.sh` puts the certificate and notary
 credentials in a throwaway keychain and removes it afterwards.
 
 **What CI builds.** Everything that ships, and `check.yml`, builds the terminal and the script runtime
@@ -468,7 +469,7 @@ library, about 130 MB; the toolchain and source aren't cached) and `~/Library/Ca
 (Cargo's target folder with V8). All three workflows cache both under the same keys, keyed on the
 build scripts and `Cargo.lock`, so a release restores what `main`'s checks built.
 
-**How CI stays quick.** GitHub runs at most five macOS jobs at once for this repository, so a push
+**How CI stays quick.** GitHub runs at most five hosted macOS jobs at once for this repository, so a push
 runs few: `ci.yml` runs the package tests in two macOS shards and the Debug build; changed-file lint
 runs on Ubuntu in `swift:6.4`, with the same `swift format lint --strict` command. A Linux path check
 skips the Debug build on PRs that only change docs or development scripts. App sources, packages,
@@ -481,7 +482,7 @@ shards by the time each took on CI (`scripts/ci/package-test-times.txt`; update 
 "passed in" lines when the shards drift apart, and an unlisted package counts as 30 seconds). A
 third shard would only wait for a free runner. The iOS builds stay off pushes for the same reason
 ("iOS checks"). App builds are arm64 only (the packages declare macOS 15 and would otherwise compile
-an x86_64 slice nothing links). The Debug, Release and Nightly builds also cache:
+an x86_64 slice nothing links). On hosted runners, the Debug, Release and Nightly builds also cache:
 
 - Swift package checkouts and binary artifacts (`-clonedSourcePackagesDirPath`), keyed by the
   project's `Package.resolved`: resolving them from nothing took 3.5 minutes on CI, restoring them
@@ -495,27 +496,50 @@ an x86_64 slice nothing links). The Debug, Release and Nightly builds also cache
 
 Releases cache neither: an archive that ships compiles from scratch.
 
-`CI_MACOS_RUNNER` overrides the runner for `ci.yml`, `check.yml` and `ios.yml`, falling back to
-`MACOS_RUNNER` and then `macos-26`. Publishing in Nightly and Release keeps `MACOS_RUNNER`.
-Swift package and compilation caches use keys containing the runner environment and architecture.
-Package resolution and compilation caches live in `RUNNER_TEMP`, so multiple runners under the
-same account never mutate the same Swift package checkout. Self-hosted jobs skip build-cache
-downloads and start with fresh package build state and a job-local script runtime cache; hosted
-jobs still restore their caches. The shared libghostty build already takes a lock on the machine.
-Self-hosted runners need the same build tools as the hosted image, including Git LFS for artwork.
-
 Every app build in CI, `check.sh` and `release.sh` passes `-disableAutomaticPackageResolution`, so
 packages come only at the versions and revisions `Package.resolved` records. When the project's
 requirements and that file disagree, the build fails ("an out-of-date resolved file was detected")
 instead of resolving again against whatever the remotes have now; resolve in Xcode and commit the
 file with the change that needed it.
 
+### Where CI runs
+
+Checks run on two pools of Mac runners: GitHub-hosted (`MACOS_RUNNER`, at most five jobs at once)
+and persistent self-hosted runners (`CI_MACOS_RUNNER`, three runners on one 12-core Mac).
+
+| Job | Runner | `runs-on` |
+| --- | --- | --- |
+| `ci.yml` "Build app" | persistent | `CI_MACOS_RUNNER`, then `MACOS_RUNNER`, then `macos-26` |
+| `check.yml` "Check Release", "Check Nightly" | persistent | the same |
+| `ci.yml` "Test packages (n/2)" | GitHub-hosted | `MACOS_RUNNER`, then `macos-26` |
+| `ios.yml` "Build for iOS" | GitHub-hosted | the same |
+| Nightly, Release, TestFlight | GitHub-hosted | `MACOS_RUNNER`, then `macos-26` |
+| Lint, path checks, release assets | Ubuntu | `ubuntu-latest` |
+
+From 21 October 2026 every macOS check ran on the persistent runners. In the day before the split
+they ran 1,800 job-minutes (package tests 800, iOS builds 500, Check 280, app builds 215), the queue
+reached 28 runs and nothing merged for over an hour. The package tests and the iOS build were the
+biggest share and need nothing only that Mac has, so they run hosted, leaving it about 500 minutes a day.
+The app build stays there, where it takes about 3 minutes (4.5 to 9 hosted). Check stays too: about
+5 minutes there (3 to 14 hosted), and the hosted pool already takes up to three jobs from each pull
+request. If the persistent runners back up again, Check is the next to move, to the same `runs-on`
+as the package tests.
+
+Every Mac runner has Xcode 27.1 at the path in `XCODE_DEVELOPER_DIR`, which each job sets as
+`DEVELOPER_DIR`; the hosted package and iOS jobs print `xcodebuild -version` first. Swift package
+and compilation caches use keys containing the runner environment and architecture, and package
+resolution and compilation caches live in `RUNNER_TEMP`, so multiple runners under the same account
+never mutate the same Swift package checkout. Persistent jobs skip build-cache downloads and start
+with fresh package build state and a job-local script runtime cache; the shared libghostty build
+already takes a lock on the machine. Hosted jobs restore their caches, and install nothing beyond
+the image (Git LFS, Rust and Python are on it).
+
 ### iOS checks
 
 The Mac's builds never compile for iOS, so `ios.yml` does, on one runner: daily at 06:00 UTC, on
 demand (`gh workflow run ios.yml --ref <branch>`), and on pull requests that touch what the iPad or
 iPhone compiles (the companion and its icons, `Packages/`, the design system, the platform adapters,
-the shared transcript pieces, these scripts). Not on pushes, which already take most of the five runners. Each
+the shared transcript pieces, these scripts). Not on pushes: the pull request that changed these inputs already ran it, and the daily run catches the rest. Each
 step runs even when the one before it failed, so one run reports every break:
 
 - **The iPhone companion** for the iOS Simulator. It compiles some of the Mac's transcript files by
@@ -537,17 +561,20 @@ step runs even when the one before it failed, so one run reports every break:
   a private incremental cache.
 
 Our own files build without warnings for iOS too: every log goes through `scripts/check-warnings.sh`.
-It restores the Mac builds' package checkouts, which pin the same versions, and saves no caches of its
-own beyond the artwork: the repository's 10 GB is full of the Mac builds' compilation caches, which a
-daily one would push out. Its compilation cache lasts for the run, so dependencies the packages
+It restores the Mac project's package checkouts, which pin the same versions. The Mac builds that
+saved them now run on the persistent runners, so the daily run saves them and pull requests only read
+them; beyond the artwork it saves nothing else. Its compilation cache lasts for the run, so dependencies the packages
 share (ACP, Exec) compile once instead of once per package: about 2.5 minutes for all of them
 locally, where building each from nothing took 8.
 
 **Not yet on iPad.** The app target is one module whose folders use each other freely (models,
 plugins, commands, settings, views). Checking `native/Models` or a consumer now follows those
-dependencies automatically, but they still import macOS-only frameworks: ServiceManagement in
-`native/Host/HostRegistration.swift`, and AppKit in `NativeApp.swift`, the Mac's entry point. Those move behind
-`native/Platform` adapters with the iPad destination (`docs/architecture.md`, "Getting there"); add
+dependencies automatically. No folder imports a macOS-only framework unguarded any more, so
+`scripts/check-ios.sh native` reports every remaining error in one pass: models that spawn processes
+themselves (`AgentRuntime`, `ShellEnvironment`, `MCPLibrary`, the orchestration script tool, the
+status bar's process sampler) rather than through a host's `CommandRunner`, Mac-only SwiftUI and
+Foundation calls in a few views and libraries, and `NativeApp.swift`, the Mac's entry point. Those
+move behind `native/Platform` adapters with the iPad destination (`docs/architecture.md`, "Getting there"); add
 a folder to the workflow's typecheck once it compiles there. A dependency's genuine platform error
 still fails its consumer's check; the checker does not stub types or suppress those errors.
 
@@ -662,8 +689,9 @@ and [internal tester setup](https://developer.apple.com/help/app-store-connect/t
 | Variable | What it holds |
 | --- | --- |
 | `NATIVE_SPARKLE_PUBLIC_KEY` | Sparkle's EdDSA public key, printed by `generate_keys`. Official builds embed it; it must be the public half of `SPARKLE_PRIVATE_KEY`, which `release.sh` checks (an appcast item it can't sign stops the release) |
-| `MACOS_RUNNER` | the runner label (`xcode-27`) |
-| `XCODE_DEVELOPER_DIR` | that runner's Xcode (`/Applications/Xcode.app/Contents/Developer`) |
+| `MACOS_RUNNER` | the GitHub-hosted runner label (`xcode-27`) |
+| `CI_MACOS_RUNNER` | the persistent runners' label for the app and Release checks (`native-macos`); "Where CI runs" |
+| `XCODE_DEVELOPER_DIR` | the Xcode every Mac runner has (`/Applications/Xcode_27.1.app/Contents/Developer`) |
 
 ## One-time setup
 

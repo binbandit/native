@@ -60,41 +60,7 @@ struct ComposerEditor: View {
             // Size to the text (capped) rather than to whatever height is on offer.
             .fixedSize(horizontal: false, vertical: true)
             .hidden()
-            .overlay {
-                Group {
-                    if showsCode {
-                        TextEditor(text: $styled, selection: $styledSelection)
-                            // With `.lineSpacing`, SwiftUI's rich-text editor moves the caret to the end
-                            // after every keystroke, so it gets the same spacing as a line height.
-                            .lineHeight(.leading(increase: richLineLeading))
-                            .attributedTextFormattingDefinition(ComposerFileReferenceAttribute.Scope.self)
-                            .onAppear {
-                                if refocusRichEditor {
-                                    refocusRichEditor = false
-                                    isFocused.wrappedValue = true
-                                }
-                            }
-                    } else {
-                        TextEditor(text: $text, selection: $selection)
-                            .lineSpacing(lineSpacing)
-                    }
-                }
-                .font(font)
-                .foregroundStyle(.dsTextPrimary)
-                // The window's tint (`dsAccentPalette`) colors the caret; nil would reset it to blue.
-                .tint(hidesCaret ? .clear : .dsAccent)
-                .textEditorStyle(.plain)
-                .scrollIndicators(.never)
-                .focused(isFocused)
-                .onKeyPress(phases: [.down, .repeat], action: onKey)
-                .accessibilityLabel(inputLabel)
-                // Files and images dropped on the text attach instead (the composer's drop area).
-                .textViewTakesOnlyTextDrops()
-                .modifier(
-                    ComposerReferenceClipboard(
-                        enabled: referencesEnabled && !projection.tokens.isEmpty,
-                        copy: { canonicalCopy(cutting: false) }, cut: { canonicalCopy(cutting: true) }))
-            }
+            .overlay { editor }
             .overlay(alignment: .topLeading) {
                 if text.isEmpty {
                     Text(placeholder)
@@ -121,6 +87,43 @@ struct ComposerEditor: View {
             .onChange(of: referencesEnabled) {
                 textChangedOutside(); restyle()
             }
+    }
+
+    /// The editor itself: rich text while the draft shows code, plain otherwise.
+    private var editor: some View {
+        Group {
+            if showsCode {
+                TextEditor(text: $styled, selection: $styledSelection)
+                    // With `.lineSpacing`, SwiftUI's rich-text editor moves the caret to the end
+                    // after every keystroke, so it gets the same spacing as a line height.
+                    .lineHeight(.leading(increase: richLineLeading))
+                    .attributedTextFormattingDefinition(ComposerFileReferenceAttribute.Scope.self)
+                    .onAppear {
+                        if refocusRichEditor {
+                            refocusRichEditor = false
+                            isFocused.wrappedValue = true
+                        }
+                    }
+            } else {
+                TextEditor(text: $text, selection: $selection)
+                    .lineSpacing(lineSpacing)
+            }
+        }
+        .font(font)
+        .foregroundStyle(.dsTextPrimary)
+        // The window's tint (`dsAccentPalette`) colors the caret; nil would reset it to blue.
+        .tint(hidesCaret ? .clear : .dsAccent)
+        .textEditorStyle(.plain)
+        .scrollIndicators(.never)
+        .focused(isFocused)
+        .onKeyPress(phases: [.down, .repeat], action: onKey)
+        .accessibilityLabel(inputLabel)
+        // Files and images dropped on the text attach instead (the composer's drop area).
+        .textViewTakesOnlyTextDrops()
+        .modifier(
+            ComposerReferenceClipboard(
+                enabled: referencesEnabled && !projection.tokens.isEmpty,
+                copy: { canonicalCopy(cutting: false) }, cut: { canonicalCopy(cutting: true) }))
     }
 
     /// Whether `text` may hold code: a backtick or a tilde fence.

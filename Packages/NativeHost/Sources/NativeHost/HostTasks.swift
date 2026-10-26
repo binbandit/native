@@ -90,15 +90,17 @@ final class HostTasks {
         ) { [weak self] token in
             // The token is the only credential a caller presents; nothing this host didn't sign gets in.
             guard let client = tokens.client(in: token) else { return nil }
-            return await self?.caller(of: client)
+            return await self?.admittedCaller(of: client)
         }
         self.server = server
         let channel = configuration.location.channel
         let store = MCPServerStore(directory: configuration.location.directory.appending(path: "MCP"))
         let logger = core.logger
-        starting = Task {
+        starting = Task { [weak self] in
             do {
                 let launch = try await server.start(remembering: store, scope: channel, tokens: tokens)
+                // Stopped while it started (the policy no longer allows the tools): it doesn't stay up.
+                guard self?.server === server else { return server.stop() }
                 if let failure = launch.storeFailure {
                     logger.error("Native's tool URLs won't outlast this run: \(failure)")
                 }
@@ -112,14 +114,32 @@ final class HostTasks {
         #endif
     }
 
+    /// Stops listening, as when the policy no longer allows Native's tools (`HostCore+Policy.swift`);
+    /// `start()` listens again. Calls with a session's URL are turned away from then on, and a start
+    /// still waiting for its remembered port gives up rather than listen later.
+    func stop() {
+        starting?.cancel()
+        starting = nil
+        #if canImport(Network) && canImport(CryptoKit)
+        server?.stop()
+        server = nil
+        #endif
+    }
+
+    /// Who calls with a token this host signed, while the policy allows Native's tools.
+    func admittedCaller(of client: UUID) -> OrchestrationCaller? {
+        guard core.allows(.agentTools) else { return nil }
+        return caller(of: client)
+    }
+
     /// The MCP servers to hand the agent for a session: `base` (what clients gave it), with Native's
-    /// own entry at this run's address when the host serves the tools.
+    /// own entry at this run's address when the host serves the tools and the policy allows them.
     func agentServers(for session: HostSessionID, base: [JSONValue]) async -> [JSONValue] {
         guard servesTools else { return base }
         #if canImport(Network) && canImport(CryptoKit)
         await starting?.value
         let others = base.filter { $0["name"]?.stringValue != Self.serverName }
-        guard let url = tokens.token(for: session.rawValue).flatMap({ server?.url(for: $0) }),
+        guard core.allows(.agentTools), let url = tokens.token(for: session.rawValue).flatMap({ server?.url(for: $0) }),
             let entry = try? JSONDecoder().decode(
                 JSONValue.self, from: JSONEncoder().encode(MCPServer.http(name: Self.serverName, url: url)))
         else { return others }
