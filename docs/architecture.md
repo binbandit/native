@@ -636,7 +636,9 @@ before scheduling that replay, so an idle placeholder cannot be mistaken for a r
 can start an agent to replay history, but sends no prompts. A cancellable loading state covers that
 search. The panel takes the sidebar's column and returns there on Keep or Cancel. The task view is
 disabled and Stop is unavailable while trying; narrow windows suspend inspectors and restore them
-afterwards. A newly managed code theme immediately suppresses the preview and ends Try On without
+afterwards. The Task Well worker control also steps aside during that suspension, so its centered
+toolbar width cannot hide the theme panel's sidebar. The task title keeps the remaining toolbar room.
+A newly managed code theme immediately suppresses the preview and ends Try On without
 saving. Try On never sends to or changes a task.
 
 ### Credential ownership

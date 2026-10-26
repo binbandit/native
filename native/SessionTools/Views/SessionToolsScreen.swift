@@ -76,7 +76,10 @@ struct SessionToolsScreen: View {
             ToolbarItem(placement: .navigation) {
                 if usesTaskWell {
                     TaskWellTitleWiring(session: session, tools: tools) { wellTitleIdealWidth = $0 }
-                        .frame(maxWidth: toolbarLayout.titleWidth, alignment: .leading)
+                        .frame(
+                            maxWidth: inspectorSuspension == nil ? toolbarLayout.titleWidth : .infinity,
+                            alignment: .leading
+                        )
                         .onGeometryChange(for: CGFloat.self, of: { $0.frame(in: .global).minX }) {
                             wellTitleMinX = $0
                         }
@@ -94,7 +97,9 @@ struct SessionToolsScreen: View {
                 }
             }
             .sharedBackgroundVisibility(.hidden)
-            if usesTaskWell {
+            // A mode using the sidebar needs its column more than the inactive worker control.
+            // The centered well can otherwise make AppKit hide that column at narrow widths.
+            if usesTaskWell, inspectorSuspension == nil {
                 ToolbarItem(placement: .principal) {
                     TaskWellWiring(
                         session: session, tools: tools, turnChanges: turnChanges,
@@ -368,6 +373,15 @@ struct SessionToolsScreen: View {
             ComposerStatePreviewFixtures.finePrint(phase: .idle, draft: "Why fixedSize here?")
         }
         .frame(width: DS.ComposerSettings.width, height: DS.TaskWell.panelWidth)
+    }
+}
+
+#Preview("Well - Title while inspectors are suspended") {
+    DSPreviewPair {
+        TaskWellTitle(facts: TaskWellPreviewFixtures.longTitle, isPresented: .constant(false), rename: { _ in })
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .disabled(true)
+            .frame(width: DS.ComposerSettings.width, height: DS.TaskWell.height)
     }
 }
 #endif
