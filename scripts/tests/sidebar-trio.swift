@@ -3,6 +3,7 @@ import Exec
 import Foundation
 import Git
 import GitHub
+import NativePolicy
 
 @testable import Native
 
@@ -82,6 +83,7 @@ private struct SidebarTrioRegression {
     }
 
     static func main() async {
+        managedFooter()
         await modelActions()
         await branchRefreshes()
         await wiredRefresh()
@@ -90,6 +92,26 @@ private struct SidebarTrioRegression {
         expect(unavailable.refreshFailure?.contains("Reconnect") == true, "Unavailable hosts explain recovery")
         if failures > 0 { exit(1) }
         print("PASS: archive groups, full project scope, refresh gating, Retry, cache bypass and in-flight lookup")
+    }
+
+    static func managedFooter() {
+        let source = StaticPolicySource(managed: [
+            PolicyKey.organizationName.rawValue: "Northwind Federal IT",
+            PolicyKey.organizationContact.rawValue: "#it-help",
+            PolicyKey.remoteHostsEnabled.rawValue: false,
+            PolicyKey.companionEnabled.rawValue: false,
+        ])
+        let center = PolicyCenter(source: source)
+        expect(center.managementLine == "Managed by Northwind Federal IT", "Footer names the policy's organization")
+        expect(center.policy.organizationContact == "#it-help", "Footer contact comes from policy")
+        expect(
+            SidebarManagedDetails.facts(center).map(\.name) == ["Other Macs", "Pairing"],
+            "Footer describes the two managed restrictions without inventing an account restriction")
+        let local = PolicyCenter(source: StaticPolicySource(user: [PolicyKey.remoteHostsEnabled.rawValue: false]))
+        expect(SidebarManagedDetails.facts(local).isEmpty, "A personal preference is never called off by policy")
+        let enabled = PolicyCenter(source: StaticPolicySource(managed: [PolicyKey.remoteHostsEnabled.rawValue: true]))
+        expect(SidebarManagedDetails.facts(enabled).isEmpty, "A managed enabled capability is never called off")
+        print("PASS: managed footer restrictions, organization, contact and personal preferences")
     }
 
     static func modelActions() async {
