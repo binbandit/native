@@ -1,5 +1,7 @@
 import CodeThemes
 import Foundation
+import NativeHostClient
+import NativeHostProtocol
 import NativePolicy
 
 @testable import Native
@@ -237,6 +239,45 @@ extension SettingsRegression {
         replaying?.phase = .idle
         for _ in 0..<10 { await Task.yield() }
         expect(!replaySearch.isActive && replaySearch.stage == nil, "Policy also cancels a wait for host replay")
+
+        for session in populated.sessions.loadedSessions { populated.sessions.remove(session) }
+        let client = NativeHostClient(
+            transport: ThemeTryOnRegressionTransport(), clientInfo: .init(name: "Regression", version: "1", build: "1"))
+        var restoring: SessionModel?
+        let bufferedReplay = ThemeTryOnModel(
+            app: populated, settings: SettingsPresentation(),
+            appearance: AppearanceModeController(defaults: PreviewUserDefaults()),
+            plugins: PluginRegistry(previewing: []), defaults: PreviewUserDefaults(), policy: { NativePolicy() },
+            loadSession: { key in
+                guard let definition = populated.runtime(key.agent)?.agent else { return }
+                let summary = HostSessionSummary(
+                    id: .init(), agentID: key.agent.rawValue, agentName: definition.displayName,
+                    agentSessionID: key.id, cwd: project.path, phase: .idle)
+                let session = SessionModel(
+                    agent: definition, id: key.id, summary: summary, client: client,
+                    services: populated.sessions.services, promptCapabilities: .init(), origin: .user, parent: nil)
+                if key == newest {
+                    session.isReplaying = true
+                    restoring = session
+                } else if key == next {
+                    session.previewExchange("Show it", reply: "```swift\nlet older = true\n```", endedAgo: 0)
+                }
+                populated.sessions.register(session)
+            })
+        bufferedReplay.start()
+        for _ in 0..<1_000 {
+            if restoring != nil { break }
+            await Task.yield()
+        }
+        expect(
+            restoring?.phase == .idle && restoring?.isRestoringHistory == true, "An idle summary can still be replaying"
+        )
+        expect(bufferedReplay.stage == .findingTask, "Discovery waits for the history-restoration flag too")
+        restoring?.previewExchange("Show it", reply: "```swift\nlet buffered = true\n```", endedAgo: 0)
+        restoring?.isReplaying = false
+        await finishTaskSearch(bufferedReplay)
+        expect(bufferedReplay.stage == .task(newest), "An idle task's buffered history is inspected after restoration")
+        bufferedReplay.cancel()
     }
 
     private static func finishTaskSearch(_ tryOn: ThemeTryOnModel) async {
@@ -246,5 +287,10 @@ extension SettingsRegression {
         }
         expect(false, "The inert task history search finishes")
     }
+}
+
+private struct ThemeTryOnRegressionTransport: HostTransport {
+    let displayName = "Inert regression transport"
+    func connect() async throws -> any ByteStream { throw CancellationError() }
 }
 #endif

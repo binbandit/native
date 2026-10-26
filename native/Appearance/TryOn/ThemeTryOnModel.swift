@@ -282,9 +282,11 @@ final class ThemeTryOnModel {
             guard !Task.isCancelled else { return nil }
             guard let session = app.session(candidate.key), session.parentID == nil, session.origin == .user
             else { continue }
-            // Hosts answer an attached open before replay finishes. Its first chunks cannot tell
-            // us whether the task has code; already-loading models need the same wait.
-            for await phase in Observations({ session.phase }) where phase != .loading { break }
+            // An idle host summary can precede the end of buffered replay. Wait for the model's
+            // history boundary as well as its phase before deciding it has no code.
+            for await ready in Observations({ session.phase != .loading && !session.isRestoringHistory }) where ready {
+                break
+            }
             guard !Task.isCancelled else { return nil }
             if Self.showsCode(session) { return candidate.key }
         }
