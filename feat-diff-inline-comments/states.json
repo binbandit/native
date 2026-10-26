@@ -1,0 +1,210 @@
+[
+  {
+    "state": "C1",
+    "theme": "dark",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C1-dark.png",
+    "mock": "mocks/C1-dark.png",
+    "comparison": "comparisons/C1-dark.png"
+  },
+  {
+    "state": "C1",
+    "theme": "light",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C1-light.png",
+    "mock": "mocks/C1-light.png",
+    "comparison": "comparisons/C1-light.png"
+  },
+  {
+    "state": "C2",
+    "theme": "dark",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C2-dark.png",
+    "mock": "mocks/C2-dark.png",
+    "comparison": "comparisons/C2-dark.png"
+  },
+  {
+    "state": "C2",
+    "theme": "light",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C2-light.png",
+    "mock": "mocks/C2-light.png",
+    "comparison": "comparisons/C2-light.png"
+  },
+  {
+    "state": "C3",
+    "theme": "dark",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C3-dark.png",
+    "mock": "mocks/C3-dark.png",
+    "comparison": "comparisons/C3-dark.png"
+  },
+  {
+    "state": "C3",
+    "theme": "light",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C3-light.png",
+    "mock": "mocks/C3-light.png",
+    "comparison": "comparisons/C3-light.png"
+  },
+  {
+    "state": "C4",
+    "theme": "dark",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C4-dark.png",
+    "mock": "mocks/C4-dark.png",
+    "comparison": "comparisons/C4-dark.png"
+  },
+  {
+    "state": "C4",
+    "theme": "light",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C4-light.png",
+    "mock": "mocks/C4-light.png",
+    "comparison": "comparisons/C4-light.png"
+  },
+  {
+    "state": "C5",
+    "theme": "dark",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C5-dark.png",
+    "mock": "mocks/C5-dark.png",
+    "comparison": "comparisons/C5-dark.png"
+  },
+  {
+    "state": "C5",
+    "theme": "light",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C5-light.png",
+    "mock": "mocks/C5-light.png",
+    "comparison": "comparisons/C5-light.png"
+  },
+  {
+    "state": "C6",
+    "theme": "dark",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C6-dark.png",
+    "mock": "mocks/C6-dark.png",
+    "comparison": "comparisons/C6-dark.png"
+  },
+  {
+    "state": "C6",
+    "theme": "light",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C6-light.png",
+    "mock": "mocks/C6-light.png",
+    "comparison": "comparisons/C6-light.png"
+  },
+  {
+    "state": "C7",
+    "theme": "dark",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C7-dark.png",
+    "mock": "mocks/C7-dark.png",
+    "comparison": "comparisons/C7-dark.png"
+  },
+  {
+    "state": "C7",
+    "theme": "light",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C7-light.png",
+    "mock": "mocks/C7-light.png",
+    "comparison": "comparisons/C7-light.png"
+  },
+  {
+    "state": "C8",
+    "theme": "dark",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C8-dark.png",
+    "mock": "mocks/C8-dark.png",
+    "comparison": "comparisons/C8-dark.png"
+  },
+  {
+    "state": "C8",
+    "theme": "light",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C8-light.png",
+    "mock": "mocks/C8-light.png",
+    "comparison": "comparisons/C8-light.png"
+  },
+  {
+    "state": "C9",
+    "theme": "dark",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C9-dark.png",
+    "mock": "mocks/C9-dark.png",
+    "comparison": "comparisons/C9-dark.png"
+  },
+  {
+    "state": "C9",
+    "theme": "light",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C9-light.png",
+    "mock": "mocks/C9-light.png",
+    "comparison": "comparisons/C9-light.png"
+  },
+  {
+    "state": "C10",
+    "theme": "dark",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C10-dark.png",
+    "mock": "mocks/C10-dark.png",
+    "comparison": "comparisons/C10-dark.png"
+  },
+  {
+    "state": "C10",
+    "theme": "light",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C10-light.png",
+    "mock": "mocks/C10-light.png",
+    "comparison": "comparisons/C10-light.png"
+  },
+  {
+    "state": "C11",
+    "theme": "dark",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C11-dark.png",
+    "mock": "mocks/C11-dark.png",
+    "comparison": "comparisons/C11-dark.png"
+  },
+  {
+    "state": "C11",
+    "theme": "light",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C11-light.png",
+    "mock": "mocks/C11-light.png",
+    "comparison": "comparisons/C11-light.png"
+  },
+  {
+    "state": "C12",
+    "theme": "dark",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C12-dark.png",
+    "mock": "mocks/C12-dark.png",
+    "comparison": "comparisons/C12-dark.png"
+  },
+  {
+    "state": "C12",
+    "theme": "light",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C12-light.png",
+    "mock": "mocks/C12-light.png",
+    "comparison": "comparisons/C12-light.png"
+  },
+  {
+    "state": "C13",
+    "theme": "dark",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C13-dark.png",
+    "mock": "mocks/C13-dark.png",
+    "comparison": "comparisons/C13-dark.png"
+  },
+  {
+    "state": "C13",
+    "theme": "light",
+    "revision": "9f1ab9dc267cb2f61ff06779a63220a44f4512e7",
+    "capture": "captures/C13-light.png",
+    "mock": "mocks/C13-light.png",
+    "comparison": "comparisons/C13-light.png"
+  }
+]
