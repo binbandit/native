@@ -102,7 +102,9 @@ private struct SidebarTrioRegression {
             PolicyKey.companionEnabled.rawValue: false,
         ])
         let center = PolicyCenter(source: source)
-        expect(center.managementLine == "Managed by Northwind Federal IT", "Footer names the policy's organization")
+        expect(
+            center.managementLine == "Managed by Northwind Federal IT · #it-help",
+            "Footer names the policy's organization and contact")
         expect(center.policy.organizationContact == "#it-help", "Footer contact comes from policy")
         expect(
             SidebarManagedDetails.facts(center).map(\.name) == ["Other Macs", "Pairing"],
