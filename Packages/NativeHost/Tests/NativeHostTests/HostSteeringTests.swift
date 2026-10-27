@@ -168,4 +168,35 @@ struct HostSteeringTests {
         await recorder.stop()
     }
 
+    @Test func reorderingAfterStopIsHonoredAndSteersStayWithTheirOriginalTurn() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let session = try await recorder.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: harness.root.path(percentEncoded: false)))
+        try await recorder.client.attach(session.id)
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "tool-sleep"))
+        try await recorder.wait("the command") {
+            await $0.mirror(session.id).state.items.contains { if case .toolCall = $0 { true } else { false } }
+        }
+        let held = PromptParams(sessionID: session.id, text: "held steer", behavior: .steer)
+        let ordinary = PromptParams(sessionID: session.id, text: "tool-sleep")
+        _ = try await recorder.client.prompt(held)
+        _ = try await recorder.client.prompt(ordinary)
+        try await recorder.client.cancel(session.id)
+        try await recorder.wait("the stopped turn") { await $0.turnsEnded(session.id).count == 1 }
+        try await recorder.client.moveQueued(
+            MoveQueuedParams(sessionID: session.id, itemID: ordinary.requestID, before: held.requestID))
+        #expect(await recorder.listed(session.id)?.queue.map(\.text) == ["tool-sleep", "held steer"])
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "resume queue"))
+        try await recorder.wait("the resumed queue") { await $0.turnsEnded(session.id).count == 4 }
+        #expect(
+            harness.received == [
+                "prompt\ttool-sleep", "prompt\ttool-sleep", "tool-finished\tsleep", "prompt\theld steer",
+                "prompt\tresume queue",
+            ])
+        await recorder.stop()
+    }
+
 }

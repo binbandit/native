@@ -208,19 +208,22 @@ struct HostSessionTests {
         await recorder.stop()
     }
 
-    @Test("Send Now on an agent that can't steer stops the turn and sends the message next")
-    func sendNowInterrupts() async throws {
+    @Test("Send Now without steering finishes tools before interrupting between steps")
+    func sendNowWaitsForToolsWithoutSteering() async throws {
         let harness = try HostHarness()
         defer { harness.cleanup() }
         harness.agentEnvironment = ["FAKE_AGENT_NO_STEERING": "1"]
         let (recorder, session) = try await started(harness)
-        _ = try await recorder.client.prompt(PromptParams(sessionID: session, text: "slow 20"))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session, text: "tool-sleep"))
         let next = PromptParams(sessionID: session, text: "next")
         #expect(try await recorder.client.prompt(next) == .queued)
-        try await recorder.wait("the turn to get going") { await $0.agentText(session).contains("tick 1") }
+        try await recorder.wait("the tool to start") {
+            await $0.mirror(session).state.items.contains { if case .toolCall = $0 { true } else { false } }
+        }
         try await recorder.client.sendQueuedNow(QueueItemParams(sessionID: session, itemID: next.requestID))
+        #expect(await recorder.listed(session)?.queue.first?.waitingForTool == "sleep 20")
         try await recorder.wait("both turns") { await $0.turnsEnded(session) == ["cancelled", "end_turn"] }
-        #expect(harness.received.filter { $0.hasPrefix("prompt\t") } == ["prompt\tslow 20", "prompt\tnext"])
+        #expect(harness.received.filter { $0.hasPrefix("prompt\t") || $0.hasPrefix("tool-finished\t") } == ["prompt\ttool-sleep", "tool-finished\tsleep", "prompt\tnext"])
         await recorder.stop()
     }
 

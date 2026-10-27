@@ -25,8 +25,10 @@ extension SessionModel {
         switch steeringDelivery {
         case .waitForTool: break
         case .steer:
+            let generation = turnGeneration
             Task {
-                guard phase == .prompting, !isStopping, !isDeliveringSteer, steeringDelivery == .steer,
+                guard phase == .prompting, turnGeneration == generation, !isStopping, !isDeliveringSteer,
+                    steeringDelivery == .steer,
                     let current = queue.remove(item.id)
                 else { return }
                 await steer(current.text, attachments: current.attachments, echo: current.isEchoed)
