@@ -61,6 +61,8 @@ JSON-RPC envelope, then add the decoded instruction string length and round up `
 Per-tool rows round independently, so their token sum need not equal the full-envelope estimate.
 Provider formatting, generic skill tooling, system prompts, user/project instructions and other
 MCP servers are outside this comparison. Dynamic script bindings can enlarge a task's listing.
+Adapters that defer tools through MCP tool search may already put fewer schemas in the model
+prompt. These numbers compare the supplied catalogs; they do not measure that adapter-specific reduction.
 
 Reproduce after building the isolated app:
 

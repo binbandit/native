@@ -14,3 +14,6 @@ scripts/native get_skill '{"skill":"build-a-native-plugin"}' --text
 `get_skill` requires `skill`. The returned guide includes the correct plugin directory for this
 copy of Native. Read it before writing a plugin or changing setup. Guides switched off by the user
 or organization are unavailable through the CLI too.
+
+If a custom shell environment removes Native's session variables, use the per-agent MCP option in
+Native's Agents settings. Do not change shell security settings or another task's credentials.
