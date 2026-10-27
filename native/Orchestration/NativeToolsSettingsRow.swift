@@ -24,7 +24,7 @@ struct NativeToolsSettingsRow: View {
                     get: { registry.nativeMCPEnabled(for: agent) },
                     set: { model.setNativeMCPEnabled($0, for: agent.id) }))
         }
-        .settingsLocked(isAllowed ? nil : "Native tools are not allowed by your organization")
+        .settingsLocked(isAllowed ? nil : "Not allowed by your organization")
     }
 
     static func rowID(_ agent: AgentDefinition.ID) -> SettingsRowID {
@@ -58,5 +58,22 @@ struct NativeToolsSettingsRow: View {
         .settingsPreviewPage()
     }
     .environment(model)
+}
+
+#Preview("Native tools - Managed restriction") {
+    let model = AppModel.preview()
+    let policy = PolicyCenter(source: StaticPolicySource(managed: ["policy.mcp.blocked": ["native"]]))
+    let registry = PluginRegistry(
+        builtIns: [BuiltInPlugins.claudeCode], defaults: PreviewUserDefaults(), policyCenter: policy)
+    return DSPreviewPair {
+        SettingsRowGroup {
+            ForEach(registry.agents) { agent in
+                NativeToolsSettingsRow(agent: agent, registry: registry)
+            }
+        }
+        .settingsPreviewPage()
+    }
+    .environment(model)
+    .environment(policy)
 }
 #endif

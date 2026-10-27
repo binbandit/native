@@ -133,8 +133,8 @@ final class HostTasks {
         return caller(of: client)
     }
 
-    /// The MCP servers to hand the agent for a session: `base` (what clients gave it), with Native's
-    /// own entry at this run's address when the host serves the tools and the policy allows them.
+    /// Native's entry is omitted when the skill covers it. MCP clients get this run's address when
+    /// the host serves the tools; app URLs stay in the stored configuration for either delivery.
     func agentServers(for session: HostSessionID, agent: String, base: [JSONValue]) async -> [JSONValue] {
         guard servesTools else {
             return usesMCP(agent: agent) ? base : base.filter { $0["name"]?.stringValue != Self.serverName }

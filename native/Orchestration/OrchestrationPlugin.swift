@@ -7,8 +7,8 @@ import NativePolicy
 import os
 
 /// Lets agents hand tasks to other agents, such as Claude Code asking Codex for a review. Every
-/// session gets Native's MCP server at a URL only it knows, so each tool call is attributed to the
-/// session that made it and the tasks it starts become its subagents.
+/// session uses a signed local URL through the skill's CLI or MCP, so each tool call is attributed
+/// to the session that made it and the tasks it starts become its subagents.
 ///
 /// Native's host serves the tools to its own sessions (`HostTasks`, docs/durability.md, "Native's
 /// tools in the host"), so delegated work goes on with the app closed and on other machines. The
