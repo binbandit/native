@@ -21,7 +21,7 @@ struct ComposeAgentPicker: View {
         CappedHeightScrollView(maxHeight: maxHeight) { popover }
     }
 
-    var popover: some View {
+    var popover: ComposerSettingsPopover {
         ComposerSettingsPopover(
             settings: settings,
             agentName: model.composeTask.editor?.agentName ?? "The agent",

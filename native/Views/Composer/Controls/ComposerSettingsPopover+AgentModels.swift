@@ -7,19 +7,28 @@ extension ComposerSettingsPopover {
         return agentModels.allSatisfy { $0.agent == currentAgentID }
     }
 
-    @ViewBuilder func agentModelRows(isPage: Bool = false) -> some View {
-        if let list = modelList, let agentModels {
+    @ViewBuilder func agentModelRows(
+        isPage: Bool = false, slots: Int = ModelChoiceList.slots, showsCaption: Bool = true
+    ) -> some View {
+        if let list = modelList(slots: slots), let agentModels {
             if list.isFilterable {
                 filterLine(count: agentModels.count)
             } else if !isPage {
                 ComposerSettingsHeader(title: "Model") { fastModeSwitch }
+            } else if fastMode != nil {
+                HStack {
+                    Spacer()
+                    fastModeSwitch
+                }
+                .composerSettingsTextEdge()
+                .frame(height: DS.ComposerSettings.rowHeight)
             }
             ForEach(list.rows) { row in
                 if let entry = agentModels.first(where: { $0.id == row.id }) {
                     agentModelRow(entry, row: row, first: !list.query.isEmpty && list.rows.first?.id == row.id)
                 }
             }
-            if list.isFilterable { filterFooter(list) }
+            modelOverflow(list, slots: slots)
             if offersAgentsSettings, let onAgentsSettings {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("No other agent is ready.")
@@ -33,7 +42,7 @@ extension ComposerSettingsPopover {
                 .composerSettingsTextEdge()
                 .padding(.vertical, DS.Space.xs)
             }
-            if !omitsModelCaptions || failure != nil || modelChange?.stage == .failed {
+            if showsCaption || failure != nil || modelChange?.stage == .failed {
                 agentModelCaption
             }
         }

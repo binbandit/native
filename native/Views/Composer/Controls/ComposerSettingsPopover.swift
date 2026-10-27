@@ -31,7 +31,7 @@ struct ComposerSettingsPopover: View {
         case effort
         case autonomy(String)
         case row(String)
-        case fastMode, retry, restart, back, agentsSettings
+        case fastMode, retry, restart, back, agentsSettings, moreModels
         case command(row: String, index: Int)
     }
 
@@ -90,6 +90,12 @@ struct ComposerSettingsPopover: View {
                         mainContent(slots: ModelChoiceList.slots, showsCaptions: true)
                         mainContent(slots: ModelChoiceList.slots - 1, showsCaptions: true)
                         mainContent(slots: ModelChoiceList.slots - 1, showsCaptions: false)
+                        // Extra agent settings can exhaust the budget even with captions hidden.
+                        // Keep their actions and row heights; the Model page holds the overflow.
+                        mainContent(slots: 4, showsCaptions: false)
+                        mainContent(slots: 3, showsCaptions: false)
+                        mainContent(slots: 2, showsCaptions: false)
+                        mainContent(slots: 1, showsCaptions: false)
                     }
                 }
             }
@@ -117,6 +123,7 @@ struct ComposerSettingsPopover: View {
             if let leadingContent {
                 leadingContent
             }
+            // Stopped values stay dimmed and disabled; overflow navigation stays available.
             Group {
                 modelSection(slots: slots, showsCaption: showsCaptions)
                     .composerSettingsSection(ruled: isStopped || leadingContent != nil)
@@ -128,14 +135,13 @@ struct ComposerSettingsPopover: View {
                     taskRows.composerSettingsSection(ruled: true).disabled(isStopped)
                 }
             }
-            // Readable but not editable: dimmed by each row, so the headers keep their color.
-            .allowsHitTesting(!isStopped || agentModels != nil)
             if let manager {
                 footer(manager)
             }
         }
         .fixedSize(horizontal: false, vertical: true)
         .onAppear { modelSlots = slots }
+        .onChange(of: slots) { modelSlots = slots }
     }
 
     // MARK: - Notice and footer
