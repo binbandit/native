@@ -26,6 +26,9 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
     @State private var folding = SidebarDayFolding()
     @State private var selection = SidebarSelectionModel()
     @Experiment(.sidebarNext) private var usesSidebarNext
+    /// Return keyboard dismissal to the originating list. Pointer dismissal keeps the clicked
+    /// control's focus, even when it belongs to the same task.
+    @State private var peekReturn: SessionKey??
 
     private let navigationItems: NavigationItems
     private let accessories: Accessories
@@ -47,89 +50,87 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
             model: model, filter: filter, insights: insights, folding: usesSidebarNext ? folding : nil,
             now: DSMinuteClock.shared.now)
         VStack(alignment: .leading, spacing: 0) {
-            // The primary nav group: 6pt insets, 2pt between rows.
-            VStack(alignment: .leading, spacing: DS.Space.xxs) {
-                NewSessionItem()
-                navigationItems
-                accessories
-            }
-            .padding(.horizontal, DS.Space.sm)
-            .padding(.top, DS.Space.sm)
-            .padding(.bottom, usesSidebarNext ? DS.Space.xxs : DS.Space.sm)
-            if !usesSidebarNext {
-                SeparatorLine().padding(.horizontal, DS.Space.lg)
-            }
-
-            ScrollView {
-                ProjectList(
-                    listing: listing, taskAccessory: taskAccessory, filter: filterBinding, selection: selection,
-                    select: select, folding: folding
-                )
-                .environment(\.sidebarAllInView, usesSidebarNext)
-                .environment(\.answerShortcutAskID, usesSidebarNext ? model.answerShortcutAsk?.id : nil)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, usesSidebarNext ? DS.Sidebar.inset : DS.Space.sm)
-                .padding(.vertical, usesSidebarNext ? 0 : DS.Space.md)
-            }
-            .scrollIndicators(.automatic)
-            .focusable()
-            .focused($isListFocused)
-            .focusEffectDisabled()
-            .onKeyPress(.upArrow) {
-                model.selectSession(offset: -1, in: usesSidebarNext ? listing.order : nil)
-                return .handled
-            }
-            .onKeyPress(.downArrow) {
-                model.selectSession(offset: 1, in: usesSidebarNext ? listing.order : nil)
-                return .handled
-            }
-            .onKeyPress(.space) {
-                guard usesSidebarNext, model.renaming == nil, let key = model.selection else { return .ignored }
-                model.peekTask(key)
-                return .handled
-            }
-            .onKeyPress(.return) {
-                guard model.renaming == nil, let selection = model.selection else { return .ignored }
-                model.renaming = selection
-                return .handled
-            }
-            // ⌘A picks every task in the open task's project; Escape lets the picks go.
-            .onKeyPress(characters: ["a"]) { press in
-                guard press.modifiers == .command else { return .ignored }
-                let targets = model.selectAllTargets(after: selection)
-                guard !targets.isEmpty else { return .ignored }
-                selection.selectAll(targets)
-                return .handled
-            }
-            .onKeyPress(.escape) {
-                guard selection.isActive else { return .ignored }
-                selection.clear()
-                return .handled
-            }
-            .accessibilityLabel("Projects")
-            .onAppear { LaunchMetrics.markOnScreen(.sidebarInteractive) }
-            .confirmationDialog(
-                "Delete “\(selection.deletionRequest.map(model.titleOfSession) ?? "")”?",
-                isPresented: Binding(
-                    get: { selection.deletionRequest != nil },
-                    set: { if !$0 { selection.deletionRequest = nil } }),
-                presenting: selection.deletionRequest
-            ) { key in
-                Button("Delete Task", role: .destructive) {
-                    model.deleteSession(key, undoManager: undoManager)
+            VStack(alignment: .leading, spacing: 0) {
+                // The primary nav group: 6pt insets, 2pt between rows.
+                VStack(alignment: .leading, spacing: DS.Space.xxs) {
+                    NewSessionItem()
+                    navigationItems
+                    accessories
                 }
-            } message: { key in
-                let agent = model.runtime(key.agent)?.agent.displayName ?? "the agent"
-                Text(
-                    "Its history goes from Native and, if \(agent) supports it, from \(agent) too. You can undo for a few seconds. To keep it out of sight instead, archive it."
-                )
+                .padding(.horizontal, DS.Space.sm)
+                .padding(.top, DS.Space.sm)
+                .padding(.bottom, usesSidebarNext ? DS.Space.xxs : DS.Space.sm)
+                if !usesSidebarNext {
+                    SeparatorLine().padding(.horizontal, DS.Space.lg)
+                }
+
+                ScrollView {
+                    ProjectList(
+                        listing: listing, taskAccessory: taskAccessory, filter: filterBinding, selection: selection,
+                        select: select, folding: folding
+                    )
+                    .environment(\.sidebarAllInView, usesSidebarNext)
+                    .environment(\.answerShortcutAskID, usesSidebarNext ? model.answerShortcutAsk?.id : nil)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, usesSidebarNext ? DS.Sidebar.inset : DS.Space.sm)
+                    .padding(.vertical, usesSidebarNext ? 0 : DS.Space.md)
+                }
+                .scrollIndicators(.automatic)
+                .focusable()
+                .focused($isListFocused)
+                .focusEffectDisabled()
+                .onKeyPress(.upArrow) {
+                    model.selectSession(offset: -1, in: usesSidebarNext ? listing.order : nil)
+                    return .handled
+                }
+                .onKeyPress(.downArrow) {
+                    model.selectSession(offset: 1, in: usesSidebarNext ? listing.order : nil)
+                    return .handled
+                }
+                .onKeyPress(.space) {
+                    guard usesSidebarNext, model.renaming == nil, let key = model.selection else { return .ignored }
+                    model.peekTask(key)
+                    return .handled
+                }
+                .onKeyPress(.return) {
+                    guard model.renaming == nil, let selection = model.selection else { return .ignored }
+                    model.renaming = selection
+                    return .handled
+                }
+                // ⌘A picks every task in the open task's project; Escape lets the picks go.
+                .onKeyPress(characters: ["a"]) { press in
+                    guard press.modifiers == .command else { return .ignored }
+                    let targets = model.selectAllTargets(after: selection)
+                    guard !targets.isEmpty else { return .ignored }
+                    selection.selectAll(targets)
+                    return .handled
+                }
+                .onKeyPress(.escape) {
+                    guard selection.isActive else { return .ignored }
+                    selection.clear()
+                    return .handled
+                }
+                .accessibilityLabel("Projects")
+                .onAppear { LaunchMetrics.markOnScreen(.sidebarInteractive) }
+
             }
+            .modifier(
+                PlatformFolderDrop(
+                    enabled: usesSidebarNext, excludedTypes: [SidebarDragState.contentType],
+                    accepts: { model.sidebarFolders.acceptsDrop }, begin: model.beginFolderDrop,
+                    preview: model.previewFolderDrop, end: model.endFolderDrop,
+                    open: { await model.openSidebarFolders($0, undoManager: undoManager) }
+                ) {
+                    SidebarFolderDropFeedback(names: model.sidebarFolders.hovered)
+                }
+            )
 
             if selection.isActive {
                 SidebarSelectionBar(selection: selection)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
-            SidebarFooter()
+            if usesSidebarNext { SidebarFolderActions() }
+            SidebarFooter(isAllInView: usesSidebarNext)
         }
         .background(usesSidebarNext ? Color.dsSidebarSolid : Color.clear)
         .animation(.dsQuick, value: selection.isActive)
@@ -152,6 +153,14 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
             else { return }
             folding.setExpanded(group.project.id, true)
         }
+        .onChange(of: model.taskPeek.request == nil) { _, isClosed in
+            if !isClosed {
+                peekReturn = isListFocused ? .some(model.selection) : nil
+            } else if let selection = peekReturn {
+                if model.taskPeek.restoresSidebarFocus, selection == model.selection { isListFocused = true }
+                peekReturn = nil
+            }
+        }
         .onChange(of: listing.order, initial: true) { _, order in
             selection.update(order: order)
         }
@@ -164,19 +173,15 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
             guard filter.requiresUncommittedChanges || filter.requiresPullRequest else { return }
             await insights.prepare(model.projects.all.flatMap { model.allSessions(in: $0.id) })
         }
-        .confirmationDialog(
-            "Delete \(selection.keys.count) Tasks?", isPresented: Bindable(selection).isConfirmingDelete
-        ) {
-            Button("Delete \(selection.keys.count) Tasks", role: .destructive) {
-                let keys = selection.keys
-                selection.clear()
-                model.deleteSessions(keys, undoManager: undoManager)
+        #if DEBUG
+        // `-nativeSidebarFixtureNeedsYou YES` starts with Needs You on, for checks of its states:
+        // ⌥⌘J only reaches an app that's in front.
+        .task {
+            if UserDefaults.standard.bool(forKey: "nativeSidebarFixtureNeedsYou") {
+                needsYouBinding.wrappedValue = true
             }
-        } message: {
-            Text(
-                "Their history goes from Native and, where the agent supports it, from the agent too. You can undo for a few seconds. To keep them out of sight instead, archive them."
-            )
         }
+        #endif
         .focusedSceneValue(\.sidebarReorder, reorder)
         .focusedSceneValue(\.sidebarNeedsYouFilter, needsYouBinding)
         .focusedSceneValue(\.sidebarSelection, selection)

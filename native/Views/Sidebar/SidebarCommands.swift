@@ -74,9 +74,11 @@ extension NativeCommand {
                 let keys = selection.keys
                 Task { await model.unarchiveSessions(keys) }
             },
-            bulk(.selectionDelete, "Delete Selected Tasks…", systemImage: "trash", applies: { _ in true }) {
-                selection, _ in
-                selection.isConfirmingDelete = true
+            bulk(.selectionDelete, "Delete Selected Tasks", systemImage: "trash", applies: { _ in true }) {
+                selection, context in
+                let keys = selection.keys
+                selection.clear()
+                model.deleteSessions(keys, undoManager: context.undoManager)
             },
             bulk(.selectionMarkRead, "Mark Selected as Read", systemImage: "envelope.open", applies: \.canMarkRead) {
                 selection, _ in

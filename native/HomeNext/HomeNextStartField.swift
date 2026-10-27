@@ -6,6 +6,7 @@ import UniformTypeIdentifiers
 /// The panel, the Compose page and this field are one draft in three sizes, so ⇧⌘N carries what's
 /// typed here onto the page, and every start goes through the same validation and policy.
 struct HomeNextStartField: View {
+    var maximumWidth = DS.HomeNext.column
     /// A start that stays on Home, for its receipt.
     let started: (StartingTask) -> Void
 
@@ -56,7 +57,7 @@ struct HomeNextStartField: View {
             }
             .frame(minHeight: DS.ComposerSettings.inputHeight)
         }
-        .frame(maxWidth: DS.HomeNext.column)
+        .frame(maxWidth: maximumWidth)
         .padding(.horizontal, DS.Space.xxxl)
         .padding(.bottom, DS.Space.xl)
         .animation(.dsQuick, value: entry.hasMessage)

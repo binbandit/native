@@ -58,7 +58,7 @@ struct AnnotatedApprovalView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HeightCappedScrollView(maxHeight: DS.Approval.maximumHeight) {
+            ApprovalScrollView {
                 VStack(alignment: .leading, spacing: DS.Space.xl) {
                     VStack(alignment: .leading, spacing: DS.Space.xxs) {
                         Text(requestTitle)

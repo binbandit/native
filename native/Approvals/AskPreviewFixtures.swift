@@ -35,6 +35,12 @@ enum AskPreviewFixtures {
     static let freeText =
         #"{"type": "object", "properties": {"name": {"type": "string", "description": "What should the new branch be called?"}}}"#
 
+    static let longChoices = settingsQuestions.replacingOccurrences(
+        of: "Survives reloads and reaches every client. Needs a store migration.",
+        with: String(
+            repeating: "Keep the settings with the turn so another client can restore the same model and permissions. ",
+            count: 24))
+
     static func questionnaire(_ schema: String = settingsQuestions) -> AgentQuestionnaire? {
         SessionModel.previewDecode(JSONValue.self, schema).flatMap {
             AgentQuestionnaire(message: "Please answer the following questions.", schema: $0)

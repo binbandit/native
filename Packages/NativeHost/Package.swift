@@ -24,14 +24,19 @@ let package = Package(
         .package(path: "../SessionTitling"),
         // The Mac host's policy source: the managed preferences Native's app reads, read by the host.
         .package(path: "../NativePolicy"),
+        .package(path: "../NativeNetwork"),
         // Tests only: Git running against a host through `RemoteCommandRunner`.
         .package(path: "../Git"),
         // Tests only: MCP browser sign-in through the paired command runner.
         .package(path: "../MCPClient"),
     ],
     targets: [
-        .target(name: "NativeHostProtocol", dependencies: ["ACP"]),
-        .target(name: "UserShell"),
+        .target(
+            name: "NativeHostProtocol", dependencies: ["ACP"],
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
+        .target(
+            name: "UserShell",
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         /// The system SQLite on Linux, which Apple's SDKs have as the `SQLite3` module.
         .systemLibrary(name: "CSQLite"),
         /// Linux path-only directory descriptors, whose flags Swift's Glibc module doesn't expose.
@@ -41,12 +46,15 @@ let package = Package(
             name: "NativeHost",
             dependencies: [
                 "NativeHostProtocol", "ACP", .product(name: "Exec", package: "Exec"),
+                .product(name: "NativePolicy", package: "NativePolicy", condition: .when(platforms: [.macOS])),
+                .product(name: "NativeNetwork", package: "NativeNetwork", condition: .when(platforms: [.macOS])),
                 .product(name: "NativeOrchestration", package: "Orchestration"),
                 .product(name: "MCP", package: "MCPServer"),
                 .product(name: "SessionTitling", package: "SessionTitling"),
                 .target(name: "CSQLite", condition: .when(platforms: [.linux])),
                 .target(name: "CHostPOSIX", condition: .when(platforms: [.linux])),
-            ]),
+            ],
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         /// The Mac's side of the host: code-signature checks, boot time, the login-shell environment.
         .target(
             name: "NativeHostMac",
@@ -58,10 +66,12 @@ let package = Package(
                 .product(name: "SessionTitling", package: "SessionTitling"),
                 .product(name: "NativeOrchestration", package: "Orchestration"),
                 .product(name: "NativePolicy", package: "NativePolicy", condition: .when(platforms: [.macOS])),
-            ]),
+            ],
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         .target(
             name: "NativeHostClient",
-            dependencies: ["NativeHostProtocol", "ACP", .product(name: "Exec", package: "Exec")]),
+            dependencies: ["NativeHostProtocol", "ACP", .product(name: "Exec", package: "Exec")],
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         /// Elsewhere than macOS it runs without the Mac's pieces (main.swift says which).
         .executableTarget(
             name: "native-host",

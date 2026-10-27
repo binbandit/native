@@ -28,7 +28,8 @@ public struct FileReferenceProjection: Equatable, Sendable {
 
     public init(
         _ raw: String, counts: [String: Counts] = [:], enabled: Bool = true,
-        formatCount: (Int) -> String = { String($0) }
+        editingAt caret: Int? = nil,
+        tokenPadding: String = "", formatCount: (Int) -> String = { String($0) }
     ) {
         self.raw = raw
         guard enabled else { display = raw; tokens = []; return }
@@ -50,10 +51,24 @@ public struct FileReferenceProjection: Equatable, Sendable {
                 let nameStart = raw.index(after: after)
                 guard let close = raw[nameStart...].firstIndex(of: "\"") else { continue }
                 path = String(raw[nameStart..<close]); end = raw.index(after: close)
+                // A completed folder keeps its closing quote while its child name is being typed.
+                // Folding that active path into a chip would map the caret to the chip's start.
+                if let caret,
+                    caret > raw.utf8.distance(from: raw.startIndex, to: start),
+                    caret < raw.utf8.distance(from: raw.startIndex, to: end)
+                {
+                    continue
+                }
             } else {
                 // The word being typed remains text until a completion or space finishes it.
                 guard let boundary = raw[after...].firstIndex(where: \.isWhitespace) else { continue }
                 path = String(raw[after..<boundary]); end = boundary
+                if let caret,
+                    caret > raw.utf8.distance(from: raw.startIndex, to: start),
+                    caret <= raw.utf8.distance(from: raw.startIndex, to: end)
+                {
+                    continue
+                }
             }
             if raw[after] != "\"", counts[path] == nil {
                 var candidate = path
@@ -70,11 +85,13 @@ public struct FileReferenceProjection: Equatable, Sendable {
             output += raw[copied..<start]
             let displayStart = output.utf8.count
             let count = counts[path]
+            output += tokenPadding
             output += path.split(separator: "/").last.map(String.init) ?? path
             if let count {
                 if count.added > 0 { output += " +\(formatCount(count.added))" }
                 if count.removed > 0 { output += " −\(formatCount(count.removed))" }
             }
+            output += tokenPadding
             tokens.append(
                 Token(
                     path: path,

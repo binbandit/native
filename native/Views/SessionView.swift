@@ -45,10 +45,6 @@ struct SessionView: View {
                 standardBody
             }
         }
-        .toolbar {
-            ToolbarItem { ChangeAgentControl(session: session) }
-                .sharedBackgroundVisibility(.hidden)
-        }
         .taskWorkspacePresentation(session: session)
         .modifier(ComposerFileReferenceWiring(session: session))
         .onChange(of: canQuote) { _, enabled in

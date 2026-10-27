@@ -69,6 +69,9 @@ public struct NativePolicy: Equatable, Sendable {
         public var repositoryScriptsEnabled = true
     }
 
+    /// Canonical absolute local roots; nil permits all, an empty list denies additions.
+    public var foldersAllowedRoots: [String]?
+
     public var organizationContact: String?
     /// A validated built-in theme for both modes, applied without replacing personal preferences.
     public var appearanceCodeTheme: String?

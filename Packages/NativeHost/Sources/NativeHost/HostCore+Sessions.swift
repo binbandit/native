@@ -448,6 +448,7 @@ extension HostCore {
 
     /// Drops a session (and the subagents under it) from the host and tells clients.
     func forget(_ session: HostSession) {
+        withdrawPermissions(of: session)
         session.retryTask?.cancel()
         if !session.isStopping { session.stopTimeout?.cancel() }
         try? store.deleteSession(session.id)

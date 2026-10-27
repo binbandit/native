@@ -110,7 +110,11 @@ footprint with physical RAM. It has no per-core scaling.
 
 Settings > General > Accounts lists and switches the GitHub accounts on this Mac. The Mac sidebar
 footer shows only the selected avatar and name beside Settings; clicking it or choosing Go > GitHub
-Account opens General at the Accounts group. A signed-out footer shows just Settings.
+Account opens General at the Accounts group. A signed-out footer shows just Settings. With All in
+view on, the footer opens its accounts in a popover instead (switch, add, or Manage in Settings);
+when the organization manages Native (`PolicyCenter`), a lock replaces its chevron and the popover
+also names the organization once, says what its policy turns off there (GitHub, other Macs,
+pairing) and where to ask.
 `GitHubAccountsModel` lists all
 accounts from `gh auth status --json hosts`, loads names and cached avatars asynchronously, and
 remembers one chosen login per host in Native's defaults. Without a choice it follows gh's active
@@ -194,7 +198,17 @@ Rules:
 `Packages/Undo` keeps undo toasts and the window's undo stack in agreement. `RootView` supplies the
 main window's undo manager to `AppModel.undoHistory`; the Edit menu uses it even when Home has no
 text responder. Archiving registers undo before workspace work starts, and the same action handles
-the toast, Cmd-Z and Redo. Expired deletions withdraw their actions from the stack.
+the toast, Cmd-Z and Redo. Task deletion, including archived tasks and bulk/menu actions, hides
+tasks immediately without confirmation and waits 10 seconds before cleanup. Undo during that window
+cancels cleanup, leaving the conversation, draft, task flags, workspace and host session untouched.
+Expired deletions withdraw their actions from the stack, remove the catalog entry and ask a running
+agent to delete its copy when supported (the host then cancels and forgets that session). Otherwise
+the agent and host can retain their copies. The separate transcript search index is not purged by
+task deletion. Native-owned worktrees are removed after checkpointing;
+branches stay or are saved under archive refs according to settings. Deleting an archived task
+forgets its workspace restore record but keeps its branch and checkpoint. The project folder is
+never removed. Archive keeps the conversation and records the workspace, branch and checkpoint so
+Undo or later Unarchive can rebuild it; restore failures retain recovery material and offer Retry.
 
 ### Migration
 
@@ -212,7 +226,10 @@ The move is mechanical and happens in small PRs once the current feature work la
 New Task's `NativeComposeTask` gate adds Quick Entry over the selected task and a Compose page
 opened by Shift-Command-N or Quick Entry's expand. Both keep drafts without creating agent
 conversations or worktrees. Compose lays out the existing composer at page size, with To / On /
-From controls and the shared toolbar well's readiness. Start snapshots text, files, settings and
+From controls and the shared toolbar well's readiness. The project, agent and device popovers are
+drawn in the page (`composeAddressPopover`), left-aligned under their control, where a system
+popover would center on it; the agent popover is the composer's settings popover at the page's
+scale. Start snapshots text, files, settings and
 workspace into the existing `StartingTask` pipeline. Address lines fold, the shared message renderer
 appears at the transcript's final width, and the composer settles below it. Startup failure uses
 the existing retry view with the snapshot intact. An explicitly held offline draft persists in
@@ -450,6 +467,17 @@ Peek and Home hosts. `SessionApprovalView` connects it to model actions. Only th
 owns shortcuts; the primary transcript leaves its response controls to the composer while enabled.
 The ordinary composer and approvals are unchanged with the gate off.
 
+Fine print asks must not contribute an unbounded minimum height to the window. `ApprovalSurface`
+uses the same minimum-width adapter as `RootDetailColumn`, so AppKit's minimum-size probe cannot
+measure wrapping content at zero width. Questions cap and scroll their prompt and choices while
+keeping the pager, actions and free-text answer visible; keyboard navigation reveals its choice.
+Failed-start cards cap their complete body, including diagnostics and recovery actions. Annotated
+approvals already cap their body. Home questions stay in the page's scroll view, and Peek questions
+stay in its height-capped body; neither uses the Fine print question layout.
+`ApprovalScrollView` measures natural content height up to its cap, respects a smaller proposed
+height, and reports zero for a minimum-height probe. A vertically fixed scroll view would still
+raise the window's minimum to its ideal height, even with a cap.
+
 At rest the gated composer is one field and a model-name control. `ComposerSettingsControl`
 opens model, effort, permission consequences and the agent's extra options in one popover;
 its MCP page embeds `MCPSessionPanel`. Picks still go through `SessionModel.pick`, including
@@ -484,7 +512,8 @@ to keep the file's kind; anything else stays a location without contents. Lines 
 credential show the key alone, and lines holding a URL password, bearer header or well-known token
 are hidden whole. A fix-it is applied only on the user's click: `AgentStartFile` checks that
 the line still holds the rejected value, keeps the original as `<file>.native-backup`, and keeps
-the file's permissions and symbolic links.
+the file's permissions and symbolic links. The window's undo toast (and ⌘Z) takes the fix back
+with `AgentStartFile.restore`, the same way, and only while the file still holds what the fix wrote.
 
 Irreversible requests use the tested `ApprovalHold` state machine: 0.6 seconds, early release
 cancels, 0.4 seconds of acknowledgement, five-second accessibility confirmation, and no Always
@@ -508,29 +537,43 @@ The behavior, tool order and remaining slices are described in `docs/session-too
 
 ### Changing a task's agent (Labs)
 
-`change-agent` is off by default. Change Agent prepares an unsent ACP conversation on another
-installed plugin agent in the task's existing folder. The user chooses from the new agent's live
-model choices and reviews an editable handoff before the first prompt. `TaskHandoff` in ACP
-assembles bounded visible-message excerpts, the goal, latest plan, reported edits, branch and
-working-tree paths and the latest explicit question locally. It never sends reasoning or calls another model.
+`change-agent` is off by default. With Fine print enabled, the composer's Model list includes
+other plugin agents' reported choices on the task's existing host. Opening the list reads live
+options or Native-owned cached options; only Load Models explicitly initializes an unknown catalog.
+Model names never imply agent identity. The reporting adapter owns each choice, including gateway
+models. The list retains its opening order until closed, and filters names, IDs and agent names.
 
-The model rejects running turns, retries, queued messages, pending approvals and active goals.
-Cancel closes the unsent replacement. A failed preparation or send keeps the original task.
-After an accepted handoff, the existing conversation chain preserves the original transcript,
-sidebar position and pin, title, branch, worktree and unsent draft. A quiet divider names the new
-agent; Earlier Conversation opens the original transcript read-only. Links survive relaunch.
+`ComposerAgentChange` prepares an unused conversation in the same folder, validates the exact model
+and a supported permission level no broader than the source, then publishes the selection. It does
+not allocate a worktree, run task-start defaults or send a working prompt. The source remains checked
+until commit. Normal running turns finish first; approvals, questions, queued messages, coordinator
+work and goals that cannot migrate safely block the choice with a specific recovery instruction.
+Goal controllers cannot migrate transactionally yet, so any existing goal must be cleared first.
 
-A task on a paired host (`NativeRemoteHosts`) changes only to another agent that host runs, found
-through the task's current pairing (`AppModel+RemoteAgentChange.swift`). The replacement starts
-there, in the task's exact folder: nothing is cloned, no worktree is made and nothing starts on this
-Mac. The host's listing publishes it, never this Mac's catalog or unsent drafts, and the same guards,
-review and single send apply. An offline host, a pairing removed or replaced by another key, no
-eligible agent, or an agent that fails to start leaves the original as it was; Cancel closes the
-unsent candidate on its host. Pairing the same host again during review moves both conversations to
-the new client. Moving a task between devices, a single combined transcript, and carrying goal
-automation and its budgets across agents remain follow-up work. Pause a goal before switching; its
-objective goes in the handoff, but its controller stays in the earlier conversation. Disable the
-gate to hide entry points; existing conversation links stay readable.
+`TaskHandoff` in ACP assembles bounded excerpts locally, without another model request. Native keeps
+that context until the next explicit submission, where it becomes an internal content block ahead
+of the unchanged user echo. The context and receipt survive relaunch in Native-owned storage. Taking
+the pending context consumes it before delivery; uncertain-send recovery never invents a second
+submission. Bounded earlier excerpts stay local for a later model choice. In-app agents that never
+saved the empty conversation recreate it with the confirmed settings, receipt and history link;
+new-task defaults and hooks do not run again. Accepted attachment reads follow the continuing draft
+through preparation, commit, Undo and recovery.
+The existing conversation chain preserves earlier history, title, sidebar position, pin, branch and
+worktree. Draft text, attachments and bare quotes move together. The task presentation key retains
+the editor, caret and open popover while the transport conversation changes.
+
+A persistent composer receipt and transcript divider offer Undo before the next submission. Undo
+restores the earlier conversation and current unsent draft in place, then closes only the unused
+candidate owned by this choice. Task > Undo Model Change remains available after receipt dismissal.
+After submission, Continue with the earlier agent opens the same Model list for a new choice.
+Pending choices have Cancel in the composer and Task menu. The title has no agent button.
+
+Paired-host choices stay on that host, using its runtimes, reported catalogs and connection. Policy
+is rechecked before preparation, commit and normal submission. Forbidden agents' known models stay
+legible with locks. Unknown permission semantics fail closed. With Fine print off, the existing
+review-sheet path remains available behind Change Agent. Disabling the gate hides the entry points;
+earlier conversation links stay readable. Combined transcripts, cross-device moves and transactional
+goal migration remain separate work.
 
 ### Transcript styles
 
@@ -645,3 +688,14 @@ or discard context. File tokens are a display projection of canonical `@path` re
 `FileReferenceProjection` maps edits and selections back to those paths. Displayed counts never
 enter the prompt. The existing repository monitor supplies uncommitted counts, with the latest
 reported turn edits as a fallback for committed files; unavailable or binary counts stay absent.
+
+### Opening folders in All in view
+
+`SidebarFolders` owns the fixed Open Folder action, device-local successful recents, batch results
+and addition Undo. `project.open` remains the Command-O entry point. `AppModel+SidebarFolders`
+resolves a whole batch before committing, revalidates live folder policy, delegates identity to
+`Projects` and opens the first new folder's home without creating a task. Existing sessions retain
+their drafts. `PlatformFolderPicker`, `PlatformFolderAccess` and `PlatformFolderDrop` adapt system
+selection, security-scoped access and external file URLs; private sidebar drags still reorder.
+Recents use non-mounting bookmark resolution and never contain paired-host paths. The new surface
+is gated by `NativeSidebarNext`; the default remains unchanged.

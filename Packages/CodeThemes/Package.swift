@@ -36,7 +36,9 @@ let package = Package(
         .package(url: "https://github.com/tree-sitter/tree-sitter-java", exact: "0.23.5"),
     ],
     targets: [
-        .target(name: "CodeThemeCatalog"),
+        .target(
+            name: "CodeThemeCatalog",
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         .target(
             name: "CodeThemes",
             dependencies: [
@@ -59,7 +61,8 @@ let package = Package(
                 .product(name: "TreeSitterC", package: "tree-sitter-c"),
                 .product(name: "TreeSitterJava", package: "tree-sitter-java"),
             ],
-            resources: [.copy("Queries")]
+            resources: [.copy("Queries")],
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]
         ),
         .testTarget(name: "CodeThemesTests", dependencies: ["CodeThemes"]),
     ]

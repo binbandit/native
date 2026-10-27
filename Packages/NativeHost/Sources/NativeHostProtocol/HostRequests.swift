@@ -214,13 +214,18 @@ public struct PromptResult: Codable, Sendable {
 public struct RespondPermissionParams: Codable, Sendable {
     public var sessionID: HostSessionID
     public var toolCallID: String
-    /// Nil cancels the request.
+    /// The opaque option id advertised for this occurrence. Nil cancels it only with approvalRequestID.
     public var optionID: String?
+    /// The host's occurrence UUID, required for cancellation and checked whenever supplied.
+    public var approvalRequestID: UUID?
 
-    public init(sessionID: HostSessionID, toolCallID: String, optionID: String?) {
+    public init(
+        sessionID: HostSessionID, toolCallID: String, optionID: String?, approvalRequestID: UUID? = nil
+    ) {
         self.sessionID = sessionID
         self.toolCallID = toolCallID
         self.optionID = optionID
+        self.approvalRequestID = approvalRequestID
     }
 }
 
@@ -323,5 +328,17 @@ public struct ListActivityParams: Codable, Sendable {
         self.after = after
         self.limit = limit
         self.includeCommands = includeCommands
+    }
+}
+
+/// Local administrators only; no upload, destination or arbitrary query is accepted.
+public struct ExportApprovalAuditParams: Codable, Sendable {
+    public var cursor: HostApprovalAuditCursor?
+    /// Clamped to 1...200 by the host.
+    public var limit: Int
+
+    public init(cursor: HostApprovalAuditCursor? = nil, limit: Int = 100) {
+        self.cursor = cursor
+        self.limit = limit
     }
 }

@@ -46,46 +46,48 @@ struct AgentStartFailureView: View {
     private var isOutputShown: Bool { showsOutput ?? initiallyShowsOutput }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: DS.Space.md) {
-                Image(systemName: "xmark.circle")
-                    .font(.system(size: DS.Approval.failureIcon * 0.875))
-                    .foregroundStyle(.dsDanger)
-                    .frame(width: DS.Approval.failureIcon, height: DS.Approval.failureIcon)
-                    .accessibilityHidden(true)
-                Text(title).font(DS.Approval.titleFont).foregroundStyle(.dsTextPrimary)
+        ApprovalScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: DS.Space.md) {
+                    Image(systemName: "xmark.circle")
+                        .font(.system(size: DS.Approval.failureIcon * 0.875))
+                        .foregroundStyle(.dsDanger)
+                        .frame(width: DS.Approval.failureIcon, height: DS.Approval.failureIcon)
+                        .accessibilityHidden(true)
+                    Text(title).font(DS.Approval.titleFont).foregroundStyle(.dsTextPrimary)
+                }
+                .accessibilityAddTraits(.isHeader)
+                if let text = explanation
+                    ?? Self.explanation(agentName: agentName, diagnostic: diagnostic, recovery: recovery, draft: draft)
+                {
+                    Text(text).font(.dsBody).foregroundStyle(.dsTextTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.leading, DS.Approval.failureIndent)
+                        .padding(.top, DS.Approval.failureDetailTop)
+                }
+                if let diagnostic {
+                    sourceWell(diagnostic)
+                        .padding(.leading, DS.Approval.failureIndent)
+                        .padding(.top, DS.Approval.sourceTop)
+                }
+                if isOutputShown {
+                    outputWell
+                        .padding(.leading, DS.Approval.failureIndent)
+                        .padding(.top, DS.Space.md)
+                }
+                footer.padding(.top, DS.Approval.failureFooterTop)
+                if let fixFailure {
+                    Text(fixFailure).font(.dsBody).foregroundStyle(.dsDanger)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.leading, DS.Approval.failureIndent)
+                        .padding(.top, DS.Space.md)
+                }
             }
-            .accessibilityAddTraits(.isHeader)
-            if let text = explanation
-                ?? Self.explanation(agentName: agentName, diagnostic: diagnostic, recovery: recovery, draft: draft)
-            {
-                Text(text).font(.dsBody).foregroundStyle(.dsTextTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.leading, DS.Approval.failureIndent)
-                    .padding(.top, DS.Approval.failureDetailTop)
-            }
-            if let diagnostic {
-                sourceWell(diagnostic)
-                    .padding(.leading, DS.Approval.failureIndent)
-                    .padding(.top, DS.Approval.sourceTop)
-            }
-            if isOutputShown {
-                outputWell
-                    .padding(.leading, DS.Approval.failureIndent)
-                    .padding(.top, DS.Space.md)
-            }
-            footer.padding(.top, DS.Approval.failureFooterTop)
-            if let fixFailure {
-                Text(fixFailure).font(.dsBody).foregroundStyle(.dsDanger)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.leading, DS.Approval.failureIndent)
-                    .padding(.top, DS.Space.md)
-            }
+            .padding(.horizontal, DS.Approval.inset)
+            .padding(.top, DS.Space.xl)
+            .padding(.bottom, DS.Approval.askTop)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, DS.Approval.inset)
-        .padding(.top, DS.Space.xl)
-        .padding(.bottom, DS.Approval.askTop)
-        .frame(maxWidth: .infinity, alignment: .leading)
         .disabled(isWorking)
     }
 
@@ -287,6 +289,12 @@ struct AgentStartFailureView: View {
                         recovery: .signIn, onRecover: {}, onFix: {})
                 }
                 ApprovalSurface { AskPreviewFixtures.failure() }.frame(width: 420)
+                ApprovalSurface {
+                    AgentStartFailureView(
+                        agentName: "Preview Agent", title: "Couldn't start the task", output: "",
+                        explanation: String(repeating: "The task is kept while the agent reconnects. ", count: 80),
+                        diagnostic: nil, recovery: .retry(restarts: false), onRecover: {}, onFix: {})
+                }.frame(width: 420)
             }
             .frame(width: 808)
             .padding(DS.Space.xl)

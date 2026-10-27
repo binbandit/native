@@ -11,6 +11,7 @@ struct HostAgentTests {
     @Test("Agents are listed with their status, which clients hear change as they start and stop")
     func statusAndChanges() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         try harness.start()
         let recorder = try await harness.connect()
         #expect(try await recorder.client.agents().map(\.state) == [.stopped])
@@ -34,6 +35,7 @@ struct HostAgentTests {
     @Test("An agent that isn't installed says so, with a host error clients can tell apart")
     func notInstalled() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         try harness.start()
         let recorder = try await harness.connect()
         try await recorder.client.syncAgents([AgentSpec(id: "ghost", name: "Ghost", command: "no-such-agent-cli")])
@@ -51,6 +53,7 @@ struct HostAgentTests {
     @Test("An agent isn't stopped while one of its sessions is working")
     func stopRefusedWhileWorking() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         try harness.start()
         let recorder = try await harness.connect()
         let session = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
@@ -64,6 +67,7 @@ struct HostAgentTests {
     @Test("A message sent after the agent stopped while idle still shows once its session reloads")
     func messageSurvivesReload() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         try harness.start()
         let recorder = try await harness.connect()
         let session = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
@@ -90,6 +94,7 @@ struct HostAgentTests {
     @Test("Restarting an agent mid-turn resumes the turn and says the user restarted it")
     func restartMidTurn() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         try harness.start()
         let recorder = try await harness.connect()
         let session = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
@@ -108,6 +113,7 @@ struct HostAgentTests {
     @Test("Signing in goes to the agent with the method chosen")
     func authenticate() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         try harness.start()
         let recorder = try await harness.connect()
         let agent = try await recorder.client.authenticateAgent("fake", methodID: "token")
@@ -120,6 +126,7 @@ struct HostAgentTests {
     @Test("Stopping an agent ends what it started in a process group of its own")
     func stopEndsProcessGroups() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         harness.agentEnvironment = ["FAKE_AGENT_GRANDCHILD": harness.grandchildFile.path(percentEncoded: false)]
         try harness.start()
         let recorder = try await harness.connect()
@@ -134,6 +141,7 @@ struct HostAgentTests {
     @Test("An agent that crashes takes what it started with it, and comes back for the turn")
     func crashEndsProcessGroups() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         harness.agentEnvironment = ["FAKE_AGENT_GRANDCHILD": harness.grandchildFile.path(percentEncoded: false)]
         try harness.start()
         let recorder = try await harness.connect()
@@ -149,6 +157,7 @@ struct HostAgentTests {
     @Test("Quit and Stop Agents ends known processes, records an unverified stop, and resumes nothing")
     func quitAndStopAgents() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         harness.agentEnvironment = ["FAKE_AGENT_GRANDCHILD": harness.grandchildFile.path(percentEncoded: false)]
         try harness.start()
         let first = try await harness.connect()
@@ -178,6 +187,7 @@ struct HostAgentTests {
     @Test("After a crash, the host's restart is journaled with how the previous run ended")
     func hostStartedSaysWhy() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         try harness.start()
         let first = try await harness.connect()
         #expect(try await first.client.activity().isEmpty)

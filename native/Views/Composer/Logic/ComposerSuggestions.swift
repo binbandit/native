@@ -1,3 +1,5 @@
+import ACP
+
 /// What the list above the composer offers right now: slash commands for a bare "/name", or files
 /// for an `@` mention at the cursor.
 enum ComposerSuggestions {

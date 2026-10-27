@@ -178,11 +178,12 @@ off, no screenshots, view hierarchy or session replay, and a `beforeSend` allowl
 
 ## Audit
 
-The durable host already keeps an activity journal: tasks started, prompts sent, approvals and who
-gave them (including from which paired device), recoveries, update installs. It becomes exportable as
-structured events through the organization's telemetry destination, with optional prompt and command
-text **only** when the organization's policy explicitly turns that on for its own collector. Native
-never sends that text anywhere itself.
+The durable host's activity journal supports recovery; it is not a complete compliance audit.
+[Approval audit version 1](enterprise/approval-audit.md) durably records observed ACP approval
+requests and decisions with transport-authenticated account or device provenance, and provides a
+bounded local JSONL export containing only metadata. It sends no audit data to telemetry collectors.
+ACP-omitted actions remain unobserved. General event coverage, tamper-evident checkpoints, collector
+delivery and routine-log redaction remain separate work.
 
 ## Later
 
@@ -209,3 +210,11 @@ tools. `policy.approvals.countUnknownPrograms` = `false` disables local unknown-
 when the user enabled them. True permits the user choice; neither policy enables Fine print itself.
 Counts never enter telemetry or exports and can be purged from Settings > Privacy. See
 [command knowledge](command-knowledge.md) for the format, limits, and privacy contract.
+
+### Local folder additions
+
+`policy.folders.allowedRoots` is an array of absolute local folder paths. Missing permits all
+local folders in ordinary mode; empty denies additions. Restricted mode defaults to empty.
+Malformed values deny additions. Native resolves symlinks before testing component boundaries
+and checks policy again before committing a chooser, recent or drop addition. Existing projects
+remain visible. This restriction does not replace the host's filesystem or agent access policy.

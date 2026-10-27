@@ -16,7 +16,6 @@ struct HostNotices: View {
     var updates: UpdateController?
 
     @Environment(AppModel.self) private var model
-    @State private var isConfirmingRestart = false
 
     var body: some View {
         if hasNotices {
@@ -53,17 +52,12 @@ struct HostNotices: View {
             }
             .padding(DS.Space.md)
             .animation(.dsStandard, value: host.away?.items.count)
-            .hostRestartConfirmation(host, isPresented: $isConfirmingRestart)
         }
     }
 
     /// Restarts the host now, after asking when that would interrupt tasks.
     private func requestRestart() {
-        if host.interruptedByRestart.isEmpty {
-            Task { await host.restartHost() }
-        } else {
-            isConfirmingRestart = true
-        }
+        host.requestHostRestart()
     }
 
     private var hasNotices: Bool {

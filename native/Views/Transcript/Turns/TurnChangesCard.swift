@@ -30,7 +30,11 @@ struct TurnChangesCard: View {
                 .transition(RevealTransition())
             }
         }
-        .background(.dsHover, in: .rect(cornerRadius: DS.Radius.card, style: .continuous))
+        // A record has no fill: it sits in the conversation like any other line of it.
+        .background(
+            actions?.isRecordOnly == true ? Color.clear : Color.dsHover,
+            in: .rect(cornerRadius: DS.Radius.card, style: .continuous)
+        )
         .overlay {
             RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                 .strokeBorder(.dsSeparator)
@@ -54,8 +58,10 @@ struct TurnChangesCard: View {
                     Text(Self.title(for: summary))
                         .font(.dsCalloutMedium)
                         .foregroundStyle(.dsTextPrimary)
+                        .lineLimit(1)
                     DiffStatsText(stats: DiffStats(added: summary.linesAdded, removed: summary.linesRemoved))
                         .font(.dsBody)
+                        .fixedSize()
                     DisclosureChevron(isExpanded: showsFiles)
                     Spacer(minLength: DS.Space.md)
                 }
@@ -65,13 +71,22 @@ struct TurnChangesCard: View {
             .accessibilityHint(
                 actions?.isRecordOnly == true ? "Shows Changes" : showsFiles ? "Hides the files" : "Lists the files")
 
-            if let actions, !actions.isRecordOnly {
+            if let actions, actions.isRecordOnly, actions.isReviewing {
+                Label("Reviewing", systemImage: "eye")
+                    .font(.dsBody)
+                    .foregroundStyle(.dsTextTertiary)
+                    .padding(.trailing, DS.Space.xs)
+                    .fixedSize()
+            } else if let actions, !actions.isRecordOnly {
+                // A narrow column truncates the summary, never the actions.
                 Button("Review", action: actions.review)
                     .buttonStyle(.ds(.ghost))
+                    .fixedSize()
                     .help("Review this turn's changes")
                 if let commitForm = actions.commitForm {
                     Button("Commit") { isCommitting = true }
                         .buttonStyle(.ds(.ghost))
+                        .fixedSize()
                         .help("Commit the changes")
                         .popover(isPresented: $isCommitting, arrowEdge: .bottom) {
                             commitForm($isCommitting)
@@ -134,6 +149,8 @@ struct TurnChangesActions {
     var latestTurnChanges: TurnDetectedChanges?
     /// The well owns Review and the Changes pane owns Commit; the card remains a record.
     var isRecordOnly = false
+    /// Changes is open on the task, so the record says it's being reviewed.
+    var isReviewing = false
 }
 
 /// A file row that opens its changes: a list row's hover fill, a shade darker while pressed.
@@ -162,9 +179,14 @@ extension EnvironmentValues {
 #if DEBUG
 #Preview("Turn changes - Record under the well") {
     DSPreviewPair {
-        TurnChangesCard(summary: TurnChangesPreviewFixtures.summary)
-            .environment(\.turnChangesActions, TurnChangesActions(review: {}, isRecordOnly: true))
-            .frame(width: 460)
+        VStack(spacing: DS.Space.lg) {
+            TurnChangesCard(summary: TurnChangesPreviewFixtures.summary)
+                .environment(\.turnChangesActions, TurnChangesActions(review: {}, isRecordOnly: true))
+            TurnChangesCard(summary: TurnChangesPreviewFixtures.summary)
+                .environment(
+                    \.turnChangesActions, TurnChangesActions(review: {}, isRecordOnly: true, isReviewing: true))
+        }
+        .frame(width: 460)
     }
 }
 

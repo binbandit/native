@@ -100,6 +100,7 @@ extension NativePolicy {
         func count(_ value: (some Collection)?) -> PolicyValueSummary { value.map { .count($0.count) } ?? .unset }
         func text(_ value: Any?) -> PolicyValueSummary { value == nil ? .unset : .configured }
         return switch key {
+        case .foldersAllowedRoots: count(foldersAllowedRoots)
         case .deploymentMode: .option(deploymentMode.rawValue)
         case .network: network.services.isEmpty ? .unset : .count(network.services.count)
         case .commandKnowledge: commandKnowledge == CommandKnowledge() ? .unset : .configured
