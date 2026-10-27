@@ -44,6 +44,11 @@ struct NoProjectHome: View {
 }
 
 #if DEBUG
+#Preview("Home - No project, ready") {
+    DSPreviewPair { NoProjectHome(agents: HomeNextPreviewFixtures.agents).frame(width: 1100, height: 850) }
+        .sidebarPreviewEnvironment(AppModel.preview(.empty))
+}
+
 #Preview("Home - No project, agent setup") {
     DSPreviewPair { NoProjectHome(agents: []).frame(width: 1100, height: 850) }
         .sidebarPreviewEnvironment(AppModel.preview(.empty))
