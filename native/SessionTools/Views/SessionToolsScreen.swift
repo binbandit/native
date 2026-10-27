@@ -24,6 +24,11 @@ struct SessionToolsScreen: View {
     @State private var wellLightTrigger = 0
     @Environment(GitStore.self) private var git
     @Environment(\.inspectorRoom) private var inspectorRoom
+    @Environment(\.inspectorSuspension) private var inspectorSuspension
+    /// The side tool open when a mode suspended inspectors, which opens again afterwards.
+    @State private var reopensSideTool: SessionToolID?
+    /// A subagent asked for while inspectors were suspended, which opens once they aren't.
+    @State private var reopensSubagent: SessionID?
     @Experiment(.transcriptWidth) private var columnWidth: TranscriptWidth
 
     private var registry: SessionToolRegistry { tools.registry }
@@ -71,7 +76,10 @@ struct SessionToolsScreen: View {
             ToolbarItem(placement: .navigation) {
                 if usesTaskWell {
                     TaskWellTitleWiring(session: session, tools: tools) { wellTitleIdealWidth = $0 }
-                        .frame(maxWidth: toolbarLayout.titleWidth, alignment: .leading)
+                        .frame(
+                            maxWidth: inspectorSuspension == nil ? toolbarLayout.titleWidth : .infinity,
+                            alignment: .leading
+                        )
                         .onGeometryChange(for: CGFloat.self, of: { $0.frame(in: .global).minX }) {
                             wellTitleMinX = $0
                         }
@@ -89,7 +97,9 @@ struct SessionToolsScreen: View {
                 }
             }
             .sharedBackgroundVisibility(.hidden)
-            if usesTaskWell {
+            // A mode using the sidebar needs its column more than the inactive worker control.
+            // The centered well can otherwise make AppKit hide that column at narrow widths.
+            if usesTaskWell, inspectorSuspension == nil {
                 ToolbarItem(placement: .principal) {
                     TaskWellWiring(
                         session: session, tools: tools, turnChanges: turnChanges,
@@ -131,6 +141,22 @@ struct SessionToolsScreen: View {
         .onChange(of: tools.openByPlace[.side]) { _, id in
             if id != nil { openSubagent = nil }
         }
+        // Closed and opened the way the user would, so the window makes room the same way.
+        .onChange(of: inspectorSuspension != nil) { _, suspends in
+            if suspends {
+                reopensSideTool = tools.openByPlace[.side]
+                reopensSubagent = openSubagent
+                openSubagent = nil
+                tools.close(.side)
+            } else if let id = reopensSubagent {
+                reopensSubagent = nil
+                reopensSideTool = nil
+                openSubagentInspector(id)
+            } else if let id = reopensSideTool {
+                reopensSideTool = nil
+                tools.open(id)
+            }
+        }
         .onChange(of: session.phase) { previous, current in
             if current == .prompting || (previous == .prompting && current == .idle) {
                 wellLightTrigger += 1
@@ -171,18 +197,24 @@ struct SessionToolsScreen: View {
     }
 
     private var conversation: some View {
-        TranscriptView(session: session) { id in
-            let show: @MainActor () -> Void = {
-                withTransaction(\.disablesAnimations, true) {
-                    tools.close(.side)
-                    openSubagent = id
-                }
+        TranscriptView(session: session) { id in openSubagentInspector(id) }
+    }
+
+    private func openSubagentInspector(_ id: SessionID) {
+        if let inspectorSuspension {
+            reopensSubagent = id
+            return inspectorSuspension.end()
+        }
+        let show: @MainActor () -> Void = {
+            withTransaction(\.disablesAnimations, true) {
+                tools.close(.side)
+                openSubagent = id
             }
-            if isSidePanelDocked.wrappedValue {
-                show()
-            } else {
-                inspectorRoom.open(DS.SessionTools.sidePanelIdealWidth, show)
-            }
+        }
+        if isSidePanelDocked.wrappedValue {
+            show()
+        } else {
+            inspectorRoom.open(DS.SessionTools.sidePanelIdealWidth, show)
         }
     }
 
@@ -231,8 +263,7 @@ struct SessionToolsScreen: View {
         if requested == nil, openSubagent != nil {
             openSubagent = nil
         } else if let id = requested ?? session.state.subagents.first?.id {
-            tools.close(.side)
-            inspectorRoom.open(DS.SessionTools.sidePanelIdealWidth) { openSubagent = id }
+            openSubagentInspector(id)
         }
     }
 
@@ -342,6 +373,15 @@ struct SessionToolsScreen: View {
             ComposerStatePreviewFixtures.finePrint(phase: .idle, draft: "Why fixedSize here?")
         }
         .frame(width: DS.ComposerSettings.width, height: DS.TaskWell.panelWidth)
+    }
+}
+
+#Preview("Well - Title while inspectors are suspended") {
+    DSPreviewPair {
+        TaskWellTitle(facts: TaskWellPreviewFixtures.longTitle, isPresented: .constant(false), rename: { _ in })
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .disabled(true)
+            .frame(width: DS.ComposerSettings.width, height: DS.TaskWell.height)
     }
 }
 #endif

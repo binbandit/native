@@ -138,6 +138,12 @@ extension HostCore {
     /// which waits until it's used: its log already shows everything.
     func loadInBackground(_ session: HostSession) {
         guard session.needsLoad, !session.reloadsQuietly, session.record.origin != .announced else { return }
+        // Restored records start idle with no history. Mark the pending replay before answering an
+        // open or attach, so clients cannot treat that empty placeholder as a completed task.
+        if session.phase != .recovering, session.phase != .loading {
+            session.phase = .loading
+            publish(session)
+        }
         Task { try? await load(session) }
     }
 

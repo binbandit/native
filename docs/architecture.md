@@ -661,7 +661,24 @@ so later edits from another task cannot be attributed to the completed one. Sear
 are skipped. `SpecimenSource` selects completed task snapshots; `SpecimenLine`
 in `Packages/CodeThemes` scores highlighted added lines, filters every displayed line and metadata for
 secret patterns, and falls back to a language sample. The excerpt stays in memory and is not logged or
-persisted. The terminal line is always a sample. Try On's task preview is a later change.
+persisted. The terminal line is always a sample.
+
+Try On (`native/Appearance/TryOn`) previews themes on a task without writing them. `ThemeTrial` in
+`Packages/CodeThemes` holds what each mode shows, which mode is listed and what Keep writes; the
+window root's `themeTryOnPreview` overrides the code themes and backgrounds from it, just inside
+`appearancePreferences(plugins:)`, and `AppearanceModeController.preview(_:)` shows the other mode
+without saving it. `ThemeTryOnModel` opens the latest task with code from Settings, or the task in
+view from View ▸ Appearance when it has code, otherwise a read-only sample. Settings searches
+`sessionList` newest first, loading unopened history through `AppModel.loadSession` as needed and
+waiting for host replay to finish before inspecting its code. Restored host records report loading
+before scheduling that replay, so an idle placeholder cannot be mistaken for a replayed transcript. This
+can start an agent to replay history, but sends no prompts. A cancellable loading state covers that
+search. The panel takes the sidebar's column and returns there on Keep or Cancel. The task view is
+disabled and Stop is unavailable while trying; narrow windows suspend inspectors and restore them
+afterwards. The Task Well worker control also steps aside during that suspension, so its centered
+toolbar width cannot hide the theme panel's sidebar. The task title keeps the remaining toolbar room.
+A newly managed code theme immediately suppresses the preview and ends Try On without
+saving. Try On never sends to or changes a task.
 
 ### Credential ownership
 
