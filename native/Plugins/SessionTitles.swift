@@ -151,6 +151,10 @@ final class SessionTitles {
         for key: Key, using titler: any SessionTitler, instructions: AIInstructionAddition?,
         isAllowed: @escaping @MainActor () -> Bool = { true }
     ) async {
+        // A discarded result must leave the original, bounded retry available when titles return.
+        defer {
+            if !isAllowed(), attempts[key]?.progress == .generating { attempts[key]?.fail() }
+        }
         // Read the state again after every suspension: a rename or the first turn may have landed.
         while let pending = attempts[key]?.request, let revision = attempts[key]?.refinementCount,
             attempts[key]?.progress == .generating, isAllowed()

@@ -72,5 +72,15 @@ Capture fresh model results locally, without network requests or personal data:
 TITLE_CAPTURE=/tmp/task-title-capture.json nice -n 10 swift test --package-path Packages/SessionTitling -j 4 --filter TitleEvaluationTests
 ```
 
+The app-owned retry regression runs against an isolated Debug build without opening a window,
+starting an agent, or invoking the on-device model:
+
+```sh
+scripts/tests/session-titles.sh cx-better-titles
+```
+
+It holds a provider, disables titles while that request is suspended, releases the result, then
+re-enables titles and sends a later prompt. It checks recovery and the unchanged retry budget.
+
 The capture test is opt-in and skips in normal CI. Inspect fresh captures before updating fixtures;
 do not overwrite the baseline with new-model results.
