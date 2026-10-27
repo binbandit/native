@@ -82,8 +82,9 @@ extension ComposerView {
                 let delivery = try await session.submit(text, attaching: attachments, behavior)
                 feedback = ComposerFeedback(
                     delivery: delivery, requested: behavior, wasWorking: wasWorking,
-                    supportsSteering: session.supportsSteering, agentName: session.agentName,
-                    heldFor: session.turnHold)
+                    agentName: session.agentName,
+                    heldFor: session.turnHold,
+                    waitingForTool: session.queuedPrompts.first(where: { $0.waitingForTool != nil })?.waitingForTool)
             } catch {
                 // Nothing went out, so the message and its files come back to be sent again.
                 if session.draft.isEmpty {
@@ -170,7 +171,7 @@ extension ComposerView {
             }
             stopEditingQueued()
         }
-        feedback = ComposerFeedback(sendingNow: route, agentName: session.agentName)
+        feedback = ComposerFeedback(sendingNow: route)
         Task { await session.sendQueuedNow(id) }
     }
 

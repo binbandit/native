@@ -59,6 +59,9 @@ final class SessionModel {
     let parentID: SessionID?
     /// Whether messages can join a turn that's running (`SteerRequest`).
     let supportsSteering: Bool
+    var steeringGate = SteeringGate()
+    var isDeliveringSteer = false
+    var isSteeringBetweenSteps = false
     /// What the agent takes in a prompt besides text: images, embedded files.
     let promptCapabilities: PromptCapabilities
     var isChangingAgent = false
@@ -211,9 +214,6 @@ final class SessionModel {
     var isStopping = false
     @ObservationIgnored var stopRequestedAt: Date?
     @ObservationIgnored var stopTimeout: Task<Void, Never>?
-    /// The queued message to send once the turn being stopped ends ("Send Now" on an agent that
-    /// can't steer).
-    var sendAfterStop: QueuedPrompt.ID?
     /// Counts turns, so the answer to a turn Native stopped waiting for doesn't end a later one.
     @ObservationIgnored var turnGeneration = 0
     var retryPolicy = TurnRetryPolicy()
@@ -447,6 +447,10 @@ final class SessionModel {
             noteReplayed()
         } else {
             state.apply(update)
+            if host == nil, phase == .prompting {
+                steeringGate.apply(update)
+                deliverPendingSteer()
+            }
         }
     }
 
@@ -535,6 +539,7 @@ final class SessionModel {
     }
 
     func requestPermission(_ request: RequestPermissionRequest, id: RequestID) {
+        if host == nil, phase == .prompting { steeringGate.apply(.toolCallUpdate(request.toolCall)) }
         state.requestPermission(request, id: id)
     }
 

@@ -56,6 +56,15 @@ struct ProtocolTests {
         #expect(try JSONDecoder().decode(PromptDelivery.self, from: Data(#""queued""#.utf8)) == .queued)
     }
 
+    @Test("Held steer status survives the wire and older queues still decode")
+    func heldSteerStatus() throws {
+        let item = QueuedPrompt(text: "After the command", waitingForTool: "sleep 20")
+        #expect(try roundTrip(item) == item)
+        let old = Data(
+            "{\"id\":\"\(item.id.uuidString)\",\"text\":\"Earlier\",\"isEchoed\":true,\"attachments\":[]}".utf8)
+        #expect(try JSONDecoder().decode(QueuedPrompt.self, from: old).waitingForTool == nil)
+    }
+
     @Test("Forwarded integers stay integers, so the reducer can decode them")
     func integersSurviveForwarding() throws {
         let update = JSONValue.object([

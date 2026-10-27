@@ -76,7 +76,7 @@ extension ComposerView {
 
     /// Disabled in place when something blocks sending, saying why.
     var sendButton: some View {
-        let behavior = session.supportsSteering ? followUp : .queue
+        let behavior = followUp
         // An item can leave the queue while its editor stays open; submission then sends a new message.
         let isEditingQueued =
             session.queuedPrompts.contains { $0.id == session.editingQueuedPrompt }
