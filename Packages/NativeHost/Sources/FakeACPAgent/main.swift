@@ -216,6 +216,10 @@ actor FakeAgent {
                 return
             }
             received("steer", text)
+            if ProcessInfo.processInfo.environment["FAKE_AGENT_DELAY_STEER"] == "1" {
+                try await Task.sleep(for: .seconds(3))
+                received("steer-accepted", text)
+            }
             try append(Message(role: "user", text: text), to: params.sessionId)
             try peer.respond(to: id, with: JSONValue.object(["outcome": .string("injected")]))
         case "session/set_config_option":

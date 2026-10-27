@@ -60,6 +60,7 @@ extension HostCore {
         defer {
             session.steeringInFlight = nil
             deliverPendingSteer(in: session)
+            drainQueue(session)
         }
         if let index = session.queue.firstIndex(where: { $0.prompt.id == item.id }) {
             session.queue[index].isSteering = true
@@ -108,8 +109,7 @@ extension HostCore {
             try store.recordDelivery(delivery, for: item.id, in: session.id)
         }
         publish(session)
-        // The turn may have ended while the steer was in flight, leaving nothing to send the queue.
-        drainQueue(session)
+        // The defer resumes delivery after releasing the steering acknowledgement's ownership.
         return delivery
     }
 

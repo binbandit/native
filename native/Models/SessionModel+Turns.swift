@@ -257,7 +257,9 @@ extension SessionModel {
     /// paused.
     func drainQueue() {
         guard host == nil else { return sendHeldPrompts() }
-        guard phase == .idle, !isRunningHiddenCommand, turnHold == nil, !queue.isPaused else { return }
+        guard phase == .idle, !isRunningHiddenCommand, !isDeliveringSteer, turnHold == nil, !queue.isPaused else {
+            return
+        }
         let next =
             if let steer = queue.items.first(where: \.steersAfterTools) {
                 queue.remove(steer.id)

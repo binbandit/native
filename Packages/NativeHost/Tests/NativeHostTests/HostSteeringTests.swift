@@ -141,4 +141,31 @@ struct HostSteeringTests {
         await second.stop()
     }
 
+    @Test func queuedTurnWaitsForTheSteeringAcknowledgement() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        harness.agentEnvironment["FAKE_AGENT_DELAY_STEER"] = "1"
+        try harness.start()
+        let recorder = try await harness.connect()
+        let session = try await recorder.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: harness.root.path(percentEncoded: false)))
+        try await recorder.client.attach(session.id)
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "tool-sleep"))
+        try await recorder.wait("the command") {
+            await $0.mirror(session.id).state.items.contains { if case .toolCall = $0 { true } else { false } }
+        }
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "next"))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "after sleep", behavior: .steer))
+        try await recorder.wait("the acknowledgement and queued turn") {
+            let ended = await $0.turnsEnded(session.id).count == 2
+            return ended && harness.received.contains("steer-accepted\tafter sleep")
+        }
+        #expect(
+            harness.received == [
+                "prompt\ttool-sleep", "tool-finished\tsleep", "steer\tafter sleep", "steer-accepted\tafter sleep",
+                "prompt\tnext",
+            ])
+        await recorder.stop()
+    }
+
 }

@@ -267,7 +267,7 @@ extension HostCore {
     /// Starts the next queued message once nothing is running, one per turn, unless paused.
     func drainQueue(_ session: HostSession) {
         guard session.phase == .idle, session.turn == nil, session.hiddenCommand == nil, session.retryAt == nil,
-            !session.record.isQueuePaused,
+            session.steeringInFlight == nil, !session.record.isQueuePaused,
             let index = session.queue.firstIndex(where: { $0.prompt.steersAfterTools && !$0.isSteering })
                 ?? session.queue.firstIndex(where: { !$0.isSteering })
         else { return }
