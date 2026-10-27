@@ -338,6 +338,7 @@ struct SessionToolsScreen: View {
 
     /// The task's branch, else its folder, at the head of the facts.
     private var location: String {
+        if session.isProjectless { return "No project" }
         guard case .branch(let name)? = git.model(for: session.cwd, session: session.key).branch?.head else {
             return session.cwd.abbreviatedPath
         }
