@@ -198,7 +198,17 @@ Rules:
 `Packages/Undo` keeps undo toasts and the window's undo stack in agreement. `RootView` supplies the
 main window's undo manager to `AppModel.undoHistory`; the Edit menu uses it even when Home has no
 text responder. Archiving registers undo before workspace work starts, and the same action handles
-the toast, Cmd-Z and Redo. Expired deletions withdraw their actions from the stack.
+the toast, Cmd-Z and Redo. Task deletion, including archived tasks and bulk/menu actions, hides
+tasks immediately without confirmation and waits 10 seconds before cleanup. Undo during that window
+cancels cleanup, leaving the conversation, draft, task flags, workspace and host session untouched.
+Expired deletions withdraw their actions from the stack, remove the catalog entry and ask a running
+agent to delete its copy when supported (the host then cancels and forgets that session). Otherwise
+the agent and host can retain their copies. The separate transcript search index is not purged by
+task deletion. Native-owned worktrees are removed after checkpointing;
+branches stay or are saved under archive refs according to settings. Deleting an archived task
+forgets its workspace restore record but keeps its branch and checkpoint. The project folder is
+never removed. Archive keeps the conversation and records the workspace, branch and checkpoint so
+Undo or later Unarchive can rebuild it; restore failures retain recovery material and offer Retry.
 
 ### Migration
 

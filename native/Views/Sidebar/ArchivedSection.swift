@@ -144,8 +144,6 @@ private struct ArchivedTaskRow: View {
     let summary: SessionSummary
     let select: () -> Void
 
-    @State private var isConfirmingDelete = false
-
     var body: some View {
         let title = model.title(for: summary)
         Group {
@@ -168,25 +166,20 @@ private struct ArchivedTaskRow: View {
         .help("\(summary.agent.displayName) · \(title) · archived")
         .contextMenu {
             Button("Unarchive", action: unarchive)
-            Button("Delete…", role: .destructive) { isConfirmingDelete = true }
+            Button("Delete", role: .destructive, action: delete)
         }
         .sidebarSwipeActions(trailing: [
             SidebarSwipeAction("Unarchive", systemImage: "arrow.uturn.backward", tint: .dsInfo, action: unarchive),
-            SidebarSwipeAction("Delete", systemImage: "trash", tint: .dsDanger) { isConfirmingDelete = true },
+            SidebarSwipeAction("Delete", systemImage: "trash", tint: .dsDanger, action: delete),
         ])
         .accessibilityActions {
             Button("Unarchive", action: unarchive)
-            Button("Delete") { isConfirmingDelete = true }
+            Button("Delete", action: delete)
         }
-        .confirmationDialog("Delete “\(title)”?", isPresented: $isConfirmingDelete) {
-            Button("Delete Task", role: .destructive) {
-                model.deleteSession(summary.id, undoManager: undoManager)
-            }
-        } message: {
-            Text(
-                "Its history goes from Native and, if \(summary.agent.displayName) supports it, from \(summary.agent.displayName) too. You can undo for a few seconds."
-            )
-        }
+    }
+
+    private func delete() {
+        model.deleteSession(summary.id, undoManager: undoManager)
     }
 
     private func unarchive() {

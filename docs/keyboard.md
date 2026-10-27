@@ -477,8 +477,9 @@ last ask removes the signal; unresolved failures also count until they recover.
 Several tasks can be picked at once and acted on together. While more than one is picked (or Select
 Tasks is on, which makes taps pick, for touch), a bar at the foot of the sidebar says how many, with
 Archive, Mark as Read, Delete and the rest under More; a picked task's context menu offers the same.
-Each action applies to the picked tasks it would change and offers one Undo for all of them; Delete
-asks first.
+Each action applies to the picked tasks it would change. Archiving, pinning and deleting offer one
+Undo for all affected tasks. Delete hides them immediately and waits 10 seconds before cleanup, so
+Undo keeps every task untouched.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
@@ -491,7 +492,7 @@ asks first.
 | | Let the picked tasks go | Task ▸ Selected Tasks | `selection.clear` |
 | | Archive the picked tasks | Task ▸ Selected Tasks | `selection.archive` |
 | | Unarchive the picked tasks | Task ▸ Selected Tasks | `selection.unarchive` |
-| | Delete the picked tasks (asks first; Undo for a few seconds) | Task ▸ Selected Tasks | `selection.delete` |
+| | Delete the picked tasks immediately; Undo for 10 seconds before cleanup starts | Task ▸ Selected Tasks | `selection.delete` |
 | | Mark the picked tasks as read | Task ▸ Selected Tasks | `selection.markRead` |
 | | Mark the picked tasks as unread | Task ▸ Selected Tasks | `selection.markUnread` |
 | | Pin the picked tasks | Task ▸ Selected Tasks | `selection.pin` |
