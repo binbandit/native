@@ -57,6 +57,7 @@ extension SessionModel {
         defer {
             isDeliveringSteer = false
             deliverPendingSteer()
+            drainQueue()
         }
         var delivery = FollowUpDelivery.queued
         do {
@@ -87,8 +88,7 @@ extension SessionModel {
                 "Couldn't add your message to the running turn, so it's queued: \(error.localizedDescription)",
                 isError: true)
         }
-        // The turn may have ended while the steer was in flight, leaving nothing to send the queue.
-        drainQueue()
+        // The defer resumes delivery after releasing the steering acknowledgement's ownership.
         return delivery
     }
 }
