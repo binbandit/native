@@ -119,9 +119,9 @@ public struct NetworkInventory: Sendable {
                 location: .configured, offline: "report health or tool failure", integration: .awaitingIntegration)
         case .orchestration:
             return Entry(
-                service: service, owner: "Packages/MCPServer/Sources/MCP/MCPHTTPServer.swift",
+                service: service, owner: "Packages/MCPServer/; Packages/Orchestration/NativeActionClient.swift",
                 destination: .local("127.0.0.1 selected port /mcp/session token"),
-                trigger: "session orchestration listener",
+                trigger: "session orchestration listener or on-demand Native CLI action",
                 payload: "scoped task and tool calls", redirects: .none, location: .local,
                 offline: "local tools work; delegated actions have their own boundary",
                 integration: .awaitingIntegration)

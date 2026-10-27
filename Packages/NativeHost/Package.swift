@@ -78,6 +78,7 @@ let package = Package(
             dependencies: [
                 "NativeHost", .target(name: "NativeHostMac", condition: .when(platforms: [.macOS])),
                 "NativeHostProtocol", "UserShell",
+                .product(name: "NativeOrchestration", package: "Orchestration"),
             ]),
         /// A scriptable ACP agent for the crash-recovery tests.
         .executableTarget(name: "FakeACPAgent", dependencies: ["NativeHostProtocol", "ACP"]),

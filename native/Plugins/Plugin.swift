@@ -154,6 +154,8 @@ struct AgentManifest: Codable, Hashable, Sendable {
     /// Where the agent keeps its own MCP configuration ("claude-code", "codex" or "cursor"), so the
     /// MCP feature can show and import the servers it already loads. Nil when unknown.
     var mcpConfig: String?
+    /// Native skill delivery supported by this adapter. Nil keeps the MCP fallback.
+    var nativeSkill: NativeAgentSkillFormat?
     /// Where the agent's icon comes from. Nil, or nothing found, draws a monogram of its name.
     var icon: AgentIconSource?
     /// Commands besides `command` that must be on the user's PATH for the agent to count as
@@ -194,7 +196,7 @@ struct AgentManifest: Codable, Hashable, Sendable {
         icon: AgentIconSource? = nil, requires: [String] = [], setup: AgentSetupGuide? = nil,
         idleSessionTimeout: Int? = nil, idleUnloadTimeout: Int? = nil, renameCommand: String? = nil,
         authMethods: [AuthMethod] = [], settingsFiles: [String] = [],
-        networkCapabilities: AgentNetworkCapabilities? = nil
+        networkCapabilities: AgentNetworkCapabilities? = nil, nativeSkill: NativeAgentSkillFormat? = nil
     ) {
         self.id = id
         self.name = name
@@ -204,6 +206,7 @@ struct AgentManifest: Codable, Hashable, Sendable {
         self.env = env
         self.resolveExecutables = resolveExecutables
         self.mcpConfig = mcpConfig
+        self.nativeSkill = nativeSkill
         self.icon = icon
         self.requires = requires
         self.setup = setup
@@ -225,6 +228,7 @@ struct AgentManifest: Codable, Hashable, Sendable {
         env = try container.decodeIfPresent([String: String].self, forKey: .env) ?? [:]
         resolveExecutables = try container.decodeIfPresent([String: String].self, forKey: .resolveExecutables) ?? [:]
         mcpConfig = try container.decodeIfPresent(String.self, forKey: .mcpConfig)
+        nativeSkill = try container.decodeIfPresent(NativeAgentSkillFormat.self, forKey: .nativeSkill)
         icon = try container.decodeIfPresent(AgentIconSource.self, forKey: .icon)
         requires = try container.decodeIfPresent([String].self, forKey: .requires) ?? []
         setup = try container.decodeIfPresent(AgentSetupGuide.self, forKey: .setup)

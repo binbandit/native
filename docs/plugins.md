@@ -5,7 +5,7 @@ an extra MCP server, or add a multi-agent workflow, by writing a `plugin.json` i
 plugins folder, and how to check that Native loads it.
 
 This file is the canonical description of Native's plugin format. Native serves it to agents as
-the `build-a-native-plugin` skill (the `get_skill` tool of its `native` MCP server), so it's
+the `build-a-native-plugin` guide (`native get_skill` from the `native-app` skill, or MCP's `get_skill`), so it's
 written for an agent doing the work as much as for a person.
 
 ## What a plugin is
@@ -97,6 +97,7 @@ of that agent through it.
 | `env` | no | Extra environment variables. |
 | `resolveExecutables` | no | Variables to set to the absolute path of a command on `PATH`, such as `{"CLAUDE_CODE_EXECUTABLE": "claude"}`, so an adapter runs the user's own CLI. |
 | `mcpConfig` | no | Where the agent keeps its own MCP configuration (`"claude-code"`, `"codex"` or `"cursor"`), so Native can show the servers it already loads. |
+| `nativeSkill` | no | Native's skill delivery mechanism: `"claude-code"` for adapters forwarding `_meta.claudeCode.options.plugins` and per-session `env`, or `"codex"` for Codex skill discovery and the shell's `CODEX_THREAD_ID`. Declare only a verified adapter mechanism. Missing keeps Native's MCP tools. This is independent of `mcpConfig`, which describes user-configured servers. |
 | `settingsFiles` | no | The settings files the agent reads as it starts (`~/…`, `$VARIABLE/…` from its environment, or a path in the task's folder). With Fine print on, a failed start that names one of them shows the line and may offer a fix-it; Native opens no other file an agent's error names. |
 | `icon` | no | The agent's icon: `{"path": "icon.svg"}` (or just `"icon.svg"`), an image in the plugin's folder; `"apps"`, bundle identifiers of apps whose icon to use when installed; `"registry"`, the agent's id in the [ACP registry](https://agentclientprotocol.com/get-started/registry), whose icon Native fetches. A monochrome SVG is drawn in the text color. Without one, Native shows a monogram. |
 | `requires` | no | Commands besides `command` that must be on `PATH` for the agent to count as installed, such as the CLI an adapter drives: `["claude"]`. Native doesn't start an agent that's missing one; it offers it in Add Agent. |

@@ -39,6 +39,8 @@ public final class HostCore {
         /// The guides Native's tools serve agents (`list_skills`, `get_skill`): the app's copies of
         /// docs/setup.md and docs/plugins.md. Empty leaves those tools out.
         public var nativeSkills: [NativeSkill]
+        /// The bundled or standalone host's action subcommand. Nil in hosts without a CLI.
+        public var actionExecutable: URL?
         /// Writes titles on this machine for `HostTitleProvider.onDevice`: the on-device model on a
         /// Mac (`MacHost`). Nil leaves titles to clients.
         public var titleGenerator: (any SessionTitleGenerator)?

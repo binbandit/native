@@ -75,6 +75,10 @@ struct OrchestrationPlugin: NativePlugin {
                 + setup
         ) { token in
             // The token is the only credential a caller presents; nothing it didn't sign gets in.
+            let policy = PolicyCenter.currentPolicy()
+            guard policy.decision(for: .orchestration).isPermitted,
+                policy.decision(for: .mcpExecution).isPermitted, policy.mcp.allows(name: Self.serverName)
+            else { return nil }
             guard let client = tokens.client(in: token) else { return nil }
             return await runtime.caller(of: client)
         }
@@ -108,6 +112,7 @@ struct OrchestrationPlugin: NativePlugin {
     func mcpServers(for session: SessionContext) -> [MCPServer] {
         // The host gives the sessions it serves Native's tools at its own address.
         guard !status.isServedByHost, let url = url(for: session.clientID) else { return [] }
+        if runtime.durableHost == nil, runtime.model?.plugins.nativeMCPChoice(for: session.agent) == false { return [] }
         runtime.handedURL(to: session)
         return [.http(name: Self.serverName, url: url)]
     }

@@ -50,7 +50,7 @@ enum BuiltInPlugins {
                             description:
                                 "Run `claude setup-token` on a computer with a browser, then paste the token it prints.",
                             kind: .environment([AuthMethod.Variable(name: "CLAUDE_CODE_OAUTH_TOKEN", label: "Token")])),
-                    ]
+                    ], nativeSkill: .claudeCode
                 )
             ]
         ), policyTranslator: ClaudeCodePolicyTranslator(), historyReader: ClaudeCodeHistoryReader.standard())
@@ -93,7 +93,7 @@ enum BuiltInPlugins {
                     ],
                     // Its home, a CODEX_HOME override, and a trusted project's own settings.
                     settingsFiles: ["~/.codex/config.toml", "$CODEX_HOME/config.toml", ".codex/config.toml"],
-                    networkCapabilities: .codexCandidate
+                    networkCapabilities: .codexCandidate, nativeSkill: .codex
                 )
             ]
         ), policyTranslator: CodexPolicyTranslator(), historyReader: CodexHistoryReader.standard())

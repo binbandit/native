@@ -1,6 +1,7 @@
 import Foundation
 import NativeHost
 import NativeHostProtocol
+import NativeOrchestration
 
 #if os(macOS)
 import NativeHostMac
@@ -44,6 +45,9 @@ let location =
     ?? HostLocation.standard(channel: channel)
 
 switch command {
+case "action":
+    NativeActionCLI.run(arguments)
+
 case "serve":
     // A release binary carries its version in an embedded Info.plist (scripts/release/host.sh).
     let bundleInfo = Bundle.main.infoDictionary ?? [:]
