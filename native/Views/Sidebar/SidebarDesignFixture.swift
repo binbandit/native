@@ -49,7 +49,10 @@ struct SidebarDesignFixture: View {
     }
 
     var body: some View {
-        if scenario == "undo-toast" {
+        if scenario.hasPrefix("pull-requests") {
+            SidebarPullRequestFixture(
+                showsPeek: scenario == "pull-requests-peek", showsAttention: scenario == "pull-requests-attention")
+        } else if scenario == "undo-toast" {
             UndoToastPreviewGallery()
         } else if scenario == "signals" {
             TaskSignalPreview()

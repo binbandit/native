@@ -140,6 +140,7 @@ private struct ArchivedTaskRow: View {
     @AppStorage("sidebar.showAgentIcons") private var showAgentIcons = true
     @Environment(\.sidebarAllInView) private var isAllInView
     @Environment(AppModel.self) private var model
+    @Environment(\.sidebarTaskInsights) private var insights
     @Environment(\.undoManager) private var undoManager
     let summary: SessionSummary
     let select: () -> Void
@@ -148,7 +149,13 @@ private struct ArchivedTaskRow: View {
         let title = model.title(for: summary)
         Group {
             if isAllInView {
-                AllInViewTaskRow(title: title, status: .idle, isSelected: model.selection == summary.id, action: select)
+                AllInViewTaskRow(
+                    title: title, status: .idle, isSelected: model.selection == summary.id,
+                    outcome: insights.pullRequestBadge(summary), action: select
+                )
+                .task(id: [summary.info.cwd, insights.branch(summary) ?? ""]) {
+                    await insights.prepare([summary])
+                }
             } else {
                 TaskRow(
                     title: title,
@@ -166,15 +173,27 @@ private struct ArchivedTaskRow: View {
         .help("\(summary.agent.displayName) · \(title) · archived")
         .contextMenu {
             Button("Unarchive", action: unarchive)
+            if isAllInView, let pullRequest = insights.pullRequestMenu(summary) {
+                Menu(pullRequest.title) {
+                    ForEach(pullRequest.items) { item in Button(item.title, action: item.perform) }
+                }
+            }
             Button("Delete", role: .destructive, action: delete)
         }
         .sidebarSwipeActions(trailing: [
             SidebarSwipeAction("Unarchive", systemImage: "arrow.uturn.backward", tint: .dsInfo, action: unarchive),
             SidebarSwipeAction("Delete", systemImage: "trash", tint: .dsDanger, action: delete),
         ])
+        .accessibilityLabel(
+            [DSInlineCode.plain(title), isAllInView ? insights.pullRequestMenu(summary)?.spokenSummary : nil]
+                .compactMap(\.self).joined(separator: ", ")
+        )
         .accessibilityActions {
             Button("Unarchive", action: unarchive)
             Button("Delete", action: delete)
+            if isAllInView, let pullRequest = insights.pullRequestMenu(summary) {
+                ForEach(pullRequest.items) { item in Button(item.spokenTitle, action: item.perform) }
+            }
         }
     }
 

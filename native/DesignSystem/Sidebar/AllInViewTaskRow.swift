@@ -20,6 +20,8 @@ public struct AllInViewTaskRow: View {
     var changes: (added: Int, removed: Int)?
     var agentName: String?
     var branchName: String?
+    /// A persistent task outcome, independent of optional row facts.
+    var outcome: AnyView?
     var peek: (() -> Void)?
     let action: () -> Void
 
@@ -42,6 +44,7 @@ public struct AllInViewTaskRow: View {
                             .foregroundStyle(emphasizesTitle ? .dsTextPrimary : .dsTextSecondary)
                             .lineLimit(1)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                        if let outcome { outcome.fixedSize() }
                         if showsAttentionClock, status.needsAttention, unavailable == nil, let attentionSince {
                             TaskAttentionClock(since: attentionSince)
                         }

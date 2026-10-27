@@ -323,12 +323,11 @@ private struct DroidPullRequestLookupRegression {
         await git.model(for: folder, session: local.id).refreshNow()
         guard let localBranch = tasks.branch(of: local) else { throw LookupFailure("This Mac's task has no branch") }
         try require(await gitHub.loadPullRequest(for: localBranch) == nil, "This Mac's lookup failed")
-        // A droid's row has no badge: the sidebar reading its menu, as every row render does, is
-        // what looks it up, starting from nothing cached for any droid.
+        // Read-only row outcomes start from nothing cached for either host.
         let insights = AppSidebarTaskInsights.make(model: app, git: git, gitHub: gitHub)
         try require(gitHub.branchPullRequests.keys.allSatisfy { $0.host == nil }, "A droid's answer was cached early")
-        try await wait("droid A's row finds its pull request") { insights.pullRequestMenu(taskA) != nil }
-        try await wait("droid B's row finds its pull request") { insights.pullRequestMenu(taskB) != nil }
+        try await wait("droid A's row finds its pull request") { insights.pullRequestBadge(taskA) != nil }
+        try await wait("droid B's row finds its pull request") { insights.pullRequestBadge(taskB) != nil }
         try require(insights.hasPullRequest(taskA) && insights.hasPullRequest(taskB), "The pull request filter missed")
 
         // One path and branch on three machines: three references, each answered by its own gh.
@@ -378,6 +377,12 @@ private struct DroidPullRequestLookupRegression {
         try require(
             tasks.menu(of: local)?.items.map(\.title) == ["Open in Native", "Open on GitHub", "Copy Link", "Merge…"],
             "This Mac's task lost its pull request actions")
+        try require(insights.pullRequestBadge(taskA) != nil, "Paired-host task has no read-only outcome badge")
+        try require(insights.pullRequestBadge(taskB) != nil, "Second host lost its own outcome badge")
+        var opened: URL?
+        gitHub.openExternally = { opened = $0 }
+        insights.pullRequestMenu(taskA)?.items.first { $0.title == "Open on GitHub" }?.perform()
+        try require(opened == tasks.pullRequest(of: taskA)?.url, "Paired-host menu opened another PR")
         // The catalog's index, as the agents' listings fill it.
         app.catalog.remote = [local.id: (project.id, local.info), taskA.id: (project.id, taskA.info)]
         try require(tasks.branch(for: taskA.id) == branchA, "A droid's task by key lost its branch")

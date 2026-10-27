@@ -2,9 +2,10 @@ import ACP
 import Foundation
 import Git
 import GitHub
+import SwiftUI
 
 /// The sidebar's answers from the Git and GitHub features: the filters' (whether a task has
-/// uncommitted changes, a pull request) and its rows' pull request menus. Like the task rows'
+/// uncommitted changes, a pull request) and its rows' pull request outcomes and menus. Like the task rows'
 /// accessories, only a task with its own checkout (a worktree) has changes or a pull request of its
 /// own; tasks in the project folder share its checkout.
 @MainActor
@@ -28,6 +29,9 @@ enum AppSidebarTaskInsights {
                 let repository = git.model(for: folder, session: summary.id)
                 if repository.isLocal, !FileManager.default.fileExists(atPath: folder.path) { return }
                 if repository.status == nil { await repository.refreshNow() }
+            },
+            pullRequestBadge: { summary in
+                tasks.pullRequest(of: summary).map { AnyView(SidebarPullRequestBadge(pullRequest: $0)) }
             },
             pullRequestMenu: { summary in
                 tasks.menu(of: summary)
