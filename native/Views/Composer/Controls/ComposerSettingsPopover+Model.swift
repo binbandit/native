@@ -47,6 +47,11 @@ extension ComposerSettingsPopover {
         return targets + (modelList.map { !$0.isFilterable && $0.overflow > 0 } == true ? [.moreModels] : [])
     }
 
+    var hasModelFailure: Bool {
+        failure.map { ["agent-model", settings.model?.option.id, settings.effort?.option.id].contains($0.optionID) }
+            ?? false
+    }
+
     /// The Fast mode switch, on the Model header's trailing edge.
     var fastMode: SelectSetting? {
         settings.modelSwitches.first
@@ -119,7 +124,7 @@ extension ComposerSettingsPopover {
             modelRow(row, setting: model, isFirstMatch: !list.query.isEmpty && row.id == list.rows.first?.id)
         }
         modelOverflow(list, slots: slots)
-        if !isStopped && (showsCaption || failure != nil) { modelCaption(model) }
+        if !isStopped && (showsCaption || hasModelFailure) { modelCaption(model) }
     }
 
     private func modelRow(_ row: ModelChoiceList.Row, setting: SelectSetting, isFirstMatch: Bool) -> some View {

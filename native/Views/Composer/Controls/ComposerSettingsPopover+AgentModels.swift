@@ -42,7 +42,7 @@ extension ComposerSettingsPopover {
                 .composerSettingsTextEdge()
                 .padding(.vertical, DS.Space.xs)
             }
-            if showsCaption || failure != nil || modelChange?.stage == .failed {
+            if showsCaption || hasModelFailure || modelChange?.stage == .failed {
                 agentModelCaption
             }
         }
