@@ -18,7 +18,7 @@ import os
 struct OrchestrationPlugin: NativePlugin {
     static let id = "orchestration"
     /// The server's name in agents' MCP lists.
-    static let serverName = "native"
+    nonisolated static let serverName = "native"
 
     let manifest = PluginManifest(
         id: Self.id,

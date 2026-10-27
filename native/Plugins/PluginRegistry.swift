@@ -2,6 +2,7 @@ import ACP
 import ApprovalAnalysis
 import Experiments
 import Foundation
+import NativeHostProtocol
 import NativePolicy
 import Observation
 import Search
