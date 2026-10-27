@@ -214,6 +214,8 @@ final class AppModel {
         self.plugins = plugins
         self.titles = titles
         self.defaults = defaults
+        let catalog = SessionCatalog(url: catalogURL)
+        self.catalog = catalog
         scratchTasks = TaskScratchStore(root: scratchRoot, persists: catalogURL != nil)
         sidebarPreferences = TaskSidebarPreferences(defaults: defaults)
         let workingSpinners = WorkingSpinnerPreferences(defaults: defaults)
@@ -234,7 +236,8 @@ final class AppModel {
             plugins: plugins, titles: titles, sendGate: sendGate, earlierConversations: earlierConversations,
             workingSpinners: workingSpinners, drafts: ComposerDrafts(defaults: defaults),
             modelContinuations: AgentModelContinuations(defaults: defaults),
-            scratchRoot: scratchRoot
+            scratchRoot: scratchRoot,
+            isProjectlessTask: { catalog.lookup($0)?.project == NoProjectLocation.id }
         ) {
             continuation.yield($0)
         } titleLanded: { key, folder, title in
@@ -246,7 +249,6 @@ final class AppModel {
         projects = Projects(defaults: defaults)
         composeTask = ComposeTaskModel(defaults: defaults)
         taskPairs = TaskPairs(defaults: defaults)
-        catalog = SessionCatalog(url: catalogURL)
         ordering = SessionOrdering(defaults: defaults)
         sessions = SessionStore(services: services)
         unread = UnreadSessions(defaults: defaults)

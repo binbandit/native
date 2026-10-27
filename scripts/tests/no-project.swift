@@ -131,6 +131,11 @@ struct NoProjectModelTests {
         #expect(!layout.side.contains(.changes))
         #expect(!layout.workbench.contains(.changes))
         #expect(!task.canChangeWorkspace)
+        let preparing = SessionModel(
+            agent: task.agent, id: task.id, cwd: scratch.appendingPathComponent("atlas"), connection: nil,
+            services: app.sessions.services, supportsSteering: false, phase: .idle)
+        #expect(preparing.isProjectless)
+        #expect(!registry.layout(for: preparing, on: screen).side.contains(.changes))
         #expect(
             NativeCommand.composer(model: app).first { $0.id == .sessionChangeWorkspace }?
                 .isAvailable(CommandContext(session: task)) == false)
