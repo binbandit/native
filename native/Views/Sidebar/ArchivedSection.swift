@@ -6,6 +6,7 @@ import SwiftUI
 /// opened to read. Hidden when nothing is archived.
 struct ArchivedSection: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.sidebarAllInView) private var isAllInView
     let select: (SessionKey) -> Void
 
     @AppStorage("sidebar.showsArchived") private var isExpanded = false
@@ -15,33 +16,23 @@ struct ArchivedSection: View {
         let groups = model.archivedTaskGroups
         let tasks = groups.flatMap(\.tasks)
         if !projects.isEmpty || !tasks.isEmpty {
-            VStack(alignment: .leading, spacing: DS.Space.xs) {
-                Button {
-                    withAnimation(.dsDisclosure) { isExpanded.toggle() }
-                } label: {
-                    SectionHeader("Archived") {
-                        Text("\(projects.count + tasks.count)")
-                            .font(.dsMonoCaption)
-                            .foregroundStyle(.dsTextTertiary)
-                        Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
-                            .font(.dsMicro)
-                            .foregroundStyle(.dsTextTertiary)
-                            .frame(width: DS.Size.controlXS)
-                    }
-                    .padding(.trailing, DS.Space.sm)
-                    .frame(minHeight: DS.Size.minimumHitTarget)
-                    .contentShape(.rect)
+            VStack(alignment: .leading, spacing: isAllInView ? 0 : DS.Space.xs) {
+                if isAllInView {
+                    // A fold, like "2 earlier": it hides rows rather than naming a group.
+                    SidebarFoldRow("Archived", count: projects.count + tasks.count, isExpanded: $isExpanded)
+                        .accessibilityLabel("Archived")
+                        .padding(.top, DS.Space.md)
+                } else {
+                    header
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Archived")
-                .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
-                .padding(.top, DS.Space.md)
 
                 if isExpanded {
                     ForEach(groups) { group in
-                        VStack(alignment: .leading, spacing: DS.Space.xxs) {
+                        VStack(alignment: .leading, spacing: isAllInView ? 0 : DS.Space.xxs) {
                             if group.isArchivedProject {
                                 ArchivedProjectRow(project: group.project)
+                            } else if isAllInView {
+                                SidebarSectionLabel(group.project.name).padding(.bottom, DS.Space.xxs)
                             } else {
                                 SectionHeader(group.project.name)
                                     .accessibilityAddTraits(.isHeader)
@@ -50,51 +41,91 @@ struct ArchivedSection: View {
                                 ArchivedTaskRow(summary: summary) { select(summary.id) }
                             }
                         }
+                        .padding(.top, isAllInView ? DS.Sidebar.headerTop : 0)
                     }
                 }
             }
         }
+    }
+
+    private var header: some View {
+        let count = model.projects.archived.count + model.archivedTaskGroups.flatMap(\.tasks).count
+        return Button {
+            withAnimation(.dsDisclosure) { isExpanded.toggle() }
+        } label: {
+            SectionHeader("Archived") {
+                Text("\(count)")
+                    .font(.dsMonoCaption)
+                    .foregroundStyle(.dsTextTertiary)
+                Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                    .font(.dsMicro)
+                    .foregroundStyle(.dsTextTertiary)
+                    .frame(width: DS.Size.controlXS)
+            }
+            .padding(.trailing, DS.Space.sm)
+            .frame(minHeight: DS.Size.minimumHitTarget)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Archived")
+        .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
+        .padding(.top, DS.Space.md)
     }
 }
 
 /// An archived project: its avatar and name, with Unarchive at hand and Delete in its menus.
 private struct ArchivedProjectRow: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.sidebarAllInView) private var isAllInView
     @Environment(\.projectIconStore) private var injectedIconStore
     let project: Project
 
     @State private var isConfirmingDelete = false
 
     var body: some View {
-        HStack(spacing: DS.Space.md) {
-            ProjectAvatar(name: project.name, icon: (injectedIconStore ?? .shared).icon(for: project))
-            Text(project.name)
-                .font(.dsCalloutBook)
-                .foregroundStyle(.dsTextSecondary)
-                .lineLimit(1)
-            Spacer(minLength: 0)
-            IconButton("Unarchive \(project.name)", systemImage: "arrow.uturn.backward", action: unarchive)
-                .dsHitTarget(DS.Size.controlXS)
-        }
-        .padding(.leading, DS.Space.sm)
-        .padding(.trailing, DS.Space.sm)
-        .frame(minHeight: DS.Size.rowMinHeight)
-        .contentShape(.rect)
-        .help(project.path)
-        .contextMenu {
-            Button("Unarchive", action: unarchive)
-            Button("Delete Project…", role: .destructive) { isConfirmingDelete = true }
-        }
-        .sidebarSwipeActions(trailing: [
-            SidebarSwipeAction("Unarchive", systemImage: "arrow.uturn.backward", tint: .dsInfo, action: unarchive),
-            SidebarSwipeAction("Delete", systemImage: "trash", tint: .dsDanger) { isConfirmingDelete = true },
-        ])
-        .projectDeletionConfirmation(project, isPresented: $isConfirmingDelete)
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(project.name), archived project")
-        .accessibilityActions {
-            Button("Unarchive", action: unarchive)
-            Button("Delete") { isConfirmingDelete = true }
+        content
+            .contentShape(.rect)
+            .help(project.path)
+            .contextMenu {
+                Button("Unarchive", action: unarchive)
+                Button("Delete Project…", role: .destructive) { isConfirmingDelete = true }
+            }
+            .sidebarSwipeActions(trailing: [
+                SidebarSwipeAction("Unarchive", systemImage: "arrow.uturn.backward", tint: .dsInfo, action: unarchive),
+                SidebarSwipeAction("Delete", systemImage: "trash", tint: .dsDanger) { isConfirmingDelete = true },
+            ])
+            .projectDeletionConfirmation(project, isPresented: $isConfirmingDelete)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(project.name), archived project")
+            .accessibilityActions {
+                Button("Unarchive", action: unarchive)
+                Button("Delete") { isConfirmingDelete = true }
+            }
+    }
+
+    @ViewBuilder private var content: some View {
+        if isAllInView {
+            // A subhead like every other project's, so the archived projects don't read as siblings of
+            // "Archived".
+            SidebarSectionLabel(project.name) {
+                IconButton("Unarchive \(project.name)", systemImage: "arrow.uturn.backward", action: unarchive)
+                    .dsHitTarget(DS.Size.controlXS)
+            }
+            .padding(.bottom, DS.Space.xxs)
+        } else {
+            HStack(spacing: DS.Space.md) {
+                ProjectAvatar(name: project.name, icon: (injectedIconStore ?? .shared).icon(for: project))
+                Text(project.name)
+                    .font(.dsCalloutBook)
+                    .foregroundStyle(.dsTextSecondary)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                IconButton("Unarchive \(project.name)", systemImage: "arrow.uturn.backward", action: unarchive)
+                    .dsHitTarget(DS.Size.controlXS)
+            }
+            .padding(.leading, DS.Space.sm)
+            .padding(.trailing, DS.Space.sm)
+            .frame(minHeight: DS.Size.rowMinHeight)
         }
     }
 

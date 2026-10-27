@@ -15,7 +15,7 @@ struct GitHubAccountButton: View {
             } label: {
                 HStack(spacing: DS.Space.md) {
                     GitHubAccountAvatar(name: accounts.name(account), data: accounts.avatar(account))
-                    Text(displayName)
+                    Text(accounts.footerName)
                         .font(.dsCalloutBook)
                         .tracking(DS.Account.nameTracking)
                         .lineLimit(1)
@@ -38,13 +38,15 @@ struct GitHubAccountButton: View {
             .help("GitHub Account: @\(account.login)")
         }
     }
+}
 
-    private var displayName: String {
-        let accounts = gitHub.accounts
-        guard let current = accounts.current else { return "" }
-        let name = accounts.name(current)
-        let matches = accounts.accounts.filter { accounts.name($0) == name }
-        return matches.count > 1 ? "@\(current.login)" : name
+extension GitHubAccountsModel {
+    /// The current account as the sidebar names it: the profile's name, or the login when another
+    /// signed-in account shares that name.
+    var footerName: String {
+        guard let current else { return "" }
+        let name = name(current)
+        return accounts.filter { self.name($0) == name }.count > 1 ? "@\(current.login)" : name
     }
 }
 

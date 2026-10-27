@@ -42,18 +42,24 @@ extension AppModel {
         }
         taskPeek.answerFailure = nil
         taskPeek.approvalAttempt = 0
+        taskPeek.restoresSidebarFocus = true
         taskPeek.request = .init(task: key, ask: ask)
         Task { await loadSession(key) }
     }
 
     func closeTaskPeek() {
+        closeTaskPeek(restoringSidebarFocus: true)
+    }
+
+    func closeTaskPeek(restoringSidebarFocus: Bool) {
+        taskPeek.restoresSidebarFocus = restoringSidebarFocus
         taskPeek.request = nil
         taskPeek.answerFailure = nil
     }
 
     func openPeekedTask(_ key: SessionKey) {
         closeTasksNeedingAttention()
-        closeTaskPeek()
+        closeTaskPeek(restoringSidebarFocus: false)
         selection = key
     }
 

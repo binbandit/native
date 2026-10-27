@@ -25,6 +25,8 @@ struct ProjectSection<TaskAccessory: View>: View {
     let isFiltered: Bool
     /// The filters leave none of its tasks.
     var hasNoMatches = false
+    /// Pinned tasks sit above the projects, so even the first project keeps a header's top margin.
+    var followsPinned = false
     let isExpanded: Binding<Bool>
     let drag: SidebarDragState
     let taskAccessory: (SessionSummary) -> TaskAccessory
@@ -138,7 +140,7 @@ struct ProjectSection<TaskAccessory: View>: View {
         let activity = isExpanded.wrappedValue ? ProjectActivity() : activity(starting: starting)
         if isAllInView {
             AllInViewProjectGroup(
-                name: project.name, isFirst: position.index == 0, isExpanded: isExpanded,
+                name: project.name, isFirst: position.index == 0 && !followsPinned, isExpanded: isExpanded,
                 taskCount: sessions.count + earlier.count,
                 isRefreshing: model.refreshingProjects.contains(project.id)
                     || model.sidebarFolders.opening.contains(project.folderName), activity: activity,
@@ -191,11 +193,13 @@ private struct ProjectEmptyRow: View {
     @State private var isHovered = false
 
     var body: some View {
-        if isAllInView {
-            Text(model.sidebarFolders.opening.contains(project.folderName) ? "Opening folder…" : "No tasks yet.")
+        if isAllInView, model.sidebarFolders.opening.contains(project.folderName) {
+            Text("Opening folder…")
                 .font(.dsBody).foregroundStyle(.dsTextSecondary)
                 .frame(maxWidth: .infinity, minHeight: DS.Sidebar.foldHeight, alignment: .leading)
                 .padding(.leading, DS.Sidebar.headerLeading)
+        } else if isAllInView, model.canCreateSession(in: project.id), model.agentStartupFailure == nil {
+            firstTaskLine
         } else if model.canCreateSession(in: project.id) || model.agentStartupFailure != nil {
             Button {
                 Task { await model.newSession(in: project.id) }
@@ -226,6 +230,39 @@ private struct ProjectEmptyRow: View {
             .trackHover($isHovered)
             .help("Install an agent to work in \(project.name)")
         }
+    }
+}
+
+extension ProjectEmptyRow {
+    /// All in view says it once per project, quietly, on the titles' edge: no glyph, no repeated
+    /// call to action. The shortcut shows only where it would start the task: the current project.
+    fileprivate var firstTaskLine: some View {
+        let shortcut =
+            model.currentProject?.id == project.id
+            ? CommandRegistry.shared.keyboardShortcut(for: .sessionNew) : nil
+        return Button {
+            Task { await model.newSession(in: project.id) }
+        } label: {
+            HStack(spacing: DS.Space.xs) {
+                Text("No tasks yet.")
+                if let shortcut {
+                    Kbd(shortcut, compact: true)
+                    Text("starts one.")
+                }
+                Spacer(minLength: 0)
+            }
+            .font(.dsBody)
+            .foregroundStyle(isHovered ? .dsTextSecondary : .dsTextTertiary)
+            .padding(.leading, DS.Sidebar.headerLeading)
+            .padding(.trailing, DS.Sidebar.trailing)
+            .frame(minHeight: max(DS.Sidebar.rowHeight, DS.Size.minimumHitTarget))
+            .contentShape(.rect)
+        }
+        .buttonStyle(SidebarRowButtonStyle())
+        .trackHover($isHovered)
+        .help("New task in \(project.name)")
+        .accessibilityLabel("No tasks yet")
+        .accessibilityHint("Starts a task in \(project.name)")
     }
 }
 
