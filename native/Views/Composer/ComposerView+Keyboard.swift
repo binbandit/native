@@ -54,6 +54,7 @@ extension ComposerView {
             overlayDismissal?.dismiss()
         case .recallLastPrompt:
             draftText = session.state.lastPrompt ?? ""
+            selection = nil
         case .editLastQueuedPrompt:
             if let last = session.queuedPrompts.last {
                 edit(last)

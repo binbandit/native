@@ -35,8 +35,11 @@ struct SidebarSelectionBar: View {
                 model.setUnread(keys, !actions.canMarkRead)
             }
             .disabled(keys.isEmpty)
-            IconButton("Delete…", systemImage: "trash") { selection.isConfirmingDelete = true }
-                .disabled(keys.isEmpty)
+            IconButton("Delete", systemImage: "trash") {
+                selection.clear()
+                model.deleteSessions(keys, undoManager: undoManager)
+            }
+            .disabled(keys.isEmpty)
             Menu {
                 SidebarBulkMenu(selection: selection)
             } label: {

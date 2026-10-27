@@ -49,8 +49,19 @@ extension AppModel {
         session.mirror = old.mirror
         session.draft = old.draft
         session.attachments = old.attachments
+        old.attachmentReads.move(to: session)
         session.heldPrompts = old.heldPrompts
         session.hasSubmittedPrompt = old.hasSubmittedPrompt
+        session.isModelChangeSource = old.isModelChangeSource
+        session.continuedTaskKey = old.taskPresentationKey
+        session.modelChange = old.modelChange
+        old.modelChange?.replace(old, with: session)
+        sessions.services.modelContinuations.replace(old.key, with: session.key)
+        for loaded in sessions.loadedSessions {
+            loaded.modelChange?.replaceReference(old.key, with: session.key)
+        }
+        session.quoteSelection = old.quoteSelection
+        session.quoteSelectionSource = old.quoteSelectionSource
         session.isChangingWorkspace = old.isChangingWorkspace
         session.isWorkspaceReplaced = old.isWorkspaceReplaced
         session.mirrorState()

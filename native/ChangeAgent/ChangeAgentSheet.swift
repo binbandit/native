@@ -125,6 +125,13 @@ private struct ChangeAgentPresentation: ViewModifier {
         ) {
             if let change = app.changingAgent { ChangeAgentSheet(change: change) }
         }
+        #if DEBUG
+        .overlay {
+            if let state = ComposerAgentModelPreview.requested {
+                ComposerAgentModelPreview(stateID: state)
+            }
+        }
+        #endif
     }
 }
 

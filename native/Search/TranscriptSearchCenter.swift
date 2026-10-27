@@ -178,12 +178,13 @@ final class TranscriptSearchCenter {
         guard let model else { return }
         isPresented = false
         let key = SessionKey(searchKey: group.session.key)
-        model.showSearchedSession(
-            key, cwd: group.session.cwd, title: group.session.title, projectFolder: group.session.project)
-        guard let hit else { return }
         let words = ParsedSearchQuery(answeredQuery ?? SearchQuery(query)).highlightWords
         Task {
-            guard let session = await model.loadedSession(key) else { return }
+            guard
+                await model.showSearchedSession(
+                    key, cwd: group.session.cwd, title: group.session.title, projectFolder: group.session.project),
+                let hit, let session = await model.loadedSession(key)
+            else { return }
             let items = session.state.items
             let index =
                 hit.anchor.index(in: items)

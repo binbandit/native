@@ -9,6 +9,9 @@ public enum PolicyLoader {
         var resolver = PolicyResolver(
             source: source, isRestricted: deployment.mode != .ordinary, isTrusted: deployment.isTrusted)
         var policy = NativePolicy()
+        policy.foldersAllowedRoots = resolver.resolve(
+            .foldersAllowedRoots, expecting: "an array of absolute local folder paths", ordinary: nil, restricted: [],
+            invalid: [], PolicyParse.folderRoots)
         policy.organizationContact = resolver.resolve(
             .organizationContact, expecting: "a non-empty string", ordinary: nil, restricted: nil, PolicyParse.text)
         // An unusable theme leaves the user's own, as the theme isn't a security setting.
@@ -157,6 +160,15 @@ extension NativePolicy {
 /// Parsers for property-list values. Each returns nil when the value as a whole is unusable, and
 /// reports entries it skipped in `problems`.
 enum PolicyParse {
+    static func folderRoots(_ raw: Any, _ problems: inout [String]) -> [String]? {
+        guard let roots = raw as? [String],
+            roots.allSatisfy({
+                $0.hasPrefix("/") && !$0.contains("\0") && !$0.hasPrefix("//")
+            })
+        else { return nil }
+        return roots.map { URL(filePath: $0).standardizedFileURL.path }
+    }
+
     static func text(_ raw: Any, _ problems: inout [String]) -> String? {
         guard let text = raw as? String, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return nil

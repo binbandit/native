@@ -30,7 +30,10 @@ extension SessionModel {
     /// Takes on the settings chosen in `old`, a session this one replaces because its agent never
     /// saved it (it went away before the first turn), so the task carries on as the user left it.
     func adoptConfigChoices(of old: SessionModel) async {
-        let chosen = services.titles.configChoices(for: old.titleKey)
+        await adoptConfigChoices(services.titles.configChoices(for: old.titleKey))
+    }
+
+    func adoptConfigChoices(_ chosen: ConfigChoices) async {
         services.titles.updateConfigChoices(for: titleKey) { $0.adopt(chosen) }
         // From what `old` chose: this session's own record follows each of the agent's answers
         // meanwhile (setting the model resets the effort), since it isn't loading.

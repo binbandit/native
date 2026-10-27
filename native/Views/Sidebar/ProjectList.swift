@@ -1,3 +1,4 @@
+import ACP
 import SwiftUI
 import TaskList
 
@@ -44,14 +45,24 @@ struct ProjectList<TaskAccessory: View>: View {
                 SidebarFilterChips(filter: $filter)
             }
             if model.projects.all.isEmpty {
-                AddProjectPrompt()
+                if isAllInView {
+                    Text("Your folders and tasks will appear here.")
+                        .font(.dsBody).foregroundStyle(.dsTextSecondary)
+                        .padding(.leading, DS.Sidebar.headerLeading)
+                        .padding(.top, DS.Space.xxxl)
+                } else {
+                    AddProjectPrompt()
+                }
             } else if isNarrowing, listing.isEmpty, model.startingTasks.isEmpty {
-                NothingMatches { filter.clearFilters() }
+                NothingMatches(isNeedsYouOnly: filter.chips == [.status(.needsYou)]) { filter.clearFilters() }
             }
             ForEach(Array(listing.groups.enumerated()), id: \.element.project.id) { index, group in
                 let project = group.project
+                let revealsEmptyHome =
+                    isAllInView && model.selection == nil && model.focusedProjectID == project.id && group.all.isEmpty
                 let hasNoMatches =
-                    isNarrowing && group.visible.isEmpty && model.startingTasks(in: project.id).isEmpty
+                    isNarrowing && !revealsEmptyHome && group.visible.isEmpty
+                    && model.startingTasks(in: project.id).isEmpty
                 ProjectSection(
                     project: project,
                     sessions: group.current,
@@ -61,8 +72,9 @@ struct ProjectList<TaskAccessory: View>: View {
                         set: { folding?.setExpanded(project.id, $0) }),
                     order: Self.positions(group.all),
                     position: (index, listing.groups.count),
-                    isFiltered: isNarrowing,
+                    isFiltered: isNarrowing && !revealsEmptyHome,
                     hasNoMatches: hasNoMatches,
+                    followsPinned: !listing.pinned.isEmpty,
                     isExpanded: Binding(
                         get: { isNarrowing ? !hasNoMatches : !collapsed.contains(project.id) },
                         set: { collapsed.set(project.id, collapsed: !$0) }
@@ -71,6 +83,13 @@ struct ProjectList<TaskAccessory: View>: View {
                     taskAccessory: taskAccessory,
                     select: select
                 )
+            }
+            if isAllInView {
+                ForEach(Array(model.sidebarFolders.opening.enumerated()), id: \.offset) { _, name in
+                    if !model.projects.all.contains(where: { $0.folderName == name }) {
+                        SidebarFolderOpeningRow(name: name)
+                    }
+                }
             }
             // Archived tasks show in their projects while the filter includes them.
             if !isNarrowing, !filter.includesArchived {
@@ -83,7 +102,7 @@ struct ProjectList<TaskAccessory: View>: View {
             if isAllInView {
                 SidebarOptionsMenu(preferences: model.sidebarPreferences)
                 Divider()
-                Button("Add Project…") { model.isAddingProject = true }
+                Button("Open Folder…") { model.requestOpenFolder() }
                 Menu("Filter Tasks") {
                     ForEach(SidebarFilterOption.all(filter: $filter, agents: model.agents.map(\.agent))) { option in
                         Toggle(option.title, isOn: option.isOn)
@@ -96,6 +115,10 @@ struct ProjectList<TaskAccessory: View>: View {
                     .pickerStyle(.inline)
                 }
             }
+        }
+        .onChange(of: model.sidebarFolders.focusRequests) {
+            guard let id = model.focusedProjectID else { return }
+            collapsed.set(id, collapsed: false)
         }
         .onChange(of: model.selection) {
             guard let selection = model.selection,
@@ -142,21 +165,32 @@ private struct AddProjectPrompt: View {
     }
 }
 
-/// The filters match no task anywhere: say so, and offer the way back.
+/// The filters match no task anywhere: say so, and offer the way back. Needs You alone (⌥⌘J) is a
+/// question with a happy answer, so it gets one rather than talk of filters.
 private struct NothingMatches: View {
+    @Environment(\.sidebarAllInView) private var isAllInView
+    var isNeedsYouOnly = false
     let clear: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.sm) {
-            Text("No tasks match these filters. Tasks show up here as soon as they do.")
-                .font(.dsBody)
-                .foregroundStyle(.dsTextTertiary)
-                .fixedSize(horizontal: false, vertical: true)
+            Text(
+                isNeedsYouOnly
+                    ? "Nothing needs you right now."
+                    : "No tasks match these filters. Tasks show up here as soon as they do."
+            )
+            .font(.dsBody)
+            .foregroundStyle(.dsTextTertiary)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, isAllInView ? DS.Space.sm : 0)
             // Ghost, so nothing opaque sits on the translucent sidebar.
-            Button("Clear Filters", action: clear)
+            Button(isNeedsYouOnly ? "Show All Tasks" : "Clear Filters", action: clear)
                 .buttonStyle(.ds(.ghost))
         }
-        .padding(.horizontal, DS.Space.sm)
+        // All in view lines the sentence up with the task titles; the ghost button's label lands
+        // there too.
+        .padding(.leading, isAllInView ? DS.Sidebar.headerLeading - DS.Space.sm : DS.Space.sm)
+        .padding(.trailing, DS.Space.sm)
         .padding(.vertical, DS.Space.md)
     }
 }
@@ -186,12 +220,36 @@ private struct NothingMatches: View {
     .sidebarPreviewEnvironment(app)
 }
 
+#Preview("Project list - Nothing needs you") {
+    let app = AppModel.preview()
+    for item in app.tasksNeedingAttention {
+        guard let session = app.session(item.id) else { continue }
+        for call in session.permissionRequests { session.state.resolvePermission(toolCallID: call.id) }
+        session.questions = []
+    }
+    return DSPreviewPair {
+        ProjectListPreview(app: app, filter: TaskFilter(statuses: [.needsYou]))
+            .environment(\.sidebarAllInView, true)
+    }
+    .sidebarPreviewEnvironment(app)
+}
+
 #Preview("Project list - No projects") {
     let app = AppModel.preview(.empty)
     DSPreviewPair {
         ProjectListPreview(app: app, filter: TaskFilter())
     }
     .sidebarPreviewEnvironment(app)
+}
+
+#Preview("Project list - Empty folder with filters") {
+    let app = AppModel.preview(.empty)
+    let project = app.projects.add(URL(filePath: "/Development/atlas"))
+    app.focusProject(project.id)
+    return DSPreviewPair {
+        ProjectListPreview(app: app, filter: TaskFilter(statuses: [.needsYou]))
+            .environment(\.sidebarAllInView, true)
+    }.sidebarPreviewEnvironment(app)
 }
 
 /// The list as the sidebar builds it, with the filter in state so its chips and menu work.

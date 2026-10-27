@@ -9,7 +9,9 @@ let package = Package(
         .library(name: "ACP", targets: ["ACP"])
     ],
     targets: [
-        .target(name: "ACP"),
+        .target(
+            name: "ACP",
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         .testTarget(name: "ACPTests", dependencies: ["ACP"]),
     ]
 )

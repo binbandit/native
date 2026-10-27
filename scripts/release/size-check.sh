@@ -73,7 +73,7 @@ check() {
     executable=$(plutil -extract CFBundleExecutable raw "$app/Contents/Info.plist")
     if [ -z "$archive" ]; then
         archive="$scratch/$name.zip"
-        ditto -c -k --sequesterRsrc --keepParent "$app" "$archive"
+        ditto -c -k --zlibCompressionLevel 9 --sequesterRsrc --keepParent "$app" "$archive"
     fi
     log "Size of $name"
     row "Download (update archive)" "$(bytes "$archive")" "$BUDGET_DOWNLOAD"

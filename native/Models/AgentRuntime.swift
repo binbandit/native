@@ -15,6 +15,10 @@ final class AgentRuntime {
     typealias Status = AgentRuntimeStatus
 
     let agent: AgentDefinition
+    /// Choices explicitly loaded from this runtime, scoped to its adapter and host lifetime.
+    private(set) var modelCatalog: [ConfigOption]?
+
+    func rememberModels(_ options: [ConfigOption]) { modelCatalog = options }
     private(set) var status = Status.idle
     /// The environment plugins' launch policy added when the agent last started, to tell when a
     /// changed policy needs a restart.

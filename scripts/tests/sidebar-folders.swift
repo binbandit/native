@@ -1,0 +1,150 @@
+import Experiments
+import Foundation
+import NativePolicy
+import SwiftUI
+import TaskList
+
+@testable import Native
+
+@main
+@MainActor
+private struct SidebarFolderChecks {
+    static func main() async throws {
+        let scratch = FileManager.default.temporaryDirectory.appending(path: "native-folder-check-\(UUID())")
+        try FileManager.default.createDirectory(at: scratch, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: scratch) }
+        let atlas = scratch.appending(path: "atlas", directoryHint: .isDirectory)
+        let pier = scratch.appending(path: "pier", directoryHint: .isDirectory)
+        let alias = scratch.appending(path: "alias", directoryHint: .isDirectory)
+        let file = scratch.appending(path: "notes.txt")
+        let package = scratch.appending(path: "Fixture.app", directoryHint: .isDirectory)
+        for folder in [atlas, pier, package] {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        }
+        try FileManager.default.createSymbolicLink(at: alias, withDestinationURL: atlas)
+        try Data("fixture".utf8).write(to: file)
+
+        let approved = scratch.appending(path: "approved", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: approved, withIntermediateDirectories: true)
+        let escape = approved.appending(path: "outside")
+        try FileManager.default.createSymbolicLink(at: escape, withDestinationURL: pier)
+        let limited = PolicyLoader.load(
+            from: StaticPolicySource(managed: ["policy.folders.allowedRoots": [approved.path]]))
+        let escaped = await PlatformFolderAccess.inspect([escape], policy: limited)
+        require(escaped.first?.failure != nil, "a symlink cannot escape an approved root")
+
+        let app = AppModel.preview()
+        app.sidebarFolders.policyOverride = .default
+        let previous = app.projects.all
+        guard let session = SessionModel.preview(in: app) else { fatalError("missing session fixture") }
+        session.draft = "Keep this draft"
+        app.selection = session.key
+        let count = app.sessionList.count
+        app.composeTask.isPresented = true
+        app.quickEntry.draft = "Keep the Compose draft"
+        let focusBeforeOpen = app.sidebarFolders.focusRequests
+        let resolved = await PlatformFolderAccess.inspect([atlas, alias, pier, file, package], policy: .default)
+        app.sidebarFolders.dismissResult()
+        let undo = UndoManager()
+        undo.groupsByEvent = false
+        undo.beginUndoGrouping()
+        let added = app.finishOpeningFolders(resolved, undoManager: undo)
+        undo.endUndoGrouping()
+        require(added.count == 2, "aliases deduplicate and files/packages are rejected")
+        require(app.projects.all.count == previous.count + 2, "the batch adds exactly two projects")
+        require(app.currentProject?.id == added.first?.id, "the first newly added folder opens its home")
+        require(!app.composeTask.isPresented, "a successful folder open reveals Home over Compose")
+        require(app.quickEntry.draft == "Keep the Compose draft", "revealing Home preserves the Compose draft")
+        require(app.sidebarFolders.focusRequests == focusBeforeOpen + 1, "success requests root navigation to Home")
+        require(
+            app.sidebarFolders.failures.count == 2,
+            "rejected names remain in the result: \(app.sidebarFolders.failures.count) \(app.sidebarFolders.failures.map(\.message))"
+        )
+        require(app.sidebarFolders.history.entries.count == 2, "only successful canonical folders enter recents")
+        require(session.draft == "Keep this draft", "opening preserves the old task draft")
+        require(app.sessionList.count == count, "opening creates no task")
+        undo.undo()
+        require(app.projects.all == previous, "one undo removes only the new batch")
+        require(app.selection == session.key, "undo restores the task behind the addition")
+        require(session.draft == "Keep this draft", "undo preserves the draft")
+        require(app.sidebarFolders.receipt == nil, "keyboard undo clears the receipt")
+
+        let first = app.finishOpeningFolders(
+            await PlatformFolderAccess.inspect([atlas], policy: .default), undoManager: nil)
+        app.dismissFolderResult()
+        let focusBeforeReopen = app.sidebarFolders.focusRequests
+        let again = app.finishOpeningFolders(
+            await PlatformFolderAccess.inspect([alias], policy: .default), undoManager: nil)
+        require(first.count == 1 && again.isEmpty, "an already-open symlink alias is a no-op")
+        require(
+            app.sidebarFolders.focusRequests == focusBeforeReopen + 1, "reopening requests Home with no selected task")
+        require(app.sidebarFolders.receipt == nil, "a no-op never offers an addition undo")
+        let total = app.projects.all.count
+        app.clearRecentFolders()
+        require(app.projects.all.count == total, "clearing recents never closes projects")
+        require(app.sidebarFolders.history.entries.isEmpty, "clear removes the history")
+
+        let inspected = await PlatformFolderAccess.inspect([pier], policy: .default)
+        let focusBeforeFailure = app.sidebarFolders.focusRequests
+        app.composeTask.isPresented = true
+        app.sidebarFolders.policyOverride = PolicyLoader.load(
+            from: StaticPolicySource(managed: ["policy.folders.allowedRoots": [String]()]))
+        require(app.finishOpeningFolders(inspected, undoManager: nil).isEmpty, "policy is revalidated at commit")
+        require(app.projects.all.count == total, "a denied addition leaves projects intact")
+        require(app.sidebarFolders.focusRequests == focusBeforeFailure, "a failed addition keeps the detail page")
+        require(app.composeTask.isPresented, "a failed addition leaves Compose in place")
+        let searched = SessionKey(agent: session.key.agent, id: .init("outside-folder-result"))
+        let selectedBeforeSearch = app.selection
+        await app.showSearchedSession(searched, cwd: pier.path, title: "Outside result", projectFolder: pier.path)
+        require(app.projects.all.count == total, "search cannot add a folder outside managed roots")
+        require(!app.catalog.contains(searched), "a refused search result does not enter the sidebar")
+        require(
+            app.selection == selectedBeforeSearch && app.actionFailure != nil,
+            "a refused search explains why without navigating")
+        let existingSearch = SessionKey(agent: session.key.agent, id: .init("existing-folder-result"))
+        await app.showSearchedSession(
+            existingSearch, cwd: atlas.path, title: "Existing result", projectFolder: atlas.path)
+        require(
+            app.selection == existingSearch && app.projects.all.count == total,
+            "search still opens already-listed projects")
+        await app.addQuickEntryProject(pier, choosing: true)
+        require(app.projects.all.count == total, "Quick Entry cannot bypass managed folder roots")
+        require(app.quickEntry.failure != nil, "Quick Entry explains a policy refusal")
+        await app.addProject(pier)
+        require(
+            app.projects.all.count == total && app.actionFailure != nil,
+            "the legacy picker cannot bypass managed roots with Labs off")
+        app.actionFailure = nil
+        app.sidebarFolders.policyOverride = .default
+        app.dismissFolderResult()
+        let invalid = FolderHistory.Entry(url: atlas, bookmark: Data([1, 2, 3]))
+        await app.openRecentFolder(invalid, undoManager: nil)
+        require(
+            app.sidebarFolders.failures.first?.reason == "Folder access expired.", "expired bookmarks offer renewal")
+        require(app.projects.all.count == total, "a stale recent never removes an existing project")
+        let abandoned = app.beginFolderDrop()
+        app.endFolderDrop()
+        await app.previewFolderDrop([atlas], request: abandoned)
+        require(
+            !app.sidebarFolders.acceptsDrop && app.sidebarFolders.hovered.isEmpty,
+            "an old hover cannot revive after leaving")
+        app.experiments.set(true, for: .sidebarNext)
+        app.setHomeNextVisible(true)
+        app.selection = nil
+        require(app.homeNextOwnsNewTask, "the folder home owns Command-N without requiring the Home switch")
+        app.setHomeNextVisible(false)
+        let failuresBeforeCancellation = app.sidebarFolders.failures
+        app.folderPickerFinished(.failure(CocoaError(.userCancelled)), undoManager: nil)
+        require(app.sidebarFolders.failures == failuresBeforeCancellation, "Files picker cancellation is silent")
+        app.folderPickerFinished(.success(nil), undoManager: nil)
+        require(app.projects.all.count == total, "cancelling a chooser keeps the workspace")
+        require(app.sidebarFolders.focusRequests == focusBeforeFailure, "cancelling a chooser keeps the detail page")
+        print(
+            "PASS: folder batches, symlink identity, files/packages, recents, undo, drafts, navigation, cancellation and policy admission"
+        )
+    }
+
+    static func require(_ condition: @autoclosure () -> Bool, _ message: String) {
+        guard condition() else { fatalError(message) }
+    }
+}

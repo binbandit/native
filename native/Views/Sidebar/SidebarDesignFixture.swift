@@ -17,12 +17,19 @@ extension View {
 
 #if DEBUG
 import ACP
+import NativePolicy
 import TaskList
+
+extension EnvironmentValues {
+    /// Task insights the sidebar fixture supplies in place of the app's (Git and GitHub's).
+    @Entry var sidebarFixtureInsights: SidebarTaskInsights?
+}
 
 struct SidebarDesignFixture: View {
     let scenario: String
     @State private var app: AppModel
-    @State private var gitHub = GitHubAccountPreviewFixtures.model(.single)
+    @State private var gitHub: GitHubModel
+    @State private var policy: PolicyCenter
     @State private var statusBar = StatusBarRegistry(defaults: PreviewUserDefaults())
 
     init(scenario: String) {
@@ -30,6 +37,15 @@ struct SidebarDesignFixture: View {
         _app = State(
             initialValue: Self.makeApp(
                 scenario == "peek-plan" ? "plan" : scenario == "facts-details" ? "facts" : scenario))
+        // "account" lists two accounts in the footer's popover; "managed" adds an organization's
+        // policy (and "managed-signed-out" leaves GitHub signed out under it).
+        _gitHub = State(
+            initialValue: GitHubAccountPreviewFixtures.model(
+                scenario == "account" ? .multiple : scenario == "managed-signed-out" ? .signedOut : .single))
+        _policy = State(
+            initialValue: scenario.hasPrefix("managed")
+                ? PolicyCenter(source: StaticPolicySource(managed: SidebarManagedDetailsPreview.northwind.dictionary))
+                : PolicyCenter.shared)
     }
 
     var body: some View {
@@ -40,20 +56,28 @@ struct SidebarDesignFixture: View {
         } else if scenario == "facts-details" {
             AllInViewPreviewList(app: app, insights: AllInViewPreviewFixtures.factsInsights)
         } else {
-            RootView(initialSidebarVisibility: scenario.hasPrefix("collapsed") ? .detailOnly : .all)
-                .environment(app)
-                .environment(gitHub)
-                .environment(statusBar)
-                .environment(\.projectIconStore, SidebarPreviewFixtures.iconStore)
-                .environment(\.taskSignalReducedMotion, scenario == "reduce-motion")
-                .task {
-                    CommandRegistry.shared.register(NativeCommand.taskPeek(model: app))
-                    if let state = TaskPeekPreviewFixtures.State(rawValue: String(scenario.dropFirst(5))),
-                        scenario.hasPrefix("peek-")
-                    {
-                        app.taskPeek.request = TaskPeekPreviewFixtures.prepare(app, state: state)
-                    }
+            // `-nativeSidebarFixtureCollapsed YES` hides the sidebar for any scenario (Peek without its row).
+            RootView(
+                initialSidebarVisibility: scenario.hasPrefix("collapsed")
+                    || UserDefaults.standard.bool(forKey: "nativeSidebarFixtureCollapsed") ? .detailOnly : .all
+            )
+            .environment(app)
+            .environment(gitHub)
+            .environment(policy)
+            .environment(statusBar)
+            .environment(
+                \.sidebarFixtureInsights, scenario == "facts" ? AllInViewPreviewFixtures.factsInsights : nil
+            )
+            .environment(\.projectIconStore, SidebarPreviewFixtures.iconStore)
+            .environment(\.taskSignalReducedMotion, scenario == "reduce-motion")
+            .task {
+                CommandRegistry.shared.register(NativeCommand.taskPeek(model: app))
+                if let state = TaskPeekPreviewFixtures.State(rawValue: String(scenario.dropFirst(5))),
+                    scenario.hasPrefix("peek-")
+                {
+                    app.taskPeek.request = TaskPeekPreviewFixtures.prepare(app, state: state)
                 }
+            }
         }
     }
 
@@ -65,6 +89,13 @@ struct SidebarDesignFixture: View {
         let app = AppModel(plugins: plugins, defaults: defaults, catalogURL: nil)
         _ = app.runtimes.sync()
         guard scenario != "empty" else { return app }
+        if scenario == "empty-projects" {
+            for name in ["native", "pier", "kite"] {
+                let project = app.projects.add(URL(filePath: "/fixture/\(name)"))
+                app.catalog.replace(AgentDefinition.ID(rawValue: "codex"), in: project.id, with: []) { _ in false }
+            }
+            return app
+        }
         let project = app.projects.add(URL(filePath: "/fixture/native"))
         guard scenario != "empty-project" else {
             app.catalog.replace(AgentDefinition.ID(rawValue: "codex"), in: project.id, with: []) { _ in false }
@@ -128,7 +159,7 @@ struct SidebarDesignFixture: View {
         let selection = SessionKey(
             agent: AgentDefinition.ID(rawValue: "codex"), id: SessionID(scenario == "ask" ? "native-1" : "native-2"))
         app.selection = selection
-        if scenario.hasPrefix("collapsed-") {
+        if scenario.hasPrefix("collapsed-") || scenario == "calm" {
             for item in app.tasksNeedingAttention {
                 let keep =
                     scenario == "collapsed-single" && item.id.id.rawValue == "native-1"
@@ -230,6 +261,7 @@ struct SidebarDesignFixture: View {
             session.lastActivity = date
             app.unread.set(SessionKey(agent: agent, id: session.id), unread: id != "native-2")
         case .failed:
+            session.state.appendUserMessage(title, at: .now.addingTimeInterval(-age - 60))
             session.phase = .disconnected
             session.addNotice(
                 "The provider was overloaded. Native tried to reconnect, but the agent stopped again.", isError: true)

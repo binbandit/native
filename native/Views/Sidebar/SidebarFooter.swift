@@ -1,13 +1,39 @@
+import NativePolicy
 import SwiftUI
 
-/// The GitHub identity and Settings share the sidebar's bottom row.
+/// The GitHub identity and Settings share the sidebar's bottom row. All in view opens the account
+/// (and who manages Native) in place; the classic sidebar leads to Settings.
 struct SidebarFooter: View {
+    var isAllInView = false
     @Environment(GitHubModel.self) private var gitHub: GitHubModel?
     @Environment(StatusBarRegistry.self) private var statusBar: StatusBarRegistry?
 
     var body: some View {
+        if isAllInView {
+            allInView
+        } else {
+            classic
+        }
+    }
+
+    private var allInView: some View {
         let isAboveStatusBar = statusBar?.isVisible == true
-        HStack(spacing: DS.Space.md) {
+        return HStack(spacing: DS.Space.md) {
+            SidebarAccountButton()
+            SettingsButton()
+        }
+        // The avatar lands 13pt in, the button's own inset before it.
+        .padding(.leading, DS.Account.footerLeading - DS.Space.sm)
+        .padding(.trailing, DS.Account.footerTrailing - DS.Space.xs)
+        .frame(height: isAboveStatusBar ? DS.Size.chromeBar : DS.Account.footerHeight)
+        .overlay(alignment: .top) {
+            SeparatorLine().padding(.horizontal, DS.Space.lg)
+        }
+    }
+
+    private var classic: some View {
+        let isAboveStatusBar = statusBar?.isVisible == true
+        return HStack(spacing: DS.Space.md) {
             #if os(macOS)
             if let gitHub, gitHub.accounts.current != nil,
                 gitHub.accounts.status == nil || !gitHub.accounts.accounts.isEmpty
@@ -74,6 +100,26 @@ private struct FooterGlyph: View {
     }
     .sidebarPreviewEnvironment(AppModel.preview())
     .environment(GitHubAccountPreviewFixtures.model(.multiple))
+}
+
+#Preview("All in view footer - Account, managed, managed without an account, signed out") {
+    let managed = PolicyCenter(source: StaticPolicySource(managed: SidebarManagedDetailsPreview.northwind.dictionary))
+    DSPreviewPair {
+        VStack(spacing: 0) {
+            SidebarFooter(isAllInView: true)
+                .environment(GitHubAccountPreviewFixtures.model(.multiple))
+            SidebarFooter(isAllInView: true)
+                .environment(GitHubAccountPreviewFixtures.model(.single))
+                .environment(managed)
+            SidebarFooter(isAllInView: true)
+                .environment(GitHubAccountPreviewFixtures.model(.signedOut))
+                .environment(managed)
+            SidebarFooter(isAllInView: true)
+                .environment(GitHubAccountPreviewFixtures.model(.signedOut))
+        }
+        .frame(width: DS.Size.sidebarWidth)
+    }
+    .sidebarPreviewEnvironment(AppModel.preview())
 }
 
 #Preview("Sidebar footer - Signed out") {

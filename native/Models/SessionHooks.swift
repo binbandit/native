@@ -10,6 +10,8 @@ final class SessionHooks {
     /// A task the user started, ready for its first prompt: on its own, or `continuing` an earlier
     /// conversation of the same task (`/clear`, or one restarted after a crash).
     var taskStarted: (_ session: SessionModel, _ continuing: SessionModel?) async -> Void = { _, _ in }
+    /// A never-sent conversation was recreated under a new adapter id, without a new task.
+    var taskRecovered: (SessionKey, SessionModel) -> Void = { _, _ in }
     /// A live turn began, at `startedAt` (its `TranscriptTurn.startedAt`), and its prompt went out.
     /// The Git feature records the working tree then (`GitTurnWiring`), so Review can show what the
     /// turn changed. It must return right away: work it starts runs after the prompt is sent.

@@ -35,6 +35,16 @@ build them, and such an app looks 12 to 40 MB smaller than what ships.
 
 Raise a budget only with the reason written here, in the same change.
 
+2026-10-27: the size cut in #211 restores the installed-app budget to 118 MB and the update ZIP
+budget to 48 MB after #210's temporary allowance. Release measures 117.016 MB installed /
+47.837 MB downloaded; Nightly measures 117.101 / 47.940 MB. All other budgets are unchanged.
+
+2026-10-27: approved by Brayden, the installed-app budget rises from 118 MB to 119 MB and
+the update-archive download budget from 48 MB to 48.5 MB. Main measured 118.2 MB installed
+for Release and 118.3 MB installed / 48.0 MB for the Nightly update archive, blocking approved
+PRs. This is temporary: the size-cut job (`perf/size-cut-2`) is bringing the app back under,
+and PR #195 moves updates to `.tar.xz` (about 32 MB) and resets the download budget.
+
 2026-10-26: approved by Brayden, the update-archive download budget rises from 47.5 MB to 48 MB.
 Main measured 47.5 MB for the Nightly update archive. This is temporary: #195 moves updates
 to `.tar.xz` (31.9 MB) and sets the budget to 35 MB.
@@ -153,6 +163,82 @@ growth. Growth since the budgets were set at a 53.2 MB binary is mostly the rede
 old and new versions of six areas behind switches. Reclaim that space by deleting each old
 version when its switch flips. The size cut below brings the executable under the former 60 MB
 limit. The download, disk-image, installed-app and script-runtime budgets are unchanged.
+
+## 2026-10-27: size optimization for the protocol and host packages
+
+The integrated app at `7b52de76` failed the 118 MB installed and 48 MB ZIP budgets.
+Compared with `688c9850`, the executable grew 0.824 MB and the embedded host 0.072 MB. The
+Release link maps attribute the largest increases to Views (0.301 MB), SidebarFolders (0.165),
+ChangeAgent (0.082), Platform (0.054), ACP (0.037), and DesignSystem (0.030). Resources,
+frameworks and the script runtime did not grow in that comparison. Named Swift specialization
+symbols grew by only 0.045 MB; no preview registry or Debug fixture implementation remained linked.
+The legacy and redesigned presentations still ship together, so deleting either is not a size fix
+that preserves today's features.
+
+Eleven package targets now use `-Osize` in release configurations: ACP; NativeHostProtocol,
+NativeHostClient, NativeHost, NativeHostMac and UserShell; NativeLink; TaskList; and
+Exec, CodeThemeCatalog and CodeThemes. Protocol, serialization and transport code is linked into
+both the app and its host, so reducing it saves space twice. The app already uses `-Osize`.
+The grammar libraries keep their existing optimization. Debug builds are unchanged, and reflection,
+assets, terminal, script runtime, update framework and signing settings are unchanged.
+
+The update ZIP now uses ditto's maximum Deflate compression (`--zlibCompressionLevel 9`) in both
+`release.sh` and `size-check.sh`. On the first optimized Release build this saved another 0.102 MB
+over ditto's default. The archive format, resource-fork preservation and notarization ZIP are unchanged.
+
+| Component, MB | Release before | Release after | Nightly before | Nightly after |
+| --- | ---: | ---: | ---: | ---: |
+| Main executable | 60.742 | 60.267 | 60.759 | 60.267 |
+| Script runtime | 41.420 | 41.373 | 41.420 | 41.373 |
+| Host helper bundle | 6.483 | 5.845 | 6.483 | 5.845 |
+| Frameworks | 2.027 | 2.027 | 2.027 | 2.027 |
+| Resources | 7.502 | 7.502 | 7.586 | 7.586 |
+| Installed total | 118.176 | 117.016 | 118.278 | 117.101 |
+| Update ZIP | 48.146 | 47.837 | 48.248 | 47.940 |
+
+Measured unsigned arm64 builds with `scripts/release/check.sh` and `size-check.sh`, in the same
+DerivedData folder, before at `7b52de76` and after on `0257c27e` plus this patch. The intervening main changes
+only update a workflow dependency and temporarily raise the size budgets. Release saves 1.160 MB installed and 0.308 MB
+downloaded; Nightly saves 1.177 and 0.308 MB. Both pass the restored 118 MB installed and 48 MB
+ZIP limits. Other budgets are unchanged.
+
+The saved baseline runtime is 0.047 MB larger than the freshly rebuilt pinned helper. There is
+no runtime source or build-setting change here. The main executable and host alone account for
+1.113 MB of the Release installed reduction and 1.130 MB for Nightly.
+
+Extracting each maximum-compression ZIP with ditto reproduces all 357 bundle entries, including
+file bytes, permissions and symbolic links. The terminal, runtime and Sparkle remain present.
+
+### Performance checks
+
+A standalone optimized client folds 10,000 turns, 200,000 message chunks and 20,000 tool updates
+per sample, with 20 paired samples per build. Median CPU time rises from 0.085 s to 0.105 s with ACP at `-Osize`:
+about 0.020 s across that batch, or under 0.1 microsecond per update. The resulting transcript
+item counts match. This records a small absolute cost on the reducer.
+
+A separate optimized client highlights 1,000 blocks per sample, with ten copies of a short language
+example in each block and three samples per language. It checks that the segments reproduce the
+input. Median CPU time, seconds:
+
+| Language | Before | After |
+| --- | ---: | ---: |
+| Swift | 0.275 | 0.272 |
+| TypeScript | 0.453 | 0.448 |
+| Python | 0.228 | 0.224 |
+| Ruby (lexer) | 0.064 | 0.067 |
+
+The existing `HostStreamingTests` also pass before and after: a 20,000-chunk flood and 2,000
+paced chunks all arrive complete and in order. Three runs per build, medians on the shared Mac:
+
+| Host path measurement | Before | After |
+| --- | ---: | ---: |
+| Flood, events per second | 38,449 | 52,848 |
+| Flood, client CPU per update | 32.7 µs | 23.9 µs |
+| Flood, host CPU per update | 42.7 µs | 30.8 µs |
+| Paced, median delivery latency | 0.15 ms | 0.08 ms |
+
+Other work shares the machine, so these throughput numbers describe these runs. Release-mode
+package tests pass in ACP, NativeHost, NativeLink, Exec, TaskList and CodeThemes (981 tests).
 
 ## 2026-10-25: the app at -Osize, Sparkle's helpers thinned, more cold packages
 

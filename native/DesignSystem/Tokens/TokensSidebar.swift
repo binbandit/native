@@ -10,6 +10,8 @@ extension DS {
         public static let foldHeight: CGFloat = 24
         public static let foldFont = Font.ds(12, weight: .book)
         public static let foldChevronFont = Font.ds(9)
+        /// A fold row's trailing count ("Archived  2").
+        public static let countFont = Font.ds(11, weight: .medium, design: .mono)
         public static let ageFont = Font.ds(11, weight: .book, design: .mono)
         public static let factFont = Font.ds(11, design: .mono)
         public static let rowHeight: CGFloat = 30
