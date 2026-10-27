@@ -10,7 +10,7 @@ extension AppModel {
     /// AppModel.swift's init.
     func dropUnsentSessions() {
         let dropped = unsentSessions.removeAll { key, draft in
-            draft == nil || !catalog.contains(key)
+            (draft == nil && !sessions.services.modelContinuations.hasPending(key)) || !catalog.contains(key)
         }
         for key in dropped {
             catalog.remove(key)
@@ -44,25 +44,37 @@ extension AppModel {
     /// session in the same folder takes its place in the sidebar, with the draft in its composer.
     /// Returns false when it isn't one.
     func reopenUnsent(_ key: SessionKey, info: SessionInfo, on runtime: AgentRuntime) async -> Bool {
-        guard unsentSessions.draft(for: key) != nil else { return false }
+        let continuation = sessions.services.modelContinuations.hasPending(key)
+        guard unsentSessions.draft(for: key) != nil || (continuation && unsentSessions.contains(key)) else {
+            return false
+        }
         // Another load of it got here first and is reopening it.
-        guard let draft = unsentSessions.claim(key) else { return true }
+        guard let draft = unsentSessions.claim(key, includingEmpty: continuation) else { return true }
         let project = catalog.lookup(key)?.project
+        var prepared: SessionModel?
         do {
             let session = try await launcher.start(
-                on: runtime, cwd: URL(filePath: info.cwd, directoryHint: .isDirectory), project: project)
+                on: runtime, cwd: URL(filePath: info.cwd, directoryHint: .isDirectory), project: project,
+                preparingModel: continuation)
+            prepared = session
+            if continuation {
+                deletedSessions.insert(session.key)
+                try await recoverAgentModel(key, in: session)
+                deletedSessions.remove(session.key)
+            }
             session.draft = draft
             catalog.swap(key, for: SessionInfo(sessionId: session.id, cwd: info.cwd, updatedAt: .now))
             ordering.replace(key, with: session.key)
             taskPairs.replace(key, with: session.key)
             history.replace(key, with: session.key)
             unsentSessions.forget(key)
-            unsentSessions.started(session.key)
+            unsentSessions.started(session.key, draft: draft)
             if selection == key {
                 session.wantsComposerFocus = true
                 selection = session.key
             }
         } catch {
+            if continuation, let prepared { discardAgentChange(prepared) }
             unsentSessions.release(key)
             openFailures[key] = SessionOpenFailure(error, agent: runtime.agent.displayName)
         }

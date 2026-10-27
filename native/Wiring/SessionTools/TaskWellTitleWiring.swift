@@ -7,13 +7,17 @@ import SwiftUI
 struct TaskWellTitleWiring: View {
     let session: SessionModel
     @Bindable var tools: SessionToolsScreenModel
+    /// The title's width shown whole, so the toolbar can make room for it.
+    var reportsIdealWidth: (CGFloat) -> Void = { _ in }
     @Environment(AppModel.self) private var app
     @Environment(GitStore.self) private var git
     @Environment(PolicyCenter.self) private var policy
     @Environment(\.undoManager) private var undoManager
 
     var body: some View {
-        TaskWellTitle(facts: facts, isPresented: $tools.showsTitle) { title in
+        TaskWellTitle(
+            facts: facts, isPresented: $tools.showsTitle, reportsIdealWidth: reportsIdealWidth
+        ) { title in
             app.rename(session.key, to: title, undoManager: undoManager)
         }
         .onChange(of: tools.showsTitle) { _, isShown in

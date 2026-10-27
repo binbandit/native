@@ -1,7 +1,7 @@
 /// Ranks a project's files and folders for an `@` query: the query's characters in order (a fuzzy
 /// subsequence), with more credit for matches in the last path component, at word starts and in
-/// runs; changed and recently mentioned paths first among equals, then shorter paths. Folders are
-/// written with a trailing "/" (`FileMention.entries(forFiles:)`).
+/// runs; changed and recently mentioned paths first among equals, then shorter paths. A query with
+/// a slash browses that directory, folders first. Folders end in "/" (`FileMention.entries(forFiles:)`).
 public struct FileMentionMatcher: Sendable {
     public let changed: Set<String>
     /// Most recent first.
@@ -14,6 +14,10 @@ public struct FileMentionMatcher: Sendable {
 
     public func matches(for query: String, in paths: [String], limit: Int) -> [String] {
         let query = query.lowercased()
+        guard limit > 0, !query.hasPrefix("/"), !query.split(separator: "/").contains("..") else { return [] }
+        if query.contains("/") {
+            return browse(query, in: paths, limit: limit)
+        }
         guard !query.isEmpty else {
             // Nothing typed yet: what the user is most likely after, then the rest in order.
             let available = Set(paths)
@@ -28,6 +32,33 @@ public struct FileMentionMatcher: Sendable {
             .sorted { ($0.1, -$0.0.count) > ($1.1, -$1.0.count) }
             .prefix(limit)
             .map(\.0)
+    }
+
+    private func browse(_ query: String, in paths: [String], limit: Int) -> [String] {
+        var relative = query[...]
+        while relative.hasPrefix("./") { relative = relative.dropFirst(2) }
+        let slash = relative.lastIndex(of: "/")
+        let directory = slash.map { String(relative[...$0]) } ?? ""
+        let name = slash.map { String(relative[relative.index(after: $0)...]) } ?? String(relative)
+        return paths.compactMap { path -> (path: String, score: Int)? in
+            let lower = path.lowercased()
+            guard lower.hasPrefix(directory) else { return nil }
+            let child = lower.dropFirst(directory.count)
+            let component = FileMention.isFolder(path) ? child.dropLast() : child
+            // Keep the named folder selectable, but don't flood its list with deeper descendants.
+            guard !component.contains("/") else { return nil }
+            guard let score = name.isEmpty ? 0 : score(String(component), for: name) else { return nil }
+            return (path, score)
+        }
+        .sorted {
+            let leftFolder = FileMention.isFolder($0.path)
+            let rightFolder = FileMention.isFolder($1.path)
+            if leftFolder != rightFolder { return leftFolder }
+            if $0.score != $1.score { return $0.score > $1.score }
+            return $0.path < $1.path
+        }
+        .prefix(limit)
+        .map(\.path)
     }
 
     /// Nil when the query's characters don't all appear in order.

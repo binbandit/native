@@ -115,7 +115,7 @@ private struct TaskPeekChecks {
         require(
             app.tasksNeedingAttention.map(\.id) == [waiting.key, failed.key], "Count tasks once, asks before failures")
         require(app.tasksNeedingAttention.first?.ask?.session === child, "The row keeps the oldest child's owner")
-        guard let focus = NativeCommand.composer.first(where: { $0.id == .composerFocus }) else {
+        guard let focus = NativeCommand.composer(model: app).first(where: { $0.id == .composerFocus }) else {
             throw MissingFixture()
         }
         var wantsInstructionFocus = false

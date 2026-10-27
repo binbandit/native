@@ -40,7 +40,8 @@ extension AppModel {
 
     /// ⌘N writes in Home's start field while Home shows it, rather than opening another surface.
     var homeNextOwnsNewTask: Bool {
-        experiments.value(of: .homeNext) && taskPeek.homeIsVisible && selection == nil && !projects.all.isEmpty
+        (experiments.value(of: .homeNext) || offersSidebarFolders) && taskPeek.homeIsVisible && selection == nil
+            && !projects.all.isEmpty
     }
 
     /// What finished, asked or failed between `start` and `end`, as the user finds it on return.
@@ -93,10 +94,14 @@ extension AppModel {
 
     /// Starts the start field's draft. Return stays on Home with a receipt; ⌘Return opens the task.
     func startHomeNextTask(open: Bool) -> StartingTask? {
-        guard experiments.value(of: .homeNext), quickEntry.hasMessage else { return nil }
+        guard experiments.value(of: .homeNext) || (offersSidebarFolders && taskPeek.homeIsVisible),
+            quickEntry.hasMessage
+        else { return nil }
         #if DEBUG
         // Fixtures are inert: they never start an agent or make a worktree.
-        guard HomeNextPreviewFixtures.requested == nil else { return nil }
+        guard HomeNextPreviewFixtures.requested == nil, SidebarFolderPreviewFixtures.requested == nil else {
+            return nil
+        }
         #endif
         return startQuickEntryDraft(open: open, confirms: false)
     }

@@ -46,6 +46,7 @@ catalog keys have no app consumer yet; their capabilities stay off in restricted
 
 | Key | Role | Capabilities | Owner |
 | --- | --- | --- | --- |
+| `policy.folders.allowedRoots` | restriction | `folders.add` | `native/SidebarFolders/AppModel+SidebarFolders.swift` |
 | `policy.deployment.mode` | deployment | - | `Packages/NativeNetwork/Sources/NativeNetwork/NetworkAdmission.swift` |
 | `policy.network` | deployment | - | `Packages/NativeNetwork/Sources/NativeNetwork/NetworkAdmission.swift` |
 | `policy.approvals.knowledge` | configuration | `approvals.knowledge` | `native/Plugins/PluginRegistry.swift` |
@@ -99,6 +100,7 @@ required.
 
 | Capability | Kind | Keys | Network services | Owners | Enforcement |
 | --- | --- | --- | --- | --- | --- |
+| `folders.add` | local | `policy.folders.allowedRoots` | - | `native/SidebarFolders/AppModel+SidebarFolders.swift` | converted |
 | `agents.execution` | execution | `policy.agents.allowed`, `policy.agents.environment`, `policy.permissions.forbiddenModes`, `policy.skills.blocked`, `policy.mcp.required` | `agents.provider`, `agents.ipc` | `native/Plugins/PluginRegistry.swift`, `Packages/NativeHost/Sources/NativeHost/AgentLink.swift` | unconverted |
 | `agents.auxiliaryGeneration` | execution | `policy.ai.instructions` | `agents.provider` | `native/Plugins/SessionTitles.swift`, `native/AIInstructions/` | unconverted |
 | `agents.install` | download | - | `adapters.install`, `agents.installGuides` | `Packages/ACP/Sources/ACP/NpxLaunch.swift`, `Packages/NativeHost/Sources/NativeHost/ManagedAdapterInstaller.swift`, `native/AgentCatalog/` | unconverted |

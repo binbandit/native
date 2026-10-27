@@ -3,7 +3,66 @@ import SwiftUI
 
 extension ComposerSettingsPopover {
     var modelList: ModelChoiceList? {
-        settings.model.map { ModelChoiceList(choices: $0.choices, current: $0.value, query: query, slots: modelSlots) }
+        if let agentModels {
+            return ModelChoiceList(
+                choices: agentModels.map(\.listChoice), current: currentModelID ?? "", query: query,
+                slots: needsCompactModelList ? 5 : ModelChoiceList.slots,
+                searchTerms: Dictionary(uniqueKeysWithValues: agentModels.map { ($0.id, $0.searchTerms) }),
+                forceFilter: needsCompactModelList)
+        }
+        return settings.model.map {
+            ModelChoiceList(choices: $0.choices, current: $0.value, query: query, slots: modelSlots)
+        }
+    }
+
+    var currentModelID: String? {
+        guard let agentModels else { return settings.model?.value }
+        return agentModels.first {
+            $0.agent == currentAgentID && $0.kind == .model(settings.model?.value)
+        }?.id
+    }
+
+    /// Reserve the full caption, footer and task rows before allocating model slots.
+    var needsCompactModelList: Bool {
+        guard let agentModels else { return false }
+        let count = agentModels.count > ModelChoiceList.filterThreshold ? ModelChoiceList.slots : agentModels.count
+        if page == .model {
+            return CGFloat(count + 1) * DS.ComposerSettings.rowHeight
+                + DS.ComposerSettings.modelCaptionHeight + DS.ComposerSettings.sectionInset * 2
+                + DS.ComposerSettings.popoverInset * 2 > DS.ComposerSettings.popoverMaxHeight
+        }
+        return estimatedSettingsHeight(models: count) > DS.ComposerSettings.popoverMaxHeight
+    }
+
+    var omitsModelCaptions: Bool {
+        agentModels != nil && page != .model && needsCompactModelList
+            && estimatedSettingsHeight(models: 5) > DS.ComposerSettings.popoverMaxHeight
+    }
+
+    private func estimatedSettingsHeight(models: Int) -> CGFloat {
+        let autonomy = settings.autonomy == nil ? 0 : settings.autonomyLevels.count + 2
+        let effort = settings.effort == nil ? 0 : 1
+        let footer = manager == nil ? 0 : DS.ComposerSettings.managedFooterReserve
+        let empty =
+            agentModels?.contains { $0.agent != currentAgentID } == true
+            ? 0 : DS.ComposerSettings.emptyModelsReserve
+        return CGFloat(models + autonomy + effort + rows.count) * DS.ComposerSettings.rowHeight
+            + DS.ComposerSettings.sectionsReserve + footer + empty
+    }
+
+    var hasOtherAgentModels: Bool {
+        agentModels?.contains { $0.agent != currentAgentID && $0.unavailable == nil } == true
+    }
+
+    var modelTargets: [Target] {
+        modelList?.rows.compactMap { row in
+            if let entry = agentModels?.first(where: { $0.id == row.id }),
+                entry.unavailable != nil || (isStopped && entry.agent == currentAgentID)
+            {
+                return nil
+            }
+            return .model(row.id)
+        } ?? []
     }
 
     /// The Fast mode switch, on the Model header's trailing edge.
@@ -13,7 +72,13 @@ extension ComposerSettingsPopover {
 
     func modelSection(slots: Int, showsCaption: Bool) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            if let model = settings.model {
+            if agentModels != nil {
+                if DS.isTouchPlatform {
+                    if let model = settings.model { modelPageRow(model) }
+                } else {
+                    agentModelRows()
+                }
+            } else if let model = settings.model {
                 if DS.isTouchPlatform {
                     modelPageRow(model)
                 } else {
@@ -136,7 +201,7 @@ extension ComposerSettingsPopover {
 
     // MARK: - Filter
 
-    private func filterLine(count: Int) -> some View {
+    func filterLine(count: Int) -> some View {
         HStack(spacing: DS.Space.md) {
             SearchField(
                 "Filter models", text: $query, prompt: Text("Filter \(count) models"), font: DS.ComposerSettings.rowFont
@@ -161,7 +226,7 @@ extension ComposerSettingsPopover {
 
     /// The slots a filtered list keeps, so typing never changes the popover's height: what didn't
     /// fit, or that nothing matched.
-    @ViewBuilder private func filterFooter(_ list: ModelChoiceList, slots: Int) -> some View {
+    @ViewBuilder func filterFooter(_ list: ModelChoiceList, slots: Int = ModelChoiceList.slots) -> some View {
         let used = list.rows.count + (list.overflow > 0 || list.rows.isEmpty ? 1 : 0)
         if list.overflow > 0 {
             slotNote("\(list.overflow) more match. Keep typing.")
@@ -232,7 +297,9 @@ extension ComposerSettingsPopover {
     var modelPage: some View {
         VStack(alignment: .leading, spacing: 0) {
             ComposerSettingsPageHeader(title: "Model", isKeyboardFocused: highlighted == .back) { page = nil }
-            if let model = settings.model {
+            if agentModels != nil {
+                agentModelRows(isPage: true)
+            } else if let model = settings.model {
                 modelRows(model, isPage: true)
             }
         }

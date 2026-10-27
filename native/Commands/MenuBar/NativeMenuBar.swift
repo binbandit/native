@@ -33,6 +33,7 @@ struct NativeMenuBar: Commands {
         ViewCommands(menu: menu, model: model)
         AppearanceCommands(menu: menu)
         SettingsCommands(settings: settings)
+        HostRestartCommands(menu: menu)
         GoCommands(menu: menu)
         SessionCommands(model: model, menu: menu)
         ProjectActionCommands(
@@ -71,6 +72,9 @@ private struct FileCommands: Commands {
             }
             CommandMenuItem(.expeditionNew, in: menu)
             CommandMenuItem(.projectOpen, in: menu)
+            if model.offersSidebarFolders {
+                Menu("Open Recent") { SidebarFolderRecentMenu(model: model, undoManager: menu.context.undoManager) }
+            }
             CommandMenuItem(.projectSettings, in: menu)
             CommandMenuItem(.projectRefresh, in: menu)
             CommandMenuItem(.pullRequestOpenAsTask, in: menu)
@@ -186,6 +190,10 @@ private struct SessionCommands: Commands {
             CommandMenuItem(.sessionNextPermissionMode, in: menu)
             ModeMenuItems(menu: menu)
             CommandMenuItem(.sessionChooseModel, in: menu)
+            if model.offersAgentModels {
+                CommandMenuItem(.sessionCancelModelChange, in: menu)
+                CommandMenuItem(.sessionUndoModelChange, in: menu)
+            }
             CommandMenuItem(.sessionChangeWorkspace, in: menu)
 
             Divider()

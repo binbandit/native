@@ -28,6 +28,9 @@ struct ComposerSettingsControl: View {
     @State private var changes = ConfigOptionChangeQueue()
     @State private var pending: ComposerSettingsPopover.Pending?
     @State private var failure: ComposerSettingsPopover.Failure?
+    @Environment(\.undoManager) private var undoManager
+    @State private var modelCatalog: [ComposerAgentModel] = []
+    @State private var loadingModelID: String?
     @State private var lastChange: (optionID: String, value: String)?
 
     var library: MCPLibrary? { MCPServersPlugin.library(in: app.plugins) }
@@ -35,7 +38,7 @@ struct ComposerSettingsControl: View {
     private var permissionsManaged: Bool { policy.isManaged(.forbiddenPermissionModes) }
 
     private var manager: String? {
-        let keys: Set<PolicyKey> = [.forbiddenPermissionModes, .mcpAllowed, .mcpBlocked, .mcpRequired]
+        let keys: Set<PolicyKey> = [.agentsAllowed, .forbiddenPermissionModes, .mcpAllowed, .mcpBlocked, .mcpRequired]
         return policy.managedKeys.isDisjoint(with: keys) ? nil : policy.organizationName ?? "your organization"
     }
 
@@ -54,8 +57,11 @@ struct ComposerSettingsControl: View {
         .dsHitTarget(DS.ComposerSettings.controlHeight)
         .accessibilityLabel("Task Settings")
         .accessibilityValue(
-            [mode.current.id == .build ? nil : "\(mode.current.name) mode", settings.model?.shortModelName]
-                .compactMap { $0 }.joined(separator: ", ")
+            [
+                mode.current.id == .build ? nil : "\(mode.current.name) mode", settings.model?.shortModelName,
+                session.agentName,
+            ]
+            .compactMap { $0 }.joined(separator: ", ")
         )
         .accessibilityHint("Model, effort and when \(session.agentName) asks")
         .accessibilityIdentifier("composer-settings")
@@ -79,6 +85,14 @@ struct ComposerSettingsControl: View {
             }
         }
         .task(id: session.clientID) { await library?.track(session.context) }
+        .onChange(of: session.modelChange?.stage) { _, stage in
+            if stage == .applied {
+                lastChange = nil
+                AccessibilityNotification.Announcement("Using \(session.agentName). Undo available.").post()
+            } else if stage == .failed, let message = session.modelChange?.error {
+                AccessibilityNotification.Announcement(message).post()
+            }
+        }
         .onChange(of: mcpPresentation?.wrappedValue, initial: true) { _, show in
             if show == true {
                 showsGoalEditor = false
@@ -96,6 +110,9 @@ struct ComposerSettingsControl: View {
             automation.goal(for: session)?.isEditorRequested = false
         }
         .onChange(of: isPresented) { _, open in
+            if open, app.offersAgentModels {
+                modelCatalog = app.agentModels(for: session)
+            }
             if !open {
                 showsMCP = false
                 showsGoalEditor = false
@@ -122,15 +139,64 @@ struct ComposerSettingsControl: View {
         } else {
             ComposerSettingsPopover(
                 settings: settings, agentName: session.agentName, workspace: workspace, manager: manager,
+                managementExplanation: policy.isManaged(.agentsAllowed) ? "Only approved agents are available." : nil,
                 permissionsManaged: permissionsManaged, forbiddenModes: policy.forbiddenPermissionModes,
                 rows: taskRows(openGoal: { showsGoalEditor = true }, openMCP: openMCP),
-                resumedAutonomy: resumedAutonomy, pending: pending, failure: failure,
+                agentModels: app.offersAgentModels ? refreshedCatalog : nil,
+                currentAgentID: session.agent.id, modelChange: session.modelChange,
+                loadingModelID: loadingModelID, onChooseAgentModel: chooseModel,
+                onAgentsSettings: {
+                    isPresented = false; presentation?.open(.agents)
+                },
+                resumedAutonomy: resumedAutonomy, pending: pending, failure: modelFailure ?? failure,
                 isStopped: session.phase == .disconnected,
                 onRestart: { Task { await app.restartAgent(for: session) } },
                 highlightsCurrent: highlightsCurrent,
                 onClose: { isPresented = false },
                 onUndo: undo,
                 onSet: set)
+        }
+    }
+
+    /// Keep the opening order, while permissions and availability remain live.
+    private var refreshedCatalog: [ComposerAgentModel] {
+        let fresh = app.agentModels(for: session)
+        guard !modelCatalog.isEmpty else { return fresh }
+        let existing = modelCatalog.compactMap { old in fresh.first { $0.id == old.id } }
+        return existing + fresh.filter { row in !modelCatalog.contains { $0.id == row.id } }
+    }
+
+    private var modelFailure: ComposerSettingsPopover.Failure? {
+        guard session.modelChange?.stage == .failed, let change = session.modelChange else { return nil }
+        return .init(optionID: "agent-model", message: change.error ?? "Couldn't change the model.") {
+            change.retry(undoManager: undoManager)
+        }
+    }
+
+    private func chooseModel(_ row: ComposerAgentModel) {
+        if row.agent == session.agent.id, case .model(let value) = row.kind,
+            let model = settings.model, let value
+        {
+            set(model, value)
+        } else if row.kind == .load {
+            guard loadingModelID == nil else { return }
+            loadingModelID = row.id
+            Task {
+                defer { loadingModelID = nil }
+                do {
+                    try await app.loadAgentModels(row, for: session)
+                    let fresh = app.agentModels(for: session)
+                    let index = modelCatalog.firstIndex { $0.id == row.id } ?? modelCatalog.endIndex
+                    modelCatalog.removeAll { $0.agent == row.agent }
+                    modelCatalog.insert(
+                        contentsOf: fresh.filter { $0.agent == row.agent }, at: min(index, modelCatalog.count))
+                    failure = nil
+                } catch {
+                    failure = .init(optionID: "agent-model", message: error.localizedDescription) { chooseModel(row) }
+                }
+            }
+        } else {
+            app.chooseAgentModel(row, for: session, undoManager: undoManager)
         }
     }
 
@@ -184,12 +250,16 @@ struct ComposerSettingsControl: View {
 
     /// ⌘Z in the popover takes back its last change.
     private func undo() {
-        guard changes.isEmpty, let lastChange,
-            let setting = session.configOptions.first(where: { $0.id == lastChange.optionID })
-                .flatMap(SelectSetting.init)
-        else { return }
-        self.lastChange = nil
-        set(setting, lastChange.value)
+        guard changes.isEmpty else { return }
+        if let lastChange,
+            let setting = session.configOptions.first(where: { $0.id == lastChange.optionID }).flatMap(
+                SelectSetting.init)
+        {
+            self.lastChange = nil
+            set(setting, lastChange.value)
+        } else {
+            session.modelChange?.undoSelection?.undo()
+        }
     }
 }
 

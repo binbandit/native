@@ -73,7 +73,7 @@ struct TaskToolsSettingsPage: View {
                 SettingsSelect(
                     label: tool.title, selection: place(of: tool),
                     options: tool.spec.places.map { .init(value: $0, title: Self.title(of: $0)) },
-                    isDefault: registry.place(for: tool.spec) == tool.spec.defaultPlace)
+                    width: DS.Settings.wideControl, isDefault: registry.place(for: tool.spec) == tool.spec.defaultPlace)
             } else {
                 SettingsSwitch(
                     tool.title,
@@ -92,7 +92,7 @@ struct TaskToolsSettingsPage: View {
     private var managedGitHub: String? {
         guard let policy, policy.isNetworkManaged, policy.isGitHubOutOfReach
         else { return nil }
-        return "\(policy.managementLine). This install has no route to GitHub, so the well offers Export Patch instead."
+        return "This install has no route to GitHub, so the well offers Export Patch instead. \(policy.managementLine)."
     }
 
     static func summary(of tool: TaskWellTool) -> String {
@@ -123,7 +123,7 @@ struct TaskToolsSettingsPage: View {
             TaskToolsSettingsPage(
                 registry: SessionToolRegistry(defaults: PreviewUserDefaults()),
                 gitHubManagement:
-                    "Managed by Northwind Federal IT. This install has no route to GitHub, so the well offers Export Patch instead."
+                    "This install has no route to GitHub, so the well offers Export Patch instead. Managed by Northwind Federal IT · #it-help."
             )
         }
         .settingsPreviewPage()

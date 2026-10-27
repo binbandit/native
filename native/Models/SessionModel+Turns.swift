@@ -379,7 +379,10 @@ extension SessionModel {
     /// mentions with `@`.
     func promptBlocks(_ text: String, attachments: [PromptAttachment]) -> [ContentBlock] {
         let mentions = PromptAttachment.mentions(in: text, relativeTo: cwd)
-        return ContentBlock.prompt(text, attachments: attachments + mentions, capabilities: promptCapabilities)
+        modelChange?.closeUndo()
+        let context = services.modelContinuations.take(for: key).map { [$0] } ?? []
+        return context
+            + ContentBlock.prompt(text, attachments: attachments + mentions, capabilities: promptCapabilities)
     }
 
     private func scheduleRetry(after delay: Duration) {

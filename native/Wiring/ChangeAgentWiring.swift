@@ -9,6 +9,10 @@ enum ChangeAgentWiring {
             automation.goal(for: source)?.goal?.status == .active
                 ? "Pause the task's goal before changing agents. Its goal text will be included in the handoff." : nil
         }
+        model.modelChangeGoalBlock = { source in
+            automation.goal(for: source)?.goal != nil
+                ? "Clear this task's goal before choosing another agent. Its goal cannot move safely yet." : nil
+        }
         model.changeAgentHandoff = { source in
             let repository = git.model(for: source.cwd, session: source.key)
             await repository.refreshNow()
