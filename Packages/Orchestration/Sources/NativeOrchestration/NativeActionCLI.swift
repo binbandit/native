@@ -4,6 +4,7 @@ import Foundation
 public enum NativeActionCLI {
     public static let endpointVariable = "NATIVE_SESSION_URL"
     public static let sessionsVariable = "NATIVE_ACTION_SESSIONS"
+    public static let executableVariable = "NATIVE_ACTION_CLI"
 
     public static func endpoint(environment: [String: String]) throws -> String {
         if let value = environment[endpointVariable] {

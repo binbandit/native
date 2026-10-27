@@ -26,7 +26,8 @@ struct HostNativeSkillTests {
         let core = try host(root)
         let spec = AgentSpec(id: "fixture", name: "Fixture", command: "/fixture", nativeSkill: .claudeCode)
         try core.syncAgents([spec])
-        _ = core.tasks.prepareSkill(for: spec, environment: [:])
+        let environment = core.tasks.prepareSkill(for: spec, environment: [:])
+        #expect(environment[NativeActionCLI.executableVariable] == "/fixture/Native Host")
         core.tasks.start()
         defer { core.tasks.stop() }
         let id = HostSessionID()

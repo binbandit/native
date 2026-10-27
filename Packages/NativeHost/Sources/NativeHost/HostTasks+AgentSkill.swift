@@ -51,6 +51,7 @@ extension HostTasks {
             skillInstallations[spec.id] = destination
             var result = environment
             result[NativeActionCLI.sessionsVariable] = sessions.path
+            result[NativeActionCLI.executableVariable] = cli.path
             result[HostLocation.channelVariable] = core.configuration.location.channel
             result[HostLocation.developmentVariable] = core.configuration.location.isDevelopment ? "1" : "0"
             return result

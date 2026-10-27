@@ -12,6 +12,7 @@ let package = Package(
     dependencies: [
         .package(path: "../ACP"),
         .package(path: "../MCPServer"),
+        .package(path: "../Exec"),
     ],
     targets: [
         .target(
@@ -25,6 +26,7 @@ let package = Package(
             dependencies: [
                 "NativeOrchestration", .product(name: "ACP", package: "ACP"),
                 .product(name: "MCP", package: "MCPServer"),
+                .product(name: "Exec", package: "Exec", condition: .when(platforms: [.macOS, .linux])),
             ]),
     ]
 )

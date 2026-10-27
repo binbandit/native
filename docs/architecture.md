@@ -80,6 +80,8 @@ selects a private signed credential in the host's directory. There is no cwd-bas
 fallback. User-owned skills, edited installations and symlinks are left alone. Unmodified copies
 written by Native can be updated. Development hosts install Codex skills only when `CODEX_HOME`
 is explicitly inside that host's directory, so isolated checks cannot change personal skills.
+`NATIVE_ACTION_CLI` selects the current task's host executable even if another Native channel
+updates Codex's shared skill copy. `NATIVE_ACTION_SESSIONS` selects that host's credential directory.
 
 The skill works whether the app or host serves Native's endpoint. The host keeps the app's URL
 as internal session configuration while leaving it out of the agent's MCP list. Unsupported

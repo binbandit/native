@@ -11,7 +11,10 @@ public enum NativeAgentSkill {
         var files: [String: Data] = [:]
         for path in resources { files[path] = try Data(contentsOf: root.appending(path: path)) }
         let quoted = "'" + cli.replacingOccurrences(of: "'", with: "'\\''") + "'"
-        files["scripts/native"] = Data(("#!/bin/sh\nexec " + quoted + " action \"$@\"\n").utf8)
+        // Codex can share this installation across Native channels. Its task's host wins over the
+        // installation's fallback path, so another channel cannot redirect an already running task.
+        files["scripts/native"] = Data(
+            ("#!/bin/sh\nnative_cli=${NATIVE_ACTION_CLI:-" + quoted + "}\nexec \"$native_cli\" action \"$@\"\n").utf8)
         return files
     }
 
