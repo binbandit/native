@@ -5,6 +5,9 @@ agent-reported title, then the first-message fallback. The first enabled title p
 built-in On-Device Titles plugin runs Apple's `SystemLanguageModel.default` through Foundation
 Models, with greedy sampling and a guided title string. No remote model is selected for naming.
 The title and custom instructions are independent of the model selected for the coding task.
+The system prompt is [SessionTitlePrompt.builtIn](../Packages/AIInstructions/Sources/AIInstructions/SessionTitlePrompt.swift);
+the guided output and sampling options are in
+[OnDeviceTitleGenerator](../Packages/SessionTitling/Sources/SessionTitling/OnDeviceTitleGenerator.swift).
 
 Generation starts alongside the first usable prompt. Only the project name and the first 2,000
 characters of that message were supplied, never the agent's answer. Attachment names substitute
@@ -31,7 +34,7 @@ if subsequently cleared. Revision checks reject stale answers and the host store
 The existing plugin admission and managed instructions continue to apply: the organization's title
 instructions replace project and global instructions. Turning off the provider prevents further
 generation, including application of an in-flight refinement. There are no new dependencies,
-endpoints, content logs, file reads, or link fetches.
+endpoints or content logs. Naming does not open pasted files or links.
 
 ## Evaluation
 

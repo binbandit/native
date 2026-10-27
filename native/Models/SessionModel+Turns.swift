@@ -2,6 +2,7 @@ import ACP
 import AIInstructions
 import Foundation
 import NativeHostProtocol
+import SessionTitling
 
 // Turns: prompting, and what happens to messages sent while a turn runs (queued for when it ends,
 // or steered into it).
@@ -285,9 +286,9 @@ extension SessionModel {
     func nameAfterPrompt(
         _ text: String, attachments: [PromptAttachment], isFirstPrompt: Bool, allowsRetry: Bool = true
     ) {
-        let prompt = text.isEmpty ? attachments.map(\.name).joined(separator: ", ") : text
+        let input = SessionTitleRequest(firstMessage: text, attachmentNames: attachments.map(\.name), in: cwd)
         let request = TitleRequest(
-            projectName: cwd.lastPathComponent, prompt: prompt,
+            projectName: input.projectName, prompt: input.prompt,
             instructions: AIInstructionsStore.shared.addition(for: .title, in: cwd))
         Task {
             let previous = services.titles.namedTitle(for: titleKey)
