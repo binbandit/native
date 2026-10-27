@@ -64,6 +64,7 @@ struct RootView: View {
         }
         .hostRestartConfirmation(durableHost)
         .taskPeekHost()
+        .noProjectMovePresentation()
         .onPreferenceChange(HomePresentedTaskAskKey.self) { homeNeeds = $0 }
         .onGeometryChange(for: CGSize.self, of: \.size) { contentSize = $0 }
         .approvalHoldKeyRoot()

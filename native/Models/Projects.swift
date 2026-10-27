@@ -40,7 +40,7 @@ final class Projects {
     }
 
     func project(_ id: Project.ID) -> Project? {
-        all.first { $0.id == id }
+        id == NoProjectLocation.id ? NoProjectLocation.group : all.first { $0.id == id }
     }
 
     /// Adds a folder at the end, or returns its project if it's already open.

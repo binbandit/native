@@ -88,7 +88,7 @@ struct HomeNextStartField: View {
     private var ownsAddress: Bool { !model.quickEntry.isPresented && !model.composeTask.isPresented }
 
     private var agentName: String? { model.quickEntryRuntime?.agent.displayName }
-    private var projectName: String? { model.quickEntry.project.flatMap(model.projects.project)?.name }
+    private var projectName: String? { model.quickEntry.project.flatMap(model.projects.project)?.name ?? "No project" }
 
     /// "Start a Codex task in native"
     private var placeholder: String {

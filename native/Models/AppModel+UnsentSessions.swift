@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import TaskList
 
 // New sessions that never got a message (`UnsentSessions`). Their agents never saved them, so an
 // empty one left behind would sit in the sidebar as "New Session" across launches with nothing to
@@ -10,7 +11,8 @@ extension AppModel {
     /// AppModel.swift's init.
     func dropUnsentSessions() {
         let dropped = unsentSessions.removeAll { key, draft in
-            (draft == nil && !sessions.services.modelContinuations.hasPending(key)) || !catalog.contains(key)
+            (draft == nil && !sessions.services.modelContinuations.hasPending(key)
+                && scratchTasks.folder(for: NoProjectLocation.key(key)) == nil) || !catalog.contains(key)
         }
         for key in dropped {
             catalog.remove(key)
@@ -45,11 +47,13 @@ extension AppModel {
     /// Returns false when it isn't one.
     func reopenUnsent(_ key: SessionKey, info: SessionInfo, on runtime: AgentRuntime) async -> Bool {
         let continuation = sessions.services.modelContinuations.hasPending(key)
-        guard unsentSessions.draft(for: key) != nil || (continuation && unsentSessions.contains(key)) else {
+        let privateDraft = scratchTasks.folder(for: NoProjectLocation.key(key)) != nil
+        guard unsentSessions.draft(for: key) != nil || ((continuation || privateDraft) && unsentSessions.contains(key))
+        else {
             return false
         }
         // Another load of it got here first and is reopening it.
-        guard let draft = unsentSessions.claim(key, includingEmpty: continuation) else { return true }
+        guard let draft = unsentSessions.claim(key, includingEmpty: continuation || privateDraft) else { return true }
         let project = catalog.lookup(key)?.project
         var prepared: SessionModel?
         do {
@@ -63,6 +67,9 @@ extension AppModel {
                 deletedSessions.remove(session.key)
             }
             session.draft = draft
+            if privateDraft {
+                try scratchTasks.reassign(session.cwd, to: NoProjectLocation.key(session.key))
+            }
             catalog.swap(key, for: SessionInfo(sessionId: session.id, cwd: info.cwd, updatedAt: .now))
             ordering.replace(key, with: session.key)
             taskPairs.replace(key, with: session.key)

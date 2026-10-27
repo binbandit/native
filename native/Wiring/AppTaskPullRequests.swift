@@ -95,6 +95,7 @@ struct AppTaskPullRequests {
 
     /// The task's folder, unless it's the project's checkout on the task's machine.
     private func checkout(of key: SessionKey, project id: Project.ID, cwd: String) -> URL? {
+        guard id != NoProjectLocation.id else { return nil }
         guard let project = model.projects.project(id) else { return nil }
         if let shared = project.checkoutPath(on: model.device(of: key)), SessionFolder.isSame(cwd, shared) {
             return nil

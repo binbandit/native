@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import TaskList
 
 // New sessions the user starts. The click lists a starting task and selects it at once, so there's
 // a row and a composer while the workspace is made (a worktree of a large repository takes a while
@@ -27,17 +28,14 @@ extension AppModel {
     /// Starts a session in `project` with `agent`, defaulting to the current project and its
     /// default agent. Returns once the session is open, or the starting task says why it isn't.
     func newSession(in project: Project.ID? = nil, with agent: AgentDefinition.ID? = nil) async {
-        guard let project = project.flatMap(projects.project) ?? currentProject else {
-            isAddingProject = true
-            return
-        }
+        let project = project.flatMap(projects.project) ?? currentProject ?? NoProjectLocation.group
         // On the paired host this project's tasks last started on, while it can take one.
         if case .remote = preferredDevice(for: project.id) {
             return await newSession(in: project.id, with: agent, on: preferredDevice(for: project.id))
         }
         // A task can't start in a folder that's gone. The project already says so, with Retry, so show
         // it rather than an alert about git; looking again first lets a folder that's back through.
-        checkFolder(of: project)
+        if !project.isNoProject { checkFolder(of: project) }
         guard missingFolder(of: project.id) == nil else {
             focusProject(project.id)
             return
@@ -69,7 +67,9 @@ extension AppModel {
         }
         let task = StartingTask(
             project: project.id, agent: definition, isAgentPicked: isAgentPicked,
-            workspaceLabel: taskWorkspaces?.newTaskWorkspaceLabel(in: project) ?? "Preparing the workspace")
+            workspaceLabel: project.isNoProject
+                ? "Preparing private task files"
+                : taskWorkspaces?.newTaskWorkspaceLabel(in: project) ?? "Preparing the workspace")
         startingTasks.insert(task, at: 0)
         selection = task.id
         await start(task)
@@ -138,7 +138,8 @@ extension AppModel {
             return
         }
         do {
-            let session = try await launcher.start(on: ready, cwd: folder, project: project.id)
+            let session = try await launcher.start(
+                on: ready, cwd: folder, project: project.isNoProject ? nil : project.id)
             guard !task.isDiscarded else {
                 sessions.remove(session)
                 return removeWorkspace(of: task)
@@ -147,6 +148,9 @@ extension AppModel {
             guard !task.isDiscarded else {
                 sessions.remove(session)
                 return removeWorkspace(of: task)
+            }
+            if project.isNoProject {
+                try scratchTasks.transfer(from: NoProjectLocation.key(task.id), to: NoProjectLocation.key(session.key))
             }
             catalog.add(
                 SessionInfo(sessionId: session.id, cwd: folder.folderPath, updatedAt: .now), for: agent, in: project.id)
@@ -178,6 +182,12 @@ extension AppModel {
     /// writes them.
     private func prepareWorkspace(for task: StartingTask, in project: Project) async throws -> URL {
         if let folder = task.folder { return folder }
+        if project.isNoProject {
+            let folder = try scratchTasks.create(for: NoProjectLocation.key(task.id))
+            task.folder = folder
+            task.ownsWorkspace = true
+            return folder
+        }
         let previous = workspacePreparations[project.id]
         let work = Task { [taskWorkspaces] in
             await previous?.value
@@ -241,6 +251,14 @@ extension AppModel {
 
     /// Removes the workspace made for a discarded task, unless it's the project's own folder.
     func removeWorkspace(of task: StartingTask) {
+        if task.project == NoProjectLocation.id {
+            do {
+                try scratchTasks.delete(NoProjectLocation.key(task.openedSession ?? task.id))
+            } catch {
+                actionFailure = ActionFailure("Couldn't remove private task files", error.localizedDescription)
+            }
+            return
+        }
         guard task.ownsWorkspace, let route = taskActionRoute(for: task), let folder = route.folder else { return }
         let project = route.project
         task.folder = nil

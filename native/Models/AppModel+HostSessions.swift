@@ -66,6 +66,7 @@ extension AppModel {
         session.isWorkspaceReplaced = old.isWorkspaceReplaced
         session.mirrorState()
         sessions.replace(old, with: session)
+        retainPrivateFiles(of: old, for: session.key)
         catalog.swap(old.key, for: SessionInfo(sessionId: agentSessionID, cwd: old.cwd.folderPath, updatedAt: .now))
         ordering.replace(old.key, with: session.key)
         taskPairs.replace(old.key, with: session.key)

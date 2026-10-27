@@ -16,8 +16,10 @@ extension AppModel {
         in project: Project.ID? = nil, with agent: AgentDefinition.ID? = nil, on device: SessionDevice,
         draft: String = ""
     ) async {
-        guard let project = project.flatMap(projects.project) ?? currentProject else {
-            isAddingProject = true
+        let project = project.flatMap(projects.project) ?? currentProject ?? NoProjectLocation.group
+        if project.isNoProject, device.isRemote {
+            actionFailure = ActionFailure(
+                "Choose a Project", "Tasks without a project run on this Mac. Choose a project to use another device.")
             return
         }
         guard case .remote(let hostID) = device else {

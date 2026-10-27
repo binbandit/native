@@ -40,8 +40,9 @@ extension AppModel {
 
     /// ⌘N writes in Home's start field while Home shows it, rather than opening another surface.
     var homeNextOwnsNewTask: Bool {
-        (experiments.value(of: .homeNext) || offersSidebarFolders) && taskPeek.homeIsVisible && selection == nil
-            && !projects.all.isEmpty
+        (experiments.value(of: .homeNext) || offersSidebarFolders || currentProject == nil) && taskPeek.homeIsVisible
+            && selection == nil
+
     }
 
     /// What finished, asked or failed between `start` and `end`, as the user finds it on return.
@@ -106,7 +107,7 @@ extension AppModel {
 
     /// Starts the start field's draft. Return stays on Home with a receipt; ⌘Return opens the task.
     func startHomeNextTask(open: Bool) -> StartingTask? {
-        guard experiments.value(of: .homeNext) || (offersSidebarFolders && taskPeek.homeIsVisible),
+        guard experiments.value(of: .homeNext) || taskPeek.homeIsVisible,
             quickEntry.hasMessage
         else { return nil }
         #if DEBUG

@@ -35,8 +35,10 @@ struct SessionToolsScreen: View {
 
     var body: some View {
         let layout = registry.layout(for: session, on: tools)
-        let turnChanges = registry.tools.filter { registry.place(of: $0.id) != .off }
-            .compactMap { $0.turnChanges?(context($0)) }.first
+        let turnChanges = registry.tools.filter {
+            registry.place(of: $0.id) != .off && (!session.isProjectless || $0.id != .changes)
+        }
+        .compactMap { $0.turnChanges?(context($0)) }.first
         ZStack {
             conversation
                 .opacity(panelLayout.replacement == nil ? 1 : 0)
@@ -69,7 +71,7 @@ struct SessionToolsScreen: View {
         }
         .focusedSceneValue(\.activeSession, session)
         .focusedSceneValue(\.sessionTools, tools)
-        .focusedSceneValue(\.gitChangesInspector, toggling(.changes))
+        .focusedSceneValue(\.gitChangesInspector, session.isProjectless ? nil : toggling(.changes))
         .navigationTitle(DSInlineCode.plain(session.displayTitle))
         .toolbar(removing: .title)
         .toolbar {

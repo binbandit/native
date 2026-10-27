@@ -74,6 +74,11 @@ extension AppModel {
 
     func chooseQuickEntryDevice(_ device: SessionDevice) {
         guard !composeTask.isHeld else { return }
+        if quickEntry.project == nil, device.isRemote {
+            quickEntry.failure = "Choose a project to run this task on another device."
+            quickEntry.picker = .project
+            return
+        }
         quickEntry.device = device
         quickEntry.failure = nil
         quickEntry.picker = nil
@@ -103,13 +108,11 @@ extension AppModel {
     /// - Parameter confirms: Quick Entry's own toast confirms a start that stays put; Home shows its receipt.
     @discardableResult
     func startQuickEntryDraft(open: Bool, send: Bool = true, confirms: Bool) -> StartingTask? {
-        guard let project = quickEntry.project.flatMap(projects.project) else {
-            quickEntry.failure = "Choose a project before starting the task."
-            quickEntry.picker = .project
-            return nil
-        }
-        guard let option = deviceOptions(for: project.id).first(where: { $0.device == quickEntry.device }),
-            option.canStart
+        let project = quickEntry.project.flatMap(projects.project) ?? NoProjectLocation.group
+        guard
+            project.isNoProject
+                ? quickEntry.device == .thisMac
+                : deviceOptions(for: project.id).first(where: { $0.device == quickEntry.device })?.canStart == true
         else {
             quickEntry.failure = "\(deviceName(quickEntry.device)) can't take a task right now. Choose another device."
             quickEntry.picker = .device
@@ -125,7 +128,7 @@ extension AppModel {
             quickEntry.picker = .agent
             return nil
         }
-        if quickEntry.device == .thisMac {
+        if quickEntry.device == .thisMac, !project.isNoProject {
             checkFolder(of: project)
             if missingFolder(of: project.id) != nil {
                 quickEntry.failure = "The project folder is unavailable. Choose another project or restore the folder."
@@ -134,7 +137,9 @@ extension AppModel {
         }
         let task = StartingTask(
             project: project.id, agent: runtime.agent, isAgentPicked: true,
-            workspaceLabel: taskWorkspaces?.newTaskWorkspaceLabel(in: project) ?? "Preparing the workspace")
+            workspaceLabel: project.isNoProject
+                ? "Preparing private task files"
+                : taskWorkspaces?.newTaskWorkspaceLabel(in: project) ?? "Preparing the workspace")
         task.device = quickEntry.device
         task.draft = quickEntry.message
         task.attachments = quickEntry.attachments

@@ -126,7 +126,7 @@ struct ComposeTaskPage: View {
                     session: editor,
                     page: .init(
                         allowsFileMentions: entry.project != nil && entry.device == .thisMac,
-                        needsFolder: entry.project == nil,
+                        needsFolder: false,
                         isSealed: compose.isHeld,
                         openSettings: { entry.toggle(.agent) },
                         start: submitOrClosePicker,
@@ -173,7 +173,7 @@ struct ComposeTaskPage: View {
             } label: {
                 HStack(spacing: DS.Space.sm) {
                     Text(projectName).font(.dsDisplay).tracking(DS.Tracking.display)
-                        .foregroundStyle(entry.project == nil ? .dsTextTertiary : .dsTextPrimary)
+                        .foregroundStyle(.dsTextPrimary)
                         .padding(.leading, -DSTypography.displayIndent(of: projectName))
                     if !compose.isHeld {
                         Image(systemName: "chevron.up.chevron.down").font(.dsCallout).foregroundStyle(.dsTextTertiary)
@@ -190,23 +190,14 @@ struct ComposeTaskPage: View {
             }
             .zIndex(entry.picker == .project ? 1 : 0)
             if entry.project == nil {
-                Button {
-                    entry.isChoosingFolder = true
-                } label: {
-                    HStack(spacing: DS.Space.sm) {
-                        Text("Open Folder…").foregroundStyle(.dsTextSecondary)
-                        Kbd("⌘O")
-                    }
-                    .font(.dsBody)
-                    .frame(height: DS.ComposeTask.rowHeight)
-                    .contentShape(.rect)
-                }
-                .buttonStyle(.plain)
+                Text("Private task files. You can move this task to a project later.")
+                    .font(.dsBody).foregroundStyle(.dsTextTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }
 
-    private var projectName: String { entry.project.flatMap(model.projects.project)?.name ?? "Choose a folder" }
+    private var projectName: String { entry.project.flatMap(model.projects.project)?.name ?? "No project" }
     private var branch: String? {
         #if DEBUG
         if let branch = compose.previewBranch { return branch }

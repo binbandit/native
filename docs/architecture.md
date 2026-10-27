@@ -716,3 +716,17 @@ their drafts. `PlatformFolderPicker`, `PlatformFolderAccess` and `PlatformFolder
 selection, security-scoped access and external file URLs; private sidebar drags still reorder.
 Recents use non-mounting bookmark resolution and never contain paired-host paths. The new surface
 is gated by `NativeSidebarNext`; the default remains unchanged.
+
+### Tasks without a project
+
+`NoProjectLocation` is a private catalog grouping, not an opened project. Native creates one
+private directory per task in its own Application Support `Task Files` directory through
+`TaskScratchStore` in TaskList. No-project starts use ordinary agent defaults and policy, skip
+worktree preparation, and hide Git tools even if the agent creates a repository there. The
+folder is a working location, not a security sandbox.
+
+Archive retains files. Delete uses the ordinary ten-second Undo window before closing the task
+and removing only its owned scratch directory. Move to Project reopens the same agent
+conversation at an admitted project folder. A unique Task Files child receives files only when
+the user opts in; originals remain owned until task deletion. Failure preserves the original
+location and draft. Paired-host scratch allocation is not supported.

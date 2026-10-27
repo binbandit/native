@@ -78,7 +78,7 @@ struct SessionView: View {
         TranscriptView(session: session) { id in
             openInspector(Self.subagentInspectorWidth) { openSubagent = id }
         }
-        .environment(\.turnChangesActions, turnChangesActions)
+        .environment(\.turnChangesActions, session.isProjectless ? nil : turnChangesActions)
         .environment(\.isPrimaryTranscript, true)
         // Native's band under the toolbar, in place of the system's edge effect; inside the bars.
         .dsToolbarBand()
@@ -106,7 +106,9 @@ struct SessionView: View {
         .focusedSceneValue(\.activeSession, session)
         .navigationTitle(DSInlineCode.plain(session.displayTitle))
         .navigationSubtitle(
-            [session.cwd.abbreviatedPath, repository.summary].compactMap(\.self).joined(separator: " · ")
+            (session.isProjectless ? ["No project"] : [session.cwd.abbreviatedPath, repository.summary]).compactMap(
+                \.self
+            ).joined(separator: " · ")
         )
         // The inspector makes the task its own column, which the window's minimum-size question measures
         // on its own: never at no width (docs/performance.md).
@@ -163,13 +165,15 @@ struct SessionView: View {
             }
             .sharedBackgroundVisibility(.hidden)
             ToolbarItem {
-                GitChangesToolbarButton(model: repository, isPresented: showsChangesBinding)
+                if !session.isProjectless {
+                    GitChangesToolbarButton(model: repository, isPresented: showsChangesBinding)
+                }
             }
             .sharedBackgroundVisibility(.hidden)
             .visibilityPriority(.high)
         }
         .mcpServersPresentation()
-        .focusedSceneValue(\.gitChangesInspector, showsChangesBinding)
+        .focusedSceneValue(\.gitChangesInspector, session.isProjectless ? nil : showsChangesBinding)
         .refreshesGitStatus(of: session, in: git)
         .detectsTurnChanges(of: session, into: changesReview, in: git)
         .environment(\.transcriptColumnMaxWidth, columnWidth.maxWidth)

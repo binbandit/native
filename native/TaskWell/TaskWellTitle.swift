@@ -21,6 +21,7 @@ struct TaskWellTitle: View {
     let facts: TaskWellTitleFacts
     @Binding var isPresented: Bool
     var reportsIdealWidth: (CGFloat) -> Void = { _ in }
+    var moveToProject: (() -> Void)?
     let rename: (String) -> Void
     @State private var isHovered = false
 
@@ -36,7 +37,7 @@ struct TaskWellTitle: View {
         .accessibilityHint("Renames the task")
         .accessibilityIdentifier("taskWell.title")
         .dsPopover(isPresented: $isPresented, arrowEdge: .bottom) {
-            TaskWellTitlePopover(facts: facts, rename: rename) { isPresented = false }
+            TaskWellTitlePopover(facts: facts, rename: rename, moveToProject: moveToProject) { isPresented = false }
         }
         // Where the window draws its own title.
         .padding(.leading, DS.Space.xl)

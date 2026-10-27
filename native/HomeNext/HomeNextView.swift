@@ -38,7 +38,7 @@ struct HomeNextView: View {
         }.sorted { ($0.finishedAt ?? .distantPast) > ($1.finishedAt ?? .distantPast) }
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                if model.projects.all.isEmpty {
+                if model.taskGroups.isEmpty {
                     firstLaunch
                 } else {
                     if !asks.isEmpty || reviews != nil {
@@ -104,7 +104,7 @@ struct HomeNextView: View {
         .scrollBounceBehavior(.basedOnSize)
         .background(.dsBackground)
         .overlay(alignment: .bottom) {
-            if !model.projects.all.isEmpty {
+            Group {
                 HomeNextStartField { task in
                     receipt = HomeNextReceipt(
                         task: task.id, title: model.projects.project(task.project)?.name ?? "the project",
@@ -275,8 +275,8 @@ struct HomeNextView: View {
 
     private var firstLaunch: some View {
         VStack(alignment: .leading, spacing: 0) {
-            title("Add a project")
-            Text("A folder with code in it. Your agents work there, and when one needs you, it shows up here.")
+            title("What would you like to do?")
+            Text("Ask a question, draft something, or explore an idea. A project folder is optional.")
                 .font(DS.HomeNext.ledeFont).tracking(DS.HomeNext.ledeTracking)
                 .foregroundStyle(.dsTextSecondary).fixedSize(horizontal: false, vertical: true)
             ViewThatFits(in: .horizontal) {

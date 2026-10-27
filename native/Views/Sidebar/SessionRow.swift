@@ -95,6 +95,9 @@ struct SessionRow<Accessory: View>: View {
                 .accessibilityHint("\(summary.agent.displayName) task. Return renames it.")
                 .accessibilityActions {
                     if isAllInView { Button("Peek") { model.peekTask(summary.id) } }
+                    if summary.project == NoProjectLocation.id {
+                        Button("Move to Project…") { model.requestMoveToProject(summary.id) }
+                    }
                     Button("Rename", action: rename)
                     Button(isUnread ? "Mark as Read" : "Mark as Unread", action: toggleUnread)
                     Button(isPinned ? "Unpin" : "Pin", action: togglePinned)
@@ -206,6 +209,9 @@ struct SessionRow<Accessory: View>: View {
         }
         if model.offersAgentChange, let session {
             Button("Change Agent…") { model.requestAgentChange(session) }
+        }
+        if summary.project == NoProjectLocation.id {
+            Button("Move to Project…") { model.requestMoveToProject(summary.id) }
         }
         Button("Rename…", action: rename)
         Button(isUnread ? "Mark as Read" : "Mark as Unread", action: toggleUnread)

@@ -147,6 +147,7 @@ extension AppModel {
             }
             target = try currentAgentChangeTarget(target)
         }
+        retainPrivateFiles(of: source, for: target.key)
         earlierConversations.record(target.key, after: source.key)
         earlierConversations.keep(target.key)
         ordering.replace(source.key, with: target.key)

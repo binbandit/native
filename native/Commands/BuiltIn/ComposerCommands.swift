@@ -9,6 +9,7 @@ extension CommandID {
     static let sessionStop: Self = "session.stop"
     static let sessionNextPermissionMode: Self = "session.nextPermissionMode"
     static let sessionChooseModel: Self = "session.chooseModel"
+    static let sessionMoveToProject: Self = "session.moveToProject"
     static let sessionChangeWorkspace: Self = "session.changeWorkspace"
 }
 
@@ -16,6 +17,13 @@ extension NativeCommand {
     /// The visible task's composer and its agent's settings.
     static func composer(model: AppModel) -> [NativeCommand] {
         [
+            NativeCommand(
+                .sessionMoveToProject, title: "Move to Project…", category: .tasks,
+                systemImage: "folder", keywords: ["folder", "scratch"]
+            ) { context in
+                if let session = context.session { model.requestMoveToProject(session.key) }
+            }
+            .available { $0.session?.isProjectless == true && $0.session?.isEarlierConversation == false },
             NativeCommand(
                 .sessionChangeWorkspace, title: "Change Workspace…", category: .tasks,
                 systemImage: "arrow.triangle.branch",

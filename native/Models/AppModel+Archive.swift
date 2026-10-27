@@ -47,7 +47,7 @@ extension AppModel {
     func putAwayWorkspace(of key: SessionKey, titled title: String, in projectID: Project.ID) async -> String {
         // A workspace that couldn't be brought back last time stays put away now.
         problems.resolve(.workspaceRestore(key), in: projectID)
-        guard let project = projects.project(projectID) else { return "" }
+        guard projectID != NoProjectLocation.id, let project = projects.project(projectID) else { return "" }
         do {
             return try await archiveWorkspace(of: key, in: project).map { " " + $0 } ?? ""
         } catch {
@@ -89,6 +89,7 @@ extension AppModel {
     /// unarchived when its turn comes. What brings it back is kept with the project, so a failure
     /// can be retried. Internal only for AppModel+Problems.swift.
     func restoreWorkspace(of key: SessionKey) async throws {
+        if catalog.lookup(key)?.project == NoProjectLocation.id { return }
         guard let route = taskActionRoute(for: key) else { throw TaskActionRoute.Failure.missingRoute }
         let task = ArchivedTaskDetails(title: route.title, archivedAt: archiveDatesAwaitingRestore[key])
         try await inWorkspaceOrder(using: route) {
