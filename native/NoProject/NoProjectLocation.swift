@@ -29,5 +29,7 @@ extension Project {
 }
 
 extension SessionModel {
-    var isProjectless: Bool { cwd.standardizedFileURL.path.hasPrefix(services.scratchRoot.path + "/") }
+    var isProjectless: Bool {
+        services.isProjectlessTask(key) || cwd.standardizedFileURL.path.hasPrefix(services.scratchRoot.path + "/")
+    }
 }
