@@ -75,6 +75,31 @@ struct NoProjectModelTests {
         #expect(app.sessionList.map(\.id).contains(key))
     }
 
+    @Test func discardingDuringStartupWaitsForTheAgentBeforeRemovingPrivateFiles() async throws {
+        let (scratch, app, host) = try await fixture()
+        defer { try? FileManager.default.removeItem(at: scratch) }
+        await host.configure(hold: true)
+        let opening = Task { await app.newSession(with: AgentDefinition.ID(rawValue: "workspace-fake")) }
+        for _ in 0..<200 {
+            if await host.hasPendingNew { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(await host.hasPendingNew)
+        let starting = try #require(app.startingTasks.first)
+        let folder = try #require(starting.folder)
+        app.discard(starting)
+        #expect(FileManager.default.fileExists(atPath: folder.path))
+        try await host.releaseNew()
+        await opening.value
+        for _ in 0..<300 {
+            if !FileManager.default.fileExists(atPath: folder.path) { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(await host.closed.count == 1)
+        #expect(!FileManager.default.fileExists(atPath: folder.path))
+        #expect(app.sessionList.isEmpty)
+    }
+
     @Test func homeStartDoesNotRequireAFolder() async throws {
         let (scratch, app, _) = try await fixture()
         defer { try? FileManager.default.removeItem(at: scratch) }

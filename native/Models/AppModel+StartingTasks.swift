@@ -110,6 +110,15 @@ extension AppModel {
         // A task on a paired host is made there (AppModel+HostsStarting.swift).
         if case .remote(let host) = task.device { return await start(task, on: host) }
         guard let project = projects.project(task.project) else { return remove(task) }
+        var privateSession: SessionModel?
+        if project.isNoProject { task.isStartingPrivateTask = true }
+        defer {
+            task.isStartingPrivateTask = false
+            if project.isNoProject, task.isDiscarded {
+                let created = privateSession
+                Task { await finishDiscardingPrivateTask(task, session: created) }
+            }
+        }
         task.failure = nil
         let agent = task.agent.id
         async let runtime = readyRuntime(for: task)
@@ -140,13 +149,14 @@ extension AppModel {
         do {
             let session = try await launcher.start(
                 on: ready, cwd: folder, project: project.isNoProject ? nil : project.id)
+            if project.isNoProject { privateSession = session }
             guard !task.isDiscarded else {
-                sessions.remove(session)
+                if !project.isNoProject { sessions.remove(session) }
                 return removeWorkspace(of: task)
             }
             await applyComposeChoices(of: task, to: session)
             guard !task.isDiscarded else {
-                sessions.remove(session)
+                if !project.isNoProject { sessions.remove(session) }
                 return removeWorkspace(of: task)
             }
             if project.isNoProject {
@@ -252,6 +262,7 @@ extension AppModel {
     /// Removes the workspace made for a discarded task, unless it's the project's own folder.
     func removeWorkspace(of task: StartingTask) {
         if task.project == NoProjectLocation.id {
+            guard !task.isStartingPrivateTask else { return }
             do {
                 try scratchTasks.delete(NoProjectLocation.key(task.openedSession ?? task.id))
             } catch {

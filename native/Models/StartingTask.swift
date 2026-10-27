@@ -66,6 +66,7 @@ final class StartingTask: Identifiable {
     var wantsComposerFocus = true
     /// The user discarded the task while it was starting.
     @ObservationIgnored var isDiscarded = false
+    @ObservationIgnored var isStartingPrivateTask = false
 
     init(project: Project.ID, agent: AgentDefinition, isAgentPicked: Bool, workspaceLabel: String) {
         id = SessionKey(agent: agent.id, id: SessionID("native-starting-\(UUID().uuidString)"))

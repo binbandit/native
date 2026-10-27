@@ -23,6 +23,17 @@ extension AppModel {
         }
     }
 
+    /// Startup may still be opening the agent after the row is discarded. Keep its working
+    /// directory until that operation returns and the resulting session has closed.
+    func finishDiscardingPrivateTask(_ task: StartingTask, session: SessionModel?) async {
+        do {
+            if let session { try await closeForScratchCleanup(session.key) }
+            removeWorkspace(of: task)
+        } catch {
+            actionFailure = ActionFailure("Couldn't remove private task files", error.localizedDescription)
+        }
+    }
+
     func chooseNoProject() {
         guard !composeTask.isHeld else { return }
         quickEntry.project = nil
