@@ -53,6 +53,9 @@ struct NoProjectModelTests {
         let (scratch, app, _) = try await fixture()
         defer { try? FileManager.default.removeItem(at: scratch) }
         #expect(app.projects.all.isEmpty)
+        let picker = NativeCommand.newTasks(model: app).first { $0.id == .sessionNewWithAgent }
+        #expect(picker?.isAvailable(CommandContext()) == true)
+        #expect(app.agentPickerOptions().contains { $0.choice != nil })
         #expect(app.canCreateSession(with: AgentDefinition.ID(rawValue: "workspace-fake")))
         await app.newSession(with: AgentDefinition.ID(rawValue: "workspace-fake"))
         let key = try #require(app.selection)
