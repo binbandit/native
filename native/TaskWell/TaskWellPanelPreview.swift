@@ -6,6 +6,7 @@ struct TaskWellPanelPreview: View {
     var isManaged = false
     var isRemote = false
     var isEmpty = false
+    var hasManyTools = false
     @State private var tools = SessionToolsScreenModel(registry: TaskWellPreviewFixtures.registryWithPluginTool())
 
     var body: some View {
@@ -23,6 +24,7 @@ struct TaskWellPanelPreview: View {
                 .font(.dsBody).foregroundStyle(.dsTextTertiary)
         }
         .onAppear {
+            if hasManyTools { tools.registry.setPluginTools(TaskWellFixturePlugin.manyTools) }
             tools.hasWell = true
             tools.wellToolAvailable = {
                 if tools.registry.place(for: $0.spec) == .off { return false }
@@ -56,5 +58,9 @@ struct TaskWellPanelPreview: View {
 
 #Preview("Well - Empty tools") {
     DSPreviewPair { TaskWellPanelPreview(isEmpty: true) }
+}
+
+#Preview("Well - 25 plugin tools") {
+    DSPreviewPair { TaskWellPanelPreview(hasManyTools: true) }
 }
 #endif

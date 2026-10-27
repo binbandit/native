@@ -393,6 +393,8 @@ Option-Cmd-O to show its error output. Cmd-Return opens the task for every ask k
 ## Task tools (Labs)
 
 With The well enabled (`NativeTaskWell`, off by default), Cmd-I opens the centered task well.
+Long tool lists scroll within the well, keeping its status, worker and checkout visible. Arrow
+navigation reveals the highlighted tool, including the first and last rows.
 Its tools appear in this fixed key order. Missing tools leave no row; their keys stay reserved.
 Clicking a waiting well focuses the composer, where the full request can be answered.
 Dev reveals the latest project action in the workbench, or its action chooser before the first run.

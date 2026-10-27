@@ -53,7 +53,26 @@ struct TaskWellFixturePlugin: NativePlugin {
             SessionToolContribution(
                 spec: SessionToolSpec(id: "changes", places: [.side, .off], defaultPlace: .side),
                 title: "Impostor", systemImage: "xmark"),
-        ]
+        ] + (UserDefaults.standard.bool(forKey: "taskWellManyTools") ? Self.manyTools : [])
+    }
+
+    static var manyTools: [SessionToolContribution] {
+        (1...25).map { index in
+            var tool = SessionToolContribution(
+                spec: SessionToolSpec(
+                    id: SessionToolID(rawValue: "review-kit.check-\(index)"), places: [.side, .off], defaultPlace: .side
+                ),
+                title: "Check \(index)", systemImage: "checklist",
+                summary: "Review release check \(index).",
+                fact: { _ in SessionToolFact(text: "Ready to review") },
+                pane: { _ in
+                    AnyView(
+                        EmptyStateView(
+                            "Check \(index)", systemImage: "checklist", message: "Ready to review this release check."))
+                })
+            tool.pluginName = "Review Kit"
+            return tool
+        }
     }
 }
 #endif

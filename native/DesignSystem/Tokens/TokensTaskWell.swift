@@ -30,6 +30,8 @@ extension DS {
         public static let footerHeight: CGFloat = 38
         public static let workbenchBarHeight: CGFloat = 36
         public static let devMaxHeight: CGFloat = 320
+        /// Keeps the status, worker and checkout visible even with many plugin tools.
+        public static let toolsMaxHeight: CGFloat = 320
         public static let rowHeight: CGFloat = 34
         public static let rowIconWidth: CGFloat = 22
         public static let rowTitleWidth: CGFloat = 104

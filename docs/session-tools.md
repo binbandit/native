@@ -39,6 +39,9 @@ through 5). The list reuses `SessionToolsScreenModel` for Changes and existing t
 action and pull request actions for the other tools. Subagents and the pull request appear only
 when present.
 
+Only the rows scroll when the list grows beyond its height limit; the status header, worker and
+checkout stay visible. Up and Down reveal the highlighted tool, including after scrolling by hand.
+
 The worker block reports the agent's selected model, machine, last measured turn duration and
 reported context use. The checkout moves to the footer. Managed worker settings carry a lock;
 the footer names the administrator once, using the configured organization name or "your

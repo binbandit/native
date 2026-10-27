@@ -13,60 +13,67 @@ struct TaskWellToolsPanel<Destination: View>: View {
     @FocusState private var isFocused: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            statusHeader
-            SeparatorLine()
-            worker
-            SeparatorLine()
-            if let page = tools.wellPage {
-                VStack(alignment: .leading, spacing: DS.Space.sm) {
-                    Button("Back to tools", systemImage: "chevron.left", action: tools.showWellTools)
-                        .buttonStyle(.ds(.ghost))
-                    CappedHeightScrollView(maxHeight: DS.TaskWell.devMaxHeight) {
-                        VStack(alignment: .leading, spacing: DS.Space.sm) { destination(page) }
-                            .frame(maxWidth: .infinity, alignment: .leading)
+        ScrollViewReader { proxy in
+            VStack(alignment: .leading, spacing: 0) {
+                statusHeader
+                SeparatorLine()
+                worker
+                SeparatorLine()
+                if let page = tools.wellPage {
+                    VStack(alignment: .leading, spacing: DS.Space.sm) {
+                        Button("Back to tools", systemImage: "chevron.left", action: tools.showWellTools)
+                            .buttonStyle(.ds(.ghost))
+                        CappedHeightScrollView(maxHeight: DS.TaskWell.devMaxHeight) {
+                            VStack(alignment: .leading, spacing: DS.Space.sm) { destination(page) }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                    .padding(DS.Space.lg)
+                } else {
+                    CappedHeightScrollView(maxHeight: DS.TaskWell.toolsMaxHeight) {
+                        VStack(spacing: 0) {
+                            ForEach(rows) { tool in
+                                row(tool, detail: detail(tool))
+                                    .id(tool.id)
+                            }
+                        }
+                        .padding(DS.Space.sm)
                     }
                 }
-                .padding(DS.Space.lg)
-            } else {
-                VStack(spacing: 0) {
-                    ForEach(rows) { tool in
-                        row(tool, detail: detail(tool))
-                    }
-                }
-                .padding(DS.Space.sm)
+                SeparatorLine()
+                footer
             }
-            SeparatorLine()
-            footer
-        }
-        .frame(width: DS.TaskWell.panelWidth)
-        .dsPopoverBackground()
-        .focusable()
-        .focusEffectDisabled()
-        .focused($isFocused)
-        .onAppear { isFocused = true }
-        .onKeyPress(.escape) {
-            if tools.wellPage != nil { tools.showWellTools() } else { tools.showsWell = false }
-            return .handled
-        }
-        .onKeyPress(.downArrow) { moveHighlight(by: 1) }
-        .onKeyPress(.upArrow) { moveHighlight(by: -1) }
-        .onKeyPress(keys: [.return, .space]) { _ in
-            guard tools.wellPage == nil, let highlighted else { return .ignored }
-            tools.performWellTool(highlighted)
-            return .handled
+            .frame(width: DS.TaskWell.panelWidth)
+            .dsPopoverBackground()
+            .focusable()
+            .focusEffectDisabled()
+            .focused($isFocused)
+            .onAppear { isFocused = true }
+            .onKeyPress(.escape) {
+                if tools.wellPage != nil { tools.showWellTools() } else { tools.showsWell = false }
+                return .handled
+            }
+            .onKeyPress(.downArrow) { moveHighlight(by: 1, proxy: proxy) }
+            .onKeyPress(.upArrow) { moveHighlight(by: -1, proxy: proxy) }
+            .onKeyPress(keys: [.return, .space]) { _ in
+                guard tools.wellPage == nil, let highlighted else { return .ignored }
+                tools.performWellTool(highlighted)
+                return .handled
+            }
         }
     }
 
     private var rows: [TaskWellTool] { tools.registry.wellTools.filter(tools.wellToolAvailable) }
 
     /// Up and down move through the rows that can open, as in a menu; Return or Space opens one.
-    private func moveHighlight(by step: Int) -> KeyPress.Result {
+    private func moveHighlight(by step: Int, proxy: ScrollViewProxy) -> KeyPress.Result {
         let enabled = rows.filter { detail($0).unavailableReason == nil }
         guard tools.wellPage == nil, !enabled.isEmpty else { return .ignored }
         let current = highlighted.flatMap(enabled.firstIndex(of:))
         let next = current.map { min(max($0 + step, 0), enabled.count - 1) } ?? (step > 0 ? 0 : enabled.count - 1)
         highlighted = enabled[next]
+        // Reveal on every key press, even at an endpoint after the list was scrolled by hand.
+        proxy.scrollTo(enabled[next].id)
         return .handled
     }
 
