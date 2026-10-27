@@ -1,0 +1,744 @@
+{
+  "app_instructions" : "Native runs several coding agents side by side. These tools let you hand work to another coding agent, such as Codex for a second opinion or another task of your own agent for a parallel subtask, and work with it: start_task, then wait_for_task for its reply; send_message to follow up or to talk to related tasks; cancel_task to stop one. Tasks work in the same project directory as you, and the user sees each one as a subagent of the task that started it. If you are a task yourself, list_tasks shows your parent and sibling tasks, which you can message. Delegate work that benefits from an independent task or a different model; do quick lookups yourself. To extend Native itself, such as writing a Native plugin for the user, read the guide first: list_skills, then get_skill. run_script runs JavaScript that calls the read-only tools, to check or wait on several tasks in one call. To set Native up for the user, or to find out why part of it isn't working, call setup_status and read the set-up-native skill with get_skill.",
+  "host_instructions" : "Native runs several coding agents side by side. These tools let you hand work to another coding agent, such as Codex for a second opinion or another task of your own agent for a parallel subtask, and work with it: start_task, then wait_for_task for its reply; send_message to follow up or to talk to related tasks; cancel_task to stop one. Tasks work in the same project directory as you, and the user sees each one as a subagent of the task that started it. If you are a task yourself, list_tasks shows your parent and sibling tasks, which you can message. Delegate work that benefits from an independent task or a different model; do quick lookups yourself. To extend Native itself, such as writing a Native plugin for the user, read the guide first: list_skills, then get_skill.",
+  "tools_list" : {
+    "id" : 1,
+    "jsonrpc" : "2.0",
+    "result" : {
+      "tools" : [
+        {
+          "annotations" : {
+            "openWorldHint" : false,
+            "readOnlyHint" : true
+          },
+          "description" : "List the coding agents you can hand tasks to with start_task, such as Claude Code and Codex. Each task runs with that agent, and the user can watch it in Native.",
+          "inputSchema" : {
+            "additionalProperties" : false,
+            "properties" : {
+
+            },
+            "type" : "object"
+          },
+          "name" : "list_agents",
+          "outputSchema" : {
+            "properties" : {
+              "agents" : {
+                "items" : {
+                  "properties" : {
+                    "id" : {
+                      "type" : "string"
+                    },
+                    "is_you" : {
+                      "type" : "boolean"
+                    },
+                    "name" : {
+                      "type" : "string"
+                    }
+                  },
+                  "required" : [
+                    "id",
+                    "name",
+                    "is_you"
+                  ],
+                  "type" : "object"
+                },
+                "type" : "array"
+              }
+            },
+            "required" : [
+              "agents"
+            ],
+            "type" : "object"
+          },
+          "title" : "List agents"
+        },
+        {
+          "annotations" : {
+            "openWorldHint" : false,
+            "readOnlyHint" : false
+          },
+          "description" : "Start a new task with a coding agent and return right away with a task_id; the task runs in the background while you continue.\n\nThe new task works in the same project directory as you, with the tools it would have if the user had started it, but it hasn't seen your conversation: make the prompt self-contained, with the goal, the relevant files and context, constraints, and what to report back. Get agent ids from list_agents. You can pick a different agent (for example Codex, for an independent review) or another task of your own agent.\n\nThen call wait_for_task for its reply, send_message to follow up or redirect it, or cancel_task to stop it. The user sees the task as a subagent of your task and approves its tool calls. Tasks you start can message each other, so parallel tasks can coordinate; they share the working directory, so don't give them overlapping files to edit.",
+          "inputSchema" : {
+            "additionalProperties" : false,
+            "properties" : {
+              "agent" : {
+                "description" : "Id of the agent to run the task, from list_agents, such as \"codex\" or \"claude-code\".",
+                "type" : "string"
+              },
+              "prompt" : {
+                "description" : "The task, written for a capable colleague who hasn't seen this conversation.",
+                "type" : "string"
+              },
+              "title" : {
+                "description" : "A short title the user sees for the task, in sentence case, like \"Review the auth middleware\".",
+                "type" : "string"
+              }
+            },
+            "required" : [
+              "agent",
+              "prompt"
+            ],
+            "type" : "object"
+          },
+          "name" : "start_task",
+          "outputSchema" : {
+            "properties" : {
+              "agent" : {
+                "description" : "The id of the agent running the task.",
+                "type" : "string"
+              },
+              "detail" : {
+                "description" : "What it's waiting on approval for, or why it failed or stopped early.",
+                "type" : "string"
+              },
+              "relation" : {
+                "enum" : [
+                  "parent",
+                  "child",
+                  "sibling"
+                ],
+                "type" : "string"
+              },
+              "reply" : {
+                "description" : "What the agent said at the end of its latest turn; partial while it's running.",
+                "type" : "string"
+              },
+              "status" : {
+                "enum" : [
+                  "running",
+                  "needs_approval",
+                  "idle",
+                  "failed",
+                  "cancelled"
+                ],
+                "type" : "string"
+              },
+              "task_id" : {
+                "type" : "string"
+              },
+              "title" : {
+                "type" : "string"
+              }
+            },
+            "required" : [
+              "task_id",
+              "agent",
+              "relation",
+              "status"
+            ],
+            "type" : "object"
+          },
+          "title" : "Start task"
+        },
+        {
+          "annotations" : {
+            "openWorldHint" : false,
+            "readOnlyHint" : true
+          },
+          "description" : "List the tasks you can reach, with their status: the tasks you started and, if you are a task yourself, the task that started you (\"parent\") and its other tasks (your siblings). Use it to find who to message, for example a sibling working on a related part of the same job.",
+          "inputSchema" : {
+            "additionalProperties" : false,
+            "properties" : {
+
+            },
+            "type" : "object"
+          },
+          "name" : "list_tasks",
+          "outputSchema" : {
+            "properties" : {
+              "tasks" : {
+                "items" : {
+                  "properties" : {
+                    "agent" : {
+                      "type" : "string"
+                    },
+                    "id" : {
+                      "type" : "string"
+                    },
+                    "relation" : {
+                      "enum" : [
+                        "parent",
+                        "child",
+                        "sibling"
+                      ],
+                      "type" : "string"
+                    },
+                    "status" : {
+                      "enum" : [
+                        "running",
+                        "needs_approval",
+                        "idle",
+                        "failed",
+                        "cancelled",
+                        "closed"
+                      ],
+                      "type" : "string"
+                    },
+                    "title" : {
+                      "type" : "string"
+                    }
+                  },
+                  "required" : [
+                    "id",
+                    "agent",
+                    "relation",
+                    "status"
+                  ],
+                  "type" : "object"
+                },
+                "type" : "array"
+              },
+              "you" : {
+                "description" : "Your own task id, when you're a task.",
+                "type" : "string"
+              }
+            },
+            "required" : [
+              "tasks"
+            ],
+            "type" : "object"
+          },
+          "title" : "List tasks"
+        },
+        {
+          "annotations" : {
+            "openWorldHint" : false,
+            "readOnlyHint" : true
+          },
+          "description" : "Wait for a task's current turn to finish, then return its status and its reply: what the agent said at the end of its latest turn. Works on any task list_tasks shows.\n\nReturns early with status needs_approval when the task is blocked on the user approving one of its tool calls in Native; let the user know if they might not have noticed, then call wait_for_task again. If the timeout passes first, the status is running: call wait_for_task again to keep waiting, or do other work and check back.",
+          "inputSchema" : {
+            "additionalProperties" : false,
+            "properties" : {
+              "task_id" : {
+                "description" : "A task id from start_task or list_tasks, or \"parent\" for the task that started you.",
+                "type" : "string"
+              },
+              "timeout_seconds" : {
+                "description" : "The longest to wait, in seconds. Defaults to 120. If the call itself times out before the task finishes, use a lower value.",
+                "maximum" : 240,
+                "minimum" : 1,
+                "type" : "integer"
+              }
+            },
+            "required" : [
+              "task_id"
+            ],
+            "type" : "object"
+          },
+          "name" : "wait_for_task",
+          "outputSchema" : {
+            "properties" : {
+              "agent" : {
+                "description" : "The id of the agent running the task.",
+                "type" : "string"
+              },
+              "detail" : {
+                "description" : "What it's waiting on approval for, or why it failed or stopped early.",
+                "type" : "string"
+              },
+              "relation" : {
+                "enum" : [
+                  "parent",
+                  "child",
+                  "sibling"
+                ],
+                "type" : "string"
+              },
+              "reply" : {
+                "description" : "What the agent said at the end of its latest turn; partial while it's running.",
+                "type" : "string"
+              },
+              "status" : {
+                "enum" : [
+                  "running",
+                  "needs_approval",
+                  "idle",
+                  "failed",
+                  "cancelled"
+                ],
+                "type" : "string"
+              },
+              "task_id" : {
+                "type" : "string"
+              },
+              "title" : {
+                "type" : "string"
+              }
+            },
+            "required" : [
+              "task_id",
+              "agent",
+              "relation",
+              "status"
+            ],
+            "type" : "object"
+          },
+          "title" : "Wait for task"
+        },
+        {
+          "annotations" : {
+            "openWorldHint" : false,
+            "readOnlyHint" : true
+          },
+          "description" : "Check a task's status and its latest reply without waiting. Works on any task list_tasks shows.",
+          "inputSchema" : {
+            "additionalProperties" : false,
+            "properties" : {
+              "task_id" : {
+                "description" : "A task id from start_task or list_tasks, or \"parent\" for the task that started you.",
+                "type" : "string"
+              }
+            },
+            "required" : [
+              "task_id"
+            ],
+            "type" : "object"
+          },
+          "name" : "get_task",
+          "outputSchema" : {
+            "properties" : {
+              "agent" : {
+                "description" : "The id of the agent running the task.",
+                "type" : "string"
+              },
+              "detail" : {
+                "description" : "What it's waiting on approval for, or why it failed or stopped early.",
+                "type" : "string"
+              },
+              "relation" : {
+                "enum" : [
+                  "parent",
+                  "child",
+                  "sibling"
+                ],
+                "type" : "string"
+              },
+              "reply" : {
+                "description" : "What the agent said at the end of its latest turn; partial while it's running.",
+                "type" : "string"
+              },
+              "status" : {
+                "enum" : [
+                  "running",
+                  "needs_approval",
+                  "idle",
+                  "failed",
+                  "cancelled"
+                ],
+                "type" : "string"
+              },
+              "task_id" : {
+                "type" : "string"
+              },
+              "title" : {
+                "type" : "string"
+              }
+            },
+            "required" : [
+              "task_id",
+              "agent",
+              "relation",
+              "status"
+            ],
+            "type" : "object"
+          },
+          "title" : "Get task"
+        },
+        {
+          "annotations" : {
+            "openWorldHint" : false,
+            "readOnlyHint" : false
+          },
+          "description" : "Send a message to a task you started, a sibling task, or your parent (\"parent\"): follow-up instructions, a correction, a question, or something they need to know. It's delivered right away: into the turn the recipient is working on, or queued for its next turn, or, if it's idle, as a new prompt. The recipient sees who it's from and can answer with send_message. This doesn't wait for a reply; call wait_for_task on the recipient if you want one.",
+          "inputSchema" : {
+            "additionalProperties" : false,
+            "properties" : {
+              "message" : {
+                "description" : "The message, written so it makes sense without your conversation.",
+                "type" : "string"
+              },
+              "to" : {
+                "description" : "A task id from start_task or list_tasks, or \"parent\" for the task that started you.",
+                "type" : "string"
+              }
+            },
+            "required" : [
+              "to",
+              "message"
+            ],
+            "type" : "object"
+          },
+          "name" : "send_message",
+          "outputSchema" : {
+            "properties" : {
+              "delivery" : {
+                "description" : "steered: added to its running turn; queued: held for its next turn; prompted: started a turn of the idle recipient.",
+                "enum" : [
+                  "steered",
+                  "queued",
+                  "prompted"
+                ],
+                "type" : "string"
+              },
+              "to" : {
+                "type" : "string"
+              }
+            },
+            "required" : [
+              "to",
+              "delivery"
+            ],
+            "type" : "object"
+          },
+          "title" : "Send message"
+        },
+        {
+          "annotations" : {
+            "destructiveHint" : true,
+            "idempotentHint" : true,
+            "openWorldHint" : false,
+            "readOnlyHint" : false
+          },
+          "description" : "Stop the current turn of a task you started. The task stays open, so you can give it new instructions with send_message afterwards.",
+          "inputSchema" : {
+            "additionalProperties" : false,
+            "properties" : {
+              "task_id" : {
+                "description" : "The task_id start_task returned.",
+                "type" : "string"
+              }
+            },
+            "required" : [
+              "task_id"
+            ],
+            "type" : "object"
+          },
+          "name" : "cancel_task",
+          "outputSchema" : {
+            "properties" : {
+              "agent" : {
+                "description" : "The id of the agent running the task.",
+                "type" : "string"
+              },
+              "detail" : {
+                "description" : "What it's waiting on approval for, or why it failed or stopped early.",
+                "type" : "string"
+              },
+              "relation" : {
+                "enum" : [
+                  "parent",
+                  "child",
+                  "sibling"
+                ],
+                "type" : "string"
+              },
+              "reply" : {
+                "description" : "What the agent said at the end of its latest turn; partial while it's running.",
+                "type" : "string"
+              },
+              "status" : {
+                "enum" : [
+                  "running",
+                  "needs_approval",
+                  "idle",
+                  "failed",
+                  "cancelled"
+                ],
+                "type" : "string"
+              },
+              "task_id" : {
+                "type" : "string"
+              },
+              "title" : {
+                "type" : "string"
+              }
+            },
+            "required" : [
+              "task_id",
+              "agent",
+              "relation",
+              "status"
+            ],
+            "type" : "object"
+          },
+          "title" : "Cancel task"
+        },
+        {
+          "annotations" : {
+            "openWorldHint" : false,
+            "readOnlyHint" : true
+          },
+          "description" : "List Native's skills: guides for working with Native itself, such as setting Native up for the user (agents, projects, devices, policy, troubleshooting) or building a Native plugin that adds an agent, an MCP server or a workflow. Read one with get_skill before doing what it covers.",
+          "inputSchema" : {
+            "additionalProperties" : false,
+            "properties" : {
+
+            },
+            "type" : "object"
+          },
+          "name" : "list_skills",
+          "outputSchema" : {
+            "properties" : {
+              "skills" : {
+                "items" : {
+                  "properties" : {
+                    "id" : {
+                      "type" : "string"
+                    },
+                    "summary" : {
+                      "type" : "string"
+                    },
+                    "title" : {
+                      "type" : "string"
+                    }
+                  },
+                  "required" : [
+                    "id",
+                    "title",
+                    "summary"
+                  ],
+                  "type" : "object"
+                },
+                "type" : "array"
+              }
+            },
+            "required" : [
+              "skills"
+            ],
+            "type" : "object"
+          },
+          "title" : "List skills"
+        },
+        {
+          "annotations" : {
+            "openWorldHint" : false,
+            "readOnlyHint" : true
+          },
+          "description" : "Read one of Native's skills in full, such as set-up-native before helping the user set Native up, or build-a-native-plugin before writing a Native plugin for them.",
+          "inputSchema" : {
+            "additionalProperties" : false,
+            "properties" : {
+              "skill" : {
+                "description" : "The skill's id, from list_skills.",
+                "enum" : [
+                  "set-up-native",
+                  "build-a-native-plugin"
+                ],
+                "type" : "string"
+              }
+            },
+            "required" : [
+              "skill"
+            ],
+            "type" : "object"
+          },
+          "name" : "get_skill",
+          "title" : "Get skill"
+        },
+        {
+          "annotations" : {
+            "openWorldHint" : false,
+            "readOnlyHint" : true
+          },
+          "description" : "Check how Native is set up on this Mac, in order: Native's version and channel; each agent (installed, turned on, signed in, the version it reports, how it's launched and installed); the durable host that keeps agents running after Native quits; paired devices (the iPhone companion) and whether the pairing gateway is listening; which settings the organization manages; and updates. Each problem says where the user fixes it in Settings. Read-only: it changes nothing, and reports no paths, secrets or transcripts. Call it before giving setup advice, and again after the user changes something.",
+          "inputSchema" : {
+            "additionalProperties" : false,
+            "properties" : {
+
+            },
+            "type" : "object"
+          },
+          "name" : "setup_status",
+          "outputSchema" : {
+            "properties" : {
+              "agents" : {
+                "items" : {
+                  "properties" : {
+                    "id" : {
+                      "type" : "string"
+                    },
+                    "install_command" : {
+                      "type" : "string"
+                    },
+                    "is_caller" : {
+                      "type" : "boolean"
+                    },
+                    "launch" : {
+                      "type" : "string"
+                    },
+                    "missing_command" : {
+                      "type" : "string"
+                    },
+                    "name" : {
+                      "type" : "string"
+                    },
+                    "sign_in" : {
+                      "enum" : [
+                        "signed_in",
+                        "needs_sign_in",
+                        "signing_in",
+                        "unknown"
+                      ],
+                      "type" : "string"
+                    },
+                    "sign_in_command" : {
+                      "type" : "string"
+                    },
+                    "state" : {
+                      "enum" : [
+                        "ready",
+                        "starting",
+                        "stopped",
+                        "not_installed",
+                        "turned_off",
+                        "not_allowed"
+                      ],
+                      "type" : "string"
+                    },
+                    "version" : {
+                      "type" : "string"
+                    }
+                  },
+                  "required" : [
+                    "id",
+                    "name",
+                    "state",
+                    "sign_in",
+                    "launch",
+                    "is_caller"
+                  ],
+                  "type" : "object"
+                },
+                "type" : "array"
+              },
+              "durable_host" : {
+                "type" : "object"
+              },
+              "native" : {
+                "properties" : {
+                  "build" : {
+                    "type" : "string"
+                  },
+                  "channel" : {
+                    "enum" : [
+                      "stable",
+                      "beta",
+                      "nightly",
+                      "dev"
+                    ],
+                    "type" : "string"
+                  },
+                  "version" : {
+                    "type" : "string"
+                  }
+                },
+                "type" : "object"
+              },
+              "organization" : {
+                "properties" : {
+                  "ignored_keys" : {
+                    "items" : {
+                      "type" : "string"
+                    },
+                    "type" : "array"
+                  },
+                  "managed_keys" : {
+                    "items" : {
+                      "type" : "string"
+                    },
+                    "type" : "array"
+                  }
+                },
+                "type" : "object"
+              },
+              "paired_devices" : {
+                "type" : "object"
+              },
+              "updates" : {
+                "type" : "object"
+              }
+            },
+            "required" : [
+              "native",
+              "agents",
+              "durable_host",
+              "paired_devices",
+              "organization",
+              "updates"
+            ],
+            "type" : "object"
+          },
+          "title" : "Setup status"
+        },
+        {
+          "annotations" : {
+            "openWorldHint" : false,
+            "readOnlyHint" : true
+          },
+          "description" : "Run JavaScript that calls the tools listed below and return what it prints. Use it to gather and condense in one call what would take several tool calls, such as checking every task and reporting only the ones that need attention, or waiting on several tasks at once.\n\nThe code is an ES module body: top-level await works. Print what you want back with text(value) or console.log(value); objects print as JSON, and nothing else is returned. Each tool takes one object argument and resolves with its structured result; a failed call rejects with its error. The script runs in an isolated sandbox with no files, network, modules, require, process or fetch: these tools are its only way out. Pass long text through `inputs` and read it as inputs.<name>. Errors report the line and column in your code.\n\nTools:\n// List the coding agents you can hand tasks to with start_task, such as Claude Code and Codex.\ntools.list_agents(): Promise<{ agents: { id: string; is_you: boolean; name: string }[] }>\n// List the tasks you can reach, with their status: the tasks you started and, if you are a task yourself, the task that started you (\"parent\") and its other tasks (your siblings).\ntools.list_tasks(): Promise<{ tasks: { agent: string; id: string; relation: \"parent\" | \"child\" | \"sibling\"; status: \"running\" | \"needs_approval\" | \"idle\" | \"failed\" | \"cancelled\" | \"closed\"; title?: string }[]; you?: string }>\n// Wait for a task's current turn to finish, then return its status and its reply: what the agent said at the end of its latest turn.\ntools.wait_for_task(input: { task_id: string; timeout_seconds?: number }): Promise<{ agent: string; detail?: string; relation: \"parent\" | \"child\" | \"sibling\"; reply?: string; status: \"running\" | \"needs_approval\" | \"idle\" | \"failed\" | \"cancelled\"; task_id: string; title?: string }>\n// Check a task's status and its latest reply without waiting.\ntools.get_task(input: { task_id: string }): Promise<{ agent: string; detail?: string; relation: \"parent\" | \"child\" | \"sibling\"; reply?: string; status: \"running\" | \"needs_approval\" | \"idle\" | \"failed\" | \"cancelled\"; task_id: string; title?: string }>",
+          "inputSchema" : {
+            "additionalProperties" : false,
+            "properties" : {
+              "code" : {
+                "description" : "The script, JavaScript.",
+                "type" : "string"
+              },
+              "inputs" : {
+                "additionalProperties" : {
+                  "type" : "string"
+                },
+                "description" : "Text the script reads as inputs.<name>, kept out of its source.",
+                "type" : "object"
+              },
+              "timeout_seconds" : {
+                "description" : "How long the script may run, in seconds. Defaults to 60.",
+                "maximum" : 240,
+                "minimum" : 1,
+                "type" : "integer"
+              }
+            },
+            "required" : [
+              "code"
+            ],
+            "type" : "object"
+          },
+          "name" : "run_script",
+          "outputSchema" : {
+            "properties" : {
+              "failure" : {
+                "properties" : {
+                  "column" : {
+                    "type" : "integer"
+                  },
+                  "kind" : {
+                    "type" : "string"
+                  },
+                  "line" : {
+                    "type" : "integer"
+                  },
+                  "message" : {
+                    "type" : "string"
+                  }
+                },
+                "type" : "object"
+              },
+              "output" : {
+                "description" : "What the script printed, a line per text() call.",
+                "type" : "string"
+              },
+              "tool_calls" : {
+                "type" : "integer"
+              }
+            },
+            "required" : [
+              "output",
+              "tool_calls"
+            ],
+            "type" : "object"
+          },
+          "title" : "Run script"
+        }
+      ]
+    }
+  }
+}
