@@ -41,9 +41,11 @@ public struct TaskPromptFrame: Hashable, Sendable {
             return
         }
 
-        if header.hasPrefix(Self.taskHeaderPrefix), header.hasSuffix(Self.taskHeaderSuffix) {
+        if header.hasPrefix(Self.taskHeaderPrefix),
+            let suffix = [Self.taskHeaderSuffix, Self.legacyTaskHeaderSuffix].first(where: header.hasSuffix)
+        {
             let agentStart = header.index(header.startIndex, offsetBy: Self.taskHeaderPrefix.count)
-            let agentEnd = header.index(header.endIndex, offsetBy: -Self.taskHeaderSuffix.count)
+            let agentEnd = header.index(header.endIndex, offsetBy: -suffix.count)
             let agent = String(header[agentStart..<agentEnd])
             guard !agent.isEmpty else { return nil }
             kind = .task
@@ -128,6 +130,11 @@ public struct TaskPromptFrame: Hashable, Sendable {
     private static let headerTerminator = "]\n\n"
     private static let taskHeaderPrefix = "[A task from your parent session ("
     private static let taskHeaderSuffix =
+        "), handed to you through Native. What you say at the end of your turn goes back to it as your reply. "
+        + "To message it or its other tasks while you work, use Native action list_tasks or send_message "
+        + "through the native-app skill, or Native MCP tools when available."
+    // Persisted transcripts still contain the original MCP-only header.
+    private static let legacyTaskHeaderSuffix =
         "), handed to you through Native. What you say at the end of your turn goes back to it as your reply. "
         + "To message it or its other tasks while you work, use the native MCP tools list_tasks and send_message."
     private static let messageHeaderPrefix = "[Message from "
