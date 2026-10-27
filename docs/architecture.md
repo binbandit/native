@@ -90,7 +90,9 @@ a per-agent Native tools switch to opt into loading all MCP tools; an explicit o
 Choices apply when a task next opens. Agents running directly in the app retain MCP compatibility.
 
 Both paths require Native's orchestration capability, managed MCP admission for `native`, and the
-`orchestration.loopback` network service. Restricted deployments remain denied. Existing task
+`orchestration.loopback` network service with valid network policy and local IPC allowed. The
+CLI accepts only the signed literal-loopback endpoint; it has no remote destination. Restricted
+deployments remain denied. Existing task
 scope, coordinator limits and tool handlers are shared, and shell execution retains the agent's
 approval flow. Credentials never enter the skill description or command arguments. Setup and
 scripts keep their existing app-running requirement; task tools can work with the app closed

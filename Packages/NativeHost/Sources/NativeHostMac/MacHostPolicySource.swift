@@ -74,7 +74,11 @@ public struct MacHostPolicySource: HostPolicySource {
         var capabilities = Set(HostCapability.allCases)
         let decided: [(HostCapability, Bool)] = [
             (.agents, permits(.agentExecution)),
-            (.agentTools, permits(.orchestration) && permits(.mcpExecution) && policy.mcp.allows(name: "native")),
+            (
+                .agentTools,
+                permits(.orchestration) && permits(.mcpExecution) && policy.mcp.allows(name: "native")
+                    && policy.network.isValid && policy.network.localIPC
+            ),
             (.companion, permits(.pairing)), (.updates, updates),
         ]
         for (capability, isPermitted) in decided where !isPermitted {

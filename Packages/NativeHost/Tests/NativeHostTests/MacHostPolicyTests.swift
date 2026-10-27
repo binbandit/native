@@ -35,6 +35,7 @@ struct MacHostPolicyTests {
     func nativeToolsAdmission() {
         for managed: [String: Any] in [
             ["policy.mcp.blocked": ["native"]], ["policy.mcp.allowed": ["other"]],
+            ["policy.network": ["localIPC": false]],
             ["policy.network": ["services": ["orchestration.loopback": ["enabled": false]]]],
         ] {
             #expect(!Self.policy(managed: managed).allows(.agentTools))

@@ -39,6 +39,7 @@ struct NativeToolsSettingsRow: View {
         let policy = registry.policyCenter.policy
         return policy.decision(for: .orchestration).isPermitted
             && policy.decision(for: .mcpExecution).isPermitted && policy.mcp.allows(name: "native")
+            && policy.network.isValid && policy.network.localIPC
     }
 }
 
