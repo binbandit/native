@@ -237,7 +237,11 @@ struct NoProjectModelTests {
         app.cancelDeletion(of: key)
         #expect(app.sessionList.map(\.id).contains(key))
         app.deleteSession(key)
-        try await Task.sleep(for: AppModel.deletionGracePeriod + .milliseconds(100))
+        try await Task.sleep(for: AppModel.deletionGracePeriod)
+        for _ in 0..<300 {
+            if app.catalog.lookup(key) == nil, !FileManager.default.fileExists(atPath: task.cwd.path) { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
         #expect(app.catalog.lookup(key) == nil)
         #expect(!FileManager.default.fileExists(atPath: task.cwd.path))
         #expect(FileManager.default.fileExists(atPath: scratch.path))

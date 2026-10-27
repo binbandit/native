@@ -74,6 +74,7 @@ extension AppModel {
                 candidate = target
                 target.isChangingWorkspace = true
                 await target.adoptConfigChoices(of: source)
+                await source.services.hooks.taskStarted(target, source)
                 try scratchTasks.reassign(source.cwd, to: NoProjectLocation.key(target.key))
                 try await closeForScratchCleanup(key)
                 didCloseSource = true
@@ -87,6 +88,7 @@ extension AppModel {
             guard let loaded = await loadedSession(target.key), loaded === target, loaded.phase == .idle,
                 !loaded.isRestoringHistory, SessionFolder.isSame(loaded.cwd.folderPath, admitted.folderPath)
             else { throw moveFailure("The agent couldn't reopen the conversation in this folder.") }
+            target.continuedTaskKey = source.taskPresentationKey
             source.attachmentReads.move(to: target)
             target.draft = draft
             target.attachments = attachments

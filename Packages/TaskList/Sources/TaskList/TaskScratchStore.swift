@@ -25,7 +25,7 @@ public final class TaskScratchStore {
         self.root = root.standardizedFileURL
         index = root.appendingPathComponent("tasks.json")
         folders =
-            (try? Data(contentsOf: index)).flatMap {
+            (persists ? try? Data(contentsOf: index) : nil).flatMap {
                 try? JSONDecoder().decode([String: UUID].self, from: $0)
             } ?? [:]
     }
