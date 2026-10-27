@@ -31,9 +31,13 @@ extension HostCore {
         case .waitForTool:
             return
         case .steer:
+            let turnID = session.turn?.requestID
             Task {
-                guard session.phase == .prompting, !session.isStopping, session.steeringInFlight == nil,
-                    let current = session.queue.first(where: { $0.prompt.id == item.prompt.id }),
+                guard session.phase == .prompting, session.turn?.requestID == turnID, !session.isStopping,
+                    session.steeringInFlight == nil,
+                    let current = session.queue.first(where: {
+                        $0.prompt.id == item.prompt.id && $0.prompt.steersAfterTools
+                    }),
                     session.steeringGate.delivery(
                         supportsSteering: session.supportsSteering, policy: link.spec.steeringPolicy ?? .afterTools)
                         == .steer

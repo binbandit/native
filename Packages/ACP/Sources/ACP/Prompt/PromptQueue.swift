@@ -115,6 +115,15 @@ public struct PromptQueue: Equatable, Sendable {
         return items.removeFirst()
     }
 
+    /// A steer belongs to the turn it targeted. If that turn ends first, it becomes ordinary
+    /// queued input, retaining its position and any explicit reorder the user made.
+    public mutating func endSteering() {
+        for index in items.indices {
+            items[index].steersAfterTools = false
+            items[index].waitingForTool = nil
+        }
+    }
+
     public mutating func pause() {
         isPaused = true
     }

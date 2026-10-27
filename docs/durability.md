@@ -1056,7 +1056,9 @@ updates. With the default `afterTools` plugin policy, every pending or running t
 completion or failure before delivery. Parallel tools all finish first. The host keeps a waiting steer
 in its durable queue with `steersAfterTools` in the prompt extras, separately from the existing
 steering-in-flight flag. It remains editable and removable. An ordinary queued turn waits for any
-in-flight steer acknowledgement, even if the original turn ends first. Session summaries carry `waitingForTool`
+in-flight steer acknowledgement, even if the original turn ends first. Undelivered steers become
+ordinary queued input when their original turn ends, keeping the user's explicit queue order.
+Session summaries carry `waitingForTool`
 so the composer can show "Will steer after <tool> finishes" beside that message.
 
 A plugin may declare `steeringPolicy: nonInterrupting` only when its adapter's steering preserves

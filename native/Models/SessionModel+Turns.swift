@@ -260,13 +260,7 @@ extension SessionModel {
         guard phase == .idle, !isRunningHiddenCommand, !isDeliveringSteer, turnHold == nil, !queue.isPaused else {
             return
         }
-        let next =
-            if let steer = queue.items.first(where: \.steersAfterTools) {
-                queue.remove(steer.id)
-            } else {
-                queue.next()
-            }
-        guard let next else { return }
+        guard let next = queue.next() else { return }
         startTurn(next.text, attachments: next.attachments, echo: next.isEchoed)
     }
 
@@ -397,6 +391,7 @@ extension SessionModel {
         let steeredBetweenSteps = isSteeringBetweenSteps && !isStopping
         isSteeringBetweenSteps = false
         steeringGate.reset()
+        queue.endSteering()
         turnGeneration += 1
         finishStopping()
         if (lastStopReason == .cancelled && !steeredBetweenSteps) || lastStopReason == .error {

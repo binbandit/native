@@ -233,6 +233,7 @@ extension HostCore {
         }
         session.steeringGate.reset()
         session.steeringInterruptTurn = nil
+        for index in session.queue.indices { session.queue[index].prompt.steersAfterTools = false }
         session.turn = nil
         session.phase = .idle
         session.record.lastStopReason = stopReason
@@ -244,6 +245,7 @@ extension HostCore {
         withdrawQuestions(of: session)
         try? store.transaction {
             try store.finishTurn(session.id)
+            try store.setQueue(session.queue, for: session.id)
             try store.updateSession(session.record)
         }
     }
@@ -268,8 +270,7 @@ extension HostCore {
     func drainQueue(_ session: HostSession) {
         guard session.phase == .idle, session.turn == nil, session.hiddenCommand == nil, session.retryAt == nil,
             session.steeringInFlight == nil, !session.record.isQueuePaused,
-            let index = session.queue.firstIndex(where: { $0.prompt.steersAfterTools && !$0.isSteering })
-                ?? session.queue.firstIndex(where: { !$0.isSteering })
+            let index = session.queue.firstIndex(where: { !$0.isSteering })
         else { return }
         let next = session.queue.remove(at: index)
         var prompt = next.prompt
