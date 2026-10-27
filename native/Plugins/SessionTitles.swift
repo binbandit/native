@@ -1,4 +1,5 @@
 import ACP
+import AIInstructions
 import Foundation
 import NativeHostProtocol
 import Observation
@@ -115,7 +116,7 @@ final class SessionTitles {
     /// user's. Call it for each prompt so a failed attempt can retry once. A task in a host is titled there.
     func generateIfNeeded(
         for key: Key, request: TitleRequest, using titler: (any SessionTitler)?, isFirstPrompt: Bool = true,
-        allowsRetry: Bool = true
+        allowsRetry: Bool = true, isAllowed: @escaping @MainActor () -> Bool = { true }
     ) async {
         guard let titler, !isTitledByHost(key),
             userTitles[key.storageKey] == nil,
@@ -128,22 +129,50 @@ final class SessionTitles {
         let shouldGenerate = state.beginIfNeeded(
             SessionTitleRequest(projectName: request.projectName, prompt: request.prompt), allowsRetry: allowsRetry)
         attempts[key] = state
-        guard shouldGenerate, let pending = state.request else { return }
-        let titleRequest = TitleRequest(
-            projectName: pending.projectName, prompt: pending.prompt, instructions: request.instructions)
+        guard shouldGenerate else { return }
         setFallbackTitle(state.fallback, for: key)
-        do {
-            if let title = try await titler.title(for: titleRequest), state.accept(generated: title) {
-                setGeneratedTitle(state.generated, for: key)
-                setFallbackTitle(nil, for: key)
-            } else {
-                state.fail()
-            }
-        } catch {
-            state.fail()
-            logger.error("Couldn't title session \(key.storageKey, privacy: .public): \(error)")
-        }
+        await writePendingTitle(for: key, using: titler, instructions: request.instructions, isAllowed: isAllowed)
+    }
+
+    /// Called once the first turn ends, while its assistant reply is still in memory.
+    func refineIfNeeded(
+        for key: Key, outcome: String, using titler: (any SessionTitler)?, instructions: AIInstructionAddition?,
+        isAllowed: @escaping @MainActor () -> Bool = { true }
+    ) async {
+        guard let titler, !isTitledByHost(key), var state = attempts[key] else { return }
+        state.finishFirstTurn(outcome: outcome)
         attempts[key] = state
+        guard state.refinementCount == 1, generating.insert(key).inserted else { return }
+        defer { generating.remove(key) }
+        await writePendingTitle(for: key, using: titler, instructions: instructions, isAllowed: isAllowed)
+    }
+
+    private func writePendingTitle(
+        for key: Key, using titler: any SessionTitler, instructions: AIInstructionAddition?,
+        isAllowed: @escaping @MainActor () -> Bool = { true }
+    ) async {
+        // Read the state again after every suspension: a rename or the first turn may have landed.
+        while let pending = attempts[key]?.request, let revision = attempts[key]?.refinementCount,
+            attempts[key]?.progress == .generating, isAllowed()
+        {
+            let request = TitleRequest(
+                firstTurnOutcome: pending.firstTurnOutcome,
+                projectName: pending.projectName, prompt: pending.prompt, instructions: instructions)
+            do {
+                let title = try await titler.title(for: request)
+                guard isAllowed(), var state = attempts[key] else { return }
+                if let title, state.accept(generated: title, revision: revision) {
+                    setGeneratedTitle(state.generated, for: key)
+                    setFallbackTitle(nil, for: key)
+                } else {
+                    state.fail()
+                }
+                attempts[key] = state
+            } catch {
+                attempts[key]?.fail()
+                logger.error("Couldn't title a session: \(error.localizedDescription)")
+            }
+        }
     }
 
     // MARK: - Storing
@@ -151,6 +180,7 @@ final class SessionTitles {
     /// Sets (or with nil clears) the user's title, saving it.
     func setUserTitle(_ title: String?, for key: Key) {
         guard userTitles[key.storageKey] != title else { return }
+        attempts[key]?.rename(to: title)
         userTitles[key.storageKey] = title
         UserDefaults.standard.set(userTitles, forKey: Self.userKey)
     }

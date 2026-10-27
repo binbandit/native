@@ -121,6 +121,7 @@ struct OnDeviceTitler: SessionTitler {
     func title(for request: TitleRequest) async throws -> String? {
         try await OnDeviceTitleGenerator().title(
             for: SessionTitleRequest(
-                projectName: request.projectName, prompt: request.prompt, instructions: request.instructions))
+                projectName: request.projectName, prompt: request.prompt, instructions: request.instructions,
+                firstTurnOutcome: request.firstTurnOutcome))
     }
 }

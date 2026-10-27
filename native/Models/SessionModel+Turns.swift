@@ -293,7 +293,7 @@ extension SessionModel {
             let previous = services.titles.namedTitle(for: titleKey)
             await services.titles.generateIfNeeded(
                 for: titleKey, request: request, using: services.plugins.titler, isFirstPrompt: isFirstPrompt,
-                allowsRetry: allowsRetry)
+                allowsRetry: allowsRetry, isAllowed: { self.services.plugins.titler != nil })
             if let title = services.titles.namedTitle(for: titleKey), isFirstPrompt || title != previous {
                 services.titleLanded(key, cwd, title)
             }
@@ -315,6 +315,7 @@ extension SessionModel {
             state.endTurn(response.stopReason)
             lastStopReason = response.stopReason
             services.post(.turnEnded(context, response.stopReason))
+            refineTitleAfterFirstTurn(succeeded: response.stopReason == .endTurn)
         } catch {
             guard generation == turnGeneration else { return }
             guard !isStopping else { return }

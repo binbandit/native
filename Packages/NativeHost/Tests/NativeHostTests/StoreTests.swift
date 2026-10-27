@@ -64,6 +64,10 @@ struct StoreTests {
             try store.database.execute(
                 """
                 DROP TABLE closed_session_config;
+                ALTER TABLE titles DROP COLUMN first_outcome;
+                ALTER TABLE titles DROP COLUMN refinement_count;
+                ALTER TABLE titles DROP COLUMN first_finished;
+                ALTER TABLE titles DROP COLUMN was_renamed;
                 ALTER TABLE titles DROP COLUMN retry_count;
                 ALTER TABLE titles DROP COLUMN prompt_id;
                 ALTER TABLE approvals DROP COLUMN audit_request_id;

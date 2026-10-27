@@ -967,24 +967,38 @@ it on); off, the app titles that host's tasks as it did before and tells the hos
   may change it.
 - **When.** As a task's first usable message starts its turn (not a session adopted from the agent's list),
   the host commits what the title is written from (project name,
-  the message up to 2,000 characters, `progress: generating`) and then writes it. Committed first,
+  the message bounded to 2,000 characters, `progress: generating`) and then writes it. Committed first,
   so a host that stops mid-title writes it at its next start. Content-only API prompts and attachment
   names count too. A first message without usable title material leaves the next turn eligible.
 - **Retries.** A failed or unavailable generator gets one retry on the next ordinary turn, using
   the original request. The host persists `retry_count` and the original `prompt_id`, so restarting
   cannot reset the budget and automatic delivery resends cannot spend it before a new prompt.
   Client title requests carry this number too, letting the app distinguish the retry from repeated
-  summaries. Generated and manually renamed titles are never retried. With host titles off, the
+  summaries. Specific generated titles and manually renamed titles are never retried. With host titles off, the
   app uses the same decision rules and retries once during that app run.
 - **No model on the host** (Apple Intelligence off on a Mac mini, a Linux host), or provider
   `client`: the summary's `titles.request` asks clients, and the first one with a titler writes it
   and sends it with `_native/session/set_title {source: generated}`. Meanwhile, and when the model
-  failed or is still generating, `titles.fallback` names the task from its first message (its first line, cut after eight
-  words), shown after the agent's own title, so a task is never nameless while there's anything to
+  failed or is still generating, `titles.fallback` names the task from a useful line of its first
+  message, with conversational filler removed and at most six words. It follows the agent's own
+  title, so a task is never nameless while there's anything to
   name it by.
 - **The user's title wins.** A rename, from any client, and its undo (the previous title, or none)
   go to the host with `_native/session/set_title {source: user}`; every client hears the change. The
-  first generated title stays: neither a client's nor the host's late one replaces it.
+  first generated title stays unless it is weak and the first turn clarifies it. A manual rename
+  permanently blocks that refinement, including after undo, reconnect and host restart.
+- **One refinement.** A generic, verbose or ambiguous initial name can be refined once from the
+  original request and up to 800 characters of the first turn's assistant text. Tool output,
+  thoughts, hidden commands and later turns are excluded. A specific initial title stays. The
+  host persists the consumed first-turn and refinement budgets, and clients echo the requested
+  `revision` on generated writes. A late initial answer, duplicate refinement or old client cannot
+  replace a refined title. The app uses the same state machine with host titles off.
+- **Input and privacy.** Naming never opens a pasted link or file. Credential assignments and
+  authorization headers are removed locally; URLs are removed and paths reduced to a basename.
+  Both ends of a long message are retained so a request following an error log is still seen.
+  Generated titles and duplicate-name suffixes reject unsafe material. Model output is tidied
+  into sentence case while preserving technical names. No additional network service is used.
+  The synthetic offline comparison and model capture instructions are in [task-titles.md](task-titles.md).
 - **Clients** read `HostSessionSummary.titles {user, generated, fallback, request}` from
   `_native/session/changed` and show the user's, the generated one, the agent's (`summary.title`),
   then the fallback. The app copies them into its own title store, so tasks the host later closes
