@@ -321,7 +321,7 @@ extension SessionModel {
                 attachments: prompt.attachments.map { attachment in
                     PromptAttachment(
                         url: attachment.url ?? URL(filePath: attachment.name), content: .reference, byteCount: nil)
-                })
+                }, waitingForTool: prompt.waitingForTool)
         }
         let held = heldPrompts.filter(\.isEchoed).map {
             QueuedPrompt(id: $0.id, $0.text, attachments: $0.attachments)

@@ -318,6 +318,25 @@ actor FakeAgent {
                     "title": .string("sleep 600"), "kind": .string("execute"), "status": .string("in_progress"),
                 ])
             return try await cancelLeavingCommand(session, ignoringCancel: true)
+        } else if text == "tool-sleep" {
+            try update(
+                session,
+                [
+                    "sessionUpdate": .string("tool_call"), "toolCallId": .string("sleep"),
+                    "title": .string("sleep 20"), "kind": .string("execute"), "status": .string("in_progress"),
+                ])
+            for _ in 0..<20 {
+                try await Task.sleep(for: .milliseconds(100))
+                if cancelled.contains(session) { return "cancelled" }
+            }
+            received("tool-finished", "sleep")
+            try update(
+                session,
+                [
+                    "sessionUpdate": .string("tool_call_update"), "toolCallId": .string("sleep"),
+                    "status": .string("completed"),
+                ])
+            return try await tick(session, count: 4, stoppable: true)
         } else if text == "cancel-leaves-command" {
             return try await cancelLeavingCommand(session)
         } else if text.hasPrefix("slow") || text.hasPrefix("stubborn") {

@@ -11,7 +11,7 @@ extension HostCore {
     /// Edits a queued message; emptying one that carries no attachments removes it.
     func updateQueued(_ params: QueueItemParams) throws {
         let session = try session(params.sessionID)
-        guard let index = session.queue.firstIndex(where: { $0.prompt.id == params.itemID }) else {
+        guard let index = session.queue.firstIndex(where: { $0.prompt.id == params.itemID && !$0.isSteering }) else {
             throw HostError.notInQueue
         }
         let text = params.text.map(PromptQuote.trimmed) ?? ""
@@ -30,7 +30,9 @@ extension HostCore {
 
     func removeQueued(_ params: QueueItemParams) throws {
         let session = try session(params.sessionID)
-        guard let index = session.queue.firstIndex(where: { $0.prompt.id == params.itemID }) else { return }
+        guard let index = session.queue.firstIndex(where: { $0.prompt.id == params.itemID && !$0.isSteering }) else {
+            return
+        }
         remember(session.queue.remove(at: index).prompt, in: session)
         try store.setQueue(session.queue, for: session.id)
         publish(session)
@@ -47,13 +49,14 @@ extension HostCore {
         session.queue.insert(StoredQueueItem(prompt: prompt, isSteering: false), at: index)
         try store.setQueue(session.queue, for: session.id)
         publish(session)
+        deliverPendingSteer(in: session)
     }
 
     /// Moves a queued message to just before `before`, or to the end.
     func moveQueued(_ params: MoveQueuedParams) throws {
         let session = try session(params.sessionID)
         guard params.before != params.itemID,
-            let index = session.queue.firstIndex(where: { $0.prompt.id == params.itemID })
+            let index = session.queue.firstIndex(where: { $0.prompt.id == params.itemID && !$0.isSteering })
         else { return }
         let item = session.queue.remove(at: index)
         let target = params.before.flatMap { before in session.queue.firstIndex { $0.prompt.id == before } }
@@ -62,20 +65,17 @@ extension HostCore {
         publish(session)
     }
 
-    /// Sends a queued message now instead of waiting: into the running turn where the agent can
-    /// steer, after stopping the running turn where it can't, or as the next prompt when the session
-    /// is idle (as it is after a stopped turn paused the queue).
+    /// Uses the same tool-safe path as Steer, or sends the next prompt when the session is idle.
     func sendQueuedNow(_ params: QueueItemParams) async throws {
         let session = try session(params.sessionID)
-        guard let index = session.queue.firstIndex(where: { $0.prompt.id == params.itemID }) else { return }
+        guard let index = session.queue.firstIndex(where: { $0.prompt.id == params.itemID && !$0.isSteering }) else {
+            return
+        }
         switch session.phase {
-        case .prompting where session.supportsSteering:
+        case .prompting where !session.isStopping:
             let item = session.queue.remove(at: index)
             try store.setQueue(session.queue, for: session.id)
-            _ = try await steer(item.prompt, into: session)
-        case .prompting:
-            session.sendAfterStop = params.itemID
-            await cancel(session)
+            _ = try await submitSteer(item.prompt, into: session)
         case .idle where session.turn == nil && session.hiddenCommand == nil:
             cancelRetry(of: session)
             let item = session.queue.remove(at: index)

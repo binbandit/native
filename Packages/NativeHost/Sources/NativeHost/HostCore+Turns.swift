@@ -53,8 +53,8 @@ extension HostCore {
             }
             try startTurn(in: session, prompt: item)
             return .prompted
-        case .prompting where params.behavior == .steer && session.supportsSteering && !session.isStopping:
-            return try await steer(item, into: session)
+        case .prompting where params.behavior == .steer && !session.isStopping:
+            return try await submitSteer(item, into: session)
         default:
             // Sending during reattachment is the same explicit resume as sending while idle.
             if (session.phase == .loading || session.phase == .disconnected) && session.preservesTranscriptOnLoad {
@@ -75,6 +75,9 @@ extension HostCore {
         let stored = StoredQueueItem(prompt: item, isSteering: steering)
         if atFront {
             session.queue.insert(stored, at: 0)
+        } else if item.steersAfterTools {
+            let index = session.queue.firstIndex(where: { !$0.prompt.steersAfterTools && !$0.isSteering })
+            session.queue.insert(stored, at: index ?? session.queue.endIndex)
         } else {
             session.queue.append(stored)
         }
@@ -99,6 +102,7 @@ extension HostCore {
             try store.setQueue(session.queue, for: session.id)
             try store.updateSession(session.record)
         }
+        session.steeringGate.reset()
         session.turn = turn
         session.stopAcknowledged = false
         session.phase = .prompting
@@ -179,7 +183,7 @@ extension HostCore {
             return
         }
         // Queued messages wait out a stopped turn until the user sends again.
-        let pause = stopReason == "cancelled"
+        let pause = stopReason == "cancelled" && session.steeringInterruptTurn != turn.requestID
         endTurn(in: session, stopReason: stopReason, pauseQueue: pause)
         session.retryAttempts = 0
         append(.turnEnded(stopReason: stopReason), to: session)
@@ -227,6 +231,8 @@ extension HostCore {
         if let turn = session.turn, turn.kind == .prompt {
             titleAfterFirstTurn(session, promptID: turn.prompt.id, succeeded: stopReason == "end_turn")
         }
+        session.steeringGate.reset()
+        session.steeringInterruptTurn = nil
         session.turn = nil
         session.phase = .idle
         session.record.lastStopReason = stopReason
@@ -261,10 +267,13 @@ extension HostCore {
     /// Starts the next queued message once nothing is running, one per turn, unless paused.
     func drainQueue(_ session: HostSession) {
         guard session.phase == .idle, session.turn == nil, session.hiddenCommand == nil, session.retryAt == nil,
-            !session.record.isQueuePaused, let index = session.queue.firstIndex(where: { !$0.isSteering })
+            !session.record.isQueuePaused,
+            let index = session.queue.firstIndex(where: { $0.prompt.steersAfterTools && !$0.isSteering })
+                ?? session.queue.firstIndex(where: { !$0.isSteering })
         else { return }
         let next = session.queue.remove(at: index)
         var prompt = next.prompt
+        prompt.steersAfterTools = false
         if prompt.origin == .user {
             prompt.origin = .queued
         }
@@ -274,55 +283,6 @@ extension HostCore {
             session.queue.insert(next, at: index)
             logger.error("Couldn't start a queued turn: \(error.localizedDescription)")
         }
-    }
-
-    /// Adds a message to the running turn. It's recorded as steering first, so if the host stops
-    /// before the agent answers, recovery can tell whether it arrived.
-    func steer(_ item: OutgoingPrompt, into session: HostSession) async throws -> PromptDelivery {
-        try enqueue(item, in: session, atFront: true, steering: true)
-        var delivery = PromptDelivery.queued
-        if let link = agents[session.record.agentID], let peer = link.peer,
-            let agentSessionID = session.record.agentSessionID
-        {
-            do {
-                let response = try await peer.request(
-                    "_session/steering",
-                    SteerRequest(sessionId: agentSessionID, prompt: item.content ?? [.text(item.text)]),
-                    as: RawSteerResponse.self)
-                switch response.outcome {
-                case "injected", "startedNewTurn":
-                    // An older agent takes it as a new turn of its own; either way it's delivered.
-                    session.queue.removeAll { $0.prompt.id == item.id }
-                    append(
-                        .prompt(
-                            PromptEcho(
-                                text: item.text, steered: response.outcome == "injected", origin: item.origin,
-                                requestID: item.id, shown: item.isEchoed, attachments: item.attachments)),
-                        to: session)
-                    delivery = .steered
-                default:
-                    // The turn ended first; it goes out next, ahead of what was already waiting.
-                    break
-                }
-            } catch {
-                append(
-                    .notice(
-                        text:
-                            "Couldn't add your message to the running turn, so it's queued: \(error.localizedDescription)",
-                        isError: true), to: session)
-            }
-        }
-        if let index = session.queue.firstIndex(where: { $0.prompt.id == item.id }) {
-            session.queue[index].isSteering = false
-        }
-        try store.transaction {
-            try store.setQueue(session.queue, for: session.id)
-            try store.recordDelivery(delivery, for: item.id, in: session.id)
-        }
-        publish(session)
-        // The turn may have ended while the steer was in flight, leaving nothing to send the queue.
-        drainQueue(session)
-        return delivery
     }
 
     // MARK: - Settings and hidden commands

@@ -13,7 +13,7 @@ extension SessionModel {
         case prompted
         /// It joined the turn that was running.
         case steered
-        /// It waits for the running turn to end.
+        /// It waits for safe steering delivery or the next turn.
         case queued
     }
 
@@ -44,7 +44,14 @@ extension SessionModel {
     /// Messages waiting for the running turn to end, in the order they'll go out. Messages that
     /// don't show in the transcript (`echo: false`) aren't listed.
     var queuedPrompts: [QueuedPrompt] {
-        host == nil ? queue.visible : hostQueuedPrompts
+        host == nil
+            ? queue.visible.map { item in
+                var shown = item
+                if item.steersAfterTools, case .waitForTool(let title) = steeringDelivery {
+                    shown.waitingForTool = title
+                }
+                return shown
+            } : hostQueuedPrompts
     }
 
     /// Whether any message waits to go out, shown or not.
@@ -154,8 +161,8 @@ extension SessionModel {
         case .idle where !isRunningHiddenCommand && turnHold == nil:
             startTurn(text, attachments: attachments, echo: echo)
             return .prompted
-        case .prompting where behavior == .steer && supportsSteering && !isStopping:
-            return await steer(text, attachments: attachments, echo: echo)
+        case .prompting where behavior == .steer && !isStopping:
+            return await submitSteer(text, attachments: attachments, echo: echo)
         case .idle, .prompting:
             queue.append(text, attachments: attachments, isEchoed: echo)
             return .queued
@@ -177,6 +184,7 @@ extension SessionModel {
             MainActor.assumeIsolated {
                 session.queue.restore(item, at: index)
                 if wasPendingComment { session.keepLocallyQueuedDiffComments(item.text) }
+                session.deliverPendingSteer()
             }
         }
         undoManager?.setActionName("Delete Queued Message")
@@ -186,17 +194,15 @@ extension SessionModel {
     enum SendNowRoute: Equatable {
         /// Into the running turn.
         case steer
-        /// The running turn stops, then the message goes as the next prompt.
-        case interrupt
         /// As the next prompt, while the agent is idle (as it is after a stopped turn).
         case send
     }
 
     var sendNowRoute: SendNowRoute? {
         switch phase {
-        case .prompting: supportsSteering ? .steer : .interrupt
+        case .prompting where !isStopping: .steer
         case .idle where !isRunningHiddenCommand && turnHold == nil: .send
-        case .idle, .loading, .disconnected: nil
+        case .idle, .prompting, .loading, .disconnected: nil
         }
     }
 
@@ -216,10 +222,7 @@ extension SessionModel {
         switch sendNowRoute {
         case .steer:
             guard let item = queue.remove(id) else { return }
-            await steer(item.text, attachments: item.attachments, echo: item.isEchoed)
-        case .interrupt:
-            sendAfterStop = id
-            await cancel()
+            await submitSteer(item.text, attachments: item.attachments, echo: item.isEchoed)
         case .send:
             guard let item = queue.remove(id) else { return }
             startTurn(item.text, attachments: item.attachments, echo: item.isEchoed)
@@ -254,7 +257,14 @@ extension SessionModel {
     /// paused.
     func drainQueue() {
         guard host == nil else { return sendHeldPrompts() }
-        guard phase == .idle, !isRunningHiddenCommand, turnHold == nil, let next = queue.next() else { return }
+        guard phase == .idle, !isRunningHiddenCommand, turnHold == nil, !queue.isPaused else { return }
+        let next =
+            if let steer = queue.items.first(where: \.steersAfterTools) {
+                queue.remove(steer.id)
+            } else {
+                queue.next()
+            }
+        guard let next else { return }
         startTurn(next.text, attachments: next.attachments, echo: next.isEchoed)
     }
 
@@ -280,6 +290,7 @@ extension SessionModel {
         cancelRetry()
         // A new turn puts a stopped one behind it: what's queued now goes out as this one ends.
         queue.resume()
+        steeringGate.reset()
         hiddenCommandEcho = nil
         let isFirstPrompt = !state.items.contains { item in
             if case .message(let message) = item { message.role == .user } else { false }
@@ -378,20 +389,15 @@ extension SessionModel {
         turnDidEnd()
     }
 
-    /// What follows the end of a turn: the stop is over, and the next queued message goes out. A
-    /// message the user sent while stopping goes first; otherwise queued messages wait out a
-    /// cancelled or failed turn, until the user sends again.
+    /// A boundary interrupt delivers the held steer next. Stop and failed turns pause the queue
+    /// until the user sends again.
     func turnDidEnd() {
+        let steeredBetweenSteps = isSteeringBetweenSteps && !isStopping
+        isSteeringBetweenSteps = false
+        steeringGate.reset()
         turnGeneration += 1
         finishStopping()
-        if let id = sendAfterStop {
-            sendAfterStop = nil
-            if phase == .idle, let item = queue.remove(id) {
-                startTurn(item.text, attachments: item.attachments, echo: item.isEchoed)
-                return
-            }
-        }
-        if lastStopReason == .cancelled || lastStopReason == .error {
+        if (lastStopReason == .cancelled && !steeredBetweenSteps) || lastStopReason == .error {
             queue.pause()
         } else {
             drainQueue()
@@ -426,40 +432,4 @@ extension SessionModel {
         isRetryScheduled = false
     }
 
-    /// Adds `text` to the running turn. If the turn ended first, it goes to the front of the queue.
-    @discardableResult
-    private func steer(_ text: String, attachments: [PromptAttachment], echo: Bool) async -> FollowUpDelivery {
-        var delivery = FollowUpDelivery.queued
-        do {
-            let prompt = promptBlocks(text, attachments: attachments)
-            guard let connection else { throw SendError.disconnected }
-            let response = try await connection.send(SteerRequest(sessionId: id, prompt: prompt))
-            switch response.outcome {
-            case .injected:
-                if echo {
-                    state.appendUserMessage(
-                        text, attachments: MessageAttachment.shown(attachments, capabilities: promptCapabilities),
-                        steered: true)
-                }
-                delivery = .steered
-            case .startedNewTurn:
-                // An older agent took it as a new prompt of its own; it's been delivered.
-                if echo {
-                    state.appendUserMessage(
-                        text, attachments: MessageAttachment.shown(attachments, capabilities: promptCapabilities))
-                }
-                delivery = .steered
-            case .promptRequired, .other:
-                queue.prepend(text, attachments: attachments, isEchoed: echo)
-            }
-        } catch {
-            queue.append(text, attachments: attachments, isEchoed: echo)
-            state.appendNotice(
-                "Couldn't add your message to the running turn, so it's queued: \(error.localizedDescription)",
-                isError: true)
-        }
-        // The turn may have ended while the steer was in flight, leaving nothing to send the queue.
-        drainQueue()
-        return delivery
-    }
 }

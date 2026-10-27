@@ -103,6 +103,8 @@ extension HostCore {
             forwarded = .object(fields)
         }
         session.pendingPermissions[toolCallID] = id
+        session.steeringGate.apply(
+            .toolCallUpdate(ToolCallUpdate(toolCallId: toolCallID, title: request.toolCall.title)))
         append(.permissionRequested(toolCallID: toolCallID, request: forwarded), to: session)
         journal(.approvalNeeded, session: session, detail: request.toolCall.title)
         publish(session)
@@ -242,6 +244,15 @@ extension HostCore {
         let tracksBackground = update.kind?.hasPrefix("subagent_") == true
         let wasWorkingInBackground = tracksBackground && session.isWorkingInBackground
         append(update, to: session)
+        if session.phase == .prompting, session.loading == nil,
+            update.kind == "tool_call" || update.kind == "tool_call_update", let decoded = update.decoded
+        {
+            session.steeringGate.apply(decoded)
+            if session.queue.contains(where: { $0.prompt.steersAfterTools }) {
+                publish(session)
+                deliverPendingSteer(in: session)
+            }
+        }
         if update.kind == "config_option_update", session.record.origin != .announced, session.loading == nil,
             !session.needsLoad, case .configOptions(let options)? = update.decoded
         {

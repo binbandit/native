@@ -16,6 +16,7 @@ final class HostHarness: @unchecked Sendable {
     var grandchildFile: URL { root.appending(path: "grandchild.pid") }
     /// Extra environment for the fake agent (`FAKE_AGENT_NO_STEERING`, `FAKE_AGENT_GRANDCHILD`).
     var agentEnvironment: [String: String] = [:]
+    var steeringPolicy: SteeringPolicy?
     private var process: Process?
 
     /// The package's own build folder, or `NATIVE_HOST_TEST_PRODUCTS` for a build made with
@@ -32,7 +33,8 @@ final class HostHarness: @unchecked Sendable {
         AgentSpec(
             id: "fake", name: "Fake Agent",
             command: Self.products.appending(path: "FakeACPAgent").path(percentEncoded: false),
-            env: agentEnvironment.merging(["FAKE_AGENT_STORE": agentStore.path(percentEncoded: false)]) { $1 })
+            env: agentEnvironment.merging(["FAKE_AGENT_STORE": agentStore.path(percentEncoded: false)]) { $1 },
+            steeringPolicy: steeringPolicy)
     }
 
     /// The pid the fake agent's own child was given, once it started one.
