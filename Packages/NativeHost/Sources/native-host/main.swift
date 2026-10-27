@@ -46,7 +46,12 @@ let location =
 
 switch command {
 case "action":
-    NativeActionCLI.run(arguments)
+    #if os(macOS)
+    let allowed = MacHost.policySource(location: location)?.current().allows(.agentTools) ?? true
+    #else
+    let allowed = LinuxHostPolicySource().current().allows(.agentTools)
+    #endif
+    NativeActionCLI.run(arguments, admitted: allowed)
 
 case "serve":
     // A release binary carries its version in an embedded Info.plist (scripts/release/host.sh).

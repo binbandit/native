@@ -65,6 +65,16 @@ struct NativeActionTests {
     }
 
     #if canImport(Network)
+    @Test("Managed denial is checked before making any connection")
+    func preflight() async throws {
+        do {
+            _ = try await NativeActionClient.call(
+                NativeActionCommand(["list_tasks"]), endpoint: "invalid", admitted: false)
+            Issue.record("A denied CLI action must fail before validating or connecting to its endpoint.")
+        } catch NativeActionCommand.Failure.denied {
+        }
+    }
+
     @Test("The CLI uses the endpoint's authorization, JSON results, and tool errors")
     func permission() async throws {
         let tool = MCPTool<String>(

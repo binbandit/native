@@ -27,7 +27,7 @@ public enum NativeActionCLI {
         public init(endpoint: String) { self.endpoint = endpoint }
     }
 
-    public static func run(_ arguments: [String]) -> Never {
+    public static func run(_ arguments: [String], admitted: Bool) -> Never {
         if arguments == ["--help"] || arguments == ["help"] {
             FileHandle.standardOutput.write(Data((NativeActionCommand.usage + "\n").utf8))
             exit(0)
@@ -36,7 +36,7 @@ public enum NativeActionCLI {
             do {
                 let command = try NativeActionCommand(arguments)
                 let endpoint = try endpoint(environment: ProcessInfo.processInfo.environment)
-                let output = try await NativeActionClient.call(command, endpoint: endpoint)
+                let output = try await NativeActionClient.call(command, endpoint: endpoint, admitted: admitted)
                 FileHandle.standardOutput.write(Data((output + "\n").utf8))
                 exit(0)
             } catch {

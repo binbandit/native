@@ -13,7 +13,8 @@ import os
 signal(SIGPIPE, SIG_IGN)
 
 if CommandLine.arguments.dropFirst().first == "action" {
-    NativeActionCLI.run(Array(CommandLine.arguments.dropFirst(2)))
+    let allowed = MacHost.policySource(location: MacHost.location())?.current().allows(.agentTools) ?? true
+    NativeActionCLI.run(Array(CommandLine.arguments.dropFirst(2)), admitted: allowed)
 }
 
 let logger = Logger(subsystem: "Native", category: "Host")

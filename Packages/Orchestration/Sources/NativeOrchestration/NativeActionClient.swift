@@ -7,7 +7,10 @@ import FoundationNetworking
 
 /// One ordinary tool call to Native's existing authenticated loopback endpoint. No discovery round trip.
 public enum NativeActionClient {
-    public static func call(_ command: NativeActionCommand, endpoint value: String) async throws -> String {
+    public static func call(
+        _ command: NativeActionCommand, endpoint value: String, admitted: Bool = true
+    ) async throws -> String {
+        guard admitted else { throw NativeActionCommand.Failure.denied }
         let endpoint = try NativeActionCommand.endpoint(value)
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = 280
