@@ -19,7 +19,8 @@ extension AppModel {
     func workspaceGotTitle(_ event: TitleEvent) async {
         guard coordinator(for: event.key) == nil,
             let provider = taskWorkspaces, !titledWorkspaces.contains(event.key),
-            let projectID = catalog.lookup(event.key)?.project, let project = projects.project(projectID)
+            let projectID = catalog.lookup(event.key)?.project, projectID != NoProjectLocation.id,
+            let project = projects.project(projectID)
         else { return }
         titledWorkspaces.insert(event.key)
         let request = sessions.session(event.key)?.state.items.lazy.compactMap { item -> String? in
