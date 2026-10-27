@@ -29,15 +29,13 @@ struct NoProjectMoveSheet: View {
                     Divider()
                     Button("Other Folder…") { isChoosingFolder = true }
                 }
-                .menuStyle(.borderlessButton).fixedSize()
+                .menuStyle(.automatic).fixedSize()
                 .accessibilityLabel("Choose project folder")
             }
             SeparatorLine()
             VStack(alignment: .leading, spacing: DS.Space.sm) {
                 Toggle("Copy task files into the project", isOn: $copyFiles)
-                    #if os(macOS)
-                .toggleStyle(.checkbox)
-                    #endif
+                    .toggleStyle(.automatic)
                     .font(.dsBody)
                 Text(
                     "Copies into a new Task Files subfolder. Existing files stay untouched. Private originals stay with this task until deletion."
@@ -66,11 +64,7 @@ struct NoProjectMoveSheet: View {
             }
         }
         .padding(DS.Space.xxl)
-        #if os(macOS)
-        .frame(width: DS.TaskWorkspace.sheetWidth)
-        #else
-        .frame(maxWidth: DS.TaskWorkspace.sheetWidth)
-        #endif
+        .frame(idealWidth: DS.TaskWorkspace.sheetWidth, maxWidth: DS.TaskWorkspace.sheetWidth)
         .background(.dsBackground)
         .disabled(isMoving)
         .interactiveDismissDisabled(isMoving)
