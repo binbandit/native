@@ -154,6 +154,80 @@ old and new versions of six areas behind switches. Reclaim that space by deletin
 version when its switch flips. The size cut below brings the executable under the former 60 MB
 limit. The download, disk-image, installed-app and script-runtime budgets are unchanged.
 
+## 2026-10-27: size optimization for the protocol and host packages
+
+The integrated app at `7b52de76` fails the unchanged 118 MB installed and 48 MB ZIP budgets.
+Compared with `688c9850`, the executable grew 0.824 MB and the embedded host 0.072 MB. The
+Release link maps attribute the largest increases to Views (0.301 MB), SidebarFolders (0.165),
+ChangeAgent (0.082), Platform (0.054), ACP (0.037), and DesignSystem (0.030). Resources,
+frameworks and the script runtime did not grow in that comparison. Named Swift specialization
+symbols grew by only 0.045 MB; no preview registry or Debug fixture implementation remained linked.
+The legacy and redesigned presentations still ship together, so deleting either is not a size fix
+that preserves today's features.
+
+Eleven package targets now use `-Osize` in release configurations: ACP; NativeHostProtocol,
+NativeHostClient, NativeHost, NativeHostMac and UserShell; NativeLink; TaskList; and
+Exec, CodeThemeCatalog and CodeThemes. Protocol, serialization and transport code is linked into
+both the app and its host, so reducing it saves space twice. The app already uses `-Osize`.
+The grammar libraries keep their existing optimization. Debug builds are unchanged, and reflection,
+assets, terminal, script runtime, update framework and signing settings are unchanged.
+
+The update ZIP now uses ditto's maximum Deflate compression (`--zlibCompressionLevel 9`) in both
+`release.sh` and `size-check.sh`. On the first optimized Release build this saved another 0.102 MB
+over ditto's default. The archive format, resource-fork preservation and notarization ZIP are unchanged.
+
+| Component, MB | Release before | Release after | Nightly before | Nightly after |
+| --- | ---: | ---: | ---: | ---: |
+| Main executable | 60.742 | 60.267 | 60.759 | 60.267 |
+| Script runtime | 41.420 | 41.373 | 41.420 | 41.373 |
+| Host helper bundle | 6.483 | 5.845 | 6.483 | 5.845 |
+| Frameworks | 2.027 | 2.027 | 2.027 | 2.027 |
+| Resources | 7.502 | 7.502 | 7.586 | 7.586 |
+| Installed total | 118.176 | 117.016 | 118.278 | 117.101 |
+| Update ZIP | 48.146 | 47.837 | 48.248 | 47.940 |
+
+Measured unsigned arm64 builds with `scripts/release/check.sh` and `size-check.sh`, in the same
+DerivedData folder, before at `7b52de76` and after on `edd7d565` plus this patch. The latter only
+adds a workflow dependency update to that baseline. Release saves 1.160 MB installed and 0.308 MB
+downloaded; Nightly saves 1.177 and 0.308 MB. Both pass every unchanged budget.
+
+The saved baseline runtime is 0.047 MB larger than the freshly rebuilt pinned helper. There is
+no runtime source or build-setting change here. The main executable and host alone account for
+1.113 MB of the Release installed reduction and 1.130 MB for Nightly.
+
+Extracting each maximum-compression ZIP with ditto reproduces all 357 bundle entries, including
+file bytes, permissions and symbolic links. The terminal, runtime and Sparkle remain present.
+
+### Performance checks
+
+A standalone optimized client folds 10,000 turns, 200,000 message chunks and 20,000 tool updates
+per sample, with 20 paired samples per build. Median CPU time rises from 0.085 s to 0.105 s with ACP at `-Osize`:
+about 0.020 s across that batch, or under 0.1 microsecond per update. The resulting transcript
+item counts match. This records a small absolute cost on the reducer.
+
+A separate optimized client highlights 1,000 ten-line blocks per sample, three samples per
+language, and checks that their segments reproduce the input. Median CPU time, seconds:
+
+| Language | Before | After |
+| --- | ---: | ---: |
+| Swift | 0.275 | 0.272 |
+| TypeScript | 0.453 | 0.448 |
+| Python | 0.228 | 0.224 |
+| Ruby (lexer) | 0.064 | 0.067 |
+
+The existing `HostStreamingTests` also pass before and after: a 20,000-chunk flood and 2,000
+paced chunks all arrive complete and in order. Three runs per build, medians on the shared Mac:
+
+| Host path measurement | Before | After |
+| --- | ---: | ---: |
+| Flood, events per second | 38,449 | 52,848 |
+| Flood, client CPU per update | 32.7 µs | 23.9 µs |
+| Flood, host CPU per update | 42.7 µs | 30.8 µs |
+| Paced, median delivery latency | 0.15 ms | 0.08 ms |
+
+Other work shares the machine, so these throughput numbers describe these runs. Release-mode
+package tests pass in ACP, NativeHost, NativeLink, Exec, TaskList and CodeThemes (981 tests).
+
 ## 2026-10-25: the app at -Osize, Sparkle's helpers thinned, more cold packages
 
 Main went over its download and installed budgets (Nightly 47.8 and 119.0 MB at `5cd3aef9`),

@@ -208,7 +208,8 @@ log "Packaging"
 run rm -rf "$output/appcast" "$output/$dmg_name"
 run mkdir -p "$output/appcast"
 # The update archive Sparkle installs, next to its notes; generate_appcast reads both.
-run ditto -c -k --sequesterRsrc --keepParent "$app" "$output/appcast/$zip_name"
+# Match size-check.sh: maximum Deflate compression keeps the ZIP and its contents compatible.
+run ditto -c -k --zlibCompressionLevel 9 --sequesterRsrc --keepParent "$app" "$output/appcast/$zip_name"
 previous_tag=""
 case $channel in
     stable) previous_tag=$(last_stable_tag "$sha^") ;;

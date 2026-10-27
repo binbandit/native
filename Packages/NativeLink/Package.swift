@@ -23,7 +23,8 @@ let package = Package(
                 // Add Host runs the host's pair command over the user's ssh (`LinkSSHPairing`).
                 .product(name: "Exec", package: "Exec"),
                 .product(name: "NativeHostClient", package: "NativeHost"),
-            ]
+            ],
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]
         ),
         .testTarget(
             name: "NativeLinkTests",
