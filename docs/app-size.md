@@ -16,9 +16,9 @@ so growth gets noticed while there's still room to choose what to cut; lower the
 
 | What | Budget | 2026-10-25, after the -Osize and Sparkle cut (Release) |
 | --- | --- | --- |
-| Download, update archive | 48.5 MB | 46.9 MB |
+| Download, update archive | 48 MB | 46.9 MB |
 | Download, disk image | 49 MB | not remeasured |
-| Installed app | 119 MB | 115.1 MB |
+| Installed app | 118 MB | 115.1 MB |
 | App binary (`Contents/MacOS/Native`) | 70 MB | 58.9 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
@@ -34,6 +34,10 @@ build them, and such an app looks 12 to 40 MB smaller than what ships.
   dry runs included, and stops before publishing when they're over.
 
 Raise a budget only with the reason written here, in the same change.
+
+2026-10-27: the size cut in #211 restores the installed-app budget to 118 MB and the update ZIP
+budget to 48 MB after #210's temporary allowance. Release measures 117.016 MB installed /
+47.837 MB downloaded; Nightly measures 117.101 / 47.940 MB. All other budgets are unchanged.
 
 2026-10-27: approved by Brayden, the installed-app budget rises from 118 MB to 119 MB and
 the update-archive download budget from 48 MB to 48.5 MB. Main measured 118.2 MB installed
@@ -162,7 +166,7 @@ limit. The download, disk-image, installed-app and script-runtime budgets are un
 
 ## 2026-10-27: size optimization for the protocol and host packages
 
-The integrated app at `7b52de76` fails the unchanged 118 MB installed and 48 MB ZIP budgets.
+The integrated app at `7b52de76` failed the 118 MB installed and 48 MB ZIP budgets.
 Compared with `688c9850`, the executable grew 0.824 MB and the embedded host 0.072 MB. The
 Release link maps attribute the largest increases to Views (0.301 MB), SidebarFolders (0.165),
 ChangeAgent (0.082), Platform (0.054), ACP (0.037), and DesignSystem (0.030). Resources,
@@ -193,9 +197,10 @@ over ditto's default. The archive format, resource-fork preservation and notariz
 | Update ZIP | 48.146 | 47.837 | 48.248 | 47.940 |
 
 Measured unsigned arm64 builds with `scripts/release/check.sh` and `size-check.sh`, in the same
-DerivedData folder, before at `7b52de76` and after on `edd7d565` plus this patch. The latter only
-adds a workflow dependency update to that baseline. Release saves 1.160 MB installed and 0.308 MB
-downloaded; Nightly saves 1.177 and 0.308 MB. Both pass every unchanged budget.
+DerivedData folder, before at `7b52de76` and after on `0257c27e` plus this patch. The intervening main changes
+only update a workflow dependency and temporarily raise the size budgets. Release saves 1.160 MB installed and 0.308 MB
+downloaded; Nightly saves 1.177 and 0.308 MB. Both pass the restored 118 MB installed and 48 MB
+ZIP limits. Other budgets are unchanged.
 
 The saved baseline runtime is 0.047 MB larger than the freshly rebuilt pinned helper. There is
 no runtime source or build-setting change here. The main executable and host alone account for
