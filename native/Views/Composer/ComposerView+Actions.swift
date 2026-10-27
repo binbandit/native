@@ -125,6 +125,7 @@ extension ComposerView {
     func edit(_ prompt: SessionModel.QueuedPrompt) {
         session.editingQueuedPrompt = prompt.id
         session.draft = prompt.text
+        selection = nil
         isFocused = true
     }
 

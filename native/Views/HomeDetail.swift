@@ -12,7 +12,13 @@ struct HomeDetail: View {
 
     var body: some View {
         let agents = model.agents.map(homeAgent)
-        if homeNext {
+        if model.offersSidebarFolders,
+            model.projects.all.isEmpty
+                || (model.focusedProjectID != nil
+                    && model.currentProject.map { model.allSessions(in: $0.id).isEmpty } == true)
+        {
+            SidebarFolderHome(agents: agents)
+        } else if homeNext {
             next(agents: agents)
         } else if let current = model.currentProject {
             HomeView(

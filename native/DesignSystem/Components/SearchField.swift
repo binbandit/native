@@ -9,7 +9,16 @@ import SwiftUI
 ///     SearchField("Search settings", text: $query, focus: $focus, equals: .search) { Kbd("⌘F") }
 ///
 /// The text takes `font`, so a field matches what's around it: Settings' 14pt, the window's 12pt.
+///
+/// `.inline` is the quiet form for a list's own filter line (the Task Settings model filter): no
+/// outline, no fill and no clear button, the magnifier in the list's check gutter, so it reads as a
+/// row of the list rather than an input box. Escape still clears it.
 public struct SearchField<Field: Hashable, Accessory: View>: View {
+    public enum Style: Sendable {
+        case outlined
+        case inline
+    }
+
     public enum Size: Sendable {
         /// 28pt, beside small buttons and in nav columns.
         case medium
@@ -30,6 +39,7 @@ public struct SearchField<Field: Hashable, Accessory: View>: View {
     let size: Size
     let font: Font
     let isHighlighted: Bool
+    var style: Style = .outlined
     let focus: FocusState<Field?>.Binding?
     let field: Field
     let accessory: Accessory
@@ -72,18 +82,46 @@ public struct SearchField<Field: Hashable, Accessory: View>: View {
     }
 
     public var body: some View {
-        let shape = RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
+        switch style {
+        case .outlined: outlined
+        case .inline: inline
+        }
+    }
+
+    private var textField: some View {
+        TextField(title, text: $text, prompt: (prompt ?? Text(title)).foregroundStyle(.dsTextTertiary))
+            .textFieldStyle(.plain)
+            .labelsHidden()
+            .font(font)
+            .foregroundStyle(.dsTextPrimary)
+            .focused(focusBinding, equals: field)
+    }
+
+    private var inline: some View {
         HStack(spacing: DS.Space.sm) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: SearchFieldMetrics.inlineGlyph))
+                .foregroundStyle(.dsTextTertiary)
+                .frame(width: SearchFieldMetrics.inlineGutter)
+                .accessibilityHidden(true)
+            textField
+            accessory
+        }
+        .onKeyPress(.escape) {
+            guard !text.isEmpty else { return .ignored }
+            text = ""
+            return .handled
+        }
+    }
+
+    private var outlined: some View {
+        let shape = RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
+        return HStack(spacing: DS.Space.sm) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: SearchFieldMetrics.glyph))
                 .foregroundStyle(.dsTextSecondary)
                 .accessibilityHidden(true)
-            TextField(title, text: $text, prompt: (prompt ?? Text(title)).foregroundStyle(.dsTextTertiary))
-                .textFieldStyle(.plain)
-                .labelsHidden()
-                .font(font)
-                .foregroundStyle(.dsTextPrimary)
-                .focused(focusBinding, equals: field)
+            textField
             if !text.isEmpty {
                 Button("Clear \(title)", systemImage: "xmark.circle.fill") { text = "" }
                     .labelStyle(.iconOnly)
@@ -105,6 +143,15 @@ public struct SearchField<Field: Hashable, Accessory: View>: View {
             text = ""
             return .handled
         }
+    }
+}
+
+extension SearchField {
+    /// The field drawn in `style`.
+    public func searchFieldStyle(_ style: Style) -> Self {
+        var field = self
+        field.style = style
+        return field
     }
 }
 
@@ -162,6 +209,9 @@ extension SearchField where Accessory == EmptyView {
 private enum SearchFieldMetrics {
     /// The magnifier and clear glyphs, a size below the 12–14pt text.
     static let glyph: CGFloat = 12
+    /// The inline magnifier, centered in a list's check gutter.
+    static let inlineGlyph: CGFloat = 11
+    static let inlineGutter: CGFloat = 14
 }
 
 #Preview("Search field") {
@@ -172,6 +222,8 @@ private enum SearchFieldMetrics {
             SearchField("Filter pull requests", text: $empty)
             SearchField("Search settings", text: $empty, font: .ds(14)) { Kbd("⌘F") }
             SearchField("Filter skills", text: $typed, size: .large, font: .ds(14))
+            SearchField("Filter models", text: $empty, prompt: Text("Filter 59 models")).searchFieldStyle(.inline)
+            SearchField("Filter models", text: $typed) { Kbd("esc") }.searchFieldStyle(.inline)
         }
         .frame(width: 280)
         .padding(DS.Space.xl)

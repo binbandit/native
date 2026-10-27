@@ -170,8 +170,24 @@ struct SessionRow<Accessory: View>: View {
 
     private var recoverySentence: String? {
         if let removed = model.removedWorkspaces[summary.id] { return "Its worktree was removed. \(removed.detail)" }
-        if TaskStatus(session) == .failed { return "The task stopped unexpectedly. Open it to retry or switch models." }
+        if let session, TaskStatus(session) == .failed {
+            // Say what Native knows ("The provider was overloaded."), then the way forward.
+            guard let details = TurnFailureContext(state: session.state).details,
+                let what = Self.firstSentence(of: details)
+            else { return "The task stopped unexpectedly. Open it to retry or switch models." }
+            return "\(what) Try again or switch models."
+        }
         return nil
+    }
+
+    private static func firstSentence(of text: String) -> String? {
+        var first: String?
+        text.enumerateSubstrings(in: text.startIndex..., options: .bySentences) { sentence, _, _, stop in
+            first = sentence?.trimmingCharacters(in: .whitespacesAndNewlines)
+            stop = true
+        }
+        guard let first, !first.isEmpty else { return nil }
+        return first.last.map { ".!?".contains($0) } == true ? first : first + "."
     }
 
     /// A row picked with others acts on all of them; otherwise on itself.

@@ -160,6 +160,20 @@ only to the experimental approval view and never change system accessibility set
 argument to return to the normal path. An accessibility `press` on Hold to Allow exercises its
 two-step confirmation; `key cmd+y --hold 0.3` exercises early release.
 
+`scripts/tests/ask-window.sh <instance> light <evidence-directory>` opens nine long choices through
+an offline ACP fixture, verifies Fine print is showing, compares the window frame, scrolls to the
+last choice and checks the delivered answer. Use a dedicated instance: the harness resets its data.
+Build and quit that instance first. Repeat with `dark`;
+the optional fourth argument selects `confirmation` or `approval`, and a fifth `keyboard` selects
+the ninth question choice with its digit key and submits with Return. The harness writes only that
+instance's projects, plugin and Labs setting, quits it on exit, and refuses UI checks while locked.
+Screenshots, the source revision and diff, the accessibility tree and before/after frames go in the
+evidence directory. Its plugin and store are in `/private/tmp/native-ask-window-<instance>`;
+its empty project is `.build/ask-window-fixture` in the worktree.
+Use `ASK_WINDOW_HEIGHT=620` to stress a shorter window; `failure` as the fourth argument checks a
+long failed-start diagnostic, expanded output and Retry. The question check also asserts that the
+last choice's accessibility frame lies inside both its scroll viewport and the window.
+
 `<text>` matches an accessibility identifier first, then a title or label exactly, then ignoring
 case, then as part of any label, value or help text. Few elements in Native have identifiers of their
 own (an icon-only button's is its symbol name, like `#gearshape`), so labels are what you'll use.

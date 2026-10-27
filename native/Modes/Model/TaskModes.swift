@@ -94,6 +94,10 @@ final class TaskModes {
         await select(catalog(for: session).next(after: mode(of: session).id).id, in: session)
     }
 
+    func recoverSelection(from old: SessionKey, to session: SessionModel) {
+        selections[Self.key(session)] = selections["\(old.agent.rawValue)/\(old.id.rawValue)"]
+    }
+
     /// A task the user just started: in the mode it carries on from (`/clear`), else in the mode
     /// new tasks start in.
     func taskStarted(_ session: SessionModel, continuing earlier: SessionModel?) async {

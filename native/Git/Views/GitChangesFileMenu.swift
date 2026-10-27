@@ -29,11 +29,12 @@ struct GitChangesFileMenu: View {
     private var position: String {
         if let range, let comparison = range.comparison {
             guard let index = comparison.changes.firstIndex(where: { $0.path == path }) else { return "" }
-            return "\(index + 1) of \(comparison.changes.count) files"
+            return "\(index + 1) of \(comparison.changes.count) \(comparison.changes.count == 1 ? "file" : "files")"
         }
         guard let index = model.changes.firstIndex(where: { $0.id == model.shownDiff?.change.id }) else { return "" }
-        let noun = Set(model.changes.map(\.path)).count == model.changes.count ? "files" : "changes"
-        return "\(index + 1) of \(model.changes.count) \(noun)"
+        let count = model.changes.count
+        let noun = Set(model.changes.map(\.path)).count == count ? "file" : "change"
+        return "\(index + 1) of \(count) \(noun)\(count == 1 ? "" : "s")"
     }
 
     var body: some View {

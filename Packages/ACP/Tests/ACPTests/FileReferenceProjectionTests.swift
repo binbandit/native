@@ -3,6 +3,17 @@ import Testing
 @testable import ACP
 
 struct FileReferenceProjectionTests {
+    @Test func anActiveUnquotedPathBeforeOtherTextStaysEditable() {
+        let raw = "@docs/gu next"
+        let caret = "@docs/gu".utf8.count
+        let projection = FileReferenceProjection(raw, editingAt: caret)
+        #expect(projection.display == raw)
+        #expect(projection.tokens.isEmpty)
+        #expect(projection.rawOffset(projection.displayOffset(caret)) == caret)
+        let completed = FileReferenceProjection("@docs/guide.md next", editingAt: "@docs/guide.md ".utf8.count)
+        #expect(completed.tokens.map(\.path) == ["docs/guide.md"])
+    }
+
     @Test func chipPaddingStaysOutOfCanonicalDraftAndUndo() {
         let raw = "@folder/File.swift next"
         let padded = FileReferenceProjection(raw, tokenPadding: "\u{00A0}")
