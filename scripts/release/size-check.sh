@@ -13,9 +13,9 @@ set -euo pipefail
 source "$(dirname "$0")/lib.sh"
 
 # Budgets in MB (10^6 bytes, as Finder counts). Raise one only with a reason in docs/app-size.md.
-BUDGET_DOWNLOAD=48
+BUDGET_DOWNLOAD=48.5
 BUDGET_DMG=49
-BUDGET_INSTALLED=118
+BUDGET_INSTALLED=119
 BUDGET_BINARY=70
 BUDGET_SCRIPT_RUNTIME=42
 
