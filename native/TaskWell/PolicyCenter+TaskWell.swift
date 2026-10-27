@@ -7,10 +7,11 @@ extension PolicyCenter {
     /// the machines it may run on.
     static let taskWorkerKeys: Set<PolicyKey> = [.agentsAllowed, .agentsEnvironment, .remoteHostsEnabled]
 
-    /// "Managed by Northwind Federal IT", or the generic line when the organization gave no name.
-    /// Native never infers a company name.
+    /// "Managed by Northwind Federal IT · #it-help", with the contact when the organization gave
+    /// one, or the generic line when it gave no name. Native never infers a company name.
     var managementLine: String {
-        policy.organizationName.map { "Managed by \($0)" } ?? Self.managedExplanation
+        guard let name = policy.organizationName else { return Self.managedExplanation }
+        return ["Managed by \(name)", policy.organizationContact].compactMap { $0 }.joined(separator: " · ")
     }
 
     /// The network policy keeps GitHub out of reach: an air-gapped or internal-only install, or

@@ -4,12 +4,12 @@ import SwiftUI
 
 struct TaskWellToolsPanel<Destination: View>: View {
     let content: TaskWellContent
-    let location: String
     let identity: TaskWellIdentity
     @Bindable var tools: SessionToolsScreenModel
     let detail: (TaskWellTool) -> TaskWellToolDetail
     @ViewBuilder var destination: (TaskWellTool) -> Destination
-    @State private var hovered: TaskWellTool?
+    /// The row under the pointer, or the one the arrow keys moved to: one highlight for both.
+    @State private var highlighted: TaskWellTool?
     @FocusState private var isFocused: Bool
 
     var body: some View {
@@ -30,7 +30,7 @@ struct TaskWellToolsPanel<Destination: View>: View {
                 .padding(DS.Space.lg)
             } else {
                 VStack(spacing: 0) {
-                    ForEach(TaskWellTool.allCases.filter(tools.wellToolAvailable)) { tool in
+                    ForEach(rows) { tool in
                         row(tool, detail: detail(tool))
                     }
                 }
@@ -49,6 +49,25 @@ struct TaskWellToolsPanel<Destination: View>: View {
             if tools.wellPage != nil { tools.showWellTools() } else { tools.showsWell = false }
             return .handled
         }
+        .onKeyPress(.downArrow) { moveHighlight(by: 1) }
+        .onKeyPress(.upArrow) { moveHighlight(by: -1) }
+        .onKeyPress(keys: [.return, .space]) { _ in
+            guard tools.wellPage == nil, let highlighted else { return .ignored }
+            tools.performWellTool(highlighted)
+            return .handled
+        }
+    }
+
+    private var rows: [TaskWellTool] { TaskWellTool.allCases.filter(tools.wellToolAvailable) }
+
+    /// Up and down move through the rows that can open, as in a menu; Return or Space opens one.
+    private func moveHighlight(by step: Int) -> KeyPress.Result {
+        let enabled = rows.filter { detail($0).unavailableReason == nil }
+        guard tools.wellPage == nil, !enabled.isEmpty else { return .ignored }
+        let current = highlighted.flatMap(enabled.firstIndex(of:))
+        let next = current.map { min(max($0 + step, 0), enabled.count - 1) } ?? (step > 0 ? 0 : enabled.count - 1)
+        highlighted = enabled[next]
+        return .handled
     }
 
     private var worker: some View {
@@ -75,42 +94,45 @@ struct TaskWellToolsPanel<Destination: View>: View {
                 .fixedSize()
             }
         }
-        .font(DS.TaskWell.object)
+        .font(DS.TaskWell.caption)
         .foregroundStyle(.dsTextTertiary)
         .padding(.vertical, DS.Space.lg)
         .padding(.horizontal, DS.Space.xl)
     }
 
+    /// One line: the branch's middle gives way before the administrator's name does.
     private var footer: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: DS.Space.sm) {
-                checkout
-                Spacer(minLength: DS.Space.md)
-                management
-            }
-            VStack(alignment: .leading, spacing: DS.Space.sm) {
-                checkout
-                management
-            }
+        HStack(spacing: DS.Space.sm) {
+            checkout
+            Spacer(minLength: DS.Space.md)
+            management
+                .layoutPriority(1)
         }
-        .font(DS.TaskWell.object)
+        .font(DS.TaskWell.caption)
         .foregroundStyle(.dsTextTertiary)
         .padding(.horizontal, DS.Space.xl)
         .padding(.vertical, DS.Space.md)
         .frame(minHeight: DS.TaskWell.footerHeight)
     }
 
+    /// The project, then its branch, as the title names them.
     private var checkout: some View {
-        Label(location, systemImage: "arrow.triangle.branch")
-            .lineLimit(1).truncationMode(.middle)
-            .help(location)
+        HStack(spacing: DS.Space.sm) {
+            Image(systemName: "arrow.triangle.branch").foregroundStyle(.dsTextQuaternary)
+            Text(identity.project)
+            if let branch = identity.branch {
+                Text("/").foregroundStyle(.dsTextQuaternary)
+                Text(branch).truncationMode(.middle)
+            }
+        }
+        .lineLimit(1)
+        .help([identity.project, identity.branch].compactMap { $0 }.joined(separator: " / "))
     }
 
     @ViewBuilder private var management: some View {
         if let management = identity.management {
             Label(management, systemImage: "lock")
-                .font(.dsCaption)
-                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(1)
         }
     }
 
@@ -135,7 +157,7 @@ struct TaskWellToolsPanel<Destination: View>: View {
                         if let stats = detail.stats { DiffStatsText(stats: stats).fixedSize() }
                     }
                     .font(DS.TaskWell.rowDetail)
-                    .foregroundStyle(.dsTextSecondary)
+                    .foregroundStyle(detail.unavailableReason == nil ? .dsTextSecondary : .dsTextTertiary)
                     Spacer(minLength: DS.Space.sm)
                     if detail.isManaged {
                         Image(systemName: "lock").foregroundStyle(.dsTextTertiary)
@@ -155,10 +177,20 @@ struct TaskWellToolsPanel<Destination: View>: View {
             .buttonStyle(.plain)
             .disabled(detail.unavailableReason != nil)
             .background(
-                detail.isSelected ? .dsSelected : hovered == tool ? .dsHover : .clear,
+                detail.isSelected ? .dsSelected : highlighted == tool ? .dsHover : .clear,
                 in: .rect(cornerRadius: DS.Radius.card)
             )
-            .trackHover(Binding(get: { hovered == tool }, set: { hovered = $0 ? tool : nil }))
+            .trackHover(
+                Binding(
+                    get: { highlighted == tool },
+                    set: { isHovered in
+                        if isHovered {
+                            highlighted = tool
+                        } else if highlighted == tool {
+                            highlighted = nil
+                        }
+                    })
+            )
             .dsHitTarget(DS.TaskWell.rowHeight)
             .accessibilityIdentifier("taskWell.\(tool.title)")
             if let reason = detail.unavailableReason ?? detail.note {
@@ -187,7 +219,7 @@ struct TaskWellToolsPanel<Destination: View>: View {
             )
             .frame(width: DS.TaskWell.signal, height: DS.TaskWell.signal)
             if let outcome = content.outcome {
-                Text("Changed \(outcome.changedFiles.count) \(outcome.changedFiles.count == 1 ? "file" : "files")")
+                Text(content.changedFiles(of: outcome))
                 DiffStatsText(stats: DiffStats(added: outcome.linesAdded, removed: outcome.linesRemoved))
                     .font(DS.TaskWell.object)
             } else {
@@ -199,7 +231,7 @@ struct TaskWellToolsPanel<Destination: View>: View {
                 }
             }
             Spacer(minLength: DS.Space.sm)
-            Text("esc").font(.dsMonoMicro).foregroundStyle(.dsTextTertiary)
+            Kbd("esc", compact: true)
         }
         .font(DS.TaskWell.body)
         .padding(.leading, DS.TaskWell.panelHeaderLeading)

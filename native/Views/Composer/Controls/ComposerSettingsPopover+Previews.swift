@@ -113,4 +113,21 @@ private struct PopoverPreview: View {
             settings: Fixtures.claude(), agentName: "Claude Code", rows: Fixtures.rows(), onSet: { _, _ in },
             page: .choices("mode")))
 }
+#Preview("Task settings - Crowded eight models, managed and stopped") {
+    DSPreviewPair {
+        ComposerSettingsPopover(
+            settings: Fixtures.claude(
+                models: Fixtures.claudeModels + ","
+                    + #"{"value":"extra-one","name":"Extra model one"},{"value":"extra-two","name":"Extra model two"}"#),
+            agentName: "Claude Code", manager: "Northwind Federal IT", permissionsManaged: true,
+            rows: Fixtures.rows()
+                + (0..<5).map {
+                    ComposerSettingsTaskRow(id: "extra-\($0)", title: "Project setting", value: "Default", kind: .page)
+                    { _ in }
+                }, isStopped: true, onRestart: {}, onSet: { _, _ in }
+        )
+        .dsPopoverBackground()
+    }
+}
+
 #endif

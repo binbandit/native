@@ -155,6 +155,7 @@ extension AppModel {
         catalog.replace(agent, in: project.id, with: topLevel) {
             let key = SessionKey(agent: agent, id: $0)
             return sessions.session(key) != nil || coordinator(for: key) != nil
+                || sessions.services.modelContinuations.hasPending(key)
         }
         problems.resolve(.listing(agent), in: project.id)
         if let selection, selection.agent == agent, !catalog.contains(selection), startingTask(selection) == nil {

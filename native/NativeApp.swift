@@ -135,6 +135,7 @@ struct NativeApp: App {
     var body: some Scene {
         Window("Native", id: "main") {
             RootView()
+                .platformTitlebarDoubleClick()
                 .sidebarDesignFixture()
                 .commandPalette(palette)
                 .onAppear {

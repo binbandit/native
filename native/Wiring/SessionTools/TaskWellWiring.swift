@@ -12,8 +12,8 @@ import Terminal
 struct TaskWellWiring: View {
     let session: SessionModel
     let tools: SessionToolsScreenModel
-    let location: String
     let turnChanges: TurnChangesActions?
+    var width = DS.TaskWell.width
     var isCompact = false
     let openSubagents: (SessionID?) -> Void
     @Environment(AppModel.self) private var app
@@ -26,8 +26,9 @@ struct TaskWellWiring: View {
 
     var body: some View {
         TaskWellToolbar(
-            session: session, tools: tools, location: location, identity: identity,
-            turnChanges: turnChanges, detail: detail, isCompact: isCompact, openSubagent: { openSubagents($0) }
+            session: session, tools: tools, identity: identity,
+            turnChanges: turnChanges, detail: detail, width: width, isCompact: isCompact,
+            openSubagent: { openSubagents($0) }
         ) { page in
             if page == .dev, let target {
                 ProjectActionsMenuContent(target: target, showsManagedExplanation: false)
@@ -105,7 +106,8 @@ struct TaskWellWiring: View {
             model: ComposerSettings(session.configOptions).model?.shortModelName,
             machine: device.isRemote ? "On \(app.deviceName(device))" : "On this Mac",
             timing: timing, contextFraction: session.usage.flatMap { $0.size > 0 ? $0.fractionUsed : nil },
-            isManaged: !managed.isDisjoint(with: workerKeys), management: management)
+            isManaged: !managed.isDisjoint(with: workerKeys), management: management,
+            project: app.projectName(of: session), branch: repository.branchName)
     }
 
     /// A tool that's off in Settings ▸ Task Tools never reaches the well, nor does its key.
@@ -145,6 +147,18 @@ struct TaskWellWiring: View {
         }
     }
 
+    /// What Dev is doing, or what choosing it would do: the run and how long it's been going, the
+    /// last run's command to show again, or the actions to choose from.
+    private func devText(_ action: ProjectAction?, isRunning: Bool, in target: ProjectActionTarget) -> String {
+        if let action { return isRunning ? "\(action.name) · running" : action.command }
+        let count = actions.store.list(for: target.project).all.count
+        return switch count {
+        case 0: "No project actions yet"
+        case 1: "1 action to run"
+        default: "\(count) actions to run"
+        }
+    }
+
     private func detail(_ tool: TaskWellTool) -> TaskWellToolDetail {
         switch tool {
         case .changes:
@@ -163,7 +177,7 @@ struct TaskWellWiring: View {
             }
             let panel = terminal.panel(for: session)
             let shells = panel.tabs.tabs.filter { $0.job == nil }
-            let label = shells.first.map { panel.tabs.label(of: $0) } ?? "Shell"
+            let label = URL(fileURLWithPath: terminal.jobShell).lastPathComponent
             return TaskWellToolDetail(
                 text: "\(label) · \(session.cwd.abbreviatedPath)",
                 isSelected: panel.isVisible && panel.tabs.selected?.job == nil,
@@ -179,7 +193,7 @@ struct TaskWellWiring: View {
                 policy.isManaged(.taskScriptsRepository)
                 && !policy.policy.taskScripts.repositoryScriptsEnabled
             return TaskWellToolDetail(
-                text: action?.name ?? "Project actions",
+                text: devText(action, isRunning: since != nil, in: target),
                 isSelected: panel.isVisible && panel.tabs.selected?.job != nil,
                 isRunning: since != nil, runningSince: since,
                 note: repositoryActionsOff ? "Repository actions are off. Your actions are still available." : nil,

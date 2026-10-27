@@ -1,6 +1,6 @@
 import Foundation
 
-/// Reported worker details, kept separate from the activity headline and the checkout footer.
+/// Reported worker details and the checkout they work in, kept separate from the activity headline.
 struct TaskWellIdentity {
     var model: String?
     var machine: String
@@ -8,4 +8,7 @@ struct TaskWellIdentity {
     var contextFraction: Double?
     var isManaged = false
     var management: String?
+    /// The task's project by name, never its worktree folder, and its branch.
+    var project = ""
+    var branch: String?
 }

@@ -19,6 +19,8 @@ extension DS {
         static let ringStroke: CGFloat = 1.5
         static let rule: CGFloat = 1
         static let maximumHeight: CGFloat = 470
+        /// Leaves room for the question's pager, actions and answer field in a normal window.
+        static let questionMaximumHeight: CGFloat = 320
         static let instructionHeight: CGFloat = 52
         static let instructionMaximumHeight: CGFloat = 78
         static let editorInsets = EdgeInsets()

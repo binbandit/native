@@ -28,9 +28,55 @@ struct FileMentionMatcherTests {
         #expect(matcher.matches(for: "src/components/", in: entries, limit: 5).contains("src/components/"))
     }
 
+    @Test func dotSlashListsOnlyRootEntriesWithFoldersFirst() {
+        let entries = FileMention.entries(forFiles: files + [".config/settings.json", ".gitignore"])
+        #expect(
+            matcher.matches(for: "./", in: entries, limit: 50) == [
+                ".config/", "docs/", "src/", ".gitignore", "README.md",
+            ])
+    }
+
+    @Test func dotSlashFiltersTheRootByAPartialName() {
+        let entries = FileMention.entries(forFiles: files + ["docs-notes.md", "nested/document.md"])
+        #expect(matcher.matches(for: "./do", in: entries, limit: 50) == ["docs/", "docs-notes.md"])
+    }
+
+    @Test func dotSlashCanBrowseAHiddenFolderWithoutMatchingEveryDot() {
+        let entries = FileMention.entries(forFiles: files + [".config/settings.json"])
+        #expect(matcher.matches(for: "./.co", in: entries, limit: 50) == [".config/"])
+        #expect(matcher.matches(for: "./.config/", in: entries, limit: 50) == [".config/", ".config/settings.json"])
+    }
+
+    @Test(arguments: ["../", "./../", "docs/../../", "/", "docs/../src/"])
+    func pathsCannotLeaveTheProject(query: String) {
+        let entries = FileMention.entries(forFiles: files)
+        #expect(matcher.matches(for: query, in: entries, limit: 50).isEmpty)
+    }
+
+    @Test func bareAtStillOffersRecentAndChangedFiles() {
+        let entries = FileMention.entries(forFiles: files)
+        let ranked = FileMentionMatcher(changed: ["docs/guide.md"], recent: ["src/index.ts"])
+        #expect(ranked.matches(for: "", in: entries, limit: 2) == ["src/index.ts", "docs/guide.md"])
+    }
+
+    @Test func rootBrowsingKeepsFoldersAheadOfRecentFilesAndHonorsTheLimit() {
+        let entries = FileMention.entries(forFiles: files)
+        let ranked = FileMentionMatcher(changed: ["README.md"], recent: ["README.md"])
+        #expect(ranked.matches(for: "./", in: entries, limit: 2) == ["docs/", "src/"])
+    }
+
+    @Test func namedFolderBrowsingStaysInThatFolder() {
+        let entries = FileMention.entries(forFiles: files + ["docs/nested/detail.md", "other/docs/guide.md"])
+        #expect(
+            matcher.matches(for: "docs/", in: entries, limit: 50) == [
+                "docs/", "docs/nested/", "docs/guide.md",
+            ])
+    }
+
     @Test func aMentionedFolderGoesAsALinkToTheFolder() throws {
         let root = FileManager.default.temporaryDirectory.appending(path: "mention-\(UUID().uuidString)")
-        try FileManager.default.createDirectory(at: root.appending(path: "src/components"), withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(
+            at: root.appending(path: "src/components"), withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
         let mentions = PromptAttachment.mentions(in: "look in @src/components/ please", relativeTo: root)
         #expect(mentions.count == 1)

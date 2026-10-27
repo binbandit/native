@@ -3,6 +3,10 @@
 set -euo pipefail
 instance=${1:?usage: composer-settings.sh instance [--geometry]}
 shift
+if [[ " ${*:-} " == *" --geometry "* ]] && [[ $(/tmp/native-tools/screenlocked) == locked ]]; then
+    echo "SKIP: screen locked; no geometry measurement or capture attempted"
+    exit 2
+fi
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 derived="/tmp/native-dd/$instance"
 products="$derived/Build/Products/Debug"

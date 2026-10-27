@@ -10,6 +10,10 @@ shortcut there. The keys here are the defaults. `DefaultShortcuts` (`Packages/Na
 mirrors them, and its tests fail when the two disagree, so change a key here first, then there.
 Rows without an id are keys a view answers itself; they can't be changed.
 
+On Mac, double-clicking empty title bar or toolbar space follows Desktop & Dock's title bar action
+(Zoom, Fill, Minimize or Do Nothing). Zoom and Fill restore the previous window size on the next
+double-click. Toolbar buttons, the task title and the well keep their own interactions.
+
 Standard macOS behavior comes for free and must not be broken: Tab / Shift-Tab move focus through
 controls (with Full Keyboard Access on), arrow keys move within lists and menus, Space activates the
 focused control, Escape dismisses popovers and sheets, ⌘W closes the frontmost window or sheet, ⌘Q quits, ⌘, opens
@@ -109,6 +113,8 @@ approval's frame: "Claude Code asks", a `1 of 2` pager, choices on digit keycaps
 recommends is tagged), Skip and Next (Return). The composer's field below becomes "Or answer in your
 own words"; Return there answers the shown question with what you typed. The draft waits
 underneath until the questions are answered, and ⌘L focuses the answer field.
+Long prompts and choices scroll inside the card. The pager, Skip / Next and answer field stay
+visible; digit and arrow keys reveal the choice they select or highlight.
 
 ### A task that couldn't start (Fine print)
 
@@ -200,11 +206,17 @@ narrowing as you type. A folder shows with a folder icon and a trailing `/`. The
 the draft as `@path` (`@src/components/` for a folder) and reaches the agent as a link to the file
 or folder. Pasted or dictated `@` text opens the list the same way ([accessibility.md](accessibility.md)).
 
+`@./` lists the project root's immediate folders and files, folders first. Continue with a partial
+name to filter, or a folder path such as `@docs/` to browse there. Hidden paths are included when
+they are in the project's file index; ignored paths stay out. `..` cannot browse outside the project.
+Paths with spaces use straight quotes (`@"My Docs/"`); folder completion leaves the caret inside
+the closing quote so the next characters continue the child name.
+
 | Keys | Action |
 | --- | --- |
 | @ | Open the file list |
 | ↑ / ↓ | Move the selection |
-| Return or Tab | Insert the selected file or folder, then a space, with the caret after it |
+| Return or Tab | Insert the selected file and a space; for a folder, leave the caret after its `/` to continue the path |
 | Escape | Close the list |
 
 ## Attachments
@@ -380,7 +392,8 @@ With The well enabled (`NativeTaskWell`, off by default), Cmd-I opens the center
 Its tools appear in this fixed key order. Missing tools leave no row; their keys stay reserved.
 Clicking a waiting well focuses the composer, where the full request can be answered.
 Dev reveals the latest project action in the workbench, or its action chooser before the first run.
-Subagents opens a roster; Return or Space on a row opens that worker. Escape returns from a
+Up and Down move through the tool list and Return or Space opens the highlighted tool, as in a
+menu. Subagents opens a roster; Return or Space on a row opens that worker. Escape returns from a
 chooser to the tool list, then closes the well. Terminal and Dev keep their existing run, stop,
 new-tab and hide commands in the workbench under the composer. A tool turned off in Settings ▸
 Task Tools has no row and its key does nothing. Task ▸ Rename Task… (no default keys) opens the
@@ -422,6 +435,27 @@ being hit by accident, since it ends work in progress.
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
 | ⌃⌥⌘Q | Quit Native and stop its agents: ends known commands, reports unverified stops, and exits the background host until Native opens again | Native | `app.quitAndStopAgents` |
+| | Restart Background Host…: confirms before restarting this Mac's host; offers to wait for busy tasks or interrupt and resume them | Native | `app.restartBackgroundHost` |
+
+Restart Background Host… is also in Settings > Background. Cancel leaves the host alone. With tasks
+running or waiting, Return chooses Wait Until They Finish; Escape cancels. The action is unavailable
+while restarting or this Mac has no background host. While waiting, the row names the blocking tasks
+and Restart Now… opens the same confirmation. Escape preserves the scheduled restart. It never restarts
+a paired host.
+
+## Opening folders (All in view)
+
+File > Open Folder… (⌘O, `project.open`) opens the system folder-only chooser directly,
+including before the first project and with the sidebar hidden. The permanent Open Folder…
+action above the account does the same. Its separate Recent Folders disclosure and File >
+Open Recent list up to six successfully opened folders on this device. Arrow keys move through
+recents, Return opens one, and Escape returns to the disclosure. Tab reaches Open Folder,
+Recent Folders, then the account controls. Return or Space activates each control.
+
+Drop one or several folders anywhere in the sidebar list to add them without starting a task.
+The persistent addition receipt offers Undo; ⌘Z undoes that addition when it is the applicable
+window action. Text editing keeps its normal undo precedence. Choosing an already open folder
+focuses its home without adding another project or another undo action.
 
 ## Picking tasks in the sidebar
 
@@ -484,11 +518,15 @@ Settings, as Escape does.
 | ↑ / ↓ | Every row, top to bottom, across sections; skips headers and locked rows. The caption under a list describes the highlighted row |
 | ← / → | On Effort, change its level (applies at once). On Mode, Goal, MCP servers or the agent's own settings, → opens its page or its choices in place; ← comes back |
 | Tab / ⇧Tab | Next / previous section: Model (including Fast mode), Effort, When it asks, the task's rows, and any retry action. A section lands on its current choice. In Compose, Tab follows native focus through agents, Add Agent and every settings control |
-| Letters | Up to 8 models: jump to the row whose name starts with what's typed (as in menus). 9 or more: type into the model filter, which matches names, then values |
+| Letters | Up to 8 models: jump to the row whose name starts with what's typed (as in menus). 9 or more: type into the model filter, which matches names, values and agent names |
 | Return | Choose and close. On a menu row, list its choices in place |
 | Space | Choose and keep the popover open |
 | Escape | Clear the filter; else leave a page; else close |
 | ⌘Z | Undo the last change made in the popover |
+
+When extra agent settings exhaust the height budget, the short model list ends with **N more models**.
+Return or Space on that row opens the full Model page; Escape or the back row returns to Task Settings.
+Lists past eight models keep the filter, with the last slot showing **N more match. Keep typing.**
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
@@ -503,12 +541,25 @@ Settings, as Escape does.
 
 ## Choosing an agent
 
-With Change Agent enabled in Settings > Labs, Task > Change Agent and the command palette
-(`session.changeAgent`) prepare a handoff to another installed agent. The task's agent control
-and sidebar menu offer the same action. Review and edit the handoff, choose the agent and model,
-then use Change Agent and Send. Cancel keeps the current task. A running turn must finish first.
-This first slice supports tasks on this Mac; earlier transcripts stay under Earlier Conversation.
-There is no default shortcut.
+With Change Agent and Fine print enabled in Settings > Labs, Task > Change Agent…
+(`session.changeAgent`) opens the composer's Model list, as Choose Model does. Other agents'
+reported models follow the current agent's models, with the agent named beside each model.
+Return chooses and closes; Space chooses and keeps the list open. Selecting another agent
+prepares it without sending a message. Context goes with the next message you explicitly send.
+The task keeps its folder, branch, draft, attachments and quoted sources. Earlier conversations
+stay accessible. While a normal turn runs, the choice waits for it to finish. Answer pending
+requests and send or remove queued messages first. Goals that cannot move safely must be cleared.
+
+| Keys | Action | Menu | Command |
+| --- | --- | --- | --- |
+| | Cancel a waiting or preparing model choice | Task | `session.cancelModelChange` |
+| | Undo the latest reversible model choice, including after dismissing its receipt | Task | `session.undoModelChange` |
+| ⌘Z | Undo the choice in normal window undo order; text edits keep precedence | Edit | |
+
+The persistent receipt above the field and the transcript divider offer Undo before the next
+message. After submission, Continue with the earlier agent makes a new choice; it cannot unsend
+a message. Escape dismisses the list without cancelling preparation. No title-bar agent button
+or review sheet is part of this path. Without Fine print, Change Agent retains its existing path.
 
 New Task With… (⌥⌘N) opens the agent picker in a sheet: every agent Native runs, each with
 its state (ready, starting, needs sign-in, not installed, stopped) and, when it can't start a
@@ -592,6 +643,8 @@ in Git, for example). No shortcuts change.
 | Keys | Action |
 | --- | --- |
 | ⇧⌘H in Hosts | Add Host: enter an SSH destination or paste a pairing link |
+| Return in Add Host when the organization stops pairing | Close the sheet |
+| ⇧⌘C in Add Host when the organization stops pairing | Copy the organization's help contact, when configured |
 | ⌘F | Focus the search field |
 | ↑ / ↓ | Move through the search results |
 | Return | Open the highlighted result |

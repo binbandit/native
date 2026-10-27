@@ -41,10 +41,14 @@ public struct ModelChoiceList: Equatable, Sendable {
     /// - Parameters:
     ///   - choices: The agent's models, in its order (first of each value, `uniqued`).
     ///   - current: The value the session runs on, kept in view when the filter is empty.
-    ///   - slots: Row slots for a filterable list; fewer when the popover runs out of height.
-    public init(choices: [Choice], current: String, query: String = "", slots: Int = Self.slots) {
+    ///   - slots: Row slots for a filterable list. Below the normal six, short lists also reserve
+    ///     their last slot for overflow; the client opens the full Model page from that row.
+    public init(
+        choices: [Choice], current: String, query: String = "", slots: Int = Self.slots,
+        searchTerms: [String: [String]] = [:], forceFilter: Bool = false
+    ) {
         let choices = choices.uniqued
-        isFilterable = choices.count > Self.filterThreshold
+        isFilterable = forceFilter || choices.count > Self.filterThreshold
         self.query = isFilterable ? query : ""
         let words = Self.words(in: self.query)
         let duplicates = Dictionary(grouping: choices, by: \.displayName).filter { $0.value.count > 1 }
@@ -62,14 +66,16 @@ public struct ModelChoiceList: Equatable, Sendable {
             return Row(choice: choice, name: name, nameMatches: Self.ranges(of: words, in: name), detail: detail)
         }
 
-        guard isFilterable else {
+        let slots = max(slots, 1)
+        guard isFilterable || (slots < Self.slots && choices.count > slots) else {
             rows = choices.map { row($0) }
             overflow = 0
             return
         }
         guard !words.isEmpty else {
-            var shown = Array(choices.prefix(slots))
-            if !shown.contains(where: { $0.value == current }),
+            let shownCount = isFilterable ? slots : slots - 1
+            var shown = Array(choices.prefix(shownCount))
+            if !shown.isEmpty, !shown.contains(where: { $0.value == current }),
                 let currentChoice = choices.first(where: {
                     $0.value == current
                 })
@@ -77,13 +83,16 @@ public struct ModelChoiceList: Equatable, Sendable {
                 shown[shown.count - 1] = currentChoice
             }
             rows = shown.map { row($0) }
-            overflow = 0
+            overflow = isFilterable ? 0 : choices.count - shown.count
             return
         }
         let matches: [Row] = choices.compactMap { choice in
             if Self.contains(words, in: choice.displayName) { return row(choice) }
             if Self.contains(words, in: choice.value) {
                 return row(choice, valueMatches: Self.ranges(of: words, in: choice.value))
+            }
+            if searchTerms[choice.value]?.contains(where: { Self.contains(words, in: $0) }) == true {
+                return row(choice)
             }
             return nil
         }
@@ -94,6 +103,14 @@ public struct ModelChoiceList: Equatable, Sendable {
             rows = matches
             overflow = 0
         }
+    }
+
+    /// A same-named choice's distinction, using original adapter values, before a client gives
+    /// rows a combined identity across adapters.
+    public static func distinguishingDetail(for choice: Choice, among choices: [Choice]) -> Detail? {
+        let group = choices.filter { $0.displayName == choice.displayName }
+        guard group.count > 1 else { return nil }
+        return distinction(of: choice, among: group)
     }
 
     /// What tells `choice` apart from the others with its name: its description when that's short and

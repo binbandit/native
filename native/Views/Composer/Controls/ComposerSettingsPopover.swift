@@ -31,7 +31,7 @@ struct ComposerSettingsPopover: View {
         case effort
         case autonomy(String)
         case row(String)
-        case fastMode, retry, restart, back
+        case fastMode, retry, restart, back, agentsSettings, moreModels
         case command(row: String, index: Int)
     }
 
@@ -48,6 +48,12 @@ struct ComposerSettingsPopover: View {
     /// Compose lists its agents above the settings.
     var leadingContent: AnyView?
     var rows: [ComposerSettingsTaskRow] = []
+    var agentModels: [ComposerAgentModel]?
+    var currentAgentID: AgentDefinition.ID?
+    var modelChange: ComposerAgentChange?
+    var loadingModelID: String?
+    var onChooseAgentModel: ((ComposerAgentModel) -> Void)?
+    var onAgentsSettings: (() -> Void)?
     /// While Plan suspends the permission level, the level it returns to.
     var resumedAutonomy: String?
     var pending: Pending?
@@ -84,6 +90,12 @@ struct ComposerSettingsPopover: View {
                         mainContent(slots: ModelChoiceList.slots, showsCaptions: true)
                         mainContent(slots: ModelChoiceList.slots - 1, showsCaptions: true)
                         mainContent(slots: ModelChoiceList.slots - 1, showsCaptions: false)
+                        // Extra agent settings can exhaust the budget even with captions hidden.
+                        // Keep their actions and row heights; the Model page holds the overflow.
+                        mainContent(slots: 4, showsCaptions: false)
+                        mainContent(slots: 3, showsCaptions: false)
+                        mainContent(slots: 2, showsCaptions: false)
+                        mainContent(slots: 1, showsCaptions: false)
                     }
                 }
             }
@@ -96,7 +108,7 @@ struct ComposerSettingsPopover: View {
         .focused($isFocused)
         .onAppear {
             isFocused = true
-            if highlightsCurrent, let model = settings.model { highlighted = .model(model.value) }
+            if highlightsCurrent, let currentModelID { highlighted = .model(currentModelID) }
         }
         .onKeyPress(phases: [.down, .repeat]) { handleKey($0) }
         .accessibilityElement(children: .contain)
@@ -111,24 +123,25 @@ struct ComposerSettingsPopover: View {
             if let leadingContent {
                 leadingContent
             }
+            // Stopped values stay dimmed and disabled; overflow navigation stays available.
             Group {
                 modelSection(slots: slots, showsCaption: showsCaptions)
                     .composerSettingsSection(ruled: isStopped || leadingContent != nil)
                 if settings.autonomy != nil {
-                    autonomySection(showsCaption: showsCaptions).composerSettingsSection(ruled: true)
+                    autonomySection(showsCaption: showsCaptions).composerSettingsSection(ruled: true).disabled(
+                        isStopped)
                 }
                 if !rows.isEmpty {
-                    taskRows.composerSettingsSection(ruled: true)
+                    taskRows.composerSettingsSection(ruled: true).disabled(isStopped)
                 }
             }
-            // Readable but not editable: dimmed by each row, so the headers keep their color.
-            .allowsHitTesting(!isStopped)
             if let manager {
                 footer(manager)
             }
         }
         .fixedSize(horizontal: false, vertical: true)
         .onAppear { modelSlots = slots }
+        .onChange(of: slots) { modelSlots = slots }
     }
 
     // MARK: - Notice and footer
@@ -200,7 +213,9 @@ struct ComposerSettingsPopover: View {
                 ForEach(settings.autonomyLevels) { choice in
                     autonomyRow(choice, setting: autonomy)
                 }
-                if !isStopped && (showsCaption || failure?.optionID == autonomy.option.id) { autonomyCaption(autonomy) }
+                if !isStopped && (showsCaption || failure?.optionID == autonomy.option.id) {
+                    autonomyCaption(autonomy)
+                }
             }
         }
     }
