@@ -406,6 +406,7 @@ extension SessionTitler {
 }
 
 struct TitleRequest: Hashable, Sendable {
+    var firstTurnOutcome: String? = nil
     var projectName: String
     /// The user's first prompt in the session.
     var prompt: String

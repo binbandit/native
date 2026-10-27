@@ -20,7 +20,12 @@ extension SessionTitleState {
         return HostSessionTitles(
             user: user, generated: generated, fallback: fallback,
             request: progress == .waitingForClient
-                ? request.map { HostTitleRequest(projectName: $0.projectName, prompt: $0.prompt, retry: retryCount) }
+                ? request.map {
+                    HostTitleRequest(
+                        projectName: $0.projectName, prompt: $0.prompt, retry: retryCount,
+                        firstTurnOutcome: refinementCount == 1 ? $0.firstTurnOutcome : nil,
+                        revision: refinementCount == 0 ? nil : refinementCount)
+                }
                 : nil)
     }
 }
@@ -107,24 +112,31 @@ extension HostCore {
     /// The user's own title, or one a client wrote because the summary asked for it.
     func setSessionTitle(_ params: SetSessionTitleParams) throws {
         let session = try session(params.sessionID)
+        guard params.source != .generated || params.revision != 1 || titling.configuration.provider != .off else {
+            return
+        }
         let changed =
             switch params.source {
             case .user: session.titleState.rename(to: params.title)
             case .generated:
-                params.title.map { session.titleState.accept(generated: $0, distinctFrom: otherTitles(near: session)) }
+                params.title.map {
+                    session.titleState.accept(
+                        generated: $0, distinctFrom: otherTitles(near: session), revision: params.revision ?? 0)
+                }
                     ?? false
             case .unknown: false
             }
         guard changed else { return }
         try store.setTitles(session.titleState, for: session.id)
         publish(session)
+        writeTitle(for: session)
     }
 
     /// Writes a title the session still wants with this host's generator, or leaves it to clients
     /// when the host has none for the configured provider.
     private func writeTitle(for session: HostSession) {
         let state = session.titleState
-        guard titling.configuration.provider != .off, var request = state.request, state.generated == nil,
+        guard titling.configuration.provider != .off, var request = state.request,
             state.progress == .generating || state.progress == .waitingForClient,
             !titling.generating.contains(session.id)
         else { return }
@@ -135,6 +147,7 @@ extension HostCore {
         request.instructions = SessionTitleInstructions(titling.configuration.instructions).addition(in: session.folder)
         request.otherTitles = otherTitles(near: session)
         let id = session.id
+        let revision = state.refinementCount
         Task {
             let result: Result<String?, any Error>
             do {
@@ -142,20 +155,28 @@ extension HostCore {
             } catch {
                 result = .failure(error)
             }
-            titleWritten(result, for: id)
+            titleWritten(result, for: id, revision: revision)
         }
     }
 
-    private func titleWritten(_ result: Result<String?, any Error>, for id: HostSessionID) {
+    private func titleWritten(_ result: Result<String?, any Error>, for id: HostSessionID, revision: Int) {
         titling.generating.remove(id)
-        guard let session = sessions[id], session.titleState.generated == nil else { return }
+        guard let session = sessions[id], session.titleState.request != nil else { return }
+        guard session.titleState.refinementCount == revision, titling.configuration.provider == .onDevice else {
+            // A client may have supplied the initial title while this model was suspended. Its
+            // stale answer must release the slot for the pending refinement or new provider.
+            writeTitle(for: session)
+            return
+        }
         switch result {
         case .success(nil):
             // No model here right now (Apple Intelligence is off, say); a client may have one.
             return leaveTitleToClients(session)
         case .success(let title?):
             // An answer with nothing usable in it counts as a failure.
-            if !session.titleState.accept(generated: title, distinctFrom: otherTitles(near: session)) {
+            if !session.titleState.accept(
+                generated: title, distinctFrom: otherTitles(near: session), revision: revision)
+            {
                 session.titleState.fail()
             }
         case .failure(let error):
@@ -164,6 +185,7 @@ extension HostCore {
         }
         saveTitles(of: session)
         publish(session)
+        writeTitle(for: session)
     }
 
     private func leaveTitleToClients(_ session: HostSession) {
@@ -171,6 +193,21 @@ extension HostCore {
         session.titleState.waitForClient()
         saveTitles(of: session)
         publish(session)
+    }
+
+    /// Consume the first turn once, including cancellation. Only assistant text from this turn
+    /// is useful context; tool output and hidden commands never become naming material.
+    func titleAfterFirstTurn(_ session: HostSession, promptID: UUID, succeeded: Bool) {
+        guard titling.configuration.provider != .off, session.titleState.promptID == promptID else { return }
+        let outcome =
+            succeeded
+            ? session.mirror.state.items.dropFirst(session.turnItemsStart).compactMap { item -> String? in
+                if case .message(let message) = item, message.role == .agent { return message.text }
+                return nil
+            }.joined(separator: "\n") : ""
+        session.titleState.finishFirstTurn(outcome: outcome)
+        saveTitles(of: session)
+        if session.titleState.refinementCount == 1 { writeTitle(for: session) }
     }
 
     /// The titles of the other live tasks in `session`'s project, which its own is told apart from.

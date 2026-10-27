@@ -2,6 +2,7 @@ import ACP
 import AIInstructions
 import Foundation
 import NativeHostProtocol
+import SessionTitling
 
 // Turns: prompting, and what happens to messages sent while a turn runs (queued for when it ends,
 // or steered into it).
@@ -285,15 +286,15 @@ extension SessionModel {
     func nameAfterPrompt(
         _ text: String, attachments: [PromptAttachment], isFirstPrompt: Bool, allowsRetry: Bool = true
     ) {
-        let prompt = text.isEmpty ? attachments.map(\.name).joined(separator: ", ") : text
+        let input = SessionTitleRequest(firstMessage: text, attachmentNames: attachments.map(\.name), in: cwd)
         let request = TitleRequest(
-            projectName: cwd.lastPathComponent, prompt: prompt,
+            projectName: input.projectName, prompt: input.prompt,
             instructions: AIInstructionsStore.shared.addition(for: .title, in: cwd))
         Task {
             let previous = services.titles.namedTitle(for: titleKey)
             await services.titles.generateIfNeeded(
                 for: titleKey, request: request, using: services.plugins.titler, isFirstPrompt: isFirstPrompt,
-                allowsRetry: allowsRetry)
+                allowsRetry: allowsRetry, isAllowed: { self.services.plugins.titler != nil })
             if let title = services.titles.namedTitle(for: titleKey), isFirstPrompt || title != previous {
                 services.titleLanded(key, cwd, title)
             }
@@ -315,6 +316,7 @@ extension SessionModel {
             state.endTurn(response.stopReason)
             lastStopReason = response.stopReason
             services.post(.turnEnded(context, response.stopReason))
+            refineTitleAfterFirstTurn(succeeded: response.stopReason == .endTurn)
         } catch {
             guard generation == turnGeneration else { return }
             guard !isStopping else { return }

@@ -442,7 +442,11 @@ The first enabled plugin with a titler decides, and the app tells each host it's
 - **No titler** (the plugin is off): tasks keep the titles their agents give them.
 
 Either way the user's own title wins over all of them and lives in the host, so a rename on one
-device shows on every other. A titler is asked once per task; one that fails isn't asked again.
+device shows on every other. A failed initial attempt may retry once on a new ordinary turn.
+A weak initial title may be refined once after the first turn; `TitleRequest.firstTurnOutcome`
+provides safe assistant context then. A manual rename prevents refinement. The host protocol
+carries a revision so an initial answer cannot overwrite the refinement. See
+[task-titles.md](task-titles.md) for the offline comparison and naming rules.
 
 ## Testing a plugin
 

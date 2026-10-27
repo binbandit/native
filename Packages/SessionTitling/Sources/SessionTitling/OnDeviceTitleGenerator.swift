@@ -30,9 +30,7 @@ public struct OnDeviceTitleGenerator: SessionTitleGenerator {
             // Greedy, so the same message gets the same title, and only what differs tells tasks apart.
             let response = try await session.respond(
                 to: request.modelPrompt, generating: Title.self, options: GenerationOptions(samplingMode: .greedy))
-            return SessionTitleRules.cleaned(response.content.title).map {
-                SessionTitleRules.sentenceCase($0, keeping: request.prompt)
-            }
+            return SessionTitleRules.automatic(response.content.title, from: request)
         }
         #endif
         return nil
@@ -62,7 +60,7 @@ extension OnDeviceTitleGenerator {
         }
 
         private static let guide =
-            "A 2 to 6 word title naming the task the user asked for and what it's about (the file, function, feature or goal), in sentence case, like a short commit subject. Imperative when the user asked for a change (\"Add docstring to greet\"), a noun phrase for questions (\"Auth middleware overview\"). Never only a generic action like \"Run shell command\" or \"Fix bug\". No quotes, no trailing punctuation, no filler like \"task\" or \"request\"."
+            "A 2 to 6 word task title naming the requested change and what it is about (the feature, function or goal). Use sentence case. Imperative for changes, a noun phrase for questions. Never only a generic action. No quotes, trailing punctuation, or filler."
     }
 }
 #endif

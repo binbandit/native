@@ -14,7 +14,7 @@ final class HostStore {
     /// Extensions that keep an engine's tables use it directly (HostStore+Notifications.swift).
     let database: SQLiteDatabase
 
-    static let schemaVersion: Int64 = 12
+    static let schemaVersion: Int64 = 13
 
     init(url: URL) throws {
         database = try SQLiteDatabase(url: url)
@@ -93,6 +93,15 @@ final class HostStore {
             }
             if version < 12 {
                 try database.execute(Self.approvalPendingTable)
+            }
+            if version < 13 {
+                try database.execute(
+                    """
+                    ALTER TABLE titles ADD COLUMN first_outcome TEXT;
+                    ALTER TABLE titles ADD COLUMN refinement_count INTEGER NOT NULL DEFAULT 0;
+                    ALTER TABLE titles ADD COLUMN first_finished INTEGER NOT NULL DEFAULT 0;
+                    ALTER TABLE titles ADD COLUMN was_renamed INTEGER NOT NULL DEFAULT 0;
+                    """)
             }
             try database.execute("PRAGMA user_version = \(Self.schemaVersion)")
         }
