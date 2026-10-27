@@ -1,5 +1,6 @@
 import ACP
 import SwiftUI
+import TaskList
 
 /// The ordinary task row, in a stable group that cannot be archived or treated as a repository.
 struct NoProjectTaskGroup<TaskAccessory: View>: View {
@@ -15,8 +16,8 @@ struct NoProjectTaskGroup<TaskAccessory: View>: View {
     var body: some View {
         AllInViewProjectGroup(
             name: "No project", isFirst: !followsPinned, isExpanded: isExpanded,
-            taskCount: group.current.count + group.earlier.count,
-            activity: ProjectActivity(), note: nil,
+            taskCount: group.current.count + group.earlier.count + model.startingTasks(in: NoProjectLocation.id).count,
+            activity: activity, note: nil,
             onNewTask: { Task { await model.newSession(in: NoProjectLocation.id) } }
         ) {
             Button("New Task") { Task { await model.newSession(in: NoProjectLocation.id) } }
@@ -37,6 +38,19 @@ struct NoProjectTaskGroup<TaskAccessory: View>: View {
                 if isEarlierExpanded.wrappedValue { rows(group.earlier) }
             }
         }
+    }
+
+    private var activity: ProjectActivity {
+        guard !isExpanded.wrappedValue else { return ProjectActivity() }
+        var value = ProjectActivity(working: model.startingTasks(in: NoProjectLocation.id).count)
+        for task in model.sessions(in: NoProjectLocation.id) {
+            switch TaskFacts.Activity(model.session(task.id)) {
+            case .needsYou: value.needsYou += 1
+            case .running: value.working += 1
+            case .failed, .done, .idle: break
+            }
+        }
+        return value
     }
 
     private func rows(_ tasks: [SessionSummary]) -> some View {
