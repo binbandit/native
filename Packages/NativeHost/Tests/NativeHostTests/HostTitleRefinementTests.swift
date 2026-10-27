@@ -40,6 +40,32 @@ extension HostTitleTests {
         for link in host.agents.values { link.endNow() }
     }
 
+    @Test("A stale model answer releases the slot for a client-triggered refinement")
+    func staleModelDoesNotStall() async throws {
+        let rig = try Rig()
+        let titler = ScriptedTitler(answer: "Fix build", released: false)
+        let host = try rig.host(titler)
+        let client = try await rig.connect(to: host)
+        try await client.configureTitles(ConfigureTitlesParams(provider: .onDevice))
+        let id = try await rig.startTask("fix the build", on: client)
+        for _ in 0..<500 {
+            if host.sessions[id]?.phase == .idle && !titler.requests.isEmpty { break }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        try await client.setSessionTitle(SetSessionTitleParams(sessionID: id, title: "Fix build", source: .generated))
+        #expect(host.sessions[id]?.titleState.refinementCount == 1)
+        titler.script.withLock { $0.answer = "Fix SessionModel isolation" }
+        titler.release()
+        for _ in 0..<500 {
+            if host.sessions[id]?.titleState.generated == "Fix SessionModel isolation" { break }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(host.sessions[id]?.titleState.generated == "Fix SessionModel isolation")
+        #expect(titler.requests.count == 2)
+        await client.stop()
+        for link in host.agents.values { link.endNow() }
+    }
+
     @Test("Client refinements require their revision; stale and duplicate answers cannot rename a task")
     func clientRefinementRevision() async throws {
         let rig = try Rig()

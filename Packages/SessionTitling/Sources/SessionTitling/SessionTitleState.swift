@@ -127,7 +127,9 @@ public struct SessionTitleState: Hashable, Sendable {
         else { return false }
         let candidate =
             request.map { SessionTitleRules.automatic(title, from: $0) }
-            ?? SessionTitleRules.cleaned(title).flatMap { SessionTitleInput.isSafeTitle($0) ? $0 : nil }
+            ?? SessionTitleRules.cleaned(title).flatMap {
+                SessionTitleInput.isSafeTitle($0) ? SessionTitleRules.sentenceCase($0) : nil
+            }
         guard let title = candidate else { return false }
         let prompt = request?.prompt ?? ""
         if revision == 1, SessionTitleRules.isWeak(title, projectName: request?.projectName ?? "") {

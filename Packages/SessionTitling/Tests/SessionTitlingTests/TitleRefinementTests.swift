@@ -79,6 +79,13 @@ struct TitleRefinementTests {
         #expect(state.wasRenamed && state.refinementCount == 0)
     }
 
+    @Test(
+        "Generic categories are weak even when they fit the word limit",
+        arguments: ["Run shell command", "Update docs", "Improve performance", "Fix memory leak", "Fix failing test"])
+    func genericCategories(title: String) {
+        #expect(SessionTitleRules.isWeak(title))
+    }
+
     @Test("Empty outcomes and later turns do not create a refinement")
     func emptyOutcome() {
         var state = SessionTitleState()
@@ -100,6 +107,29 @@ struct TitleRefinementTests {
         #expect(SessionTitleInput.isSafeTitle("Fix release.py"))
         let distinct = SessionTitleRules.distinct("Fix build", from: ["Fix build"], prompt: text)
         #expect(!distinct.contains("fixture") && !distinct.contains("/Users"))
+    }
+
+    @Test("A verbose answer falls back to a complete short phrase")
+    func verboseAnswer() {
+        let request = SessionTitleRequest(
+            projectName: "dashboard",
+            prompt: "The search box drops focus after each keystroke. Fix it in the React customer list.")
+        let title = SessionTitleRules.automatic("Fix search box focus loss in React customer list", from: request)
+        #expect(title == "The search box drops focus")
+    }
+
+    @Test("Credential assignments, quoted passphrases and private-key blocks are removed locally")
+    func credentialFormats() {
+        let text = """
+            AWS_ACCESS_KEY_ID=AKIA0000000000000000
+            DB_PASSWORD="synthetic multi word passphrase"
+            -----BEGIN PRIVATE KEY-----
+            synthetic key material
+            -----END PRIVATE KEY-----
+            Fix payment header logging
+            """
+        #expect(SessionTitleInput.prepared(text) == "Fix payment header logging")
+        #expect(!SessionTitleInput.isSafeTitle("Use AKIA0000000000000000"))
     }
 
     @Test("A request after a long log is retained, bounded and treated as context")

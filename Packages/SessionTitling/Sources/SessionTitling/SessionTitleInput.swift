@@ -7,7 +7,9 @@ public enum SessionTitleInput {
         var text = text
         for pattern in [
             #"(?im)^\s*(?:authorization|cookie|set-cookie|x-api-key|title)\s*:.*$"#,
-            #"(?i)\b(?:api[_-]?key|access[_-]?token|password|secret|token)\s*[=:]\s*[\"']?[^\s\"']+"#,
+            #"(?im)^.*\b(?:[A-Z0-9_]*(?:_key|_token|_password|_secret|_credential)[A-Z0-9_]*|api[_-]?key|access[_-]?token|key|password|secret|token|credential)\s*[=:].*$"#,
+            #"(?s)-----BEGIN [^-]*(?:PRIVATE KEY|CREDENTIAL)[^-]*-----.*?-----END [^-]+-----"#,
+            #"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b"#,
             #"\b(?:sk-|ghp_|github_pat_)[A-Za-z0-9_-]+"#,
             #"\b[A-Za-z0-9_+/=-]{32,}\b"#,
         ] {

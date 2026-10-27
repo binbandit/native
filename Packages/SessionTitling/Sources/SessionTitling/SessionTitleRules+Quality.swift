@@ -11,6 +11,9 @@ extension SessionTitleRules {
             "that", "again", "please", "help", "build", "test", "tests", "bug", "issue", "task", "request",
             "update", "improve", "add", "change", "code", "work", "stuff", "thing", "things", "project", "feature",
             "component",
+            "run", "shell", "command", "refactor", "review", "inspect", "investigate", "explain", "create",
+            "implement", "docs", "documentation", "performance", "memory", "leak", "crash",
+            "failing", "failure", "failures", "broken", "flaky",
             projectName.lowercased(),
         ]
         return words.allSatisfy { generic.contains($0) }
@@ -66,7 +69,7 @@ extension SessionTitleRules {
         let source = request.prompt + "\n" + (request.firstTurnOutcome ?? "")
         let title = restoringNames(in: sentenceCase(compact(cleaned), keeping: source), from: source)
         let words = title.split(whereSeparator: \.isWhitespace)
-        guard words.count >= 2, !filler.contains(where: { title.lowercased().hasPrefix($0) }) else {
+        guard (2...6).contains(words.count), !filler.contains(where: { title.lowercased().hasPrefix($0) }) else {
             return fallback(from: request.firstTurnOutcome ?? request.prompt)
         }
         return title

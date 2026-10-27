@@ -40,9 +40,9 @@
       "focus"
     ],
     "before": "Fix search box focus loss in React customer list",
-    "initial": "Fix search box focus loss React customer list",
-    "refined": "Fix search box focus loss React customer list",
-    "after": "Fix search box focus loss React customer list"
+    "initial": "The search box drops focus",
+    "refined": "",
+    "after": "The search box drops focus"
   },
   {
     "id": 4,

@@ -48,8 +48,8 @@ change with OS/model updates. The checked-in replay is deterministic and offline
 and transitions against those captured provider answers. It is not a claim that every future
 on-device inference produces the same strings.
 
-The recorded score improves from **222/240 to 238/240**. Subject recognition improves from 35 to
-39 tasks; titles with 2 to 6 words improve from 29 to 39. One result is still verbose.
+The recorded score improves from **222/240 to 239/240**. Subject recognition improves from 35 to
+39 tasks; all 40 titles have 2 to 6 words, up from 29.
 
 Each title gets one point per criterion: a fixture subject keyword, 2 to 6 whitespace-separated
 words, sentence case, no filler prefix, no quotes/trailing punctuation, and no credential or path.
