@@ -205,8 +205,9 @@ per sample, with 20 paired samples per build. Median CPU time rises from 0.085 s
 about 0.020 s across that batch, or under 0.1 microsecond per update. The resulting transcript
 item counts match. This records a small absolute cost on the reducer.
 
-A separate optimized client highlights 1,000 ten-line blocks per sample, three samples per
-language, and checks that their segments reproduce the input. Median CPU time, seconds:
+A separate optimized client highlights 1,000 blocks per sample, with ten copies of a short language
+example in each block and three samples per language. It checks that the segments reproduce the
+input. Median CPU time, seconds:
 
 | Language | Before | After |
 | --- | ---: | ---: |
