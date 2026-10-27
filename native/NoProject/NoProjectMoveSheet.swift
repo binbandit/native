@@ -68,7 +68,7 @@ struct NoProjectMoveSheet: View {
             minWidth: DS.isTouchPlatform ? nil : DS.TaskWorkspace.sheetWidth,
             idealWidth: DS.TaskWorkspace.sheetWidth, maxWidth: DS.TaskWorkspace.sheetWidth
         )
-        .background(.dsBackground)
+        .background(.dsOverlay)
         .disabled(isMoving)
         .interactiveDismissDisabled(isMoving)
         .fileImporter(isPresented: $isChoosingFolder, allowedContentTypes: [.folder]) { result in
