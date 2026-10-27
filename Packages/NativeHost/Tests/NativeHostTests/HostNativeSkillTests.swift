@@ -40,6 +40,9 @@ struct HostNativeSkillTests {
             meta?["claudeCode"]?["options"]?["env"]?[NativeActionCLI.endpointVariable]?.stringValue)
         #expect(try NativeActionCommand.endpoint(endpoint).host == "127.0.0.1")
         #expect(meta?["claudeCode"]?["options"]?["plugins"] != nil)
+        let other = await core.tasks.agentMeta(for: HostSessionID(), agent: spec.id, base: base)
+        #expect(other?["claudeCode"]?["options"]?["env"]?[NativeActionCLI.endpointVariable]?.stringValue != endpoint)
+        #expect(base["claudeCode"]?["options"]?["env"] == nil)
         var optedIn = spec
         optedIn.nativeMCPEnabled = true
         try core.syncAgents([optedIn])

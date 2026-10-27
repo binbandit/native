@@ -19,3 +19,5 @@ Commands print JSON. Add `--text` for readable text. Pass a JSON argument object
 argument, or use `--stdin` to read it from standard input. A failure prints to stderr and exits nonzero.
 Never pick another task's credential or bypass an approval or managed restriction. If Native is
 unavailable, reopen the task in Native; do not start another host or change agent configuration.
+If the shell sandbox blocks loopback access, request its normal permission for this command.
+If permission is denied, stop; do not change the sandbox or managed policy.
