@@ -66,6 +66,25 @@ extension HostTitleTests {
         for link in host.agents.values { link.endNow() }
     }
 
+    @Test("A late model answer leaves a client's completed title settled")
+    func lateModelAfterClient() async throws {
+        let rig = try Rig()
+        let titler = ScriptedTitler(answer: "Late model answer", released: false)
+        let host = try rig.host(titler)
+        let client = try await rig.connect(to: host)
+        try await client.configureTitles(ConfigureTitlesParams(provider: .onDevice))
+        let id = try await rig.startTask("fix login state", on: client)
+        for _ in 0..<500 where titler.requests.isEmpty { try await Task.sleep(for: .milliseconds(20)) }
+        try await client.setSessionTitle(
+            SetSessionTitleParams(sessionID: id, title: "Fix login state", source: .generated))
+        titler.release()
+        for _ in 0..<500 where host.titling.generating.contains(id) { try await Task.sleep(for: .milliseconds(20)) }
+        #expect(host.sessions[id]?.titleState.generated == "Fix login state")
+        #expect(host.sessions[id]?.titleState.progress == nil)
+        await client.stop()
+        for link in host.agents.values { link.endNow() }
+    }
+
     @Test("Client refinements require their revision; stale and duplicate answers cannot rename a task")
     func clientRefinementRevision() async throws {
         let rig = try Rig()

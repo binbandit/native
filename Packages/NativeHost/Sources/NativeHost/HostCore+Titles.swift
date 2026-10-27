@@ -161,7 +161,7 @@ extension HostCore {
 
     private func titleWritten(_ result: Result<String?, any Error>, for id: HostSessionID, revision: Int) {
         titling.generating.remove(id)
-        guard let session = sessions[id] else { return }
+        guard let session = sessions[id], session.titleState.request != nil else { return }
         guard session.titleState.refinementCount == revision, titling.configuration.provider == .onDevice else {
             // A client may have supplied the initial title while this model was suspended. Its
             // stale answer must release the slot for the pending refinement or new provider.
