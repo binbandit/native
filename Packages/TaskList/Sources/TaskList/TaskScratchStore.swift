@@ -85,8 +85,8 @@ public final class TaskScratchStore {
 
     /// Archive deliberately has no filesystem operation. Delete is called after the Undo window
     /// and after closing the agent, never while that agent can still write into its folder.
-    public func delete(_ task: String, at knownFolder: URL? = nil) throws {
-        guard let folder = folder(for: task) ?? knownFolder else { return }
+    public func delete(_ task: String) throws {
+        guard let folder = folder(for: task) else { return }
         guard owns(folder) else { throw Failure.unsafeFolder }
         if FileManager.default.fileExists(atPath: folder.path) { try FileManager.default.removeItem(at: folder) }
         let previous = folders
@@ -97,7 +97,20 @@ public final class TaskScratchStore {
     /// A unique child prevents collisions, partial overwrites and merging into existing files.
     /// The source stays owned until deletion, including after a successful project move.
     public func copyFiles(of task: String, into project: URL) throws -> URL? {
+        try copyingFiles(of: task, into: project)()
+    }
+
+    /// Snapshot ownership on the model's actor, then run bulk I/O away from the interface thread.
+    public func copyingFiles(of task: String, into project: URL) throws -> @Sendable () throws -> URL? {
         guard let source = folder(for: task), owns(source) else { throw Failure.unsafeFolder }
+        let root = root
+        return { try Self.copyFiles(from: source, into: project, root: root) }
+    }
+
+    private nonisolated static func copyFiles(from source: URL, into project: URL, root: URL) throws -> URL? {
+        guard source.resolvingSymlinksInPath() == source, root.resolvingSymlinksInPath() == root else {
+            throw Failure.unsafeFolder
+        }
         let target = project.standardizedFileURL.resolvingSymlinksInPath()
         guard target != root, !target.path.hasPrefix(root.path + "/"),
             (try? target.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true

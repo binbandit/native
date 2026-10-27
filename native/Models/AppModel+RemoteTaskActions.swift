@@ -211,9 +211,9 @@ extension AppModel {
 
     func deleteWorkspace(using route: TaskActionRoute) async throws {
         let scratchKey = NoProjectLocation.key(route.key)
-        if scratchTasks.folder(for: scratchKey) != nil || route.project.isNoProject {
+        if scratchTasks.folder(for: scratchKey) != nil {
             try await closeForScratchCleanup(route.key)
-            try scratchTasks.delete(scratchKey, at: route.project.isNoProject ? route.folder : nil)
+            try scratchTasks.delete(scratchKey)
         }
         if route.project.isNoProject { return }
         try await inWorkspaceOrder(using: route) {

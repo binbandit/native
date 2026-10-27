@@ -92,7 +92,8 @@ struct HomeNextStartField: View {
 
     /// "Start a Codex task in native"
     private var placeholder: String {
-        switch (agentName, projectName) {
+        if model.quickEntry.project == nil { return "Ask a question or describe a task" }
+        return switch (agentName, projectName) {
         case (let agent?, let project?): "Start a \(agent) task in \(project)"
         case (nil, let project?): "Start a task in \(project)"
         default: "Start a task"

@@ -59,7 +59,15 @@ extension AppModel {
         var didCloseSource = false
         do {
             try scratchTasks.reassign(source.cwd, to: NoProjectLocation.key(key))
-            if copyFiles { copied = try scratchTasks.copyFiles(of: NoProjectLocation.key(key), into: admitted) }
+            if copyFiles {
+                let copy = try scratchTasks.copyingFiles(of: NoProjectLocation.key(key), into: admitted)
+                copied = try await Task.detached(priority: .utility, operation: copy).value
+            }
+            guard sessions.session(key) === source, !pendingDeletionKeys.contains(key), !isArchived(key),
+                source.phase == .idle, !source.hasQueuedPrompts
+            else {
+                throw moveFailure("The task changed while its files were being copied. Try again when it's ready.")
+            }
             let target: SessionModel
             if isEmpty {
                 target = try await launcher.start(on: runtime, cwd: admitted, project: nil, preparingModel: true)

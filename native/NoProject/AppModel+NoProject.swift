@@ -17,8 +17,8 @@ extension AppModel {
     }
 
     func retainPrivateFiles(of source: SessionModel, for key: SessionKey) {
-        guard source.isProjectless else { return }
-        do { try scratchTasks.reassign(source.cwd, to: NoProjectLocation.key(key)) } catch {
+        guard let folder = scratchTasks.folder(for: NoProjectLocation.key(source.key)) else { return }
+        do { try scratchTasks.reassign(folder, to: NoProjectLocation.key(key)) } catch {
             actionFailure = ActionFailure("Couldn't update private task files", error.localizedDescription)
         }
     }

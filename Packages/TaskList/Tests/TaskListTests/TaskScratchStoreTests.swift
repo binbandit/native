@@ -29,6 +29,18 @@ struct TaskScratchStoreTests {
         #expect(TaskScratchStore(root: model.root).folder(for: "agent/task") == first)
     }
 
+    @Test func conversationReplacementRetainsOneOwner() throws {
+        let (temporary, model) = try fixture()
+        defer { try? FileManager.default.removeItem(at: temporary) }
+        let folder = try model.create(for: "agent/earlier")
+        try model.reassign(folder, to: "agent/current")
+        try model.delete("agent/earlier")
+        #expect(FileManager.default.fileExists(atPath: folder.path))
+        #expect(model.folder(for: "agent/current") == folder)
+        try model.delete("agent/current")
+        #expect(!FileManager.default.fileExists(atPath: folder.path))
+    }
+
     @Test func undoAndArchiveKeepFilesUntilActualDeletion() throws {
         let (temporary, model) = try fixture()
         defer { try? FileManager.default.removeItem(at: temporary) }

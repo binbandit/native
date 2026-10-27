@@ -25,7 +25,7 @@ struct NoProjectModelTests {
         let scratch = FileManager.default.temporaryDirectory.resolvingSymlinksInPath()
             .appendingPathComponent("no-project-model-\(UUID())", isDirectory: true)
         try FileManager.default.createDirectory(at: scratch, withIntermediateDirectories: true)
-        let host = NoProjectTestHost()
+        let host = NoProjectTestHost(idPrefix: "task-\(UUID())")
         let client = NativeHostClient(transport: host, clientInfo: PeerInfo(name: "tests", version: "1", build: "1"))
         await client.start()
         _ = try await client.connected()
@@ -184,6 +184,20 @@ struct NoProjectModelTests {
         #expect(app.catalog.lookup(oldKey) == nil)
         #expect(app.scratchTasks.folder(for: NoProjectLocation.key(key)) == source.cwd)
         #expect(try FileManager.default.contentsOfDirectory(atPath: project.path).isEmpty)
+    }
+
+    @Test func clearingKeepsPrivateFilesWithTheCurrentConversation() async throws {
+        let (scratch, app, _) = try await fixture()
+        defer { try? FileManager.default.removeItem(at: scratch) }
+        await app.newSession(with: AgentDefinition.ID(rawValue: "workspace-fake"))
+        let old = try #require(app.selection.flatMap(app.session))
+        old.previewExchange("Draft a checklist", reply: "Ready.")
+        let current = try await app.clearConversation(of: old)
+        #expect(app.scratchTasks.folder(for: NoProjectLocation.key(current.key)) == old.cwd)
+        #expect(app.scratchTasks.folder(for: NoProjectLocation.key(old.key)) == nil)
+        let oldRoute = try #require(app.taskActionRoute(for: old.key))
+        try await app.deleteWorkspace(using: oldRoute)
+        #expect(FileManager.default.fileExists(atPath: current.cwd.path))
     }
 
     @Test func failedMoveRetainsPrivateFilesAndOriginalCatalog() async throws {

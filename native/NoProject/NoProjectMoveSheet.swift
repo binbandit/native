@@ -43,6 +43,7 @@ struct NoProjectMoveSheet: View {
                     "Copies into a new Task Files subfolder. Existing files stay untouched. Private originals stay with this task until deletion."
                 )
                 .font(.dsCaption).foregroundStyle(.dsTextTertiary)
+                .padding(.leading, DS.Space.xxl)
                 .fixedSize(horizontal: false, vertical: true)
             }
             if let failure {
@@ -65,7 +66,11 @@ struct NoProjectMoveSheet: View {
             }
         }
         .padding(DS.Space.xxl)
+        #if os(macOS)
         .frame(width: DS.TaskWorkspace.sheetWidth)
+        #else
+        .frame(maxWidth: DS.TaskWorkspace.sheetWidth)
+        #endif
         .background(.dsBackground)
         .disabled(isMoving)
         .interactiveDismissDisabled(isMoving)
@@ -118,6 +123,30 @@ private struct NoProjectMovePresentation: ViewModifier {
             task: SessionKey(agent: AgentDefinition.ID(rawValue: "claude-code"), id: SessionID("preview"))
         )
         .environment(AppModel.preview(.empty))
+    }
+}
+#endif
+
+#if DEBUG
+extension NoProjectMoveSheet {
+    fileprivate static func preview(moving: Bool = false, failure: String? = nil) -> Self {
+        var view = Self(task: SessionKey(agent: AgentDefinition.ID(rawValue: "claude-code"), id: SessionID("preview")))
+        view._folder = State(initialValue: URL(filePath: "/Development/atlas"))
+        view._isMoving = State(initialValue: moving)
+        view._failure = State(initialValue: failure)
+        return view
+    }
+}
+
+#Preview("Move to Project - Ready, moving and failed") {
+    let app = AppModel.preview(.empty)
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xl) {
+            NoProjectMoveSheet.preview()
+            NoProjectMoveSheet.preview(moving: true)
+            NoProjectMoveSheet.preview(failure: "Couldn't reopen the task in this folder. Your private files are kept.")
+        }
+        .environment(app)
     }
 }
 #endif

@@ -55,7 +55,7 @@ struct NoProjectTaskGroup<TaskAccessory: View>: View {
 }
 
 #if DEBUG
-#Preview("No project - Starting and completed tasks") {
+#Preview("No project - Task row") {
     let app = AppModel.preview()
     let agent = app.agents.first?.agent
     return DSPreviewPair {
