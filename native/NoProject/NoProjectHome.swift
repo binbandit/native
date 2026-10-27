@@ -36,6 +36,7 @@ struct NoProjectHome: View {
         }
         .scrollBounceBehavior(.basedOnSize)
         .background(.dsBackground)
+        .navigationTitle("Home")
         .dsToolbarBand(showsDivider: false)
         .onAppear { model.setHomeNextVisible(true) }
         .onDisappear { model.setHomeNextVisible(false) }

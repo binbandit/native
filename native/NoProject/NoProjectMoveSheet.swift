@@ -57,14 +57,17 @@ struct NoProjectMoveSheet: View {
                 }
                 Spacer(minLength: DS.Space.md)
                 Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
-                    .buttonStyle(.ds(.secondary)).disabled(isMoving)
+                    .buttonStyle(.ds(.secondary, size: .medium)).disabled(isMoving)
                 Button("Move", action: move).keyboardShortcut(.defaultAction)
-                    .buttonStyle(.ds(.primary)).disabled(folder == nil || isMoving)
+                    .buttonStyle(.ds(.primary, size: .medium)).disabled(folder == nil || isMoving)
                     .accessibilityIdentifier("moveToProject.move")
             }
         }
         .padding(DS.Space.xxl)
-        .frame(idealWidth: DS.TaskWorkspace.sheetWidth, maxWidth: DS.TaskWorkspace.sheetWidth)
+        .frame(
+            minWidth: DS.isTouchPlatform ? nil : DS.TaskWorkspace.sheetWidth,
+            idealWidth: DS.TaskWorkspace.sheetWidth, maxWidth: DS.TaskWorkspace.sheetWidth
+        )
         .background(.dsBackground)
         .disabled(isMoving)
         .interactiveDismissDisabled(isMoving)
