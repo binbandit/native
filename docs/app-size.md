@@ -16,9 +16,9 @@ so growth gets noticed while there's still room to choose what to cut; lower the
 
 | What | Budget | 2026-10-25, after the -Osize and Sparkle cut (Release) |
 | --- | --- | --- |
-| Download, update archive | 47.5 MB | 46.9 MB |
+| Download, update archive | 48.5 MB | 46.9 MB |
 | Download, disk image | 49 MB | not remeasured |
-| Installed app | 118 MB | 115.1 MB |
+| Installed app | 119 MB | 115.1 MB |
 | App binary (`Contents/MacOS/Native`) | 70 MB | 58.9 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
@@ -34,6 +34,16 @@ build them, and such an app looks 12 to 40 MB smaller than what ships.
   dry runs included, and stops before publishing when they're over.
 
 Raise a budget only with the reason written here, in the same change.
+
+2026-10-27: approved by Brayden, the installed-app budget rises from 118 MB to 119 MB and
+the update-archive download budget from 48 MB to 48.5 MB. Main measured 118.2 MB installed
+for Release and 118.3 MB installed / 48.0 MB for the Nightly update archive, blocking approved
+PRs. This is temporary: the size-cut job (`perf/size-cut-2`) is bringing the app back under,
+and PR #195 moves updates to `.tar.xz` (about 32 MB) and resets the download budget.
+
+2026-10-26: approved by Brayden, the update-archive download budget rises from 47.5 MB to 48 MB.
+Main measured 47.5 MB for the Nightly update archive. This is temporary: #195 moves updates
+to `.tar.xz` (31.9 MB) and sets the budget to 35 MB.
 
 2026-10-26: approved by Brayden, the disk-image budget rises from 48 MB to 49 MB to unblock
 the beta. The disk image measured 48.2 MB in the beta release check at `f7e707d9` and is not

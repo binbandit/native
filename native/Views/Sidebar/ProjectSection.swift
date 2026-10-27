@@ -90,7 +90,10 @@ struct ProjectSection<TaskAccessory: View>: View {
         .projectDeletionConfirmation(project, isPresented: $isConfirmingDelete)
         .task(id: project.id) { await iconStore.resolve(project) }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(project.name)
+        .accessibilityLabel(
+            isAllInView && model.sidebarFolders.opening.contains(project.folderName)
+                ? "Opening \(project.name)" : project.name
+        )
         .accessibilityActions {
             Button("New Task") { Task { await model.newSession(in: project.id) } }
             Button("Refresh") { Task { await model.refreshProject(project.id) } }
@@ -139,7 +142,8 @@ struct ProjectSection<TaskAccessory: View>: View {
             AllInViewProjectGroup(
                 name: project.name, isFirst: position.index == 0 && !followsPinned, isExpanded: isExpanded,
                 taskCount: sessions.count + earlier.count,
-                isRefreshing: model.refreshingProjects.contains(project.id), activity: activity,
+                isRefreshing: model.refreshingProjects.contains(project.id)
+                    || model.sidebarFolders.opening.contains(project.folderName), activity: activity,
                 note: hasNoMatches ? "No matching tasks" : nil, onNewTask: onNewTask,
                 menu: { projectMenu }, content: content)
         } else {
@@ -189,7 +193,12 @@ private struct ProjectEmptyRow: View {
     @State private var isHovered = false
 
     var body: some View {
-        if isAllInView, model.canCreateSession(in: project.id), model.agentStartupFailure == nil {
+        if isAllInView, model.sidebarFolders.opening.contains(project.folderName) {
+            Text("Opening folder…")
+                .font(.dsBody).foregroundStyle(.dsTextSecondary)
+                .frame(maxWidth: .infinity, minHeight: DS.Sidebar.foldHeight, alignment: .leading)
+                .padding(.leading, DS.Sidebar.headerLeading)
+        } else if isAllInView, model.canCreateSession(in: project.id), model.agentStartupFailure == nil {
             firstTaskLine
         } else if model.canCreateSession(in: project.id) || model.agentStartupFailure != nil {
             Button {

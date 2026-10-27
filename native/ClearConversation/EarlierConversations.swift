@@ -64,6 +64,13 @@ final class EarlierConversations {
         save()
     }
 
+    func undoSelection(_ later: SessionKey, restoring earlierKey: SessionKey) {
+        guard earlier[later] == earlierKey else { return }
+        earlier.removeValue(forKey: later)
+        kept.remove(later)
+        save()
+    }
+
     private func save() {
         let links = earlier.filter { kept.contains($0.key) }.map { Link(later: $0.key, earlier: $0.value) }
         if let data = try? JSONEncoder().encode(links) {

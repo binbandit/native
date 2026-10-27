@@ -15,6 +15,13 @@ extension ComposerView {
             .font(.dsCaption)
             .foregroundStyle(.dsTextTertiary)
             .padding(.horizontal, DS.Space.xxl)
+        } else if session.modelChange?.stage == .applied,
+            let level = settings.autonomy?.current, ["default", "read-only"].contains(level.value)
+        {
+            Text("\(session.agentName) asks before any change.")
+                .font(.dsCaption)
+                .foregroundStyle(.dsTextTertiary)
+                .padding(.horizontal, DS.ComposerQuote.inset)
         } else if let followUpHint {
             Text(followUpHint.text)
                 .font(.dsCaption)

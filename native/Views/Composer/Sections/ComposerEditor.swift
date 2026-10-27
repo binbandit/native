@@ -41,6 +41,10 @@ struct ComposerEditor: View {
     @State private var refocusRichEditor = false
     /// The draft as the rich-text editor holds it: `text`'s characters, with code styled.
     @State private var styled = AttributedString()
+    // Fine print's message binding derives a new String from the canonical quoted draft. Binding
+    // TextEditor to that projection can reapply an old caret as its storage changes during typing.
+    @State private var plain = ""
+    @State private var plainSelection: TextSelection?
     @State private var styledSelection = AttributedTextSelection()
     /// The selection both sides last agreed on, as UTF-8 offsets, so a change to `text` from outside
     /// can tell whether a new selection came with it.
@@ -76,6 +80,11 @@ struct ComposerEditor: View {
             .padding(.top, insets.top)
             .padding(.bottom, insets.bottom)
             .onAppear(perform: textChangedOutside)
+            .onChange(of: plain) {
+                if !showsCode, plain != text { text = plain }
+                plainSelectionChanged()
+            }
+            .onChange(of: plainSelection, plainSelectionChanged)
             .onChange(of: styled, editorChanged)
             .onChange(of: styledSelection, editorSelectionChanged)
             .onChange(of: text, textChangedOutside)
@@ -105,7 +114,7 @@ struct ComposerEditor: View {
                         }
                     }
             } else {
-                TextEditor(text: $text, selection: $selection)
+                TextEditor(text: $plain, selection: $plainSelection)
                     .lineSpacing(lineSpacing)
             }
         }
@@ -120,6 +129,10 @@ struct ComposerEditor: View {
         .accessibilityLabel(inputLabel)
         // Files and images dropped on the text attach instead (the composer's drop area).
         .textViewTakesOnlyTextDrops()
+        .textInputKeepsLiteralQuotes()
+        .background {
+            PlatformComposerReferenceBackground(ranges: referenceRanges)
+        }
         .modifier(
             ComposerReferenceClipboard(
                 enabled: referencesEnabled && !projection.tokens.isEmpty,
@@ -160,11 +173,11 @@ struct ComposerEditor: View {
             let edit = projection.replacingDisplay(
                 with: typed, restored: ComposerFileReferenceAttribute.restoredTokens(in: styled))
             guard edit.text != text else { return }
-            let next = makeProjection(edit.text)
+            let next = makeProjection(edit.text, editingAt: edit.caret)
             let caret = editorDisplaySelection.flatMap { next.rawSelection($0, showing: typed) }
             text = edit.text
             projection = next
-            styled = styledString(text)
+            styled = styledString(text, projection: next)
             select(caret ?? edit.caret..<edit.caret)
             editorSelectionChanged()
             return
@@ -177,6 +190,14 @@ struct ComposerEditor: View {
         editorSelectionChanged()
     }
 
+    private func plainSelectionChanged() {
+        guard !showsCode, plain == text, let offsets = Self.offsets(of: plainSelection, in: plain) else { return }
+        syncedSelection = offsets
+        if offsets != Self.offsets(of: selection, in: text) {
+            selection = Self.textSelection(offsets, in: text)
+        }
+    }
+
     private func editorSelectionChanged() {
         guard String(styled.characters) == projection.display, let offsets = editorSelection else { return }
         syncedSelection = offsets
@@ -186,10 +207,21 @@ struct ComposerEditor: View {
     }
 
     /// The composer changed the draft or the selection itself (a completion, a recalled prompt, a
-    /// code edit). A new draft without a new selection puts the caret at its end.
+    /// code edit). A nil selection puts the caret at the end of a new draft.
     private func textChangedOutside() {
-        // The plain editor is bound to the draft itself, until code may appear.
+        // Update text and caret together: a completion's new caret can exceed the old text's end.
         guard showsCode else {
+            let wanted = Self.offsets(of: selection, in: text)
+            if plain != text {
+                plain = text
+                let end = text.utf8.count
+                let caret = wanted ?? end..<end
+                plainSelection = Self.textSelection(caret, in: plain)
+                syncedSelection = caret
+            } else if let wanted, wanted != syncedSelection {
+                plainSelection = Self.textSelection(wanted, in: plain)
+                syncedSelection = wanted
+            }
             if Self.mayHaveCode(text) || !makeProjection(text).tokens.isEmpty {
                 switchToRichText()
             }
@@ -197,12 +229,11 @@ struct ComposerEditor: View {
         }
         let wanted = Self.offsets(of: selection, in: text)
         let next = makeProjection(text)
-        let rawChanged = projection.raw != text
         if String(styled.characters) != next.display {
             projection = next
             styled = styledString(text)
             let end = text.utf8.count
-            let caret = wanted.flatMap { rawChanged && $0 == syncedSelection ? nil : $0 } ?? end..<end
+            let caret = wanted ?? end..<end
             select(caret)
         } else {
             projection = next
@@ -256,8 +287,8 @@ struct ComposerEditor: View {
     // MARK: - Styling
 
     /// `text` with its code styled.
-    private func styledString(_ text: String) -> AttributedString {
-        let projected = makeProjection(text)
+    private func styledString(_ text: String, projection: FileReferenceProjection? = nil) -> AttributedString {
+        let projected = projection ?? makeProjection(text)
         var styled = AttributedString(projected.display)
         applyCodeStyle(to: &styled, from: projected.display)
         for token in projected.tokens {
@@ -267,9 +298,12 @@ struct ComposerEditor: View {
             let rawEnd = text.utf8.index(text.startIndex, offsetBy: token.raw.upperBound)
             styled[lower..<upper][ComposerFileReferenceAttribute.self] = .init(
                 raw: String(text[rawStart..<rawEnd]), display: String(styled[lower..<upper].characters))
-            styled[lower..<upper].font = DS.ComposerQuote.codeFont
-            styled[lower..<upper].backgroundColor = .dsFill
-            styled[lower..<upper].foregroundColor = .dsTextSecondary
+            styled[lower..<upper].font = DS.ComposerReference.font
+            styled[lower..<upper].foregroundColor = .dsTextPrimary
+            let paddedStart = styled.index(afterCharacter: lower)
+            let paddedEnd = styled.index(beforeCharacter: upper)
+            styled[lower..<paddedStart].font = DS.ComposerReference.paddingFont
+            styled[paddedEnd..<upper].font = DS.ComposerReference.paddingFont
             if let counts = token.counts {
                 for (label, color) in [
                     ("+\(DSFormat.lineCount(counts.added))", Color.dsSuccess),
@@ -319,9 +353,20 @@ struct ComposerEditor: View {
         return [NSItemProvider(object: result as NSString)]
     }
 
-    private func makeProjection(_ text: String) -> FileReferenceProjection {
-        FileReferenceProjection(
-            text, counts: referenceCounts, enabled: referencesEnabled, formatCount: DSFormat.lineCount)
+    private func makeProjection(_ text: String, editingAt caret: Int? = nil) -> FileReferenceProjection {
+        let caret = caret ?? Self.offsets(of: selection, in: text)?.upperBound
+        return FileReferenceProjection(
+            text, counts: referenceCounts, enabled: referencesEnabled,
+            editingAt: caret,
+            tokenPadding: DS.ComposerReference.padding, formatCount: DSFormat.lineCount)
+    }
+
+    private var referenceRanges: [NSRange] {
+        projection.tokens.map { token in
+            let start = projection.display.utf8.index(projection.display.startIndex, offsetBy: token.display.lowerBound)
+            let end = projection.display.utf8.index(projection.display.startIndex, offsetBy: token.display.upperBound)
+            return NSRange(start..<end, in: projection.display)
+        }
     }
 
     private func applyCodeStyle(to styled: inout AttributedString, from text: String) {
@@ -344,57 +389,3 @@ struct ComposerEditor: View {
         }
     }
 }
-
-#if DEBUG
-#Preview("Editor") {
-    DSPreviewPair {
-        VStack(spacing: DS.Space.xl) {
-            ComposerSurface {
-                ComposerEditorPreview(text: "", placeholder: "What should Claude Code work on?")
-            }
-            ComposerSurface {
-                ComposerEditorPreview(
-                    text: """
-                        The queue test still flakes. Look at `PromptQueueTests` and fix the ordering:
-
-                        ```swift
-                        queue.move(id, .up)
-                        ```
-                        """,
-                    placeholder: "")
-            }
-        }
-        .frame(width: 560)
-    }
-}
-
-#Preview("Editor - Live references, unknown counts and narrow") {
-    DSPreviewPair {
-        ComposerSurface {
-            ComposerEditorPreview(
-                text: "Check @Packages/ACP/PromptQueue.swift and @\"folder/File with spaces.swift\" please.",
-                placeholder: "Message Codex", referencesEnabled: true,
-                referenceCounts: ["Packages/ACP/PromptQueue.swift": .init(added: 6, removed: 2)])
-        }.frame(width: 380)
-    }
-}
-
-/// Holds the editor's text, selection and focus, which a preview can't pass as plain values.
-private struct ComposerEditorPreview: View {
-    @State var text: String
-    let placeholder: String
-    var referencesEnabled = false
-    var referenceCounts: [String: FileReferenceProjection.Counts] = [:]
-    @State private var selection: TextSelection?
-    @FocusState private var isFocused: Bool
-
-    var body: some View {
-        ComposerEditor(
-            text: $text, selection: $selection, placeholder: placeholder, isFocused: $isFocused,
-            referencesEnabled: referencesEnabled, referenceCounts: referenceCounts
-        ) { _ in
-            .ignored
-        }
-    }
-}
-#endif

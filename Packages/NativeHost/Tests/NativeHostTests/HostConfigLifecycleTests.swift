@@ -38,6 +38,7 @@ struct HostConfigLifecycleTests {
     @Test("Closing and reopening a saved session keeps its settings across a host restart")
     func closedSessionKeepsConfig() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         let (first, session) = try await savedSession(harness)
         let agentSessionID = try #require(session.agentSessionID)
         try await first.client.closeSession(session.id, closeInAgent: true)
@@ -57,6 +58,7 @@ struct HostConfigLifecycleTests {
     @Test("First adoption accepts local choices, but reopening an existing host session ignores stale client values")
     func adoptedSessionUsesFallbackOnlyOnce() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         let (first, session) = try await savedSession(harness)
         let agentSessionID = try #require(session.agentSessionID)
         harness.kill()
@@ -83,6 +85,7 @@ struct HostConfigLifecycleTests {
     @Test("An agent disconnecting during restoration does not replace the durable choices")
     func disconnectedRestoreKeepsConfig() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         harness.agentEnvironment["FAKE_AGENT_CRASH_ON_RESTORE"] = "1"
         let (first, session) = try await savedSession(harness)
         let agentSessionID = try #require(session.agentSessionID)

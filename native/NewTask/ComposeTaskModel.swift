@@ -12,7 +12,11 @@ final class ComposeTaskModel {
     var stage = Stage.writing
     var starting: StartingTask?
     var navigationSelection: SessionKey?
-    var configuredAgent: AgentDefinition.ID?
+    var configuredAgent: AgentDefinition.ID? {
+        didSet { if oldValue != configuredAgent { permissionBeforePlan = nil } }
+    }
+    /// Part of the draft, so dismissing its picker cannot broaden permissions when leaving Plan.
+    var permissionBeforePlan: String?
     var options: [ConfigOption] = []
     var defaults: [String: String] = [:]
     var choices: [String: String] = [:]
@@ -51,7 +55,7 @@ final class ComposeTaskModel {
     #if DEBUG
     var previewBranch: String?
     var previewState: String?
-    var previewLastConnected: Date?
+    var previewOfflineSince: Date?
     #endif
 
     var hasContent: Bool {
@@ -97,11 +101,31 @@ final class ComposeTaskModel {
             !PolicyPermissionModes.forbids(setting.option, value: value),
             let category = setting.option.category
         else { return }
+        if category == "mode" {
+            if value == ComposerSettings.planValue {
+                if setting.value != value, permissionBeforePlan == nil { permissionBeforePlan = setting.value }
+            } else {
+                permissionBeforePlan = nil
+            }
+        }
         choices[category] = value == defaults[category] ? nil : value
         if let index = options.firstIndex(where: { $0.id == setting.option.id }) {
             options[index].kind = .select(currentValue: value, options: setting.choices)
         }
     }
+
+    func setPlanning(_ isPlanning: Bool) {
+        guard let plan = ComposerSettings(options).plan, plan.isOn != isPlanning else { return }
+        if isPlanning {
+            choose(plan.setting, value: plan.plan.value)
+        } else if let permission = permissionBeforePlan
+            ?? defaults["mode"].flatMap({ $0 == ComposerSettings.planValue ? nil : $0 })
+            ?? plan.setting.choices.first(where: { $0.value != plan.plan.value })?.value
+        {
+            choose(plan.setting, value: permission)
+        }
+    }
+
 }
 
 /// An agent the brief also goes to, with the settings its task starts with: the project's and the

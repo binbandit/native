@@ -22,8 +22,8 @@ final class UnsentSessions {
     }
 
     /// A new session the user just started.
-    func started(_ session: SessionKey) {
-        drafts[Self.id(session)] = ""
+    func started(_ session: SessionKey, draft: String = "") {
+        drafts[Self.id(session)] = draft
     }
 
     /// The session got its first message, so its agent keeps it from now on.
@@ -43,8 +43,9 @@ final class UnsentSessions {
 
     /// The draft of a session to reopen, unless it's being reopened already. `release` it if that
     /// fails; `forget` it once a fresh session took its place.
-    func claim(_ session: SessionKey) -> String? {
-        guard let draft = draft(for: session), claimed.insert(Self.id(session)).inserted else { return nil }
+    func claim(_ session: SessionKey, includingEmpty: Bool = false) -> String? {
+        let saved = includingEmpty ? drafts[Self.id(session)] : draft(for: session)
+        guard let draft = saved, claimed.insert(Self.id(session)).inserted else { return nil }
         return draft
     }
 

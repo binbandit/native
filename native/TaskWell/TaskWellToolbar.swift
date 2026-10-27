@@ -4,10 +4,10 @@ import SwiftUI
 struct TaskWellToolbar<Destination: View>: View {
     let session: SessionModel
     @Bindable var tools: SessionToolsScreenModel
-    let location: String
     let identity: TaskWellIdentity
     let turnChanges: TurnChangesActions?
     let detail: (TaskWellTool) -> TaskWellToolDetail
+    var width = DS.TaskWell.width
     var isCompact = false
     var openSubagent: (SessionID) -> Void = { _ in }
     @ViewBuilder var destination: (TaskWellTool) -> Destination
@@ -25,15 +25,17 @@ struct TaskWellToolbar<Destination: View>: View {
                 tools.toggleWell()
             }
         } label: {
-            TaskWellLabel(content: content, isCompact: isCompact)
+            TaskWellLabel(content: content, width: width, isCompact: isCompact)
                 .opacity(tools.showsWell ? 0 : 1)
         }
         .buttonStyle(.plain)
         .dsHitTarget(DS.TaskWell.height)
         .help(help)
+        // On the button, so it stays current and survives the label hiding while the well is open.
+        .accessibilityLabel(content.accessibilityText)
         .dsPopover(isPresented: $tools.showsWell, attachmentAnchor: .point(.top), arrowEdge: .bottom) {
             TaskWellToolsPanel(
-                content: content, location: location, identity: identity, tools: tools, detail: detail,
+                content: content, identity: identity, tools: tools, detail: detail,
                 destination: destination)
         }
         .onChange(of: session.phase) { previous, phase in
@@ -77,7 +79,7 @@ struct TaskWellToolbar<Destination: View>: View {
             // Preserve the ask verbatim. Tool kind is not enough to tell push from overwrite.
             content.object =
                 switch ask.content {
-                case .permission(let call): call.title
+                case .permission(let call): TaskWellContent.reason(call.title)
                 case .question(let question): question.request.message
                 }
         } else if session.needsApproval {
@@ -99,7 +101,11 @@ struct TaskWellToolbar<Destination: View>: View {
             content.verb = "Stopped"
         } else {
             content.status = isLanding ? .done : .idle
-            if let turn = latestTurn, turn.id != session.reviewedTaskWellTurnID, let turnChanges {
+            // The outcome stays while Changes is open on it; only Review leaves, as the turn's card
+            // says it's being reviewed. Closing Changes after that returns the well to rest.
+            if let turn = latestTurn, turn.id != session.reviewedTaskWellTurnID || tools.isOpen(.changes),
+                let turnChanges
+            {
                 var summary = session.state.summary(of: turn)
                 if let detected = turnChanges.latestTurnChanges, detected.startedAt == turn.startedAt {
                     summary.changedFiles = detected.files
@@ -120,8 +126,8 @@ struct TaskWellToolbar<Destination: View>: View {
     return DSPreviewPair {
         if let session = SessionModel.preview(in: app) {
             TaskWellToolbar(
-                session: session, tools: SessionToolsScreenModel(), location: "native · main",
-                identity: .init(machine: "On this Mac"), turnChanges: nil
+                session: session, tools: SessionToolsScreenModel(),
+                identity: .init(machine: "On this Mac", project: "native", branch: "main"), turnChanges: nil
             ) {
                 _ in
                 TaskWellToolDetail()

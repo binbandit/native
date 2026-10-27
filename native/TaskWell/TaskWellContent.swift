@@ -16,18 +16,35 @@ struct TaskWellContent: Equatable {
     /// A key that leaves what the well is narrating ("esc" while comparing), at its trailing edge.
     var exitKey: String?
     var attentionSince: Date?
+    /// The verb is the agent's state, not an action, so a dot sets it apart: "Codex · Ready".
+    var verbIsState = false
 
     var isWaiting: Bool { status.needsAttention }
 
     var accessibilityText: String {
         var parts = [agent, verb, object].compactMap { $0 }.filter { !$0.isEmpty }
         if let outcome {
-            parts.append(
-                "Changed \(outcome.changedFiles.count) files, +\(outcome.linesAdded), -\(outcome.linesRemoved)")
+            parts.append("\(changedFiles(of: outcome)), +\(outcome.linesAdded), -\(outcome.linesRemoved)")
         }
         if let progress { parts.append("\(progress.completed) of \(progress.total) plan steps") }
         if showsReview { parts.append("Review") }
         if let exitKey { parts.append("\(exitKey) to go back") }
         return parts.joined(separator: ", ")
+    }
+
+    /// An ask's own words as the reason it waits: "Write notes.txt" reads "to write notes.txt".
+    /// The verb is kept, never softened; a leading acronym ("PR") keeps its case.
+    static func reason(_ title: String) -> String {
+        guard let first = title.first, first.isUppercase else { return "to \(title)" }
+        let second = title.dropFirst().first
+        let isAcronym = second.map { $0.isUppercase } ?? false
+        return "to " + (isAcronym ? title : first.lowercased() + title.dropFirst())
+    }
+
+    /// "Changed 1 file", "Changed 3 files", or without the verb where the well is compact.
+    func changedFiles(of outcome: TurnSummary, includesVerb: Bool = true) -> String {
+        let count = outcome.changedFiles.count
+        let files = "\(count) \(count == 1 ? "file" : "files")"
+        return includesVerb ? "Changed \(files)" : files
     }
 }

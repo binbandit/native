@@ -21,6 +21,7 @@ final class AppModel {
     let runtimes: AgentRuntimes
     /// Paired hosts sessions can run on besides this Mac (AppModel+Hosts.swift).
     let hosts: RemoteHosts
+    let sidebarFolders: SidebarFoldersModel
     let projects: Projects
     let catalog: SessionCatalog
     let ordering: SessionOrdering
@@ -79,6 +80,7 @@ final class AppModel {
     var coordinators: [HostCoordinator] = []
     @ObservationIgnored var followedCoordinatorClients: Set<ObjectIdentifier> = []
     @ObservationIgnored var agentChangeGoalBlock: @MainActor (SessionModel) -> String? = { _ in nil }
+    @ObservationIgnored var modelChangeGoalBlock: @MainActor (SessionModel) -> String? = { _ in nil }
     @ObservationIgnored var changeAgentHandoff: @MainActor (SessionModel) async -> String = { source in
         TaskHandoff.draft(title: source.displayTitle, state: source.state)
     }
@@ -226,7 +228,8 @@ final class AppModel {
         self.sendGate = sendGate
         services = SessionServices(
             plugins: plugins, titles: titles, sendGate: sendGate, earlierConversations: earlierConversations,
-            workingSpinners: workingSpinners, drafts: ComposerDrafts(defaults: defaults)
+            workingSpinners: workingSpinners, drafts: ComposerDrafts(defaults: defaults),
+            modelContinuations: AgentModelContinuations(defaults: defaults)
         ) {
             continuation.yield($0)
         } titleLanded: { key, folder, title in
@@ -234,6 +237,7 @@ final class AppModel {
         }
         runtimes = AgentRuntimes(plugins: plugins)
         sendGate.runtimes = runtimes
+        sidebarFolders = SidebarFoldersModel(defaults: defaults)
         projects = Projects(defaults: defaults)
         composeTask = ComposeTaskModel(defaults: defaults)
         taskPairs = TaskPairs(defaults: defaults)
@@ -482,10 +486,22 @@ final class AppModel {
     /// yet) and so can't reopen. Internal only for AppModel+Recovery.swift.
     func replaceEmptySession(_ old: SessionModel, on runtime: AgentRuntime) async -> SessionModel? {
         let project = catalog.lookup(old.key)?.project
-        guard let session = try? await launcher.start(on: runtime, cwd: old.cwd, project: project, continuing: old)
+        let continuation = sessions.services.modelContinuations.hasPending(old.key)
+        guard
+            let session = try? await launcher.start(
+                on: runtime, cwd: old.cwd, project: project, continuing: old, preparingModel: continuation)
         else { return nil }
         await session.adoptConfigChoices(of: old)
+        if continuation {
+            do { try await recoverAgentModel(old.key, in: session, original: old) } catch {
+                deletedSessions.insert(session.key)
+                discardAgentChange(session)
+                return nil
+            }
+        }
+        old.attachmentReads.move(to: session)
         session.draft = old.draft
+        session.attachments = old.attachments
         catalog.swap(old.key, for: SessionInfo(sessionId: session.id, cwd: old.cwd.folderPath, updatedAt: .now))
         if selection == old.key {
             selection = session.key

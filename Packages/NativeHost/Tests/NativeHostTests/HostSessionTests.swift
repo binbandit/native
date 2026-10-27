@@ -20,6 +20,7 @@ struct HostSessionTests {
     @Test("A session started with a client's id and attach streams from its first event; a retry returns it")
     func newSessionWithClientID() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         try harness.start()
         let recorder = try await harness.connect()
         let id = HostSessionID()
@@ -38,6 +39,7 @@ struct HostSessionTests {
     @Test("Opening with attach answers at once and the agent's replay streams in")
     func openWithAttach() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         let (recorder, first) = try await started(harness)
         _ = try await recorder.client.prompt(PromptParams(sessionID: first, text: "hello"))
         try await recorder.wait("the turn") { await $0.turnsEnded(first) == ["end_turn"] }
@@ -61,6 +63,7 @@ struct HostSessionTests {
     @Test("A session that can't load says why, in its summary and its transcript")
     func failedOpen() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         try harness.start()
         let recorder = try await harness.connect()
         let summary = try await recorder.client.openSession(
@@ -75,6 +78,7 @@ struct HostSessionTests {
     @Test("A session the agent never saved carries on in a fresh agent session, under the same id")
     func unsavedSessionIsReplaced() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         let (first, session) = try await started(harness)
         let original = try #require(await first.summaries[session]?.agentSessionID)
         await first.stop()
@@ -97,6 +101,7 @@ struct HostSessionTests {
     @Test("Content, attachments and instructions reach the agent; the same instructions go only once")
     func contentAndPreamble() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         let (recorder, session) = try await started(harness)
         let preamble = PromptPreambleSpec(
             marker: PreambleMarker(id: "plan", label: "Plan mode", symbol: "list.bullet"), instructions: "Plan first.")
@@ -125,6 +130,7 @@ struct HostSessionTests {
     @Test("A question reaches the client, and the answer reaches the agent")
     func questions() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         let (recorder, session) = try await started(harness)
         _ = try await recorder.client.prompt(PromptParams(sessionID: session, text: "question please"))
         try await recorder.wait("the question") { await !$0.mirror(session).questions.isEmpty }
@@ -146,6 +152,7 @@ struct HostSessionTests {
     @Test("An approval waiting when the client quits is there for the next one, which can answer it")
     func approvalSurvivesClientRestart() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         let (first, session) = try await started(harness)
         _ = try await first.client.prompt(PromptParams(sessionID: session, text: "permission please"))
         try await first.wait("the approval") { await !$0.mirror(session).state.pendingPermissions.isEmpty }
@@ -167,6 +174,7 @@ struct HostSessionTests {
     @Test("A hidden command's reply comes back to its caller and stays out of the transcript")
     func hiddenCommand() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         let (recorder, session) = try await started(harness)
         let output = try await recorder.client.runHidden(RunHiddenParams(sessionID: session, text: "/context"))
         #expect(output == "context: 42% used")
@@ -183,6 +191,7 @@ struct HostSessionTests {
     @Test("Stopping a turn whose agent won't confirm ends its owned process")
     func stopTwice() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         let (recorder, session) = try await started(harness)
         _ = try await recorder.client.prompt(PromptParams(sessionID: session, text: "stubborn 8"))
         try await recorder.wait("the turn to get going") { await $0.agentText(session).contains("tick 1") }
@@ -202,6 +211,7 @@ struct HostSessionTests {
     @Test("Send Now on an agent that can't steer stops the turn and sends the message next")
     func sendNowInterrupts() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         harness.agentEnvironment = ["FAKE_AGENT_NO_STEERING": "1"]
         let (recorder, session) = try await started(harness)
         _ = try await recorder.client.prompt(PromptParams(sessionID: session, text: "slow 20"))
@@ -217,6 +227,7 @@ struct HostSessionTests {
     @Test("Queued messages can be reordered, removed and put back")
     func queueEdits() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         let (recorder, session) = try await started(harness)
         _ = try await recorder.client.prompt(PromptParams(sessionID: session, text: "slow 5"))
         let items = ["a", "b", "c"].map { PromptParams(sessionID: session, text: $0) }
@@ -238,6 +249,7 @@ struct HostSessionTests {
     @Test("A prompt that fails for a passing reason goes out again by itself, shown once")
     func passingFailureRetries() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         let (recorder, session) = try await started(harness)
         _ = try await recorder.client.prompt(PromptParams(sessionID: session, text: "flaky-once hi"))
         try await recorder.wait("the failure") { await !$0.failures(session).isEmpty }
@@ -255,6 +267,7 @@ struct HostSessionTests {
     @Test("Settings chosen for a session are set back after it's reloaded")
     func configSetBack() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         let (recorder, session) = try await started(harness)
         try await recorder.client.setConfigOption(
             SetConfigOptionParams(sessionID: session, configID: "mode", value: "plan"))
@@ -269,6 +282,7 @@ struct HostSessionTests {
     @Test("The model comes back before the effort, so setting it back doesn't undo the effort")
     func configSetBackModelFirst() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         let (recorder, session) = try await started(harness)
         // The agent lists the effort before the model, and "effort" sorts first too; choosing a
         // model puts the effort back to its default, as codex-acp does.
@@ -288,6 +302,7 @@ struct HostSessionTests {
     @Test("MCP servers replaced for a session go to the agent at its next load")
     func replacedMCPServers() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         try harness.start()
         let recorder = try await harness.connect()
         let server = { (name: String) in
@@ -322,6 +337,7 @@ struct HostSessionTests {
     @Test("The agent's saved sessions are listed, closed and deleted through the host")
     func agentSessions() async throws {
         let harness = try HostHarness()
+        defer { harness.cleanup() }
         let (recorder, session) = try await started(harness)
         let other = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp"))
         let listed = try await recorder.client.listAgentSessions(ListAgentSessionsParams(agentID: "fake", cwd: "/"))

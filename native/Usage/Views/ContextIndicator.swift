@@ -2,20 +2,34 @@ import ACP
 import SwiftUI
 
 /// How full a session's context window is, as a ring; a click opens the breakdown. `.ring` fits a
-/// sidebar task row; `.labeled` adds the percentage, for the composer's controls.
+/// sidebar task row; `.labeled` adds the percentage, for the composer's controls; `.field` is that at
+/// Fine print's 24pt, among the field's trailing controls.
 struct ContextIndicator<Source: ContextSource>: View {
     enum Style {
         case ring
         case labeled
+        case field
     }
 
     let source: Source
     var style: Style = .ring
     /// Where the breakdown opens: above the composer, beside a sidebar row.
     var arrowEdge: Edge = .top
+    /// How full the window must be before the indicator shows (Fine print's field: from 70%); its
+    /// breakdown still opens from View ▸ Show Context Use below that.
+    var revealsAt: Double = 0
+    /// Whether the breakdown is open, when something else opens it too (View ▸ Show Context Use).
+    var breakdown: Binding<Bool>?
 
-    @State private var isShowingBreakdown = false
+    @State private var ownBreakdown = false
     @State private var isHovered = false
+
+    private var isShowingBreakdown: Bool {
+        get { breakdown?.wrappedValue ?? ownBreakdown }
+        nonmutating set {
+            if let breakdown { breakdown.wrappedValue = newValue } else { ownBreakdown = newValue }
+        }
+    }
 
     var body: some View {
         if isVisible {
@@ -29,7 +43,7 @@ struct ContextIndicator<Source: ContextSource>: View {
             .accessibilityLabel("Context")
             .accessibilityValue(source.fractionUsed.map { "\(DSFormat.percent($0)) full" } ?? "Not reported yet")
             .accessibilityHint("Shows what fills the context window")
-            .popover(isPresented: $isShowingBreakdown, arrowEdge: arrowEdge) {
+            .popover(isPresented: breakdown ?? $ownBreakdown, arrowEdge: arrowEdge) {
                 ContextBreakdownView(source: source)
                     .dsPopoverBackground()
             }
@@ -39,7 +53,8 @@ struct ContextIndicator<Source: ContextSource>: View {
     /// A row only shows a ring once there's something to show; the composer keeps its place for
     /// agents that can explain their context even before the first usage update.
     private var isVisible: Bool {
-        source.fractionUsed != nil || (style == .labeled && source.reportStatus != .unsupported)
+        let available = source.fractionUsed != nil || (style != .ring && source.reportStatus != .unsupported)
+        return available && (isShowingBreakdown || (source.fractionUsed ?? 0) >= revealsAt)
     }
 
     @ViewBuilder
@@ -52,7 +67,7 @@ struct ContextIndicator<Source: ContextSource>: View {
             ring
                 .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
                 .contentShape(.rect)
-        case .labeled:
+        case .labeled, .field:
             let shape = RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
             HStack(spacing: DS.Space.sm) {
                 ring
@@ -60,10 +75,10 @@ struct ContextIndicator<Source: ContextSource>: View {
                     .monospacedDigit()
                     .contentTransition(.numericText(value: source.fractionUsed ?? 0))
             }
-            .font(.dsBody)
+            .font(style == .field ? .dsMonoCaption : .dsBody)
             .foregroundStyle(isHovered || isShowingBreakdown ? .dsTextPrimary : .dsTextSecondary)
             .padding(.horizontal, DS.Space.sm)
-            .frame(height: DS.Size.composerPill)
+            .frame(height: style == .field ? DS.ComposerSettings.controlHeight : DS.Size.composerPill)
             .background(isShowingBreakdown ? Color.dsSelected : isHovered ? .dsHover : .clear, in: shape)
             .contentShape(shape)
             .trackHover($isHovered)
@@ -82,6 +97,11 @@ struct ContextIndicator<Source: ContextSource>: View {
             Click for a breakdown
             """
     }
+}
+
+extension FocusedValues {
+    /// The focused task's context breakdown, for View ▸ Show Context Use.
+    @Entry var contextUsePopover: Binding<Bool>?
 }
 
 #if NATIVE_PREVIEWS_WIP

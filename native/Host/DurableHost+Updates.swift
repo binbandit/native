@@ -33,9 +33,8 @@ extension DurableHost {
     /// Restarts the host onto this app's binary now. Running turns are interrupted and resume on the
     /// new host, which says it restarted to update. Ask first while `interruptedByRestart` has any.
     func restartHost() async {
-        await perform("restart the host") { client in
-            try await client.shutdownHost(stopAgents: false, immediately: true)
-        }
+        requestHostRestart()
+        await confirmHostRestart()
     }
 
     /// Compares builds and, for a host from an earlier Native, asks it (once per host process) to

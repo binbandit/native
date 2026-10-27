@@ -1,8 +1,9 @@
 import SwiftUI
 
 /// The one inline notice: a tinted glyph, a title, up to two supporting lines and trailing
-/// actions, on a raised surface outlined in the tone. `ErrorState` and `LimitBanner` are built on
-/// it; use it directly for other notices (offline, sign-in expired) rather than inventing one.
+/// actions that move below the message at narrow widths, on a raised surface outlined in the tone.
+/// `ErrorState` and `LimitBanner` are built on it; use it directly for other notices (offline,
+/// sign-in expired) rather than inventing one.
 public struct NoticeBanner<Actions: View>: View {
     public enum Tone: Sendable {
         case info, success, warning, danger
@@ -55,6 +56,31 @@ public struct NoticeBanner<Actions: View>: View {
 
     public var body: some View {
         let shape = RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline, spacing: DS.Space.md) {
+                message
+                actionRow.fixedSize()
+            }
+            VStack(alignment: .leading, spacing: Actions.self == EmptyView.self ? 0 : DS.Space.md) {
+                message
+                ViewThatFits(in: .horizontal) {
+                    actionRow.fixedSize()
+                    VStack(alignment: .leading, spacing: DS.Space.xs) {
+                        actions
+                    }
+                    .fixedSize()
+                }
+                .padding(.leading, DS.Size.rowLeading + DS.Space.md)
+            }
+        }
+        .padding(.vertical, DS.Space.md)
+        .padding(.horizontal, DS.Space.lg)
+        .background(.dsSurfaceRaised, in: shape)
+        .overlay { shape.strokeBorder(tone.color.opacity(0.35), lineWidth: 1) }
+        .accessibilityElement(children: .contain)
+    }
+
+    private var message: some View {
         // The glyph and the actions' labels sit on the title's baseline.
         HStack(alignment: .firstTextBaseline, spacing: DS.Space.md) {
             Image(systemName: systemImage ?? tone.defaultSymbol)
@@ -80,19 +106,17 @@ public struct NoticeBanner<Actions: View>: View {
             }
             .tracking(DS.Tracking.tight)
             .textSelection(.enabled)
+            .fixedSize(horizontal: false, vertical: true)
             // Beside buttons, a title line as tall as they are, so the margins stay even.
             .padding(.vertical, Actions.self == EmptyView.self ? 0 : DS.Space.xs)
             .frame(maxWidth: .infinity, alignment: .leading)
-
-            HStack(spacing: DS.Space.xs) {
-                actions
-            }
         }
-        .padding(.vertical, DS.Space.md)
-        .padding(.horizontal, DS.Space.lg)
-        .background(.dsSurfaceRaised, in: shape)
-        .overlay { shape.strokeBorder(tone.color.opacity(0.35), lineWidth: 1) }
-        .accessibilityElement(children: .contain)
+    }
+
+    private var actionRow: some View {
+        HStack(spacing: DS.Space.xs) {
+            actions
+        }
     }
 }
 
@@ -119,6 +143,14 @@ extension NoticeBanner where Actions == EmptyView {
             NoticeBanner(tone: .success, title: "Imported your terminal settings") {
                 Button("Undo") {}.buttonStyle(.ds(.secondary))
             }
+            NoticeBanner(
+                tone: .danger, title: "Couldn't restart the background helper",
+                detail: "Native is still trying to reconnect."
+            ) {
+                Button("Show Details") {}.buttonStyle(.ds(.ghost))
+                Button("Try Again…") {}.buttonStyle(.ds(.primary))
+            }
+            .frame(width: 280)
         }
         .frame(width: 520)
     }
