@@ -68,6 +68,9 @@ private struct Machine: Sendable {
         if arguments.first == "config", arguments.contains(where: { $0.contains("gh-resolved") }) {
             return .output(1, "", "")
         }
+        if arguments.first == "config", arguments.contains(where: { $0.contains("nativearchivedworktree") }) {
+            return .output(0, "nativearchivedworktree.\(Self.folder).branch\ntask/archived-\(pullRequest)\0", "")
+        }
         return .output(0, "", "")
     }
 
@@ -483,6 +486,27 @@ private struct DroidPullRequestLookupRegression {
         try require(tasks.branch(of: taskA) == branchA, "Pairing again changed the task's branch")
         try require(await linkA2.lookups.count == 1, "The new pairing was asked more than once")
         try require(await linkA.runs.count == runsOnOldA, "The replaced pairing still ran commands")
+        // Archive records are read on the task's host, and gh uses its surviving project checkout.
+        app.projects.update(project.id) { $0.checkouts.append(ProjectCheckout(host: a.id, path: "/same/repo")) }
+        app.archivedSessions.set(taskA.id, archived: true)
+        let commandsHere = await here.commands.count
+        await insights.prepare([taskA])
+        let archivedBranch = tasks.branch(of: taskA)
+        try require(
+            archivedBranch
+                == BranchReference(
+                    host: a.id, directory: URL(filePath: "/same/repo", directoryHint: .isDirectory),
+                    branch: "task/archived-20"),
+            "Archived droid task lost its host or saved branch")
+        try require(insights.pullRequestBadge(taskA) != nil, "Archived droid task lost its outcome")
+        try require(
+            tasks.menu(of: taskA)?.items.map(\.title) == ["Open on GitHub", "Copy Link"],
+            "Archived droid task exposed writes")
+        try require(await here.commands.count == commandsHere, "Archived droid lookup used this Mac's git or gh")
+        try require(
+            await linkA2.lookups.last?.directory == "/same/repo", "Archived droid PR lookup used the removed worktree")
+        print(
+            "PASS: archived droid outcomes use that host's saved branch and surviving checkout, with read-only actions")
         print("PASS: pairing a droid again asks the new pairing")
     }
 

@@ -419,6 +419,9 @@ every task with its own checkout shows its PR number, lifecycle glyph and failin
 the row and in Peek, even with all facts off. The row starts the cached lookup without requiring
 a branch fact or an active filter; project Refresh still bypasses that cache. Row menus retain
 the existing open and copy actions, with host-safe read-only actions for paired tasks.
+Archived managed worktrees resolve their saved branch from the surviving project checkout on the
+task's machine, keeping PR outcomes and menu actions after removal and relaunch without restoring
+the worktree. Project Refresh also bypasses the PR cache for these archived branches.
 Home Next owns the asks it shows; matching sidebar sentences, clocks and keycaps fold. Requests not
 yet shown by Home, including different requests on the same task, keep their sidebar sentence.
 The Debug fixtures `fold`, `facts` and `home-fold` cover these states.

@@ -38,13 +38,7 @@ enum AppSidebarTaskInsights {
             },
             prepare: { summaries in
                 for summary in summaries {
-                    guard let folder = tasks.checkout(of: summary) else { continue }
-                    let repository = git.model(for: folder, session: summary.id)
-                    if repository.isLocal, !FileManager.default.fileExists(atPath: folder.path) { continue }
-                    if repository.status == nil { await repository.refreshNow() }
-                    if let reference = tasks.branch(of: summary) {
-                        await gitHub.loadPullRequest(for: reference)
-                    }
+                    await tasks.prepare(summary)
                 }
             }
         )

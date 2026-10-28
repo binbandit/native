@@ -65,6 +65,12 @@ private struct SidebarPullRequestChecks {
     }
 
     static func main() async throws {
+        do {
+            try await SidebarArchivedPullRequestChecks.run()
+        } catch {
+            print("FAIL: \(error)")
+            exit(1)
+        }
         let folder = FileManager.default.temporaryDirectory.appending(path: "sidebar-pr-\(UUID())")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
