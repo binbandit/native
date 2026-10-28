@@ -20,7 +20,9 @@ extension AVAudioPlayer {
 @MainActor
 struct SilentAudioRegression {
     static func main() async throws {
-        guard let original = class_getInstanceMethod(AVAudioPlayer.self, #selector(AVAudioPlayer.play)),
+        guard
+            let original = class_getInstanceMethod(
+                AVAudioPlayer.self, #selector(AVAudioPlayer.play as (AVAudioPlayer) -> () -> Bool)),
             let replacement = class_getInstanceMethod(AVAudioPlayer.self, #selector(AVAudioPlayer.silentTestPlay))
         else { fatalError("Missing audio playback interception") }
         method_exchangeImplementations(original, replacement)
@@ -48,6 +50,7 @@ struct SilentAudioRegression {
         let celebration = CelebrationPreviewFixtures.center()
         celebration.setAllAutomatic(true)
         celebration.refresh()
+        precondition(celebration.resolution.active != nil, "Celebration fixture must be active")
         let notice = NativeNotification(
             id: "silent-fixture", kind: .turnFinished, agent: "fixture", agentName: "Fixture",
             title: "Fixture finished", body: "Test notification", sound: .done)
