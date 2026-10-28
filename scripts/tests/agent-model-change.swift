@@ -325,7 +325,12 @@ private struct AgentModelChangeRegression {
             let manifest = PluginManifest(
                 id: "permissions", name: "Permissions",
                 agents: [
-                    AgentManifest(id: "fixture", name: "Fixture", command: "/usr/bin/true"),
+                    AgentManifest(
+                        id: "fixture", name: "Fixture", command: "/usr/bin/python3",
+                        args: [
+                            script, "--kind", "source", "--store", scratch.appending(path: "source").path,
+                            "--project", scratch.path,
+                        ]),
                     AgentManifest(
                         id: "target", name: "Target", command: "/usr/bin/python3",
                         args: [
@@ -342,10 +347,14 @@ private struct AgentModelChangeRegression {
             defer { app.stopAgents() }
             _ = await app.checkForAgents()
             let project = app.projects.add(scratch)
+            try FileManager.default.createDirectory(
+                at: scratch.appending(path: "source"), withIntermediateDirectories: true)
+            try Data(test.source.utf8).write(to: scratch.appending(path: "source/default-mode"))
+            _ = await app.ensureRunning(.init(rawValue: "fixture"))
             let config = ComposerSettingsPreviewFixtures.claude(mode: test.source)
             guard
                 let source = SessionModel.preview(
-                    in: app, agent: "fixture", cwd: scratch.path,
+                    in: app, agent: "fixture", id: "model-source", cwd: scratch.path,
                     configOptions: [config.model?.option, config.autonomy?.option].compactMap { $0 })
             else { throw ChangeFailure("No permission source") }
             source.previewExchange("Keep the task", reply: "Progress saved")
@@ -368,7 +377,7 @@ private struct AgentModelChangeRegression {
                 print("PASS: policy denying every offered mode blocks with one organization name")
                 continue
             }
-            try require(change.stage == .applied, change.error ?? test.name)
+            try require(change.stage == .applied, test.name + ": " + (change.error ?? "Not applied"))
             guard let key = app.selection, let target = app.session(key) else {
                 throw ChangeFailure("No permission target")
             }
