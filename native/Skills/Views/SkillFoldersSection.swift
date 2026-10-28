@@ -5,6 +5,7 @@ import SwiftUI
 /// Where agents look for skills, in the shared folders section: every root the library checks,
 /// grouped by scope, with how many skills each holds.
 struct SkillFoldersSection: View {
+    @Environment(\.projectDisplayName) private var projectDisplayName
     let library: SkillLibrary
     /// The project the page points at; nil shows every project's folders.
     let project: URL?
@@ -12,7 +13,8 @@ struct SkillFoldersSection: View {
     var body: some View {
         SettingsFoldersSection(
             title: "Where agents look for skills",
-            folders: SettingsFolder.skills(library: library, project: project),
+            folders: SettingsFolder.skills(
+                library: library, project: project, projectDisplayName: projectDisplayName.callAsFunction),
             place: SettingsFolderNoun("folder"),
             item: SettingsFolderNoun("skill"))
     }
@@ -20,7 +22,9 @@ struct SkillFoldersSection: View {
 
 extension SettingsFolder {
     /// One row per skills root (a folder and its singular twin, like `.opencode/skill(s)`, share one).
-    static func skills(library: SkillLibrary, project: URL?) -> [SettingsFolder] {
+    static func skills(
+        library: SkillLibrary, project: URL?, projectDisplayName: @MainActor (URL) -> String = { $0.lastPathComponent }
+    ) -> [SettingsFolder] {
         let projects = library.host?.skillProjects ?? []
         let counts = Dictionary(library.items.flatMap(\.places).map { ($0.root.path, 1) }, uniquingKeysWith: +)
         let folders = library.roots.compactMap { root -> SettingsFolder? in
@@ -33,7 +37,7 @@ extension SettingsFolder {
                 scope = .project
                 section =
                     project != nil || projects.count == 1
-                    ? "This project · \(url.lastPathComponent)" : url.lastPathComponent
+                    ? "This project · \(projectDisplayName(url))" : projectDisplayName(url)
                 label = String(root.path.dropFirst(SkillPaths.key(url).count + 1))
             case .user, .account:
                 scope = .user

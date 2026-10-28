@@ -4,6 +4,8 @@ import SwiftUI
 /// One provider account in Settings › Usage: each limit window as a bar with its reset time, and
 /// what the open tasks have used.
 struct UsageAccountCard: View {
+    @Environment(\.projectDisplayName) private var projectDisplayName
+
     let agent: AgentDefinition.ID
     let name: String
     /// For the agent's icon, the one the sidebar and recent tasks show.
@@ -91,7 +93,7 @@ struct UsageAccountCard: View {
                     tokens: spent(usage.reduce(ActivityCounts()) { $0 + $1.counts }))
                 ForEach(usage, id: \.project) { entry in
                     ContributorRow(
-                        title: URL(filePath: entry.project).lastPathComponent, detail: summary(of: entry.counts),
+                        title: projectDisplayName(URL(filePath: entry.project)), detail: summary(of: entry.counts),
                         tokens: spent(entry.counts))
                 }
             }

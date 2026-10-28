@@ -75,6 +75,7 @@ private struct FileCommands: Commands {
             if model.offersSidebarFolders {
                 Menu("Open Recent") { SidebarFolderRecentMenu(model: model, undoManager: menu.context.undoManager) }
             }
+            CommandMenuItem(.projectRename, in: menu)
             CommandMenuItem(.projectSettings, in: menu)
             CommandMenuItem(.projectRefresh, in: menu)
             CommandMenuItem(.pullRequestOpenAsTask, in: menu)

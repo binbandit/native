@@ -37,7 +37,10 @@ enum CommandsWiring {
         registry.register(NativeCommand.coordinatorTasks(model: model))
         registry.register(NativeCommand.quickEntry(model: model))
         registry.register(NativeCommand.taskPairs(model: model))
-        registry.register([.projectSettings(model: model, settings: settings), .projectRefresh(model: model)])
+        registry.register([
+            .projectSettings(model: model, settings: settings), .projectRefresh(model: model),
+            .projectRename(model: model),
+        ])
         registry.register([.pullRequestTasks(features.pullRequestTasks)])
         registry.register([.gitCleanUpMerged(features.gitCleanup, model: model)])
         registry.register(NativeCommand.expeditions(model: model))

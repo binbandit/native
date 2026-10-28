@@ -122,6 +122,7 @@ struct TaskScriptsSettingsPage: View {
 
 /// A project's scripts in a sheet, for editing them from Settings ▸ Scripts.
 struct TaskScriptProjectSheet: View {
+    @Environment(\.projectDisplayName) private var projectDisplayName
     struct Project: Identifiable {
         let url: URL
         var id: URL { url }
@@ -135,7 +136,7 @@ struct TaskScriptProjectSheet: View {
         VStack(alignment: .leading, spacing: DS.Space.xl) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(project.url.lastPathComponent)
+                    Text(projectDisplayName(project.url))
                         .settingsText(.title)
                         .foregroundStyle(.dsTextPrimary)
                         .accessibilityAddTraits(.isHeader)

@@ -18,7 +18,8 @@ struct ProjectIdentitySection: View {
         SettingsRowGroup {
             SettingsRow(
                 id: rows.name, "Name",
-                description: Text("Shown in the sidebar and everywhere else in Native. The folder keeps its name.")
+                description: Text(
+                    "Shown throughout Native. Clear it to use the folder name; the folder on disk keeps its name.")
             ) {
                 ProjectNameField(project: project)
             }
@@ -100,7 +101,7 @@ private struct ProjectNameField: View {
             .onChange(of: isFocused) { _, focused in
                 if !focused { commit() }
             }
-            .onChange(of: project.name, initial: true) { _, name in
+            .onChange(of: project.baseName, initial: true) { _, name in
                 if !isFocused { draft = name }
             }
             .onDisappear(perform: commit)
@@ -109,11 +110,11 @@ private struct ProjectNameField: View {
 
     private func commit() {
         model.renameProject(project.id, to: draft, undoManager: undoManager)
-        draft = model.projects.project(project.id)?.name ?? draft
+        draft = model.projects.project(project.id)?.baseName ?? draft
     }
 }
 
-#if NATIVE_PREVIEWS_WIP
+#if DEBUG
 #Preview("Project identity") {
     let app = AppModel.preview()
     DSPreviewPair {

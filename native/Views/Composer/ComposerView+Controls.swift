@@ -60,7 +60,8 @@ extension ComposerView {
             onAttach: attach,
             onSet: set,
             onCycleEffort: { apply(settings.nextEffort) },
-            mode: TaskModeControl(session: session, modes: taskModes),
+            mode: TaskModeControl(
+                session: session, modes: taskModes, resolvedProjectName: app.projectName(of: session)),
             extras: { density in SessionGoalControl(session: session, showsIcon: density.showsIcons) },
             context: { density in
                 // The session's MCP servers sit beside the context ring, quiet like it.

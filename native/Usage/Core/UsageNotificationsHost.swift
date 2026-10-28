@@ -4,6 +4,7 @@ import Foundation
 /// What notifications need from the app to decide whether to show and to act on the answer.
 /// `AppModel` conforms.
 protocol UsageNotificationsHost: AnyObject {
+    func taskProjectName(_ ref: UsageSessionRef) -> String?
     /// Whether the task is the one on screen.
     func isShowing(_ ref: UsageSessionRef) -> Bool
     /// Whether Native's tools started the task (workflow steps, orchestration, expeditions), which
@@ -19,4 +20,8 @@ protocol UsageNotificationsHost: AnyObject {
     func show(_ ref: UsageSessionRef)
     /// Whether `show` can find the task: it's open or its agent still lists it.
     func canShow(_ ref: UsageSessionRef) -> Bool
+}
+
+extension UsageNotificationsHost {
+    func taskProjectName(_ ref: UsageSessionRef) -> String? { nil }
 }

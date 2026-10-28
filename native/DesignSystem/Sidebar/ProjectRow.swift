@@ -17,6 +17,8 @@ public enum ProjectIcon {
 /// place. Hovering swaps the avatar for a chevron and reveals the actions menu; "+" creates a task.
 public struct ProjectRow<MenuContent: View>: View {
     let name: String
+    let qualifier: String?
+    let path: String?
     let icon: ProjectIcon
     let isExpanded: Bool
     let taskCount: Int?
@@ -36,6 +38,8 @@ public struct ProjectRow<MenuContent: View>: View {
     ///   - menu: The project's actions, shown from the "…" button and as a context menu.
     public init(
         name: String,
+        qualifier: String? = nil,
+        path: String? = nil,
         icon: ProjectIcon = .initial,
         isExpanded: Bool,
         taskCount: Int? = nil,
@@ -47,6 +51,8 @@ public struct ProjectRow<MenuContent: View>: View {
         @ViewBuilder menu: () -> MenuContent
     ) {
         self.name = name
+        self.qualifier = qualifier
+        self.path = path
         self.icon = icon
         self.isExpanded = isExpanded
         self.taskCount = taskCount
@@ -79,6 +85,14 @@ public struct ProjectRow<MenuContent: View>: View {
                         .foregroundStyle(.dsTextSecondary)
                         .lineLimit(1)
 
+                    if let qualifier {
+                        Text("· \(qualifier)")
+                            .font(.dsCalloutBook)
+                            .foregroundStyle(.dsTextTertiary)
+                            .lineLimit(1)
+                            .truncationMode(.head)
+                    }
+
                     if isRefreshing {
                         ProjectRefreshIndicator()
                     }
@@ -104,7 +118,8 @@ public struct ProjectRow<MenuContent: View>: View {
                 .contentShape(.rect)
             }
             .buttonStyle(SidebarRowButtonStyle())
-            .accessibilityLabel(name)
+            .accessibilityLabel([name, qualifier, path].compactMap { $0 }.joined(separator: ", "))
+            .help(path ?? name)
             .accessibilityValue(accessibilityValue)
             .accessibilityHint(isExpanded ? "Hides the project's tasks" : "Shows the project's tasks")
 
@@ -238,3 +253,26 @@ public struct ProjectAvatar: View {
         .frame(width: 244)
     }
 }
+
+#if DEBUG
+#Preview("Project names - Duplicates and custom name") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xs) {
+            ProjectRow(name: "native", qualifier: "work", path: "/projects/work/native", isExpanded: true, onToggle: {})
+            {
+                Button("Rename Project…") {}
+            }
+            ProjectRow(
+                name: "native", qualifier: "personal", path: "/projects/personal/native", isExpanded: false,
+                onToggle: {}
+            ) {
+                Button("Rename Project…") {}
+            }
+            ProjectRow(name: "Native at Work", path: "/projects/work/native", isExpanded: true, onToggle: {}) {
+                Button("Rename Project…") {}
+            }
+        }
+        .frame(width: DS.Window.sidebarMinWidth)
+    }
+}
+#endif

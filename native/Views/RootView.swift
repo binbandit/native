@@ -130,6 +130,8 @@ struct RootView: View {
             }
         }
         navigation
+            .environment(\.projectDisplayName, ProjectDisplayNameResolver(projects: model.projects))
+            .projectRenamePresentation()
             .changeAgentPresentation()
             .coordinatorTaskPresentation()
             .newExpeditionSheet()

@@ -54,7 +54,7 @@ extension CommandPaletteSource {
                     id: .init("task:\(summary.id.agent.rawValue)/\(summary.id.id)"),
                     kind: .task,
                     title: model.title(for: summary),
-                    subtitle: model.projects.project(summary.project)?.name,
+                    subtitle: model.projectName(for: summary.id, in: summary.project),
                     systemImage: "bubble.left",
                     keywords: [summary.agent.displayName]
                 ) {

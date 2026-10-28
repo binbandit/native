@@ -279,7 +279,7 @@ struct SessionRow<Accessory: View>: View {
     /// The agent and title (and project, when pinned away from it), then what the session is
     /// waiting on, so triage needs no click.
     private var tooltip: String {
-        let project = indent == .flat ? model.projects.project(summary.project).map { " · \($0.name)" } : nil
+        let project = indent == .flat ? model.projectName(for: summary.id, in: summary.project).map { " · \($0)" } : nil
         let line = "\(summary.agent.displayName) · \(title)\(project ?? "")\(isArchived ? " · Archived" : "")"
         let removed = model.removedWorkspaces[summary.id].map { "Its worktree was removed. \($0.detail)" }
         return [line, removed, session?.sidebarAsk].compactMap(\.self).joined(separator: "\n")

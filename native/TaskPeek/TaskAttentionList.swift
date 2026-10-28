@@ -78,7 +78,7 @@ struct TaskAttentionList: View {
             attentionSince: item.ask?.since,
             answersShortcut: item.ask != nil && item.ask?.id == model.answerShortcutAsk?.id,
             askShortcut: CommandRegistry.shared.keyboardShortcut(for: .taskAnswerOldestAsk),
-            projectName: model.projects.project(item.summary.project)?.name,
+            projectName: model.projectName(for: item.summary.id, in: item.summary.project),
             outcome: insights.pullRequestBadge(item.summary),
             action: { model.peekTask(item.id, ask: item.ask) }
         )

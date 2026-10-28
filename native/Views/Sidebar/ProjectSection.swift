@@ -92,10 +92,11 @@ struct ProjectSection<TaskAccessory: View>: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel(
             isAllInView && model.sidebarFolders.opening.contains(project.folderName)
-                ? "Opening \(project.name)" : project.name
+                ? "Opening \(project.name), \(project.path)" : "\(project.name), \(project.path)"
         )
         .accessibilityActions {
             Button("New Task") { Task { await model.newSession(in: project.id) } }
+            Button("Rename Project") { model.requestRenameProject(project.id) }
             Button("Refresh") { Task { await model.refreshProject(project.id) } }
             Button("Move Up") { model.move(.project(project.id), .up) }
             Button("Move Down") { model.move(.project(project.id), .down) }
@@ -140,7 +141,8 @@ struct ProjectSection<TaskAccessory: View>: View {
         let activity = isExpanded.wrappedValue ? ProjectActivity() : activity(starting: starting)
         if isAllInView {
             AllInViewProjectGroup(
-                name: project.name, isFirst: position.index == 0 && !followsPinned, isExpanded: isExpanded,
+                name: project.baseName, qualifier: project.nameQualifier, path: project.path,
+                isFirst: position.index == 0 && !followsPinned, isExpanded: isExpanded,
                 taskCount: sessions.count + earlier.count,
                 isRefreshing: model.refreshingProjects.contains(project.id)
                     || model.sidebarFolders.opening.contains(project.folderName), activity: activity,
@@ -148,7 +150,8 @@ struct ProjectSection<TaskAccessory: View>: View {
                 menu: { projectMenu }, content: content)
         } else {
             ProjectGroup(
-                name: project.name, icon: iconStore.icon(for: project), isExpanded: isExpanded,
+                name: project.baseName, qualifier: project.nameQualifier, path: project.path,
+                icon: iconStore.icon(for: project), isExpanded: isExpanded,
                 taskCount: sessions.count + earlier.count, activity: activity,
                 isRefreshing: model.refreshingProjects.contains(project.id),
                 note: hasNoMatches ? "No matching tasks" : nil,

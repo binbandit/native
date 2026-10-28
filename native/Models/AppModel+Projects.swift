@@ -1,4 +1,5 @@
 import Foundation
+import ProjectNames
 
 // The projects in the sidebar: adding, focusing, removing (with undo) and reordering them.
 extension AppModel {
@@ -58,12 +59,18 @@ extension AppModel {
         Task { await refreshSessions(in: project) }
     }
 
+    func requestRenameProject(_ id: Project.ID) {
+        guard let project = projects.project(id), project.host == .local else { return }
+        projectNameDraft = project.baseName
+        renamingProject = id
+    }
+
     /// Names a project in Native, open or archived; the folder keeps its own name. Nil, blank or the
     /// folder's name goes back to the folder's. ⌘Z puts the previous name back.
     func renameProject(_ id: Project.ID, to name: String?, undoManager: UndoManager? = nil) {
         guard let project = projects.project(id) ?? projects.archived.first(where: { $0.id == id }) else { return }
-        let trimmed = name?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let displayName = trimmed?.isEmpty == false && trimmed != project.folderName ? trimmed : nil
+        guard project.host == .local else { return }
+        let displayName = ProjectName.normalized(name, folderName: project.folderName)
         guard displayName != project.displayName else { return }
         projects.rename(id, to: displayName)
         undoManager?.registerUndo(withTarget: self) { model in

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A15000000000000000000020 /* ProjectNames in Frameworks */ = {isa = PBXBuildFile; productRef = A15000000000000000000010 /* ProjectNames */; };
 		A6A700000000000000000020 /* NativeNetwork in Frameworks */ = {isa = PBXBuildFile; productRef = A6A700000000000000000010 /* NativeNetwork */; };
 		C0A990010000000000000001 /* ApprovalAnalysis in Frameworks */ = {isa = PBXBuildFile; productRef = C0A990010000000000000002 /* ApprovalAnalysis */; };
 		000000000000000000000320 /* ACP in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000000310 /* ACP */; };
@@ -137,6 +138,7 @@
 				00000000000000004D0DE520 /* Modes in Frameworks */,
 				000000000000000053ED7520 /* SessionTools in Frameworks */,
 				00000000000000009C010020 /* ProjectIcons in Frameworks */,
+				A15000000000000000000020 /* ProjectNames in Frameworks */,
 				0000000000000000AC7A0020 /* ProjectActions in Frameworks */,
 				00000000000000007E1E0020 /* NativeTelemetry in Frameworks */,
 				00000000000000000D0D0020 /* Undo in Frameworks */,
@@ -271,6 +273,7 @@
 				00000000000000004D0DE510 /* Modes */,
 				000000000000000053ED7510 /* SessionTools */,
 				00000000000000009C010010 /* ProjectIcons */,
+				A15000000000000000000010 /* ProjectNames */,
 				0000000000000000AC7A0010 /* ProjectActions */,
 				00000000000000007E1E0010 /* NativeTelemetry */,
 				00000000000000000D0D0010 /* Undo */,
@@ -336,6 +339,7 @@
 				00000000000000004D0DE500 /* XCLocalSwiftPackageReference "Packages/Modes" */,
 				000000000000000053ED7500 /* XCLocalSwiftPackageReference "Packages/SessionTools" */,
 				00000000000000009C010000 /* XCLocalSwiftPackageReference "Packages/ProjectIcons" */,
+				A15000000000000000000000 /* XCLocalSwiftPackageReference "Packages/ProjectNames" */,
 				0000000000000000AC7A0000 /* XCLocalSwiftPackageReference "Packages/ProjectActions" */,
 				00000000000000007E1E0000 /* XCLocalSwiftPackageReference "Packages/Telemetry" */,
 				00000000000000000D0D0000 /* XCLocalSwiftPackageReference "Packages/Undo" */,
@@ -830,6 +834,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		A15000000000000000000000 /* XCLocalSwiftPackageReference "Packages/ProjectNames" */ = {isa = XCLocalSwiftPackageReference; relativePath = Packages/ProjectNames; };
 		A6A700000000000000000000 /* XCLocalSwiftPackageReference "Packages/NativeNetwork" */ = {isa = XCLocalSwiftPackageReference; relativePath = Packages/NativeNetwork; };
 		C0A990010000000000000003 /* XCLocalSwiftPackageReference "Packages/ApprovalAnalysis" */ = {isa = XCLocalSwiftPackageReference; relativePath = Packages/ApprovalAnalysis; };
 		000000000000000000000300 /* XCLocalSwiftPackageReference "Packages/ACP" */ = {
@@ -978,6 +983,7 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		A15000000000000000000010 /* ProjectNames */ = {isa = XCSwiftPackageProductDependency; productName = ProjectNames; };
 		A6A700000000000000000010 /* NativeNetwork */ = {isa = XCSwiftPackageProductDependency; productName = NativeNetwork; };
 		C0A990010000000000000002 /* ApprovalAnalysis */ = {isa = XCSwiftPackageProductDependency; productName = ApprovalAnalysis; };
 		000000000000000000000310 /* ACP */ = {
