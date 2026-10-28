@@ -15,6 +15,7 @@ parser.add_argument('--kind', choices=['source', 'target'], required=True)
 parser.add_argument('--store', type=pathlib.Path, required=True)
 parser.add_argument('--project', required=True)
 parser.add_argument('--reject-unsent-load', action='store_true')
+parser.add_argument('--model-switch', action='store_true')
 args = parser.parse_args()
 args.store.mkdir(parents=True, exist_ok=True)
 source = args.kind == 'source'
@@ -38,7 +39,7 @@ def options():
         ('agent-full-access', 'Full access')]
     mode_file = args.store / 'default-mode'
     initial_mode = mode_file.read_text().strip() if mode_file.exists() else levels[0][0]
-    return [option('model', 'model', models[0][0], models),
+    return ([dict(option('fast', 'model_config', 'off', [('off', 'Off'), ('on', 'On')]), name='Fast mode')] if args.model_switch else []) + [option('model', 'model', models[0][0], models),
             option('effort', 'thought_level', 'low', [(v, v.title()) for v in ['default', 'low', 'medium', 'high', 'xhigh', 'max']]),
             option('mode', 'mode', initial_mode, levels)]
 
