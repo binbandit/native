@@ -62,6 +62,9 @@ import Testing
     }
 
     @Test func unknownModesUseAnExplicitFallback() {
+        #expect(AgentModelPermissions.isConservative("default"))
+        #expect(!AgentModelPermissions.isConservative("interactive"))
+        #expect(!AgentModelPermissions.isConservative("bypassPermissions"))
         #expect(
             AgentModelPermissions.selection(for: "auto", offered: ["interactive", "autopilot"])
                 == .init(value: "interactive", reason: .unknown))

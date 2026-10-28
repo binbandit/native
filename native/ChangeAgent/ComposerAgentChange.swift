@@ -247,7 +247,18 @@ final class ComposerAgentChange {
         let confirmed = ModeAgentSettings(target.configOptions)
         if needsRestriction, confirmed.isPlanOn {
             expectedPlanOption = confirmed.plan?.id
-            permissionNotice = planning ? nil : "\(choice.agentName) will use Plan Mode to keep this task read-only."
+            if planning {
+                if selection.reason == .unknown, permissionSourceValue == nil,
+                    AgentModelPermissions.isConservative(selection.value)
+                {
+                    permissionNotice = nil
+                }
+            } else {
+                let planNotice = "\(choice.agentName) will use Plan Mode to keep this task read-only."
+                permissionNotice =
+                    AgentModelPermissions.isConservative(selection.value)
+                    ? planNotice : [permissionNotice, planNotice].compactMap { $0 }.joined(separator: " ")
+            }
         } else if planning, expectedPlanOption == nil {
             let title =
                 targetMode.choices.first { $0.value == selection.value }?.askingTitle.lowercased() ?? selection.value
@@ -261,8 +272,6 @@ final class ComposerAgentChange {
             }
             permissionNotice =
                 "\(choice.agentName) can't require plan approval. It will \(using) instead. Review permissions before sending."
-        } else if expectedPlanOption != nil {
-            permissionNotice = nil
         }
     }
 

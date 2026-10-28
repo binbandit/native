@@ -41,6 +41,15 @@ public enum AgentModelPermissions {
         selection(for: source, offered: offered, forbidden: forbidden)?.value
     }
 
+    /// A documented level that protects changes with approval or a read-only restriction.
+    /// Unknown values and levels granting automatic changes cannot justify hiding a notice.
+    public static func isConservative(_ value: String) -> Bool {
+        switch level(value) {
+        case .asks, .readOnly, .planning: true
+        default: false
+        }
+    }
+
     private enum Level {
         case asks, edits, workspace, review, full, refuses, planning, readOnly
 

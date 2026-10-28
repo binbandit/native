@@ -315,6 +315,14 @@ private struct AgentModelChangeRegression {
             ("unknown", "auto", #"[["interactive","Interactive"],["autopilot","Autopilot"]]"#, "interactive", true),
             ("no setting", "auto", "[]", nil, true),
             ("plan supported", "plan", #"[["default","Manual"],["plan","Plan"]]"#, "plan", false),
+            (
+                "plan separate unknown", "plan", #"[["interactive","Interactive"],["autopilot","Autopilot"]]"#,
+                "interactive", true
+            ),
+            (
+                "read-only separate unknown", "read-only",
+                #"[["interactive","Interactive"],["autopilot","Autopilot"]]"#, "interactive", true
+            ),
             ("plan separate", "plan", #"[["default","Manual"],["agent","Auto review"]]"#, "default", false),
             ("plan no setting", "plan", "[]", nil, true),
             ("plan unsupported", "plan", #"[["default","Manual"],["auto","Auto"]]"#, "default", true),
@@ -346,7 +354,9 @@ private struct AgentModelChangeRegression {
                         args: [
                             script, "--kind", "target", "--store", scratch.appending(path: "agent").path,
                             "--project", scratch.path, "--permission-options", test.levels,
-                        ] + (test.name == "plan separate" ? ["--separate-plan"] : [])),
+                        ]
+                            + (["plan separate", "plan separate unknown", "read-only separate unknown"].contains(
+                                test.name) ? ["--separate-plan"] : [])),
                 ])
             let app = AppModel(
                 plugins: PluginRegistry(
@@ -426,6 +436,11 @@ private struct AgentModelChangeRegression {
                         && change.permissionNotice?.contains("doesn't offer") == false
                         && change.permissionNotice?.contains("when something looks risky") == true,
                     "Policy-limited permission copy blamed the agent's offered choices")
+            }
+            if test.name == "plan separate unknown" || test.name == "read-only separate unknown" {
+                try require(
+                    change.permissionNotice?.contains("can't be compared") == true,
+                    "Planning confirmation hid an independent unknown permission level")
             }
             let stored = AgentModelContinuations(defaults: defaults).receipt(for: target.key)
             try require(stored?.permissionNotice == change.permissionNotice, "Permission notice did not persist")
