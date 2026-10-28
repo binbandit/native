@@ -9,8 +9,8 @@ extension CommandID {
 extension NativeCommand {
     static func changeAgent(model: AppModel) -> NativeCommand {
         NativeCommand(
-            .sessionChangeAgent, title: "Change Agent…", category: .composer,
-            systemImage: "arrow.triangle.swap", keywords: ["model", "continue with"]
+            .sessionChangeAgent, title: "Switch Agent…", category: .composer,
+            systemImage: "arrow.triangle.swap", keywords: ["model", "harness", "change agent", "continue with"]
         ) { context in
             guard let source = context.session else { return }
             model.requestAgentChange(source)

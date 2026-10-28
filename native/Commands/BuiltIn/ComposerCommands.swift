@@ -85,7 +85,8 @@ extension NativeCommand {
                 }
                 if context.composeDraft != nil { return true }
                 return context.session.map {
-                    ExperimentStore.shared.value(of: .composerNext) || ComposerSettings($0.configOptions).model != nil
+                    model.offersAgentModels || ExperimentStore.shared.value(of: .composerNext)
+                        || ComposerSettings($0.configOptions).model != nil
                 } ?? false
             },
         ]

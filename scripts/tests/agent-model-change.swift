@@ -156,6 +156,33 @@ private struct AgentModelChangeRegression {
         print("PASS: exact model, permission preservation, no working prompt, one task, drafts and Undo")
         print("PASS: suspended attachment reads follow the draft through selection and Undo")
 
+        experiments.set(false, for: .composerNext)
+        let command = NativeCommand.changeAgent(model: app)
+        let context = CommandContext(session: source)
+        try require(command.isAvailable(context), "Switch Agent is missing with Fine print off")
+        command.perform(context)
+        try require(source.isAgentPickerRequested && source.isModelPickerRequested, "Command missed the Agent section")
+        try require(app.changingAgent == nil, "Legacy composer opened a confirmation sheet")
+        source.isAgentPickerRequested = false
+        source.isModelPickerRequested = false
+        app.switchAgent(to: choice.agent, for: source)
+        guard let legacy = source.modelChange else { throw ChangeFailure("No direct agent choice") }
+        try await wait("legacy agent prepared") { legacy.stage == .applied || legacy.stage == .failed }
+        try require(legacy.stage == .applied, legacy.error ?? "Direct agent choice failed")
+        guard let selected = app.selection, let legacyTarget = app.sessions.session(selected) else {
+            throw ChangeFailure("No legacy target")
+        }
+        try require(legacyTarget.agent.id == choice.agent, "Agent choice did not change harness")
+        try require(ComposerSettings(legacyTarget.configOptions).model?.value == "small", "Agent default was not used")
+        try require(
+            legacyTarget.draft == source.draft || legacyTarget.draft == "Draft edited after selection", "Draft lost")
+        try require(await process.accepted.isEmpty, "Direct agent choice submitted a working prompt")
+        legacy.undo()
+        try require(
+            app.selection == source.key && source.attachments.count == 3, "Legacy Undo lost the task or attachments")
+        experiments.set(true, for: .composerNext)
+        print("PASS: Switch Agent command, default model, invisible handoff and Undo with Fine print off")
+
         source.phase = .prompting
         source.lastStopReason = nil
         app.chooseAgentModel(choice, for: source)

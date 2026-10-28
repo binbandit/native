@@ -83,6 +83,7 @@ private struct ComposerSettingsRegression {
             try composeChoicesAndDismissal()
             try keyboardTargets()
             try boundedModelTargets()
+            try agentGrouping()
             try await restartRouting()
         } catch {
             print("FAIL: \(error)")
@@ -321,6 +322,29 @@ private struct ComposerSettingsRegression {
         popover.choose(.restart, closing: false)
         try expect(restarted && !changed, "Stopped settings changed or Restart failed")
         print("PASS: Fast mode, retry, Edit Modes and Restart have working keyboard targets")
+    }
+
+    private static func agentGrouping() throws {
+        let current = AgentDefinition.ID(rawValue: "claude-code")
+        var picked: AgentDefinition.ID?
+        let popover = ComposerSettingsPopover(
+            settings: ComposerSettingsPreviewFixtures.claude(), agentName: "Claude Code",
+            agentModels: ComposerAgentSwitchFixtures.models(count: 4), currentAgentID: current,
+            onChooseAgent: { picked = $0 }, onSet: { _, _ in })
+        try expect(popover.modelList?.rows.count == 6, "The model section included another harness")
+        try expect(popover.modelList?.isFilterable == false, "Foreign models triggered the filter")
+        try expect(popover.sections.first?.count == 4, "The first keyboard section is not the four agents")
+        let target = AgentDefinition.ID(rawValue: "codex")
+        popover.choose(.agent(target), closing: false)
+        try expect(picked == target, "The Agent row did not invoke the switch action")
+        let switched = ComposerSettingsPopover(
+            settings: ComposerSettingsPreviewFixtures.codex(), agentName: "Codex",
+            agentModels: ComposerAgentSwitchFixtures.models(count: 4), currentAgentID: target,
+            onChooseAgent: { _ in }, onSet: { _, _ in })
+        try expect(
+            switched.modelList?.rows.map(\.name) == ["6.1 Sol", "6 Astra", "6 Sol", "6 Luna", "5.6 Sol"],
+            "Switching agents did not replace the complete model scope")
+        print("PASS: Agent is the first section, models stay scoped, and choosing a harness invokes its model action")
     }
 
     private static func boundedModelTargets() throws {

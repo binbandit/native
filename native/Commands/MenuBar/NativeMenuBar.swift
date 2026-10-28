@@ -181,7 +181,7 @@ private struct SessionCommands: Commands {
             CommandMenuItem(.composerFocus, in: menu)
             CommandMenuItem(.sessionStop, in: menu)
             CommandMenuItem(.sessionClearConversation, in: menu)
-            if model.offersAgentChange { CommandMenuItem(.sessionChangeAgent, in: menu) }
+            if model.offersAgentModels { SwitchAgentMenu(model: model, menu: menu) }
             CommandMenuItem(.sessionOpenEarlierConversation, in: menu)
             CommandMenuItem(.sessionOpenCurrentConversation, in: menu)
 

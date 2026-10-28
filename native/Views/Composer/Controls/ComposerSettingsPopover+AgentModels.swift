@@ -2,15 +2,43 @@ import ACP
 import SwiftUI
 
 extension ComposerSettingsPopover {
+    var agentGroups: AgentModelGroups<AgentDefinition.ID, ComposerAgentModel> {
+        AgentModelGroups(agentModels ?? [], agent: \.agent)
+    }
+
+    var currentAgentModels: [ComposerAgentModel] {
+        currentAgentID.map { agentGroups.models(for: $0) } ?? []
+    }
+
+    var agentSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ComposerAgentSelector(
+                agents: agentGroups.groups.compactMap { $0.models.first }, current: currentAgentID,
+                pending: modelChange?.showsLoader == true ? modelChange?.choice.agent : nil,
+                isBusy: modelChange?.isPending == true,
+                highlighted: { if case .agent(let id) = highlighted { id } else { nil } }()
+            ) { id in choose(.agent(id), closing: false) }
+            if offersAgentsSettings, let onAgentsSettings {
+                Button("Agents Settings…", action: onAgentsSettings)
+                    .buttonStyle(.plain)
+                    .font(DS.ComposerSettings.detailFont)
+                    .foregroundStyle(.dsTextSecondary)
+                    .composerSettingsTextEdge()
+                    .composerSettingsCommandFocus(highlighted == .agentsSettings)
+            }
+        }
+    }
+
     var offersAgentsSettings: Bool {
         guard let agentModels, onAgentsSettings != nil else { return false }
-        return agentModels.allSatisfy { $0.agent == currentAgentID }
+        return agentModels.allSatisfy { $0.agent == currentAgentID || $0.unavailable != nil }
     }
 
     @ViewBuilder func agentModelRows(
         isPage: Bool = false, slots: Int = ModelChoiceList.slots, showsCaption: Bool = true
     ) -> some View {
-        if let list = modelList(slots: slots), let agentModels {
+        if let list = modelList(slots: slots) {
+            let agentModels = currentAgentModels
             if list.isFilterable {
                 filterLine(count: agentModels.count)
             } else if !isPage {
@@ -24,24 +52,11 @@ extension ComposerSettingsPopover {
                 .frame(height: DS.ComposerSettings.rowHeight)
             }
             ForEach(list.rows) { row in
-                if let entry = agentModels.first(where: { $0.id == row.id }) {
+                if let entry = agentModels.first(where: { $0.choice.value == row.id }) {
                     agentModelRow(entry, row: row, first: !list.query.isEmpty && list.rows.first?.id == row.id)
                 }
             }
             modelOverflow(list, slots: slots)
-            if offersAgentsSettings, let onAgentsSettings {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("No other agent is ready.")
-                    Button("Agents Settings…", action: onAgentsSettings).buttonStyle(.plain)
-                        .foregroundStyle(.dsTextPrimary)
-                        .composerSettingsCommandFocus(highlighted == .agentsSettings)
-                        .dsHitTarget(DS.ComposerSettings.lineHeight)
-                }
-                .font(DS.ComposerSettings.detailFont)
-                .foregroundStyle(.dsTextSecondary)
-                .composerSettingsTextEdge()
-                .padding(.vertical, DS.Space.xs)
-            }
             if showsCaption || hasModelFailure || modelChange?.stage == .failed {
                 agentModelCaption
             }
@@ -51,9 +66,9 @@ extension ComposerSettingsPopover {
     private func agentModelRow(
         _ entry: ComposerAgentModel, row: ModelChoiceList.Row, first: Bool
     ) -> some View {
-        let target = Target.model(entry.id)
+        let target = Target.model(entry.choice.value)
         let lit = highlight(of: target)
-        let selected = entry.id == currentModelID
+        let selected = entry.choice.value == currentModelID
         let starting =
             (modelChange?.stage == .preparing && modelChange?.showsLoader == true
                 && modelChange?.choice.id == entry.id) || loadingModelID == entry.id
@@ -78,11 +93,11 @@ extension ComposerSettingsPopover {
                 Text(Self.marked(row.name, row.nameMatches, font: DS.ComposerSettings.rowMatchFont))
             } trailing: {
                 HStack(spacing: DS.Space.sm) {
-                    if let distinction = entry.distinction(in: agentModels ?? []) {
-                        Text(distinction).font(.dsMonoCaption).lineLimit(1).truncationMode(.head)
+                    if let distinction = entry.choice.resolvedDefault ?? entry.distinction(in: currentAgentModels) {
+                        Text(distinction).font(DS.ComposerSettings.detailFont).lineLimit(1).truncationMode(.head)
+                    } else if case .value(let value, _) = row.detail {
+                        Text(value).font(.dsMonoCaption).lineLimit(1).truncationMode(.head)
                     }
-                    Text(entry.agentName + (entry.isManaged ? " · Not allowed" : ""))
-                        .font(DS.ComposerSettings.detailFont).lineLimit(1).layoutPriority(1)
                 }
                 .foregroundStyle(.dsTextTertiary)
             }
@@ -113,13 +128,13 @@ extension ComposerSettingsPopover {
         }
     }
 
-    private var agentModelCaption: some View {
+    @ViewBuilder private var agentModelCaption: some View {
         let rowID: String? =
             switch highlighted ?? hovered ?? firstMatch {
             case .model(let id): id
             default: currentModelID
             }
-        let entry = agentModels?.first { $0.id == rowID }
+        let entry = currentAgentModels.first { $0.choice.value == rowID }
         let modelFailure = failure.flatMap {
             ["agent-model", settings.model?.option.id, settings.effort?.option.id].contains($0.optionID) ? $0 : nil
         }
@@ -134,13 +149,16 @@ extension ComposerSettingsPopover {
             } else if let reason = entry?.unavailable {
                 reason
             } else {
-                settings.model == nil ? "\(agentName) picks its own model." : entry?.choice.purpose
+                settings.model == nil
+                    ? "\(agentName) picks its own model." : entry.flatMap { Self.caption(of: $0.choice) }
             }
-        return ComposerSettingsCaption(
-            text: text.map { AttributedString($0) }, isFailure: failed != nil,
-            isKeyboardFocused: highlighted == .retry,
-            action: modelFailure?.retry.map { .init(title: "Try Again", action: $0) }
-        )
-        .frame(minHeight: DS.ComposerSettings.modelCaptionHeight, alignment: .topLeading)
+        let reserving = currentAgentModels.compactMap { Self.caption(of: $0.choice).map(AttributedString.init) }
+        if text != nil || !reserving.isEmpty {
+            ComposerSettingsCaption(
+                text: text.map { AttributedString($0) }, reserving: reserving, isFailure: failed != nil,
+                isKeyboardFocused: highlighted == .retry,
+                action: modelFailure?.retry.map { .init(title: "Try Again", action: $0) }
+            )
+        }
     }
 }

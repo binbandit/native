@@ -46,6 +46,13 @@ extension ComposerView {
         ComposerControlsRow(
             settings: settings,
             agentName: session.agentName,
+            agentPicker: app.offersAgentModels
+                ? ComposerAgentPicker(
+                    models: app.composerAgentModels(for: session), current: session.agent.id,
+                    pending: session.modelChange?.isPending == true ? session.modelChange?.choice.agent : nil,
+                    showsLoader: session.modelChange?.showsLoader == true,
+                    highlightsAgent: session.isAgentPickerRequested,
+                    onChoose: { app.switchAgent(to: $0, for: session, undoManager: undoManager) }) : nil,
             resumedAutonomy: autonomyBeforePlan,
             followUpHint: followUpHint,
             isModelPickerOpen: $isModelPickerOpen,

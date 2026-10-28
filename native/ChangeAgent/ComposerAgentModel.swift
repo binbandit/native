@@ -2,8 +2,8 @@ import ACP
 import Foundation
 
 /// A model retains the identity of the adapter that reported it, even when names or values collide.
-struct ComposerAgentModel: Identifiable, Equatable {
-    enum Kind: Equatable {
+struct ComposerAgentModel: Identifiable, Equatable, Sendable {
+    enum Kind: Equatable, Sendable {
         case model(String?)
         case load
     }

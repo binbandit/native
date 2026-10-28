@@ -225,6 +225,9 @@ struct ComposerView: View {
             }
             session.isModelPickerRequested = false
         }
+        .onChange(of: isModelPickerOpen) { _, open in
+            if !open { session.isAgentPickerRequested = false }
+        }
         .onChange(of: drops?.items.isEmpty == false) { _, hasDrops in
             guard hasDrops, let drops else { return }
             attach(drops.items)
@@ -287,7 +290,7 @@ struct ComposerView: View {
                 )
             }
             VStack(spacing: 0) {
-                if composerNext, let change = session.modelChange {
+                if let change = session.modelChange {
                     ComposerAgentReceiptSection(change: change)
                 }
                 if composerNext, !session.composerQuotes.isEmpty {
