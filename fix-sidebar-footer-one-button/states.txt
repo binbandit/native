@@ -1,6 +1,7 @@
 Sidebar footer state evidence
 Before: 48968dae2
-Rendered after: 4d54fade0; later changes preserve identical view output and move managed restriction assertions.
+Rendered after: 4d54fade0. Final code: e90bf26d154f48864465a40da3506935e276e300.
+The footer source is unchanged between those revisions. The final General account action layout and guidance refinements need a fresh visual check; the screen locked before that refresh.
 Matching mock: none supplied or found. Reference for all footer states is the job specification: one avatar/name/trailing-gear Settings button; signed out uses Settings and gear.
 Settings reference: existing General settings tokens and Accounts group; managed details use SettingsNote.
 All accounts, portraits, organization names and paths are fixture content.
