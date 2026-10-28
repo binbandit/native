@@ -305,7 +305,7 @@ private struct AgentModelChangeRegression {
         }
         let cases: [(name: String, source: String, levels: String, expected: String?, notice: Bool)] = [
             ("equal", "auto", #"[["default","Manual"],["agent","Auto review"]]"#, "agent", false),
-            ("stricter", "auto", #"[["default","Manual"],["acceptEdits","Accept edits"]]"#, "acceptEdits", true),
+            ("stricter", "auto", #"[["default","Manual"],["acceptEdits","Accept edits"]]"#, "default", true),
             (
                 "no safe match", "default",
                 #"[["agent-full-access","Full access"],["workspace-write","Workspace write"]]"#, "workspace-write", true

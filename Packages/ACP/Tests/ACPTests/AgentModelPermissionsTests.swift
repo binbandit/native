@@ -16,9 +16,15 @@ import Testing
 
     @Test func stricterOnlyUsesTheClosestLevel() {
         #expect(
-            AgentModelPermissions.selection(for: "auto", offered: ["default", "acceptEdits"])
+            AgentModelPermissions.selection(for: "bypassPermissions", offered: ["default", "acceptEdits"])
                 == .init(value: "acceptEdits", reason: .stricter))
         #expect(AgentModelPermissions.replacement(for: "bypassPermissions", offered: ["default", "agent"]) == "agent")
+    }
+
+    @Test func riskReviewDoesNotImplyTrustedEditsAreSafe() {
+        #expect(AgentModelPermissions.replacement(for: "auto", offered: ["acceptEdits", "default"]) == "default")
+        #expect(
+            AgentModelPermissions.replacement(for: "agent", offered: ["workspace-write", "read-only"]) == "read-only")
     }
 
     @Test func noSafeMatchUsesSafestOfferedAndReportsIt() {
@@ -64,7 +70,7 @@ import Testing
         let offered = choices.map(\.value).filter { $0 != "plan" }
         #expect(AgentModelPermissions.replacement(for: "agent", offered: offered) == "auto")
         #expect(AgentModelPermissions.replacement(for: "agent-full-access", offered: offered) == "bypassPermissions")
-        #expect(AgentModelPermissions.replacement(for: "auto", offered: offered, forbidden: ["auto"]) == "acceptEdits")
+        #expect(AgentModelPermissions.replacement(for: "auto", offered: offered, forbidden: ["auto"]) == "default")
     }
 
     private let claudePermissionOptions = #"""

@@ -54,9 +54,10 @@ public enum AgentModelPermissions {
         }
 
         func isSafer(than other: Level) -> Bool {
-            // Editing freely and running commands within a boundary are different grants.
-            // Neither can silently stand in for the other, even though both sit below review.
-            self != other && (rank < other.rank || self == .refuses && other == .asks)
+            // Trusted edits, a workspace boundary and risk review grant different actions.
+            // Only asking/refusing every change is known safer across those grants. Full
+            // access can narrow to any of them.
+            self != other && (self == .asks || self == .refuses || other == .full)
         }
     }
 
