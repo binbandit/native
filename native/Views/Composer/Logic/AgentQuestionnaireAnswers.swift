@@ -5,6 +5,19 @@ import Foundation
 struct AgentQuestionnaireAnswers: Equatable {
     private(set) var picks: [String: [String]] = [:]
     var typed: [String: String] = [:]
+    /// Questions whose pick is the agent's suggestion rather than the user's choice.
+    private(set) var suggested: Set<String> = []
+
+    /// Starts each single-choice question on the choice the agent recommends, if it marks one, so
+    /// Return accepts the suggestion.
+    init(suggesting questionnaire: AgentQuestionnaire? = nil) {
+        for question in questionnaire?.questions ?? [] where !question.allowsMultiple {
+            guard let option = question.options.first(where: { AgentQuestionOptionLabel($0.title).isRecommended })
+            else { continue }
+            picks[question.key] = [option.value]
+            suggested.insert(question.key)
+        }
+    }
 
     func isPicked(_ option: AgentQuestionnaire.Option, in question: AgentQuestionnaire.Question) -> Bool {
         picks[question.key, default: []].contains(option.value)
@@ -22,6 +35,7 @@ struct AgentQuestionnaireAnswers: Equatable {
 
     /// Picks an option; a multi-select toggles it, a single select replaces the pick.
     mutating func pick(_ option: AgentQuestionnaire.Option, in question: AgentQuestionnaire.Question) {
+        suggested.remove(question.key)
         var current = picks[question.key, default: []]
         if question.allowsMultiple {
             if let index = current.firstIndex(of: option.value) {
@@ -35,9 +49,28 @@ struct AgentQuestionnaireAnswers: Equatable {
         picks[question.key] = current
     }
 
+    /// Text typed for a question. Without a companion field the text is the answer itself, so it
+    /// replaces a pick rather than going out behind it; `choose` is the other way round.
+    /// A suggested pick gives way to typed text too, so the user's words never go out beside a
+    /// choice they didn't make.
+    mutating func type(_ text: String, for question: AgentQuestionnaire.Question) {
+        if question.customKey == nil || suggested.contains(question.key), !text.isEmpty {
+            picks[question.key] = nil
+            suggested.remove(question.key)
+        }
+        typed[Self.textKey(for: question)] = text
+    }
+
+    /// Picks an option, replacing text typed as the answer when the question has no companion field.
+    mutating func choose(_ option: AgentQuestionnaire.Option, in question: AgentQuestionnaire.Question) {
+        if question.customKey == nil { typed[question.key] = nil }
+        pick(option, in: question)
+    }
+
     /// Leaves a question unanswered.
     mutating func clear(_ question: AgentQuestionnaire.Question) {
         picks[question.key] = nil
+        suggested.remove(question.key)
         typed[Self.textKey(for: question)] = nil
     }
 

@@ -22,6 +22,7 @@ struct HomeNextView: View {
     @State private var visibleCount = DS.HomeNext.pageSize
     @State private var receipt: HomeNextReceipt?
     @State private var safeAreaTop: CGFloat = 0
+    @State private var startFieldHeight: CGFloat = 0
 
     var body: some View {
         let tasks = model.homeNextTasks(retaining: currentRequest)
@@ -40,7 +41,9 @@ struct HomeNextView: View {
                 if model.projects.all.isEmpty {
                     firstLaunch
                 } else {
-                    header(asks: asks.count, total: asks.count + (reviews == nil ? 0 : 1))
+                    if !asks.isEmpty || reviews != nil {
+                        header(asks: asks.count, total: asks.count + (reviews == nil ? 0 : 1))
+                    }
                     if let receipt {
                         HomeNextReceiptView(receipt: receipt) {
                             model.openHomeNextTask(receipt.starting?.openedSession ?? receipt.task)
@@ -55,7 +58,9 @@ struct HomeNextView: View {
                             .id(task.requestID)
                             .id(task.id)
                         } else {
-                            quiet(finished: finished.count, working: tasks.filter { $0.status.isActive }.count)
+                            quiet(
+                                finished: finished.count, working: tasks.filter { $0.status.isActive }.count,
+                                hasTasks: !tasks.isEmpty)
                         }
                     }
                     .padding(.top, DS.HomeNext.askTop)
@@ -83,7 +88,7 @@ struct HomeNextView: View {
             .frame(maxWidth: DS.HomeNext.column, alignment: .leading)
             .padding(.horizontal, DS.Space.xxxl)
             .padding(.top, max(0, DS.HomeNext.top - safeAreaTop))
-            .padding(.bottom, DS.Space.xxxl)
+            .padding(.bottom, startFieldHeight + DS.HomeNext.sectionTop)
             .frame(maxWidth: .infinity, alignment: .top)
         }
         .preference(
@@ -98,12 +103,17 @@ struct HomeNextView: View {
         .onDisappear { model.setHomeNextVisible(false) }
         .scrollBounceBehavior(.basedOnSize)
         .background(.dsBackground)
-        .safeAreaInset(edge: .bottom) {
+        .overlay(alignment: .bottom) {
             if !model.projects.all.isEmpty {
                 HomeNextStartField { task in
                     receipt = HomeNextReceipt(
                         task: task.id, title: model.projects.project(task.project)?.name ?? "the project",
                         action: "Started a \(task.agent.displayName) task", date: .now, starting: task)
+                }
+                .onGeometryChange(for: CGFloat.self) {
+                    $0.size.height
+                } action: {
+                    startFieldHeight = $0
                 }
             }
         }
@@ -151,28 +161,34 @@ struct HomeNextView: View {
         .accessibilityAddTraits(.isHeader)
     }
 
-    private func quiet(finished: Int, working: Int) -> some View {
+    private func quiet(finished: Int, working: Int, hasTasks: Bool) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(
-                isLoading
-                    ? "Checking your projects"
-                    : receipt.flatMap { $0.starting == nil ? $0 : nil }.map {
-                        "Your last answer was at \($0.date.formatted(date: .omitted, time: .shortened))"
-                    } ?? "Nothing needs you now"
-            )
-            .font(.dsBody).foregroundStyle(.dsTextTertiary)
-            title(isLoading ? "Finding your tasks…" : "You’re clear.").padding(.top, DS.HomeNext.titleTop)
-            Text(
-                isLoading
-                    ? "Your agents are checking for saved tasks. Asks will appear here as they arrive."
-                    : finished > 0
-                        ? "\(finished) \(finished == 1 ? "task finished" : "tasks finished") today."
-                        : working > 0
-                            ? "Your agents are working. Their next ask will appear here."
-                            : "Start a task. When an agent needs you, it shows up here."
-            )
-            .font(DS.HomeNext.ledeFont).tracking(DS.HomeNext.ledeTracking)
-            .foregroundStyle(.dsTextSecondary)
+            if !hasTasks, !isLoading, let project = model.currentProject {
+                Text(project.name).font(.dsBody).foregroundStyle(.dsTextTertiary)
+                title(
+                    "What should \(model.quickEntryRuntime?.agent.displayName ?? "your agent") do in \(project.name)?"
+                )
+                .padding(.top, DS.HomeNext.titleTop)
+            } else {
+                if isLoading {
+                    Text("Checking your projects").font(.dsBody).foregroundStyle(.dsTextTertiary)
+                } else if let receipt, receipt.starting == nil {
+                    Text("Your last answer was at \(receipt.date.formatted(date: .omitted, time: .shortened))")
+                        .font(.dsBody).foregroundStyle(.dsTextTertiary)
+                }
+                title(isLoading ? "Finding your tasks…" : "You’re clear.").padding(.top, DS.HomeNext.titleTop)
+                if isLoading || finished > 0 || working > 0 {
+                    Text(
+                        isLoading
+                            ? "Your agents are checking for saved tasks. Asks will appear here as they arrive."
+                            : finished > 0
+                                ? "\(finished) \(finished == 1 ? "task finished" : "tasks finished") today."
+                                : "Your agents are working. Their next ask will appear here."
+                    )
+                    .font(DS.HomeNext.ledeFont).tracking(DS.HomeNext.ledeTracking)
+                    .foregroundStyle(.dsTextSecondary)
+                }
+            }
         }
     }
 

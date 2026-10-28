@@ -58,7 +58,7 @@ struct HomeNextStartField: View {
             .frame(minHeight: DS.ComposerSettings.inputHeight)
         }
         .frame(maxWidth: maximumWidth)
-        .padding(.horizontal, DS.Space.xxl)
+        .padding(.horizontal, DS.Space.xxxl)
         .padding(.bottom, DS.Space.xl)
         .animation(.dsQuick, value: entry.hasMessage)
         .accessibilityElement(children: .contain)
@@ -108,7 +108,7 @@ struct HomeNextStartField: View {
             isAddressOpen.toggle()
         } label: {
             HStack(spacing: DS.Space.xs) {
-                Text(model.quickEntryModelName ?? agentName ?? "Choose Agent").lineLimit(1)
+                Text(model.homeNextModelName ?? agentName ?? "Choose Agent").lineLimit(1)
                 Image(systemName: "chevron.down").font(.dsMicro)
             }
             .font(.dsBody)
@@ -126,7 +126,7 @@ struct HomeNextStartField: View {
         .dsHitTarget(DS.ComposerSettings.controlHeight)
         .accessibilityLabel("Task address")
         .accessibilityValue(
-            [agentName, model.quickEntryModelName, model.deviceName(model.quickEntry.device), projectName]
+            [agentName, model.homeNextModelName, model.deviceName(model.quickEntry.device), projectName]
                 .compactMap(\.self).joined(separator: ", ")
         )
         .help("Choose the agent, device and project")
@@ -159,6 +159,9 @@ struct HomeNextStartField: View {
 
     private func handleKey(_ press: KeyPress) -> KeyPress.Result {
         guard !PlatformTextInput.isComposing else { return .ignored }
+        if press.key == .tab, press.modifiers.isSubset(of: [.shift]) {
+            return ComposerPlatform.moveKeyFocus(forward: !press.modifiers.contains(.shift)) ? .handled : .ignored
+        }
         if press.key == .escape {
             isFocused = false
             return .handled

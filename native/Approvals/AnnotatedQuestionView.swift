@@ -14,6 +14,11 @@ struct AnnotatedQuestionView: View {
     var isAvailable = true
     var focusRequested = false
     var didFocus: () -> Void = {}
+    /// For hosts away from the task (Home): "Open Task" at the field's trailing edge.
+    var openTask: (() -> Void)?
+    /// The side margin. A host whose column already has one (Home) passes 0, so the field's rule
+    /// spans the column rather than overhanging it.
+    var inset = DS.Approval.inset
     /// Answers already given, for previews of a picked choice.
     var initialAnswers: AgentQuestionnaireAnswers?
     let onSubmit: ([String: JSONValue]) async -> Void
@@ -65,7 +70,7 @@ struct AnnotatedQuestionView: View {
                     }
                     footer.padding(.top, DS.Approval.footerTop)
                 }
-                .padding(.horizontal, DS.Approval.inset)
+                .padding(.horizontal, inset)
                 .padding(.vertical, DS.Approval.askTop)
                 .focusable(isAvailable)
                 .focused($cardFocused)
@@ -80,14 +85,15 @@ struct AnnotatedQuestionView: View {
                 }
             }
             .onAppear {
-                if let initialAnswers { answers = initialAnswers }
+                answers = initialAnswers ?? AgentQuestionnaireAnswers(suggesting: questionnaire)
+                highlighted = question.map { answers.initialHighlight(in: $0) } ?? 0
                 if takesFocus, isAvailable { cardFocused = true }
             }
             .onChange(of: focusRequested, initial: true) { _, requested in
                 if requested, question != nil { wordsFocused = true; didFocus() }
             }
             .onChange(of: index) {
-                highlighted = 0
+                highlighted = question.map { answers.initialHighlight(in: $0) } ?? 0
                 scroll.scrollTo("question-title", anchor: .top)
             }
         }
@@ -131,7 +137,7 @@ struct AnnotatedQuestionView: View {
         let label = AgentQuestionOptionLabel(option.title)
         return Button {
             highlighted = number - 1
-            answers.pick(option, in: question)
+            answers.choose(option, in: question)
         } label: {
             HStack(alignment: .top, spacing: DS.Approval.optionGap) {
                 keycap(number, isPicked: isPicked).opacity(number <= 9 ? 1 : 0)
@@ -180,26 +186,31 @@ struct AnnotatedQuestionView: View {
 
     private var footer: some View {
         HStack(spacing: DS.Space.sm) {
+            // A confirmation has no field, so the link leads its buttons.
+            if question == nil, let openTask { AskOpenTaskLink(action: openTask) }
             Spacer(minLength: 0)
-            if question == nil {
-                Button("Skip") { decline() }.buttonStyle(ApprovalActionStyle(quiet: true))
-                Button {
-                    submit()
-                } label: {
-                    actionLabel("Continue")
+            Group {
+                if question == nil {
+                    Button("Skip") { decline() }.buttonStyle(ApprovalActionStyle(quiet: true))
+                    Button {
+                        submit()
+                    } label: {
+                        actionLabel("Continue")
+                    }
+                    .buttonStyle(ApprovalActionStyle(primary: true))
+                } else {
+                    Button("Skip") { skip() }
+                        .buttonStyle(ApprovalActionStyle(quiet: true))
+                        .help("Leave this question unanswered")
+                    Button {
+                        submit()
+                    } label: {
+                        actionLabel(isLast ? (questions.count == 1 ? "Send" : "Send Answers") : "Next")
+                    }
+                    .buttonStyle(ApprovalActionStyle(primary: true))
                 }
-                .buttonStyle(ApprovalActionStyle(primary: true))
-            } else {
-                Button("Skip") { skip() }
-                    .buttonStyle(ApprovalActionStyle(quiet: true))
-                    .help("Leave this question unanswered")
-                Button {
-                    submit()
-                } label: {
-                    actionLabel(isLast ? (questions.count == 1 ? "Answer" : "Send Answers") : "Next")
-                }
-                .buttonStyle(ApprovalActionStyle(primary: true))
             }
+            .disabled(sending || !isAvailable)
         }
     }
 
@@ -212,22 +223,35 @@ struct AnnotatedQuestionView: View {
 
     private var ownWords: some View {
         HStack(alignment: .bottom, spacing: DS.Space.md) {
-            ComposerEditor(
-                text: typedText, selection: $wordsSelection, placeholder: "Or answer in your own words",
-                isFocused: $wordsFocused, inputLabel: "Answer \(agentName) in your own words",
-                insets: DS.Approval.editorInsets, maximumHeight: DS.Approval.instructionMaximumHeight
-            ) { press in
-                guard press.key == .return, press.modifiers.isEmpty, !PlatformTextInput.isComposing else {
-                    return .ignored
+            Group {
+                ComposerEditor(
+                    text: typedText, selection: $wordsSelection, placeholder: "Or answer in your own words",
+                    isFocused: $wordsFocused, inputLabel: "Answer \(agentName) in your own words",
+                    insets: DS.Approval.editorInsets, maximumHeight: DS.Approval.instructionMaximumHeight
+                ) { press in
+                    guard !PlatformTextInput.isComposing else { return .ignored }
+                    if press.key == .tab, press.modifiers.isSubset(of: [.shift]) {
+                        return ComposerPlatform.moveKeyFocus(forward: !press.modifiers.contains(.shift))
+                            ? .handled : .ignored
+                    }
+                    guard press.key == .return, press.modifiers.isEmpty else {
+                        return .ignored
+                    }
+                    submit()
+                    return .handled
                 }
-                submit()
-                return .handled
+                if openTask == nil || !typedAnswer.isEmpty {
+                    ComposerSendButton(disabledReason: typedAnswer.isEmpty ? "Type an answer first" : nil) {
+                        submit()
+                    }
+                    .accessibilityLabel("Send Your Answer")
+                }
             }
-            ComposerSendButton(disabledReason: typedAnswer.isEmpty ? "Type an answer first" : nil) { submit() }
-                .accessibilityLabel("Send Your Answer")
+            .disabled(sending || !isAvailable)
+            // The task stays a click away while the answer can't be sent.
+            if let openTask { AskOpenTaskLink(action: openTask) }
         }
-        .disabled(sending || !isAvailable)
-        .padding(.horizontal, DS.Approval.inset)
+        .padding(.horizontal, inset)
         .padding(.vertical, DS.Space.lg)
         .frame(minHeight: DS.Approval.instructionHeight)
     }
@@ -238,20 +262,26 @@ struct AnnotatedQuestionView: View {
 
     private var typedText: Binding<String> {
         let key = question.map { AgentQuestionnaireAnswers.textKey(for: $0) } ?? ""
-        return Binding(get: { answers.typed[key, default: ""] }, set: { answers.typed[key] = $0 })
+        return Binding(
+            get: { answers.typed[key, default: ""] },
+            set: { text in
+                if let question { answers.type(text, for: question) }
+            })
     }
 
     // MARK: - Actions
 
     private func handleKey(_ press: KeyPress, reveal: (Int) -> Void) -> KeyPress.Result {
         // ⌘1–9 and the like belong to the app; typing in the field stays typing.
-        guard cardFocused, press.modifiers.isDisjoint(with: [.command, .option, .control]) else { return .ignored }
+        guard cardFocused, !sending, isAvailable, press.modifiers.isDisjoint(with: [.command, .option, .control]) else {
+            return .ignored
+        }
         let options = question?.options ?? []
         if let digit = press.characters.first?.wholeNumberValue, (1...9).contains(digit), digit <= options.count,
             let question
         {
             highlighted = digit - 1
-            answers.pick(options[digit - 1], in: question)
+            answers.choose(options[digit - 1], in: question)
             reveal(highlighted)
             return .handled
         }
@@ -259,7 +289,7 @@ struct AnnotatedQuestionView: View {
         case .upArrow: highlighted = max(highlighted - 1, 0)
         case .downArrow: highlighted = min(highlighted + 1, max(options.count - 1, 0))
         case .space where options.indices.contains(highlighted):
-            if let question { answers.pick(options[highlighted], in: question) }
+            if let question { answers.choose(options[highlighted], in: question) }
         case .return:
             submit()
             return .handled

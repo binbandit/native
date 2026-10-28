@@ -259,7 +259,8 @@ The sidebar owns the shared `TaskSignal`; Home uses it for the current ask and U
 oldest within each kind. The ask being read stays put when another arrives. Answering uses the
 exact `SessionModel` and tool-call request displayed, including subagent requests. Home records
 a receipt and advances when the model acknowledges an answer. Questions embed the composer's
-`AgentQuestionSection`, with the same digit keys, multiple-question paging and free text. Plan
+question, with the same digit keys, multiple-question paging and free text: `AnnotatedQuestionView`
+with Fine print, `AgentQuestionSection` without. Plan
 permissions embed `ComposerPlanSection` in its numbered review presentation (first five steps,
 then Show more in Peek), using only the current turn's checklist. The exact permission proposal always
 stays visible in the shared annotated approval, with the agent's Approve Plan and Revise choices.
@@ -394,7 +395,8 @@ all open one 600pt popover without changing selection. A visible row supplies it
 rows and Settings use the window anchor. The model routes captured requests to their owning
 session and checks identity again before answering. Questions, plans and commands with unknown
 or irreversible effects open Peek from ⌘Y; a small ACP vocabulary permits routine approvals.
-Peek reuses `AnnotatedApprovalView` and `AgentQuestionSection`, including command explanations,
+Peek reuses `AnnotatedApprovalView` and the composer's question (`AnnotatedQuestionView` with Fine
+print, `AgentQuestionSection` without), including command explanations,
 instruction recovery and the hold for irreversible approvals. Recovered failures use their live signal;
 unrecovered failures expose the real notice and the model's recovery action.
 

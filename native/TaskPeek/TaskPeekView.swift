@@ -8,6 +8,7 @@ struct TaskPeekView: View {
     var maxBodyHeight = DS.Peek.maxBodyHeight
     @Environment(AppModel.self) private var model
     @Environment(\.sidebarTaskInsights) private var insights
+    @Experiment(.composerNext) private var composerNext
     var openTask: ((SessionKey) -> Void)?
     @FocusState private var isFocused: Bool
     @State private var wantsInstructionFocus = false
@@ -29,8 +30,8 @@ struct TaskPeekView: View {
             HeightCappedScrollView(maxHeight: maxBodyHeight) {
                 moment
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, showsAnnotatedApproval ? 0 : DS.Peek.bodyHorizontal)
-                    .padding(.vertical, showsAnnotatedApproval ? 0 : DS.Peek.bodyVertical)
+                    .padding(.horizontal, showsAnnotatedAsk ? 0 : DS.Peek.bodyHorizontal)
+                    .padding(.vertical, showsAnnotatedAsk ? 0 : DS.Peek.bodyVertical)
             }
         }
         .task(id: summary.flatMap { insights.branch($0) }) {
@@ -63,18 +64,25 @@ struct TaskPeekView: View {
         if let openTask { openTask(request.task) } else { model.openPeekedTask(request.task) }
     }
 
-    /// The shared approval already owns its insets, including the instruction field's full-width rule.
-    private var showsAnnotatedApproval: Bool {
+    /// The shared approval and question (Fine print) already own their insets, including the field's
+    /// full-width rule.
+    private var showsAnnotatedAsk: Bool {
         guard model.taskIsAvailable(request.task), model.taskIsReachable(request.task),
-            let ask, ask.isCurrent, model.session(ask.session.key) === ask.session,
-            case .permission = ask.content
+            let ask, ask.isCurrent, model.session(ask.session.key) === ask.session
         else { return false }
-        return true
+        switch ask.content {
+        case .permission: return true
+        case .question: return composerNext
+        }
     }
 
     private var showsInstructionEditor: Bool {
-        guard showsAnnotatedApproval, case .permission(let call) = ask?.content else { return false }
-        return call.permission?.options.contains(where: \.isRejection) == true
+        guard showsAnnotatedAsk else { return false }
+        switch ask?.content {
+        case .permission(let call): return call.permission?.options.contains(where: \.isRejection) == true
+        case .question(let question): return question.questionnaire?.questions.isEmpty == false
+        case nil: return false
+        }
     }
 
     private var header: some View {
@@ -179,10 +187,16 @@ struct TaskPeekView: View {
                 onInstruct: { try await model.instructTaskAsk(ask, text: $0) }
             )
             .id(call)
+        case .question(let question) where composerNext:
+            AnnotatedQuestionView(
+                agentName: ask.session.agentName, questionnaire: question.questionnaire,
+                message: question.request.message, isAvailable: ask.session.phase != .disconnected,
+                focusRequested: wantsInstructionFocus, didFocus: { wantsInstructionFocus = false },
+                onSubmit: { await model.answerTaskQuestion(ask, content: $0) },
+                onDecline: { await model.answerTaskQuestion(ask, content: nil) }
+            )
         case .question(let question):
-            if let schema = question.request.requestedSchema,
-                let questionnaire = AgentQuestionnaire(message: question.request.message, schema: schema)
-            {
+            if let questionnaire = question.questionnaire {
                 AgentQuestionSection(
                     questionnaire: questionnaire, takesFocus: true, answersHighlightedOption: true,
                     onSubmit: { content in Task { await model.answerTaskQuestion(ask, content: content) } },
@@ -220,6 +234,10 @@ extension FocusedValues {
 #Preview("Peek - Routine approval") { TaskPeekPreviewFixtures.view(.routine) }
 #Preview("Peek - Destructive approval") { TaskPeekPreviewFixtures.view(.destructive) }
 #Preview("Peek - Question") { TaskPeekPreviewFixtures.view(.question) }
+#Preview("Peek - Question, Fine print") { TaskPeekPreviewFixtures.view(.question, finePrint: true) }
+#Preview("Peek - Question, Fine print, narrow") {
+    TaskPeekPreviewFixtures.view(.question, width: 360, finePrint: true)
+}
 #Preview("Peek - Answer delivery failed") { TaskPeekPreviewFixtures.view(.answerFailure) }
 #Preview("Peek - Failure") { TaskPeekPreviewFixtures.view(.failure) }
 #Preview("Peek - Recovering") { TaskPeekPreviewFixtures.view(.recovering) }

@@ -129,14 +129,19 @@ struct AnnotatedApprovalView: View {
                         inputLabel: "Tell \(agentName) what to do instead", insets: DS.Approval.editorInsets,
                         maximumHeight: DS.Approval.instructionMaximumHeight
                     ) { press in
-                        guard press.key == .return, press.modifiers.isEmpty, !PlatformTextInput.isComposing else {
+                        guard !PlatformTextInput.isComposing else { return .ignored }
+                        if press.key == .tab, press.modifiers.isSubset(of: [.shift]) {
+                            return ComposerPlatform.moveKeyFocus(forward: !press.modifiers.contains(.shift))
+                                ? .handled : .ignored
+                        }
+                        guard press.key == .return, press.modifiers.isEmpty else {
                             return .ignored
                         }
                         sendInstruction(instruction)
                         return .handled
                     }
                     .disabled(sending || committed || !isAvailable)
-                    if openTask == nil || !instruction.isEmpty {
+                    if openTask == nil || !instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         ComposerSendButton(
                             disabledReason: instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                                 ? "Enter an instruction first" : nil
@@ -170,18 +175,7 @@ struct AnnotatedApprovalView: View {
     }
 
     @ViewBuilder private var taskLink: some View {
-        if let openTask {
-            Button(action: openTask) {
-                HStack(spacing: DS.Space.sm) {
-                    Text("Open Task").font(.dsBody)
-                    Kbd("⌘↩", compact: true)
-                }
-                .fixedSize()
-            }
-            .buttonStyle(.plain).foregroundStyle(.dsTextTertiary)
-            .dsHitTarget(DS.Size.controlXS)
-            .keyboardShortcut(.return, modifiers: .command)
-        }
+        if let openTask { AskOpenTaskLink(action: openTask) }
     }
 
     private func fixIt(_ replacement: String) -> some View {
