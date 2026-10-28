@@ -104,6 +104,11 @@ public struct Usage: Decodable, Hashable, Sendable {
         _meta.rateLimit
     }
 
+    /// The model the agent reports running, for agents that offer no model setting to read it from.
+    public var model: String? {
+        _meta.model
+    }
+
     public struct Cost: Decodable, Hashable, Sendable {
         public var amount: Double
         public var currency: String
