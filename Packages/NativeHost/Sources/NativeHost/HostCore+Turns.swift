@@ -95,6 +95,7 @@ extension HostCore {
             try store.updateSession(session.record)
         }
         session.turn = turn
+        session.stopAcknowledged = false
         session.phase = .prompting
         session.hiddenCommandEcho = nil
         // Instructions go ahead of the message unless the agent already has these.
@@ -168,7 +169,10 @@ extension HostCore {
 
     func finish(_ turn: UnfinishedTurn, in session: HostSession, stopReason: String) {
         guard session.turn?.requestID == turn.requestID else { return }
-        guard !session.isStopping else { return }
+        guard !session.isStopping else {
+            session.stopAcknowledged = true
+            return
+        }
         // Queued messages wait out a stopped turn until the user sends again.
         let pause = stopReason == "cancelled"
         endTurn(in: session, stopReason: stopReason, pauseQueue: pause)

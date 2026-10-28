@@ -49,6 +49,10 @@ final class HostSession {
     /// ends to confirm.
     var stopRequestedAt: Date?
     var stopTimeout: Task<Void, Never>?
+    var stopAcknowledged = false
+    /// A forced stop keeps Native's partial transcript when reattaching to the agent.
+    var preservesTranscriptOnLoad = false
+    var isReplayingPreservedTranscript = false
     /// The queued message to send once the turn being stopped ends ("Send Now" on an agent that
     /// can't steer).
     var sendAfterStop: UUID?

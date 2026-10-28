@@ -186,6 +186,7 @@ extension HostCore {
 
     private func performLoad(_ session: HostSession) async throws {
         let wasRecovering = session.phase == .recovering
+        let preserving = session.preservesTranscriptOnLoad
         if !wasRecovering {
             session.phase = .loading
         }
@@ -202,14 +203,18 @@ extension HostCore {
             guard link.canLoadSessions else { throw HostError.cannotLoad(link.spec.name) }
             let servers = await tasks.agentServers(
                 for: session.id, agent: session.record.agentID, base: session.mcpServers)
-            discardSubagentsForReplay(of: session, on: link)
-            append(.reset(loading: true), to: session)
-            replaying = true
+            if !preserving {
+                discardSubagentsForReplay(of: session, on: link)
+                append(.reset(loading: true), to: session)
+                replaying = true
+            }
+            session.isReplayingPreservedTranscript = preserving
+            defer { session.isReplayingPreservedTranscript = false }
             route(session, on: link)
             let response: RawConfigOptionsResponse
             do {
                 response = try await peer.request(
-                    "session/load",
+                    preserving && link.capabilities?.resumeSessions == true ? "session/resume" : "session/load",
                     RawLoadSessionRequest(
                         sessionId: agentSessionID, cwd: session.record.cwd, mcpServers: servers,
                         _meta: await tasks.agentMeta(
@@ -217,7 +222,8 @@ extension HostCore {
                             servers: session.mcpServers)),
                     as: RawConfigOptionsResponse.self)
             } catch let error as RPCError
-                where !session.record.isAdopted && session.record.lastStopReason == nil && !error.isAuthRequired
+                where !session.record.isAdopted && (session.record.lastStopReason == nil || preserving)
+                && !error.isAuthRequired
             {
                 // Agents save a session once a turn ends; one that never got that far has nothing to
                 // load, so it carries on in a fresh agent session under the same host id.
@@ -229,10 +235,11 @@ extension HostCore {
             guard generation == link.generation else { throw PeerError.closed }
             // Inside the load, so clients get where the settings end up rather than the agent's defaults.
             try await restoreConfigChoices(of: session, on: link, reported: response.configOptions)
-            if !wasRecovering {
+            if !wasRecovering && !preserving {
                 showPendingMessage(of: session)
             }
-            append(.loaded, to: session)
+            if !preserving { append(.loaded, to: session) }
+            session.preservesTranscriptOnLoad = false
             await tasks.writeSkillCredential(for: session)
             tasks.sessionLoaded(session)
             session.needsLoad = false

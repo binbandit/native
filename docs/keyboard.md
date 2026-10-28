@@ -49,16 +49,14 @@ needed in the placeholder. Code-block and queued-message editing hints remain vi
 controls row has room.
 
 **Stop** asks the agent to end the turn and answers its open permission requests as rejected. The
-host gives the agent two seconds to cancel, then ends the processes it can attribute to that agent,
-including shell commands in separate process groups. The task stays Stopping until those known
-processes have exited. Pressing Stop again ends the grace period.
-An agent process can serve several tasks: Native waits for its other tasks to finish or be stopped
-before ending that shared process, and explains that commands may still be running meanwhile.
-ACP cancellation does not guarantee that every command has exited or that commands cannot detach
-between process snapshots. Native therefore reports an unverified Stop as a failed turn with a clear warning that
-background commands may still be running, rather than labelling it Stopped. Queued messages remain
-paused unless the user explicitly chose Send Now. In-app mode, which cannot track the host's processes,
-keeps the turn Stopping and explains its limit.
+button shows that it is stopping. After three seconds, or immediately on a second press, the host
+freezes and ends the agent's known process tree, including shell commands in separate process groups.
+The transcript marks unfinished tool calls Stopped. If the agent did not answer, the receipt says
+"Stopped. <agent> didn't respond, so Native stopped it."
+
+Native restarts the adapter and reattaches the conversation, retaining the transcript, draft and
+paused queue. Other running tasks that shared the adapter recover through the same path as an agent
+crash. Queued messages remain paused unless the user explicitly chose Send Now.
 
 ### Code
 

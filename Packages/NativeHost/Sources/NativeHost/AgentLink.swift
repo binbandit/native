@@ -246,7 +246,7 @@ final class AgentLink {
 
     /// New work waits for the frozen generation to exit, then loads on its replacement.
     func waitForCommandStop() async throws {
-        while isStopping && commandStopOwnsTree {
+        while commandStopOwnsTree {
             try await Task.sleep(for: .milliseconds(25))
         }
     }
@@ -254,6 +254,8 @@ final class AgentLink {
     func commandsDidStop() {
         beginCommandStop()
         commandProcesses = nil
+        commandStopOwnsTree = false
+        isStopping = false
         peer?.close()
     }
 

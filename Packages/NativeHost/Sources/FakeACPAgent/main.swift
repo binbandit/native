@@ -84,6 +84,7 @@ actor FakeAgent {
         guard let id = message.id, let peer else {
             if message.method == "session/cancel", let params = try? message.params(as: SessionParams.self) {
                 cancelled.insert(params.sessionId)
+                note("cancels.log", params.sessionId.rawValue)
                 if ProcessInfo.processInfo.environment["FAKE_AGENT_EXIT_ON_CANCEL"] == "1" { exit(0) }
             }
             return
@@ -110,7 +111,8 @@ actor FakeAgent {
                         "sessionCapabilities": .object(
                             [
                                 "list": .object([:]), "delete": .object([:]),
-                                "resume": .object([:]),
+                                "resume": ProcessInfo.processInfo.environment["FAKE_AGENT_NO_RESUME"] == "1"
+                                    ? .null : .object([:]),
                             ].merging(Self.closeCapability) { $1 }),
                     ]),
                     "agentInfo": .object(["name": .string("fake-agent"), "version": .string("1")]),
@@ -292,6 +294,14 @@ actor FakeAgent {
             try update(session, ["sessionUpdate": .string("agent_message_chunk"), "content": Self.text("working…")])
             try await Task.sleep(for: .milliseconds(200))
             exit(3)
+        } else if text == "stuck-tool" {
+            try update(
+                session,
+                [
+                    "sessionUpdate": .string("tool_call"), "toolCallId": .string("sleep"),
+                    "title": .string("sleep 600"), "kind": .string("execute"), "status": .string("in_progress"),
+                ])
+            return try await cancelLeavingCommand(session, ignoringCancel: true)
         } else if text == "cancel-leaves-command" {
             return try await cancelLeavingCommand(session)
         } else if text.hasPrefix("slow") || text.hasPrefix("stubborn") {

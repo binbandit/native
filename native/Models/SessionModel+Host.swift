@@ -165,7 +165,7 @@ extension SessionModel {
         case .prompt(let prompt) where isLive && prompt.shown && !prompt.steered:
             // The host sends a turn's prompt as it shows it, so the turn's own work comes later.
             services.hooks.turnStarted(self, step.event.at)
-        case .turnEnded(let raw) where isLive:
+        case .turnEnded(let raw, _) where isLive:
             let reason = SessionMirror.stopReason(raw)
             lastStopReason = reason
             services.post(.turnEnded(context, reason))

@@ -38,6 +38,7 @@ extension ComposerView {
                         // Escape stops from the editor through its keys (`ComposerKeyMap`), which
                         // see it first; the button's own Escape covers focus anywhere else.
                         ComposerStopButton(
+                            isStopping: session.isStopping,
                             isEscapeEnabled: overlayDismissal == nil && !isFocused && suggestions == nil
                                 && selectedAttachmentIndex == nil && !windowClaimsCancelKeys,
                             action: stop

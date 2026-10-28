@@ -26,7 +26,7 @@ extension HostCore {
             clearNotifications(as: .resolved) {
                 $0.sessionID == session.id && $0.kind == .question && $0.questionID == questionID
             }
-        case .turnEnded(let stopReason) where stopReason == "end_turn":
+        case .turnEnded(let stopReason, _) where stopReason == "end_turn":
             postTurnFinished(in: session)
         case .turnFailed(let message, let error, _):
             postTurnFailed(message: message, error: error, in: session)

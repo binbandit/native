@@ -49,13 +49,13 @@ struct HostStopCommandTests {
         #expect(rig.core.stoppingSessions.isEmpty)
         #expect(try rig.core.store.unfinishedTurns().isEmpty)
         let saved = try rig.core.store.sessions()
-        #expect(saved.first { $0.id == initial.id }?.lastStopReason == "error")
-        #expect(saved.first { $0.id == later.id }?.lastStopReason == "error")
+        #expect(saved.first { $0.id == initial.id }?.lastStopReason == "cancelled")
+        #expect(saved.first { $0.id == later.id }?.lastStopReason == "cancelled")
         // The in-process exit records the status while leaving the sockets available to drain.
         _ = try await first.client.sessions()
         _ = try await second.client.sessions()
-        #expect(await first.turnsEnded(initial.id) == ["error"])
-        #expect(await second.turnsEnded(later.id) == ["error"])
+        #expect(await first.turnsEnded(initial.id) == ["cancelled"])
+        #expect(await second.turnsEnded(later.id) == ["cancelled"])
         #expect(await first.recoveries(initial.id).isEmpty)
         #expect(await second.recoveries(later.id).isEmpty)
         await first.stop()
@@ -85,7 +85,7 @@ struct HostStopCommandTests {
         try await second.client.attach(stopped.id)
         try await second.client.attach(sibling.id)
         try await second.wait("the sibling recovery") { await !$0.recoveries(sibling.id).isEmpty }
-        #expect(await second.summaries[stopped.id]?.lastStopReason == "error")
+        #expect(await second.summaries[stopped.id]?.lastStopReason == "cancelled")
         #expect(await second.recoveries(stopped.id).isEmpty)
         #expect(await second.recoveries(sibling.id).first?.cause == .hostUpdated)
         await second.stop()
@@ -150,41 +150,8 @@ struct HostStopCommandTests {
         await recorder.stop()
     }
 
-    @Test("A shared agent stays Stopping with an explanation until its other task can stop")
-    func sharedAgent() async throws {
-        let harness = try HostHarness()
-        defer { harness.cleanup() }
-        try harness.start()
-        let recorder = try await harness.connect()
-        let first = try await recorder.client.newSession(
-            NewSessionParams(agentID: "fake", cwd: harness.root.path, attach: true))
-        let second = try await recorder.client.newSession(
-            NewSessionParams(agentID: "fake", cwd: harness.root.path, attach: true))
-        _ = try await recorder.client.prompt(PromptParams(sessionID: second.id, text: "stubborn 100"))
-        try await recorder.wait("the sibling turn") { await $0.agentText(second.id).contains("tick 1") }
-        _ = try await recorder.client.prompt(PromptParams(sessionID: first.id, text: "slow 100"))
-        try await recorder.wait("the target turn") { await $0.agentText(first.id).contains("tick 1") }
-        try await recorder.client.cancel(first.id)
-        try await recorder.wait("the shared-process explanation") {
-            await $0.notices(first.id).contains { $0.contains("may still be running") }
-        }
-        #expect(await recorder.turnsEnded(first.id).isEmpty)
-        #expect(await recorder.summaries[first.id]?.isStopping == true)
-        #expect(await recorder.notices(first.id).contains { $0.contains("may still be running") })
-        #expect(await recorder.turnsEnded(second.id).isEmpty)
-        try await recorder.client.cancel(second.id)
-        try await recorder.wait("both stops") {
-            let firstEnded = await $0.turnsEnded(first.id)
-            let secondEnded = await $0.turnsEnded(second.id)
-            return firstEnded == ["error"] && secondEnded == ["error"]
-        }
-        #expect(await recorder.recoveries(first.id).isEmpty)
-        #expect(await recorder.recoveries(second.id).isEmpty)
-        await recorder.stop()
-    }
-
     @Test(
-        "Stop ends the observed shell and warns that detached commands cannot be verified",
+        "Stop ends the observed shell without touching unrelated processes",
         arguments: [false, true])
     func cancelledCommand(agentExits: Bool) async throws {
         let unrelated = Process()
@@ -206,8 +173,8 @@ struct HostStopCommandTests {
             Int32(String(contentsOf: harness.agentStore.appending(path: "command.pid"), encoding: .utf8)))
         defer { if kill(pid, 0) == 0 { kill(-pid, SIGKILL) } }
         try await recorder.client.cancel(session.id)
-        try await recorder.wait("the stop result") { await $0.turnsEnded(session.id) == ["error"] }
-        #expect(await recorder.notices(session.id).contains { $0.contains("could not verify Stop") })
+        try await recorder.wait("the stop result") { await $0.turnsEnded(session.id) == ["cancelled"] }
+        #expect(await recorder.notices(session.id).contains { $0.hasPrefix("Stopped.") })
         #expect(!AgentStopProcesses(root: pid).hasRemainingProcesses)
         try await recorder.wait("the command to exit") { _ in kill(pid, 0) != 0 }
         #expect(unrelated.isRunning)

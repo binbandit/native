@@ -196,7 +196,7 @@ actor Recorder {
     }
 
     func turnsEnded(_ session: HostSessionID) -> [String] {
-        payloads(session).compactMap { if case .turnEnded(let reason) = $0 { reason } else { nil } }
+        payloads(session).compactMap { if case .turnEnded(let reason, _) = $0 { reason } else { nil } }
     }
 
     /// The session as the host lists it now (`session/list`), whatever this client has heard.

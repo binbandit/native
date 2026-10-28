@@ -41,30 +41,41 @@ public struct ComposerSendButton: View {
 /// Stops the running turn: a 24pt foreground-colored square with an 8pt stop glyph. Binds Esc
 /// unless `isEscapeEnabled` is false, for when something else in the composer needs it.
 public struct ComposerStopButton: View {
+    let isStopping: Bool
     let isEscapeEnabled: Bool
     let action: () -> Void
 
     @Environment(\.isEnabled) private var isEnabled
     @State private var isHovered = false
 
-    public init(isEscapeEnabled: Bool = true, action: @escaping () -> Void) {
+    public init(isStopping: Bool = false, isEscapeEnabled: Bool = true, action: @escaping () -> Void) {
+        self.isStopping = isStopping
         self.isEscapeEnabled = isEscapeEnabled
         self.action = action
     }
 
     public var body: some View {
         Button(action: action) {
-            RoundedRectangle(cornerRadius: 1, style: .continuous)
-                .fill(.dsTextInverse)
-                .frame(width: 8, height: 8)
-                .frame(width: DS.Size.composerAction, height: DS.Size.composerAction)
-                .dsHitTarget(DS.Size.composerAction)
+            Group {
+                if isStopping {
+                    DotGridLoader(pattern: .waiting)
+                        .foregroundStyle(.dsTextInverse)
+                        .frame(width: DS.Size.navIcon, height: DS.Size.navIcon)
+                } else {
+                    RoundedRectangle(cornerRadius: 1, style: .continuous)
+                        .fill(.dsTextInverse)
+                        .frame(width: 8, height: 8)
+                }
+            }
+            .frame(width: DS.Size.composerAction, height: DS.Size.composerAction)
+            .dsHitTarget(DS.Size.composerAction)
         }
         .buttonStyle(ComposerActionStyle(kind: .stop, isHovered: isHovered && isEnabled))
         .keyboardShortcut(isEscapeEnabled ? .cancelAction : nil)
         .opacity(isEnabled ? 1 : 0.5)
-        .help("Stop (Esc)")
-        .accessibilityLabel("Stop Agent")
+        .help(isStopping ? "Stopping... Press again to stop now (Esc)" : "Stop (Esc)")
+        .accessibilityLabel(isStopping ? "Stopping Agent" : "Stop Agent")
+        .accessibilityHint(isStopping ? "Press again to stop now." : "")
         .trackHover($isHovered)
     }
 }
@@ -99,6 +110,7 @@ private struct ComposerActionStyle: ButtonStyle {
             ComposerSendButton {}
             ComposerSendButton(disabledReason: "Answer the permission request first") {}
             ComposerStopButton(isEscapeEnabled: false) {}
+            ComposerStopButton(isStopping: true, isEscapeEnabled: false) {}
         }
     }
 }
