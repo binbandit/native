@@ -84,6 +84,7 @@ private struct SidebarTrioRegression {
 
     static func main() async {
         managedSettings()
+        await accountSettings()
         await modelActions()
         await branchRefreshes()
         await wiredRefresh()
@@ -114,6 +115,26 @@ private struct SidebarTrioRegression {
         let enabled = PolicyCenter(source: StaticPolicySource(managed: [PolicyKey.remoteHostsEnabled.rawValue: true]))
         expect(SettingsManagementDetails.facts(enabled).isEmpty, "A managed enabled capability is never called off")
         print("PASS: managed settings restrictions, organization, contact and personal preferences")
+    }
+
+    static func accountSettings() async {
+        let model = GitHubAccountPreviewFixtures.model(.switchable)
+        expect(model.accounts.current?.login == "alex-morgan", "Saved account is kept before switching")
+        await model.selectAccount(
+            GitHubAccountPreviewFixtures.status(.switchable)?.hosts["github.com"]?.last
+                ?? GitHubAccountPreviewFixtures.second)
+        expect(model.accounts.current?.login == "alex-work", "General can select the newly active GitHub account")
+        if let previous = GitHubAccountPreviewFixtures.status(.switchable)?.hosts["github.com"]?.first {
+            await model.selectAccount(previous)
+        } else {
+            expect(false, "Previous fixture account exists")
+        }
+        expect(model.accounts.current?.login == "alex-work", "A failed switch keeps the current account")
+        model.accounts.addAccount()
+        expect(model.accounts.showsSignIn, "General offers sign-in guidance when adding an account")
+        expect(model.accounts.signInCommand == "gh auth login", "Sign-in stays with GitHub CLI")
+        expect(model.accounts.signOutCommand == "gh auth logout", "Sign-out stays with GitHub CLI")
+        print("PASS: account selection, failed-switch retention, add and sign-out guidance")
     }
 
     static func modelActions() async {
