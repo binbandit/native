@@ -7,6 +7,7 @@ struct SidebarProjectsHeader: View {
     var body: some View {
         SidebarSectionLabel("Projects") {
             IconButton("Open Folder…", systemImage: "plus", size: .small, action: model.requestOpenFolder)
+                .focusable()
                 .disabled(!model.canOpenFolders || !model.sidebarFolders.opening.isEmpty)
                 .help("Open Folder… (⌘O)")
                 .accessibilityHint("Choose a folder to add to Native")
