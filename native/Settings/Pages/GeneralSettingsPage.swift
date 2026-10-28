@@ -1,4 +1,5 @@
 import Experiments
+import NativePolicy
 import SwiftUI
 
 extension SettingsPane.ID {
@@ -34,6 +35,7 @@ extension SettingsPane {
 }
 
 struct GeneralSettingsPage: View {
+    @Environment(PolicyCenter.self) private var policy: PolicyCenter?
     @Environment(\.settingsPlainly) private var plainly
     @Environment(SettingsPresentation.self) private var presentation
     @Environment(DockBadgePreference.self) private var injectedBadge: DockBadgePreference?
@@ -94,6 +96,9 @@ struct GeneralSettingsPage: View {
             }
             if homeNext {
                 HomeNextSettingsSection()
+            }
+            if let policy, !policy.policy.managedKeys.isEmpty {
+                SettingsManagementDetails(center: policy)
             }
             #if os(macOS)
             if let gitHub {
@@ -164,6 +169,15 @@ struct GeneralSettingsPage: View {
     .environment(SettingsPresentation())
     .environment(GitHubAccountPreviewFixtures.model(.multiple))
     .environment(\.settingsPlainly, true)
+    .defaultAppStorage(PreviewUserDefaults())
+}
+#Preview("General settings - Managed") {
+    DSPreviewPair {
+        GeneralSettingsPage().settingsPreviewPage()
+    }
+    .environment(SettingsPresentation())
+    .environment(GitHubAccountPreviewFixtures.model(.multiple))
+    .environment(PolicyCenter(source: StaticPolicySource(managed: SettingsManagementPreview.northwind.dictionary)))
     .defaultAppStorage(PreviewUserDefaults())
 }
 #endif

@@ -165,6 +165,9 @@ final class GitHubAccountsModel {
         }
     }
 
+    var signOutCommand: String { "gh auth logout" }
+    func copySignOutCommand() { DSPasteboard.copy(signOutCommand) }
+
     func addAccount() { showsSignIn = true; copiedCommand = false }
     var signInCommand: String { error == .notInstalled ? "brew install gh" : "gh auth login" }
     func copySignInCommand() { DSPasteboard.copy(signInCommand); copiedCommand = true }
@@ -194,10 +197,13 @@ final class GitHubAccountsModel {
 
 #if DEBUG
 extension GitHubAccountsModel {
-    func configurePreview(status: AuthStatus?, error: GitHubError?, profiles: [String: GitHubUser]) {
+    func configurePreview(
+        status: AuthStatus?, error: GitHubError?, profiles: [String: GitHubUser], avatars: [String: Data] = [:]
+    ) {
         self.status = status
         self.error = error
         self.profiles = profiles
+        self.avatars = avatars
     }
 }
 #endif
