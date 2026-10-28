@@ -1,0 +1,35 @@
+{
+  "revision": "19418efafcd9db399ceadc331c780904e1c1edd0",
+  "instance": "cx-open-folder-rework",
+  "design": "open-folder-v2.html",
+  "before": "origin/main: SidebarView footer SidebarFolderActions",
+  "ui_states": {
+    "rest": "F1",
+    "empty": "F5",
+    "drop": "F3 (inert external drag feedback)",
+    "picker": "picker (shared picker fixture)",
+    "blocked": "blocked",
+    "opening": "F10",
+    "failure": "F6",
+    "added": "F4"
+  },
+  "pending": [
+    "Pointer hover: the permitted drive.sh interface has no hover action. Shared IconButton unchanged.",
+    "Touch: no iPad run surface is available through run-isolated.sh. Always-visible control and existing dsHitTarget retained.",
+    "Real external drag: drive.sh has no external drag input; feedback and model paths checked separately."
+  ],
+  "mock_refresh_pending": [
+    "blocked and opening PNGs after final contextual correction; screen locked before refresh. Final HTML and spec are supplied."
+  ],
+  "capture_settings": {
+    "appearance": [
+      "light",
+      "dark"
+    ],
+    "frame": "1000x700",
+    "statusBar.isShown": false,
+    "experiment.NativeSidebarNext": true,
+    "sounds.enabled": false
+  },
+  "capture_note": "All native captures completed while unlocked. The driver warned of Ghostty coverage; each intended state was visible and matched its AX tree."
+}
