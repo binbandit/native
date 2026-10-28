@@ -5,7 +5,9 @@ import SwiftUI
 extension ComposerView {
     @ViewBuilder
     func settingsNote(_ settings: ComposerSettings) -> some View {
-        if PolicyCenter.shared.isManaged(.forbiddenPermissionModes) {
+        if PolicyCenter.shared.isManaged(.forbiddenPermissionModes),
+            session.modelChange?.isPermissionPolicyBlocked != true
+        {
             let manager = PolicyCenter.shared.policy.organizationDisplayName
             let choice = settings.autonomy?.current.map(Self.whenItAsks)
             Label(

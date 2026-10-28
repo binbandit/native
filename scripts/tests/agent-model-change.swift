@@ -368,7 +368,8 @@ private struct AgentModelChangeRegression {
             try await wait(test.name) { change.stage == .applied || change.stage == .failed }
             if test.name == "policy locked" {
                 try require(
-                    change.stage == .failed && app.selection == source.key, "Policy did not keep the original agent")
+                    change.stage == .failed && change.isPermissionPolicyBlocked && app.selection == source.key,
+                    "Policy did not keep the original agent")
                 let message = change.error ?? ""
                 try require(
                     message.components(separatedBy: "Example Organization").count == 2

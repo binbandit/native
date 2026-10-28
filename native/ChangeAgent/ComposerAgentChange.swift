@@ -18,6 +18,7 @@ final class ComposerAgentChange {
     private(set) var stage: Stage = .waiting
     private(set) var error: String?
     private(set) var permissionNotice: String?
+    private(set) var isPermissionPolicyBlocked = false
     private var permissionValue: String?
     private(set) var showsLoader = false
     var isReceiptDismissed = false { didSet { persistReceipt() } }
@@ -217,6 +218,7 @@ final class ComposerAgentChange {
     }
 
     private func permissionPolicyFailure(_ policy: NativePolicy) -> Failure {
+        isPermissionPolicyBlocked = true
         let manager = policy.organizationName ?? "Your organization"
         return Failure(
             "\(manager) doesn't allow any of \(choice.agentName)'s permission levels. Keep the current agent or contact your administrator."
