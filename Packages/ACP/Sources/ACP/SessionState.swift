@@ -94,6 +94,7 @@ public struct SessionState: Sendable {
         case .usage(var usage):
             // Agents may report cost only now and then; keep the last known figure.
             usage.cost = usage.cost ?? self.usage?.cost
+            usage._meta.model = usage._meta.model ?? self.usage?._meta.model
             self.usage = usage
         case .subagent(let update): upsertSubagent(update)
         case .sessionMessage(let update):

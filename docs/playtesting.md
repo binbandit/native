@@ -125,6 +125,17 @@ For a long transcript without spending anything, install the long-session fake a
 it lists sessions of 20, 100 and 500 turns to reopen. `scripts/perf/fixture.sh` fills a sidebar with
 30 tasks across four projects (it rewrites the project list, so seed again afterwards).
 
+### Silent instances
+
+Dev builds, previews and test harnesses are silent by default. `run-isolated.sh` passes
+`-sounds.enabled NO -native.mute YES` at every launch; seeding and launch profiling also mute audio.
+The shared `NativeAudioPolicy` blocks player creation, including Settings sound previews, even if
+Sounds is enabled. System notifications carry no sound. Celebrations currently have no audio path.
+
+Keep test instances muted on the shared Mac. On a dedicated audio test machine only, pass both
+`-native.mute NO -sounds.enabled YES` and enable the Sounds plugin to test playback. These are
+per-instance overrides; never change system volume or play audio to verify silence.
+
 ## Drive it
 
 `scripts/dev/drive.sh <name> <command>` (or `just drive <name> <command>`). It compiles itself on

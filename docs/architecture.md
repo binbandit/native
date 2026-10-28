@@ -138,9 +138,10 @@ here and on two hosts are three lookups with three answers, cached and deduplica
 `RemoteHostsWiring` hands `GitHubModel` each pairing's command runner when it makes that host's
 task workspaces. gh runs there with an empty client environment, without this Mac's PATH, account
 choice or `GH_HOST`, so the host's login shell, signed-in account and GitHub hostname apply. Which
-pull request a branch was opened for is read with the host's git. A paired-host row has no pull
-request badge, so `AppTaskPullRequests` starts a branch's first lookup when its pull request is
-first asked for (the row's menu); `GitHubModel`'s refreshes follow. Switching accounts here leaves
+pull request a branch was opened for is read with the host's git. All in view shows a read-only
+pull-request outcome on paired-host rows and in Peek.
+`AppTaskPullRequests` also starts a remote branch's first lookup when its pull request is
+first asked for; `GitHubModel`'s refreshes follow. Switching accounts here leaves
 hosts' answers alone; pairing a host again forgets its answers and drops what the old pairing was
 still answering. An offline host, a missing `runCommands` grant or gh, or a signed-out gh there
 keeps the last answer with its failure. This Mac's gh is never asked instead. Lookups are refused,
@@ -415,7 +416,14 @@ excludes folded earlier tasks. Pinned tasks stay in their existing user-chosen s
 View > Sidebar and the list context menu share persisted choices: ask text and machine glyphs
 (default on), ages, changes on finished tasks, agent names and branches (default off), plus folding
 after a day, a week or never. Changes use the latest completed turn; branch facts use the existing
-git adapter without loading pull requests. No extra data is fetched with additions off.
+git adapter without loading pull requests. Pull-request outcomes are independent of those additions:
+every task with its own checkout shows its PR number, lifecycle glyph and failing-checks mark on
+the row and in Peek, even with all facts off. The row starts the cached lookup without requiring
+a branch fact or an active filter; project Refresh still bypasses that cache. Row menus retain
+the existing open and copy actions, with host-safe read-only actions for paired tasks.
+Archived managed worktrees resolve their saved branch from the surviving project checkout on the
+task's machine, keeping PR outcomes and menu actions after removal and relaunch without restoring
+the worktree. Project Refresh also bypasses the PR cache for these archived branches.
 Home Next owns the asks it shows; matching sidebar sentences, clocks and keycaps fold. Requests not
 yet shown by Home, including different requests on the same task, keep their sidebar sentence.
 The Debug fixtures `fold`, `facts` and `home-fold` cover these states.

@@ -7,6 +7,7 @@ struct TaskPeekView: View {
     let request: TaskPeekPresentation.Request
     var maxBodyHeight = DS.Peek.maxBodyHeight
     @Environment(AppModel.self) private var model
+    @Environment(\.sidebarTaskInsights) private var insights
     @Experiment(.composerNext) private var composerNext
     var openTask: ((SessionKey) -> Void)?
     @FocusState private var isFocused: Bool
@@ -15,6 +16,11 @@ struct TaskPeekView: View {
     private var session: SessionModel? { request.ask?.session ?? model.session(request.task) }
     private var ask: TaskPeekAsk? {
         request.ask ?? model.taskAsks(for: request.task).first
+    }
+
+    private var summary: SessionSummary? {
+        guard let found = model.catalog.lookup(request.task) else { return nil }
+        return model.allSessions(in: found.project).first { $0.id == request.task }
     }
 
     var body: some View {
@@ -27,6 +33,9 @@ struct TaskPeekView: View {
                     .padding(.horizontal, showsAnnotatedAsk ? 0 : DS.Peek.bodyHorizontal)
                     .padding(.vertical, showsAnnotatedAsk ? 0 : DS.Peek.bodyVertical)
             }
+        }
+        .task(id: summary.flatMap { insights.branch($0) }) {
+            if let summary { await insights.prepare([summary]) }
         }
         .background(.dsOverlay)
         .environment(\.permissionShortcutsEnabled, false)
@@ -89,6 +98,7 @@ struct TaskPeekView: View {
                 .font(DS.Peek.titleFont).foregroundStyle(.dsTextPrimary)
                 .lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
                 .help(model.titleOfSession(request.task))
+            if let summary { insights.pullRequestBadge(summary).fixedSize() }
             if let ask {
                 TaskAttentionClock(since: ask.since)
             }

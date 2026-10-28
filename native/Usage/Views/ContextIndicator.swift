@@ -53,7 +53,12 @@ struct ContextIndicator<Source: ContextSource>: View {
     /// A row only shows a ring once there's something to show; the composer keeps its place for
     /// agents that can explain their context even before the first usage update.
     private var isVisible: Bool {
-        let available = source.fractionUsed != nil || (style != .ring && source.reportStatus != .unsupported)
+        // Fine print's field shows nothing until there's a number, but keeps an anchor for View ▸
+        // Show Context Use.
+        let available =
+            source.fractionUsed != nil
+            || (style == .labeled && source.reportStatus != .unsupported)
+            || (style == .field && isShowingBreakdown)
         return available && (isShowingBreakdown || (source.fractionUsed ?? 0) >= revealsAt)
     }
 
