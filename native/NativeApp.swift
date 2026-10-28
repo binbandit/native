@@ -60,7 +60,17 @@ struct NativeApp: App {
         let durableHost = DurableHost()
         _durableHost = State(initialValue: durableHost)
         let git = GitStore { await model.shellEnvironment() }
-        let gitHub = GitHubModel { await model.shellEnvironment(refresh: $0) }
+        let gitHub: GitHubModel
+        #if DEBUG
+        // The isolated sidebar scene must not start the app's background gh against a real account.
+        if UserDefaults.standard.string(forKey: "nativeSidebarFixture")?.hasPrefix("pull-requests") == true {
+            gitHub = SidebarPullRequestPreviewFixtures.gitHub()
+        } else {
+            gitHub = GitHubModel { await model.shellEnvironment(refresh: $0) }
+        }
+        #else
+        gitHub = GitHubModel { await model.shellEnvironment(refresh: $0) }
+        #endif
         _git = State(initialValue: git)
         _gitHub = State(initialValue: gitHub)
         SessionToolsWiring.registerBuiltIns(.shared, git: git, gitHub: gitHub)
