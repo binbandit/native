@@ -200,7 +200,7 @@ extension HostCore {
                 throw HostError.agentUnavailable(link.spec.name)
             }
             let generation = link.generation
-            guard link.canLoadSessions else { throw HostError.cannotLoad(link.spec.name) }
+            guard link.canLoadSessions || preserving else { throw HostError.cannotLoad(link.spec.name) }
             let servers = await tasks.agentServers(
                 for: session.id, agent: session.record.agentID, base: session.mcpServers)
             if !preserving {
@@ -213,14 +213,18 @@ extension HostCore {
             route(session, on: link)
             let response: RawConfigOptionsResponse
             do {
-                response = try await peer.request(
-                    preserving && link.capabilities?.resumeSessions == true ? "session/resume" : "session/load",
-                    RawLoadSessionRequest(
-                        sessionId: agentSessionID, cwd: session.record.cwd, mcpServers: servers,
-                        _meta: await tasks.agentMeta(
-                            for: session.id, agent: session.record.agentID, base: session.record.meta,
-                            servers: session.mcpServers)),
-                    as: RawConfigOptionsResponse.self)
+                if preserving && !link.canLoadSessions {
+                    response = try await replaceUnsaved(session, on: link, peer: peer)
+                } else {
+                    response = try await peer.request(
+                        preserving && link.capabilities?.resumeSessions == true ? "session/resume" : "session/load",
+                        RawLoadSessionRequest(
+                            sessionId: agentSessionID, cwd: session.record.cwd, mcpServers: servers,
+                            _meta: await tasks.agentMeta(
+                                for: session.id, agent: session.record.agentID, base: session.record.meta,
+                                servers: session.mcpServers)),
+                        as: RawConfigOptionsResponse.self)
+                }
             } catch let error as RPCError
                 where !session.record.isAdopted && (session.record.lastStopReason == nil || preserving)
                 && !error.isAuthRequired

@@ -107,7 +107,7 @@ actor FakeAgent {
                 with: JSONValue.object([
                     "protocolVersion": .number(1),
                     "agentCapabilities": .object([
-                        "loadSession": .bool(true),
+                        "loadSession": .bool(ProcessInfo.processInfo.environment["FAKE_AGENT_NO_LOAD"] != "1"),
                         "sessionCapabilities": .object(
                             [
                                 "list": .object([:]), "delete": .object([:]),

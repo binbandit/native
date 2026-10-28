@@ -51,11 +51,12 @@ struct HostStuckStopTests {
 
     @Test(
         "Stop ends a sleeping tool, retains history, and accepts the next message",
-        arguments: ["ignore", "die", "reply"])
+        arguments: ["ignore", "die", "reply", "no-load"])
     func sleepingTool(behavior: String) async throws {
         let harness = try HostHarness()
         defer { harness.cleanup() }
         harness.agentEnvironment["FAKE_AGENT_NO_RESUME"] = "1"
+        if behavior == "no-load" { harness.agentEnvironment["FAKE_AGENT_NO_LOAD"] = "1" }
         if behavior == "die" { harness.agentEnvironment["FAKE_AGENT_EXIT_ON_CANCEL"] = "1" }
         try harness.start()
         let recorder = try await harness.connect()
