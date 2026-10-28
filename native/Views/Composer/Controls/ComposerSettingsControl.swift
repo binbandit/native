@@ -67,8 +67,22 @@ struct ComposerSettingsControl: View {
         .accessibilityIdentifier("composer-settings")
         .help(CommandRegistry.shared.help("Task Settings", for: .sessionChooseModel))
         .focusedSceneValue(\.mcpServersPopover, mcpPresentation)
-        .popover(isPresented: $isPresented, arrowEdge: .top) {
-            content.dsPopoverBackground()
+        .background {
+            GeometryReader { geometry in
+                // Resolve the door's width and the slab's top in the same layout pass. A stored
+                // measurement can still be zero when a command opens the popover during layout.
+                let frame = geometry.frame(in: .named(ComposerSettingsFieldSpace.name))
+                Color.clear
+                    .popover(
+                        isPresented: $isPresented,
+                        attachmentAnchor: .rect(
+                            .rect(
+                                CGRect(
+                                    x: 0, y: -frame.minY, width: geometry.size.width, height: 0))), arrowEdge: .bottom
+                    ) {
+                        content.dsPopoverBackground()
+                    }
+            }
         }
         .task(id: session.clientID) { await library?.track(session.context) }
         .onChange(of: session.modelChange?.stage) { _, stage in
@@ -114,7 +128,7 @@ struct ComposerSettingsControl: View {
                 SessionGoalEditor(controller: controller, agentName: session.agentName) { isPresented = false }
             }
         } else if showsMCP, let library {
-            ComposerSettingsPageFrame(title: "MCP Servers", onBack: backFromPage) {
+            ComposerSettingsPageFrame(title: "MCP Servers", scrollsOverflow: true, onBack: backFromPage) {
                 MCPSessionPanel(
                     library: library, session: session, entries: library.entries(forSession: session.clientID),
                     onManage: {
@@ -283,6 +297,7 @@ struct ComposerSettingsDoorLabel: View {
 /// Escape goes back too, never closing the popover.
 struct ComposerSettingsPageFrame<Content: View>: View {
     let title: String
+    var scrollsOverflow = false
     let onBack: () -> Void
     @ViewBuilder let content: () -> Content
 
@@ -291,7 +306,13 @@ struct ComposerSettingsPageFrame<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ComposerSettingsPageHeader(title: title, onBack: onBack)
-            content()
+            if scrollsOverflow {
+                ComposerSettingsPageBody {
+                    content()
+                }
+            } else {
+                content()
+            }
         }
         .padding(.top, DS.ComposerSettings.popoverInset)
         .frame(minWidth: DS.ComposerSettings.popoverWidth)

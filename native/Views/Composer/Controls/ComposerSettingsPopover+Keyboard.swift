@@ -19,7 +19,11 @@ struct ComposerSettingsTypeAhead {
 extension ComposerSettingsPopover {
     /// The rows the keyboard reaches, by section, skipping headers and locked levels.
     var sections: [[Target]] {
-        if isStopped, agentModels == nil { return onRestart == nil ? [] : [[.restart]] }
+        if isStopped, agentModels == nil, page == nil {
+            return (modelList?.overflow ?? 0) > 0
+                ? [[.moreModels]] + (onRestart == nil ? [] : [[.restart]])
+                : (onRestart == nil ? [] : [[.restart]])
+        }
         switch page {
         case .choices(let id):
             return [[.back] + (rows.first { $0.id == id }.map(pageTargets) ?? [])]
@@ -108,6 +112,14 @@ extension ComposerSettingsPopover {
 
     /// ← and → change Effort's level, open a row's page or menu, and come back from a page.
     private func step(_ direction: Int) -> KeyPress.Result {
+        if direction < 0, page != nil {
+            leavePage()
+            return .handled
+        }
+        if direction > 0, highlighted == .moreModels {
+            choose(.moreModels, closing: false)
+            return .handled
+        }
         guard !isStopped else { return .ignored }
         if highlighted == .effort, let effort = settings.effort {
             let levels = effort.choices
@@ -116,10 +128,6 @@ extension ComposerSettingsPopover {
             {
                 onSet(effort, levels[index + direction].value)
             }
-            return .handled
-        }
-        if direction < 0, page != nil {
-            leavePage()
             return .handled
         }
         if direction > 0, case .row(let id) = highlighted, let row = rows.first(where: { $0.id == id }) {
@@ -156,11 +164,11 @@ extension ComposerSettingsPopover {
         if isFilterFocused { return .ignored }
         let inModels: Bool =
             switch highlighted {
-            case .model, nil: true
+            case .model, .moreModels, nil: true
             default: false
             }
         // Past eight models, letters typed in the Model section go into its filter.
-        if inModels, page == (DS.isTouchPlatform ? .model : nil), modelList?.isFilterable == true {
+        if inModels, modelList?.isFilterable == true {
             query += press.characters
             return .handled
         }
@@ -194,8 +202,14 @@ extension ComposerSettingsPopover {
 
     /// Chooses what `target` stands for; Return also closes the popover after a choice.
     func choose(_ target: Target, closing: Bool) {
-        guard !isStopped || target == .restart || agentModels != nil else { return }
+        guard !isStopped || target == .restart || target == .moreModels || target == .back || agentModels != nil else {
+            return
+        }
         switch target {
+        case .moreModels:
+            page = .model
+            highlighted = .back
+            return
         case .model(let value):
             if DS.isTouchPlatform, page == nil {
                 page = .model
@@ -263,11 +277,14 @@ extension ComposerSettingsPopover {
         }
     }
 
-    private func leavePage() {
+    func leavePage() {
         let from = page
         page = nil
         hovered = nil
         if case .choices(let id) = from { highlighted = .row(id) }
+        if from == .model {
+            highlighted = DS.isTouchPlatform ? currentModelID.map(Target.model) : .moreModels
+        }
     }
 
     private func isCurrent(_ target: Target) -> Bool {
@@ -276,7 +293,7 @@ extension ComposerSettingsPopover {
         case .autonomy(let value): value == shownAutonomy
         case .effort: true
         case .fastMode: fastMode?.isOn == true
-        case .retry, .restart, .back, .command, .agentsSettings: false
+        case .retry, .restart, .back, .command, .agentsSettings, .moreModels: false
         case .row(let id):
             pageChoice(id)?.isCurrent ?? false
         }
@@ -289,6 +306,7 @@ extension ComposerSettingsPopover {
         case .effort: "Effort"
         case .fastMode: fastMode?.option.name
         case .agentsSettings: "Agents Settings"
+        case .moreModels: "More models"
         case .retry: "Try Again"
         case .restart: "Restart"
         case .back: "Task Settings"

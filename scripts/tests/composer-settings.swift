@@ -1,6 +1,8 @@
 import ACP
+import AppKit
 import Experiments
 import Foundation
+import MCPClient
 import NativeHostClient
 import NativeHostProtocol
 import SwiftUI
@@ -17,6 +19,9 @@ private actor SettingsHost: HostTransport {
     private let epoch = UUID()
     private var peer: JSONRPCPeer?
     private(set) var restarts: [String] = []
+    private var isStopping = false
+
+    func prepareToStop() { isStopping = true }
 
     func connect() throws -> any ByteStream {
         let (clientEnd, hostEnd) = try UnixSocket.pair()
@@ -51,6 +56,9 @@ private actor SettingsHost: HostTransport {
             default:
                 try peer.respond(to: id, error: .methodNotFound(message.method))
             }
+        } catch PeerError.closed where isStopping {
+            // Requests queued before intentional teardown can arrive after the client disconnects.
+            return
         } catch {
             print("FAIL: fixture response: \(error)")
             exit(1)
@@ -63,9 +71,18 @@ private actor SettingsHost: HostTransport {
 private struct ComposerSettingsRegression {
     static func main() async {
         do {
+            if CommandLine.arguments.contains("--geometry") {
+                _ = NSApplication.shared
+                try popoverGeometry()
+                try crowdedPopoverGeometry()
+                try await mcpPageGeometry()
+            } else {
+                print("SKIP: popover geometry requires --geometry on an unlocked desktop")
+            }
             try capturedModels()
             try composeChoicesAndDismissal()
             try keyboardTargets()
+            try boundedModelTargets()
             try await restartRouting()
         } catch {
             print("FAIL: \(error)")
@@ -83,6 +100,175 @@ private struct ComposerSettingsRegression {
             if ContinuousClock.now > deadline { throw SettingsFailure(message: "Timed out") }
             try await Task.sleep(for: .milliseconds(1))
         }
+    }
+
+    private static func popoverGeometry() throws {
+        var options = try GatewayWire.options()
+        guard let index = options.firstIndex(where: { $0.category == "model" }),
+            case .select(_, var choices) = options[index].kind
+        else {
+            throw SettingsFailure(message: "No model section")
+        }
+        choices += try JSONDecoder().decode(
+            [ConfigOption.SelectOption].self,
+            from: Data(
+                """
+                [
+                    {"value":"short-caption","name":"Short caption","description":"Quick answers."},
+                    {"value":"long-caption","name":"Long caption","description":"Careful analysis across large projects with a generous context window and detailed reasoning for difficult work."}
+                ]
+                """.utf8))
+        options[index].kind = .select(currentValue: "short-caption", options: choices)
+        let settings = ComposerSettings(options)
+        func height(_ query: String, extraRows: Int = 0) -> CGFloat {
+            let rows =
+                ComposerSettingsPreviewFixtures.rows()
+                + (0..<extraRows).map { index in
+                    ComposerSettingsTaskRow(
+                        id: "extra-\(index)", title: "Project setting", value: "Default", kind: .page
+                    ) { _ in }
+                }
+            let view = ComposerSettingsPopover(
+                settings: settings, agentName: "Claude Code", rows: rows, onSet: { _, _ in }, query: query)
+            return NSHostingView(rootView: view).fittingSize.height
+        }
+        let heights = ["", "short caption", "long caption", "no-such-model"].map { height($0) }
+        print("Popover query heights: \(heights)")
+        try expect(Set(heights).count == 1, "Filtering moved the popover frame")
+        let tall = height("", extraRows: 5)
+        print("Popover with extra settings: \(tall)")
+        try expect(tall <= DS.ComposerSettings.popoverMaxHeight, "Popover exceeded its height budget")
+        print("PASS: actual popover layout keeps caption/filter height stable and fits its height budget")
+    }
+
+    private static func crowdedPopoverGeometry() throws {
+        let extraModels = (1...6).map {
+            #"{"value":"extra-\#($0)","name":"Extra model \#($0)","description":"An additional model."}"#
+        }
+        var maximum: CGFloat = 0
+        for count in [6, 7, 8, 9, 12] {
+            let base = ComposerSettingsPreviewFixtures.claude(
+                models: ([ComposerSettingsPreviewFixtures.claudeModels] + extraModels.prefix(count - 6))
+                    .joined(separator: ","))
+            let settings = ComposerSettings(
+                [
+                    base.model?.option, base.effort?.option, base.autonomy?.option,
+                    ComposerSettingsPreviewFixtures.codex().modelSwitches.first?.option,
+                ].compactMap { $0 })
+            for extra in [0, 2, 3, 5] {
+                let rows =
+                    ComposerSettingsPreviewFixtures.rows()
+                    + (0..<extra).map {
+                        ComposerSettingsTaskRow(
+                            id: "extra-\($0)", title: "Project setting", value: "Default", kind: .page
+                        ) { _ in }
+                    }
+                for managed in [false, true] {
+                    for stopped in [false, true] {
+                        for appearance in [ColorScheme.light, .dark] {
+                            let view = ComposerSettingsPopover(
+                                settings: settings, agentName: "Claude Code",
+                                manager: managed ? "Northwind Federal IT" : nil,
+                                permissionsManaged: managed, rows: rows, isStopped: stopped,
+                                onRestart: {}, onSet: { _, _ in }
+                            )
+                            .environment(\.colorScheme, appearance)
+                            let size = NSHostingView(rootView: view).fittingSize
+                            maximum = max(maximum, size.height)
+                            try expect(size.width == DS.ComposerSettings.popoverWidth, "Crowded popover changed width")
+                            try expect(
+                                size.height <= DS.ComposerSettings.popoverMaxHeight,
+                                "\(count) models, \(extra) extras, managed \(managed), stopped \(stopped), \(appearance): \(size.height) exceeds 620pt"
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        let base = ComposerSettingsPreviewFixtures.claude(models: ComposerSettingsPreviewFixtures.gatewayModels)
+        let catalog = (base.model?.choices ?? []).map {
+            ComposerAgentModel(
+                agent: .init(rawValue: "fixture"), agentName: "Claude Code", choice: $0, kind: .model($0.value))
+        }
+        let rows =
+            ComposerSettingsPreviewFixtures.rows()
+            + (0..<5).map {
+                ComposerSettingsTaskRow(id: "extra-\($0)", title: "Project setting", value: "Default", kind: .page) {
+                    _ in
+                }
+            }
+        for failedID in ["model", "mode", "goal", "agent-model"] {
+            for appearance in [ColorScheme.light, .dark] {
+                let view = ComposerSettingsPopover(
+                    settings: base, agentName: "Claude Code", manager: "Northwind Federal IT",
+                    permissionsManaged: true, rows: rows,
+                    agentModels: failedID == "agent-model" ? catalog : nil,
+                    currentAgentID: .init(rawValue: "fixture"),
+                    failure: .init(
+                        optionID: failedID, message: "Couldn't apply this setting. Your previous choice is still on.",
+                        retry: {}),
+                    onSet: { _, _ in }
+                ).environment(\.colorScheme, appearance)
+                let height = NSHostingView(rootView: view).fittingSize.height
+                maximum = max(maximum, height)
+                try expect(
+                    height <= DS.ComposerSettings.popoverMaxHeight,
+                    "Crowded \(failedID) recovery exceeded 620pt: \(height)")
+            }
+        }
+        print(
+            "PASS: crowded 6/7/8/9/12-model layouts, up to five extra rows, managed/stopped, light/dark; maximum \(maximum)pt"
+        )
+    }
+
+    private static func mcpPageGeometry() async throws {
+        let app = AppModel.preview(.empty)
+        guard let session = SessionModel.preview(in: app, cwd: "/fixture") else {
+            throw SettingsFailure(message: "No MCP preview session")
+        }
+        let library = MCPLibrary(storeURL: nil)
+        let entries: [MCPSessionEntry] = (1...18).map { index in
+            let server = ManagedServer(
+                name: "Server \(index)",
+                transport: .stdio(command: "/usr/bin/false", arguments: [], environmentNames: [], workingDirectory: nil)
+            )
+            library.reports[.managed(server.id)] = MCPProbeReport(
+                status: index.isMultiple(of: 3)
+                    ? .failed(
+                        MCPProbeFailure(
+                            stage: .launch, message: "The server could not start. Check its configuration and retry."))
+                    : .connected, startedAt: .now, duration: .zero)
+            return .managed(server, .deliver)
+        }
+        let page = ComposerSettingsPageFrame(title: "MCP Servers", scrollsOverflow: true, onBack: {}) {
+            MCPSessionPanel(library: library, session: session, entries: entries, isPage: true)
+        }
+        let host = NSHostingView(rootView: page)
+        let height = host.fittingSize.height
+        print("Long MCP page height: \(height)")
+        try expect(height <= DS.ComposerSettings.popoverMaxHeight, "Long MCP page has no bounded overflow path")
+        host.setFrameSize(NSSize(width: DS.ComposerSettings.popoverWidth, height: 300))
+        for _ in 0..<10 {
+            host.layoutSubtreeIfNeeded()
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        func scrollViews(in view: NSView) -> [NSScrollView] {
+            let own = (view as? NSScrollView).map { [$0] } ?? []
+            return own + view.subviews.flatMap { scrollViews(in: $0) }
+        }
+        let scrolling = scrollViews(in: host)
+        try expect(scrolling.count == 1, "MCP page must have exactly one outer scroll region")
+        if let scroll = scrolling.first, let document = scroll.documentView {
+            print("MCP viewport: \(scroll.contentView.bounds); document: \(document.frame)")
+            try expect(scroll.contentView.bounds.height < 300, "MCP content ignored the short presentation")
+            if document.frame.height == 0 {
+                print("SKIP: scroll-document layout and recovery-control reachability require an attached window")
+            } else {
+                try expect(
+                    document.frame.height > scroll.contentView.bounds.height, "Long MCP content is not scrollable")
+            }
+        }
+        print("PASS: long MCP page, including failed servers, has a bounded height and one short-page scroll viewport")
     }
 
     private static func capturedModels() throws {
@@ -137,10 +323,23 @@ private struct ComposerSettingsRegression {
         print("PASS: Fast mode, retry, Edit Modes and Restart have working keyboard targets")
     }
 
-    private static func composePopover(_ app: AppModel) -> ComposerSettingsPopover? {
-        let body = ComposeAgentPicker(model: app).body
-        if let capped = body as? CappedHeightScrollView<ComposerSettingsPopover> { return capped.content }
-        return body as? ComposerSettingsPopover
+    private static func boundedModelTargets() throws {
+        let models =
+            ComposerSettingsPreviewFixtures.claudeModels + ","
+            + (1...2).map {
+                #"{"value":"extra-\#($0)","name":"Extra model \#($0)"}"#
+            }.joined(separator: ",")
+        let settings = ComposerSettingsPreviewFixtures.claude(models: models)
+        let compact = ComposerSettingsPopover(
+            settings: settings, agentName: "Fixture", onSet: { _, _ in }, modelSlots: 5)
+        let shown = (compact.modelList?.rows ?? []).map { ComposerSettingsPopover.Target.model($0.id) }
+        try expect(
+            compact.modelTargets == shown + [.moreModels], "Compact model keyboard targets differ from displayed rows")
+        try expect(compact.modelList?.isFilterable == false, "Eight models showed an early filter")
+        let page = ComposerSettingsPopover(settings: settings, agentName: "Fixture", onSet: { _, _ in }, page: .model)
+        try expect(page.modelTargets.count == 8, "Full Model page lost an overflow choice")
+        try expect(page.sections.first?.first == .back, "Full Model page lost its keyboard return path")
+        print("PASS: compact model targets match displayed rows and the full Model page reaches all eight choices")
     }
 
     private static func composeChoicesAndDismissal() throws {
@@ -152,7 +351,8 @@ private struct ComposerSettingsRegression {
         guard let permissions = settings.autonomy else { throw SettingsFailure(message: "No permissions") }
         app.composeTask.choose(permissions, value: "default")
         app.quickEntry.picker = .agent
-        guard let popover = composePopover(app),
+        let popover = ComposeAgentPicker(model: app).popover
+        guard
             let mode = popover.rows.first(where: { $0.id == "compose-mode" })
         else { throw SettingsFailure(message: "Compose lost its Mode row") }
         mode.perform("build")
@@ -163,7 +363,8 @@ private struct ComposerSettingsRegression {
         popover.onClose()
         app.quickEntry.picker = .agent
         try expect(app.composeTask.choices["mode"] == "plan", "Compose cannot start in Plan")
-        guard let updated = composePopover(app),
+        let updated = ComposeAgentPicker(model: app).popover
+        guard
             let updatedMode = updated.rows.first(where: { $0.id == "compose-mode" })
         else { throw SettingsFailure(message: "Compose lost its selected Mode row") }
         try expect(updatedMode.value == "Plan", "Compose did not reflect Plan")
@@ -214,6 +415,7 @@ private struct ComposerSettingsRegression {
         await app.restartAgent(for: session)
         try expect(await remote.restarts == ["fixture"], "Restart missed the task's host")
         try expect(await local.restarts.isEmpty, "Restart reached this Mac for a remote task")
+        await remote.prepareToStop()
         host.stop()
         await remoteClient.stop()
         await app.restartAgent(for: session)
@@ -224,6 +426,8 @@ private struct ComposerSettingsRegression {
                 if case .notice(let notice) = $0 { return notice.text.contains("Reconnect the task's host") }
                 return false
             }, "Unavailable host did not explain how to reconnect")
+        await local.prepareToStop()
+        await localClient.stop()
         print("PASS: Restart stays on the task's host; unavailable hosts never fall back to this Mac")
     }
 }
