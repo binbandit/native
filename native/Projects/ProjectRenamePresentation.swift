@@ -18,7 +18,9 @@ private struct ProjectRenamePresentation: ViewModifier {
             isPresented: Binding(
                 get: { model.renamingProject != nil },
                 set: { if !$0 { model.renamingProject = nil } }),
-            presenting: model.renamingProject.flatMap(model.projects.project)
+            presenting: model.renamingProject.flatMap { id in
+                model.projects.project(id) ?? model.projects.archived.first { $0.id == id }
+            }
         ) { project in
             TextField(project.folderName, text: $model.projectNameDraft)
                 .accessibilityLabel("Project name")

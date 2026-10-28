@@ -10,9 +10,9 @@ extension NativeCommand {
             .projectRename, title: "Rename Project…", category: .tasks, systemImage: "pencil",
             keywords: ["display name", "folder", "name"]
         ) { _ in
-            guard let project = model.currentProject else { return }
+            guard let project = model.projectRenameTarget else { return }
             model.requestRenameProject(project.id)
         }
-        .available { _ in model.currentProject?.host == .local }
+        .available { _ in model.projectRenameTarget?.host == .local }
     }
 }

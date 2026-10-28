@@ -59,8 +59,17 @@ extension AppModel {
         Task { await refreshSessions(in: project) }
     }
 
+    var projectRenameTarget: Project? {
+        if let selection, let id = catalog.lookup(selection)?.project {
+            return projects.project(id) ?? projects.archived.first { $0.id == id }
+        }
+        return currentProject
+    }
+
     func requestRenameProject(_ id: Project.ID) {
-        guard let project = projects.project(id), project.host == .local else { return }
+        guard let project = projects.project(id) ?? projects.archived.first(where: { $0.id == id }),
+            project.host == .local
+        else { return }
         projectNameDraft = project.baseName
         renamingProject = id
     }

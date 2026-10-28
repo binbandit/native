@@ -1,3 +1,4 @@
+import ACP
 import Foundation
 import SwiftUI
 
@@ -63,6 +64,13 @@ import SwiftUI
         require(app.projects.project(relocated.id)?.name == "moved-native", "clearing restores the folder name")
         require(app.projects.project(relocated.id)?.displayName == nil, "the automatic name is never saved as custom")
         app.projects.archive(relocated.id)
+        app.requestRenameProject(relocated.id)
+        require(app.renamingProject == relocated.id, "archived projects can open the rename dialog")
+        app.catalog.add(
+            SessionInfo(sessionId: SessionID("archived-name"), cwd: relocated.path),
+            for: AgentDefinition.ID(rawValue: "claude-code"), in: relocated.id)
+        app.selection = SessionKey(agent: AgentDefinition.ID(rawValue: "claude-code"), id: SessionID("archived-name"))
+        require(app.projectRenameTarget?.id == relocated.id, "the menu targets an archived task's own project")
         app.renameProject(relocated.id, to: "Archived Native")
         app.projects.unarchive(relocated.id)
         require(app.projects.project(relocated.id)?.name == "Archived Native", "archived renames survive unarchive")
