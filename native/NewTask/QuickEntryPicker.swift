@@ -139,7 +139,7 @@ struct QuickEntryPicker: View {
                     HStack(spacing: DS.Space.sm) {
                         Image(systemName: "folder").font(DS.ComposerSettings.rowFont).foregroundStyle(.dsTextSecondary)
                             .frame(width: DS.ComposerSettings.selectionWidth)
-                        Text("Choose a Folder…").font(DS.ComposerSettings.rowFont)
+                        Text("Open Folder…").font(DS.ComposerSettings.rowFont)
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, DS.Space.xs)
@@ -148,6 +148,7 @@ struct QuickEntryPicker: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.dsTextPrimary)
+                .disabled(!model.canOpenFolders || !model.sidebarFolders.opening.isEmpty)
             }
         }
         .padding(DS.ComposerSettings.sectionInset)
@@ -173,5 +174,21 @@ struct QuickEntryPicker: View {
 }
 #Preview("Quick Entry - Project picker") {
     QuickEntryPreviewFixture(state: .projects)
+}
+#Preview("Project picker - No projects") {
+    DSPreviewPair {
+        let model = QuickEntryPreviewFixtures.model(.firstLaunch)
+        QuickEntryPicker(model: model, entry: model.quickEntry)
+            .onAppear { model.quickEntry.picker = .project }
+            .frame(width: DS.ComposeTask.popoverWidth)
+    }
+}
+#Preview("Project picker - Managed restriction") {
+    DSPreviewPair {
+        let model = SidebarFolderPreviewFixtures.model("blocked")
+        QuickEntryPicker(model: model, entry: model.quickEntry)
+            .onAppear { model.quickEntry.picker = .project }
+            .frame(width: DS.ComposeTask.popoverWidth)
+    }
 }
 #endif
