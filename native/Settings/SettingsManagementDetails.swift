@@ -5,18 +5,39 @@ import SwiftUI
 struct SettingsManagementDetails: View {
     let center: PolicyCenter
 
+    struct Fact: Identifiable {
+        let name: String
+        let explanation: String
+        var id: String { name }
+    }
+
+    static func facts(_ center: PolicyCenter) -> [Fact] {
+        var facts: [Fact] = []
+        if center.isGitHubOutOfReach, center.isNetworkManaged {
+            facts.append(
+                Fact(
+                    name: "GitHub",
+                    explanation: "GitHub is off by policy. Pull requests and accounts aren't available on this Mac."))
+        }
+        if !center.policy.remoteHostsEnabled, center.policy.isManaged(.remoteHostsEnabled) {
+            facts.append(
+                Fact(name: "Other Macs", explanation: "Other Macs are off by policy. Tasks run on this Mac only."))
+        }
+        if !center.policy.companionEnabled, center.policy.isManaged(.companionEnabled) {
+            facts.append(
+                Fact(
+                    name: "Pairing", explanation: "Pairing is off by policy. Phones and iPads can't pair with this Mac."
+                ))
+        }
+        return facts
+    }
+
     var body: some View {
         SettingsNote(center.managementLine, systemImage: "building.2") {
             VStack(alignment: .leading, spacing: DS.Space.md) {
                 Text("Some of Native's settings are set for you. A lock shows which ones.")
-                if center.isGitHubOutOfReach, center.isNetworkManaged {
-                    Text("GitHub is off by policy. Pull requests and accounts aren't available on this Mac.")
-                }
-                if !center.policy.remoteHostsEnabled, center.policy.isManaged(.remoteHostsEnabled) {
-                    Text("Other Macs are off by policy. Tasks run on this Mac only.")
-                }
-                if !center.policy.companionEnabled, center.policy.isManaged(.companionEnabled) {
-                    Text("Pairing is off by policy. Phones and iPads can't pair with this Mac.")
+                ForEach(Self.facts(center)) { fact in
+                    Text(fact.explanation)
                 }
                 Text(
                     center.policy.organizationContact.map { "Ask in \($0) to change managed settings." }
