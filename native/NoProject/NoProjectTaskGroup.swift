@@ -6,6 +6,8 @@ import TaskList
 struct NoProjectTaskGroup<TaskAccessory: View>: View {
     @Environment(AppModel.self) private var model
     let group: SidebarListing.Group
+    var isFiltered = false
+    var hasNoMatches = false
     var followsPinned = false
     let isExpanded: Binding<Bool>
     let isEarlierExpanded: Binding<Bool>
@@ -17,7 +19,7 @@ struct NoProjectTaskGroup<TaskAccessory: View>: View {
         AllInViewProjectGroup(
             name: "No project", isFirst: !followsPinned, isExpanded: isExpanded,
             taskCount: group.current.count + group.earlier.count + model.startingTasks(in: NoProjectLocation.id).count,
-            activity: activity, note: nil,
+            activity: activity, note: hasNoMatches ? "No matching tasks" : nil,
             onNewTask: { Task { await model.newSession(in: NoProjectLocation.id) } }
         ) {
             Button("New Task") { Task { await model.newSession(in: NoProjectLocation.id) } }
@@ -25,7 +27,8 @@ struct NoProjectTaskGroup<TaskAccessory: View>: View {
             ForEach(model.problems.list(for: NoProjectLocation.id)) { ProjectProblemRow(problem: $0) }
             ForEach(model.startingTasks(in: NoProjectLocation.id)) { StartingTaskRow(task: $0) }
             rows(group.current)
-            if group.current.isEmpty, group.earlier.isEmpty, model.startingTasks(in: NoProjectLocation.id).isEmpty,
+            if !isFiltered, group.current.isEmpty, group.earlier.isEmpty,
+                model.startingTasks(in: NoProjectLocation.id).isEmpty,
                 model.problems.list(for: NoProjectLocation.id).isEmpty
             {
                 Text("Start a task here. A folder is optional.")
@@ -69,6 +72,31 @@ struct NoProjectTaskGroup<TaskAccessory: View>: View {
 }
 
 #if DEBUG
+#Preview("No project - Empty") {
+    let app = AppModel.preview(.empty)
+    DSPreviewPair {
+        NoProjectTaskGroup(
+            group: SidebarListing.Group(project: NoProjectLocation.group, all: [], current: []),
+            isExpanded: .constant(true), isEarlierExpanded: .constant(false), drag: SidebarDragState(),
+            taskAccessory: { _ in EmptyView() }, select: { _ in }
+        )
+        .frame(width: DS.Window.sidebarMinWidth)
+    }.sidebarPreviewEnvironment(app)
+}
+
+#Preview("No project - No matching tasks") {
+    let app = AppModel.preview(.empty)
+    DSPreviewPair {
+        NoProjectTaskGroup(
+            group: SidebarListing.Group(project: NoProjectLocation.group, all: [], current: []),
+            isFiltered: true, hasNoMatches: true,
+            isExpanded: .constant(false), isEarlierExpanded: .constant(false), drag: SidebarDragState(),
+            taskAccessory: { _ in EmptyView() }, select: { _ in }
+        )
+        .frame(width: DS.Window.sidebarMinWidth)
+    }.sidebarPreviewEnvironment(app)
+}
+
 #Preview("No project - Task row") {
     let app = AppModel.preview()
     let agent = app.agents.first?.agent

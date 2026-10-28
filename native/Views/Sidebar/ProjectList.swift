@@ -65,9 +65,10 @@ struct ProjectList<TaskAccessory: View>: View {
                     && model.startingTasks(in: project.id).isEmpty
                 if project.isNoProject {
                     NoProjectTaskGroup(
-                        group: group, followsPinned: !listing.pinned.isEmpty,
+                        group: group, isFiltered: isNarrowing, hasNoMatches: hasNoMatches,
+                        followsPinned: !listing.pinned.isEmpty,
                         isExpanded: Binding(
-                            get: { isNarrowing || !collapsed.contains(project.id) },
+                            get: { isNarrowing ? !hasNoMatches : !collapsed.contains(project.id) },
                             set: { collapsed.set(project.id, collapsed: !$0) }),
                         isEarlierExpanded: Binding(
                             get: { group.isEarlierExpanded }, set: { folding?.setExpanded(project.id, $0) }),
