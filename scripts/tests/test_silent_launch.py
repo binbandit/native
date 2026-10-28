@@ -8,10 +8,10 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 
 class SilentLaunchTests(unittest.TestCase):
-    def arguments(self, *overrides):
-        source = (ROOT / "scripts/dev/run-isolated.sh").read_text()
+    def arguments(self, *overrides, script="scripts/dev/run-isolated.sh"):
+        source = (ROOT / script).read_text()
         start = source.index("defaults_args=()")
-        end = source.index("# In the background", start)
+        end = source.index("# In the background" if script.endswith("run-isolated.sh") else "open -g", start)
         result = subprocess.run(
             ["bash", "-c", 'app_args=("$@"); worktrees=/tmp/fixture\n'
              + source[start:end] + '\nprintf "%s\\n" "${defaults_args[@]}"', "test", *overrides],
@@ -30,6 +30,13 @@ class SilentLaunchTests(unittest.TestCase):
         args = self.arguments("-sounds.enabled", "YES", "-native.mute", "NO")
         self.assertNotIn("-sounds.enabled", args)
         self.assertNotIn("-native.mute", args)
+
+    def test_profiler_silent_defaults_and_overrides(self):
+        args = self.arguments(script="scripts/perf/profile-launch.sh")
+        self.assertEqual(args, ["-sounds.enabled", "NO", "-native.mute", "YES"])
+        args = self.arguments("-sounds.enabled", "YES", "-native.mute", "NO",
+                              script="scripts/perf/profile-launch.sh")
+        self.assertEqual(args, [""])
 
 
 class AudioPolicyTests(unittest.TestCase):
