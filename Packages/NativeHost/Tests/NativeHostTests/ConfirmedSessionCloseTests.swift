@@ -32,13 +32,18 @@ struct ConfirmedSessionCloseTests {
         } else {
             _ = try await recorder.client.stopAgent("fake")
             try await Task.sleep(for: .seconds(3))
+            await #expect(throws: (any Error).self) { try await recorder.client.closeSessionConfirmed(summary.id) }
+            #expect(try await recorder.client.sessions().contains { $0.id == summary.id })
+            #expect(FileManager.default.fileExists(atPath: file.path))
+            await recorder.stop()
+            return
         }
         try await recorder.client.closeSessionConfirmed(summary.id)
         #expect(try await !recorder.client.sessions().contains { $0.id == summary.id })
         #expect(FileManager.default.fileExists(atPath: file.path))
         await recorder.stop()
     }
-    @Test func cleanupAfterCancellingATurnWaitsForItsOwnedProcesses() async throws {
+    @Test func unverifiedStopKeepsTheSessionForCleanupRetry() async throws {
         let harness = try HostHarness()
         defer { harness.cleanup() }
         harness.agentEnvironment["FAKE_AGENT_NO_CLOSE"] = "1"
@@ -54,8 +59,8 @@ struct ConfirmedSessionCloseTests {
             let task = await $0.summaries[summary.id]
             return agent?.state == .stopped && task?.isStopping == false
         }
-        try await recorder.client.closeSessionConfirmed(summary.id)
-        #expect(try await !recorder.client.sessions().contains { $0.id == summary.id })
+        await #expect(throws: (any Error).self) { try await recorder.client.closeSessionConfirmed(summary.id) }
+        #expect(try await recorder.client.sessions().contains { $0.id == summary.id })
         await recorder.stop()
     }
 

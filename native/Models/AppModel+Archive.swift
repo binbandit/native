@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import TaskList
 import Undo
 
 // Archiving and deleting tasks and projects. Archive hides and can always come back; delete acts at
@@ -200,13 +201,16 @@ extension AppModel {
     private func carryOutDeletion(using route: TaskActionRoute) async {
         let key = route.key
         let projectID = route.project.id
-        guard pendingDeletions.removeValue(forKey: key) != nil else { return }
+        guard pendingDeletions[key] != nil else { return }
+        defer { pendingDeletions[key] = nil }
         do {
             try await releaseCoordinatorAssignments(beforeDeleting: key)
         } catch {
             actionFailure = ActionFailure("Couldn't Delete Coordinator", error.localizedDescription)
             return
         }
+        let hadPrivateFiles = scratchTasks.folder(for: NoProjectLocation.key(key)) != nil
+        if hadPrivateFiles, !(await removePrivateTaskFiles(using: route)) { return }
         let title = route.title
         deletedSessions.insert(key)
         archivedSessions.set(key, archived: false)

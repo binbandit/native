@@ -727,8 +727,9 @@ folder is a working location, not a security sandbox.
 
 Archive retains files. Delete uses the ordinary ten-second Undo window before closing the task
 and removing only its owned scratch directory. Cleanup uses the host's confirmed-close request:
-only an agent acknowledgement or confirmed process-tree exit permits forgetting the host record.
-Unsupported or rejected closes retain the record and private files for retry; older hosts reject
+only an agent acknowledgement permits forgetting the host record. Process snapshots cannot prove
+that detached commands exited. Unsupported or rejected closes retain the task, record and private
+files for retry; older hosts reject
 the separate method safely. Move to Project reopens the same agent
 conversation at an admitted project folder. A unique Task Files child receives files only when
 the user opts in; originals remain owned until task deletion. Failure preserves the original

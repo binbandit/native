@@ -64,7 +64,8 @@ actor NoProjectTestHost: HostTransport {
             initialize: .object([
                 "protocolVersion": .number(1),
                 "agentCapabilities": .object([
-                    "loadSession": .bool(true), "sessionCapabilities": .object(["close": .object([:])]),
+                    "loadSession": .bool(true),
+                    "sessionCapabilities": .object(["close": .object([:]), "delete": .object([:])]),
                 ]), "authMethods": .array([]),
             ]))
         switch message.method {
@@ -142,6 +143,14 @@ actor NoProjectTestHost: HostTransport {
             closed.append(sessionID)
             summaries.removeAll { $0.id == sessionID }
             try peer.notify(HostProtocol.Method.sessionClosed, SessionParams(sessionID: sessionID))
+            try peer.respond(to: id, with: EmptyMessage())
+        case HostProtocol.Method.deleteAgentSession:
+            let params = try message.params(as: DeleteAgentSessionParams.self)
+            let removed = summaries.filter { $0.agentSessionID == params.agentSessionID }
+            summaries.removeAll { $0.agentSessionID == params.agentSessionID }
+            for summary in removed {
+                try peer.notify(HostProtocol.Method.sessionClosed, SessionParams(sessionID: summary.id))
+            }
             try peer.respond(to: id, with: EmptyMessage())
         case HostProtocol.Method.prompt:
             prompts.append(try message.params(as: PromptParams.self))

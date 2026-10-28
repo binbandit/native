@@ -345,15 +345,24 @@ struct NoProjectModelTests {
         let task = try #require(app.selection.flatMap(app.session))
         let file = task.cwd.appendingPathComponent("notes.txt")
         try Data("Retain this".utf8).write(to: file)
-        let route = try #require(app.taskActionRoute(for: task.key))
         await host.configure(failClose: true)
-        await #expect(throws: (any Error).self) { try await app.deleteWorkspace(using: route) }
+        app.deleteSession(task.key)
+        try await Task.sleep(for: AppModel.deletionGracePeriod)
+        for _ in 0..<200 where app.actionFailure == nil {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(app.actionFailure != nil)
         #expect(FileManager.default.fileExists(atPath: file.path))
         #expect(app.scratchTasks.folder(for: NoProjectLocation.key(task.key)) == task.cwd)
         #expect(app.catalog.contains(task.key))
         await host.configure()
-        try await app.deleteWorkspace(using: route)
+        app.deleteSession(task.key)
+        try await Task.sleep(for: AppModel.deletionGracePeriod)
+        for _ in 0..<200 where FileManager.default.fileExists(atPath: task.cwd.path) {
+            try await Task.sleep(for: .milliseconds(10))
+        }
         #expect(!FileManager.default.fileExists(atPath: task.cwd.path))
+        #expect(!app.catalog.contains(task.key))
     }
 
     @Test func deleteUndoKeepsFilesAndCommittedDeletionCleansOnlyOwnedFolder() async throws {
