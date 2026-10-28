@@ -26,6 +26,12 @@ import SwiftUI
         let second = app.projects.add(personal)
         require(app.projects.project(first.id)?.name == "native · work", "first duplicate has its parent")
         require(app.projects.project(second.id)?.name == "native · personal", "second duplicate has its parent")
+        app.projects.archive(second.id)
+        require(
+            app.projects.project(first.id)?.name == "native · work",
+            "an archived duplicate keeps the open label distinct")
+        require(app.projects.archived.first?.name == "native · personal", "archive labels use the same disambiguation")
+        app.projects.unarchive(second.id)
         let encoded = try JSONEncoder().encode(app.projects.all)
         let decoded = try JSONDecoder().decode([Project].self, from: encoded)
         require(

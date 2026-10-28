@@ -16,8 +16,8 @@ final class Projects {
         didSet { save() }
     }
 
-    var all: [Project] { resolved(openProjects) }
-    var archived: [Project] { resolved(archivedProjects) }
+    var all: [Project] { Array(resolved(openProjects + archivedProjects).prefix(openProjects.count)) }
+    var archived: [Project] { Array(resolved(openProjects + archivedProjects).dropFirst(openProjects.count)) }
 
     @ObservationIgnored private let names: ProjectNameStore
     @ObservationIgnored private let defaults: UserDefaults
