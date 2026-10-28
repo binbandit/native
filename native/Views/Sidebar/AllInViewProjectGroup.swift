@@ -53,7 +53,8 @@ struct AllInViewProjectGroup<MenuContent: View, Content: View>: View {
                                 .font(DS.Sidebar.projectFont)
                                 .foregroundStyle(.dsTextTertiary)
                                 .lineLimit(1)
-                                .truncationMode(.head)
+                                .truncationMode(.tail)
+                                .layoutPriority(1)
                         }
                         if isRefreshing && taskCount > 0 {
                             ProjectRefreshIndicator()

@@ -90,7 +90,8 @@ public struct ProjectRow<MenuContent: View>: View {
                             .font(.dsCalloutBook)
                             .foregroundStyle(.dsTextTertiary)
                             .lineLimit(1)
-                            .truncationMode(.head)
+                            .truncationMode(.tail)
+                            .layoutPriority(1)
                     }
 
                     if isRefreshing {
