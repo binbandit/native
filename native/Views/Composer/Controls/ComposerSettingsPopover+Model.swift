@@ -2,16 +2,24 @@ import ACP
 import SwiftUI
 
 extension ComposerSettingsPopover {
-    var modelList: ModelChoiceList? {
+    var modelList: ModelChoiceList? { modelList(slots: modelSlots) }
+
+    func modelList(slots: Int) -> ModelChoiceList? {
         if let agentModels {
-            let compact = needsCompactModelList
             return ModelChoiceList(
                 choices: agentModels.map(\.listChoice), current: currentModelID ?? "", query: query,
-                slots: compact ? 5 : ModelChoiceList.slots,
-                searchTerms: Dictionary(uniqueKeysWithValues: agentModels.map { ($0.id, $0.searchTerms) }),
-                forceFilter: compact)
+                slots: page == .model
+                    ? (agentModels.count > ModelChoiceList.filterThreshold ? ModelChoiceList.slots : agentModels.count)
+                    : slots,
+                searchTerms: Dictionary(uniqueKeysWithValues: agentModels.map { ($0.id, $0.searchTerms) }))
         }
-        return settings.model.map { ModelChoiceList(choices: $0.choices, current: $0.value, query: query) }
+        return settings.model.map {
+            ModelChoiceList(
+                choices: $0.choices, current: $0.value, query: query,
+                slots: page == .model
+                    ? ($0.choices.count > ModelChoiceList.filterThreshold ? ModelChoiceList.slots : $0.choices.count)
+                    : slots)
+        }
     }
 
     var currentModelID: String? {
@@ -21,47 +29,27 @@ extension ComposerSettingsPopover {
         }?.id
     }
 
-    /// Reserve the full caption, footer and task rows before allocating model slots.
-    var needsCompactModelList: Bool {
-        guard let agentModels else { return false }
-        let count = agentModels.count > ModelChoiceList.filterThreshold ? ModelChoiceList.slots : agentModels.count
-        if page == .model {
-            return CGFloat(count + 1) * DS.ComposerSettings.rowHeight
-                + DS.ComposerSettings.modelCaptionHeight + DS.ComposerSettings.sectionInset * 2
-                + DS.ComposerSettings.popoverInset * 2 > DS.ComposerSettings.popoverMaxHeight
-        }
-        return estimatedSettingsHeight(models: count) > DS.ComposerSettings.popoverMaxHeight
-    }
-
-    var omitsModelCaptions: Bool {
-        agentModels != nil && page != .model && needsCompactModelList
-            && estimatedSettingsHeight(models: 5) > DS.ComposerSettings.popoverMaxHeight
-    }
-
-    private func estimatedSettingsHeight(models: Int) -> CGFloat {
-        let autonomy = settings.autonomy == nil ? 0 : settings.autonomyLevels.count + 2
-        let effort = settings.effort == nil ? 0 : 1
-        let footer = manager == nil ? 0 : DS.ComposerSettings.managedFooterReserve
-        let empty =
-            agentModels?.contains { $0.agent != currentAgentID } == true
-            ? 0 : DS.ComposerSettings.emptyModelsReserve
-        return CGFloat(models + autonomy + effort + rows.count) * DS.ComposerSettings.rowHeight
-            + DS.ComposerSettings.sectionsReserve + footer + empty
-    }
-
     var hasOtherAgentModels: Bool {
         agentModels?.contains { $0.agent != currentAgentID && $0.unavailable == nil } == true
     }
 
     var modelTargets: [Target] {
-        modelList?.rows.compactMap { row in
-            if let entry = agentModels?.first(where: { $0.id == row.id }),
-                entry.unavailable != nil || (isStopped && entry.agent == currentAgentID)
-            {
-                return nil
-            }
-            return .model(row.id)
-        } ?? []
+        let targets: [Target] =
+            modelList?.rows.compactMap { row in
+                if let entry = agentModels?.first(where: { $0.id == row.id }),
+                    entry.unavailable != nil || (isStopped && entry.agent == currentAgentID)
+                {
+                    return nil
+                }
+                if isStopped && agentModels == nil { return nil }
+                return .model(row.id)
+            } ?? []
+        return targets + (modelList.map { !$0.isFilterable && $0.overflow > 0 } == true ? [.moreModels] : [])
+    }
+
+    var hasModelFailure: Bool {
+        failure.map { ["agent-model", settings.model?.option.id, settings.effort?.option.id].contains($0.optionID) }
+            ?? false
     }
 
     /// The Fast mode switch, on the Model header's trailing edge.
@@ -69,28 +57,19 @@ extension ComposerSettingsPopover {
         settings.modelSwitches.first
     }
 
-    var modelSection: some View {
+    func modelSection(slots: Int, showsCaption: Bool) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             if agentModels != nil {
                 if DS.isTouchPlatform {
-                    Button {
-                        page = .model
-                    } label: {
-                        ComposerSettingsRow(highlight: highlight(of: .model(currentModelID ?? ""))) {
-                            Text("Model")
-                        } trailing: {
-                            ComposerSettingsValue(
-                                text: settings.model?.shortModelName ?? "Default", glyph: "chevron.right")
-                        }
-                    }.buttonStyle(.plain)
+                    modelPageRow(settings.model)
                 } else {
-                    agentModelRows()
+                    agentModelRows(slots: slots, showsCaption: showsCaption)
                 }
             } else if let model = settings.model {
                 if DS.isTouchPlatform {
                     modelPageRow(model)
                 } else {
-                    modelRows(model)
+                    modelRows(model, slots: slots, showsCaption: showsCaption)
                 }
             } else {
                 Text("\(agentName) picks its own model.")
@@ -108,25 +87,27 @@ extension ComposerSettingsPopover {
     }
 
     /// On touch the list is a page of its own; the door shows the model it's on.
-    private func modelPageRow(_ model: SelectSetting) -> some View {
+    private func modelPageRow(_ model: SelectSetting?) -> some View {
         Button {
             page = .model
         } label: {
-            ComposerSettingsRow(highlight: highlight(of: .model(model.value)), isDimmed: isStopped) {
+            ComposerSettingsRow(highlight: highlight(of: .model(currentModelID ?? "")), isDimmed: isStopped) {
                 Text("Model")
             } trailing: {
-                ComposerSettingsValue(text: model.shortModelName, glyph: "chevron.right")
+                ComposerSettingsValue(text: model?.shortModelName ?? "Default", glyph: "chevron.right")
             }
         }
         .buttonStyle(.plain)
-        .accessibilityValue(model.shortModelName)
+        .accessibilityValue(model?.shortModelName ?? "Default")
         .accessibilityHint("Opens a page")
     }
 
     /// The models: a header, or past eight a filter in its place, the rows and their caption. On the
     /// touch page the page's own header names the list.
-    @ViewBuilder func modelRows(_ model: SelectSetting, isPage: Bool = false) -> some View {
-        let list = ModelChoiceList(choices: model.choices, current: model.value, query: query)
+    @ViewBuilder func modelRows(
+        _ model: SelectSetting, isPage: Bool = false, slots: Int = ModelChoiceList.slots, showsCaption: Bool = true
+    ) -> some View {
+        let list = modelList(slots: slots) ?? ModelChoiceList(choices: [], current: "")
         if list.isFilterable {
             filterLine(count: model.choices.uniqued.count)
         } else if !isPage {
@@ -142,10 +123,8 @@ extension ComposerSettingsPopover {
         ForEach(list.rows) { row in
             modelRow(row, setting: model, isFirstMatch: !list.query.isEmpty && row.id == list.rows.first?.id)
         }
-        if list.isFilterable {
-            filterFooter(list)
-        }
-        if !isStopped { modelCaption(model, list: list) }
+        modelOverflow(list, slots: slots)
+        if !isStopped && (showsCaption || hasModelFailure) { modelCaption(model) }
     }
 
     private func modelRow(_ row: ModelChoiceList.Row, setting: SelectSetting, isFirstMatch: Bool) -> some View {
@@ -179,6 +158,7 @@ extension ComposerSettingsPopover {
             }
         }
         .buttonStyle(.plain)
+        .disabled(isStopped)
         .composerSettingsHover(target, hovered: $hovered)
         .help([row.choice.description, row.choice.value].compactMap { $0 }.joined(separator: "\n"))
         .contextMenu {
@@ -232,7 +212,7 @@ extension ComposerSettingsPopover {
 
     /// The slots a filtered list keeps, so typing never changes the popover's height: what didn't
     /// fit, or that nothing matched.
-    @ViewBuilder func filterFooter(_ list: ModelChoiceList) -> some View {
+    @ViewBuilder func filterFooter(_ list: ModelChoiceList, slots: Int = ModelChoiceList.slots) -> some View {
         let used = list.rows.count + (list.overflow > 0 || list.rows.isEmpty ? 1 : 0)
         if list.overflow > 0 {
             slotNote("\(list.overflow) more match. Keep typing.")
@@ -244,8 +224,30 @@ extension ComposerSettingsPopover {
             }
             .modifier(SlotNote())
         }
-        ForEach(0..<max((needsCompactModelList ? 5 : ModelChoiceList.slots) - used, 0), id: \.self) { _ in
+        ForEach(0..<max(slots - used, 0), id: \.self) { _ in
             Color.clear.frame(height: DS.ComposerSettings.rowHeight)
+        }
+    }
+
+    @ViewBuilder func modelOverflow(_ list: ModelChoiceList, slots: Int) -> some View {
+        if list.isFilterable {
+            filterFooter(list, slots: slots)
+        } else if list.overflow > 0 {
+            Button {
+                page = .model
+            } label: {
+                ComposerSettingsRow(highlight: highlight(of: .moreModels)) {
+                    Text("\(list.overflow) more models")
+                        .font(DS.ComposerSettings.detailFont)
+                        .foregroundStyle(.dsTextSecondary)
+                } trailing: {
+                    Image(systemName: "chevron.right").font(DS.ComposerSettings.glyphFont)
+                        .foregroundStyle(.dsTextTertiary)
+                }
+            }
+            .buttonStyle(.plain)
+            .composerSettingsHover(.moreModels, hovered: $hovered)
+            .accessibilityHint("Opens the full model list")
         }
     }
 
@@ -253,10 +255,10 @@ extension ComposerSettingsPopover {
         Text(text).modifier(SlotNote())
     }
 
-    private func modelCaption(_ model: SelectSetting, list: ModelChoiceList) -> some View {
+    private func modelCaption(_ model: SelectSetting) -> some View {
         let failed = failure.flatMap { [model.option.id, settings.effort?.option.id].contains($0.optionID) ? $0 : nil }
-        let shown = list.rows.map(\.choice) + (model.current.map { [$0] } ?? [])
-        let purposes = shown.compactMap(Self.caption(of:))
+        // Reserve from the entire section, independent of the query and the current choice.
+        let purposes = model.choices.compactMap(Self.caption(of:))
         let previewed: SelectSetting.Choice? =
             switch highlighted ?? hovered ?? firstMatch {
             case .model(let value): model.choices.first { $0.value == value }
@@ -302,14 +304,15 @@ extension ComposerSettingsPopover {
     /// The model list on its own page (touch).
     var modelPage: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ComposerSettingsPageHeader(title: "Model", isKeyboardFocused: highlighted == .back) { page = nil }
+            ComposerSettingsPageHeader(title: "Model", isKeyboardFocused: highlighted == .back) { leavePage() }
             if agentModels != nil {
-                agentModelRows(isPage: true)
+                agentModelRows(isPage: true, slots: ModelChoiceList.slots, showsCaption: true)
             } else if let model = settings.model {
                 modelRows(model, isPage: true)
             }
         }
         .padding(.bottom, DS.ComposerSettings.sectionInset)
+        .onAppear { modelSlots = ModelChoiceList.slots }
     }
 }
 
