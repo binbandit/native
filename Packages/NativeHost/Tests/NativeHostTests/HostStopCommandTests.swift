@@ -107,8 +107,8 @@ struct HostStopCommandTests {
             Int32(String(contentsOf: harness.agentStore.appending(path: "command.pid"), encoding: .utf8)))
         defer { if kill(pid, 0) == 0 { kill(-pid, SIGKILL) } }
         try await recorder.client.cancel(session.id)
-        try await recorder.wait("the adapter to exit") {
-            await $0.agents["fake"]?.state == .stopped
+        try await recorder.wait("Stop to take ownership of command cleanup") {
+            await $0.summaries[session.id]?.isStopping == true
         }
         try await recorder.client.closeSession(session.id)
         try await recorder.client.shutdownHost(stopAgents: !restart, immediately: restart)

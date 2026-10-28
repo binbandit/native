@@ -56,6 +56,11 @@ extension HostCore {
         case .prompting where params.behavior == .steer && session.supportsSteering && !session.isStopping:
             return try await steer(item, into: session)
         default:
+            // Sending during reattachment is the same explicit resume as sending while idle.
+            if session.phase == .loading && session.preservesTranscriptOnLoad {
+                session.record.isQueuePaused = false
+                try store.updateSession(session.record)
+            }
             try enqueue(item, in: session)
             if session.phase == .disconnected {
                 // A message for a session whose agent couldn't run is a cue to try again.
