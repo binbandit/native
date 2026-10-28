@@ -16,7 +16,6 @@ The header uses SidebarSectionLabel and the existing small IconButton, with no n
 | opening | [light](opening-light.png) / [dark](opening-dark.png) | [light](mocks/opening-light.png) / [dark](mocks/opening-dark.png) | [light](compare-opening-light.png) / [dark](compare-opening-dark.png) |
 | hover | Real-surface capture pending | [light](mocks/hover-light.png) / [dark](mocks/hover-dark.png) | No supported driver input |
 | touch | Real-surface capture pending | [light](mocks/touch-light.png) / [dark](mocks/touch-dark.png) | No supported driver input |
-
 | keyboard focus | Background Tab attempt left AX focus on the window; inconclusive | Existing system focus treatment | Foreground manual verification pending |
 
 Additional unchanged recovery context: [failure light](failure-light.png), [failure dark](failure-dark.png), [Added/Undo light](added-light.png), [Added/Undo dark](added-dark.png). These retain the existing feedback design; the new header follows the rest mock above.
