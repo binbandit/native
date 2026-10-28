@@ -100,6 +100,38 @@ struct NoProjectModelTests {
         #expect(app.sessionList.isEmpty)
     }
 
+    @Test func reopeningAnEmptyPrivateTaskKeepsItsNameSettingsAndFiles() async throws {
+        let (scratch, app, host) = try await fixture()
+        defer { try? FileManager.default.removeItem(at: scratch) }
+        await host.configure(resetEffort: true)
+        await app.newSession(with: AgentDefinition.ID(rawValue: "workspace-fake"))
+        let key = try #require(app.selection)
+        let source = try #require(app.session(key))
+        app.rename(key, to: "A remembered title")
+        app.ordering.pin(key)
+        let effort = try #require(source.state.configOptions.first { $0.id == "effort" })
+        await source.setConfigOption(effort, to: "high")
+        let file = source.cwd.appendingPathComponent("notes.txt")
+        try Data("Private notes".utf8).write(to: file)
+        let info = try #require(app.catalog.lookup(key)?.info)
+        let runtime = try #require(app.runtime(key.agent))
+        app.sessions.remove(source)
+        #expect(await app.reopenUnsent(key, info: info, on: runtime))
+        let current = try #require(app.selection.flatMap(app.session))
+        #expect(current.key != key)
+        #expect(current.cwd == source.cwd)
+        #expect(app.titleOfSession(current.key) == "A remembered title")
+        let reopenedEffort = try #require(current.state.configOptions.first { $0.id == "effort" })
+        guard case .select(let value, _) = reopenedEffort.kind else {
+            Issue.record("The reopened task has no effort choice")
+            return
+        }
+        #expect(value == "high")
+        #expect(app.ordering.isPinned(current.key))
+        #expect(app.scratchTasks.folder(for: NoProjectLocation.key(current.key)) == source.cwd)
+        #expect(try String(contentsOf: file, encoding: .utf8) == "Private notes")
+    }
+
     @Test func homeStartDoesNotRequireAFolder() async throws {
         let (scratch, app, _) = try await fixture()
         defer { try? FileManager.default.removeItem(at: scratch) }

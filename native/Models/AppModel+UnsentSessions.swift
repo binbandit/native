@@ -69,6 +69,9 @@ extension AppModel {
             session.draft = draft
             if privateDraft {
                 try scratchTasks.reassign(session.cwd, to: NoProjectLocation.key(session.key))
+                let previous = SessionTitles.Key(agent: key.agent, session: key.id)
+                await session.adoptConfigChoices(titles.configChoices(for: previous))
+                if let title = titles.namedTitle(for: previous) { titles.rename(session.titleKey, to: title) }
             }
             catalog.swap(key, for: SessionInfo(sessionId: session.id, cwd: info.cwd, updatedAt: .now))
             ordering.replace(key, with: session.key)
