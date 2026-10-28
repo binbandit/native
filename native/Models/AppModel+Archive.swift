@@ -17,7 +17,7 @@ extension AppModel {
     /// A project's archived tasks, most recently archived first, for the Archived view.
     func archivedSessions(in project: Project.ID) -> [SessionSummary] {
         allSessions(in: project)
-            .filter { archivedSessions.contains($0.id) }
+            .filter { archivedSessions.contains($0.id) && !pendingDeletionKeys.contains($0.id) }
             .sorted { (archivedSessions.date($0.id) ?? .distantPast) > (archivedSessions.date($1.id) ?? .distantPast) }
     }
 

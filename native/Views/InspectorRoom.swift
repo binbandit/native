@@ -14,6 +14,15 @@ struct InspectorRoom {
 
 extension EnvironmentValues {
     @Entry var inspectorRoom = InspectorRoom.none
+    /// Set while a mode takes the sidebar's column in a window too narrow for an inspector as well
+    /// (Try On). Session views close their inspectors meanwhile and open them again afterwards.
+    @Entry var inspectorSuspension: InspectorSuspension?
+}
+
+/// See `EnvironmentValues.inspectorSuspension`. Asking for an inspector while it's set ends the mode
+/// first: what the user asked for wins, and the inspector opens once the mode has given the room back.
+struct InspectorSuspension {
+    let end: @MainActor () -> Void
 }
 
 /// The window's side of `InspectorRoom`: opening an inspector never widens the window, so the

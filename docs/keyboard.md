@@ -255,9 +255,11 @@ Peek for review. The full request is always shown there. The current task and it
 | Return in Peek (except a question) | Open Task | | |
 | ⌘R in a failure Peek | Retry the failed task | | |
 
-A click on a row's signal, a force click, or Peek in its context menu opens the same 600pt popover.
+A click on a row's signal, a force click, or Peek in its context menu opens the same 600pt Peek,
+drawn in the window beside its row and never over the toolbar. Escape returns focus to the list
+when it opened Peek; clicking outside closes Peek and keeps focus with the clicked control.
 Questions keep their digit, arrow and Return controls. An answer closes Peek. Hidden or filtered
-rows use a window anchor. The experiment defaults to off; the shortcuts below keep today's
+rows open it at the top of the content. The experiment defaults to off; the shortcuts below keep today's
 behavior while it is off. Workflow and expedition approvals retain their local shortcut when no
 task ask owns ⌘Y and the user has not reassigned it to another command.
 
@@ -475,8 +477,9 @@ last ask removes the signal; unresolved failures also count until they recover.
 Several tasks can be picked at once and acted on together. While more than one is picked (or Select
 Tasks is on, which makes taps pick, for touch), a bar at the foot of the sidebar says how many, with
 Archive, Mark as Read, Delete and the rest under More; a picked task's context menu offers the same.
-Each action applies to the picked tasks it would change and offers one Undo for all of them; Delete
-asks first.
+Each action applies to the picked tasks it would change. Archiving, pinning and deleting offer one
+Undo for all affected tasks. Delete hides them immediately and waits 10 seconds before cleanup, so
+Undo keeps every task untouched.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
@@ -489,7 +492,7 @@ asks first.
 | | Let the picked tasks go | Task ▸ Selected Tasks | `selection.clear` |
 | | Archive the picked tasks | Task ▸ Selected Tasks | `selection.archive` |
 | | Unarchive the picked tasks | Task ▸ Selected Tasks | `selection.unarchive` |
-| | Delete the picked tasks (asks first; Undo for a few seconds) | Task ▸ Selected Tasks | `selection.delete` |
+| | Delete the picked tasks immediately; Undo for 10 seconds before cleanup starts | Task ▸ Selected Tasks | `selection.delete` |
 | | Mark the picked tasks as read | Task ▸ Selected Tasks | `selection.markRead` |
 | | Mark the picked tasks as unread | Task ▸ Selected Tasks | `selection.markUnread` |
 | | Pin the picked tasks | Task ▸ Selected Tasks | `selection.pin` |
@@ -716,6 +719,21 @@ them one in Settings ▸ Keyboard Shortcuts.
 | | Follow the system's light or dark appearance | View | `appearance.system` |
 | | Light | View | `appearance.light` |
 | | Dark | View | `appearance.dark` |
+| | Try on code themes on the task in view (from Settings or Home, the latest task with code; the sample task when there is no code to show) | View | `appearance.tryOn` |
+
+Try On (Settings ▸ Appearance ▸ Try On…, or View ▸ Appearance ▸ Try On Themes…) turns the sidebar into
+the theme list and recolors the window as the highlight moves. Focus starts in the list, on the theme
+in use. Task controls are disabled while trying; agents keep running. It's unavailable while an
+organization sets the code theme.
+
+| Keys | Action |
+| --- | --- |
+| ↑ / ↓ | Highlight the previous or next theme, and show it |
+| Home / End | Highlight the first or last theme |
+| ← / → | List Dark mode's or Light mode's themes (the window shows that mode meanwhile) |
+| Typing a name | Highlight the first theme it starts ("to" for Tokyo Night) |
+| Return | Keep the highlighted themes and backgrounds, and go back |
+| Escape, ⌘. | Cancel: write nothing and go back, from anywhere in the window. The task's turn keeps running: Stop (⌘.) steps aside until Try On ends |
 
 ## Ownership
 

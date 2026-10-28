@@ -41,6 +41,12 @@ struct RootView: View {
     @Environment(DurableHost.self) private var durableHost: DurableHost?
     @Environment(UpdateController.self) private var updates: UpdateController?
     @Environment(WhatsNewCenter.self) private var whatsNew
+    /// Try On Themes, which takes the sidebar's column while it runs.
+    @Environment(ThemeTryOnModel.self) private var tryOn: ThemeTryOnModel?
+    #if DEBUG
+    /// The sidebar fixture's branches, which no checkout behind its tasks could report.
+    @Environment(\.sidebarFixtureInsights) private var sidebarFixtureInsights
+    #endif
 
     init(initialSidebarVisibility: NavigationSplitViewVisibility = .all) {
         _columnVisibility = State(initialValue: initialSidebarVisibility)
@@ -68,6 +74,7 @@ struct RootView: View {
         .telemetryConsentPrompt(isTurnRunning: isAnyTurnRunning)
         .focusedSceneValue(\.sidebarVisibility, $columnVisibility)
         .focusedSceneValue(\.showsPullRequests, $showsPullRequests)
+        .themeTryOnRoot(sidebar: $columnVisibility, selection: model.selection, isSettingsShown: settings.isShown)
         // The pull requests page and a session take turns in the detail column.
         .onChange(of: showsPullRequests) { _, shows in
             if shows {
@@ -249,7 +256,9 @@ struct RootView: View {
 
     private var splitView: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
-            sidebar
+            ThemeTryOnSidebar { sidebar }
+                // A hidden sidebar is still laid out; its rows mustn't hold Peek beside nothing.
+                .environment(\.offersTaskPeekAnchors, columnVisibility != .detailOnly)
                 .modifier(
                     QuickEntryScrim(
                         isPresented: model.quickEntry.isEnabled && model.quickEntry.isPresented,
@@ -269,45 +278,11 @@ struct RootView: View {
                 .platformMinimumContentWidth(DS.Window.sidebarMinWidth)
                 .navigationSplitViewColumnWidth(min: DS.Window.sidebarMinWidth, ideal: sidebarWidth.value, max: 380)
                 .toolbar {
-                    ToolbarItem {
-                        SidebarCollapseButton(isExpanded: columnVisibility != .detailOnly) {
-                            withAnimation {
-                                columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
-                            }
-                        }
-                    }
-                    .sharedBackgroundVisibility(.hidden)
-                    ToolbarItem {
-                        TranscriptSearchToolbarButton()
-                    }
-                    .sharedBackgroundVisibility(.hidden)
-                    if releaseChannel.isNightly {
-                        ToolbarItem {
-                            NightlyMark()
-                                .foregroundStyle(.dsTextTertiary)
-                        }
-                        .sharedBackgroundVisibility(.hidden)
-                    }
-                    // Pushes the toggle and search to the leading edge, next to the window controls, and
-                    // back and forward to its trailing edge, by the content they navigate.
-                    if columnVisibility != .detailOnly || !model.offersTaskPeek {
-                        ToolbarSpacer(.flexible)
-                    }
-                    // The update button: right-aligned before back and forward, and still there when
-                    // the sidebar is hidden. It shows only when an update needs the user.
-                    if let updates, updates.showsToolbarButton {
-                        ToolbarItem {
-                            UpdateToolbarButton(controller: updates)
-                        }
-                        .sharedBackgroundVisibility(.hidden)
-                    }
-                    if columnVisibility != .detailOnly {
-                        ToolbarItem {
-                            HistoryNavigationButtons(
-                                canGoBack: model.canGoBack, canGoForward: model.canGoForward,
-                                onBack: model.goBack, onForward: model.goForward)
-                        }
-                        .sharedBackgroundVisibility(.hidden)
+                    // Try On's panel has the column to itself; Escape is its way out.
+                    if tryOn?.isActive != true {
+                        RootSidebarToolbar(
+                            columnVisibility: $columnVisibility, model: model, updates: updates,
+                            isNightly: releaseChannel.isNightly)
                     }
                 }
         } detail: {
@@ -319,7 +294,7 @@ struct RootView: View {
                     HostNotices(host: durableHost, updates: updates)
                 }
             } content: {
-                detail
+                ThemeTryOnDetail { detail }
             }
             // Under every page, so the transcript and anything else without a background of its
             // own sits on the design system's background in the user's light tone, not the system's.
@@ -365,7 +340,14 @@ struct RootView: View {
             AppTaskRowAccessory(summary: summary)
         }
         .environment(\.homePresentedTaskNeeds, homeNeeds)
-        .environment(\.sidebarTaskInsights, AppSidebarTaskInsights.make(model: model, git: git, gitHub: gitHub))
+        .environment(\.sidebarTaskInsights, sidebarInsights)
+    }
+
+    private var sidebarInsights: SidebarTaskInsights {
+        #if DEBUG
+        if let fixture = sidebarFixtureInsights { return fixture }
+        #endif
+        return AppSidebarTaskInsights.make(model: model, git: git, gitHub: gitHub)
     }
 
     /// Turns Automations on and opens it, from the Workflows page; nil once it's in the sidebar.

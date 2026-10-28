@@ -26,6 +26,9 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
     @State private var folding = SidebarDayFolding()
     @State private var selection = SidebarSelectionModel()
     @Experiment(.sidebarNext) private var usesSidebarNext
+    /// Return keyboard dismissal to the originating list. Pointer dismissal keeps the clicked
+    /// control's focus, even when it belongs to the same task.
+    @State private var peekReturn: SessionKey??
 
     private let navigationItems: NavigationItems
     private let accessories: Accessories
@@ -109,22 +112,6 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
                 }
                 .accessibilityLabel("Projects")
                 .onAppear { LaunchMetrics.markOnScreen(.sidebarInteractive) }
-                .confirmationDialog(
-                    "Delete “\(selection.deletionRequest.map(model.titleOfSession) ?? "")”?",
-                    isPresented: Binding(
-                        get: { selection.deletionRequest != nil },
-                        set: { if !$0 { selection.deletionRequest = nil } }),
-                    presenting: selection.deletionRequest
-                ) { key in
-                    Button("Delete Task", role: .destructive) {
-                        model.deleteSession(key, undoManager: undoManager)
-                    }
-                } message: { key in
-                    let agent = model.runtime(key.agent)?.agent.displayName ?? "the agent"
-                    Text(
-                        "Its history goes from Native and, if \(agent) supports it, from \(agent) too. You can undo for a few seconds. To keep it out of sight instead, archive it."
-                    )
-                }
 
             }
             .modifier(
@@ -143,7 +130,7 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
             if usesSidebarNext { SidebarFolderActions() }
-            SidebarFooter()
+            SidebarFooter(isAllInView: usesSidebarNext)
         }
         .background(usesSidebarNext ? Color.dsSidebarSolid : Color.clear)
         .animation(.dsQuick, value: selection.isActive)
@@ -166,6 +153,14 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
             else { return }
             folding.setExpanded(group.project.id, true)
         }
+        .onChange(of: model.taskPeek.request == nil) { _, isClosed in
+            if !isClosed {
+                peekReturn = isListFocused ? .some(model.selection) : nil
+            } else if let selection = peekReturn {
+                if model.taskPeek.restoresSidebarFocus, selection == model.selection { isListFocused = true }
+                peekReturn = nil
+            }
+        }
         .onChange(of: listing.order, initial: true) { _, order in
             selection.update(order: order)
         }
@@ -178,19 +173,15 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
             guard filter.requiresUncommittedChanges || filter.requiresPullRequest else { return }
             await insights.prepare(model.projects.all.flatMap { model.allSessions(in: $0.id) })
         }
-        .confirmationDialog(
-            "Delete \(selection.keys.count) Tasks?", isPresented: Bindable(selection).isConfirmingDelete
-        ) {
-            Button("Delete \(selection.keys.count) Tasks", role: .destructive) {
-                let keys = selection.keys
-                selection.clear()
-                model.deleteSessions(keys, undoManager: undoManager)
+        #if DEBUG
+        // `-nativeSidebarFixtureNeedsYou YES` starts with Needs You on, for checks of its states:
+        // ⌥⌘J only reaches an app that's in front.
+        .task {
+            if UserDefaults.standard.bool(forKey: "nativeSidebarFixtureNeedsYou") {
+                needsYouBinding.wrappedValue = true
             }
-        } message: {
-            Text(
-                "Their history goes from Native and, where the agent supports it, from the agent too. You can undo for a few seconds. To keep them out of sight instead, archive them."
-            )
         }
+        #endif
         .focusedSceneValue(\.sidebarReorder, reorder)
         .focusedSceneValue(\.sidebarNeedsYouFilter, needsYouBinding)
         .focusedSceneValue(\.sidebarSelection, selection)

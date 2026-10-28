@@ -110,7 +110,11 @@ footprint with physical RAM. It has no per-core scaling.
 
 Settings > General > Accounts lists and switches the GitHub accounts on this Mac. The Mac sidebar
 footer shows only the selected avatar and name beside Settings; clicking it or choosing Go > GitHub
-Account opens General at the Accounts group. A signed-out footer shows just Settings.
+Account opens General at the Accounts group. A signed-out footer shows just Settings. With All in
+view on, the footer opens its accounts in a popover instead (switch, add, or Manage in Settings);
+when the organization manages Native (`PolicyCenter`), a lock replaces its chevron and the popover
+also names the organization once, says what its policy turns off there (GitHub, other Macs,
+pairing) and where to ask.
 `GitHubAccountsModel` lists all
 accounts from `gh auth status --json hosts`, loads names and cached avatars asynchronously, and
 remembers one chosen login per host in Native's defaults. Without a choice it follows gh's active
@@ -194,7 +198,17 @@ Rules:
 `Packages/Undo` keeps undo toasts and the window's undo stack in agreement. `RootView` supplies the
 main window's undo manager to `AppModel.undoHistory`; the Edit menu uses it even when Home has no
 text responder. Archiving registers undo before workspace work starts, and the same action handles
-the toast, Cmd-Z and Redo. Expired deletions withdraw their actions from the stack.
+the toast, Cmd-Z and Redo. Task deletion, including archived tasks and bulk/menu actions, hides
+tasks immediately without confirmation and waits 10 seconds before cleanup. Undo during that window
+cancels cleanup, leaving the conversation, draft, task flags, workspace and host session untouched.
+Expired deletions withdraw their actions from the stack, remove the catalog entry and ask a running
+agent to delete its copy when supported (the host then cancels and forgets that session). Otherwise
+the agent and host can retain their copies. The separate transcript search index is not purged by
+task deletion. Native-owned worktrees are removed after checkpointing;
+branches stay or are saved under archive refs according to settings. Deleting an archived task
+forgets its workspace restore record but keeps its branch and checkpoint. The project folder is
+never removed. Archive keeps the conversation and records the workspace, branch and checkpoint so
+Undo or later Unarchive can rebuild it; restore failures retain recovery material and offer Retry.
 
 ### Migration
 
@@ -647,7 +661,24 @@ so later edits from another task cannot be attributed to the completed one. Sear
 are skipped. `SpecimenSource` selects completed task snapshots; `SpecimenLine`
 in `Packages/CodeThemes` scores highlighted added lines, filters every displayed line and metadata for
 secret patterns, and falls back to a language sample. The excerpt stays in memory and is not logged or
-persisted. The terminal line is always a sample. Try On's task preview is a later change.
+persisted. The terminal line is always a sample.
+
+Try On (`native/Appearance/TryOn`) previews themes on a task without writing them. `ThemeTrial` in
+`Packages/CodeThemes` holds what each mode shows, which mode is listed and what Keep writes; the
+window root's `themeTryOnPreview` overrides the code themes and backgrounds from it, just inside
+`appearancePreferences(plugins:)`, and `AppearanceModeController.preview(_:)` shows the other mode
+without saving it. `ThemeTryOnModel` opens the latest task with code from Settings, or the task in
+view from View ▸ Appearance when it has code, otherwise a read-only sample. Settings searches
+`sessionList` newest first, loading unopened history through `AppModel.loadSession` as needed and
+waiting for host replay to finish before inspecting its code. Restored host records report loading
+before scheduling that replay, so an idle placeholder cannot be mistaken for a replayed transcript. This
+can start an agent to replay history, but sends no prompts. A cancellable loading state covers that
+search. The panel takes the sidebar's column and returns there on Keep or Cancel. The task view is
+disabled and Stop is unavailable while trying; narrow windows suspend inspectors and restore them
+afterwards. The Task Well worker control also steps aside during that suspension, so its centered
+toolbar width cannot hide the theme panel's sidebar. The task title keeps the remaining toolbar room.
+A newly managed code theme immediately suppresses the preview and ends Try On without
+saving. Try On never sends to or changes a task.
 
 ### Credential ownership
 

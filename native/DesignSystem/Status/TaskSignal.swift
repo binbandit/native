@@ -100,7 +100,7 @@ public struct TaskSignal<Working: View>: View {
         if unavailable != nil { return .dsTextTertiary }
         switch status {
         case .starting, .working, .waiting: return .dsTextSecondary
-        case .needsInput, .needsPermission, .needsPlanReview: return .dsAttention
+        case .needsInput, .needsPermission, .needsPlanReview: return .dsAttentionGlyph
         case .failed: return .dsDanger
         case .done where isUnread: return .dsAccent
         default: return .dsTextTertiary

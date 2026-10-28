@@ -46,6 +46,10 @@ enum AppearancePreviewFixtures {
         let registry = PluginRegistry(
             previewing: plugin ? [AppearanceFixturePlugin()] : [],
             disabled: disabled ? ["lantern"] : [])
+        let tryOn = ThemeTryOnModel(
+            app: AppModel.preview(.empty), settings: SettingsPresentation(),
+            appearance: AppearanceModeController(defaults: defaults), plugins: registry, defaults: defaults,
+            policy: { policyCenter(locked: locked).policy })
         return DSPreviewPair {
             CodeThemeSettingsRow(
                 defaults: defaults, fixedSpecimen: sample ? .sample() : latest, initiallyShowsPolicyDetails: showLock
@@ -53,6 +57,7 @@ enum AppearancePreviewFixtures {
             .frame(width: width)
             .padding(DS.Space.xl)
         }
+        .environment(tryOn)
         .environment(registry)
         .environment(policyCenter(locked: locked))
         .environment(SettingsPresentation())

@@ -1,0 +1,602 @@
+[
+  {
+    "id": 1,
+    "project": "native",
+    "message": "fix the build",
+    "outcome": "The Swift compiler rejected an actor-isolated call in SessionModel. Fixed the isolation.",
+    "ideal": "Fix SessionModel isolation",
+    "keywords": [
+      "sessionmodel",
+      "isolation"
+    ],
+    "before": "Fix build in native",
+    "initial": "Fix build",
+    "refined": "Fix build: actor isolation fixed",
+    "after": "Fix build: actor isolation fixed"
+  },
+  {
+    "id": 2,
+    "project": "storefront",
+    "message": "Can you please help me add retries with exponential backoff to the upload client?",
+    "outcome": "Added exponential backoff to UploadClient.",
+    "ideal": "Retry failed uploads",
+    "keywords": [
+      "upload",
+      "retry"
+    ],
+    "before": "Add exponential backoff retries to upload client",
+    "initial": "Add exponential backoff retries upload client",
+    "refined": "",
+    "after": "Add exponential backoff retries upload client"
+  },
+  {
+    "id": 3,
+    "project": "dashboard",
+    "message": "The search box drops focus after each keystroke. Fix it in the React customer list.",
+    "outcome": "Kept the search input mounted across customer list renders.",
+    "ideal": "Keep customer search focused",
+    "keywords": [
+      "search",
+      "focus"
+    ],
+    "before": "Fix search box focus loss in React customer list",
+    "initial": "The search box drops focus",
+    "refined": "",
+    "after": "The search box drops focus"
+  },
+  {
+    "id": 4,
+    "project": "parser",
+    "message": "Refactor parseConfig so unknown YAML keys produce a useful error instead of being ignored.",
+    "outcome": "Unknown YAML keys now report the key and line.",
+    "ideal": "Reject unknown YAML keys",
+    "keywords": [
+      "yaml",
+      "key"
+    ],
+    "before": "Refactor parseConfig to validate unknown YAML keys",
+    "initial": "Refactor parseConfig to validate unknown keys",
+    "refined": "",
+    "after": "Refactor parseConfig to validate unknown keys"
+  },
+  {
+    "id": 5,
+    "project": "billing",
+    "message": "Why are invoices charged twice when a webhook is retried?",
+    "outcome": "The webhook handler lacked idempotency checks.",
+    "ideal": "Invoice webhook idempotency",
+    "keywords": [
+      "invoice",
+      "webhook"
+    ],
+    "before": "Invoices charged twice on webhook retry",
+    "initial": "Invoices charged twice on webhook retry",
+    "refined": "",
+    "after": "Invoices charged twice on webhook retry"
+  },
+  {
+    "id": 6,
+    "project": "server",
+    "message": "panic: runtime error: invalid memory address or nil pointer dereference\napi/handlers.go:42\nPlease fix the nil user in the Go profile handler.",
+    "outcome": "The profile handler now checks for a missing user.",
+    "ideal": "Guard missing profile users",
+    "keywords": [
+      "profile",
+      "user"
+    ],
+    "before": "Fix nil user in profile handler",
+    "initial": "Fix nil user in profile handler",
+    "refined": "",
+    "after": "Fix nil user in profile handler"
+  },
+  {
+    "id": 7,
+    "project": "worker",
+    "message": "Traceback (most recent call last):\n  File \"/home/fixture/work/queue/worker.py\", line 91\nKeyError: job_id\nHandle jobs without job_id in the Python worker.",
+    "outcome": "Missing job IDs now send jobs to the dead-letter queue.",
+    "ideal": "Handle missing job IDs",
+    "keywords": [
+      "job",
+      "id"
+    ],
+    "before": "Fix worker job_id handling",
+    "initial": "Fix missing job_id in worker",
+    "refined": "",
+    "after": "Fix missing job_id in worker"
+  },
+  {
+    "id": 8,
+    "project": "cli",
+    "message": "error[E0382]: borrow of moved value: config\nStop the Rust CLI from moving config before logging it.",
+    "outcome": "Logged config before the move.",
+    "ideal": "Fix moved CLI config",
+    "keywords": [
+      "config",
+      "cli"
+    ],
+    "before": "Stop Rust CLI from moving config before logging",
+    "initial": "Prevent config movement before logging",
+    "refined": "",
+    "after": "Prevent config movement before logging"
+  },
+  {
+    "id": 9,
+    "project": "mobile",
+    "message": "Add pull to refresh to the SwiftUI inbox, and preserve the scroll position when new mail arrives.",
+    "outcome": "Added inbox refresh while preserving the visible message.",
+    "ideal": "Refresh inbox without scroll jumps",
+    "keywords": [
+      "inbox",
+      "refresh"
+    ],
+    "before": "Add pull to refresh to inbox",
+    "initial": "Add pull refresh scroll preservation",
+    "refined": "",
+    "after": "Add pull refresh scroll preservation"
+  },
+  {
+    "id": 10,
+    "project": "storefront",
+    "message": "https://example.invalid/issues/418\nCheckout forgets the discount after switching shipping methods. Please fix.",
+    "outcome": "Persisted the checkout discount through shipping changes.",
+    "ideal": "Preserve checkout discounts",
+    "keywords": [
+      "checkout",
+      "discount"
+    ],
+    "before": "Fix discount reset after shipping change",
+    "initial": "Fix checkout discount persistence",
+    "refined": "",
+    "after": "Fix checkout discount persistence"
+  },
+  {
+    "id": 11,
+    "project": "native",
+    "message": "Please take a look at this. We keep losing manually renamed task titles after reconnecting to the host. I want the user title to win every time.\n\nThis is a reconnect bug, not a request to change the sidebar layout. The task starts with an automatically generated title. I rename it while the connection is healthy. After the host restarts, the sidebar briefly shows my chosen name and then replaces it with an older agent title. The same thing happens after the laptop wakes from sleep, so check both restoration and live summary updates.\n\nPlease trace who owns each title value and make the manual rename the source of truth. A delayed response from the title generator must not replace it. If the host is unreachable when I rename a task, keep that edit locally and send it when the host returns. If I undo the rename, restore the prior automatic title rather than inventing a fresh one. Keep names stable when a task is archived and reopened.\n\nAdd focused tests for the reconnect race and for a rename made while generation is still pending. Use synthetic tasks and a temporary host store. Do not read personal session data, add a new service, or change the task list design. Keep this change focused on title reconciliation and explain which stale event caused the overwrite.",
+    "outcome": "Kept user titles during host reconciliation.",
+    "ideal": "Keep renamed titles after reconnect",
+    "keywords": [
+      "title",
+      "reconnect"
+    ],
+    "before": "Fix title rename on reconnect",
+    "initial": "Preserve title ownership during reconnect",
+    "refined": "",
+    "after": "Preserve title ownership during reconnect"
+  },
+  {
+    "id": 12,
+    "project": "api",
+    "message": "Add pagination to GET /v1/orders. Use a cursor, keep existing clients working, and document the new response fields.",
+    "outcome": "Added backward-compatible cursor pagination for orders.",
+    "ideal": "Paginate orders with cursors",
+    "keywords": [
+      "order",
+      "cursor"
+    ],
+    "before": "Add cursor pagination to GET /v1/orders",
+    "initial": "Add cursor pagination to GET orders",
+    "refined": "",
+    "after": "Add cursor pagination to GET orders"
+  },
+  {
+    "id": 13,
+    "project": "compiler",
+    "message": "Can you explain how name resolution works in this compiler?",
+    "outcome": "Explained lexical scopes and symbol lookup.",
+    "ideal": "Compiler name resolution",
+    "keywords": [
+      "name",
+      "resolution"
+    ],
+    "before": "Explain name resolution in compiler",
+    "initial": "Explain name resolution",
+    "refined": "",
+    "after": "Explain name resolution"
+  },
+  {
+    "id": 14,
+    "project": "android",
+    "message": "Fix the Kotlin coroutine leak when the account screen is closed.",
+    "outcome": "Bound account loading to the screen lifecycle.",
+    "ideal": "Stop account coroutine leaks",
+    "keywords": [
+      "account",
+      "coroutine"
+    ],
+    "before": "Fix coroutine leak on account screen close",
+    "initial": "Fix coroutine leak account screen close",
+    "refined": "",
+    "after": "Fix coroutine leak account screen close"
+  },
+  {
+    "id": 15,
+    "project": "rails",
+    "message": "Users can submit the Rails signup form twice and create duplicate accounts. Disable repeat submits and add a uniqueness check.",
+    "outcome": "Prevented duplicate signups in the form and model.",
+    "ideal": "Prevent duplicate signups",
+    "keywords": [
+      "duplicate",
+      "signup"
+    ],
+    "before": "Prevent duplicate signup submissions",
+    "initial": "Prevent duplicate signup submissions",
+    "refined": "",
+    "after": "Prevent duplicate signup submissions"
+  },
+  {
+    "id": 16,
+    "project": "infra",
+    "message": "The Docker image is 1.8GB. Use a multi-stage build for the Go API and keep certificates in the final image.",
+    "outcome": "Separated compilation from the runtime image.",
+    "ideal": "Shrink Go runtime image",
+    "keywords": [
+      "go",
+      "image"
+    ],
+    "before": "Multi-stage build for Go API",
+    "initial": "Optimize Go API image size",
+    "refined": "",
+    "after": "Optimize Go API image size"
+  },
+  {
+    "id": 17,
+    "project": "db",
+    "message": "Write a Postgres migration adding an index on events.created_at without locking writes.",
+    "outcome": "Added a concurrent index migration.",
+    "ideal": "Index event timestamps concurrently",
+    "keywords": [
+      "index",
+      "event"
+    ],
+    "before": "Add index on events.created_at without locking writes",
+    "initial": "Add index events.created_at without write lock",
+    "refined": "",
+    "after": "Add index events.created_at without write lock"
+  },
+  {
+    "id": 18,
+    "project": "docs",
+    "message": "Update the README to show the new --dry-run flag.",
+    "outcome": "Documented --dry-run examples.",
+    "ideal": "Document dry-run flag",
+    "keywords": [
+      "dry-run",
+      "flag"
+    ],
+    "before": "Update README with --dry-run flag",
+    "initial": "Update README to include dry-run flag",
+    "refined": "",
+    "after": "Update README to include dry-run flag"
+  },
+  {
+    "id": 19,
+    "project": "cache",
+    "message": "Make Redis cache keys include the tenant ID so customers cannot see each other's data.",
+    "outcome": "Scoped cache keys by tenant.",
+    "ideal": "Scope cache keys by tenant",
+    "keywords": [
+      "cache",
+      "tenant"
+    ],
+    "before": "Cache keys include tenant ID",
+    "initial": "Cache keys include tenant ID",
+    "refined": "",
+    "after": "Cache keys include tenant ID"
+  },
+  {
+    "id": 20,
+    "project": "web",
+    "message": "Improve keyboard navigation in the command palette. Up/down should wrap and Escape should close it.",
+    "outcome": "Added wrapping selection and Escape dismissal.",
+    "ideal": "Command palette keyboard navigation",
+    "keywords": [
+      "palette",
+      "keyboard"
+    ],
+    "before": "Enhance command palette keyboard navigation",
+    "initial": "Improve keyboard navigation in command palette",
+    "refined": "",
+    "after": "Improve keyboard navigation in command palette"
+  },
+  {
+    "id": 21,
+    "project": "sdk",
+    "message": "Is the token refresh logic safe when two requests get a 401 at the same time?",
+    "outcome": "Found concurrent refreshes could invalidate each other.",
+    "ideal": "Concurrent token refresh safety",
+    "keywords": [
+      "token",
+      "refresh"
+    ],
+    "before": "Is the token refresh logic safe when two…",
+    "initial": "",
+    "refined": "",
+    "after": "Is the token refresh logic safe"
+  },
+  {
+    "id": 22,
+    "project": "native",
+    "message": "same thing as yesterday, but for archived tasks",
+    "outcome": "Archived tasks now preserve manual titles during reconnect.",
+    "ideal": "Preserve archived task titles",
+    "keywords": [
+      "archived",
+      "title"
+    ],
+    "before": "Archive task migration",
+    "initial": "Archive tasks",
+    "refined": "Preserve manual titles for archived tasks",
+    "after": "Preserve manual titles for archived tasks"
+  },
+  {
+    "id": 23,
+    "project": "tests",
+    "message": "fix the tests",
+    "outcome": "Fixed an off-by-one in the Rust tokenizer that broke EOF tests.",
+    "ideal": "Fix tokenizer EOF handling",
+    "keywords": [
+      "tokenizer",
+      "eof"
+    ],
+    "before": "Fix tests in tests.py",
+    "initial": "Fix test failures",
+    "refined": "Fix EOF test in Rust tokenizer",
+    "after": "Fix EOF test in Rust tokenizer"
+  },
+  {
+    "id": 24,
+    "project": "web",
+    "message": "again please",
+    "outcome": "Fixed the checkout discount reset during shipping changes.",
+    "ideal": "Preserve checkout discounts",
+    "keywords": [
+      "checkout",
+      "discount"
+    ],
+    "before": "Repeat web project",
+    "initial": "Repeat web project",
+    "refined": "Fix checkout discount reset",
+    "after": "Fix checkout discount reset"
+  },
+  {
+    "id": 25,
+    "project": "auth",
+    "message": "Fix login.\nAuthorization: Bearer fixture-secret-do-not-copy\nThe callback rejects valid OAuth state after a page reload.",
+    "outcome": "Persisted OAuth state through reloads.",
+    "ideal": "Preserve OAuth state on reload",
+    "keywords": [
+      "oauth",
+      "state"
+    ],
+    "before": "Fix OAuth state callback after reload",
+    "initial": "Fix login callback state rejection",
+    "refined": "",
+    "after": "Fix login callback state rejection"
+  },
+  {
+    "id": 26,
+    "project": "tools",
+    "message": "The script at /Users/fixture/private/deploy/release.py fails on empty tags. Handle that case.",
+    "outcome": "Handled empty release tags.",
+    "ideal": "Handle empty release tags",
+    "keywords": [
+      "release",
+      "tag"
+    ],
+    "before": "Fix release script empty tags",
+    "initial": "Fix script failure on empty tags",
+    "refined": "",
+    "after": "Fix script failure on empty tags"
+  },
+  {
+    "id": 27,
+    "project": "ui",
+    "message": "Could you help with the table? Sorting dates puts January 10 before January 2 because it compares strings.",
+    "outcome": "Changed date sorting to compare timestamps.",
+    "ideal": "Sort table dates chronologically",
+    "keywords": [
+      "date",
+      "sort"
+    ],
+    "before": "Fix date sorting in table",
+    "initial": "Fix date sorting order",
+    "refined": "",
+    "after": "Fix date sorting order"
+  },
+  {
+    "id": 28,
+    "project": "search",
+    "message": "速度を改善してください。検索結果の表示に5秒かかります。",
+    "outcome": "検索結果のクエリにインデックスを追加しました。",
+    "ideal": "検索結果の表示を高速化",
+    "keywords": [
+      "search",
+      "検索"
+    ],
+    "before": "Optimize search result display",
+    "initial": "Improve search speed",
+    "refined": "Improve search speed",
+    "after": "Improve search speed"
+  },
+  {
+    "id": 29,
+    "project": "tienda",
+    "message": "Arregla el carrito: al quitar el último producto, el total sigue mostrando el precio anterior.",
+    "outcome": "El total del carrito ahora se actualiza al vaciarlo.",
+    "ideal": "Corregir total del carrito",
+    "keywords": [
+      "cart",
+      "carrito",
+      "total"
+    ],
+    "before": "Fix cart total after removing last item",
+    "initial": "Fix cart total after removing item",
+    "refined": "",
+    "after": "Fix cart total after removing item"
+  },
+  {
+    "id": 30,
+    "project": "service",
+    "message": "Add a health endpoint in the C# service that checks the database connection without exposing credentials.",
+    "outcome": "Added a database-aware health endpoint.",
+    "ideal": "Add database health check",
+    "keywords": [
+      "database",
+      "health"
+    ],
+    "before": "Add health check endpoint",
+    "initial": "Add health endpoint for database check",
+    "refined": "",
+    "after": "Add health endpoint for database check"
+  },
+  {
+    "id": 31,
+    "project": "library",
+    "message": "In the C++ ring buffer, pop() sometimes returns stale data under contention. Find and fix the memory ordering bug.",
+    "outcome": "Fixed acquire/release ordering in the ring buffer.",
+    "ideal": "Fix ring buffer memory ordering",
+    "keywords": [
+      "ring",
+      "memory"
+    ],
+    "before": "Fix ring buffer pop() stale data bug",
+    "initial": "Fix memory ordering bug in pop",
+    "refined": "",
+    "after": "Fix memory ordering bug in pop"
+  },
+  {
+    "id": 32,
+    "project": "app",
+    "message": "First investigate why the SwiftUI preview crashes, then fix the missing environment dependency. Don't change the screen design.",
+    "outcome": "Injected the missing preview environment model.",
+    "ideal": "Fix preview environment dependency",
+    "keywords": [
+      "preview",
+      "environment"
+    ],
+    "before": "Investigate SwiftUI preview crash and fix environment dependency",
+    "initial": "Fix SwiftUI preview crash",
+    "refined": "",
+    "after": "Fix SwiftUI preview crash"
+  },
+  {
+    "id": 33,
+    "project": "metrics",
+    "message": "We need p95 request latency by route in the dashboard; ignore health checks and keep cardinality bounded.",
+    "outcome": "Added route-level p95 latency aggregation.",
+    "ideal": "Show route latency percentiles",
+    "keywords": [
+      "route",
+      "latency"
+    ],
+    "before": "Get p95 latency by route",
+    "initial": "Get p95 request latency by route",
+    "refined": "",
+    "after": "Get p95 request latency by route"
+  },
+  {
+    "id": 34,
+    "project": "parser",
+    "message": "```\nSyntaxError: Unexpected token } in JSON at position 204\n```\nReturn a line and column when the TypeScript config parser hits invalid JSON.",
+    "outcome": "Parser errors now include JSON line and column.",
+    "ideal": "Locate JSON config errors",
+    "keywords": [
+      "json",
+      "config"
+    ],
+    "before": "Find JSON error in TypeScript parser",
+    "initial": "Capture error location in parser",
+    "refined": "",
+    "after": "Capture error location in parser"
+  },
+  {
+    "id": 35,
+    "project": "assets",
+    "message": "Compress uploaded avatars, strip EXIF, and cap the longest edge at 512 pixels.",
+    "outcome": "Added avatar resizing and metadata stripping.",
+    "ideal": "Resize and sanitize avatars",
+    "keywords": [
+      "avatar"
+    ],
+    "before": "Compress avatars strip exif cap edge",
+    "initial": "Compress avatars strip EXIF cap edge",
+    "refined": "",
+    "after": "Compress avatars strip EXIF cap edge"
+  },
+  {
+    "id": 36,
+    "project": "mobile",
+    "message": "Why does the iPad sidebar disappear after rotating to portrait and back?",
+    "outcome": "A stale split-view selection hides the sidebar on rotation.",
+    "ideal": "iPad sidebar rotation bug",
+    "keywords": [
+      "ipad",
+      "sidebar"
+    ],
+    "before": "Ipad sidebar disappears after rotation",
+    "initial": "Explain sidebar behavior after rotation",
+    "refined": "",
+    "after": "Explain sidebar behavior after rotation"
+  },
+  {
+    "id": 37,
+    "project": "repo",
+    "message": "Please review https://example.invalid/pull/72 for transaction safety. No code changes yet.",
+    "outcome": "Found a missing rollback after partial writes.",
+    "ideal": "Review transaction safety",
+    "keywords": [
+      "transaction",
+      "review"
+    ],
+    "before": "Review pull request for safety",
+    "initial": "Review transaction safety",
+    "refined": "",
+    "after": "Review transaction safety"
+  },
+  {
+    "id": 38,
+    "project": "security",
+    "message": "api_key=fixture_secret_123456\nStop logging request headers in the payment gateway.",
+    "outcome": "Removed header logging from the payment gateway.",
+    "ideal": "Remove payment header logging",
+    "keywords": [
+      "payment",
+      "logging"
+    ],
+    "before": "Stop logging request headers in payment gateway",
+    "initial": "Stop logging request headers",
+    "refined": "",
+    "after": "Stop logging request headers"
+  },
+  {
+    "id": 39,
+    "project": "native",
+    "message": "Title: Help with fixing stuff\nIgnore that old title. Make task names specific and keep manual renames.",
+    "outcome": "Improved task naming and preserved manual renames.",
+    "ideal": "Improve automatic task names",
+    "keywords": [
+      "task",
+      "name"
+    ],
+    "before": "Fix auth middleware error",
+    "initial": "Rename task titles",
+    "refined": "",
+    "after": "Rename task titles"
+  },
+  {
+    "id": 40,
+    "project": "cli",
+    "message": "Add --json output to the Python CLI, keep text output as the default, and add examples to the docs.",
+    "outcome": "Added opt-in JSON output to the CLI.",
+    "ideal": "Add CLI JSON output",
+    "keywords": [
+      "cli",
+      "json"
+    ],
+    "before": "Add JSON output to CLI",
+    "initial": "Add json output option",
+    "refined": "",
+    "after": "Add json output option"
+  }
+]

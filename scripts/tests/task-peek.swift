@@ -10,6 +10,7 @@ import SwiftUI
 @MainActor
 private struct TaskPeekChecks {
     static func main() async throws {
+        checkPlacement()
         try await checkRecovery()
         try checkQuestionNavigation()
         try await checkAttentionList()
@@ -43,6 +44,21 @@ private struct TaskPeekChecks {
         require(
             app.taskPeek.request == nil && routine.permissionRequests.count == 1, "Default gate blocks both actions")
         app.experiments.set(true, for: .sidebarNext)
+        app.peekTask(current.key)
+        let firstRequest = app.taskPeek.request?.id
+        app.peekTask(current.key)
+        require(app.taskPeek.request?.id != firstRequest, "Equal-content Peek replacement has a fresh identity")
+        app.closeTaskPeek(restoringSidebarFocus: false)
+        require(
+            app.taskPeek.request == nil && !app.taskPeek.restoresSidebarFocus && app.selection == current.key,
+            "Pointer dismissal preserves the clicked control's focus even on the current task")
+        app.peekTask(current.key)
+        require(app.taskPeek.restoresSidebarFocus, "A new Peek resets the previous pointer dismissal")
+        app.closeTaskPeek()
+        require(app.taskPeek.restoresSidebarFocus, "Keyboard dismissal can restore the originating list")
+        app.peekTask(current.key)
+        app.openPeekedTask(current.key)
+        require(!app.taskPeek.restoresSidebarFocus, "Open Task preserves the task's focus")
         require(!app.legacyAskShortcutEnabled(in: registry), "Global task ask withdraws every legacy fallback")
         require(commands.allSatisfy { $0.showsInSettings() }, "Enabled experiment exposes its shortcut settings")
         require(app.oldestTaskAsk?.task == routine.key, "Oldest ask is chosen across tasks")
@@ -92,6 +108,39 @@ private struct TaskPeekChecks {
         print(
             "PASS: gate, shortcut ownership, global routing, recovery drafts, question navigation, stale and late asks"
         )
+    }
+
+    /// Peek hangs from its row, stays under the toolbar and inside the window, and keeps its arrow on
+    /// the row wherever it has to slide.
+    static func checkPlacement() {
+        let window = CGRect(x: 0, y: 0, width: 1184 + 256, height: 848)
+        let size = CGSize(width: DS.Peek.width, height: 360)
+        let row = CGRect(x: 8, y: 160, width: 240, height: 46)
+        let beside = TaskPeekFrame(anchor: row, size: size, in: window)
+        require(beside.arrow?.edge == .leading, "A sidebar row gets Peek beside it")
+        require(beside.card.minX > row.maxX, "Peek clears its row")
+        require(beside.card.minY == row.midY - DS.Peek.arrowInset, "Peek hangs from its row")
+        require(beside.arrow?.base.y == row.midY, "The arrow points at the row")
+
+        let high = TaskPeekFrame(anchor: CGRect(x: 8, y: 0, width: 240, height: 30), size: size, in: window)
+        require(high.card.minY >= DS.Peek.toolbarGap, "Peek never rises over the toolbar")
+
+        let low = TaskPeekFrame(anchor: CGRect(x: 8, y: 800, width: 240, height: 30), size: size, in: window)
+        require(low.card.maxY <= window.maxY - DS.Peek.windowInset, "Peek stays inside the window")
+        require(
+            (low.arrow?.base.y ?? 0) <= low.card.maxY - DS.Peek.radius, "The arrow stays off the rounded corner")
+
+        let tall = TaskPeekFrame(anchor: row, size: CGSize(width: DS.Peek.width, height: 2000), in: window)
+        require(tall.card.height <= window.height - DS.Peek.toolbarGap - DS.Peek.windowInset, "Peek fits the window")
+
+        let wide = CGRect(x: 400, y: 200, width: 640, height: 60)
+        let below = TaskPeekFrame(anchor: wide, size: size, in: window)
+        require(below.arrow?.edge == .top && below.card.minY > wide.maxY, "A wide row gets Peek below it")
+
+        let loose = TaskPeekFrame(anchor: nil, size: size, in: window)
+        require(loose.arrow == nil && loose.card.minY == DS.Peek.toolbarGap, "Without a row, Peek sits at the top")
+        require(abs(loose.card.midX - window.midX) < 1, "Without a row, Peek is centered")
+        print("PASS: placement beside, below and without a row; toolbar, window and arrow bounds")
     }
 
     static func checkAttentionList() async throws {

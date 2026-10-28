@@ -34,6 +34,16 @@ final class PlatformAppearance {
         #endif
     }
 
+    /// Light or dark as the app shows now: what `apply(_:)` set, or the system's.
+    var current: ColorScheme {
+        #if canImport(AppKit)
+        NSApplication.shared.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? .dark : .light
+        #else
+        let scene = UIApplication.shared.connectedScenes.lazy.compactMap { $0 as? UIWindowScene }.first
+        return scene?.traitCollection.userInterfaceStyle == .dark ? .dark : .light
+        #endif
+    }
+
     #if canImport(UIKit) && !canImport(AppKit)
     private func apply(to scene: UIWindowScene) {
         switch scheme {

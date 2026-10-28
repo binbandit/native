@@ -39,7 +39,7 @@ extension ComposerView {
                         // see it first; the button's own Escape covers focus anywhere else.
                         ComposerStopButton(
                             isEscapeEnabled: overlayDismissal == nil && !isFocused && suggestions == nil
-                                && selectedAttachmentIndex == nil,
+                                && selectedAttachmentIndex == nil && !windowClaimsCancelKeys,
                             action: stop
                         )
                     }

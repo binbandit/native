@@ -2,6 +2,7 @@ import CodeThemes
 import Experiments
 import Foundation
 import NativeHostProtocol
+import NativePolicy
 import Skills
 
 @testable import Native
@@ -15,7 +16,7 @@ private final class InertKeepAwakeEngine: KeepAwakeEngine {
 
 @main
 @MainActor
-private struct SettingsRegression {
+struct SettingsRegression {
     private static var failures = 0
 
     static func main() async {
@@ -35,17 +36,18 @@ private struct SettingsRegression {
         combinedLibraryScope()
         accountNavigation()
         codeThemeChoices()
+        await themeTryOn()
         #endif
         if failures > 0 {
             print("FAILED: \(failures) Settings regressions")
             exit(1)
         }
         print(
-            "PASS: Settings navigation, account links, code theme choices, sound migration, live switching and disabled playback"
+            "PASS: Settings navigation, account links, code theme choices, Try On, sound migration, live switching and disabled playback"
         )
     }
 
-    private static func expect(_ condition: Bool, _ message: String) {
+    static func expect(_ condition: Bool, _ message: String) {
         if !condition {
             print("FAIL: \(message)")
             failures += 1
@@ -227,6 +229,8 @@ private struct SettingsRegression {
         expect(saved() == ("native", "native"), "Reset to Native resets both modes")
     }
 
+    /// Try On writes nothing while trying or on Cancel, writes both modes and the backgrounds on Keep
+    /// as one Undo, returns to Settings, and stays shut while policy sets the code theme.
     private static func soundChoices() async {
         let choices: [Bool?] = [nil, false, true]
         for legacy in choices {

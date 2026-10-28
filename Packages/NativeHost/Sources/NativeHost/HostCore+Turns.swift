@@ -215,6 +215,9 @@ extension HostCore {
     }
 
     func endTurn(in session: HostSession, stopReason: String, pauseQueue: Bool) {
+        if let turn = session.turn, turn.kind == .prompt {
+            titleAfterFirstTurn(session, promptID: turn.prompt.id, succeeded: stopReason == "end_turn")
+        }
         session.turn = nil
         session.phase = .idle
         session.record.lastStopReason = stopReason

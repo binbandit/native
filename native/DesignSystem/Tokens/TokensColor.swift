@@ -61,6 +61,9 @@ nonisolated extension ShapeStyle where Self == Color {
 
     /// Hairlines between regions: sidebar edge, card outlines, section rules.
     public static var dsSeparator: Color { DSPalette.separator }
+    /// The hairline around an overlay drawn inside the window (Peek), so it keeps an edge on a page
+    /// of its own color: a dark wash in light mode, a light one in dark.
+    public static var dsOverlayEdge: Color { DSPalette.overlayEdge }
     /// Outline of the composer, its pills and secondary buttons.
     public static var dsBorder: Color { DSPalette.border }
     /// Outline of a hovered control.
@@ -103,6 +106,9 @@ nonisolated extension ShapeStyle where Self == Color {
     /// Tasks waiting on the user: questions, approvals, plans to review. Amber, so it reads the
     /// same whatever the accent is.
     public static var dsAttention: Color { DSPalette.attention }
+    /// The same amber for dots and strokes (the status signal's grid). Text amber reads as rust at
+    /// glyph size in light mode; this one clears 3:1 on the light background and keeps its hue.
+    public static var dsAttentionGlyph: Color { DSPalette.attentionGlyph }
 
     public static var dsSuccess: Color { DSPalette.success }
     public static var dsWarning: Color { DSPalette.warning }
@@ -141,6 +147,7 @@ nonisolated private enum DSPalette {
     static let surfaceSunken = toned(
         dynamic("surfaceSunken", light: 0xF6F6F6, dark: 0x070708), wool: 0xF1EDE6, trueBlack: 0x000000)
     static let overlay = toned(dynamic("overlay", light: 0xFFFFFF, dark: 0x18181B), wool: 0xFBF9F5, trueBlack: 0x0E0E10)
+    static let overlayEdge = dynamic("overlayEdge", light: 0x000000, lightAlpha: 0.1, dark: 0xFFFFFF, darkAlpha: 0.09)
     static let sidebarSolid = toned(
         dynamic("sidebarSolid", light: 0xF0F0F0, dark: 0x070708), wool: 0xEEEAE2, trueBlack: 0x000000)
 
@@ -198,6 +205,7 @@ nonisolated private enum DSPalette {
         dynamic("textInverse", light: 0xFFFFFF, dark: 0x0D0D0E), wool: 0xFBF9F5, trueBlack: 0x000000)
 
     static let attention = toned(dynamic("attention", light: 0xA35200, dark: 0xFFB000), wool: 0x9C4E00)
+    static let attentionGlyph = toned(dynamic("attentionGlyph", light: 0xD27A00, dark: 0xFFB000), wool: 0xC97400)
 
     static let success = toned(dynamic("success", light: 0x16A249, dark: 0x4ADE80), wool: 0x159C46)
     static let warning = toned(dynamic("warning", light: 0x9A6700, dark: 0xD29922), wool: 0x936200)
