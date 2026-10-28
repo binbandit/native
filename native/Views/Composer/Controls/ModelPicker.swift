@@ -15,6 +15,7 @@ struct ModelPicker: View {
     @State private var highlighted: Int?
     @State private var highlightedAgent: AgentDefinition.ID?
     @State private var isInAgents = false
+    @State private var usesNativeTraversal = false
     @FocusState private var isPickerFocused: Bool
     @FocusState private var isSearchFocused: Bool
 
@@ -221,15 +222,16 @@ struct ModelPicker: View {
     private func handleKey(_ press: KeyPress) -> KeyPress.Result {
         // Shortcuts with ⌘, ⌥ or ⌃ belong to the app and the text field.
         guard press.modifiers.isDisjoint(with: [.command, .option, .control]) else { return .ignored }
+        // Tab keeps the native route through agent buttons, models, effort and switches. Once
+        // focus leaves the search field, those controls own their activation and arrow keys.
+        if press.key == .tab || press.key == KeyEquivalent("\u{19}") {
+            isInAgents = false
+            usesNativeTraversal = true
+            return .ignored
+        }
+        if usesNativeTraversal, !isSearchFocused { return .ignored }
         let matches = matches
         let agents = agentPicker?.agents.filter { $0.unavailable == nil } ?? []
-        if press.key == .tab || press.key == KeyEquivalent("\u{19}") {
-            if !agents.isEmpty {
-                isInAgents.toggle()
-                highlightedAgent = agentPicker?.current
-                return .handled
-            }
-        }
         if isInAgents, !agents.isEmpty {
             let index = agents.firstIndex { $0.agent == highlightedAgent } ?? 0
             switch press.key {
