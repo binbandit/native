@@ -7,8 +7,8 @@ import NativePolicy
 import os
 
 /// Lets agents hand tasks to other agents, such as Claude Code asking Codex for a review. Every
-/// session gets Native's MCP server at a URL only it knows, so each tool call is attributed to the
-/// session that made it and the tasks it starts become its subagents.
+/// session uses a signed local URL through the skill's CLI or MCP, so each tool call is attributed
+/// to the session that made it and the tasks it starts become its subagents.
 ///
 /// Native's host serves the tools to its own sessions (`HostTasks`, docs/durability.md, "Native's
 /// tools in the host"), so delegated work goes on with the app closed and on other machines. The
@@ -18,7 +18,7 @@ import os
 struct OrchestrationPlugin: NativePlugin {
     static let id = "orchestration"
     /// The server's name in agents' MCP lists.
-    static let serverName = "native"
+    nonisolated static let serverName = "native"
 
     let manifest = PluginManifest(
         id: Self.id,
@@ -75,6 +75,11 @@ struct OrchestrationPlugin: NativePlugin {
                 + setup
         ) { token in
             // The token is the only credential a caller presents; nothing it didn't sign gets in.
+            let policy = PolicyCenter.currentPolicy()
+            guard policy.decision(for: .orchestration).isPermitted,
+                policy.decision(for: .mcpExecution).isPermitted, policy.mcp.allows(name: Self.serverName),
+                policy.network.isValid, policy.network.localIPC
+            else { return nil }
             guard let client = tokens.client(in: token) else { return nil }
             return await runtime.caller(of: client)
         }
@@ -108,6 +113,7 @@ struct OrchestrationPlugin: NativePlugin {
     func mcpServers(for session: SessionContext) -> [MCPServer] {
         // The host gives the sessions it serves Native's tools at its own address.
         guard !status.isServedByHost, let url = url(for: session.clientID) else { return [] }
+        if runtime.durableHost == nil, runtime.model?.plugins.nativeMCPChoice(for: session.agent) == false { return [] }
         runtime.handedURL(to: session)
         return [.http(name: Self.serverName, url: url)]
     }

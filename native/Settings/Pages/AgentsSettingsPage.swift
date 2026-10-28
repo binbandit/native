@@ -78,6 +78,8 @@ struct AgentsSettingsPage: View {
                             AgentDefaultsRow(agentName: entry.agent.name, agentID: entry.definition.id)
                                 .padding(.leading, SettingsMetrics.iconTile + DS.Space.lg)
                         }
+                        NativeToolsSettingsRow(agent: entry.definition, registry: registry)
+                            .padding(.leading, SettingsMetrics.iconTile + DS.Space.lg)
                     }
                 }
             }

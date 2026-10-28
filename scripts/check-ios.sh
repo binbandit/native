@@ -38,12 +38,27 @@ python3 scripts/check-ios-sources.py "$work/sources" native/DesignSystem "$@" >"
 # Builds a package with xcodebuild for the simulator and imports its products, for packages swiftc
 # alone can't build. The cache makes reruns incremental; parallel checks take turns on it.
 build_package() {
-    local package=$1 name=$2 derived
+    local package=$1 name=$2 derived scheme
     derived="$packages/$(basename "$package")"
     mkdir -p "$packages"
     until mkdir "$derived.lock" 2>/dev/null; do sleep 1; done
     lock="$derived.lock"
-    if ! (cd "$package" && "$root/scripts/dev/build-slot.sh" -scheme "$name" -destination "generic/platform=iOS Simulator" \
+    # A single-product package can expose its package name as the scheme, even when its module
+    # has another name (Orchestration / NativeOrchestration). Prefer the module's own scheme.
+    (cd "$package" && "$root/scripts/dev/build-slot.sh" -list -json) >"$derived.schemes.json" 2>"$derived.schemes.log"
+    scheme=$(python3 - "$derived.schemes.json" "$name" "$(basename "$package")" <<'PY'
+import json, sys
+data = json.load(open(sys.argv[1]))
+schemes = data.get("workspace", data.get("project", {})).get("schemes", [])
+for candidate in [sys.argv[2], sys.argv[3] + "-Package", sys.argv[3]]:
+    if candidate in schemes:
+        print(candidate)
+        break
+else:
+    raise SystemExit("No Xcode scheme for " + sys.argv[2])
+PY
+    )
+    if ! (cd "$package" && "$root/scripts/dev/build-slot.sh" -scheme "$scheme" -destination "generic/platform=iOS Simulator" \
         -derivedDataPath "$derived" build -quiet) >"$derived.log" 2>&1; then
         grep -E "error:" "$derived.log" | sort -u | head -20 >&2 || true
         echo "building $package for iOS failed; full log: $derived.log" >&2

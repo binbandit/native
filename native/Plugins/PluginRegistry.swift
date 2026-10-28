@@ -2,6 +2,7 @@ import ACP
 import ApprovalAnalysis
 import Experiments
 import Foundation
+import NativeHostProtocol
 import NativePolicy
 import Observation
 import Search
@@ -58,6 +59,7 @@ final class PluginRegistry {
     private(set) var failures: [LoadFailure] = []
     /// The user's explicit on/off choices; a plugin without one follows `isEnabledByDefault`.
     private var choices: [String: Bool]
+    private var nativeMCPChoices: [String: Bool] = [:]
 
     private let defaults: UserDefaults
     private let builtIns: [any NativePlugin]
@@ -76,6 +78,7 @@ final class PluginRegistry {
         self.builtIns = builtIns
         self.defaults = defaults
         self.policyCenter = policyCenter
+        nativeMCPChoices = defaults.dictionary(forKey: "nativeMCPChoices") as? [String: Bool] ?? [:]
         if let stored = defaults.dictionary(forKey: Self.choicesKey) as? [String: Bool] {
             choices = stored
         } else {
@@ -154,6 +157,19 @@ final class PluginRegistry {
         choices[id] = enabled
         defaults.set(choices, forKey: Self.choicesKey)
         syncExperiments()
+    }
+
+    func nativeMCPChoice(for agent: AgentDefinition.ID) -> Bool? {
+        nativeMCPChoices[agent.rawValue]
+    }
+
+    func nativeMCPEnabled(for agent: AgentDefinition) -> Bool {
+        nativeMCPChoice(for: agent.id) ?? (agent.manifest.nativeSkill == nil || agent.manifest.nativeSkill == .unknown)
+    }
+
+    func setNativeMCPEnabled(_ enabled: Bool, for agent: AgentDefinition.ID) {
+        nativeMCPChoices[agent.rawValue] = enabled
+        defaults.set(nativeMCPChoices, forKey: "nativeMCPChoices")
     }
 
     /// Hands enabled plugins' experiments to Labs, so a plugin's experiments and their claims come

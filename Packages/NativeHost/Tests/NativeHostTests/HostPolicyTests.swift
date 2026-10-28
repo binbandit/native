@@ -349,7 +349,7 @@ struct HostPolicyTests {
         let project = rig.root.appending(path: "project").path(percentEncoded: false)
         try FileManager.default.createDirectory(atPath: project, withIntermediateDirectories: true)
         let summary = try await client.newSession(NewSessionParams(agentID: "fake", cwd: project))
-        let served = await rig.core.tasks.agentServers(for: summary.id, base: [])
+        let served = await rig.core.tasks.agentServers(for: summary.id, agent: "fake", base: [])
         let url = try #require(served.first?["url"]?.stringValue.flatMap(URL.init(string:)))
         #expect(rig.core.tasks.admittedCaller(of: summary.id.rawValue) != nil)
 
@@ -358,7 +358,7 @@ struct HostPolicyTests {
         rig.policy.set(HostPolicy(mode: .ordinary, capabilities: withoutTools))
         rig.core.refreshPolicy()
 
-        #expect(await rig.core.tasks.agentServers(for: summary.id, base: []).isEmpty)
+        #expect(await rig.core.tasks.agentServers(for: summary.id, agent: "fake", base: []).isEmpty)
         #expect(rig.core.tasks.admittedCaller(of: summary.id.rawValue) == nil)
         var request = URLRequest(url: url, timeoutInterval: 2)
         request.httpMethod = "POST"

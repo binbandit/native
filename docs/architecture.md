@@ -62,6 +62,44 @@
 - **Subagents** are child sessions: announced by agents (the ACP subagents RFD) or started by
   Native's orchestration tools on any agent. Both look and behave the same in the UI.
 
+### Native's tools on demand
+
+Claude Code and Codex receive the bundled `native-app` skill instead of Native's full MCP tool
+list. Discovery adds only its name, description and location; instructions and references load
+when needed. Its `scripts/native` CLI calls the existing signed loopback endpoint and the same
+`OrchestrationTools`, `SkillTools`, `SetupTools` and `OrchestrationScriptTool` handlers. JSON is the
+default output; `--text` prints the readable result, `--stdin` accepts a JSON argument object.
+The host helper and standalone host implement `action <tool> [JSON | --stdin] [--text]` without
+starting another host. Argument parsing, endpoint validation and installation live in
+`Packages/Orchestration`; host delivery lives in `HostTasks+AgentSkill`.
+
+Claude's skill is a local SDK plugin in the host's own directory, loaded through session options.
+The same options supply its session URL to shell tools, outside model context. Codex discovers
+`$CODEX_HOME/skills/native-app` (default `~/.codex/skills/native-app`); its shell's `CODEX_THREAD_ID`
+selects a private signed credential in the host's directory. There is no cwd-based or last-task
+fallback. User-owned skills, edited installations and symlinks are left alone. Unmodified copies
+written by Native can be updated. Development hosts install Codex skills only when `CODEX_HOME`
+is explicitly inside that host's directory, so isolated checks cannot change personal skills.
+`NATIVE_ACTION_CLI` selects the current task's host executable even if another Native channel
+updates Codex's shared skill copy. `NATIVE_ACTION_SESSIONS` selects that host's credential directory.
+
+Binary-only standalone hosts without the skill resource bundle retain MCP. Resource lookup is
+non-trapping and uses only deployed bundles, so missing resources cannot terminate the host.
+The skill works whether the app or host serves Native's endpoint. The host keeps the app's URL
+as internal session configuration while leaving it out of the agent's MCP list. Unsupported
+agents and installations that cannot be delivered retain MCP by default. Settings > Agents has
+a per-agent Native tools switch to opt into loading all MCP tools; an explicit off stays off.
+Choices apply when a task next opens. Agents running directly in the app retain MCP compatibility.
+
+Both paths require Native's orchestration capability, managed MCP admission for `native`, and the
+`orchestration.loopback` network service with valid network policy and local IPC allowed. The
+CLI accepts only the signed literal-loopback endpoint; it has no remote destination. Restricted
+deployments remain denied. Existing task
+scope, coordinator limits and tool handlers are shared, and shell execution retains the agent's
+approval flow. Credentials never enter the skill description or command arguments. Setup and
+scripts keep their existing app-running requirement; task tools can work with the app closed
+when host tools are enabled. See [Native tool context measurement](native-tool-context.md).
+
 ## Clients and hosts
 
 Native is split into a **host**, which runs agents, commands and file access, and **clients**, which

@@ -658,6 +658,9 @@ in Git, for example). No shortcuts change.
 | ⌘[ | Return from a celebration detail page first; otherwise close Settings (Go menu) |
 | ↑ / ↓ in the page list | Move to the previous / next page |
 
+In Agents, Tab focuses each agent's Native tools switch and Space toggles MCP delivery for newly
+opened tasks. Claude Code and Codex use the on-demand skill while that switch is off.
+
 ## Search
 
 The search panel (⇧⌘F, Go ▸ Search Tasks…, or the magnifying glass in the window toolbar between

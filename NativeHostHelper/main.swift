@@ -3,6 +3,7 @@ import NativeHost
 import NativeHostMac
 import NativeHostProtocol
 import NativeLink
+import NativeOrchestration
 import os
 
 // Native's background host: launchd starts it at login and keeps it running, so agents keep working
@@ -10,6 +11,11 @@ import os
 // windows) so it can post notifications and, later, show a menu bar extra. See docs/durability.md.
 
 signal(SIGPIPE, SIG_IGN)
+
+if CommandLine.arguments.dropFirst().first == "action" {
+    let allowed = MacHost.policySource(location: MacHost.location())?.current().allows(.agentTools) ?? true
+    NativeActionCLI.run(Array(CommandLine.arguments.dropFirst(2)), admitted: allowed)
+}
 
 let logger = Logger(subsystem: "Native", category: "Host")
 let bundle = Bundle.main

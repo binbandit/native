@@ -23,7 +23,7 @@ public enum MacHost {
         location: HostLocation, info: PeerInfo, inheritEnvironment: Bool = false, pluginsDirectory: URL? = nil
     ) -> HostCore.Configuration {
         let policy = policySource(location: location)
-        return HostCore.Configuration(
+        var configuration = HostCore.Configuration(
             location: location,
             hostInfo: info,
             machineName: Host.current().localizedName ?? ProcessInfo.processInfo.hostName,
@@ -46,6 +46,8 @@ public enum MacHost {
             credentials: credentialStore(for: location),
             policy: policy ?? FixedHostPolicySource(.unrestricted)
         )
+        configuration.actionExecutable = Bundle.main.executableURL
+        return configuration
     }
 
     /// The managed preferences this process's host follows, or nil when no organization can manage it.

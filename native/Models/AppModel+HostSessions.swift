@@ -129,6 +129,7 @@ extension AppModel {
     var hostAgentSpecs: [AgentSpec] {
         plugins.agents.map { agent in
             var spec = AgentSpec(agent)
+            spec.nativeMCPEnabled = plugins.nativeMCPChoice(for: agent.id)
             spec.env.merge(plugins.launchEnvironment(for: agent.id)) { $1 }
             return spec
         }

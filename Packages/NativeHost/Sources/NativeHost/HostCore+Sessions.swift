@@ -18,11 +18,15 @@ extension HostCore {
         let link = try await readyAgent(params.agentID)
         guard let peer = link.peer else { throw HostError.agentUnavailable(link.spec.name) }
         let sessionID = params.sessionID ?? HostSessionID()
-        let servers = await tasks.agentServers(for: sessionID, base: params.mcpServers)
+        let servers = await tasks.agentServers(for: sessionID, agent: params.agentID, base: params.mcpServers)
         let response: RawNewSessionResponse
         do {
             response = try await peer.request(
-                "session/new", RawNewSessionRequest(cwd: params.cwd, mcpServers: servers, _meta: params.meta),
+                "session/new",
+                RawNewSessionRequest(
+                    cwd: params.cwd, mcpServers: servers,
+                    _meta: await tasks.agentMeta(
+                        for: sessionID, agent: params.agentID, base: params.meta, servers: params.mcpServers)),
                 as: RawNewSessionResponse.self)
         } catch {
             noteAgentError(error, from: link)
@@ -81,6 +85,7 @@ extension HostCore {
             append(.update(SessionMirror.configOptionsUpdate(options)), to: session)
         }
         route(session, on: link)
+        await tasks.writeSkillCredential(for: session)
         publish(session)
         return session.summary
     }
@@ -195,7 +200,8 @@ extension HostCore {
             }
             let generation = link.generation
             guard link.canLoadSessions else { throw HostError.cannotLoad(link.spec.name) }
-            let servers = await tasks.agentServers(for: session.id, base: session.mcpServers)
+            let servers = await tasks.agentServers(
+                for: session.id, agent: session.record.agentID, base: session.mcpServers)
             discardSubagentsForReplay(of: session, on: link)
             append(.reset(loading: true), to: session)
             replaying = true
@@ -206,7 +212,9 @@ extension HostCore {
                     "session/load",
                     RawLoadSessionRequest(
                         sessionId: agentSessionID, cwd: session.record.cwd, mcpServers: servers,
-                        _meta: session.record.meta),
+                        _meta: await tasks.agentMeta(
+                            for: session.id, agent: session.record.agentID, base: session.record.meta,
+                            servers: session.mcpServers)),
                     as: RawConfigOptionsResponse.self)
             } catch let error as RPCError
                 where !session.record.isAdopted && session.record.lastStopReason == nil && !error.isAuthRequired
@@ -225,6 +233,7 @@ extension HostCore {
                 showPendingMessage(of: session)
             }
             append(.loaded, to: session)
+            await tasks.writeSkillCredential(for: session)
             tasks.sessionLoaded(session)
             session.needsLoad = false
             session.supportsSteering = link.supportsSteering
@@ -260,10 +269,14 @@ extension HostCore {
     func replaceUnsaved(
         _ session: HostSession, on link: AgentLink, peer: JSONRPCPeer
     ) async throws -> RawConfigOptionsResponse {
-        let servers = await tasks.agentServers(for: session.id, base: session.mcpServers)
+        let servers = await tasks.agentServers(for: session.id, agent: session.record.agentID, base: session.mcpServers)
         let response = try await peer.request(
             "session/new",
-            RawNewSessionRequest(cwd: session.record.cwd, mcpServers: servers, _meta: session.record.meta),
+            RawNewSessionRequest(
+                cwd: session.record.cwd, mcpServers: servers,
+                _meta: await tasks.agentMeta(
+                    for: session.id, agent: session.record.agentID, base: session.record.meta,
+                    servers: session.mcpServers)),
             as: RawNewSessionResponse.self)
         let old = session.record.agentSessionID
         if let old {
@@ -275,6 +288,7 @@ extension HostCore {
             tasks.agentSessionReplaced(agent: session.record.agentID, old: old, new: response.sessionId)
         }
         route(session, on: link)
+        await tasks.writeSkillCredential(for: session)
         return RawConfigOptionsResponse(configOptions: response.configOptions)
     }
 
