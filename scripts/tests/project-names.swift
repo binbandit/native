@@ -32,6 +32,7 @@ import SwiftUI
         duplicates.rename(archivedCopy.id, to: nil)
         require(duplicates.project(openCopy.id)?.displayName == nil, "clearing an archived name clears the open copy")
         let afterClear = Projects(defaults: duplicateDefaults)
+        require(afterClear.archived.first?.id == archivedCopy.id, "relaunch preserves the archived copy")
         require(afterClear.project(openCopy.id)?.displayName == nil, "relaunch does not resurrect a cleared name")
         afterClear.remove(openCopy.id)
         require(Projects(defaults: duplicateDefaults).add(work).name == "native", "close and reopen keeps the clear")

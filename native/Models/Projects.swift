@@ -29,16 +29,19 @@ final class Projects {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         names = ProjectNameStore(defaults: defaults)
-        if let data = defaults.data(forKey: Self.key),
+        // Observable setters save both lists, so read both before assigning either one.
+        let savedProjects = defaults.data(forKey: Self.key)
+        let savedArchivedProjects = defaults.data(forKey: Self.archivedKey)
+        if let data = savedProjects,
             let projects = try? JSONDecoder().decode([Project].self, from: data)
         {
             openProjects = projects
         } else if let path = defaults.string(forKey: Self.legacyWorkspaceKey) {
             openProjects = [Project(id: UUID(), url: URL(filePath: path, directoryHint: .isDirectory))]
-            // Assigning in init doesn't run `didSet`, and the project's id has to stick.
+            // Persist the migrated project's id before a later initialization can replace it.
             save()
         }
-        if let data = defaults.data(forKey: Self.archivedKey),
+        if let data = savedArchivedProjects,
             let projects = try? JSONDecoder().decode([Project].self, from: data)
         {
             archivedProjects = projects
