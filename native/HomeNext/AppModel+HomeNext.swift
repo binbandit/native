@@ -59,6 +59,18 @@ extension AppModel {
         return away
     }
 
+    /// Use only a name the agent reported. Before its first session, show the agent rather than a wire id.
+    var homeNextModelName: String? {
+        guard let agent = quickEntry.agent else { return nil }
+        let choices = AgentSessionDefaults.offeredChoices(for: agent, setting: .model)
+        let explicit =
+            quickEntry.project.flatMap { ProjectTaskDefaults.model(for: $0, agent: agent) }
+            ?? AgentSessionDefaults.explicitValue(for: agent, setting: .model)
+        if let explicit { return choices.first { $0.value == explicit }?.name }
+        guard let name = quickEntryModelName else { return nil }
+        return choices.first { $0.name == name }?.name
+    }
+
     /// Agents paused at a usage limit, with the tasks each one stopped. Empty while Usage is off.
     var homeNextLimits: [HomeNextLimit] {
         #if DEBUG

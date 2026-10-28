@@ -12,8 +12,10 @@ struct HomeNextStatusLine: View {
         let local = working.filter { $0.host == nil }.count
         let remote = working.count - local
         VStack(alignment: .leading, spacing: DS.Space.xxs) {
-            Text(status(working: working.count, local: local, remote: remote))
-                .foregroundStyle(.dsTextSecondary)
+            if !working.isEmpty {
+                Text(status(working: working.count, local: local, remote: remote))
+                    .foregroundStyle(.dsTextSecondary)
+            }
             if let away {
                 Text(away).foregroundStyle(.dsTextTertiary).accessibilityIdentifier("home-next-away")
             }
@@ -31,7 +33,6 @@ struct HomeNextStatusLine: View {
     }
 
     private func status(working: Int, local: Int, remote: Int) -> String {
-        if working == 0 { return "No tasks are running." }
         let places = remote > 0 ? ", \(remote) on other hosts" : ""
         #if os(macOS)
         let lid =

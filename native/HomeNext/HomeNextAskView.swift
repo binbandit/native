@@ -7,6 +7,7 @@ struct HomeNextAskView: View {
     let openTask: () -> Void
 
     @Environment(AppModel.self) private var model
+    @Experiment(.composerNext) private var composerNext
     @State private var wantsInstructionFocus = false
     @State private var isAnswering = false
     @State private var approvalAttempt = 0
@@ -38,21 +39,36 @@ struct HomeNextAskView: View {
                 ErrorState("Couldn't complete that action", recovery: "Your task is still here.", details: answerError)
                     .padding(.top, DS.Space.lg)
             }
-            if task.status != .failed, task.request?.call == nil {
+            if task.status != .failed, task.request?.call == nil, !asksInPlace {
                 Button("Open Task", action: openTask)
                     .buttonStyle(.ds(.ghost)).keyboardShortcut(.return, modifiers: .command)
                     .padding(.top, DS.Space.lg)
             }
         }
         .onChange(of: task.requestID) { answerError = nil }
-        .focusedSceneValue(\.taskPeekInstructionFocus, task.request?.call == nil ? nil : $wantsInstructionFocus)
+        .focusedSceneValue(\.taskPeekInstructionFocus, hasAnswerField ? $wantsInstructionFocus : nil)
         .environment(\.legacyAskShortcutEnabled, model.legacyAskShortcutEnabled(in: .shared))
         .environment(\.permissionShortcutsEnabled, model.taskPeek.request == nil)
     }
 
+    /// With Fine print, the question carries its own field and Open Task link, as the approval does.
+    private var asksInPlace: Bool {
+        composerNext && task.request?.question != nil
+    }
+
+    /// ⌘L focuses the field for telling the agent what to do instead, or answering in your own words.
+    private var hasAnswerField: Bool {
+        task.request?.call != nil || (asksInPlace && task.request?.question?.questionnaire?.questions.isEmpty == false)
+    }
+
     @ViewBuilder private var content: some View {
         if let request = task.request, let question = request.question {
-            HomeNextQuestionView(question: question) { response in
+            HomeNextQuestionView(
+                session: request.session, question: question,
+                isAvailable: request.session.phase != .disconnected && model.taskIsReachable(task.id),
+                focusRequested: wantsInstructionFocus, didFocus: { wantsInstructionFocus = false },
+                openTask: openTask
+            ) { response in
                 perform(response == .decline ? "Skipped the question" : "Answered the question") {
                     try await request.session.respondToQuestion(response, for: question.id)
                 }
