@@ -208,7 +208,8 @@ extension SessionModel {
     }
 
     var sendNowRoute: SendNowRoute? {
-        switch phase {
+        guard supportsQueuedSteering else { return nil }
+        return switch phase {
         case .prompting where !isStopping: .steer
         case .idle where !isRunningHiddenCommand && !isDeliveringSteer && turnHold == nil: .send
         case .idle, .prompting, .loading, .disconnected: nil
@@ -218,6 +219,7 @@ extension SessionModel {
     /// Sends a queued message now instead of waiting, as `sendNowRoute` says. Like any new turn, it
     /// lifts the pause a stopped turn put on the rest.
     func sendQueuedNow(_ id: QueuedPrompt.ID) async {
+        guard sendNowRoute != nil else { return }
         if host != nil {
             if editingQueuedPrompt == id {
                 editingQueuedPrompt = nil

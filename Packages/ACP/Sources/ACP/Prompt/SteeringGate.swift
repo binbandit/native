@@ -30,6 +30,12 @@ public struct SteeringGate: Equatable, Sendable {
 
     public init() {}
 
+    /// Queue actions need an advertised extension or an explicit tool-boundary delivery contract.
+    /// The default hold policy alone is not an advertisement that the adapter can accept input.
+    public static func supportsQueuedSteering(supportsSteering: Bool, policy: SteeringPolicy?) -> Bool {
+        supportsSteering || policy == .afterTools
+    }
+
     public func delivery(supportsSteering: Bool, policy: SteeringPolicy = .afterTools) -> Delivery {
         if supportsSteering, policy == .nonInterrupting { return .steer }
         if let tool = tools.first(where: { !$0.status.isFinished }) { return .waitForTool(tool.title) }

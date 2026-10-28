@@ -490,3 +490,8 @@ extension preserves running tools. Native can then deliver Steer immediately. Th
 and removable in the composer. Without a steering extension, Native interrupts only at that boundary
 and submits the held message as the next prompt. Do not opt an interrupting adapter into
 `nonInterrupting`. Stop always cancels immediately regardless of this setting.
+
+The queue's Send Now action requires an advertised ACP steering extension or an explicit
+`"steeringPolicy": "afterTools"` declaration. Without either, queued messages wait for the turn to
+end and the action is hidden, including its menu item, accessibility action and queued-edit shortcut.
+An omitted or unknown policy does not opt an agent without ACP steering into this action.

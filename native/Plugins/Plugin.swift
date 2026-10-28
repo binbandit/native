@@ -184,7 +184,8 @@ struct AgentManifest: Codable, Hashable, Sendable {
     /// that titles sessions with a model of its own doesn't then), and any once Native's title for it
     /// differs, so the agent's own session list shows Native's titles. Nil leaves names to the agent.
     var renameCommand: String?
-    /// Immediate steering is allowed only when this adapter preserves running tool calls.
+    /// `afterTools` explicitly offers queued steering at tool boundaries without an ACP extension.
+    /// `nonInterrupting` permits immediate delivery when the adapter advertises ACP steering.
     var steeringPolicy: SteeringPolicy?
     /// Ways to sign the agent in that it accepts without advertising them, in ACP's shape
     /// (`AuthMethod`): a key in a variable it reads (`"type": "env_var"`), or a device code it

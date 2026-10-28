@@ -78,15 +78,17 @@ Tab edit the code and the hint says "↩ New line · ⌘↩ Send":
 
 ### Queued messages
 
-Each queued message has Send Now, Edit and Remove on hover; its menu (a right-click, or touch and
-hold on iPad) adds Move Up and Move Down. Send Now steers the message into the running turn when the
-agent can steer safely; otherwise it waits for running tools before interrupting between steps. Drag a message to reorder
-the queue. Clicking a message, or ↑ in an empty composer, opens it in the editor:
+Each queued message has Edit and Remove on hover; its menu (a right-click, or touch and hold on
+iPad) adds Move Up and Move Down. Send Now appears only when the current task's agent advertises
+ACP steering or explicitly declares `afterTools` delivery in its plugin manifest. It adds the message
+to the running turn, waiting for running tools when needed. For agents advertising neither, queued
+messages send when the turn ends; Send Now, its menu item, accessibility action and shortcut are absent.
+Drag a message to reorder the queue. Clicking a message, or ↑ in an empty composer, opens it in the editor:
 
 | Keys (queued message open in the editor) | Action |
 | --- | --- |
 | Return | Save the edit; the message keeps its place |
-| ⌘Return | Save the edit and Send Now |
+| ⌘Return | Save the edit and Send Now, only when the agent supports it |
 | ⌥⌘↑ / ⌥⌘↓ | Move it up / down the queue (Task ▸ Move Queued Message Up / Down) |
 | Escape | Close it without saving |
 

@@ -13,6 +13,54 @@ private struct SteeringQueueRegression {
             print("FAIL: couldn't create the in-app session fixture")
             exit(1)
         }
+        guard let unsupported = SessionModel.preview(in: app, phase: .prompting, supportsSteering: false) else {
+            print("FAIL: couldn't create the unsupported agent fixture")
+            exit(1)
+        }
+        guard unsupported.sendNowRoute == nil else {
+            print("FAIL: Send Now is offered without an ACP steering extension or an explicit afterTools policy")
+            exit(1)
+        }
+        unsupported.queue.append("wait for the turn")
+        guard let queued = unsupported.queuedPrompts.first else {
+            print("FAIL: couldn't queue the unsupported agent's message")
+            exit(1)
+        }
+        unsupported.editingQueuedPrompt = queued.id
+        await unsupported.sendQueuedNow(queued.id)
+        guard unsupported.queuedPrompts.map(\.id) == [queued.id], unsupported.editingQueuedPrompt == queued.id else {
+            print("FAIL: unavailable Send Now changed the queue or its edit")
+            exit(1)
+        }
+        unsupported.phase = .idle
+        guard unsupported.sendNowRoute == nil else {
+            print("FAIL: an unsupported agent exposes Send Now after the turn")
+            exit(1)
+        }
+        let boundary = SessionModel(
+            agent: AgentDefinition(
+                AgentManifest(id: "boundary", name: "Boundary", command: "/dev/null", steeringPolicy: .afterTools),
+                pluginID: "fixture"),
+            id: SessionID("boundary"), cwd: session.cwd, connection: nil, services: app.sessions.services,
+            supportsSteering: false, phase: .prompting)
+        guard session.sendNowRoute == .steer, boundary.sendNowRoute == .steer else {
+            print("FAIL: native or explicit afterTools steering lost Send Now")
+            exit(1)
+        }
+        var keys = ComposerKeyMap.Context(
+            isSuggestionListOpen: false, isDraftEmpty: false, isWorking: true, hasQueuedPrompts: true,
+            isEditingQueued: true, canSendQueuedNow: false, hasLastPrompt: true, isComposing: false,
+            preferredFollowUp: .queue)
+        guard ComposerKeyMap.action(for: .return, modifiers: .command, isRepeat: false, in: keys) == nil else {
+            print("FAIL: an unsupported queued edit claims the Send Now shortcut")
+            exit(1)
+        }
+        keys.canSendQueuedNow = true
+        guard ComposerKeyMap.action(for: .return, modifiers: .command, isRepeat: false, in: keys) == .sendQueuedNow
+        else {
+            print("FAIL: a supported queued edit lost the Send Now shortcut")
+            exit(1)
+        }
         session.state.appendUserMessage("original turn")
         session.apply(.toolCall(ToolCallUpdate(toolCallId: "sleep", title: "sleep 20", status: .inProgress)))
         let delivery = try await session.submit("local original", .steer)
@@ -60,7 +108,7 @@ private struct SteeringQueueRegression {
         }
         try await checkUndoAcrossTurn(app)
         try await checkAcknowledgementOwnership(app)
-        print("In-app hold, edit, undo, acknowledgement ownership and queue-order checks passed")
+        print("Queued steering capability, shortcut, undo, acknowledgement and queue-order checks passed")
     }
     private static func checkUndoAcrossTurn(_ app: AppModel) async throws {
         guard let session = SessionModel.preview(in: app, phase: .prompting) else { exit(1) }

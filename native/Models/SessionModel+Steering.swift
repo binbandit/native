@@ -1,7 +1,13 @@
 import ACP
 import Foundation
+import NativeHostProtocol
 
 extension SessionModel {
+    var supportsQueuedSteering: Bool {
+        SteeringGate.supportsQueuedSteering(
+            supportsSteering: hostSummary?.supportsSteering ?? supportsSteering, policy: agent.manifest.steeringPolicy)
+    }
+
     var steeringDelivery: SteeringGate.Delivery {
         steeringGate.delivery(supportsSteering: supportsSteering, policy: agent.manifest.steeringPolicy ?? .afterTools)
     }

@@ -2,8 +2,7 @@ import ACP
 import SwiftUI
 
 /// Follow-ups waiting for the turn to end, as the composer's top section. The first goes out next.
-/// Each can be sent now (steered after running tools finish), edited in the composer, moved by
-/// drag, its menu or ⌥⌘↑ / ⌥⌘↓ while open in the editor, or removed.
+/// Each can be edited, moved or removed. Agents advertising mid-turn delivery also offer Send Now.
 struct QueuedPromptsSection: View {
     typealias Prompt = SessionModel.QueuedPrompt
 
@@ -190,7 +189,11 @@ private struct QueuedPromptRow: View {
         .accessibilityLabel(isEditing ? "Editing: \(summary)" : isNext ? "Next: \(summary)" : summary)
         .accessibilityValue(prompt.waitingForTool.map { "Will steer after \($0) finishes" } ?? "Queued")
         // The hover actions, for VoiceOver and Switch Control, which don't hover.
-        .accessibilityAction(named: "Send Now") { if sendNow != nil { onSendNow(prompt.id) } }
+        .accessibilityActions {
+            if sendNow != nil {
+                Button("Send Now") { onSendNow(prompt.id) }
+            }
+        }
         .accessibilityAction(named: "Edit Message") { onEdit(prompt) }
         .accessibilityAction(named: "Remove from Queue") { onRemove(prompt.id) }
         .accessibilityAction(named: "Move Up") { onMove(prompt.id, .up) }
@@ -234,31 +237,39 @@ private struct ActionIcon: View {
 }
 
 #if DEBUG
-#Preview("Queued messages") {
+#Preview("Queued messages - Steering supported") {
+    DSPreviewPair {
+        ComposerSurface {
+            QueuedPromptsSection(
+                prompts: ComposerPreviewFixtures.queued, editing: nil, sendNow: .steer, agentName: "Steering Agent",
+                onSendNow: { _ in }, onMove: { _, _ in }, onDrop: { _, _ in }, onEdit: { _ in }, onRemove: { _ in })
+        }
+        .frame(width: 560)
+    }
+}
+
+#Preview("Queued messages - No mid-turn input") {
+    DSPreviewPair {
+        ComposerSurface {
+            QueuedPromptsSection(
+                prompts: ComposerPreviewFixtures.queued, editing: nil, sendNow: nil, agentName: "Queue Agent",
+                onSendNow: { _ in }, onMove: { _, _ in }, onDrop: { _, _ in }, onEdit: { _ in }, onRemove: { _ in })
+        }
+        .frame(width: 560)
+    }
+}
+
+#Preview("Queued messages - Waiting for tools") {
     let prompts: [SessionModel.QueuedPrompt] = {
         var prompts = ComposerPreviewFixtures.queued
         prompts[0].waitingForTool = "sleep 20"
         return prompts
     }()
     DSPreviewPair {
-        VStack(spacing: DS.Space.xl) {
-            ComposerSurface {
-                QueuedPromptsSection(
-                    prompts: prompts, editing: nil, sendNow: .steer, agentName: "Claude Code", onSendNow: { _ in },
-                    onMove: { _, _ in }, onDrop: { _, _ in }, onEdit: { _ in }, onRemove: { _ in })
-            }
-            // One open in the editor, on an agent that can't steer.
-            ComposerSurface {
-                QueuedPromptsSection(
-                    prompts: Array(prompts.prefix(2)), editing: prompts[1].id, sendNow: .steer, agentName: "Codex",
-                    onSendNow: { _ in }, onMove: { _, _ in }, onDrop: { _, _ in }, onEdit: { _ in },
-                    onRemove: { _ in })
-            }
-            ComposerSurface {
-                QueuedPromptsSection(
-                    prompts: [prompts[0]], editing: nil, sendNow: nil, agentName: "Cursor", onSendNow: { _ in },
-                    onMove: { _, _ in }, onDrop: { _, _ in }, onEdit: { _ in }, onRemove: { _ in })
-            }
+        ComposerSurface {
+            QueuedPromptsSection(
+                prompts: prompts, editing: prompts[0].id, sendNow: .steer, agentName: "After Tools Agent",
+                onSendNow: { _ in }, onMove: { _, _ in }, onDrop: { _, _ in }, onEdit: { _ in }, onRemove: { _ in })
         }
         .frame(width: 560)
     }
