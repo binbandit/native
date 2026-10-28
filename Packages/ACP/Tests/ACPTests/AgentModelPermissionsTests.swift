@@ -50,6 +50,9 @@ import Testing
         #expect(AgentModelPermissions.selection(for: "dontAsk", offered: ["default"])?.reason == .unknown)
         #expect(AgentModelPermissions.replacement(for: "auto", offered: ["bypassPermissions", "dontAsk"]) == "dontAsk")
         #expect(AgentModelPermissions.selection(for: nil, offered: ["auto", "default"])?.value == "default")
+        #expect(
+            AgentModelPermissions.selection(for: "default", offered: ["custom", "bypassPermissions"])?.reason
+                == .unknown)
         #expect(AgentModelPermissions.selection(for: "auto", offered: []) == nil)
     }
 

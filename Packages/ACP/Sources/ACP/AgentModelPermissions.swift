@@ -34,7 +34,7 @@ public enum AgentModelPermissions {
         if let stricter = ranked.filter({ $0.level.isSafer(than: wanted) }).max(by: { $0.level.rank < $1.level.rank }) {
             return Selection(value: stricter.value, reason: .stricter)
         }
-        return Selection(value: safest, reason: ranked.isEmpty ? .unknown : .safestAvailable)
+        return Selection(value: safest, reason: ranked.count == allowed.count ? .safestAvailable : .unknown)
     }
 
     public static func replacement(for source: String, offered: [String], forbidden: Set<String> = []) -> String? {
