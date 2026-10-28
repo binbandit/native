@@ -107,7 +107,7 @@ when host tools are enabled. See [Native tool context measurement](native-tool-c
 
 `AppModel.renameProject` changes Native's display name, never the folder on disk, and registers
 undo. Clearing a name restores the folder name. File > Rename Project, both sidebar menus and the
-Name field in Settings > Projects use that method. Managed policy does not govern display names.
+Name row in Settings > Projects use that method. Managed policy does not govern display names.
 
 `Packages/ProjectNames` normalizes names, resolves unnamed duplicates with the shortest distinct
 parent suffix, and keeps custom names in Native-owned defaults by canonical path and filesystem

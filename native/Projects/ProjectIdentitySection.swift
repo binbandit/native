@@ -21,7 +21,10 @@ struct ProjectIdentitySection: View {
                 description: Text(
                     "Shown throughout Native. Clear it to use the folder name; the folder on disk keeps its name.")
             ) {
-                ProjectNameField(project: project)
+                HStack(spacing: DS.Space.lg) {
+                    SettingsValue(project.baseName)
+                    Button("Rename…") { model.requestRenameProject(project.id) }
+                }
             }
             folderRow
             SettingsRow(id: rows.icon, "Icon", description: Text(iconDescription)) {
@@ -80,44 +83,26 @@ struct ProjectIdentitySection: View {
     }
 }
 
-/// Renames the project when the field is submitted or left; ⌘Z puts the old name back. Clearing it
-/// goes back to the folder's name.
-private struct ProjectNameField: View {
-    let project: Project
-
-    @Environment(AppModel.self) private var model
-    @Environment(\.undoManager) private var undoManager
-    @State private var draft = ""
-    @FocusState private var isFocused: Bool
-
-    private static let width: CGFloat = 220
-
-    var body: some View {
-        TextField(project.folderName, text: $draft)
-            .focused($isFocused)
-            .settingsField()
-            .frame(width: Self.width)
-            .onSubmit(commit)
-            .onChange(of: isFocused) { _, focused in
-                if !focused { commit() }
-            }
-            .onChange(of: project.baseName, initial: true) { _, name in
-                if !isFocused { draft = name }
-            }
-            .onDisappear(perform: commit)
-            .accessibilityLabel("Project name")
-    }
-
-    private func commit() {
-        model.renameProject(project.id, to: draft, undoManager: undoManager)
-        draft = model.projects.project(project.id)?.baseName ?? draft
-    }
-}
-
 #if DEBUG
-#Preview("Project identity") {
+#Preview("Project identity - Folder name") {
     let app = AppModel.preview()
     DSPreviewPair {
+        if let project = app.previewProject() {
+            ProjectIdentitySection(project: project)
+                .settingsPreviewPage()
+        }
+    }
+    .sidebarPreviewEnvironment(app)
+}
+#endif
+
+#if DEBUG
+#Preview("Project identity - Custom name") {
+    let app = AppModel.preview()
+    if let project = app.previewProject() {
+        app.renameProject(project.id, to: "Native at Work")
+    }
+    return DSPreviewPair {
         if let project = app.previewProject() {
             ProjectIdentitySection(project: project)
                 .settingsPreviewPage()
