@@ -16,7 +16,7 @@ so growth gets noticed while there's still room to choose what to cut; lower the
 
 | What | Budget | 2026-10-25, after the -Osize and Sparkle cut (Release) |
 | --- | --- | --- |
-| Download, update archive | 48 MB | 46.9 MB |
+| Download, update archive | 49 MB | 46.9 MB |
 | Download, disk image | 49 MB | not remeasured |
 | Installed app | 118 MB | 115.1 MB |
 | App binary (`Contents/MacOS/Native`) | 70 MB | 58.9 MB |
@@ -34,6 +34,10 @@ build them, and such an app looks 12 to 40 MB smaller than what ships.
   dry runs included, and stops before publishing when they're over.
 
 Raise a budget only with the reason written here, in the same change.
+
+2026-10-28: approved by Brayden, the update-archive download budget rises from 48 MB to 49 MB
+to unblock PRs measuring 0.1 to 0.2 MB over the limit. This is temporary until PR #195 moves
+updates to `.tar.xz` (about 32 MB) and resets the budget. All other budgets are unchanged.
 
 2026-10-27: the size cut in #211 restores the installed-app budget to 118 MB and the update ZIP
 budget to 48 MB after #210's temporary allowance. Release measures 117.016 MB installed /
