@@ -1,1 +1,4 @@
+bf701da35
+Command: scripts/tests/project-names.sh cx-rename-project
 PASS: model rename, undo/redo, duplicates, clearing, reopen, move and archive
+Includes relaunch preserves the archived copy.
