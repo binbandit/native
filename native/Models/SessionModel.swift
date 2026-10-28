@@ -92,6 +92,7 @@ final class SessionModel {
     var wantsComposerFocus = false
     /// Set to ask the session's view to open the model picker; the view clears it.
     var isModelPickerRequested = false
+    var isAgentPickerRequested = false
     /// Set to ask the composer to open its file picker (File ▸ Attach Files…); it clears it.
     var isAttachmentPickerRequested = false
     /// Set to ask the session's view to show or hide the subagent inspector; the view clears it.

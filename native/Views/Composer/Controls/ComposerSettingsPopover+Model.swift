@@ -5,13 +5,14 @@ extension ComposerSettingsPopover {
     var modelList: ModelChoiceList? { modelList(slots: modelSlots) }
 
     func modelList(slots: Int) -> ModelChoiceList? {
-        if let agentModels {
+        if agentModels != nil, settings.model != nil {
+            let agentModels = currentAgentModels
             return ModelChoiceList(
-                choices: agentModels.map(\.listChoice), current: currentModelID ?? "", query: query,
+                choices: agentModels.map(\.choice), current: currentModelID ?? "", query: query,
                 slots: page == .model
                     ? (agentModels.count > ModelChoiceList.filterThreshold ? ModelChoiceList.slots : agentModels.count)
                     : slots,
-                searchTerms: Dictionary(uniqueKeysWithValues: agentModels.map { ($0.id, $0.searchTerms) }))
+                searchTerms: [:])
         }
         return settings.model.map {
             ModelChoiceList(
@@ -22,21 +23,12 @@ extension ComposerSettingsPopover {
         }
     }
 
-    var currentModelID: String? {
-        guard let agentModels else { return settings.model?.value }
-        return agentModels.first {
-            $0.agent == currentAgentID && $0.kind == .model(settings.model?.value)
-        }?.id
-    }
-
-    var hasOtherAgentModels: Bool {
-        agentModels?.contains { $0.agent != currentAgentID && $0.unavailable == nil } == true
-    }
+    var currentModelID: String? { settings.model?.value }
 
     var modelTargets: [Target] {
         let targets: [Target] =
             modelList?.rows.compactMap { row in
-                if let entry = agentModels?.first(where: { $0.id == row.id }),
+                if let entry = currentAgentModels.first(where: { $0.choice.value == row.id }),
                     entry.unavailable != nil || (isStopped && entry.agent == currentAgentID)
                 {
                     return nil
@@ -59,7 +51,7 @@ extension ComposerSettingsPopover {
 
     func modelSection(slots: Int, showsCaption: Bool) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            if agentModels != nil {
+            if agentModels != nil, settings.model != nil {
                 if DS.isTouchPlatform {
                     modelPageRow(settings.model)
                 } else {

@@ -29,8 +29,6 @@ struct ComposerSettingsControl: View {
     @State private var pending: ComposerSettingsPopover.Pending?
     @State private var failure: ComposerSettingsPopover.Failure?
     @Environment(\.undoManager) private var undoManager
-    @State private var modelCatalog: [ComposerAgentModel] = []
-    @State private var loadingModelID: String?
     @State private var lastChange: (optionID: String, value: String)?
 
     var library: MCPLibrary? { MCPServersPlugin.library(in: app.plugins) }
@@ -48,7 +46,7 @@ struct ComposerSettingsControl: View {
         } label: {
             ComposerSettingsDoorLabel(
                 mode: mode.current.id == .build ? nil : mode.current.name,
-                model: doorModel,
+                model: doorModel, agent: session.agentName,
                 isFast: settings.modelSwitches.first?.isOn == true,
                 isOpen: isPresented, isHovered: isHovered)
         }
@@ -60,7 +58,7 @@ struct ComposerSettingsControl: View {
             [mode.current.id == .build ? nil : "\(mode.current.name) mode", doorModel, session.agentName]
                 .compactMap { $0 }.joined(separator: ", ")
         )
-        .accessibilityHint("Model, effort and when \(session.agentName) asks")
+        .accessibilityHint("Switch agent, model, effort and when \(session.agentName) asks")
         .accessibilityIdentifier("composer-settings")
         .help(CommandRegistry.shared.help("Task Settings", for: .sessionChooseModel))
         .focusedSceneValue(\.mcpServersPopover, mcpPresentation)
@@ -108,13 +106,14 @@ struct ComposerSettingsControl: View {
         }
         .onChange(of: isPresented) { _, open in
             if open, app.offersAgentModels {
-                modelCatalog = app.agentModels(for: session)
+                failure = nil
             }
             if !open {
                 showsMCP = false
                 showsGoalEditor = false
                 mcpPresentation?.wrappedValue = false
                 lastChange = nil
+                session.isAgentPickerRequested = false
             }
         }
     }
@@ -141,9 +140,11 @@ struct ComposerSettingsControl: View {
                 managementExplanation: policy.isManaged(.agentsAllowed) ? "Only approved agents are available." : nil,
                 permissionsManaged: permissionsManaged, forbiddenModes: policy.forbiddenPermissionModes,
                 rows: taskRows(openGoal: { showsGoalEditor = true }, openMCP: openMCP),
-                agentModels: app.offersAgentModels ? refreshedCatalog : nil,
+                agentModels: app.offersAgentModels ? app.composerAgentModels(for: session) : nil,
                 currentAgentID: session.agent.id, modelChange: session.modelChange,
-                loadingModelID: loadingModelID, onChooseAgentModel: chooseModel,
+                onChooseAgentModel: chooseModel,
+                onChooseAgent: { app.switchAgent(to: $0, for: session, undoManager: undoManager) },
+                highlightsAgent: session.isAgentPickerRequested,
                 onAgentsSettings: {
                     isPresented = false; presentation?.open(.agents)
                 },
@@ -163,14 +164,6 @@ struct ComposerSettingsControl: View {
         settings.model?.shortModelName ?? session.usage?.model ?? "Settings"
     }
 
-    /// Keep the opening order, while permissions and availability remain live.
-    private var refreshedCatalog: [ComposerAgentModel] {
-        let fresh = app.agentModels(for: session)
-        guard !modelCatalog.isEmpty else { return fresh }
-        let existing = modelCatalog.compactMap { old in fresh.first { $0.id == old.id } }
-        return existing + fresh.filter { row in !modelCatalog.contains { $0.id == row.id } }
-    }
-
     private var modelFailure: ComposerSettingsPopover.Failure? {
         guard session.modelChange?.stage == .failed, let change = session.modelChange else { return nil }
         return .init(optionID: "agent-model", message: change.error ?? "Couldn't change the model.") {
@@ -183,23 +176,6 @@ struct ComposerSettingsControl: View {
             let model = settings.model, let value
         {
             set(model, value)
-        } else if row.kind == .load {
-            guard loadingModelID == nil else { return }
-            loadingModelID = row.id
-            Task {
-                defer { loadingModelID = nil }
-                do {
-                    try await app.loadAgentModels(row, for: session)
-                    let fresh = app.agentModels(for: session)
-                    let index = modelCatalog.firstIndex { $0.id == row.id } ?? modelCatalog.endIndex
-                    modelCatalog.removeAll { $0.agent == row.agent }
-                    modelCatalog.insert(
-                        contentsOf: fresh.filter { $0.agent == row.agent }, at: min(index, modelCatalog.count))
-                    failure = nil
-                } catch {
-                    failure = .init(optionID: "agent-model", message: error.localizedDescription) { chooseModel(row) }
-                }
-            }
         } else {
             app.chooseAgentModel(row, for: session, undoManager: undoManager)
         }
@@ -272,6 +248,7 @@ struct ComposerSettingsControl: View {
 struct ComposerSettingsDoorLabel: View {
     let mode: String?
     let model: String
+    var agent: String?
     var isFast = false
     let isOpen: Bool
     var isHovered = false
@@ -279,8 +256,16 @@ struct ComposerSettingsDoorLabel: View {
     var body: some View {
         let lit = isOpen || isHovered
         HStack(spacing: DS.Space.xs) {
+            if let mode {
+                Text(mode).foregroundStyle(lit ? .dsTextPrimary : .dsTextSecondary).fixedSize()
+                Text("·").foregroundStyle(.dsTextQuaternary)
+            }
+            if let agent {
+                Text(agent).fixedSize()
+                Text("·").foregroundStyle(.dsTextQuaternary)
+            }
             Text(
-                "\(Text(mode.map { "\($0) " } ?? "").foregroundStyle(lit ? .dsTextPrimary : .dsTextSecondary))\(Text(mode == nil ? "" : "· ").foregroundStyle(.dsTextQuaternary))\(Text(model))\(Text(isFast ? " · " : "").foregroundStyle(.dsTextQuaternary))\(Text(isFast ? "Fast" : ""))"
+                "\(Text(model))\(Text(isFast ? " · " : "").foregroundStyle(.dsTextQuaternary))\(Text(isFast ? "Fast" : ""))"
             )
             .lineLimit(1)
             Image(systemName: "chevron.down").font(.dsMicro)
@@ -342,9 +327,10 @@ struct ComposerSettingsPageFrame<Content: View>: View {
 #Preview("Task settings door - Model, mode, Fast and no model setting") {
     DSPreviewPair {
         HStack(spacing: DS.Space.lg) {
-            ComposerSettingsDoorLabel(mode: nil, model: "Haiku 5.5", isOpen: false)
-            ComposerSettingsDoorLabel(mode: "Plan", model: "Haiku 5.5", isOpen: true)
-            ComposerSettingsDoorLabel(mode: nil, model: "6.1 Sol", isFast: true, isOpen: false, isHovered: true)
+            ComposerSettingsDoorLabel(mode: nil, model: "Haiku 5.5", agent: "Claude Code", isOpen: false)
+            ComposerSettingsDoorLabel(mode: "Plan", model: "Haiku 5.5", agent: "Claude Code", isOpen: true)
+            ComposerSettingsDoorLabel(
+                mode: nil, model: "6.1 Sol", agent: "Codex", isFast: true, isOpen: false, isHovered: true)
             ComposerSettingsDoorLabel(mode: nil, model: "claude-opus-5-5", isOpen: false)
             ComposerSettingsDoorLabel(mode: nil, model: "Settings", isOpen: false)
         }

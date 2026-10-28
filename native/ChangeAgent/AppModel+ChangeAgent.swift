@@ -50,6 +50,7 @@ extension AppModel {
     func requestAgentChange(_ source: SessionModel) {
         guard offersAgentChange, changingAgent == nil else { return }
         if offersAgentModels {
+            source.isAgentPickerRequested = true
             source.isModelPickerRequested = true
         } else {
             changingAgent = ChangeAgentModel(source: source, app: self)

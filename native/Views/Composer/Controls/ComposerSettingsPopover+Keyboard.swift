@@ -36,6 +36,13 @@ extension ComposerSettingsPopover {
             ]
         case nil:
             var sections: [[Target]] = []
+            if onChooseAgent != nil {
+                sections.append(
+                    agentGroups.groups.compactMap { group in
+                        guard group.models.first?.unavailable == nil, modelChange?.isPending != true else { return nil }
+                        return .agent(group.id)
+                    })
+            }
             if settings.model != nil || agentModels != nil {
                 sections.append(DS.isTouchPlatform ? [.model(currentModelID ?? "")] : modelTargets)
             }
@@ -210,12 +217,17 @@ extension ComposerSettingsPopover {
             page = .model
             highlighted = .back
             return
+        case .agent(let id):
+            guard let agent = agentGroups.groups.first(where: { $0.id == id })?.models.first,
+                agent.unavailable == nil, modelChange?.isPending != true
+            else { return }
+            if id != currentAgentID { onChooseAgent?(id) }
         case .model(let value):
             if DS.isTouchPlatform, page == nil {
                 page = .model
                 return
             }
-            if let row = agentModels?.first(where: { $0.id == value }) {
+            if let row = currentAgentModels.first(where: { $0.choice.value == value }) {
                 guard row.unavailable == nil, !(isStopped && row.agent == currentAgentID) else { return }
                 if value != currentModelID { onChooseAgentModel?(row) }
             } else if let model = settings.model, value != model.value {
@@ -289,6 +301,7 @@ extension ComposerSettingsPopover {
 
     private func isCurrent(_ target: Target) -> Bool {
         switch target {
+        case .agent(let id): id == currentAgentID
         case .model(let value): value == currentModelID
         case .autonomy(let value): value == shownAutonomy
         case .effort: true
@@ -301,6 +314,7 @@ extension ComposerSettingsPopover {
 
     private func name(of target: Target) -> String? {
         switch target {
+        case .agent(let id): agentGroups.groups.first { $0.id == id }?.models.first?.agentName
         case .model(let value): modelList?.rows.first { $0.id == value }?.name
         case .autonomy(let value): settings.autonomyLevels.first { $0.value == value }?.askingTitle
         case .effort: "Effort"

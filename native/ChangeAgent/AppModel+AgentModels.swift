@@ -12,7 +12,7 @@ extension AppModel {
         session.continuedTaskKey = record.source
     }
 
-    var offersAgentModels: Bool { offersAgentChange && experiments.value(of: .composerNext) }
+    var offersAgentModels: Bool { offersAgentChange }
 
     /// Only explicit loads create a conversation. Opening or hovering reads Native-owned caches
     /// and already loaded sessions on this exact host.
@@ -51,6 +51,31 @@ extension AppModel {
             }
         }
         return result
+    }
+
+    /// The picker lists installed agents on the task's host, including a stopped agent with its
+    /// recovery reason. Cached models belonging to removed or forbidden agents stay out of it.
+    func composerAgentModels(for source: SessionModel) -> [ComposerAgentModel] {
+        let installed = Set(
+            agentChangeRuntimes(at: agentChangePlace(of: source)).compactMap { runtime in
+                if case .notInstalled = runtime.status { return nil as AgentDefinition.ID? }
+                return runtime.agent.id
+            })
+        return agentModels(for: source).filter { $0.agent == source.agent.id || installed.contains($0.agent) }
+    }
+
+    func switchAgent(
+        to agent: AgentDefinition.ID, for source: SessionModel, undoManager: UndoManager? = nil
+    ) {
+        guard agent != source.agent.id,
+            let entry = composerAgentModels(for: source).first(where: { $0.agent == agent }),
+            entry.unavailable == nil
+        else { return }
+        // The candidate reports its own default during preparation. No discovery conversation or
+        // model choice is required before someone can choose the harness.
+        let choice = ComposerAgentModel(
+            agent: agent, agentName: entry.agentName, choice: .init(value: "", name: "Default"), kind: .model(nil))
+        chooseAgentModel(choice, for: source, undoManager: undoManager)
     }
 
     private func agentModelOptions(_ runtime: AgentRuntime, place: AgentChangePlace) -> [ConfigOption]? {

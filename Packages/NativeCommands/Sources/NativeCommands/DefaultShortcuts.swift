@@ -53,6 +53,7 @@ public enum DefaultShortcuts {
         "session.nextPermissionMode": "⇧⌘M",
         "session.nextMode": "⌃⇧M",
         "session.chooseModel": "⇧⌘E",
+        "session.changeAgent": "⌃⌥⌘A",
         "goal.edit": "⌥⌘G",
         "workflow.run": "⌥⌘R",
         "task.answerOldestAsk": "⌘Y",

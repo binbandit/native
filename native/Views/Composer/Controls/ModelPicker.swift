@@ -4,6 +4,7 @@ import SwiftUI
 /// The model list with a search field (an agent can offer dozens of
 /// models), plus the settings that tune the model: effort and switches such as Fast mode.
 struct ModelPicker: View {
+    var agentPicker: ComposerAgentPicker?
     let model: SelectSetting?
     let effort: SelectSetting?
     let switches: [SelectSetting]
@@ -12,6 +13,9 @@ struct ModelPicker: View {
 
     @State private var query = ""
     @State private var highlighted: Int?
+    @State private var highlightedAgent: AgentDefinition.ID?
+    @State private var isInAgents = false
+    @FocusState private var isPickerFocused: Bool
     @FocusState private var isSearchFocused: Bool
 
     private var matches: [SelectSetting.Choice] {
@@ -20,6 +24,16 @@ struct ModelPicker: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            if let agentPicker {
+                ComposerAgentSelector(
+                    agents: agentPicker.agents, current: agentPicker.current,
+                    pending: agentPicker.showsLoader ? agentPicker.pending : nil,
+                    isBusy: agentPicker.pending != nil,
+                    highlighted: isInAgents ? highlightedAgent : nil, onChoose: agentPicker.onChoose
+                )
+                .padding(.vertical, DS.ComposerSettings.sectionInset)
+                SeparatorLine()
+            }
             if model != nil {
                 searchField
                 SeparatorLine()
@@ -32,9 +46,25 @@ struct ModelPicker: View {
                 footer
             }
         }
-        .frame(width: ComposerMetrics.modelPickerWidth)
-        .onAppear { isSearchFocused = true }
-        .onChange(of: query) { highlighted = nil }
+        .frame(width: agentPicker == nil ? ComposerMetrics.modelPickerWidth : DS.ComposerSettings.popoverWidth)
+        .focusable()
+        .focusEffectDisabled()
+        .focused($isPickerFocused)
+        .onKeyPress(phases: [.down, .repeat]) { handleKey($0) }
+        .onAppear {
+            isPickerFocused = model == nil
+            isSearchFocused = model != nil
+            isInAgents = agentPicker?.highlightsAgent == true || model == nil
+            highlightedAgent = agentPicker?.current
+        }
+        .onChange(of: agentPicker?.current) {
+            query = ""
+            highlighted = nil
+            highlightedAgent = agentPicker?.current
+        }
+        .onChange(of: query) {
+            highlighted = nil; isInAgents = false
+        }
     }
 
     private var searchField: some View {
@@ -192,11 +222,44 @@ struct ModelPicker: View {
         // Shortcuts with ⌘, ⌥ or ⌃ belong to the app and the text field.
         guard press.modifiers.isDisjoint(with: [.command, .option, .control]) else { return .ignored }
         let matches = matches
+        let agents = agentPicker?.agents.filter { $0.unavailable == nil } ?? []
+        if press.key == .tab || press.key == KeyEquivalent("\u{19}") {
+            if !agents.isEmpty {
+                isInAgents.toggle()
+                highlightedAgent = agentPicker?.current
+                return .handled
+            }
+        }
+        if isInAgents, !agents.isEmpty {
+            let index = agents.firstIndex { $0.agent == highlightedAgent } ?? 0
+            switch press.key {
+            case .downArrow:
+                if index == agents.count - 1 {
+                    isInAgents = false; highlighted = 0
+                } else {
+                    highlightedAgent = agents[index + 1].agent
+                }
+                return .handled
+            case .upArrow:
+                highlightedAgent = agents[max(0, index - 1)].agent
+                return .handled
+            case .return, .space:
+                if agentPicker?.pending == nil { agentPicker?.onChoose(agents[index].agent) }
+                if press.key == .return { dismiss() }
+                return .handled
+            default: break
+            }
+        }
         switch press.key {
         case .downArrow:
             highlighted = min((highlighted ?? -1) + 1, matches.count - 1)
             return .handled
         case .upArrow:
+            if highlighted == 0 || highlighted == nil, let last = agents.last {
+                isInAgents = true
+                highlightedAgent = last.agent
+                return .handled
+            }
             highlighted = max((highlighted ?? matches.count) - 1, 0)
             return .handled
         case .return where press.phase == .down:

@@ -510,7 +510,7 @@ keys and Return to choose from the menu. Model, effort, autonomy and mode keep t
 controls, moving into More only as the row runs out of room.
 
 With Fine print (`NativeComposerNext`) enabled, the field's trailing controls are, left to right:
-the context ring (only from 70% full), the Task Settings door (the model, led by the mode when it
+the context ring (only from 70% full), the Task Settings door (the agent and model, led by the mode when it
 isn't Build), the paperclip (Attach Files, ⌘U) and Send or Stop. The door opens one Task Settings
 popover: the model and its effort, when the agent asks, then the task's rows (Mode, Goal, MCP
 servers, Web search when the agent offers it, and the agent's own settings). Choose Model (⌘⇧E)
@@ -523,8 +523,8 @@ Settings, as Escape does.
 | --- | --- |
 | ↑ / ↓ | Every row, top to bottom, across sections; skips headers and locked rows. The caption under a list describes the highlighted row |
 | ← / → | On Effort, change its level (applies at once). On Mode, Goal, MCP servers or the agent's own settings, → opens its page or its choices in place; ← comes back |
-| Tab / ⇧Tab | Next / previous section: Model (including Fast mode), Effort, When it asks, the task's rows, and any retry action. A section lands on its current choice. In Compose, Tab follows native focus through agents, Add Agent and every settings control |
-| Letters | Up to 8 models: jump to the row whose name starts with what's typed (as in menus). 9 or more: type into the model filter, which matches names, values and agent names |
+| Tab / ⇧Tab | Next / previous section: Agent, Model (including Fast mode), Effort, When it asks, the task's rows, and any retry action. A section lands on its current choice. In Compose, Tab follows native focus through agents, Add Agent and every settings control |
+| Letters | Up to 8 models: jump to the row whose name starts with what's typed (as in menus). 9 or more: type into the model filter, which matches only the current agent's model names and values |
 | Return | Choose and close. On a menu row, list its choices in place |
 | Space | Choose and keep the popover open |
 | Escape | Clear the filter; else leave a page; else close |
@@ -541,20 +541,24 @@ Lists past eight models keep the filter, with the last slot showing **N more mat
 | | Put the task in a mode, one command per mode ("Debug Mode"); your own and the project's modes get theirs too | Task ▸ Mode | `mode.build` / `mode.plan` / `mode.ask` / `mode.debug` / `mode.review` |
 | | Edit Modes… (Settings ▸ Modes) | Task ▸ Mode | `modes.edit` |
 | ⌘⇧E | Model picker | Task | `session.chooseModel` |
+| ⌃⌥⌘A | Switch Agent: open the picker on the current agent | Task ▸ Switch Agent | `session.changeAgent` |
 | | Change Workspace…: choose a branch, new worktree or project folder before the first message | Task | `session.changeWorkspace` |
 | ⌥⌘G | Set or edit the task's goal | Task | `goal.edit` |
 | ⌥⌘R | Run a workflow | Task | `workflow.run` |
 
 ## Choosing an agent
 
-With Change Agent and Fine print enabled in Settings > Labs, Task > Change Agent…
-(`session.changeAgent`) opens the composer's Model list, as Choose Model does. Other agents'
-reported models follow the current agent's models, with the agent named beside each model.
-Return chooses and closes; Space chooses and keeps the list open. Selecting another agent
-prepares it without sending a message. Context goes with the next message you explicitly send.
-The task keeps its folder, branch, draft, attachments and quoted sources. Earlier conversations
-stay accessible. While a normal turn runs, the choice waits for it to finish. Answer pending
-requests and send or remove queued messages first. Goals that cannot move safely must be cleared.
+With Change Agent enabled in Settings > Labs, the composer's model control names both the
+agent and model ("Claude Code · Haiku 5.5"). Its first section is Agent: installed agents in a
+compact row, with the current one checked. The models below belong only to the current agent.
+This works with Fine print on or off. Task ▸ Switch Agent lists the same agents; Choose Agent…
+(⌃⌥⌘A, `session.changeAgent`) opens the picker on its Agent section. The command palette finds
+"Switch Agent". Return chooses and closes; Space chooses and keeps the picker open.
+Selecting another agent prepares its default model immediately without sending a message.
+Context goes with the next message you explicitly send. The task keeps its folder, branch,
+draft, attachments and quoted sources. Earlier conversations stay accessible. While a normal
+turn runs, the choice waits for it to finish. Answer pending requests and send or remove queued
+messages first. Goals that cannot move safely must be cleared.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
@@ -565,7 +569,7 @@ requests and send or remove queued messages first. Goals that cannot move safely
 The persistent receipt above the field and the transcript divider offer Undo before the next
 message. After submission, Continue with the earlier agent makes a new choice; it cannot unsend
 a message. Escape dismisses the list without cancelling preparation. No title-bar agent button
-or review sheet is part of this path. Without Fine print, Change Agent retains its existing path.
+or review sheet is part of this path in either composer.
 
 New Task With… (⌥⌘N) opens the agent picker in a sheet: every agent Native runs, each with
 its state (ready, starting, needs sign-in, not installed, stopped) and, when it can't start a

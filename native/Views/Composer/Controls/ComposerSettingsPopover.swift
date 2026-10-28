@@ -28,6 +28,7 @@ struct ComposerSettingsPopover: View {
 
     enum Target: Hashable {
         case model(String)
+        case agent(AgentDefinition.ID)
         case effort
         case autonomy(String)
         case row(String)
@@ -53,6 +54,8 @@ struct ComposerSettingsPopover: View {
     var modelChange: ComposerAgentChange?
     var loadingModelID: String?
     var onChooseAgentModel: ((ComposerAgentModel) -> Void)?
+    var onChooseAgent: ((AgentDefinition.ID) -> Void)?
+    var highlightsAgent = false
     var onAgentsSettings: (() -> Void)?
     /// While Plan suspends the permission level, the level it returns to.
     var resumedAutonomy: String?
@@ -108,7 +111,17 @@ struct ComposerSettingsPopover: View {
         .focused($isFocused)
         .onAppear {
             isFocused = true
-            if highlightsCurrent, let currentModelID { highlighted = .model(currentModelID) }
+            if highlightsAgent, let currentAgentID {
+                highlighted = .agent(currentAgentID)
+            } else if highlightsCurrent, let currentModelID {
+                highlighted = .model(currentModelID)
+            }
+        }
+        .onChange(of: currentAgentID) {
+            query = ""
+            hovered = nil
+            highlighted = nil
+            page = nil
         }
         .onKeyPress(phases: [.down, .repeat]) { handleKey($0) }
         .accessibilityElement(children: .contain)
@@ -123,10 +136,14 @@ struct ComposerSettingsPopover: View {
             if let leadingContent {
                 leadingContent
             }
+            if agentModels != nil, onChooseAgent != nil {
+                agentSection.composerSettingsSection(ruled: isStopped || leadingContent != nil)
+            }
             // Stopped values stay dimmed and disabled; overflow navigation stays available.
             Group {
                 modelSection(slots: slots, showsCaption: showsCaptions)
-                    .composerSettingsSection(ruled: isStopped || leadingContent != nil)
+                    .composerSettingsSection(
+                        ruled: isStopped || leadingContent != nil || (agentModels != nil && onChooseAgent != nil))
                 if settings.autonomy != nil {
                     autonomySection(showsCaption: showsCaptions).composerSettingsSection(ruled: true).disabled(
                         isStopped)
