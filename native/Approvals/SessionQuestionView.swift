@@ -8,11 +8,10 @@ struct SessionQuestionView: View {
     let question: SessionModel.PendingQuestion
 
     var body: some View {
-        let request = question.request
         AnnotatedQuestionView(
             agentName: session.agentName,
-            questionnaire: request.requestedSchema.flatMap { AgentQuestionnaire(message: request.message, schema: $0) },
-            message: request.message,
+            questionnaire: question.questionnaire,
+            message: question.request.message,
             // It takes the keys when nothing's being typed.
             takesFocus: session.draft.isEmpty,
             isAvailable: session.phase != .disconnected,
