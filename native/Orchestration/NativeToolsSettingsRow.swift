@@ -14,7 +14,8 @@ struct NativeToolsSettingsRow: View {
             description: Text(
                 supportsSkill
                     ? "Uses a skill when available, with MCP as a fallback. Turn on to always load Native's MCP tools."
-                    : "This agent uses MCP to access Native's tasks and setup tools."),
+                    : "Let this agent use Native's task and setup tools through MCP. When off, these tools are unavailable the next time a task is opened."
+            ),
             detail: Text(
                 "Applies when a task is next opened. Both paths follow the same permissions and organization policy.")
         ) {
@@ -76,5 +77,20 @@ struct NativeToolsSettingsRow: View {
     }
     .environment(model)
     .environment(policy)
+}
+
+#Preview("Native tools - No skill support, MCP off") {
+    let model = AppModel.preview()
+    let registry = PluginRegistry(previewing: [BuiltInPlugins.cursor])
+    registry.setNativeMCPEnabled(false, for: AgentDefinition.ID(rawValue: "cursor"))
+    return DSPreviewPair {
+        SettingsRowGroup {
+            ForEach(registry.agents) { agent in
+                NativeToolsSettingsRow(agent: agent, registry: registry)
+            }
+        }
+        .settingsPreviewPage()
+    }
+    .environment(model)
 }
 #endif
