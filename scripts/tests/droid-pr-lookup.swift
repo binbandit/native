@@ -504,7 +504,8 @@ private struct DroidPullRequestLookupRegression {
             "Archived droid task exposed writes")
         try require(await here.commands.count == commandsHere, "Archived droid lookup used this Mac's git or gh")
         try require(
-            await linkA2.lookups.last?.directory == "/same/repo", "Archived droid PR lookup used the removed worktree")
+            SessionFolder.isSame(await linkA2.lookups.last?.directory ?? "", "/same/repo"),
+            "Archived droid PR lookup used the removed worktree")
         print(
             "PASS: archived droid outcomes use that host's saved branch and surviving checkout, with read-only actions")
         print("PASS: pairing a droid again asks the new pairing")

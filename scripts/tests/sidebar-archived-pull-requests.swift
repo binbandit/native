@@ -88,7 +88,8 @@ enum SidebarArchivedPullRequestChecks {
         let lookups = await freshRunner.commands.filter { $0.arguments.first == "pr" }
         try require(lookups.count == 1, "Archived task must share the PR cache")
         try require(
-            lookups.first?.directory == folder.path && lookups.first?.arguments.contains(branch?.branch ?? "") == true,
+            SessionFolder.isSame(lookups.first?.directory ?? "", folder.folderPath)
+                && lookups.first?.arguments.contains("--head=\(branch?.branch ?? "")") == true,
             "gh must look up the saved branch from the surviving checkout")
         freshInsights.pullRequestMenu(summary)?.items.first { $0.title == "Open on GitHub" }?.perform()
         try require(opened?.lastPathComponent == "107", "Archived row menu must open its own PR")
