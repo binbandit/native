@@ -90,6 +90,36 @@ struct TaskScratchStoreTests {
         #expect(model.folder(for: "agent/task") == folder)
     }
 
+    @Test func redirectedStorageNeverReadsAnIndexOrCreatesTaskFoldersOutsideItsRoot() throws {
+        let temporary = FileManager.default.temporaryDirectory.resolvingSymlinksInPath()
+            .appendingPathComponent("task-scratch-root-\(UUID())", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temporary) }
+        let outside = temporary.appendingPathComponent("outside", isDirectory: true)
+        try FileManager.default.createDirectory(at: outside, withIntermediateDirectories: true)
+        try JSONEncoder().encode(["agent/task": UUID()]).write(to: outside.appendingPathComponent("tasks.json"))
+        let link = temporary.appendingPathComponent("private", isDirectory: true)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: outside)
+        let store = TaskScratchStore(root: link)
+        #expect(store.folder(for: "agent/task") == nil)
+        #expect(throws: TaskScratchStore.Failure.self) { try store.create(for: "agent/new") }
+        #expect(try FileManager.default.contentsOfDirectory(atPath: outside.path) == ["tasks.json"])
+    }
+
+    @Test func redirectedIndexIsNeverReadOrOverwritten() throws {
+        let (temporary, model) = try fixture()
+        defer { try? FileManager.default.removeItem(at: temporary) }
+        try FileManager.default.createDirectory(at: model.root, withIntermediateDirectories: true)
+        let outside = temporary.appendingPathComponent("outside.json")
+        let original = try JSONEncoder().encode(["agent/task": UUID()])
+        try original.write(to: outside)
+        try FileManager.default.createSymbolicLink(
+            at: model.root.appendingPathComponent("tasks.json"), withDestinationURL: outside)
+        let redirected = TaskScratchStore(root: model.root)
+        #expect(redirected.folder(for: "agent/task") == nil)
+        #expect(throws: TaskScratchStore.Failure.self) { try redirected.create(for: "agent/new") }
+        #expect(try Data(contentsOf: outside) == original)
+    }
+
     @Test func emptyCopyDoesNotCreateClutterAndScratchCannotBecomeAProject() throws {
         let (temporary, model) = try fixture()
         defer { try? FileManager.default.removeItem(at: temporary) }

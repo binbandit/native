@@ -25,13 +25,16 @@ public final class TaskScratchStore {
         self.root = root.standardizedFileURL
         index = root.appendingPathComponent("tasks.json")
         folders =
-            (persists ? try? Data(contentsOf: index) : nil).flatMap {
+            (persists && self.root.resolvingSymlinksInPath().path == self.root.path
+            && index.resolvingSymlinksInPath().path == index.path
+            ? try? Data(contentsOf: index) : nil).flatMap {
                 try? JSONDecoder().decode([String: UUID].self, from: $0)
             } ?? [:]
     }
 
     /// Allocated before agent startup; a retry uses the same directory.
     public func create(for task: String) throws -> URL {
+        guard root.resolvingSymlinksInPath().path == root.path else { throw Failure.unsafeFolder }
         if let folder = folder(for: task) {
             guard owns(folder) else { throw Failure.unsafeFolder }
             return folder
@@ -77,8 +80,8 @@ public final class TaskScratchStore {
         guard plain.deletingLastPathComponent() == root,
             UUID(uuidString: plain.lastPathComponent) != nil,
             folders.values.contains(where: { $0.uuidString == plain.lastPathComponent }),
-            plain.resolvingSymlinksInPath() == plain,
-            root.resolvingSymlinksInPath() == root
+            plain.resolvingSymlinksInPath().path == plain.path,
+            root.resolvingSymlinksInPath().path == root.path
         else { return false }
         return true
     }
@@ -108,7 +111,8 @@ public final class TaskScratchStore {
     }
 
     private nonisolated static func copyFiles(from source: URL, into project: URL, root: URL) throws -> URL? {
-        guard source.resolvingSymlinksInPath() == source, root.resolvingSymlinksInPath() == root else {
+        guard source.resolvingSymlinksInPath().path == source.path, root.resolvingSymlinksInPath().path == root.path
+        else {
             throw Failure.unsafeFolder
         }
         let target = project.standardizedFileURL.resolvingSymlinksInPath()
@@ -134,6 +138,10 @@ public final class TaskScratchStore {
 
     private func save() throws {
         guard persists else { return }
+        guard root.resolvingSymlinksInPath().path == root.path, index.resolvingSymlinksInPath().path == index.path
+        else {
+            throw Failure.unsafeFolder
+        }
         try FileManager.default.createDirectory(
             at: root, withIntermediateDirectories: true,
             attributes: [.posixPermissions: 0o700])

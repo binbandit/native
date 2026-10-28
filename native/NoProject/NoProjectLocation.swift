@@ -11,10 +11,10 @@ enum NoProjectLocation {
             0x89, 0x08, 0x16, 0xD9, 0x72, 0xB8, 0x0F, 0x1A
         ))
     static var root: URL {
-        URL.applicationSupportDirectory.appendingPathComponent(
+        URL.applicationSupportDirectory.standardizedFileURL.resolvingSymlinksInPath().appendingPathComponent(
             Bundle.main.bundleIdentifier ?? "Native", isDirectory: true
         )
-        .appendingPathComponent("Task Files", isDirectory: true).standardizedFileURL.resolvingSymlinksInPath()
+        .appendingPathComponent("Task Files", isDirectory: true).standardizedFileURL
     }
     static var group: Project { Project(id: id, url: root, displayName: "No project") }
     static func contains(_ folder: URL) -> Bool {
