@@ -65,7 +65,7 @@ for _ in $(seq 1 20); do
     focus=$("${drive[@]}" focused)
     printf '%s\n' "$focus" >>"$evidence/focus.txt"
     if [[ "$focus" == *'AXMenuButton "Low"'* ]]; then effort=1; fi
-    if [[ "$focus" == *'Fast mode'* ]]; then fast=1; break; fi
+    if [[ "$focus" == *'AXCheckBox:Toggle "Fast mode"'* ]]; then fast=1; break; fi
 done
 "${drive[@]}" tree >"$evidence/tree.txt"
 [ "$effort" = 1 ] && [ "$fast" = 1 ] || { echo 'FAIL: Tab never reached both effort and Fast mode'; exit 1; }
