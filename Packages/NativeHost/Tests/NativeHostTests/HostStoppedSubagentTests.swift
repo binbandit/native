@@ -44,6 +44,20 @@ struct HostStoppedSubagentTests {
             descendants.append(child)
             owner = child
         }
+        let buffered = try #require(
+            AgentUpdate.parse(
+                Data(
+                    #"{"params":{"sessionId":"child-0","update":{"sessionUpdate":"subagent_update","sessionId":"child-1","state":{"state":"idle","stopReason":"cancelled"}}}}"#
+                        .utf8)))
+        let generation = link.generation
+        let previous = link.onChange
+        link.onChange = {
+            previous?()
+            if nested && link.generation > generation && link.status == .ready {
+                link.buffer(buffered.update, for: SessionID("child-0"))
+            }
+        }
+        defer { link.onChange = previous }
         _ = try await recorder.client.prompt(PromptParams(sessionID: parent.id, text: "stubborn 100"))
         try await recorder.wait("the parent turn") { await $0.agentText(parent.id).contains("tick 1") }
         try await recorder.client.cancel(parent.id)
@@ -55,6 +69,7 @@ struct HostStoppedSubagentTests {
             #expect(rig.core.sessions[child.id] === child)
             let id = try #require(child.record.agentSessionID)
             #expect(link.routes[id] == child.id)
+            #expect(rig.core.sessions.values.count { $0.record.agentSessionID == id } == 1)
             let summary = try await reader.client.attach(child.id)
             #expect(await reader.agentText(child.id) == "Child history")
             #expect(!summary.needsApproval)

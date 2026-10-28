@@ -212,6 +212,10 @@ extension HostCore {
                 for: session.id, agent: session.record.agentID, base: session.mcpServers)
             guard session.loadGeneration == loadGeneration else { throw PeerError.closed }
             let children = preserving ? subagents(of: session) : []
+            // Buffered announcements must not recreate descendants whose history Native kept.
+            for child in children {
+                if let id = child.record.agentSessionID { link.routes[id] = child.id }
+            }
             for child in children { route(child, on: link) }
             if !preserving {
                 discardSubagentsForReplay(of: session, on: link)
