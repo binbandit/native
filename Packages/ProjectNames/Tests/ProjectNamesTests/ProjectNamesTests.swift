@@ -56,4 +56,23 @@ import Testing
         #expect(ProjectNameStore(defaults: defaults).name(for: original) == nil)
         #expect(FileManager.default.fileExists(atPath: moved.path))
     }
+
+    @Test @MainActor func replacementFolderDoesNotTakeAMovedFoldersName() throws {
+        let domain = "ProjectNamesTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: domain))
+        defer { defaults.removePersistentDomain(forName: domain) }
+        let scratch = FileManager.default.temporaryDirectory.appending(path: domain)
+        defer { try? FileManager.default.removeItem(at: scratch) }
+        let original = scratch.appending(path: "native")
+        let moved = scratch.appending(path: "moved")
+        try FileManager.default.createDirectory(at: original, withIntermediateDirectories: true)
+        let store = ProjectNameStore(defaults: defaults)
+        store.rename(original, to: "Work Native")
+        try FileManager.default.moveItem(at: original, to: moved)
+        try FileManager.default.createDirectory(at: original, withIntermediateDirectories: true)
+        #expect(store.name(for: original) == nil)
+        store.rename(original, to: nil)
+        #expect(store.name(for: moved) == "Work Native")
+    }
+
 }

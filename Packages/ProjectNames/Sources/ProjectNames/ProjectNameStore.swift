@@ -39,8 +39,10 @@ import Foundation
     }
 
     private func index(for url: URL) -> Int? {
-        if let id = fileID(for: url), let index = entries.firstIndex(where: { $0.fileID == id }) { return index }
-        return entries.firstIndex { $0.paths.contains(path(for: url)) }
+        let id = fileID(for: url)
+        if let id, let index = entries.firstIndex(where: { $0.fileID == id }) { return index }
+        // A new folder at a moved folder's old path must not inherit or clear that folder's name.
+        return entries.firstIndex { $0.paths.contains(path(for: url)) && (id == nil || $0.fileID == nil) }
     }
 
     private func path(for url: URL) -> String {
