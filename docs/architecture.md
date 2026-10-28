@@ -632,6 +632,9 @@ equivalent level, then the closest stricter level, otherwise the safest advertis
 policy. Unknown semantics are never treated as equivalent by matching IDs; a wholly unfamiliar list
 uses its first advertised level with an explicit review notice. A missing permission setting does
 not block the switch. Only a policy denying every advertised level blocks permission translation.
+Planning and read-only restrictions remain distinct from ordinary approvals. A supported agent plan
+setting is confirmed before committing, including separate collaboration settings; Native rebinds
+its mode ownership to the target's option IDs. A missing planning restriction is disclosed.
 The receipt explains changed or incomparable levels and opens the permission choices in one click;
 Undo retains the original session and level. The chosen settings and notice survive relaunch. It does
 not allocate a worktree, run task-start defaults or send a working prompt. The source remains checked

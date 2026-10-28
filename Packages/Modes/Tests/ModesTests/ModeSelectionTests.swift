@@ -84,6 +84,31 @@ struct ModeSelectionTests {
         #expect(changes.map(\.optionID) == ["model", "mode"])
     }
 
+    @Test(arguments: [Mode.ask, .review, .plan])
+    func continuingMovesPlanOwnershipToTheTargetsOption(mode: Mode) throws {
+        let (asking, _, _) = switching(ModeSelection(), to: mode, on: try Fixtures.options(Fixtures.claudeCode))
+        let target = Fixtures.setting(try Fixtures.options(Fixtures.codex), "collaboration_mode", to: "plan")
+        let continued = asking.continuing(options: target)
+        #expect(continued.effectiveMode(options: target) == mode.id)
+        #expect(continued.restore["mode"] == nil)
+        let (_, _, changes) = switching(continued, to: .build, on: target)
+        #expect(changes == [.init(optionID: "collaboration_mode", value: "default")])
+    }
+
+    @Test func continuingDoesNotMistakeAnUnsupportedPlanForApproval() throws {
+        let (asking, _, _) = switching(ModeSelection(), to: .ask, on: try Fixtures.options(Fixtures.claudeCode))
+        let target = try Fixtures.options(Fixtures.claudeCode)
+        #expect(asking.continuing(options: target).effectiveMode(options: target) == .ask)
+    }
+
+    @Test func continuingDoesNotRestoreAnUnsafeFirstChoice() throws {
+        let options = try Fixtures.options(
+            #"[{"id":"mode","name":"Permissions","category":"mode","type":"select","currentValue":"plan","options":[{"value":"bypassPermissions","name":"Full"},{"value":"default","name":"Ask"},{"value":"plan","name":"Plan"}]}]"#
+        )
+        let continued = ModeSelection(mode: .ask).continuing(options: options)
+        #expect(continued.restore["mode"]?.original == "default")
+    }
+
     @Test func survivesBeingSaved() throws {
         let (asking, _, _) = switching(ModeSelection(), to: .ask, on: try Fixtures.options(Fixtures.codex))
         let data = try JSONEncoder().encode(asking)

@@ -42,10 +42,11 @@ public enum AgentModelPermissions {
     }
 
     private enum Level {
-        case asks, edits, workspace, review, full, refuses
+        case asks, edits, workspace, review, full, refuses, planning, readOnly
 
         var rank: Int {
             switch self {
+            case .planning, .readOnly: -1
             case .asks, .refuses: 0
             case .edits, .workspace: 1
             case .review: 2
@@ -57,13 +58,18 @@ public enum AgentModelPermissions {
             // Trusted edits, a workspace boundary and risk review grant different actions.
             // Only asking/refusing every change is known safer across those grants. Full
             // access can narrow to any of them.
-            self != other && (self == .asks || self == .refuses || other == .full)
+            if other == .planning || other == .readOnly {
+                return self != other && (self == .planning || self == .readOnly)
+            }
+            return self != other && (rank < 0 || self == .asks || self == .refuses || other == .full)
         }
     }
 
     private static func level(_ value: String) -> Level? {
         switch value {
-        case "read-only", "default", "plan": .asks
+        case "default": .asks
+        case "read-only": .readOnly
+        case "plan": .planning
         case "dontAsk": .refuses
         case "acceptEdits": .edits
         case "workspace-write": .workspace

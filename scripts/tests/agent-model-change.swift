@@ -1,14 +1,16 @@
+import Modes
 import NativePolicy
 
 // The runner prepends the existing in-memory host fixture from droid-change-agent.swift.
 // Only fixture protocol responses are adapted to report a conservative permission mode.
 
 private struct AgentModelPermissionPolicy: PolicySource {
-    let blocked: Bool
+    let forbidden: [String]
+    private var blocked: Bool { !forbidden.isEmpty }
     func managedEntry(forKey key: String) -> ManagedEntry {
         guard blocked else { return .absent }
         switch key {
-        case "policy.permissions.forbiddenModes": return .value(["default", "auto"])
+        case "policy.permissions.forbiddenModes": return .value(forbidden)
         case "policy.organization.name": return .value("Example Organization")
         default: return .absent
         }
@@ -312,6 +314,14 @@ private struct AgentModelChangeRegression {
             ),
             ("unknown", "auto", #"[["interactive","Interactive"],["autopilot","Autopilot"]]"#, "interactive", true),
             ("no setting", "auto", "[]", nil, true),
+            ("plan supported", "plan", #"[["default","Manual"],["plan","Plan"]]"#, "plan", false),
+            ("plan separate", "plan", #"[["default","Manual"],["agent","Auto review"]]"#, "default", false),
+            ("plan no setting", "plan", "[]", nil, true),
+            ("plan unsupported", "plan", #"[["default","Manual"],["auto","Auto"]]"#, "default", true),
+            ("manual read-only", "read-only", #"[["default","Manual"],["plan","Plan"]]"#, "plan", true),
+            ("read-only via plan", "read-only", #"[["default","Manual"],["plan","Plan"]]"#, "plan", true),
+            ("policy closer", "bypassPermissions", #"[["default","Manual"],["agent","Auto review"]]"#, "default", true),
+            ("policy limited", "auto", #"[["default","Manual"],["agent","Auto review"]]"#, "default", true),
             ("policy locked", "auto", #"[["default","Manual"],["auto","Auto"]]"#, nil, false),
         ]
         for test in cases {
@@ -336,13 +346,16 @@ private struct AgentModelChangeRegression {
                         args: [
                             script, "--kind", "target", "--store", scratch.appending(path: "agent").path,
                             "--project", scratch.path, "--permission-options", test.levels,
-                        ]),
+                        ] + (test.name == "plan separate" ? ["--separate-plan"] : [])),
                 ])
             let app = AppModel(
                 plugins: PluginRegistry(
                     builtIns: [ManifestPlugin(manifest: manifest)], defaults: defaults,
                     policyCenter: PolicyCenter(
-                        source: AgentModelPermissionPolicy(blocked: test.name == "policy locked"))),
+                        source: AgentModelPermissionPolicy(
+                            forbidden: test.name == "policy locked"
+                                ? ["default", "auto"]
+                                : ["policy limited", "policy closer"].contains(test.name) ? ["agent"] : []))),
                 defaults: defaults, catalogURL: nil, experiments: experiments)
             defer { app.stopAgents() }
             _ = await app.checkForAgents()
@@ -351,13 +364,21 @@ private struct AgentModelChangeRegression {
                 at: scratch.appending(path: "source"), withIntermediateDirectories: true)
             try Data(test.source.utf8).write(to: scratch.appending(path: "source/default-mode"))
             _ = await app.ensureRunning(.init(rawValue: "fixture"))
-            let config = ComposerSettingsPreviewFixtures.claude(mode: test.source)
+            let modes = TaskModes(library: ModeLibrary(defaults: defaults), defaults: defaults)
+            app.sessionHooks.taskStarted = { session, earlier in await modes.taskStarted(session, continuing: earlier) }
+            let config =
+                test.source == "read-only"
+                ? ComposerSettingsPreviewFixtures.codex(mode: test.source)
+                : ComposerSettingsPreviewFixtures.claude(mode: test.source)
             guard
                 let source = SessionModel.preview(
                     in: app, agent: "fixture", id: "model-source", cwd: scratch.path,
                     configOptions: [config.model?.option, config.autonomy?.option].compactMap { $0 })
             else { throw ChangeFailure("No permission source") }
             source.previewExchange("Keep the task", reply: "Progress saved")
+            if (test.source == "plan" || test.source == "read-only") && test.name != "manual read-only" {
+                await modes.select(.ask, in: source)
+            }
             app.catalog.add(SessionInfo(sessionId: source.id, cwd: scratch.path), for: source.agent.id, in: project.id)
             app.selection = source.key
             let choice = ComposerAgentModel(
@@ -387,8 +408,31 @@ private struct AgentModelChangeRegression {
                 test.name + " selected the wrong level")
             try require(
                 (change.permissionNotice != nil) == test.notice, test.name + " explanation missing or unnecessary")
+            if test.source == "plan" || test.source == "read-only" {
+                let expectedMode: Mode.ID = test.name == "manual read-only" ? .plan : .ask
+                try require(modes.mode(of: target).id == expectedMode, "The task lost its local mode")
+                if test.name != "plan unsupported" && test.name != "plan no setting" {
+                    try require(
+                        ModeAgentSettings(target.configOptions).isPlanOn, "The target lost planning restrictions")
+                } else {
+                    try require(
+                        change.permissionNotice?.contains("can't require plan approval") == true,
+                        "Lost planning restriction was silent")
+                }
+            }
+            if test.name == "policy limited" || test.name == "policy closer" {
+                try require(
+                    change.permissionNotice?.contains("can't use") == true
+                        && change.permissionNotice?.contains("doesn't offer") == false
+                        && change.permissionNotice?.contains("when something looks risky") == true,
+                    "Policy-limited permission copy blamed the agent's offered choices")
+            }
             let stored = AgentModelContinuations(defaults: defaults).receipt(for: target.key)
             try require(stored?.permissionNotice == change.permissionNotice, "Permission notice did not persist")
+            if let plan = ModeAgentSettings(target.configOptions).plan, ModeAgentSettings(target.configOptions).isPlanOn
+            {
+                try require(stored?.confirmedChoices?[plan.id] == "plan", "Planning restriction did not persist")
+            }
             let calls = try String(contentsOf: scratch.appending(path: "agent/calls.jsonl"), encoding: .utf8)
             try require(!calls.contains("session/prompt"), "Permission fallback sent a prompt")
             change.undo()

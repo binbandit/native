@@ -9,7 +9,8 @@ extension ComposerView {
             session.modelChange?.isPermissionPolicyBlocked != true
         {
             let manager = PolicyCenter.shared.policy.organizationDisplayName
-            let choice = settings.autonomy?.current.map(Self.whenItAsks)
+            let explainsLevel = session.modelChange?.stage == .applied && session.modelChange?.permissionNotice != nil
+            let choice = explainsLevel ? nil : settings.autonomy?.current.map(Self.whenItAsks)
             Label(
                 "Managed by \(manager)\(choice.map { ": \($0)" } ?? "")",
                 systemImage: "lock"

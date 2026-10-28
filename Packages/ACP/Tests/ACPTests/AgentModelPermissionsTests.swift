@@ -27,6 +27,21 @@ import Testing
             AgentModelPermissions.replacement(for: "agent", offered: ["workspace-write", "read-only"]) == "read-only")
     }
 
+    @Test func planCannotBecomeOrdinaryApprovalsSilently() {
+        #expect(
+            AgentModelPermissions.selection(for: "plan", offered: ["default"])
+                == .init(value: "default", reason: .safestAvailable))
+        #expect(
+            AgentModelPermissions.selection(for: "plan", offered: ["default", "plan"])
+                == .init(value: "plan", reason: .equivalent))
+    }
+
+    @Test func readOnlyDoesNotBecomeOrdinaryApprovalsSilently() {
+        #expect(AgentModelPermissions.selection(for: "read-only", offered: ["default"])?.reason == .safestAvailable)
+        #expect(AgentModelPermissions.replacement(for: "read-only", offered: ["default", "plan"]) == "plan")
+        #expect(AgentModelPermissions.replacement(for: "plan", offered: ["default", "read-only"]) == "read-only")
+    }
+
     @Test func noSafeMatchUsesSafestOfferedAndReportsIt() {
         #expect(
             AgentModelPermissions.selection(for: "default", offered: ["agent-full-access", "workspace-write"])

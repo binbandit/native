@@ -103,6 +103,16 @@ struct ComposerAgentReceipt: View {
                 text:
                     "Example Organization doesn't allow any of Custom Agent's permission levels. Keep the current agent or contact your administrator.",
                 isFailure: true, actionTitle: "Try Again", action: {}, onDismiss: {})
+            ComposerAgentReceipt(
+                text: "Using Target Agent · Small",
+                permissionNotice:
+                    "Target Agent can't use 'when something looks risky' for this task, so it will ask before any change.",
+                onPermissions: {}, actionTitle: "Undo", action: {}, onDismiss: {})
+            ComposerAgentReceipt(
+                text: "Using Target Agent · Small",
+                permissionNotice:
+                    "Target Agent can't require plan approval. It will ask before any change instead. Review permissions before sending.",
+                onPermissions: {}, actionTitle: "Undo", action: {}, onDismiss: {})
         }.frame(width: DS.ComposerSettings.width).background(.dsSurface)
     }
 }

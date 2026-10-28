@@ -110,8 +110,22 @@ final class TaskModes {
     /// `projectRoot(session)` only finds the task once the catalog lists it.
     func taskStarted(_ session: SessionModel, continuing earlier: SessionModel?, projectRoot root: URL?) async {
         if let earlier {
-            // Its settings come across with the rest of the task's (`adoptSettings`).
-            selections[Self.key(session)] = selections[Self.key(earlier)]
+            // The candidate has confirmed its settings. Different adapters need new ownership
+            // records for a planning restriction, rather than the source's option IDs.
+            let previous = selections[Self.key(earlier)] ?? ModeSelection(mode: mode(of: earlier).id)
+            if earlier.agent.id == session.agent.id {
+                selections[Self.key(session)] = previous
+            } else {
+                let earlierMode = mode(of: earlier).id
+                let continuingMode: Mode.ID =
+                    earlierMode == .build && ModeAgentSettings(session.configOptions).isPlanOn
+                    ? .plan : earlierMode
+                selections[Self.key(session)] = ModeSelection(mode: continuingMode).continuing(
+                    options: session.configOptions
+                ) {
+                    !PolicyPermissionModes.forbids($0, value: $1)
+                }
+            }
             return
         }
         let root = root ?? projectRoot(session)
