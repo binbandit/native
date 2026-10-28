@@ -23,3 +23,15 @@ Reviewed against the mock in both appearances. The app uses the current shared c
 Real Claude Code verification used Haiku 5.5 at Low effort: start from Home with no folder, write a private checklist, move to atlas with a byte-identical copy, retain the draft, and answer a follow-up from the same conversation. An empty task moved without copying; its name, settings and files survive reopening. Delete and Cmd-Z restored the private task in both appearances.
 
 The model suite passed 11 tests on three consecutive runs; the scratch-store suite passed 8 tests. Search UI verification remains blocked by the shared battery pause before any tasks were indexed. iPad verification reaches existing host and Terminal platform errors. Final design approval remains pending.
+
+Final review updates: `39e99171` requires an explicit agent close acknowledgement. Process snapshots never authorize file deletion. Cleanup runs before history deletion; a refusal keeps the task listed and its files intact. The real Claude task at `8fbcc3da` verified final folder and ownership cleanup after the Undo window. The final copy separates the reason and recovery into paragraphs.
+
+| Additional state | Dark app | Dark mock | Light app | Light mock |
+| --- | --- | --- | --- | --- |
+| n12: Delete refused, task retained | [app](app-n12-dark.png) | [mock](mock-n12-dark.png) | [app](app-n12-light.png) | [mock](mock-n12-light.png) |
+
+Native owns the system alert's material, font and corner geometry; the mock uses the approved semantic palette for its hierarchy and copy. The final alert was checked in both appearances with a scripted fixture that rejects close; its task, ownership and exact file bytes remained.
+
+Validation: final Debug build has zero repository warnings; strict lint passed for 77 changed Swift files. Fourteen model tests cover startup, move, reopened identities, Git exclusion, Undo, cleanup ordering and refusal/retry. Thirty focused host/policy tests include unsupported close, rejected close and an escaped writer. Eight scratch-store tests and five keyboard-document tests passed. Release/Nightly compiled with archive sizes 48.1/48.2 MB against main's 49 MB budget and installed sizes 117.7/117.8 MB against 118 MB. The last edit only separates alert paragraphs; it has its own Debug build and visual check.
+
+Verification limits: the shared iPad compile check stops in host/Terminal/platform code; search UI was paused on battery with no tasks indexed. Projectless scratch execution is local; paired hosts still require a project. An agent unable to acknowledge closure retains the task and files with the failure message. Visual approval remains pending; do not merge.
