@@ -10,6 +10,7 @@ struct NoProjectTaskIntro: View {
                 "Ask a question, draft something, or explore an idea. Your files stay private until you move this task to a project."
         ) {
             Button("Write a Message") { session.wantsComposerFocus = true }
+                .disabled(!session.acceptsPrompts)
         }
     }
 }
@@ -20,6 +21,19 @@ struct NoProjectTaskIntro: View {
     DSPreviewPair {
         if let session = SessionModel.preview(in: app) {
             NoProjectTaskIntro(session: session).frame(width: 800, height: 500)
+        }
+    }
+    .environment(app)
+}
+#endif
+
+#if DEBUG
+#Preview("No project - Moving") {
+    let app = AppModel.preview(.empty)
+    DSPreviewPair {
+        if let session = SessionModel.preview(in: app) {
+            NoProjectTaskIntro(session: session).frame(width: 800, height: 500)
+                .onAppear { session.isChangingWorkspace = true }
         }
     }
     .environment(app)

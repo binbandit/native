@@ -11,7 +11,7 @@ struct NewSessionEmptyState: View {
     @Environment(\.isPrimaryTranscript) private var isPrimary
 
     var body: some View {
-        if isPrimary, session.isProjectless, session.acceptsPrompts {
+        if isPrimary, session.isProjectless {
             NoProjectTaskIntro(session: session)
         } else if isPrimary {
             NewSessionScreen(session: session)
