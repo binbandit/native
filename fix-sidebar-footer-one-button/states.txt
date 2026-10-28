@@ -1,0 +1,39 @@
+Sidebar footer state evidence
+Before: 48968dae2
+Rendered after: 4d54fade0; later changes preserve identical view output and move managed restriction assertions.
+Matching mock: none supplied or found. Reference for all footer states is the job specification: one avatar/name/trailing-gear Settings button; signed out uses Settings and gear.
+Settings reference: existing General settings tokens and Accounts group; managed details use SettingsNote.
+All accounts, portraits, organization names and paths are fixture content.
+The screen was unlocked before each capture. macOS reports windows off screen; captures use the isolated window id. Command-comma opens General; AX pointer, hover and VoiceOver checks remain pending.
+
+before-next-dark-account.png | existing split-footer baseline
+after-classic-dark-account.png | job specification; no image mock supplied
+after-classic-dark-managed-signed-out.png | job specification; no image mock supplied
+after-classic-dark-managed.png | job specification; no image mock supplied
+after-classic-light-account.png | job specification; no image mock supplied
+after-classic-light-managed-signed-out.png | job specification; no image mock supplied
+after-classic-light-managed.png | job specification; no image mock supplied
+after-next-dark-account-loginOnly.png | job specification; no image mock supplied
+after-next-dark-account-longName.png | job specification; no image mock supplied
+after-next-dark-account-offline.png | job specification; no image mock supplied
+after-next-dark-account.png | job specification; no image mock supplied
+after-next-dark-managed-signed-out.png | job specification; no image mock supplied
+after-next-dark-managed.png | job specification; no image mock supplied
+after-next-light-account.png | job specification; no image mock supplied
+after-next-light-managed-signed-out.png | job specification; no image mock supplied
+after-next-light-managed.png | job specification; no image mock supplied
+settings-classic-dark-account.png | job specification; no image mock supplied
+settings-classic-dark-managed-signed-out.png | job specification; no image mock supplied
+settings-classic-dark-managed.png | job specification; no image mock supplied
+settings-classic-light-account.png | job specification; no image mock supplied
+settings-classic-light-managed-signed-out.png | job specification; no image mock supplied
+settings-classic-light-managed.png | job specification; no image mock supplied
+settings-next-dark-account-loginOnly.png | job specification; no image mock supplied
+settings-next-dark-account-longName.png | job specification; no image mock supplied
+settings-next-dark-account-offline.png | job specification; no image mock supplied
+settings-next-dark-account.png | job specification; no image mock supplied
+settings-next-dark-managed-signed-out.png | job specification; no image mock supplied
+settings-next-dark-managed.png | job specification; no image mock supplied
+settings-next-light-account.png | job specification; no image mock supplied
+settings-next-light-managed-signed-out.png | job specification; no image mock supplied
+settings-next-light-managed.png | job specification; no image mock supplied
