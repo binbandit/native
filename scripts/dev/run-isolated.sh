@@ -143,12 +143,6 @@ bundle_id >/dev/null || { echo "run without --no-build to rebuild it as $name" >
 # Relaunching replaces the app but leaves its background host running, so durability and host
 # handoffs can be tested by relaunching; --quit and --reset stop the host too.
 quit_app
-# Instances start muted: many run at once on one Mac, and their sounds would play over whatever the
-# person at it is doing. Written once into the instance's own defaults, so turning sounds on in its
-# Settings (to test them) sticks.
-if ! defaults export "$(bundle_id)" - 2>/dev/null | plutil -extract pluginChoices.sounds raw - >/dev/null 2>&1; then
-    defaults write "$(bundle_id)" pluginChoices -dict-add sounds -bool NO
-fi
 defaults_args=()
 # Test sessions run on Claude Code with its cheapest model at its lowest effort, and instances are
 # dark, so a check never flashes a bright window at the person using this Mac. App arguments override
@@ -158,6 +152,9 @@ defaults_args=()
     defaults_args+=(-agentDefaults.claude-code.model haiku)
 [[ " ${app_args[*]-} " == *" -agentDefaults.claude-code.effort "* ]] ||
     defaults_args+=(-agentDefaults.claude-code.effort low)
+# The master mute also covers previews and any audio outside the Sounds plugin.
+[[ " ${app_args[*]-} " == *" -sounds.enabled "* ]] || defaults_args+=(-sounds.enabled NO)
+[[ " ${app_args[*]-} " == *" -native.mute "* ]] || defaults_args+=(-native.mute YES)
 [[ " ${app_args[*]-} " == *" -appearance.mode "* ]] || defaults_args+=(-appearance.mode dark)
 [[ " ${app_args[*]-} " == *" -gitWorktreesFolder "* ]] || defaults_args+=(-gitWorktreesFolder "$worktrees")
 # In the background (-g): the instance never takes focus from whoever is using this Mac.

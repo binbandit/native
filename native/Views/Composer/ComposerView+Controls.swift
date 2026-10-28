@@ -7,9 +7,9 @@ extension ComposerView {
     func settingsNote(_ settings: ComposerSettings) -> some View {
         if PolicyCenter.shared.isManaged(.forbiddenPermissionModes) {
             let manager = PolicyCenter.shared.policy.organizationName ?? "your organization"
-            let choice = settings.autonomy?.current?.askingTitle
+            let choice = settings.autonomy?.current.map(Self.whenItAsks)
             Label(
-                "Managed by \(manager)\(choice.map { ": \($0.lowercased())" } ?? "")",
+                "Managed by \(manager)\(choice.map { ": \($0)" } ?? "")",
                 systemImage: "lock"
             )
             .font(.dsCaption)
@@ -27,6 +27,18 @@ extension ComposerView {
                 .font(.dsCaption)
                 .foregroundStyle(.dsTextTertiary)
                 .padding(.horizontal, DS.Space.xxl)
+        }
+    }
+
+    /// A permission level as a phrase after the manager's name: "asks before any change", "never asks".
+    static func whenItAsks(_ level: SelectSetting.Choice) -> String {
+        switch level.value {
+        case "agent-full-access", "bypassPermissions": "never asks"
+        case "dontAsk": "refuses anything not already allowed"
+        case "read-only", "default", "workspace-write", "acceptEdits", "agent", "auto":
+            "asks \(level.askingTitle.prefix(1).lowercased() + level.askingTitle.dropFirst())"
+        // A mode Native doesn't know keeps the agent's own name.
+        default: level.name
         }
     }
 

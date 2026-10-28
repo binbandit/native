@@ -47,7 +47,8 @@ struct RateLimitTests {
         let malformed = try JSONDecoder().decode(
             MetaHolder.self, from: Data(#"{"_meta":{"_claude/rateLimit":{"utilization":"high"}}}"#.utf8))
         let notAnObject = try JSONDecoder().decode(MetaHolder.self, from: Data(#"{"_meta":3}"#.utf8))
-        #expect([missing, modelOnly, malformed, notAnObject].allSatisfy { $0._meta == UsageMeta() })
+        #expect([missing, malformed, notAnObject].allSatisfy { $0._meta == UsageMeta() })
+        #expect(modelOnly._meta == UsageMeta(model: "x"))
 
         let unknown = try JSONDecoder().decode(
             MetaHolder.self,

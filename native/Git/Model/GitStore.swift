@@ -1,3 +1,4 @@
+import ACP
 import Foundation
 import Git
 import NativePolicy
@@ -42,6 +43,8 @@ final class GitStore {
     // Not observed: models are created lazily from view bodies, which mustn't mutate observed state.
     @ObservationIgnored private var models: [URL: GitRepositoryModel] = [:]
     @ObservationIgnored private var unavailableModels: [URL: GitRepositoryModel] = [:]
+    /// Saved branch names outlive a task's checkout; rows observe these without reading git in a view body.
+    private var archivedBranchesByProject: [URL: [ArchivedWorktree]] = [:]
 
     init(
         environment: @escaping EnvironmentProvider, settings: GitSettings = GitSettings(),
@@ -73,6 +76,24 @@ final class GitStore {
     private func owner(for session: SessionKey?) -> GitStore? {
         guard let session, let sessionStore else { return self }
         return sessionStore(session)
+    }
+
+    /// The archived branch, read from the task's own machine's project, after preparation.
+    func archivedTaskBranch(at folder: URL, of project: URL, session: SessionKey) -> String? {
+        guard let owner = owner(for: session) else { return nil }
+        return owner.archivedBranchesByProject[project.standardizedFileURL]?.first {
+            SessionFolder.isSame($0.path.folderPath, folder.folderPath)
+        }?.branch
+    }
+
+    /// Reads the durable archive records from a surviving checkout, without restoring any worktree.
+    func prepareArchivedTaskBranches(of project: URL, session: SessionKey) async throws {
+        guard let owner = owner(for: session) else { return }
+        let records = try await owner.archivedTaskWorktrees(of: project)
+        let project = project.standardizedFileURL
+        if owner.archivedBranchesByProject[project] != records {
+            owner.archivedBranchesByProject[project] = records
+        }
     }
 
     /// The model for the working tree containing `folder`. It starts loading and watching right away.
