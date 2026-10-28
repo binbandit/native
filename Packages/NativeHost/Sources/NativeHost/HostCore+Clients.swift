@@ -259,6 +259,11 @@ extension HostCore {
             client.attached.remove(params.sessionID)
             sessions[params.sessionID]?.subscribers.remove(client.id)
             try reply(EmptyMessage())
+        case Method.closeSessionConfirmed:
+            let params = try message.params(as: SessionParams.self)
+            try await closeSessionConfirmed(params.sessionID)
+            client.attached.remove(params.sessionID)
+            try reply(EmptyMessage())
         case Method.exportApprovalAudit:
             guard client.grants.isLocal, client.grants.manageHost, client.identity.kind == .localPeer else {
                 throw HostError.notAuthorized("export approval records")

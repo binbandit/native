@@ -47,7 +47,8 @@ extension AppModel {
     /// Returns false when it isn't one.
     func reopenUnsent(_ key: SessionKey, info: SessionInfo, on runtime: AgentRuntime) async -> Bool {
         let continuation = sessions.services.modelContinuations.hasPending(key)
-        let privateDraft = scratchTasks.folder(for: NoProjectLocation.key(key)) != nil
+        let privateFolder = scratchTasks.folder(for: NoProjectLocation.key(key))
+        let privateDraft = privateFolder != nil
         guard unsentSessions.draft(for: key) != nil || ((continuation || privateDraft) && unsentSessions.contains(key))
         else {
             return false
@@ -67,8 +68,8 @@ extension AppModel {
                 deletedSessions.remove(session.key)
             }
             session.draft = draft
-            if privateDraft {
-                try scratchTasks.reassign(session.cwd, to: NoProjectLocation.key(session.key))
+            if let privateFolder {
+                try scratchTasks.reassign(privateFolder, to: NoProjectLocation.key(session.key))
                 let previous = SessionTitles.Key(agent: key.agent, session: key.id)
                 await session.adoptConfigChoices(titles.configChoices(for: previous))
                 if let title = titles.namedTitle(for: previous) { titles.rename(session.titleKey, to: title) }
@@ -79,12 +80,16 @@ extension AppModel {
             history.replace(key, with: session.key)
             unsentSessions.forget(key)
             unsentSessions.started(session.key, draft: draft)
+            if movingProjectlessTask == key { movingProjectlessTask = session.key }
             if selection == key {
                 session.wantsComposerFocus = true
                 selection = session.key
             }
         } catch {
-            if continuation, let prepared { discardAgentChange(prepared) }
+            if let prepared {
+                deletedSessions.insert(prepared.key)
+                discardAgentChange(prepared)
+            }
             unsentSessions.release(key)
             openFailures[key] = SessionOpenFailure(error, agent: runtime.agent.displayName)
         }

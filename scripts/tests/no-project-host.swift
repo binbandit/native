@@ -133,12 +133,12 @@ actor NoProjectTestHost: HostTransport {
                             payload: .update(configOptions(model: current.model, effort: current.effort)))))
             }
             try peer.respond(to: id, with: EmptyMessage())
-        case HostProtocol.Method.closeSession:
+        case HostProtocol.Method.closeSession, HostProtocol.Method.closeSessionConfirmed:
             if failClose {
                 try peer.respond(to: id, error: RPCError(code: -32603, message: "Fixture cannot close the task"))
                 return
             }
-            let sessionID = try message.params(as: CloseSessionParams.self).sessionID
+            let sessionID = try message.params(as: SessionParams.self).sessionID
             closed.append(sessionID)
             summaries.removeAll { $0.id == sessionID }
             try peer.notify(HostProtocol.Method.sessionClosed, SessionParams(sessionID: sessionID))

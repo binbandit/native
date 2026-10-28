@@ -251,6 +251,61 @@ struct NoProjectModelTests {
         #expect(try FileManager.default.contentsOfDirectory(atPath: project.path).isEmpty)
     }
 
+    @Test func movedEmptyTaskReopensBeforeItsFirstPrompt() async throws {
+        let (scratch, app, _) = try await fixture()
+        defer { try? FileManager.default.removeItem(at: scratch) }
+        await app.newSession(with: AgentDefinition.ID(rawValue: "workspace-fake"))
+        let original = try #require(app.selection.flatMap(app.session))
+        original.draft = "Remember this draft"
+        let file = original.cwd.appendingPathComponent("notes.txt")
+        try Data("Retained notes".utf8).write(to: file)
+        let project = scratch.appendingPathComponent("atlas", isDirectory: true)
+        try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
+        try await app.moveToProject(original.key, folder: project, copyFiles: false)
+        let moved = try #require(app.selection.flatMap(app.session))
+        app.rename(moved.key, to: "A moved draft")
+        app.ordering.pin(moved.key)
+        app.keepDrafts()
+        let info = try #require(app.catalog.lookup(moved.key)?.info)
+        let runtime = try #require(app.runtime(moved.agent.id))
+        app.sessions.remove(moved)
+        #expect(await app.reopenUnsent(moved.key, info: info, on: runtime))
+        let reopened = try #require(app.selection.flatMap(app.session))
+        #expect(reopened.cwd == project)
+        #expect(reopened.draft == "Remember this draft")
+        #expect(app.titleOfSession(reopened.key) == "A moved draft")
+        #expect(app.ordering.isPinned(reopened.key))
+        #expect(app.scratchTasks.folder(for: NoProjectLocation.key(reopened.key)) == original.cwd)
+        #expect(app.catalog.lookup(moved.key) == nil)
+        #expect(try String(contentsOf: file, encoding: .utf8) == "Retained notes")
+    }
+
+    @Test func unloadedPrivateDraftMovesAndUpdatesTheSheetIdentity() async throws {
+        let (scratch, app, host) = try await fixture()
+        defer { try? FileManager.default.removeItem(at: scratch) }
+        await app.newSession(with: AgentDefinition.ID(rawValue: "workspace-fake"))
+        let original = try #require(app.selection.flatMap(app.session))
+        original.draft = "A draft from the sidebar"
+        app.keepDrafts()
+        app.sessions.remove(original)
+        app.requestMoveToProject(original.key)
+        let project = scratch.appendingPathComponent("atlas", isDirectory: true)
+        try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
+        await host.configure(failClose: true)
+        await #expect(throws: (any Error).self) {
+            try await app.moveToProject(original.key, folder: project, copyFiles: false)
+        }
+        let replacement = try #require(app.movingProjectlessTask)
+        #expect(replacement != original.key)
+        #expect(app.catalog.lookup(replacement)?.project == NoProjectLocation.id)
+        await host.configure()
+        try await app.moveToProject(replacement, folder: project, copyFiles: false)
+        let moved = try #require(app.selection.flatMap(app.session))
+        #expect(moved.cwd == project)
+        #expect(moved.draft == "A draft from the sidebar")
+        #expect(!moved.isProjectless)
+    }
+
     @Test func clearingKeepsPrivateFilesWithTheCurrentConversation() async throws {
         let (scratch, app, _) = try await fixture()
         defer { try? FileManager.default.removeItem(at: scratch) }
@@ -281,6 +336,24 @@ struct NoProjectModelTests {
         #expect(app.session(key)?.draft == "Still here")
         #expect(FileManager.default.fileExists(atPath: source.cwd.path))
         #expect(app.projects.all.isEmpty)
+    }
+
+    @Test func rejectedCloseRetainsPrivateFilesForDeletionRetry() async throws {
+        let (scratch, app, host) = try await fixture()
+        defer { try? FileManager.default.removeItem(at: scratch) }
+        await app.newSession(with: AgentDefinition.ID(rawValue: "workspace-fake"))
+        let task = try #require(app.selection.flatMap(app.session))
+        let file = task.cwd.appendingPathComponent("notes.txt")
+        try Data("Retain this".utf8).write(to: file)
+        let route = try #require(app.taskActionRoute(for: task.key))
+        await host.configure(failClose: true)
+        await #expect(throws: (any Error).self) { try await app.deleteWorkspace(using: route) }
+        #expect(FileManager.default.fileExists(atPath: file.path))
+        #expect(app.scratchTasks.folder(for: NoProjectLocation.key(task.key)) == task.cwd)
+        #expect(app.catalog.contains(task.key))
+        await host.configure()
+        try await app.deleteWorkspace(using: route)
+        #expect(!FileManager.default.fileExists(atPath: task.cwd.path))
     }
 
     @Test func deleteUndoKeepsFilesAndCommittedDeletionCleansOnlyOwnedFolder() async throws {

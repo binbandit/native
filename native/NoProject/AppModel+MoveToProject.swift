@@ -12,10 +12,19 @@ extension AppModel {
         guard catalog.lookup(key)?.project == NoProjectLocation.id else {
             throw moveFailure("This task already has a project.")
         }
+        let privateFolder = scratchTasks.folder(for: NoProjectLocation.key(key))
         if session(key) == nil { await loadSession(key) }
-        guard let source = await loadedSession(key), source.isProjectless else {
+        // An unsent conversation reopens under a new agent ID. Its owned folder follows it.
+        let opened =
+            session(key)
+            ?? sessions.loadedSessions.first {
+                guard let privateFolder else { return false }
+                return scratchTasks.folder(for: NoProjectLocation.key($0.key)) == privateFolder
+            }
+        guard let opened, let source = await loadedSession(opened.key), source.isProjectless else {
             throw moveFailure("The task couldn't be opened. Open it and try again.")
         }
+        let key = source.key
         let isEmpty = !source.hasStarted && !source.hasSubmittedPrompt
         guard source.origin == .user, !source.isSubagent, !source.isEarlierConversation,
             source.phase == .idle, !source.hasQueuedPrompts, !source.needsApproval,
@@ -145,17 +154,22 @@ extension AppModel {
                 let held = try await client.sessions().first {
                     $0.agentID == key.agent.rawValue && $0.agentSessionID == key.id
                 }
-                if let held { try await client.closeSession(held.id, closeInAgent: true) }
+                guard let held else {
+                    throw moveFailure("Couldn't confirm that this task closed. Its private files are kept.")
+                }
+                try await client.closeSessionConfirmed(held.id)
             } else if let runtime = agentRuntime(for: key), runtime.isReady {
                 guard runtime.capabilities?.closeSessions == true, let connection = runtime.connection else {
                     throw moveFailure("The agent couldn't close this task. Its private files are kept.")
                 }
                 _ = try await connection.send(CloseSessionRequest(sessionId: key.id))
+            } else {
+                throw moveFailure("Couldn't confirm that this task closed. Its private files are kept.")
             }
             return
         }
         if let host = source.host {
-            try await host.client.closeSession(host.id, closeInAgent: true)
+            try await host.client.closeSessionConfirmed(host.id)
             sessions.hostSummaries[host.id] = nil
         } else {
             guard agentRuntime(for: key)?.capabilities?.closeSessions == true, let connection = source.connection else {

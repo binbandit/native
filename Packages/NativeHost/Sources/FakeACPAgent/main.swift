@@ -107,10 +107,11 @@ actor FakeAgent {
                     "protocolVersion": .number(1),
                     "agentCapabilities": .object([
                         "loadSession": .bool(true),
-                        "sessionCapabilities": .object([
-                            "list": .object([:]), "close": .object([:]), "delete": .object([:]),
-                            "resume": .object([:]),
-                        ]),
+                        "sessionCapabilities": .object(
+                            [
+                                "list": .object([:]), "delete": .object([:]),
+                                "resume": .object([:]),
+                            ].merging(Self.closeCapability) { $1 }),
                     ]),
                     "agentInfo": .object(["name": .string("fake-agent"), "version": .string("1")]),
                     "authMethods": .array([.object(["id": .string("token"), "name": .string("Token")])]),
@@ -176,6 +177,11 @@ actor FakeAgent {
             received("delete", session.rawValue)
             try peer.respond(to: id, with: JSONValue.object([:]))
         case "session/close":
+            if ProcessInfo.processInfo.environment["FAKE_AGENT_REJECT_CLOSE"] == "1",
+                !FileManager.default.fileExists(atPath: store.appendingPathComponent("allow-close").path)
+            {
+                throw RPCError(code: -32603, message: "Fixture refused to close the session")
+            }
             let session = try message.params(as: SessionParams.self).sessionId
             received("close", session.rawValue)
             // Freed, as a real agent does: a resume reports the defaults again.
@@ -551,6 +557,10 @@ actor FakeAgent {
             "options": .array(values.map { .object(["value": .string($0), "name": .string($0.capitalized)]) }),
         ])
     }
+
+    /// Exercises agents that cannot confirm a session close.
+    private static let closeCapability: [String: JSONValue] =
+        ProcessInfo.processInfo.environment["FAKE_AGENT_NO_CLOSE"] == "1" ? [:] : ["close": .object([:])]
 
     /// `FAKE_AGENT_NO_STEERING=1` makes it an agent that can't take messages mid-turn.
     private static let cantSteer = ProcessInfo.processInfo.environment["FAKE_AGENT_NO_STEERING"] == "1"

@@ -79,6 +79,16 @@ final class AgentLink {
         capabilities?.loadSession == true
     }
 
+    /// A stopped status alone isn't proof: termination can still be draining child processes.
+    var hasConfirmedExit: Bool {
+        if commandStopOwnsTree {
+            commandProcesses?.refresh()
+            if commandProcesses?.hasRemainingProcesses == true { return false }
+        }
+        return peer == nil && starting == nil && process?.isRunning != true
+            && !processGroups.groups.contains(where: AgentProcessGroups.isAlive)
+    }
+
     var processIdentifier: Int32? {
         process?.processIdentifier
     }
