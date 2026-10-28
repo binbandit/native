@@ -15,7 +15,7 @@ extension ComposerView {
             .font(.dsCaption)
             .foregroundStyle(.dsTextTertiary)
             .padding(.horizontal, DS.Space.xxl)
-        } else if session.modelChange?.stage == .applied,
+        } else if session.modelChange?.stage == .applied, session.modelChange?.permissionNotice == nil,
             let level = settings.autonomy?.current, ["default", "read-only"].contains(level.value)
         {
             Text("\(session.agentName) asks before any change.")
