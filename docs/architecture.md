@@ -83,6 +83,8 @@ is explicitly inside that host's directory, so isolated checks cannot change per
 `NATIVE_ACTION_CLI` selects the current task's host executable even if another Native channel
 updates Codex's shared skill copy. `NATIVE_ACTION_SESSIONS` selects that host's credential directory.
 
+Binary-only standalone hosts without the skill resource bundle retain MCP. Resource lookup is
+non-trapping and uses only deployed bundles, so missing resources cannot terminate the host.
 The skill works whether the app or host serves Native's endpoint. The host keeps the app's URL
 as internal session configuration while leaving it out of the agent's MCP list. Unsupported
 agents and installations that cannot be delivered retain MCP by default. Settings > Agents has

@@ -7,7 +7,12 @@ public enum NativeAgentSkill {
     private static let resources = ["SKILL.md", "references/tasks.md", "references/setup.md", "references/scripts.md"]
 
     public static func files(cli: String) throws -> [String: Data] {
-        guard let root = Bundle.module.url(forResource: name, withExtension: nil) else { throw Failure.resources }
+        let root = try resourceRoot(
+            in: [
+                Bundle.main.resourceURL,
+                Bundle(for: NativeAgentSkillBundleMarker.self).resourceURL,
+                Bundle.main.bundleURL,
+            ].compactMap { $0 })
         var files: [String: Data] = [:]
         for path in resources { files[path] = try Data(contentsOf: root.appending(path: path)) }
         let quoted = "'" + cli.replacingOccurrences(of: "'", with: "'\\''") + "'"
@@ -16,6 +21,18 @@ public enum NativeAgentSkill {
         files["scripts/native"] = Data(
             ("#!/bin/sh\nnative_cli=${NATIVE_ACTION_CLI:-" + quoted + "}\nexec \"$native_cli\" action \"$@\"\n").utf8)
         return files
+    }
+
+    /// Standalone hosts ship as a single binary. SwiftPM's Bundle.module traps when its bundle is
+    /// absent, so resolve only deployed resources and let installation fall back to MCP instead.
+    static func resourceRoot(in locations: [URL]) throws -> URL {
+        for location in locations {
+            for suffix in ["bundle", "resources"] {
+                let url = location.appending(path: "Orchestration_NativeOrchestration." + suffix)
+                if let root = Bundle(url: url)?.url(forResource: name, withExtension: nil) { return root }
+            }
+        }
+        throw Failure.resources
     }
 
     @discardableResult
@@ -85,3 +102,5 @@ public enum NativeAgentSkill {
         }
     }
 }
+
+private final class NativeAgentSkillBundleMarker: NSObject {}

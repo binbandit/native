@@ -1,6 +1,7 @@
 import Foundation
-import NativeOrchestration
 import Testing
+
+@testable import NativeOrchestration
 
 #if os(macOS) || os(Linux)
 import Exec
@@ -8,6 +9,16 @@ import Exec
 
 @Suite("Native skill installation")
 struct NativeAgentSkillTests {
+    @Test("Binary-only deployments report missing resources instead of terminating the host")
+    func missingResources() throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "native-skill-" + UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        #expect(throws: NativeAgentSkill.Failure.resources) {
+            try NativeAgentSkill.resourceRoot(in: [root])
+        }
+    }
+
     #if os(macOS) || os(Linux)
     @Test("A shared skill invokes the host of its task after another channel updates it")
     func currentHost() async throws {
