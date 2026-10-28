@@ -8,3 +8,5 @@ Supplemental real-agent verification at `dab8f656`: Claude Code, Haiku 5.5, Low 
 | Delete with Undo | [app](review-delete-dark.png) | [app](review-delete-light.png) | n9 |
 
 [All eleven states with paired light and dark mocks](states.md).
+
+Final-head CI passed, including the iOS app build, all package tests and pullfrog approval. The standalone local iPad typecheck helper still reports shared platform errors. Final-head model tests passed (14).
