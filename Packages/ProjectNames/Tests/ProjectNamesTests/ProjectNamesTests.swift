@@ -75,4 +75,19 @@ import Testing
         #expect(store.name(for: moved) == "Work Native")
     }
 
+    @Test @MainActor func legacyImportDoesNotResurrectClearedNames() throws {
+        let domain = "ProjectNamesTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: domain))
+        defer { defaults.removePersistentDomain(forName: domain) }
+        let url = URL(filePath: "/projects/native")
+        let legacy = [ProjectName(url: url, customName: "Old Name")]
+        let store = ProjectNameStore(defaults: defaults)
+        store.migrateLegacyNames(legacy)
+        #expect(store.name(for: url) == "Old Name")
+        store.rename(url, to: nil)
+        let reloaded = ProjectNameStore(defaults: defaults)
+        reloaded.migrateLegacyNames(legacy)
+        #expect(reloaded.name(for: url) == nil)
+    }
+
 }

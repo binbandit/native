@@ -43,11 +43,24 @@ final class Projects {
         {
             archivedProjects = projects
         }
-        for project in openProjects + archivedProjects where project.host == .local {
-            if let name = project.displayName, names.name(for: project.url) == nil {
-                names.rename(project.url, to: name)
-            }
+        names.migrateLegacyNames(
+            (openProjects + archivedProjects).filter { $0.host == .local }.map {
+                ProjectName(url: $0.url, customName: $0.displayName)
+            })
+        synchronizeNames()
+    }
+
+    /// Project records cache names for rendering; the folder store is authoritative, including a
+    /// cleared name. Refreshing every local record also catches aliases and moved-folder records.
+    private func synchronizeNames() {
+        func refreshed(_ project: Project) -> Project {
+            guard project.host == .local else { return project }
+            var project = project
+            project.displayName = names.name(for: project.url)
+            return project
         }
+        openProjects = openProjects.map(refreshed)
+        archivedProjects = archivedProjects.map(refreshed)
     }
 
     private func resolved(_ projects: [Project]) -> [Project] {
@@ -74,6 +87,7 @@ final class Projects {
     /// Adds a folder at the end, or returns its project if it's already open.
     @discardableResult
     func add(_ url: URL) -> Project {
+        synchronizeNames()
         if let existing = openProjects.first(where: { SessionFolder.isSame($0.path, url.folderPath) }) {
             return project(existing.id) ?? existing
         }
@@ -86,7 +100,11 @@ final class Projects {
     func rename(_ id: Project.ID, to name: String?) {
         guard let project = (openProjects + archivedProjects).first(where: { $0.id == id }) else { return }
         let displayName = ProjectName.normalized(name, folderName: project.folderName)
-        if project.host == .local { names.rename(project.url, to: displayName) }
+        if project.host == .local {
+            names.rename(project.url, to: displayName)
+            synchronizeNames()
+            return
+        }
         if let index = openProjects.firstIndex(where: { $0.id == id }) {
             openProjects[index].displayName = displayName
         } else if let index = archivedProjects.firstIndex(where: { $0.id == id }) {
@@ -111,6 +129,8 @@ final class Projects {
     /// Puts a removed project back where it was, for undo.
     func restore(_ project: Project, at index: Int) {
         guard self.project(project.id) == nil else { return }
+        var project = project
+        if project.host == .local { project.displayName = names.name(for: project.url) }
         openProjects.insert(project, at: min(index, openProjects.count))
     }
 

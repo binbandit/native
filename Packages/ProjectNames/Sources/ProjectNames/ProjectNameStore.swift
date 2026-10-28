@@ -11,11 +11,23 @@ import Foundation
 
     private let defaults: UserDefaults
     private let key = "projectDisplayNames"
+    private let migrationKey = "projectDisplayNames.migrated"
     private var entries: [Entry]
 
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         entries = defaults.data(forKey: key).flatMap { try? JSONDecoder().decode([Entry].self, from: $0) } ?? []
+    }
+
+    /// A cleared name is meaningful. Importing legacy records again would resurrect stale names.
+    public func migrateLegacyNames(_ projects: [ProjectName]) {
+        guard !defaults.bool(forKey: migrationKey) else { return }
+        for project in projects {
+            if let name = project.customName, self.name(for: project.url) == nil {
+                rename(project.url, to: name)
+            }
+        }
+        defaults.set(true, forKey: migrationKey)
     }
 
     public func name(for url: URL) -> String? {
