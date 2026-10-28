@@ -18,9 +18,6 @@
     "Touch: no iPad run surface is available through run-isolated.sh. Always-visible control and existing dsHitTarget retained.",
     "Real external drag: drive.sh has no external drag input; feedback and model paths checked separately."
   ],
-  "mock_refresh_pending": [
-    "blocked and opening PNGs after final contextual correction; screen locked before refresh. Final HTML and spec are supplied."
-  ],
   "capture_settings": {
     "appearance": [
       "light",

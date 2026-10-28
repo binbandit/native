@@ -12,8 +12,8 @@ The header uses SidebarSectionLabel and the existing small IconButton, with no n
 | picker | [light](picker-light.png) / [dark](picker-dark.png) | [light](mocks/picker-light.png) / [dark](mocks/picker-dark.png) | [light](compare-picker-light.png) / [dark](compare-picker-dark.png) |
 | empty | [light](empty-light.png) / [dark](empty-dark.png) | [light](mocks/empty-light.png) / [dark](mocks/empty-dark.png) | [light](compare-empty-light.png) / [dark](compare-empty-dark.png) |
 | drop | [light](drop-light.png) / [dark](drop-dark.png) | [light](mocks/drop-light.png) / [dark](mocks/drop-dark.png) | [light](compare-drop-light.png) / [dark](compare-drop-dark.png) |
-| blocked | [light](blocked-light.png) / [dark](blocked-dark.png) | [HTML state](open-folder-v2.html?only=blocked&theme=pair); final PNG refresh pending while locked | Pending final mock refresh |
-| opening | [light](opening-light.png) / [dark](opening-dark.png) | [HTML state](open-folder-v2.html?only=opening&theme=pair); final PNG refresh pending while locked | Pending final mock refresh |
+| blocked | [light](blocked-light.png) / [dark](blocked-dark.png) | [light](mocks/blocked-light.png) / [dark](mocks/blocked-dark.png) | [light](compare-blocked-light.png) / [dark](compare-blocked-dark.png) |
+| opening | [light](opening-light.png) / [dark](opening-dark.png) | [light](mocks/opening-light.png) / [dark](mocks/opening-dark.png) | [light](compare-opening-light.png) / [dark](compare-opening-dark.png) |
 | hover | Real-surface capture pending | [light](mocks/hover-light.png) / [dark](mocks/hover-dark.png) | No supported driver input |
 | touch | Real-surface capture pending | [light](mocks/touch-light.png) / [dark](mocks/touch-dark.png) | No supported driver input |
 
@@ -26,7 +26,7 @@ Additional unchanged recovery context: [failure light](failure-light.png), [fail
 - FolderHistoryTests: 2 passed. FolderPolicyTests and PolicyCoverageTests: 9 passed.
 - Strict Swift format lint and diff whitespace check passed.
 - File menu still exposes Open Folder… with Command-O and Open Recent. The three project addresses use the same QuickEntryPicker captured here.
-- Rest, picker, empty and drag feedback were compared side by side in light and dark. The plus aligns to the existing heading and control edges. Native chrome and the unchanged fixture transcript retain their current app rendering. Blocked and opening native captures were reviewed; their final mock PNG refresh was interrupted by screen locking.
+- Rest, picker, empty, drag feedback, managed restriction and opening were compared side by side in light and dark. The plus aligns to the existing heading and control edges. Native chrome and the unchanged fixture transcript retain their current app rendering. The final light/dark mock refresh completed after the screen became available again.
 
 ## Remaining checks
 
