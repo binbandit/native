@@ -169,6 +169,7 @@ extension SessionModel {
             let reason = SessionMirror.stopReason(raw)
             lastStopReason = reason
             services.post(.turnEnded(context, reason))
+            refineTitleAfterFirstTurn(succeeded: reason == .endTurn)
         case .turnFailed(let message, let error, _) where isLive:
             lastStopReason = .error
             let (prompt, items) = latestTurn

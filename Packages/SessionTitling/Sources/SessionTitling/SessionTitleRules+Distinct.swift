@@ -51,7 +51,10 @@ extension SessionTitleRules {
             details.append(word)
         }
         var seen: Set<String> = []
-        return details.filter { $0.count <= detailLimit && seen.insert($0.lowercased()).inserted }
+        return details.filter {
+            $0.count <= detailLimit && SessionTitleInput.isSafeTitle($0)
+                && seen.insert($0.lowercased()).inserted
+        }
     }
 
     /// A word that names one thing: a file (`greet.py`), a path, a flag (`--shout`), or an
