@@ -160,7 +160,7 @@ final class AgentLink {
             commandProcesses?.refresh()
         }
         starting = task
-        defer { starting = nil }
+        defer { if generation == self.generation { starting = nil } }
         do {
             try await task.value
             guard generation == self.generation else { throw PeerError.closed }
@@ -190,6 +190,7 @@ final class AgentLink {
             status == .starting && !isStopping
             ? .failed(startupFailure("The process exited before initialization finished.")) : .stopped
         self.generation += 1
+        starting = nil
         isStopping = false
         peer?.close()
         peer = nil

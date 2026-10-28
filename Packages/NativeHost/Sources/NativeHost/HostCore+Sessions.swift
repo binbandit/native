@@ -161,7 +161,9 @@ extension HostCore {
             return try await loading.value
         }
         guard session.needsLoad else { return }
+        let loadGeneration = session.loadGeneration
         let task = Task {
+            guard session.loadGeneration == loadGeneration else { throw PeerError.closed }
             // Recovery reads the replay to tell whether the agent had the interrupted prompt.
             if session.reloadsQuietly, session.phase != .recovering {
                 do {
@@ -170,32 +172,37 @@ extension HostCore {
                     logger.error("Couldn't resume a session quietly, loading it: \(error.localizedDescription)")
                 }
             }
+            guard session.loadGeneration == loadGeneration else { throw PeerError.closed }
             // A load starts the log over, so it no longer holds the conversation to resume.
             session.reloadsQuietly = false
-            try await performLoad(session)
+            try await performLoad(session, loadGeneration: loadGeneration)
         }
         session.loading = task
         // Clients count a load as work a restart would cut off, quiet ones too (`holdsRestart`).
         publish(session)
         defer {
-            session.loading = nil
-            publish(session)
+            if session.loadGeneration == loadGeneration {
+                session.loading = nil
+                publish(session)
+            }
         }
         try await task.value
     }
 
-    private func performLoad(_ session: HostSession) async throws {
+    private func performLoad(_ session: HostSession, loadGeneration: Int) async throws {
+        guard session.loadGeneration == loadGeneration else { throw PeerError.closed }
         let wasRecovering = session.phase == .recovering
         let preserving = session.preservesTranscriptOnLoad
-        if !wasRecovering {
+        if !wasRecovering && !preserving && session.turn == nil {
             session.phase = .loading
         }
         publish(session)
         var replaying = false
         session.loadingConfigOptions = nil
-        defer { session.loadingConfigOptions = nil }
+        defer { if session.loadGeneration == loadGeneration { session.loadingConfigOptions = nil } }
         do {
             let link = try await readyAgent(session.record.agentID)
+            guard session.loadGeneration == loadGeneration else { throw PeerError.closed }
             guard let peer = link.peer, let agentSessionID = session.record.agentSessionID else {
                 throw HostError.agentUnavailable(link.spec.name)
             }
@@ -203,17 +210,20 @@ extension HostCore {
             guard link.canLoadSessions || preserving else { throw HostError.cannotLoad(link.spec.name) }
             let servers = await tasks.agentServers(
                 for: session.id, agent: session.record.agentID, base: session.mcpServers)
+            guard session.loadGeneration == loadGeneration else { throw PeerError.closed }
+            let children = preserving ? subagents(of: session) : []
+            for child in children { route(child, on: link) }
             if !preserving {
                 discardSubagentsForReplay(of: session, on: link)
                 append(.reset(loading: true), to: session)
                 replaying = true
             }
             session.isReplayingPreservedTranscript = preserving
-            defer { session.isReplayingPreservedTranscript = false }
+            defer { if session.loadGeneration == loadGeneration { session.isReplayingPreservedTranscript = false } }
             route(session, on: link)
             let response: RawConfigOptionsResponse
             do {
-                if preserving && !link.canLoadSessions {
+                if preserving && !link.canLoadSessions && link.capabilities?.resumeSessions != true {
                     response = try await replaceUnsaved(session, on: link, peer: peer)
                 } else {
                     response = try await peer.request(
@@ -226,7 +236,8 @@ extension HostCore {
                         as: RawConfigOptionsResponse.self)
                 }
             } catch let error as RPCError
-                where !session.record.isAdopted && (session.record.lastStopReason == nil || preserving)
+                where session.loadGeneration == loadGeneration && !session.record.isAdopted
+                && (session.record.lastStopReason == nil || preserving)
                 && !error.isAuthRequired
             {
                 // Agents save a session once a turn ends; one that never got that far has nothing to
@@ -236,9 +247,19 @@ extension HostCore {
                 noteAgentError(error, from: link)
                 throw error
             }
-            guard generation == link.generation else { throw PeerError.closed }
+            guard generation == link.generation, session.loadGeneration == loadGeneration else {
+                throw PeerError.closed
+            }
             // Inside the load, so clients get where the settings end up rather than the agent's defaults.
             try await restoreConfigChoices(of: session, on: link, reported: response.configOptions)
+            guard generation == link.generation, session.loadGeneration == loadGeneration else {
+                throw PeerError.closed
+            }
+            for child in children {
+                child.needsLoad = false
+                child.reloadsQuietly = false
+                publish(child)
+            }
             if !wasRecovering && !preserving {
                 showPendingMessage(of: session)
             }
@@ -258,6 +279,7 @@ extension HostCore {
                 drainQueue(session)
             }
         } catch {
+            guard session.loadGeneration == loadGeneration else { throw error }
             if replaying {
                 if !wasRecovering {
                     showPendingMessage(of: session)

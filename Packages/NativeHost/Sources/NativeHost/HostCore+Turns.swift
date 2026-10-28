@@ -57,7 +57,7 @@ extension HostCore {
             return try await steer(item, into: session)
         default:
             // Sending during reattachment is the same explicit resume as sending while idle.
-            if session.phase == .loading && session.preservesTranscriptOnLoad {
+            if (session.phase == .loading || session.phase == .disconnected) && session.preservesTranscriptOnLoad {
                 session.record.isQueuePaused = false
                 try store.updateSession(session.record)
             }

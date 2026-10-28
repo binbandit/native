@@ -51,12 +51,12 @@ struct HostStuckStopTests {
 
     @Test(
         "Stop ends a sleeping tool, retains history, and accepts the next message",
-        arguments: ["ignore", "die", "reply", "no-load"])
+        arguments: ["ignore", "die", "reply", "no-load", "resume-only"])
     func sleepingTool(behavior: String) async throws {
         let harness = try HostHarness()
         defer { harness.cleanup() }
-        harness.agentEnvironment["FAKE_AGENT_NO_RESUME"] = "1"
-        if behavior == "no-load" { harness.agentEnvironment["FAKE_AGENT_NO_LOAD"] = "1" }
+        if behavior != "resume-only" { harness.agentEnvironment["FAKE_AGENT_NO_RESUME"] = "1" }
+        if behavior == "no-load" || behavior == "resume-only" { harness.agentEnvironment["FAKE_AGENT_NO_LOAD"] = "1" }
         if behavior == "die" { harness.agentEnvironment["FAKE_AGENT_EXIT_ON_CANCEL"] = "1" }
         try harness.start()
         let recorder = try await harness.connect()
@@ -94,6 +94,69 @@ struct HostStuckStopTests {
         #expect(try await recorder.client.agents().first?.processID != before)
         #expect(await recorder.mirror(session.id).userMessages == [prompt, "hello again"])
         #expect(await recorder.notices(session.id).count == 1)
+        if behavior == "resume-only" {
+            #expect(await recorder.summaries[session.id]?.agentSessionID == session.agentSessionID)
+            #expect(harness.received.contains { $0.hasPrefix("resume\t") })
+        }
+        await recorder.stop()
+    }
+
+    @Test("Stop during a hung history load keeps the stopped task usable")
+    func hungLoad() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        harness.agentEnvironment["FAKE_AGENT_NO_RESUME"] = "1"
+        harness.agentEnvironment["FAKE_AGENT_LOAD_HANG_ONCE"] = "1"
+        try harness.start()
+        let recorder = try await harness.connect()
+        let session = try await recorder.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: harness.root.path, attach: true))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "first"))
+        try await recorder.wait("the first turn") { await $0.turnsEnded(session.id) == ["end_turn"] }
+        _ = try await recorder.client.restartAgent("fake")
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "do not deliver"))
+        try await recorder.wait("the hung load") { _ in
+            ((try? String(contentsOf: harness.agentStore.appending(path: "loads.log"), encoding: .utf8)) ?? "")
+                .contains("waiting")
+        }
+        #expect(await recorder.summaries[session.id]?.phase == .prompting)
+        try await recorder.client.cancel(session.id)
+        try await recorder.wait("Stop") { await $0.turnsEnded(session.id) == ["end_turn", "cancelled"] }
+        try await Task.sleep(for: .milliseconds(300))
+        #expect(await recorder.summaries[session.id]?.phase == .idle)
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "next"))
+        try await recorder.wait("the next message") { await $0.agentText(session.id).contains("echo: next") }
+        #expect(!harness.received.contains("prompt\tdo not deliver"))
+        #expect(await recorder.notices(session.id).contains { $0.hasPrefix("Stopped.") })
+        await recorder.stop()
+    }
+
+    @Test("Sending once resumes the queue after a failed reattachment")
+    func retryReattachment() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        let executable = harness.root.appending(path: "agent-executable")
+        try FileManager.default.createSymbolicLink(
+            at: executable, withDestinationURL: HostHarness.products.appending(path: "FakeACPAgent"))
+        try harness.start()
+        let recorder = try await harness.connect()
+        var spec = harness.agentSpec
+        spec.command = executable.path
+        try await recorder.client.syncAgents([spec])
+        let session = try await recorder.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: harness.root.path, attach: true))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "stubborn 100"))
+        try await recorder.wait("the turn") { await $0.agentText(session.id).contains("tick 1") }
+        try FileManager.default.removeItem(at: executable)
+        try await recorder.client.cancel(session.id)
+        try await recorder.client.cancel(session.id)
+        try await recorder.wait("the failed reattachment") { await $0.summaries[session.id]?.phase == .disconnected }
+        #expect(await recorder.summaries[session.id]?.isQueuePaused == true)
+        try FileManager.default.createSymbolicLink(
+            at: executable, withDestinationURL: HostHarness.products.appending(path: "FakeACPAgent"))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "next"))
+        try await recorder.wait("the single send to arrive") { await $0.agentText(session.id).contains("echo: next") }
+        #expect(await recorder.summaries[session.id]?.queue.isEmpty == true)
         await recorder.stop()
     }
 

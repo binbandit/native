@@ -22,6 +22,7 @@ extension HostCore {
                 processes.terminate()
                 if !processes.hasRemainingProcesses {
                     if link.generation == generation {
+                        preserveStoppedDescendants(on: link)
                         link.commandsDidStop()
                         agentExited(session.record.agentID, generation: generation)
                     }
@@ -35,6 +36,35 @@ extension HostCore {
         }
     }
 
+    /// The retained parent cards must keep their backing sessions, including nested history.
+    private func preserveStoppedDescendants(on link: AgentLink) {
+        for session in sessions.values where session.record.agentID == link.spec.id && session.isStopping {
+            session.preservesTranscriptOnLoad = true
+            for child in subagents(of: session) {
+                child.needsLoad = true
+                child.reloadsQuietly = true
+                withdrawQuestions(of: child)
+                guard let ownerID = child.record.parentID, let owner = sessions[ownerID],
+                    let agentID = child.record.agentSessionID
+                else { continue }
+                let working = owner.mirror.state.subagents.first { $0.id == agentID }?.workState?.isWorking == true
+                let openTool = child.mirror.state.items.contains {
+                    if case .toolCall(let call) = $0 { !call.status.isFinished } else { false }
+                }
+                if working || openTool {
+                    child.record.lastStopReason = "cancelled"
+                    append(.turnEnded(stopReason: "cancelled"), to: child)
+                    append(
+                        .update(
+                            .object([
+                                "sessionUpdate": .string("subagent_update"), "sessionId": .string(agentID.rawValue),
+                                "state": .object(["state": .string("idle"), "stopReason": .string("cancelled")]),
+                            ])), to: owner)
+                }
+            }
+        }
+    }
+
     func finishForcedStop(_ turn: UnfinishedTurn, in session: HostSession) {
         guard session.turn?.requestID == turn.requestID else { return }
         let message =
@@ -42,6 +72,14 @@ extension HostCore {
         // Reload the agent's conversation without replacing the host's richer transcript, including
         // partial tool calls and this stop receipt, with an incomplete agent-side replay.
         session.preservesTranscriptOnLoad = true
+        session.loadGeneration += 1
+        session.loading = nil
+        session.loadingConfigOptions = nil
+        session.isReplayingPreservedTranscript = false
+        if session.mirror.isLoading {
+            showPendingMessage(of: session)
+            append(.loaded, to: session)
+        }
         endTurn(in: session, stopReason: "cancelled", pauseQueue: true)
         append(.turnEnded(stopReason: "cancelled", message: message), to: session)
         publish(session)

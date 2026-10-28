@@ -64,6 +64,7 @@ those processes have exited, closing open tool calls as Stopped. If the agent di
 receipt says "Stopped. <agent> didn't respond, so Native stopped it." A shared adapter restarts without
 waiting for sibling turns, which use crash recovery. The stopped session reattaches without replacing
 Native's partial transcript with the agent's replay; its draft and paused queue remain intact.
+Retained subagent cards keep their descendant sessions, history and routing too.
 Cleanup survives closing the task. Quit Native and Stop Agents waits for it; immediate restart finishes
 it before exiting. (The opposite failures are as bad: daemons from old versions piling up, or an
 app that reads "daemon unreachable" as "gone" and starts a second copy of a running conversation.

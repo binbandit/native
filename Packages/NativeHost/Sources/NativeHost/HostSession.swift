@@ -38,6 +38,7 @@ final class HostSession {
     private(set) var lastEventAt = Date.now
     /// The load in flight, shared by everyone who needs it.
     var loading: Task<Void, any Error>?
+    var loadGeneration = 0
     /// Config notifications during a load stay private until restoration has settled.
     var loadingConfigOptions: JSONValue?
     /// Settings supplied by the client opening this session. Saved choices always win; after a

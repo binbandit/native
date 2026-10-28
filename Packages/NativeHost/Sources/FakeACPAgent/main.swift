@@ -135,6 +135,10 @@ actor FakeAgent {
                 to: id,
                 with: JSONValue.object(["sessionId": .string(session.rawValue), "configOptions": options(session)]))
         case "session/load":
+            if ProcessInfo.processInfo.environment["FAKE_AGENT_LOAD_HANG_ONCE"] == "1", firstTime("load-hang") {
+                note("loads.log", "waiting")
+                try await Task.sleep(for: .seconds(3_600))
+            }
             let session = try message.params(as: SessionParams.self).sessionId
             let servers =
                 (try? message.params(as: LoadParams.self))?.mcpServers.map { "\($0.name) \($0.command ?? "")" } ?? []
