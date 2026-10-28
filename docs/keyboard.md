@@ -530,6 +530,10 @@ Settings, as Escape does.
 | Escape | Clear the filter; else leave a page; else close |
 | ⌘Z | Undo the last change made in the popover |
 
+When extra agent settings exhaust the height budget, the short model list ends with **N more models**.
+Return or Space on that row opens the full Model page; Escape or the back row returns to Task Settings.
+Lists past eight models keep the filter, with the last slot showing **N more match. Keep typing.**
+
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
 | ⌘⇧M | Next permission mode | Task | `session.nextPermissionMode` |
