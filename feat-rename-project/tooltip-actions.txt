@@ -1,0 +1,4 @@
+AXButton "native, work, /private/tmp/native-playtest/cx-rename-project/work/native" = "Expanded"
+  AXScrollToVisible
+  AXShowMenu
+  AXPress

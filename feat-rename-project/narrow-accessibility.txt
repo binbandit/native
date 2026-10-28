@@ -1,0 +1,48 @@
+AXWindow:StandardWindow "Native" #main
+  AXSplitGroup #main, SidebarNavigationSplitView
+    AXButton "New Task"
+    AXMenuButton "New Task With" #chevron.down
+    AXButton "Pull Requests"
+    AXButton "Workflows"
+    AXScrollArea "Projects"
+      AXOpaqueProviderGroup:OpaqueProviderList "Project tasks"
+        AXGroup "Native at Work - a project name that is deliberately long, /private/tmp/native-playtest/cx-rename-pr…"
+          AXButton "Native at Work - a project name that is deliberately long, /private/tmp/native-playtest/cx-rename-pr…" = "Expanded"
+          AXOpaqueProviderGroup:OpaqueProviderList
+        AXGroup "native · personal, /private/tmp/native-playtest/cx-rename-project/personal/native"
+          AXButton "native, personal, /private/tmp/native-playtest/cx-rename-project/personal/native" = "Expanded"
+          AXOpaqueProviderGroup:OpaqueProviderList
+        AXGroup "native · work/apps, /private/tmp/native-playtest/cx-rename-project/work/apps/native"
+          AXButton "native, work/apps, /private/tmp/native-playtest/cx-rename-project/work/apps/native" = "Expanded"
+          AXOpaqueProviderGroup:OpaqueProviderList
+        AXGroup "native · personal/apps, /private/tmp/native-playtest/cx-rename-project/personal/apps/native"
+          AXButton "native, personal/apps, /private/tmp/native-playtest/cx-rename-project/personal/apps/native" = "Expanded"
+          AXOpaqueProviderGroup:OpaqueProviderList
+    AXButton "Open Folder"
+    AXButton "Recent Folders" = "0 folders"
+    AXButton "GitHub Account: @project-fixture, managed by your organization"
+    AXButton "Settings" #gearshape
+    AXSplitter = "255.5" [disabled]
+    AXScrollArea
+      AXHeading "Native Dev"
+      AXButton "New Fake Agent task"
+      AXMenuButton "New Tasks Start In" = "Native at Work - a project name that is deliberately long, /private/tmp/native-playtest/cx-rename-pr…" #folder
+      AXMenuButton "New Tasks Start In" = "Native at Work - a project name that is deliberately long, /private/tmp/native-playtest/cx-rename-pr…"
+      AXMenuButton "New Tasks Start In" = "Native at Work - a project name that is deliberately long, /private/tmp/native-playtest/cx-rename-pr…" #chevron.up.chevron.down
+      AXStaticText = "No tasks in Native at Work - a project name that is deliberately long yet"
+      AXStaticText = "Pick an agent above to start one, or press ⌘N."
+  AXGroup "Status bar"
+    AXButton "Working tasks" = "None"
+    AXMenuButton "Keep Mac awake" = "Off. Your Mac sleeps as usual."
+    AXButton "Memory and CPU" = "Native itself uses 68.8 MB of memory and 2.9% CPU. Its agents, with the tools they run and anything …"
+    AXButton "Keyboard Shortcuts and Help"
+  AXToolbar
+    AXButton "Collapse Sidebar" = "Expanded" #sidebar.left
+    AXButton "Search Tasks" #magnifyingglass
+    AXGroup "Go back ⌘["
+      AXGroup "History"
+        AXButton "Go back" #arrow.left [disabled]
+        AXButton "Go forward" #arrow.right [disabled]
+  AXButton:CloseButton
+  AXButton:FullScreenButton "this button also has an action to zoom the window"
+  AXButton:MinimizeButton
