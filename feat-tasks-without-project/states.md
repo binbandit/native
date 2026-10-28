@@ -37,3 +37,5 @@ Validation: final Debug build has zero repository warnings; strict lint passed f
 Verification limits: the shared iPad compile check stops in host/Terminal/platform code; search UI was paused on battery with no tasks indexed. Projectless scratch execution is local; paired hosts still require a project. An agent unable to acknowledge closure retains the task and files with the failure message. Visual approval remains pending; do not merge.
 
 Final-head CI passed, including the iOS app build, all package tests and pullfrog approval. The standalone local iPad typecheck helper still reports shared platform errors. Final-head model tests passed (14).
+
+Latest main integration: `a770a749` merges `48968dae`, resolves RootView by preserving Move presentation and sidebar insights, and passes Debug build, zero-warning check, lint and all 14 model tests. [Dark integration Move sheet](integration-move-dark.png) / [light](integration-move-light.png), matching mock n5, were checked in the running app. The standard composer is shown in this fixture. CI/review rerun on this merge; the preceding complete green set covered 39e99171.
