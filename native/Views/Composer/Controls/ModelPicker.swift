@@ -15,8 +15,6 @@ struct ModelPicker: View {
     @State private var highlighted: Int?
     @State private var highlightedAgent: AgentDefinition.ID?
     @State private var isInAgents = false
-    @State private var usesNativeTraversal = false
-    @FocusState private var isPickerFocused: Bool
     @FocusState private var isSearchFocused: Bool
 
     private var matches: [SelectSetting.Choice] {
@@ -48,14 +46,10 @@ struct ModelPicker: View {
             }
         }
         .frame(width: agentPicker == nil ? ComposerMetrics.modelPickerWidth : DS.ComposerSettings.popoverWidth)
-        .focusable()
-        .focusEffectDisabled()
-        .focused($isPickerFocused)
         .onKeyPress(phases: [.down, .repeat]) { handleKey($0) }
         .onAppear {
-            isPickerFocused = model == nil
             isSearchFocused = model != nil
-            isInAgents = agentPicker?.highlightsAgent == true || model == nil
+            isInAgents = agentPicker?.highlightsAgent == true && model != nil
             highlightedAgent = agentPicker?.current
         }
         .onChange(of: agentPicker?.current) {
@@ -226,10 +220,9 @@ struct ModelPicker: View {
         // focus leaves the search field, those controls own their activation and arrow keys.
         if press.key == .tab || press.key == KeyEquivalent("\u{19}") {
             isInAgents = false
-            usesNativeTraversal = true
             return .ignored
         }
-        if usesNativeTraversal, !isSearchFocused { return .ignored }
+        guard isSearchFocused else { return .ignored }
         let matches = matches
         let agents = agentPicker?.agents.filter { $0.unavailable == nil } ?? []
         if isInAgents, !agents.isEmpty {
