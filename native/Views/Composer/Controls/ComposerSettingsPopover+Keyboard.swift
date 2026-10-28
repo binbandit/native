@@ -43,7 +43,7 @@ extension ComposerSettingsPopover {
                         return .agent(group.id)
                     })
             }
-            if settings.model != nil || agentModels != nil {
+            if settings.model != nil {
                 sections.append(DS.isTouchPlatform ? [.model(currentModelID ?? "")] : modelTargets)
             }
             if offersAgentsSettings { sections.append([.agentsSettings]) }
