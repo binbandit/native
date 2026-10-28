@@ -1,0 +1,19 @@
+Building for debugging...
+[1 / 5]
+Build complete! (0.31 sec)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2084
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Suite KeyboardDocumentTests started.
+􀟈  Test everyDefaultParsesAndIsAllowed() started.
+􀟈  Test reportsRowsItCannotRead() started.
+􀟈  Test parsesPairsRangesAndBlankKeys() started.
+􀟈  Test noTwoCommandsShareADefault() started.
+􀟈  Test defaultsMatchTheDocument() started.
+􁁛  Test parsesPairsRangesAndBlankKeys() passed after 0.001 seconds.
+􁁛  Test reportsRowsItCannotRead() passed after 0.001 seconds.
+􁁛  Test noTwoCommandsShareADefault() passed after 0.001 seconds.
+􁁛  Test everyDefaultParsesAndIsAllowed() passed after 0.001 seconds.
+􁁛  Test defaultsMatchTheDocument() passed after 0.003 seconds.
+􁁛  Suite KeyboardDocumentTests passed after 0.003 seconds.
+􁁛  Test run with 5 tests in 1 suite passed after 0.003 seconds.

@@ -1,0 +1,10 @@
+Persistence review regression at fc3b7c3b8536c7e7ba4d3afa33f9d94dce1dd714
+
+Before: the focused model harness failed with "clearing an archived name clears the open copy" on d5252ae93e05ffb3bfd3a54e17cea8bf8431d4bf.
+After: the same harness passes, including archive, reopen the same folder, clear the archived record, reconstruct Projects, then close/reopen again. Six ProjectNames Swift Testing tests also pass, including one-time legacy migration and folder replacement after a move.
+
+Native-owned folder names are authoritative. Project records cache that name consistently on initialization, add, rename and restore. Legacy import is marked complete once, so cleared names cannot be recreated from stale project fields.
+
+Debug build and strict formatting pass without repository warnings. ProjectNames compiles for arm64 iOS Simulator. The full resolved dependency comparison produces the same 58 source diagnostics on this head and origin/main, with no additional diagnostics (ipad-check.txt).
+
+Final UI replay of the duplicate-record case is pending because the screen locked before launch. Earlier running-app captures cover every rename entry point, clearing, cancellation, relaunch, undo/redo, ordinary and archived duplicates, long names, light and dark.

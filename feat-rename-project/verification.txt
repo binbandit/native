@@ -21,3 +21,5 @@ Final additional states at d5252ae93e05ffb3bfd3a54e17cea8bf8431d4bf:
 Model checks also cover the selected archived task's menu target and archived names. Package tests cover a replacement folder at a moved folder's old path, including clearing it without clearing the original folder's name.
 
 Follow-up outside this change: File > Project Settings and Refresh Project still use currentProject's open-project fallback when the selected task belongs to an archived project. Rename Project now resolves the selected task's project explicitly.
+
+Persistence review follow-up at fc3b7c3b8536c7e7ba4d3afa33f9d94dce1dd714: see review-regression.txt, project-names-tests.txt, model-checks.txt and ipad-check.txt. Final UI replay is pending while locked.

@@ -1,0 +1,21 @@
+Building for debugging...
+[1 / 5]
+Build complete! (0.26 sec)
+􀟈  Test run started.
+􀄵  Testing Library Version: 2084
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀟈  Suite ProjectNamesTests started.
+􀟈  Test replacementFolderDoesNotTakeAMovedFoldersName() started.
+􀟈  Test respectsCustomNamesAndHostBoundaries() started.
+􀟈  Test legacyImportDoesNotResurrectClearedNames() started.
+􀟈  Test distinguishesShortestParentSuffixes() started.
+􀟈  Test resolvesCustomNamesAndClearing() started.
+􀟈  Test persistsAfterReopeningMovingAndClearing() started.
+􁁛  Test resolvesCustomNamesAndClearing() passed after 0.001 seconds.
+􁁛  Test respectsCustomNamesAndHostBoundaries() passed after 0.001 seconds.
+􁁛  Test distinguishesShortestParentSuffixes() passed after 0.001 seconds.
+􁁛  Test legacyImportDoesNotResurrectClearedNames() passed after 0.003 seconds.
+􁁛  Test replacementFolderDoesNotTakeAMovedFoldersName() passed after 0.006 seconds.
+􁁛  Test persistsAfterReopeningMovingAndClearing() passed after 0.008 seconds.
+􁁛  Suite ProjectNamesTests passed after 0.008 seconds.
+􁁛  Test run with 6 tests in 1 suite passed after 0.008 seconds.
