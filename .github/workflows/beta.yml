@@ -43,7 +43,7 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
           git fetch origin main 'refs/tags/v*:refs/tags/v*'
-          args=(--check-runs --github-output "$GITHUB_OUTPUT")
+          args=(--check-releases --check-runs --github-output "$GITHUB_OUTPUT")
           if [ "$DRY_RUN" = true ]; then args+=(--dry-run); fi
           python3 scripts/release/beta-schedule.py "${args[@]}"
       - name: Tag the selected main commit

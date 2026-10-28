@@ -190,8 +190,18 @@ fi
 echo "Building libghostty ($GHOSTTY_COMMIT) with Zig $ZIG_VERSION; the first build takes a few minutes"
 started=$SECONDS
 rm -rf "$prefix"
+build_status=0
 (cd "$src" && "${zig_env[@]}" "$zig" build "${zig_args[@]}") \
-    || give_up "libghostty didn't build; see the Zig output above."
+    || build_status=$?
+# Zig 0.16.0 has crashed during a cold build on the hosted macOS runner. Retry that
+# compiler crash once with one job, keeping completed work; genuine build errors still fail.
+if [ "$build_status" = 139 ]; then
+    echo "Zig exited with a segmentation fault; retrying libghostty once with a single build job"
+    (cd "$src" && "${zig_env[@]}" "$zig" build -j1 "${zig_args[@]}") \
+        || give_up "libghostty didn't build; see the Zig output above."
+elif [ "$build_status" != 0 ]; then
+    give_up "libghostty didn't build; see the Zig output above."
+fi
 
 framework="$src/macos/GhosttyKit.xcframework"
 library="$(find "$framework" -maxdepth 2 -name '*.a' | head -n 1)"
