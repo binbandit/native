@@ -262,12 +262,14 @@ actor FakeAgent {
     }
 
     private func prompt(_ session: SessionID, text framed: String) async throws -> String {
-        received("prompt", framed)
         // A task's prompt or a message from another session opens with Native's header; the script is
         // what follows it.
         let isFramed = framed.hasPrefix("[A task from your parent session (") || framed.hasPrefix("[Message from ")
         let text = isFramed ? framed.components(separatedBy: "]\n\n").dropFirst().joined(separator: "]\n\n") : framed
-        if text.hasPrefix("lose-once"), firstTime(text) {
+        // Publish receipt only after the restart marker is durable; the crash harness kills on receipt.
+        let losesPrompt = text.hasPrefix("lose-once") && firstTime(text)
+        received("prompt", framed)
+        if losesPrompt {
             // Never recorded, never answered: as if the prompt was lost on the way in.
             try await Task.sleep(for: .seconds(3_600))
         }
