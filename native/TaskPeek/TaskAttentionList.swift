@@ -1,9 +1,11 @@
+import ACP
 import SwiftUI
 
 /// The same speaking rows as All in view, with asks first and failures after a quiet rule.
 struct TaskAttentionList: View {
     var maxHeight = DS.Sidebar.attentionMaximumHeight
     @Environment(AppModel.self) private var model
+    @Environment(\.sidebarTaskInsights) private var insights
     @State private var highlighted: SessionKey?
     @FocusState private var isFocused: Bool
 
@@ -77,7 +79,15 @@ struct TaskAttentionList: View {
             answersShortcut: item.ask != nil && item.ask?.id == model.answerShortcutAsk?.id,
             askShortcut: CommandRegistry.shared.keyboardShortcut(for: .taskAnswerOldestAsk),
             projectName: model.projects.project(item.summary.project)?.name,
+            outcome: insights.pullRequestBadge(item.summary),
             action: { model.peekTask(item.id, ask: item.ask) }
+        )
+        .task(id: [item.summary.info.cwd, insights.branch(item.summary) ?? ""]) {
+            await insights.prepare([item.summary])
+        }
+        .accessibilityLabel(
+            [DSInlineCode.plain(model.title(for: item.summary)), insights.pullRequestMenu(item.summary)?.spokenSummary]
+                .compactMap(\.self).joined(separator: ", ")
         )
         .accessibilityHint("Opens Peek without leaving the current task.")
     }

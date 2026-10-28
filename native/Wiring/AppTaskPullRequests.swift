@@ -35,6 +35,24 @@ struct AppTaskPullRequests {
         branch(of: summary).flatMap(knownPullRequest(of:))
     }
 
+    /// An archive's checkout may have been removed. Its saved branch is looked up from the project's
+    /// surviving checkout on the same machine, so a relaunch needs neither a live worktree nor a PR cache.
+    @discardableResult
+    func prepare(_ summary: SessionSummary, maxAge: TimeInterval = GitHubModel.branchMaxAge) async -> GitHubError? {
+        guard let folder = checkout(of: summary) else { return nil }
+        if model.isArchived(summary.id), let project = projectCheckout(for: summary.id, in: summary.project) {
+            try? await git.prepareArchivedTaskBranches(of: project, session: summary.id)
+            if let reference = archivedBranch(of: summary.id, project: summary.project, folder: folder) {
+                return await gitHub.loadPullRequest(for: reference, maxAge: maxAge)
+            }
+        }
+        let repository = git.model(for: folder, session: summary.id)
+        if repository.isLocal, !FileManager.default.fileExists(atPath: folder.path) { return nil }
+        if repository.status == nil { await repository.refreshNow() }
+        guard let reference = branch(of: summary) else { return nil }
+        return await gitHub.loadPullRequest(for: reference, maxAge: maxAge)
+    }
+
     /// The pull request of a task on this Mac by its key: the visible one, for the commands that open
     /// it where Settings say (the pull request page included). `branch(for:)` finds any task's.
     func pullRequest(for key: SessionKey) -> PullRequestSummary? {
@@ -70,8 +88,7 @@ struct AppTaskPullRequests {
         return SidebarTaskMenu(title: "Pull Request", spokenSummary: pullRequest.spokenSummary, items: items)
     }
 
-    /// What gh last said about a branch. A paired host's row has no badge to start its lookup (the
-    /// badge's card offers this Mac's writes), so asking starts it while there's no answer, as
+    /// What gh last said about a branch. Asking about a paired host starts its first lookup, as
     /// `GitStore.model(for:)` starts reading a checkout; `GitHubModel`'s refreshes take it from there.
     private func knownPullRequest(of branch: BranchReference) -> PullRequestSummary? {
         let found = gitHub.branchPullRequest(for: branch)
@@ -85,12 +102,26 @@ struct AppTaskPullRequests {
 
     private func branch(of key: SessionKey, project: Project.ID, cwd: String) -> BranchReference? {
         guard let folder = checkout(of: key, project: project, cwd: cwd) else { return nil }
+        if let archived = archivedBranch(of: key, project: project, folder: folder) { return archived }
         let repository = git.model(for: folder, session: key)
         guard let name = repository.branch?.name else { return nil }
         if repository.isLocal { return BranchReference(directory: folder, branch: name) }
         // Without its host, a paired host's checkout has no gh to ask: never this Mac's instead.
         guard let host = model.device(of: key).remoteHostID else { return nil }
         return BranchReference(host: host, directory: folder, branch: name)
+    }
+
+    private func archivedBranch(of key: SessionKey, project: Project.ID, folder: URL) -> BranchReference? {
+        guard model.isArchived(key), let root = projectCheckout(for: key, in: project),
+            let name = git.archivedTaskBranch(at: folder, of: root, session: key)
+        else { return nil }
+        return BranchReference(host: model.device(of: key).remoteHostID, directory: root, branch: name)
+    }
+
+    private func projectCheckout(for key: SessionKey, in id: Project.ID) -> URL? {
+        model.projects.project(id)?.checkoutPath(on: model.device(of: key)).map {
+            URL(filePath: $0, directoryHint: .isDirectory)
+        }
     }
 
     /// The task's folder, unless it's the project's checkout on the task's machine.

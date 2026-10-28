@@ -64,6 +64,7 @@ struct RootView: View {
         }
         .hostRestartConfirmation(durableHost)
         .taskPeekHost()
+        .environment(\.sidebarTaskInsights, sidebarInsights)
         .onPreferenceChange(HomePresentedTaskAskKey.self) { homeNeeds = $0 }
         .onGeometryChange(for: CGSize.self, of: \.size) { contentSize = $0 }
         .approvalHoldKeyRoot()
@@ -340,7 +341,6 @@ struct RootView: View {
             AppTaskRowAccessory(summary: summary)
         }
         .environment(\.homePresentedTaskNeeds, homeNeeds)
-        .environment(\.sidebarTaskInsights, sidebarInsights)
     }
 
     private var sidebarInsights: SidebarTaskInsights {

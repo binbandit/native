@@ -133,9 +133,13 @@ struct SessionRow<Accessory: View>: View {
                 changes: preferences.shows(.changes) ? finishedChanges : nil,
                 agentName: !isPairMember && preferences.shows(.agents) ? summary.agent.displayName : nil,
                 branchName: showsBranch ? insights.branch(summary) : nil,
+                outcome: insights.pullRequestBadge(summary),
                 peek: { model.peekTask(summary.id) },
                 action: { if model.taskPeek.request?.task != summary.id { select() } }
             )
+            .task(id: [summary.info.cwd, insights.branch(summary) ?? ""]) {
+                await insights.prepare([summary])
+            }
             .task(id: showsBranch) {
                 if showsBranch { await insights.prepareBranch(summary) }
             }
