@@ -54,7 +54,7 @@ struct HomeProjectMenu<ID: Hashable>: View {
         .fixedSize()
         .trackHover($isHovered)
         .accessibilityLabel("New Tasks Start In")
-        .accessibilityValue(selected?.name ?? "No Project")
+        .accessibilityValue(selected.map { "\($0.name), \($0.url.path(percentEncoded: false))" } ?? "No Project")
         .help(selected.map { "New tasks start in \($0.url.path(percentEncoded: false))" } ?? "Choose a Project")
     }
 }

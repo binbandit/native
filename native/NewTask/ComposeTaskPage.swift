@@ -184,7 +184,10 @@ struct ComposeTaskPage: View {
             }
             .buttonStyle(ComposeAddressButtonStyle()).disabled(compose.isHeld || compose.stage != .writing)
             .accessibilityLabel("Choose task project")
-            .accessibilityValue(projectName)
+            .accessibilityValue(
+                entry.project.flatMap(model.projects.project).map { "\($0.name), \($0.path)" } ?? "No project"
+            )
+            .help(entry.project.flatMap(model.projects.project)?.path ?? "Choose a project")
             .composeAddressPopover(isPresented: entry.picker == .project, dismiss: { entry.picker = nil }) {
                 QuickEntryPicker(model: model, entry: entry)
                     .frame(width: DS.ComposeTask.popoverWidth).frame(maxHeight: $0)
