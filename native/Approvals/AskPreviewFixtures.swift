@@ -53,7 +53,7 @@ enum AskPreviewFixtures {
         isAvailable: Bool = true, picked: Int? = nil
     ) -> some View {
         let questionnaire = schema.flatMap(questionnaire)
-        var answers = AgentQuestionnaireAnswers()
+        var answers = AgentQuestionnaireAnswers(suggesting: questionnaire)
         if let picked, let first = questionnaire?.questions.first, first.options.indices.contains(picked) {
             answers.pick(first.options[picked], in: first)
         }

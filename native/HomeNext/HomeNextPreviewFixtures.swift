@@ -229,7 +229,7 @@ enum HomeNextPreviewFixtures {
             schema = #"{"type":"object","properties":{"answer":{"type":"string"}}}"#
         } else {
             schema =
-                #"{"type":"object","properties":{"size":{"type":"string","title":"Thumbnail sizes","oneOf":[{"const":"both","title":"1x and 2x","description":"Sharp on Retina screens. About 1.4 GB more storage at today's library size."},{"const":"single","title":"Only 1x","description":"Today's behavior. Thumbnails look soft on Retina screens."}]},"size_custom":{"type":"string"}}}"#
+                #"{"type":"object","properties":{"size":{"type":"string","title":"Thumbnail sizes","oneOf":[{"const":"both","title":"1x and 2x (Recommended)","description":"Sharp on Retina screens. About 1.4 GB more storage at today's library size."},{"const":"single","title":"Only 1x","description":"Today's behavior. Thumbnails look soft on Retina screens."}]},"size_custom":{"type":"string"}}}"#
         }
         let json = """
             {"sessionId":"\(session.id.rawValue)","mode":"form","message":"Should thumbnails cover 2x sizes too, or only 1x?","requestedSchema":\(schema)}
@@ -307,10 +307,14 @@ enum HomeNextPreviewFixtures {
         }
     }
 
-    static func page(_ state: State, narrow: Bool = false) -> some View {
-        DSPreviewPair {
+    /// `finePrint` turns on the composer's annotated asks (`NativeComposerNext`).
+    static func page(_ state: State, narrow: Bool = false, finePrint: Bool = false) -> some View {
+        let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
+        experiments.set(finePrint, for: .composerNext)
+        return DSPreviewPair {
             HomeNextFixtureView(state: state)
                 .environment(SettingsPresentation())
+                .environment(\.experimentStore, experiments)
                 .frame(
                     width: (narrow || state == .narrow) ? DS.Size.popoverWidth : DS.HomeNext.column + DS.Space.xxxl * 2)
         }
