@@ -222,9 +222,16 @@ extension HostCore {
                 append(.reset(loading: true), to: session)
                 replaying = true
             }
-            session.isReplayingPreservedTranscript = preserving
-            defer { if session.loadGeneration == loadGeneration { session.isReplayingPreservedTranscript = false } }
             route(session, on: link)
+            let replaysHistory = preserving && link.canLoadSessions && link.capabilities?.resumeSessions != true
+            session.isReplayingPreservedTranscript = replaysHistory
+            for child in children { child.isReplayingPreservedTranscript = replaysHistory }
+            defer {
+                if session.loadGeneration == loadGeneration {
+                    session.isReplayingPreservedTranscript = false
+                    for child in children { child.isReplayingPreservedTranscript = false }
+                }
+            }
             let response: RawConfigOptionsResponse
             do {
                 if preserving && !link.canLoadSessions && link.capabilities?.resumeSessions != true {

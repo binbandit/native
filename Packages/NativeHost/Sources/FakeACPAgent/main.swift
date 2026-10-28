@@ -135,6 +135,7 @@ actor FakeAgent {
                 to: id,
                 with: JSONValue.object(["sessionId": .string(session.rawValue), "configOptions": options(session)]))
         case "session/load":
+            try emitChildText("Child history")
             if ProcessInfo.processInfo.environment["FAKE_AGENT_LOAD_HANG_ONCE"] == "1", firstTime("load-hang") {
                 note("loads.log", "waiting")
                 try await Task.sleep(for: .seconds(3_600))
@@ -164,6 +165,7 @@ actor FakeAgent {
             try reportReloadConfig(session)
             try peer.respond(to: id, with: JSONValue.object(["configOptions": options(session)]))
         case "session/resume":
+            try emitChildText("Fresh child update")
             // Like a load without the replay.
             let session = try message.params(as: SessionParams.self).sessionId
             guard FileManager.default.fileExists(atPath: file(session).path(percentEncoded: false)) else {
@@ -478,6 +480,17 @@ actor FakeAgent {
     }
 
     // MARK: - Store
+
+    private func emitChildText(_ text: String) throws {
+        let ids = ProcessInfo.processInfo.environment["FAKE_AGENT_CHILD_IDS"] ?? ""
+        for id in ids.split(separator: ",") {
+            try update(
+                SessionID(String(id)),
+                [
+                    "sessionUpdate": .string("agent_message_chunk"), "content": Self.text(text),
+                ])
+        }
+    }
 
     private func update(_ session: SessionID, _ update: [String: JSONValue]) throws {
         try peer?.notify(

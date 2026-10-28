@@ -9,9 +9,13 @@ import Testing
 @Suite("Stopped subagent transcripts", .serialized, .timeLimit(.minutes(1)))
 @HostActor
 struct HostStoppedSubagentTests {
-    @Test("Fresh clients retain descendant identities, history and routes after Stop", arguments: [false, true])
-    func retainsDescendants(nested: Bool) async throws {
+    @Test(
+        "Fresh clients retain descendant identities, history and routes after Stop", arguments: [false, true],
+        [false, true])
+    func retainsDescendants(nested: Bool, resumes: Bool) async throws {
         let rig = try HostStopCommandRig()
+        rig.harness.agentEnvironment["FAKE_AGENT_CHILD_IDS"] = nested ? "child-0,child-1" : "child-0"
+        if !resumes { rig.harness.agentEnvironment["FAKE_AGENT_NO_RESUME"] = "1" }
         defer { rig.cleanup() }
         let recorder = try await rig.connect()
         let summary = try await recorder.client.newSession(
@@ -71,7 +75,8 @@ struct HostStoppedSubagentTests {
             #expect(link.routes[id] == child.id)
             #expect(rig.core.sessions.values.count { $0.record.agentSessionID == id } == 1)
             let summary = try await reader.client.attach(child.id)
-            #expect(await reader.agentText(child.id) == "Child history")
+            let expected = resumes ? "Child history\nFresh child update" : "Child history"
+            #expect(await reader.agentText(child.id) == expected)
             #expect(!summary.needsApproval)
             #expect(summary.lastStopReason == "cancelled")
             #expect(
@@ -79,6 +84,15 @@ struct HostStoppedSubagentTests {
                     if case .toolCall(let call) = $0 { call.status == .cancelled } else { false }
                 })
             #expect(!child.isWorkingInBackground)
+            let live = try #require(
+                AgentUpdate.parse(
+                    Data(
+                        #"{"params":{"sessionId":"child","update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"Live child traffic"}}}}"#
+                            .utf8)))
+            rig.core.apply(live.update, to: child, on: link)
+            try await reader.wait("fresh child traffic") { await $0.agentText(child.id).contains("Live child traffic") }
+            let after = await reader.agentText(child.id)
+            #expect(after.components(separatedBy: "Child history").count == 2)
         }
         #expect(!parent.isWorkingInBackground)
         await reader.stop()

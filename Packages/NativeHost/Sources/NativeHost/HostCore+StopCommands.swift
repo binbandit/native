@@ -76,6 +76,7 @@ extension HostCore {
         session.loading = nil
         session.loadingConfigOptions = nil
         session.isReplayingPreservedTranscript = false
+        for child in subagents(of: session) { child.isReplayingPreservedTranscript = false }
         if session.mirror.isLoading {
             showPendingMessage(of: session)
             append(.loaded, to: session)
