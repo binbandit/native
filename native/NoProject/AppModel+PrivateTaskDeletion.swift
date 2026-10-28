@@ -15,7 +15,7 @@ extension AppModel {
         } catch {
             actionFailure = ActionFailure(
                 "Couldn't Delete Task",
-                "\(error.localizedDescription) The task is still listed. Open it and try deleting it again."
+                "\(error.localizedDescription)\n\nThe task is still listed. Open it and try deleting it again."
             )
             return false
         }
