@@ -1,6 +1,6 @@
 Project naming verification
 
-Screenshots: Debug instance cx-rename-project, sounds disabled, fixture folders and a fixture GitHub account. Captured at 9425c9a943dea48445e976b0f3e524f44f7c9bdc. Feature source is unchanged by the rebase onto the silent-instance change.
+Screenshots: Debug instance cx-rename-project, sounds disabled, fixture folders and a fixture GitHub account. Captured at 9425c9a943dea48445e976b0f3e524f44f7c9bdc. These open-project captures predate the final archived-project and replacement-folder regressions. The final Debug build and model checks pass at d5252ae93e05ffb3bfd3a54e17cea8bf8431d4bf; the archived-state captures below were taken from that build.
 
 Observed through drive.sh: old and new context-menu Rename Project; File > Rename Project; Settings > project > Rename; Rename, Cancel, clearing, live sidebar/Home updates; custom name after quit/relaunch; Undo Rename Project and Redo Rename Project. Long custom names truncate, and work/apps and personal/apps remain distinct in a narrow window.
 
@@ -13,3 +13,11 @@ Visual references (no external mocks were supplied):
 Tooltip capture remains pending. Full paths are in the accessibility labels (old-accessibility.txt and next-accessibility.txt), and the header help uses the full path. The driver exposes no hover/show-help action (tooltip-actions.txt). No pointer movement or foreground activation was used.
 
 The driver warned that other windows covered parts of the app. Screenshots were inspected; changed rows and dialogs are legible. Some background Home content can retain an animation frame while covered.
+
+Final additional states at d5252ae93e05ffb3bfd3a54e17cea8bf8431d4bf:
+- next-archived-duplicates-light.png: an archived duplicate keeps both parent labels distinct. Reference: ArchivedSection.swift and AllInViewProjectGroup.swift existing previews; no external mock supplied.
+- next-archived-renamed-light.png: the archived project's accessibility Rename Project action opened the shared dialog, saved Personal Native, and left the open project alone. Reference: ArchivedSection.swift and ProjectRenamePresentation.swift existing previews; no external mock supplied.
+
+Model checks also cover the selected archived task's menu target and archived names. Package tests cover a replacement folder at a moved folder's old path, including clearing it without clearing the original folder's name.
+
+Follow-up outside this change: File > Project Settings and Refresh Project still use currentProject's open-project fallback when the selected task belongs to an archived project. Rename Project now resolves the selected task's project explicitly.
