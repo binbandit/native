@@ -16,6 +16,7 @@ parser.add_argument('--store', type=pathlib.Path, required=True)
 parser.add_argument('--project', required=True)
 parser.add_argument('--reject-unsent-load', action='store_true')
 parser.add_argument('--model-switch', action='store_true')
+parser.add_argument('--permission-options', type=json.loads)
 args = parser.parse_args()
 args.store.mkdir(parents=True, exist_ok=True)
 source = args.kind == 'source'
@@ -37,11 +38,13 @@ def options():
               ('bypassPermissions', 'Bypass permissions')] if source else [
         ('read-only', 'Read only'), ('workspace-write', 'Workspace write'), ('agent', 'Auto review'),
         ('agent-full-access', 'Full access')]
+    if args.permission_options is not None:
+        levels = [(v, n) for v, n in args.permission_options]
     mode_file = args.store / 'default-mode'
-    initial_mode = mode_file.read_text().strip() if mode_file.exists() else levels[0][0]
+    initial_mode = mode_file.read_text().strip() if mode_file.exists() else levels[0][0] if levels else ''
     return ([dict(option('fast', 'model_config', 'off', [('off', 'Off'), ('on', 'On')]), name='Fast mode')] if args.model_switch else []) + [option('model', 'model', models[0][0], models),
             option('effort', 'thought_level', 'low', [(v, v.title()) for v in ['default', 'low', 'medium', 'high', 'xhigh', 'max']]),
-            option('mode', 'mode', initial_mode, levels)]
+            *([option('mode', 'mode', initial_mode, levels)] if levels else [])]
 
 
 def send(message):

@@ -627,7 +627,13 @@ Model names never imply agent identity. The reporting adapter owns each choice, 
 models. The list retains its opening order until closed, and filters names, IDs and agent names.
 
 `ComposerAgentChange` prepares an unused conversation in the same folder, validates the exact model
-and a supported permission level no broader than the source, then publishes the selection. It does
+and a supported permission level, then publishes the selection. Permission translation prefers an
+equivalent level, then the closest stricter level, otherwise the safest advertised level allowed by
+policy. Unknown semantics are never treated as equivalent by matching IDs; a wholly unfamiliar list
+uses its first advertised level with an explicit review notice. A missing permission setting does
+not block the switch. Only a policy denying every advertised level blocks permission translation.
+The receipt explains changed or incomparable levels and opens the permission choices in one click;
+Undo retains the original session and level. The chosen settings and notice survive relaunch. It does
 not allocate a worktree, run task-start defaults or send a working prompt. The source remains checked
 until commit. Normal running turns finish first; approvals, questions, queued messages, coordinator
 work and goals that cannot migrate safely block the choice with a specific recovery instruction.

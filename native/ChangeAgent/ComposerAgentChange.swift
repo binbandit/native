@@ -17,6 +17,8 @@ final class ComposerAgentChange {
     let choice: ComposerAgentModel
     private(set) var stage: Stage = .waiting
     private(set) var error: String?
+    private(set) var permissionNotice: String?
+    private var permissionValue: String?
     private(set) var showsLoader = false
     var isReceiptDismissed = false { didSet { persistReceipt() } }
     private let earlierName: String
@@ -46,6 +48,9 @@ final class ComposerAgentChange {
     var isPending: Bool { stage == .waiting || stage == .preparing }
     var undoSelection: ComposerAgentChange? { canUndo ? self : priorChoice?.undoSelection }
     var canUndo: Bool { stage == .applied && !undoIsClosed && current?.hasSubmittedPrompt == false }
+    var hasPermissionChoice: Bool {
+        current.map { !ComposerSettings($0.configOptions).autonomyLevels.isEmpty } ?? false
+    }
     var sourceName: String { earlierName }
     var sourceModel: String { earlierModel }
 
@@ -61,6 +66,7 @@ final class ComposerAgentChange {
         self.current = current
         self.app = app
         stage = .applied
+        permissionNotice = record.permissionNotice
         isReceiptDismissed = record.isDismissed
         undoIsClosed = !app.sessions.services.modelContinuations.hasPending(current.key)
     }
@@ -72,7 +78,7 @@ final class ComposerAgentChange {
                 source: earlierKey, sourceName: earlierName, sourceModel: earlierModel,
                 sourceModelValue: earlierModelValue,
                 agent: choice.agent, agentName: choice.agentName, modelValue: value,
-                modelName: choice.choice.name, isDismissed: isReceiptDismissed,
+                modelName: choice.choice.name, isDismissed: isReceiptDismissed, permissionNotice: permissionNotice,
                 confirmedChoices: Dictionary(
                     uniqueKeysWithValues: current.configOptions.compactMap { option in
                         guard option.category == "model" || option.category == "mode",
@@ -183,19 +189,58 @@ final class ComposerAgentChange {
                 }
             }
         }
-        guard let mode = ComposerSettings(source.configOptions).autonomy,
-            let targetMode = ComposerSettings(target.configOptions).autonomy,
-            let safe = AgentModelPermissions.replacement(
-                for: mode.value, offered: targetMode.choices.map(\.value),
-                forbidden: source.services.plugins.policyCenter.policy.forbiddenPermissionModes)
-        else {
-            throw Failure(
-                "\(choice.agentName) cannot preserve this task's permissions. Keep the current agent or choose a supported permission level first."
-            )
+        let sourceMode = ComposerSettings(source.configOptions).autonomy
+        guard let targetMode = ComposerSettings(target.configOptions).autonomy, !targetMode.choices.isEmpty else {
+            permissionValue = nil
+            permissionNotice =
+                "\(choice.agentName) doesn't offer a permission choice. Check its permissions before sending."
+            return
         }
-        await target.setConfigOption(targetMode.option, to: safe)
-        guard ComposerSettings(target.configOptions).autonomy?.value == safe else {
-            throw Failure("Couldn't keep this task's permission level. \(source.agentName) is still selected.")
+        let offered = permissionLevels(targetMode)
+        guard
+            let selection = AgentModelPermissions.selection(
+                for: sourceMode?.value, offered: offered,
+                forbidden: source.services.plugins.policyCenter.policy.forbiddenPermissionModes)
+        else { throw permissionPolicyFailure(source.services.plugins.policyCenter.policy) }
+        permissionValue = selection.value
+        permissionNotice = permissionExplanation(selection, source: sourceMode, target: targetMode)
+        await target.setConfigOption(targetMode.option, to: selection.value)
+        guard ComposerSettings(target.configOptions).autonomy?.value == selection.value else {
+            throw Failure(
+                "Couldn't set \(choice.agentName)'s permissions. \(source.agentName) is still selected. Try Again.")
+        }
+    }
+
+    private func permissionLevels(_ setting: SelectSetting) -> [String] {
+        let levels = setting.choices.map(\.value).filter { $0 != ComposerSettings.planValue }
+        return levels.isEmpty ? setting.choices.map(\.value) : levels
+    }
+
+    private func permissionPolicyFailure(_ policy: NativePolicy) -> Failure {
+        let manager = policy.organizationName ?? "Your organization"
+        return Failure(
+            "\(manager) doesn't allow any of \(choice.agentName)'s permission levels. Keep the current agent or contact your administrator."
+        )
+    }
+
+    private func permissionExplanation(
+        _ selection: AgentModelPermissions.Selection, source: SelectSetting?, target: SelectSetting
+    ) -> String? {
+        let level = target.choices.first { $0.value == selection.value }
+        let name = level?.askingTitle.lowercased() ?? selection.value
+        switch selection.reason {
+        case .equivalent:
+            return nil
+        case .stricter:
+            let earlier = source?.current?.askingTitle.lowercased() ?? source?.value ?? "the previous level"
+            let consequence = selection.value == "dontAsk" ? "refuse anything not already allowed" : "ask \(name)"
+            return "\(choice.agentName) doesn't offer '\(earlier)', so it will \(consequence)."
+        case .safestAvailable:
+            return
+                "\(choice.agentName) has no level that asks as often. Its safest level is '\(name)'. Review permissions before sending."
+        case .unknown:
+            return
+                "These permission levels can't be compared. \(choice.agentName) will use '\(name)'. Review permissions before sending."
         }
     }
 
@@ -211,12 +256,22 @@ final class ComposerAgentChange {
         {
             throw Failure("\(choice.choice.displayName) is no longer available. Choose another model.")
         }
-        guard let mode = ComposerSettings(source.configOptions).autonomy,
-            let actual = ComposerSettings(target.configOptions).autonomy,
-            AgentModelPermissions.replacement(
-                for: mode.value, offered: [actual.value],
-                forbidden: app.plugins.policyCenter.policy.forbiddenPermissionModes) == actual.value
-        else { throw Failure("The task's permissions changed. Choose a model again.") }
+        let actual = ComposerSettings(target.configOptions).autonomy
+        if let actual, !actual.choices.isEmpty {
+            let allowed = permissionLevels(actual).filter {
+                !app.plugins.policyCenter.policy.forbiddenPermissionModes.contains($0)
+            }
+            guard !allowed.isEmpty else { throw permissionPolicyFailure(app.plugins.policyCenter.policy) }
+            let expected = AgentModelPermissions.selection(
+                for: ComposerSettings(source.configOptions).autonomy?.value,
+                offered: permissionLevels(actual),
+                forbidden: app.plugins.policyCenter.policy.forbiddenPermissionModes)
+            guard actual.value == permissionValue, expected?.value == permissionValue else {
+                throw Failure("The task's permissions changed. Choose a model again.")
+            }
+        } else if permissionValue != nil {
+            throw Failure("The task's permissions changed. Choose a model again.")
+        }
     }
 
     func replaceReference(_ old: SessionKey, with replacement: SessionKey) {

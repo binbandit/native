@@ -16,6 +16,7 @@ struct ComposerSettingsControl: View {
     var resumedAutonomy: String?
     /// The popover was asked for by its command (⇧⌘E), so it opens with the current model highlighted.
     var highlightsCurrent = false
+    var highlightsPermissions = false
 
     @Environment(AppModel.self) var app
     @Environment(AutomationCenter.self) var automation
@@ -151,7 +152,7 @@ struct ComposerSettingsControl: View {
                 resumedAutonomy: resumedAutonomy, pending: pending, failure: modelFailure ?? failure,
                 isStopped: session.phase == .disconnected,
                 onRestart: { Task { await app.restartAgent(for: session) } },
-                highlightsCurrent: highlightsCurrent,
+                highlightsCurrent: highlightsCurrent, highlightsPermissions: highlightsPermissions,
                 onClose: { isPresented = false },
                 onUndo: undo,
                 onSet: set)

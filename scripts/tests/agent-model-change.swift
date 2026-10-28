@@ -1,5 +1,21 @@
+import NativePolicy
+
 // The runner prepends the existing in-memory host fixture from droid-change-agent.swift.
 // Only fixture protocol responses are adapted to report a conservative permission mode.
+
+private struct AgentModelPermissionPolicy: PolicySource {
+    let blocked: Bool
+    func managedEntry(forKey key: String) -> ManagedEntry {
+        guard blocked else { return .absent }
+        switch key {
+        case "policy.permissions.forbiddenModes": return .value(["default", "auto"])
+        case "policy.organization.name": return .value("Example Organization")
+        default: return .absent
+        }
+    }
+    func userValue(forKey key: String) -> Any? { nil }
+    var managedKeys: [String]? { blocked ? ["policy.permissions.forbiddenModes", "policy.organization.name"] : [] }
+}
 
 private actor AgentModelAttachmentGate {
     private var value: PromptAttachment?
@@ -40,6 +56,7 @@ private struct AgentModelChangeRegression {
             try duplicateModels()
             try await run()
             try await inAppRecovery()
+            try await permissionFallbacks()
         } catch { print("FAIL: \(error)"); exit(1) }
     }
 
@@ -280,6 +297,96 @@ private struct AgentModelChangeRegression {
         print(
             "PASS: locally prepared context survives relaunch, is consumed once and remains available to later choices")
         await client.stop()
+    }
+
+    static func permissionFallbacks() async throws {
+        guard let script = ProcessInfo.processInfo.environment["NATIVE_AGENT_MODEL_FIXTURE_SCRIPT"] else {
+            throw ChangeFailure("No permission fixture script")
+        }
+        let cases: [(name: String, source: String, levels: String, expected: String?, notice: Bool)] = [
+            ("equal", "auto", #"[["default","Manual"],["agent","Auto review"]]"#, "agent", false),
+            ("stricter", "auto", #"[["default","Manual"],["acceptEdits","Accept edits"]]"#, "acceptEdits", true),
+            (
+                "no safe match", "default",
+                #"[["agent-full-access","Full access"],["workspace-write","Workspace write"]]"#, "workspace-write", true
+            ),
+            ("unknown", "auto", #"[["interactive","Interactive"],["autopilot","Autopilot"]]"#, "interactive", true),
+            ("no setting", "auto", "[]", nil, true),
+            ("policy locked", "auto", #"[["default","Manual"],["auto","Auto"]]"#, nil, false),
+        ]
+        for test in cases {
+            let scratch = FileManager.default.temporaryDirectory.appending(path: "agent-permissions-\(UUID())")
+            try FileManager.default.createDirectory(at: scratch, withIntermediateDirectories: true)
+            defer { try? FileManager.default.removeItem(at: scratch) }
+            let defaults = PreviewUserDefaults()
+            let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
+            experiments.set(true, for: .changeAgent)
+            experiments.set(true, for: .composerNext)
+            let manifest = PluginManifest(
+                id: "permissions", name: "Permissions",
+                agents: [
+                    AgentManifest(id: "fixture", name: "Fixture", command: "/usr/bin/true"),
+                    AgentManifest(
+                        id: "target", name: "Target", command: "/usr/bin/python3",
+                        args: [
+                            script, "--kind", "target", "--store", scratch.appending(path: "agent").path,
+                            "--project", scratch.path, "--permission-options", test.levels,
+                        ]),
+                ])
+            let app = AppModel(
+                plugins: PluginRegistry(
+                    builtIns: [ManifestPlugin(manifest: manifest)], defaults: defaults,
+                    policyCenter: PolicyCenter(
+                        source: AgentModelPermissionPolicy(blocked: test.name == "policy locked"))),
+                defaults: defaults, catalogURL: nil, experiments: experiments)
+            defer { app.stopAgents() }
+            _ = await app.checkForAgents()
+            let project = app.projects.add(scratch)
+            let config = ComposerSettingsPreviewFixtures.claude(mode: test.source)
+            guard
+                let source = SessionModel.preview(
+                    in: app, agent: "fixture", cwd: scratch.path,
+                    configOptions: [config.model?.option, config.autonomy?.option].compactMap { $0 })
+            else { throw ChangeFailure("No permission source") }
+            source.previewExchange("Keep the task", reply: "Progress saved")
+            app.catalog.add(SessionInfo(sessionId: source.id, cwd: scratch.path), for: source.agent.id, in: project.id)
+            app.selection = source.key
+            let choice = ComposerAgentModel(
+                agent: .init(rawValue: "target"), agentName: "Target",
+                choice: .init(value: "gpt-6-sol", name: "6 Sol"), kind: .model("gpt-6-sol"))
+            app.chooseAgentModel(choice, for: source)
+            guard let change = source.modelChange else { throw ChangeFailure("No permission change") }
+            try await wait(test.name) { change.stage == .applied || change.stage == .failed }
+            if test.name == "policy locked" {
+                try require(
+                    change.stage == .failed && app.selection == source.key, "Policy did not keep the original agent")
+                let message = change.error ?? ""
+                try require(
+                    message.components(separatedBy: "Example Organization").count == 2
+                        && message.contains("doesn't allow any of Target's permission levels"),
+                    "Policy failure did not name the organization once")
+                print("PASS: policy denying every offered mode blocks with one organization name")
+                continue
+            }
+            try require(change.stage == .applied, change.error ?? test.name)
+            guard let key = app.selection, let target = app.session(key) else {
+                throw ChangeFailure("No permission target")
+            }
+            try require(
+                ComposerSettings(target.configOptions).autonomy?.value == test.expected,
+                test.name + " selected the wrong level")
+            try require(
+                (change.permissionNotice != nil) == test.notice, test.name + " explanation missing or unnecessary")
+            let stored = AgentModelContinuations(defaults: defaults).receipt(for: target.key)
+            try require(stored?.permissionNotice == change.permissionNotice, "Permission notice did not persist")
+            let calls = try String(contentsOf: scratch.appending(path: "agent/calls.jsonl"), encoding: .utf8)
+            try require(!calls.contains("session/prompt"), "Permission fallback sent a prompt")
+            change.undo()
+            try require(
+                app.selection == source.key && ComposerSettings(source.configOptions).autonomy?.value == test.source,
+                "Undo did not restore the original permission level")
+            print("PASS: permission fallback \(test.name), receipt persistence, no prompt and Undo")
+        }
     }
 
     static func duplicateModels() throws {

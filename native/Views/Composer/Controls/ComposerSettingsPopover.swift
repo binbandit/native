@@ -66,6 +66,7 @@ struct ComposerSettingsPopover: View {
     var onRestart: (() -> Void)?
     /// Opened from the keyboard: the current model starts highlighted.
     var highlightsCurrent = false
+    var highlightsPermissions = false
     var onClose: () -> Void = {}
     var onUndo: (() -> Void)?
     let onSet: (SelectSetting, String) -> Void
@@ -111,7 +112,9 @@ struct ComposerSettingsPopover: View {
         .focused($isFocused)
         .onAppear {
             isFocused = true
-            if highlightsAgent, let currentAgentID {
+            if highlightsPermissions, let value = settings.autonomy?.value {
+                highlighted = .autonomy(value)
+            } else if highlightsAgent, let currentAgentID {
                 highlighted = .agent(currentAgentID)
             } else if highlightsCurrent, let currentModelID {
                 highlighted = .model(currentModelID)
@@ -122,6 +125,9 @@ struct ComposerSettingsPopover: View {
             hovered = nil
             highlighted = nil
             page = nil
+        }
+        .onChange(of: highlightsPermissions) { _, requested in
+            if requested, let value = settings.autonomy?.value { highlighted = .autonomy(value) }
         }
         .onKeyPress(phases: [.down, .repeat]) { handleKey($0) }
         .accessibilityElement(children: .contain)
