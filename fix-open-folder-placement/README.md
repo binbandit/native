@@ -1,6 +1,6 @@
 # Open Folder placement review
 
-Revision: `19418efaf`. Isolated Debug instance: `cx-open-folder-rework`, 1000 by 700, light and dark. Sidebar Next was enabled with a typed defaults value. Sound and status bar were disabled in this instance. No real session or system chooser was opened.
+Visual capture revision: `19418efaf`. Current code revision: `0351e4119`; the follow-up restores explicit keyboard focusability without changing the resting design. Isolated Debug instance: `cx-open-folder-rework`, 1000 by 700, light and dark. Sidebar Next was enabled with a typed defaults value. Sound and status bar were disabled in this instance. No real session or system chooser was opened.
 
 [Design HTML](open-folder-v2.html) and [spec](open-folder-v2-spec.md) supersede requests-1026 section 1. [Capture manifest](manifest.json). [Native state matrix](native-matrix.png).
 
@@ -17,14 +17,16 @@ The header uses SidebarSectionLabel and the existing small IconButton, with no n
 | hover | Real-surface capture pending | [light](mocks/hover-light.png) / [dark](mocks/hover-dark.png) | No supported driver input |
 | touch | Real-surface capture pending | [light](mocks/touch-light.png) / [dark](mocks/touch-dark.png) | No supported driver input |
 
+| keyboard focus | Background Tab attempt left AX focus on the window; inconclusive | Existing system focus treatment | Foreground manual verification pending |
+
 Additional unchanged recovery context: [failure light](failure-light.png), [failure dark](failure-dark.png), [Added/Undo light](added-light.png), [Added/Undo dark](added-dark.png). These retain the existing feedback design; the new header follows the rest mock above.
 
 ## Verification
 
-- Debug build and repository warning check passed at this revision.
+- Debug, Release and Nightly builds and repository warning checks passed at `0351e4119`. Release: 48.0 MB download / 117.4 MB installed. Nightly: 48.1 MB / 117.5 MB. Existing size budgets are unchanged.
 - Existing sidebar-folders integration checks passed: folder batches, aliases, files/packages, recents, Undo, drafts, navigation, cancellation and managed admission.
 - FolderHistoryTests: 2 passed. FolderPolicyTests and PolicyCoverageTests: 9 passed.
-- Strict Swift format lint and diff whitespace check passed.
+- Strict Swift format lint and diff whitespace check passed. Pullfrog approved `0351e4119` and resolved the focus finding. App build, build paths and lint CI passed; package and iPad CI jobs remained queued at handoff.
 - File menu still exposes Open Folder… with Command-O and Open Recent. The three project addresses use the same QuickEntryPicker captured here.
 - Rest, picker, empty, drag feedback, managed restriction and opening were compared side by side in light and dark. The plus aligns to the existing heading and control edges. Native chrome and the unchanged fixture transcript retain their current app rendering. The final light/dark mock refresh completed after the screen became available again.
 
@@ -32,4 +34,4 @@ Additional unchanged recovery context: [failure light](failure-light.png), [fail
 
 Visual check pending. A separate coordinator design review is required before merge.
 
-The driver cannot create pointer hover, an external folder drag or iPad touch. The drop capture is inert feedback, backed by the existing model checks; it does not prove an external drag interaction. The always-visible plus and existing dsHitTarget are retained for touch, but no iPad screenshot is claimed. Hover reuses unchanged IconButton styling. System chooser activation was not driven because the playtesting rules prohibit opening system pickers. The driver warned that Ghostty covered the window; captures visibly show the intended states and were corroborated by AX trees.
+The driver cannot create pointer hover, an external folder drag or iPad touch. The drop capture is inert feedback, backed by the existing model checks; it does not prove an external drag interaction. The always-visible plus and existing dsHitTarget are retained for touch, but no iPad screenshot is claimed. Hover reuses unchanged IconButton styling. The local iPad check was stopped after about 20 minutes of broad dependency discovery, a compiler abort and diagnostics in unrelated dependencies; it is inconclusive, with CI still queued. The pid-scoped Tab attempt did not produce a focused control in the background fixture, so real keyboard verification remains pending despite the restored `.focusable()`. System chooser activation was not driven because the playtesting rules prohibit opening system pickers. The driver warned that Ghostty covered the window; captures visibly show the intended states and were corroborated by AX trees.

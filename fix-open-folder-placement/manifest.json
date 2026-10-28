@@ -28,5 +28,20 @@
     "experiment.NativeSidebarNext": true,
     "sounds.enabled": false
   },
-  "capture_note": "All native captures completed while unlocked. The driver warned of Ghostty coverage; each intended state was visible and matched its AX tree."
+  "capture_note": "All native captures completed while unlocked. The driver warned of Ghostty coverage; each intended state was visible and matched its AX tree.",
+  "code_revision": "0351e4119d244ce7e74e5a1cdf14ce6210018098",
+  "keyboard_check": "Inconclusive: background pid-scoped Tab attempt left AX focus on the window; no control focus or chooser activation is claimed.",
+  "local_ipad_check": "Inconclusive after compiler abort and broad dependency discovery; CI queued.",
+  "release_checks": {
+    "Release": {
+      "download_mb": 48.0,
+      "installed_mb": 117.4
+    },
+    "Nightly": {
+      "download_mb": 48.1,
+      "installed_mb": 117.5
+    },
+    "warnings": "No repository warnings",
+    "budgets": "unchanged"
+  }
 }

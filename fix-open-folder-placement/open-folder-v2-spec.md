@@ -6,7 +6,7 @@ Supersedes section 1 of requests-1026-spec.md and requests-1026.html. The approv
 
 Use `SidebarSectionLabel("Projects")` above the project groups. Its 12pt semibold Geist, -0.06 tracking, secondary text, 30pt leading and 10pt trailing insets are exactly the shared All in view heading. Use the existing small `IconButton` with a regular 12pt plus in a 24pt square, radius 4. Secondary at rest, primary with the existing 4.5% neutral hover wash. Keep the control visible at rest and on touch. Give the heading at least the platform minimum target height and preserve `.dsHitTarget` on the control. No new color, size or animation token.
 
-The plus opens the chooser directly through `requestOpenFolder`, with the accessible name Open Folder… and Command-O tooltip. Disable during opening or when managed policy forbids additions. Keep the heading in place in both cases. The quiet plus does not compete with New Task; folder-level plus buttons still create tasks.
+Keep explicit `.focusable()` on the replacement control. The plus opens the chooser directly through `requestOpenFolder`, with the accessible name Open Folder… and Command-O tooltip. Disable during opening or when managed policy forbids additions. Keep the heading in place in both cases. The quiet plus does not compete with New Task; folder-level plus buttons still create tasks.
 
 The footer contains only the existing account and Settings controls. Keep opening, failure, managed and Added/Undo feedback. File > Open Recent remains the home for recents. Command-O, File > Open Folder and folder drops keep their model behavior. The entire sidebar is a folder drop target, including its footer; private internal drags still reorder.
 
