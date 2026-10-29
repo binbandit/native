@@ -28,10 +28,8 @@ private struct ComposerCaretChecks {
                 // Mid-draft, after "Look at " / "Plain dr".
                 // Finder files also advertise text. A native string receiver steals that drop
                 // before the composer's attachment destination can see its file URL.
-                if !fixture.textView.registeredDraggedTypes.isEmpty {
-                    print(
-                        "FAIL \(editor): the native editor still claims dragged types: \(fixture.textView.registeredDraggedTypes)"
-                    )
+                if claimsFileDrop(fixture.textView) {
+                    print("FAIL \(editor): the native editor takes a file drop before the attachment destination")
                     failures += 1
                 }
                 let caret = 8
@@ -95,6 +93,16 @@ private struct ComposerCaretChecks {
             exit(1)
         }
         print("Composer caret checks passed")
+    }
+
+    private static func claimsFileDrop(_ editor: NSTextView) -> Bool {
+        let board = NSPasteboard.withUniqueName()
+        defer { board.releaseGlobally() }
+        let item = NSPasteboardItem()
+        item.setString("file:///fixture/brief.txt", forType: .fileURL)
+        item.setString("/fixture/brief.txt", forType: .string)
+        board.writeObjects([item])
+        return board.availableType(from: editor.registeredDraggedTypes) != nil
     }
 }
 
