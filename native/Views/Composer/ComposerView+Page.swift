@@ -13,7 +13,7 @@ extension ComposerView {
                 richLineLeading: DS.ComposeTask.editorRichLineLeading,
                 insets: DS.ComposeTask.editorInsets, maximumHeight: DS.ComposeTask.editorMaxHeight,
                 // A mentioned file shows as its name on a chip, even where @ can't look files up (another Mac).
-                referencesEnabled: true
+                referencesEnabled: true, routesFileDropsToAttachments: true
             ) { press in
                 handleKey(press, suggestions: suggestions)
             }

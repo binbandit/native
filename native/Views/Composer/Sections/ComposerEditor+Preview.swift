@@ -59,7 +59,7 @@ private struct ComposerEditorPreview: View {
     var body: some View {
         ComposerEditor(
             text: $text, selection: $selection, placeholder: placeholder, isFocused: $isFocused,
-            referencesEnabled: referencesEnabled, referenceCounts: referenceCounts
+            referencesEnabled: referencesEnabled, referenceCounts: referenceCounts, routesFileDropsToAttachments: true
         ) { _ in
             .ignored
         }

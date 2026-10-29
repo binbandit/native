@@ -28,7 +28,7 @@ private struct ComposerCaretChecks {
                 // Mid-draft, after "Look at " / "Plain dr".
                 // Finder files also advertise text. A native string receiver steals that drop
                 // before the composer's attachment destination can see its file URL.
-                if claimsFileDrop(fixture.textView) {
+                if editor != .quickEntry, claimsFileDrop(fixture.textView) {
                     print("FAIL \(editor): the native editor takes a file drop before the attachment destination")
                     failures += 1
                 }
@@ -111,7 +111,7 @@ private struct ComposerCaretChecks {
 @MainActor
 private final class ComposerCaretFixture {
     /// The three places the editor is used, with their own font and line spacing.
-    enum Editor: CaseIterable {
+    enum Editor: CaseIterable, Equatable {
         case composer, composePage, quickEntry
     }
 
@@ -201,7 +201,10 @@ private struct ComposerCaretHost: View {
         Group {
             switch editor {
             case .composer:
-                ComposerEditor(text: $model.text, selection: $selection, placeholder: "", isFocused: $isFocused) { _ in
+                ComposerEditor(
+                    text: $model.text, selection: $selection, placeholder: "", isFocused: $isFocused,
+                    routesFileDropsToAttachments: true
+                ) { _ in
                     .ignored
                 }
             case .composePage:
@@ -209,7 +212,8 @@ private struct ComposerCaretHost: View {
                     text: $model.text, selection: $selection, placeholder: "", isFocused: $isFocused,
                     font: DS.ComposeTask.editorFont, lineSpacing: DS.ComposeTask.editorLineSpacing,
                     richLineLeading: DS.ComposeTask.editorRichLineLeading,
-                    insets: DS.ComposeTask.editorInsets, maximumHeight: DS.ComposeTask.editorMaxHeight
+                    insets: DS.ComposeTask.editorInsets, maximumHeight: DS.ComposeTask.editorMaxHeight,
+                    routesFileDropsToAttachments: true
                 ) { _ in .ignored }
             case .quickEntry:
                 ComposerEditor(

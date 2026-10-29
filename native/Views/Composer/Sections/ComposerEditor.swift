@@ -32,6 +32,8 @@ struct ComposerEditor: View {
     var maximumHeight = ComposerMetrics.editorMaxHeight
     var referencesEnabled = false
     var referenceCounts: [String: FileReferenceProjection.Counts] = [:]
+    /// Only composers with an attachment destination take files away from native text dropping.
+    var routesFileDropsToAttachments = false
     let onKey: (KeyPress) -> KeyPress.Result
 
     /// Whether the rich-text editor is in use, from the first backtick or `~~~` on.
@@ -128,9 +130,9 @@ struct ComposerEditor: View {
         .onKeyPress(phases: [.down, .repeat], action: onKey)
         .accessibilityLabel(inputLabel)
         // Files and images dropped on the text attach instead (the composer's drop area).
-        .textViewDefersDrops()
+        .textViewDefersDrops(routesFileDropsToAttachments)
         .onDrop(
-            of: [.text],
+            of: routesFileDropsToAttachments ? [.text] : [],
             delegate: ComposerTextDrop { dropped in
                 let offsets = Self.offsets(of: selection, in: text)
                 let start = offsets?.lowerBound ?? text.utf8.count

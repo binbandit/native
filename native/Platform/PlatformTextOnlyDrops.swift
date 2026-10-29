@@ -9,8 +9,8 @@ import UIKit
 extension View {
     /// SwiftUI owns the editor's drops. Registering even plain text here steals files that also
     /// advertise a string, inserting their paths before the attachment destination sees them.
-    func textViewDefersDrops() -> some View {
-        background(TextOnlyDrops())
+    func textViewDefersDrops(_ defersDrops: Bool) -> some View {
+        background(TextOnlyDrops(defersDrops: defersDrops))
     }
 }
 
@@ -18,15 +18,19 @@ extension View {
 /// Finds the editor's text view beside it and removes its native drop registration. The text view
 /// registers again when it's enabled or disabled, so this runs on every update.
 private struct TextOnlyDrops: NSViewRepresentable {
+    let defersDrops: Bool
     func makeNSView(context: Context) -> NSView {
         Anchor()
     }
 
     func updateNSView(_ view: NSView, context: Context) {
-        (view as? Anchor)?.narrow()
+        guard let anchor = view as? Anchor else { return }
+        anchor.defersDrops = defersDrops
+        anchor.narrow()
     }
 
     final class Anchor: NSView {
+        var defersDrops = false
         #if DEBUG
         private var dropCheck: PlatformAttachmentDropCheck?
         #endif
@@ -46,8 +50,10 @@ private struct TextOnlyDrops: NSViewRepresentable {
                 for _ in 0..<4 {
                     guard let view = ancestor else { return }
                     if let textView = Self.textView(in: view, depth: 6) {
-                        if !textView.registeredDraggedTypes.isEmpty {
+                        let types: [NSPasteboard.PasteboardType] = self?.defersDrops == true ? [] : [.string]
+                        if textView.registeredDraggedTypes != types {
                             textView.unregisterDraggedTypes()
+                            textView.registerForDraggedTypes(types)
                         }
                         return
                     }
@@ -65,10 +71,16 @@ private struct TextOnlyDrops: NSViewRepresentable {
 }
 #else
 private struct TextOnlyDrops: UIViewRepresentable {
+    let defersDrops: Bool
     func makeUIView(context: Context) -> UIView { Anchor() }
-    func updateUIView(_ view: UIView, context: Context) { (view as? Anchor)?.deferDrops() }
+    func updateUIView(_ view: UIView, context: Context) {
+        guard let anchor = view as? Anchor else { return }
+        anchor.defersDrops = defersDrops
+        anchor.deferDrops()
+    }
 
     final class Anchor: UIView {
+        var defersDrops = false
         override func didMoveToWindow() {
             super.didMoveToWindow()
             deferDrops()
@@ -76,6 +88,7 @@ private struct TextOnlyDrops: UIViewRepresentable {
 
         func deferDrops() {
             DispatchQueue.main.async { [weak self] in
+                guard self?.defersDrops == true else { return }
                 var ancestor = self?.superview
                 for _ in 0..<4 {
                     guard let view = ancestor else { return }
