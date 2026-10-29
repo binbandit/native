@@ -227,6 +227,18 @@ struct TaskScriptVariablesList: View {
     }
 }
 
+#if DEBUG
+#Preview("Warm worktrees - Setup editor") {
+    DSPreviewPair {
+        TaskScriptEditorSheet(
+            target: .init(event: .setup, scope: .project(TaskScriptsPreviewFixtures.project)))
+    }
+    .environment(TaskScriptsPreviewFixtures.settings())
+    .environment(TaskScriptsPreviewFixtures.center())
+    .environment(AppModel.preview())
+}
+#endif
+
 #if NATIVE_PREVIEWS_WIP
 #Preview("Script editor - Global setup") {
     DSPreviewPair {
