@@ -11,14 +11,18 @@ protocol ContextSource {
     var reportStatus: ContextReportStatus { get }
     /// Whether the agent can compact its context on request (`/compact`).
     var canCompact: Bool { get }
+    var isAwaitingContextUsage: Bool { get }
     func refreshReport() async
     func compact() async
 }
 
 extension ContextSource {
+    var isAwaitingContextUsage: Bool { false }
+
     /// The used share of the window, from the freshest numbers available. Usage updates follow
     /// every turn; a report can be older.
     var fractionUsed: Double? {
+        guard !isAwaitingContextUsage else { return nil }
         if let usage, usage.size > 0 { return usage.fractionUsed }
         return report?.fractionUsed
     }

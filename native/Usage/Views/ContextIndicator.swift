@@ -41,7 +41,11 @@ struct ContextIndicator<Source: ContextSource>: View {
             .buttonStyle(.plain)
             .help(tooltip)
             .accessibilityLabel("Context")
-            .accessibilityValue(source.fractionUsed.map { "\(DSFormat.percent($0)) full" } ?? "Not reported yet")
+            .accessibilityValue(
+                source.isAwaitingContextUsage
+                    ? "Compacted, waiting for context usage"
+                    : source.fractionUsed.map { "\(DSFormat.percent($0)) full" } ?? "Not reported yet"
+            )
             .accessibilityHint("Shows what fills the context window")
             .popover(isPresented: breakdown ?? $ownBreakdown, arrowEdge: arrowEdge) {
                 ContextBreakdownView(source: source)
@@ -56,17 +60,27 @@ struct ContextIndicator<Source: ContextSource>: View {
         // Fine print's field shows nothing until there's a number, but keeps an anchor for View ▸
         // Show Context Use.
         let available =
-            source.fractionUsed != nil
+            source.isAwaitingContextUsage || source.fractionUsed != nil
             || (style == .labeled && source.reportStatus != .unsupported)
             || (style == .field && isShowingBreakdown)
-        return available && (isShowingBreakdown || (source.fractionUsed ?? 0) >= revealsAt)
+        return available
+            && (source.isAwaitingContextUsage || isShowingBreakdown || (source.fractionUsed ?? 0) >= revealsAt)
     }
 
     @ViewBuilder
     private var label: some View {
         // The ring's own tooltip would hide the fuller one on the button.
-        let ring = ContextUsageRing(fraction: source.fractionUsed ?? 0, size: UsageMetrics.ringSize)
-            .allowsHitTesting(false)
+        let ring = Group {
+            if source.isAwaitingContextUsage {
+                Image(systemName: "checkmark.circle")
+                    .font(.dsCaption)
+                    .foregroundStyle(.dsTextSecondary)
+                    .frame(width: UsageMetrics.ringSize, height: UsageMetrics.ringSize)
+            } else {
+                ContextUsageRing(fraction: source.fractionUsed ?? 0, size: UsageMetrics.ringSize)
+            }
+        }
+        .allowsHitTesting(false)
         switch style {
         case .ring:
             ring
@@ -76,9 +90,11 @@ struct ContextIndicator<Source: ContextSource>: View {
             let shape = RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
             HStack(spacing: DS.Space.sm) {
                 ring
-                Text(source.fractionUsed.map(DSFormat.percent) ?? "Context")
-                    .monospacedDigit()
-                    .contentTransition(.numericText(value: source.fractionUsed ?? 0))
+                Text(
+                    source.isAwaitingContextUsage ? "Compacted" : source.fractionUsed.map(DSFormat.percent) ?? "Context"
+                )
+                .monospacedDigit()
+                .contentTransition(.numericText(value: source.fractionUsed ?? 0))
             }
             .font(style == .field ? .dsMonoCaption : .dsBody)
             .foregroundStyle(isHovered || isShowingBreakdown ? .dsTextPrimary : .dsTextSecondary)
@@ -92,6 +108,9 @@ struct ContextIndicator<Source: ContextSource>: View {
     }
 
     private var tooltip: String {
+        if source.isAwaitingContextUsage {
+            return "Context compacted. Waiting for the agent to report the new size."
+        }
         guard let usage = source.usage, usage.size > 0 else {
             return "Context\nClick to see what fills it"
         }
@@ -123,6 +142,18 @@ extension FocusedValues {
                 ContextIndicator(source: PreviewContextSource.codex)
                 ContextIndicator(source: PreviewContextSource.codex, style: .labeled)
             }
+        }
+    }
+}
+#endif
+
+#if DEBUG
+#Preview("Context indicator after compaction") {
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            ContextIndicator(source: PreviewContextSource.compacted)
+            ContextIndicator(source: PreviewContextSource.compacted, style: .labeled)
+            ContextIndicator(source: PreviewContextSource.codex, style: .labeled)
         }
     }
 }

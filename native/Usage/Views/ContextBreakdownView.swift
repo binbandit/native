@@ -56,6 +56,19 @@ private struct ContextBreakdownPlaceholder<Source: ContextSource>: View {
     let source: Source
 
     var body: some View {
+        if source.isAwaitingContextUsage {
+            note(
+                systemImage: "checkmark.circle",
+                text:
+                    "\(source.agentName) compacted the conversation. The new context size appears when the agent next reports usage."
+            )
+        } else {
+            status
+        }
+    }
+
+    @ViewBuilder
+    private var status: some View {
         switch source.reportStatus {
         case .unsupported:
             note(
@@ -130,6 +143,14 @@ private struct ContextBreakdownPlaceholder<Source: ContextSource>: View {
             ContextBreakdownView(source: stale)
             ContextBreakdownView(source: empty)
         }
+    }
+}
+#endif
+
+#if DEBUG
+#Preview("Context breakdown after compaction") {
+    DSPreviewPair {
+        ContextBreakdownView(source: PreviewContextSource.compacted)
     }
 }
 #endif

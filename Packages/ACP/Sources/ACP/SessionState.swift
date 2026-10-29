@@ -18,9 +18,13 @@ public struct SessionState: Sendable {
     var planTurnStart: Int?
     public var configOptions: [ConfigOption] = []
     public private(set) var availableCommands: [AvailableCommand] = []
-    public private(set) var usage: Usage?
+    public internal(set) var usage: Usage?
+    /// A completed compaction makes earlier context totals and breakdowns obsolete.
+    public internal(set) var contextCompactedAt: Date?
+    var completedCompactions: Set<String> = []
+    private var lastReportedUsage: Usage?
 
-    private var toolCallIndices: [String: Int] = [:]
+    var toolCallIndices: [String: Int] = [:]
     /// Tool calls that haven't finished, so a turn's end settles them without a pass over every call.
     var openCallIndices: Set<Int> = []
     /// The clocks of live turns, keyed by the index of the prompt that started each one.
@@ -63,6 +67,7 @@ public struct SessionState: Sendable {
 
     /// Folds one update in. `date` is when it arrived; only items of a live turn keep it.
     public mutating func apply(_ update: SessionUpdate, at date: Date = .now) {
+        let receivedAt = date
         let date = openTurn == nil ? nil : date
         switch update {
         case .userMessageChunk(let chunk):
@@ -93,9 +98,15 @@ public struct SessionState: Sendable {
         case .sessionInfo(let title): self.title = title ?? self.title
         case .usage(var usage):
             // Agents may report cost only now and then; keep the last known figure.
-            usage.cost = usage.cost ?? self.usage?.cost
-            usage._meta.model = usage._meta.model ?? self.usage?._meta.model
-            self.usage = usage
+            usage.cost = usage.cost ?? lastReportedUsage?.cost
+            usage._meta.model = usage._meta.model ?? lastReportedUsage?._meta.model
+            lastReportedUsage = usage
+            // Older adapters use zero when compaction succeeded without a post-compaction count.
+            if contextCompactedAt == nil || self.usage != nil || usage.used > 0 {
+                self.usage = usage
+            }
+        case .compaction(let update): applyCompaction(update, receivedAt: receivedAt, transcriptDate: date)
+        case .compactionSummary(let chunk): appendCompactionSummary(chunk, at: date)
         case .subagent(let update): upsertSubagent(update)
         case .sessionMessage(let update):
             upsertSessionMessage(update.messageId, sender: update.senderSessionId, recipient: update.recipientSessionId)
@@ -380,7 +391,7 @@ public struct SessionState: Sendable {
         }
     }
 
-    private mutating func upsertToolCall(_ update: ToolCallUpdate, at date: Date?) {
+    mutating func upsertToolCall(_ update: ToolCallUpdate, at date: Date?) {
         if let index = toolCallIndices[update.toolCallId], case .toolCall(var call) = items[index] {
             call.merge(update)
             if call.status.isFinished, call.finishedAt == nil, call.startedAt != nil {

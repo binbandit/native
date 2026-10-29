@@ -9,8 +9,17 @@ struct SessionContextSource: ContextSource {
 
     var agentName: String { session.agentName }
     var usage: Usage? { session.usage }
-    var report: ContextReport? { reports.report(for: session.key) }
-    var reportStatus: ContextReportStatus { reports.status(of: session) }
+    var isAwaitingContextUsage: Bool { session.contextCompactedAt != nil && session.usage == nil && report == nil }
+    var report: ContextReport? {
+        guard let report = reports.report(for: session.key) else { return nil }
+        if let compactedAt = session.contextCompactedAt, report.capturedAt <= compactedAt { return nil }
+        return report
+    }
+    var reportStatus: ContextReportStatus {
+        let status = reports.status(of: session)
+        if case .ready = status, report == nil { return .ready(isStale: true) }
+        return status
+    }
     var canCompact: Bool { session.acceptsPrompts && session.advertises("compact") }
 
     func refreshReport() async {

@@ -863,3 +863,14 @@ unresolved across relaunch until matching transcript/queue evidence or explicit 
 resend; no timer implies failure. Comments use the public task submission API and retain its queue
 and steer behavior. No GitHub review is created. Source excerpt policy grants apply at collection
 and submission; they introduce no new endpoint. Inert Debug fixtures cover C1 through C13.
+
+### Context after compaction
+
+Both the app and host advertise ACP's `session.compaction` client capability. The shared
+`SessionState` reducer renders `compaction_update` and `compaction_summary_chunk` as a transcript
+operation. A successful completion invalidates earlier context usage and cached breakdowns;
+failed or cancelled compactions keep them. Duplicate completion events do not invalidate newer
+usage. Until the agent reports a positive post-compaction count, the context display says
+"Compacted" and omits the old percentage and pressure warnings. Older Claude adapters can report
+zero as a placeholder when the compact boundary has no token count; Native waits for the next
+usage report rather than presenting that placeholder as an empty context.

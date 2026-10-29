@@ -167,6 +167,7 @@ final class SessionModel {
     var reviewedTaskWellTurnID: String?
     private(set) var availableCommands: [AvailableCommand] = []
     private(set) var usage: Usage?
+    private(set) var contextCompactedAt: Date?
     /// Tool calls waiting for the user's permission, oldest first.
     private(set) var permissionRequests: [ToolCallState] = []
     private(set) var hasSubagents = false
@@ -514,6 +515,7 @@ final class SessionModel {
         if taskActivity != activity { taskActivity = activity }
         if availableCommands != transcript.availableCommands { availableCommands = transcript.availableCommands }
         if usage != transcript.usage { usage = transcript.usage }
+        if contextCompactedAt != transcript.contextCompactedAt { contextCompactedAt = transcript.contextCompactedAt }
         let requests = transcript.permissionRequests
         if permissionRequests != requests {
             permissionRequests = requests
