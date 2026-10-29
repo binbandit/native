@@ -16,7 +16,7 @@ struct PermissionDefaultsRow: View {
     }
 
     private var selected: TaskPermissionMode {
-        TaskPermissionMode(rawValue: stored ?? global) ?? .fullAccess
+        TaskPermissionMode.migrating(stored ?? global) ?? .askFirst
     }
 
     private var effective: TaskPermissionMode? {

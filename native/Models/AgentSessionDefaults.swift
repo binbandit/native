@@ -13,14 +13,13 @@ enum AgentSessionDefaults {
     /// A setting Settings can give a default, in the order they're applied: the model first, since
     /// changing it can change the efforts on offer.
     enum Setting: String, CaseIterable, Sendable {
-        case model, effort, permissions
+        case model, effort
 
         /// The ACP config option category that holds it.
         var category: String {
             switch self {
             case .model: "model"
             case .effort: "thought_level"
-            case .permissions: "mode"
             }
         }
 
@@ -156,8 +155,7 @@ enum AgentSessionDefaults {
     static func lastValue(
         for agent: AgentDefinition.ID, setting: Setting, defaults: UserDefaults = .standard
     ) -> String? {
-        guard setting != .permissions,
-            let id = defaults.string(forKey: setting.key(for: agent) + ".option")
+        guard let id = defaults.string(forKey: setting.key(for: agent) + ".option")
         else { return nil }
         return lastUsed(for: agent, defaults: defaults).choices[id]?.value
     }

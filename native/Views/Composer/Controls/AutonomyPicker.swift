@@ -58,7 +58,7 @@ struct AutonomyPicker: View {
             onSet(setting, choice.value)
             dismiss()
         }
-        .help(isSuspended ? "Resumes when Plan Mode ends" : choice.descriptionWithoutName ?? choice.name)
+        .help(isSuspended ? "Resumes when the task mode ends" : choice.descriptionWithoutName ?? choice.name)
     }
 
     private var footer: some View {

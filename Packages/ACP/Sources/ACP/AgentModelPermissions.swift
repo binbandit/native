@@ -17,7 +17,10 @@ public enum AgentModelPermissions {
     ) -> Selection? {
         let allowed = offered.filter { !forbidden.contains($0) }
         guard let first = allowed.first else { return nil }
-        if let source, let wanted = TaskPermissionMode(rawValue: source) {
+        let sharedValues: Set<String> = ["ask-first", "accept-edits", "full-access"]
+        if let source, let wanted = TaskPermissionMode(rawValue: source),
+            sharedValues.contains(source) || offered.contains(where: sharedValues.contains)
+        {
             let modes = allowed.compactMap(TaskPermissionMode.init(rawValue:))
                 .filter { $0.rank <= wanted.rank }
             guard let selected = modes.max(by: { $0.rank < $1.rank }) else { return nil }

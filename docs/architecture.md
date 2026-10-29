@@ -643,11 +643,10 @@ Model names never imply agent identity. The reporting adapter owns each choice, 
 models. The list retains its opening order until closed, and filters the current agent's model names and IDs.
 
 `ComposerAgentChange` prepares an unused conversation in the same folder, validates the exact model
-and a supported permission level, then publishes the selection. Permission translation prefers an
-equivalent level, then the closest stricter level, otherwise the safest advertised level allowed by
-policy. Unknown semantics are never treated as equivalent by matching IDs; a wholly unfamiliar list
-uses its first advertised level with an explicit review notice. A missing permission setting does
-not block the switch. Only a policy denying every advertised level blocks permission translation.
+and a supported permission mode, then publishes the selection. Shared permission intent stays the
+same across agents; each plugin enforces its closest stricter control. A destination that cannot
+supply a sufficiently restrictive control leaves the source selected with recovery guidance.
+Unknown provider values never justify widening permissions. A missing permission setting is disclosed.
 Planning and read-only restrictions remain distinct from ordinary approvals. A supported agent plan
 setting is confirmed before committing, including separate collaboration settings; Native rebinds
 its mode ownership to the target's option IDs. A missing planning restriction is disclosed.

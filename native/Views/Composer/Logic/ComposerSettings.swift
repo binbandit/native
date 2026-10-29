@@ -47,12 +47,12 @@ struct ComposerSettings: Equatable {
 
     /// The four shared permission modes, without the provider's Plan setting.
     var autonomyLevels: [SelectSetting.Choice] {
-        autonomy?.choices.filter { $0.value != Self.planValue } ?? []
+        autonomy?.choices.filter { $0.value != Self.planValue && $0.value != "read-only" } ?? []
     }
 
     /// Whether Plan Mode has taken the permission mode's place, suspending the autonomy level.
     var isAutonomySuspended: Bool {
-        autonomy?.value == Self.planValue
+        autonomy?.value == Self.planValue || autonomy?.value == "read-only"
     }
 
     /// The autonomy level to show: the current one, or while Plan Mode suspends it, `resumed`.

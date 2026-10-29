@@ -71,9 +71,8 @@ final class NewTasksDefaultsModel {
         let last = AgentSessionDefaults.lastValue(for: agent, setting: setting, defaults: defaults)
         let user = AgentSessionDefaults.explicitValue(for: agent, setting: setting, defaults: defaults)
         let local = project == nil ? nil : stored(setting)
-        let forbidden = setting == .permissions ? policy.forbiddenPermissionModes : []
         let resolution = TaskDefaultResolution(
-            offered: offered.map(\.value), agent: own, user: user, project: local, lastUsed: last, forbidden: forbidden)
+            offered: offered.map(\.value), agent: own, user: user, project: local, lastUsed: last)
         func name(_ value: String?) -> String? {
             value.map { id in offered.first { $0.value == id }?.name ?? id }
         }
@@ -83,19 +82,7 @@ final class NewTasksDefaultsModel {
         }
         let optionID = snapshots.first { $0.category == setting.category }?.id
         let modeValue = mode.id == .build ? nil : modeResolution.changes.first { $0.optionID == optionID }?.value
-        let managed = setting == .permissions && policy.isManaged(.forbiddenPermissionModes)
         var layers: [NewTasksSettingReceipt.Layer] = []
-        // Only permissions have an organization layer, and only while it limits them.
-        if setting == .permissions, !forbidden.isEmpty {
-            let allowed = offered.filter { !forbidden.contains($0.value) }.map(\.name)
-            layers.append(
-                .init(
-                    name: managed ? policy.organizationDisplayName : "Policy", symbol: "building.2",
-                    value: offered.isEmpty
-                        ? "Choices not reported"
-                        : allowed.isEmpty ? "No choices allowed" : "Allows \(allowed.joined(separator: ", "))",
-                    wins: resolution.source == .organization, isOrganization: true))
-        }
         if let project {
             layers.append(
                 .init(
@@ -122,9 +109,7 @@ final class NewTasksDefaultsModel {
                 at: min(1, layers.count))
         }
         let source: SettingsSourceLabel.Source
-        if managed && !forbidden.isEmpty {
-            source = .organization(policy.organizationDisplayName)
-        } else if modeValue != nil {
+        if modeValue != nil {
             source = .mode(mode.name)
         } else {
             source =
@@ -146,11 +131,9 @@ final class NewTasksDefaultsModel {
             return "\(saved)\(from) is no longer offered, so \(agentName) uses its default."
         }
         return NewTasksSettingReceipt(
-            title: setting == .model ? "Model" : setting == .effort ? "Effort" : "Permissions",
+            title: setting == .model ? "Model" : "Effort",
             context: "for \(agentName)\(project.map { " in \($0.name)" } ?? " in all projects")",
-            value: name(modeValue ?? resolution.value)
-                ?? (!offered.isEmpty && offered.allSatisfy { forbidden.contains($0.value) }
-                    ? "No allowed choice" : "Not reported yet"),
+            value: name(modeValue ?? resolution.value) ?? "Not reported yet",
             source: source, layers: layers,
             note: unavailable
                 ? "The saved choice is no longer offered. \(agentName) keeps its own default."
@@ -159,9 +142,7 @@ final class NewTasksDefaultsModel {
                     : resolution.restricted
                         ? "Policy excludes the requested choice. Native uses the agent's allowed default, or its first allowed choice."
                         : "Project settings come first, then your default or last choice, then the agent's own default.",
-            help: managed
-                ? "\(policy.organizationDisplayName) decides which choices are allowed. \(policy.organizationHelp)"
-                : nil,
+            help: nil,
             reason: resolution.restricted
                 ? resolution.value == own ? "allowed default" : "first allowed" : nil,
             isDefault: stored(setting) == nil, unavailable: unavailable,

@@ -59,7 +59,7 @@ struct AutonomyPill: View {
             " Press \($0.displayString) for the next level."
         }
         return isSuspended
-            ? "Autonomy resumes at \(detail) when Plan Mode ends"
+            ? "Autonomy resumes at \(detail) when the task mode ends"
             : "Autonomy: \(detail).\(next ?? "")"
     }
 }
