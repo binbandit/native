@@ -16,7 +16,7 @@ The existing repository-script trust and managed script policies still apply.
 | Copies off | Folder and env controls dimmed; setup command remains available |
 | Invalid path | Keep the user's input; explain that absolute, parent, .git and .env paths are skipped |
 | Existing setup | Edit or Show for a repository script, with the existing script editor |
-| Task ready | Existing setup notice lists the cloned paths; output also stays in the task terminal |
+| Task ready | Existing setup notice lists the cloned paths; output stays in its expandable task banner |
 | Unsupported volume | Say that copies need both checkouts on the same APFS volume; setup still runs |
 | Unsafe or existing paths | List skipped paths; never overwrite, traverse external links or use a full copy |
 | Setup failure | Existing setup banner keeps Retry, Edit Script and Skip Setup; agent messages wait |
