@@ -124,13 +124,34 @@ if [ "$build" = 1 ]; then
     # without asking the remotes, so a build works offline and doesn't wait on the network.
     log="$derived/build.log"
     mkdir -p "$derived"
+    # SDK modules and content-addressed compile results can be shared safely. The toolchain,
+    # SDK and architecture key prevents reusing incompatible compiler data after an Xcode update.
+    cache="${NATIVE_DEV_CACHE:-$HOME/Library/Caches/native-build/isolated}"
+    compiler_key=$({ xcrun swiftc --version 2>/dev/null; xcrun --sdk macosx --show-sdk-build-version; uname -m; } |
+        shasum -a 256 | awk '{print $1}')
+    compiler_cache="$cache/xcode/$compiler_key"
+    mkdir -p "$compiler_cache"
+    "$root/scripts/dev/build-cache.sh" prepare "$root" "$derived" || echo "warning: package cache not restored" >&2
+    cache_arguments=(
+        COMPILATION_CACHE_ENABLE_CACHING=YES
+        "COMPILATION_CACHE_CAS_PATH=$compiler_cache/CompilationCache.noindex"
+        COMPILATION_CACHE_LIMIT_SIZE=2G
+        "MODULE_CACHE_DIR=$compiler_cache/ModuleCache.noindex"
+        SWIFT_ENABLE_PREFIX_MAPPING=YES SWIFT_ENABLE_PROJECT_PREFIX_MAPPING=YES
+        CLANG_ENABLE_PREFIX_MAPPING=YES CLANG_ENABLE_PROJECT_PREFIX_MAPPING=YES
+        "SWIFT_OTHER_PREFIX_MAPPINGS=\"$root=/^native-repo\" \"$derived=/^native-derived\""
+        "CLANG_OTHER_PREFIX_MAPPINGS=\"$root=/^native-repo\" \"$derived=/^native-derived\""
+    )
     # Many agents build at once on a Mac someone is using: builds take turns at a lower priority.
-    if ! NATIVE_BUILD_LOG="$log" "$root/scripts/dev/build-slot.sh" -project "$root/native.xcodeproj" -scheme native -configuration Debug \
-        -skipPackageUpdates -derivedDataPath "$derived" NATIVE_BUNDLE_IDENTIFIER_SUFFIX=".dev.$name" build; then
-        grep -E "^/.*error:" "$log" | sort -u | head -20 >&2
+    if ! NATIVE_BUILD_LOG="$log" NATIVE_BUILD_TIMINGS="$derived/build-timings.txt" "$root/scripts/dev/build-slot.sh" -project "$root/native.xcodeproj" -scheme native -configuration Debug \
+        -skipPackageUpdates -derivedDataPath "$derived" -showBuildTimingSummary \
+        NATIVE_BUNDLE_IDENTIFIER_SUFFIX=".dev.$name" "${cache_arguments[@]}" build; then
+        grep -E "^/.*error:" "$log" | sort -u | head -20 >&2 || true
         echo "build failed; full log: $log" >&2
         exit 1
     fi
+    # Publish only after success. Cache failures should be visible, but cannot invalidate the app.
+    "$root/scripts/dev/build-cache.sh" publish "$root" "$derived" || echo "warning: package cache not saved" >&2
 fi
 if [ "$action" = build ]; then
     echo "built $name"
