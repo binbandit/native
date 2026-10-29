@@ -30,7 +30,7 @@ extension ComposerView {
                         mode: TaskModeControl(
                             session: session, modes: taskModes, resolvedProjectName: app.projectName(of: session)),
                         isPresented: $isModelPickerOpen, resumedAutonomy: autonomyBeforePlan,
-                        highlightsCurrent: settingsOpenedByCommand)
+                        highlightsCurrent: settingsOpenedByCommand, highlightsPermissions: settingsOpenedForPermissions)
                     AttachButton(isPickingFiles: $isPickingFiles, onPick: attach, isField: true)
                         .fileDialogDefaultDirectory(session.cwd)
                 }
@@ -55,6 +55,7 @@ extension ComposerView {
             .onChange(of: isModelPickerOpen) { _, open in
                 if !open {
                     settingsOpenedByCommand = false
+                    settingsOpenedForPermissions = false
                     takeFocusIfWanted()
                 }
             }

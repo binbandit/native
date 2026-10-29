@@ -5,9 +5,12 @@ import SwiftUI
 extension ComposerView {
     @ViewBuilder
     func settingsNote(_ settings: ComposerSettings) -> some View {
-        if PolicyCenter.shared.isManaged(.forbiddenPermissionModes) {
+        if PolicyCenter.shared.isManaged(.forbiddenPermissionModes),
+            session.modelChange?.isPermissionPolicyBlocked != true
+        {
             let manager = PolicyCenter.shared.policy.organizationDisplayName
-            let choice = settings.autonomy?.current.map(Self.whenItAsks)
+            let explainsLevel = session.modelChange?.stage == .applied && session.modelChange?.permissionNotice != nil
+            let choice = explainsLevel ? nil : settings.autonomy?.current.map(Self.whenItAsks)
             Label(
                 "Managed by \(manager)\(choice.map { ": \($0)" } ?? "")",
                 systemImage: "lock"
@@ -15,7 +18,7 @@ extension ComposerView {
             .font(.dsCaption)
             .foregroundStyle(.dsTextTertiary)
             .padding(.horizontal, DS.Space.xxl)
-        } else if session.modelChange?.stage == .applied,
+        } else if session.modelChange?.stage == .applied, session.modelChange?.permissionNotice == nil,
             let level = settings.autonomy?.current, ["default", "read-only"].contains(level.value)
         {
             Text("\(session.agentName) asks before any change.")
