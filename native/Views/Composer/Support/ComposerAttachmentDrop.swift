@@ -46,12 +46,10 @@ struct ComposerAttachmentDrop: DropDelegate {
         Task {
             var items: [ComposerDropItem] = []
             for provider in providers {
-                let result: Result<ComposerDropItem, any Error> = await withCheckedContinuation { continuation in
-                    _ = provider.loadTransferable(type: ComposerDropItem.self) { continuation.resume(returning: $0) }
-                }
-                switch result {
-                case .success(let item): items.append(item)
-                case .failure: items.append(.failed(provider.suggestedName ?? "file"))
+                do {
+                    items.append(try await ComposerDropItem.load(provider))
+                } catch {
+                    items.append(.failed(provider.suggestedName ?? "file"))
                 }
             }
             perform(items)

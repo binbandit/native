@@ -1,15 +1,37 @@
 import ACP
 import AppKit
+import SwiftUI
 import UniformTypeIdentifiers
 
 @testable import Native
 
 @main
+@MainActor
 private struct ComposerDropChecks {
     static func main() async throws {
         let fixture = URL(filePath: CommandLine.arguments[1], directoryHint: .isDirectory)
         guard !ComposerAttachmentDrop.accepts(NSItemProvider(object: "a text selection" as NSString)) else {
             throw Failure("An ordinary text selection was admitted as a file attachment")
+        }
+        guard !ComposerDropItem.acceptsPaste(NSItemProvider(object: "a text selection" as NSString)) else {
+            throw Failure("Ordinary text paste was admitted as a file attachment")
+        }
+        for original in ["Before selected after", "`code` before selected after"] {
+            let draft = Draft(original)
+            let undo = UndoManager()
+            undo.groupsByEvent = false
+            undo.beginUndoGrouping()
+            ComposerEditorUndo.record(
+                Binding(get: { draft.text }, set: { draft.text = $0 }), using: undo, actionName: "Drop Text")
+            draft.text = original.replacingOccurrences(of: "selected", with: "dropped")
+            undo.endUndoGrouping()
+            let replaced = draft.text
+            undo.undo()
+            guard draft.text == original else { throw Failure("Text drop undo lost the replaced selection") }
+            undo.redo()
+            guard draft.text == replaced, undo.undoActionName == "Drop Text" else {
+                throw Failure("Text drop redo lost the edit or its action name")
+            }
         }
         for name in ["brief.txt", "pixel.png", "folder"] {
             let url = fixture.appending(path: name)
@@ -53,6 +75,20 @@ private struct ComposerDropChecks {
             try Data(contentsOf: retained) == Data(contentsOf: source)
         else { throw Failure("A provider's temporary file was not retained") }
         try FileManager.default.removeItem(at: retained.deletingLastPathComponent())
+        let document = NSItemProvider()
+        document.registerFileRepresentation(
+            forTypeIdentifier: UTType.pdf.identifier, fileOptions: [], visibility: .all
+        ) { done in
+            done(source, false, nil)
+            return nil
+        }
+        guard ComposerDropItem.acceptsPaste(document),
+            !document.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier)
+        else { throw Failure("A typed document without a file URL was excluded from paste") }
+        guard case .file(let retainedDocument) = try await ComposerDropItem.load(document), retainedDocument != source,
+            try Data(contentsOf: retainedDocument) == Data(contentsOf: source)
+        else { throw Failure("A pasted typed document was not retained") }
+        try FileManager.default.removeItem(at: retainedDocument.deletingLastPathComponent())
         let provider = NSItemProvider()
         provider.registerDataRepresentation(forTypeIdentifier: UTType.png.identifier, visibility: .all) { done in
             done(image, nil)
@@ -62,14 +98,17 @@ private struct ComposerDropChecks {
             throw Failure("A raw picture did not import as an image")
         }
         print(
-            "PASS: mixed file/text imports, image and folder attachments, unsupported-image fallback, duplicate files, raw pictures"
+            "PASS: file/text imports, images and folders, image fallback, duplicates, raw pictures, typed document paste, text drop undo/redo"
         )
     }
 
     private static func load(_ provider: NSItemProvider) async throws -> ComposerDropItem {
-        try await withCheckedThrowingContinuation { continuation in
-            _ = provider.loadTransferable(type: ComposerDropItem.self) { result in continuation.resume(with: result) }
-        }
+        try await ComposerDropItem.load(provider)
+    }
+
+    private final class Draft {
+        var text: String
+        init(_ text: String) { self.text = text }
     }
 
     private struct Failure: Error, CustomStringConvertible {

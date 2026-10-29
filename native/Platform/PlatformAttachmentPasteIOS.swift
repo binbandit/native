@@ -49,7 +49,7 @@ struct PlatformAttachmentPasteIOS: UIViewRepresentable {
                         previousConfiguration = text.pasteConfiguration
                         text.pasteDelegate = self
                         let configuration = UIPasteConfiguration(forAccepting: NSString.self)
-                        configuration.addAcceptableTypeIdentifiers([UTType.fileURL.identifier, UTType.image.identifier])
+                        configuration.addAcceptableTypeIdentifiers([UTType.item.identifier])
                         text.pasteConfiguration = configuration
                     }
                     return
@@ -79,9 +79,7 @@ struct PlatformAttachmentPasteIOS: UIViewRepresentable {
             transform item: any UITextPasteItem
         ) {
             let provider = item.itemProvider
-            let isFile = provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier)
-            let image = provider.registeredTypeIdentifiers.compactMap { UTType($0) }.first { $0.conforms(to: .image) }
-            guard isFile || (image != nil && !provider.hasItemConformingToTypeIdentifier(UTType.text.identifier)) else {
+            guard ComposerDropItem.acceptsPaste(provider) else {
                 if let previousDelegate,
                     previousDelegate.responds(to: #selector(Self.textPasteConfigurationSupporting(_:transform:)))
                 {
@@ -93,19 +91,15 @@ struct PlatformAttachmentPasteIOS: UIViewRepresentable {
                 return
             }
             item.setNoResult()
-            let type = isFile ? UTType.fileURL : image ?? .image
             let accept = perform
             Task {
-                let data: Data? = await withCheckedContinuation { continuation in
-                    provider.loadDataRepresentation(forTypeIdentifier: type.identifier) { data, _ in
-                        continuation.resume(returning: data)
+                do {
+                    switch try await ComposerDropItem.load(provider) {
+                    case .file(let url): accept?(.files([url]))
+                    case .image(let data, let type): accept?(.image(data, type))
+                    case .failed(let name): accept?(.failed(name))
                     }
-                }
-                if let data, isFile, let url = URL(dataRepresentation: data, relativeTo: nil), url.isFileURL {
-                    accept?(.files([url]))
-                } else if let data, !isFile {
-                    accept?(.image(data, type))
-                } else {
+                } catch {
                     accept?(.failed(provider.suggestedName ?? "file"))
                 }
             }

@@ -9,6 +9,27 @@ enum ComposerDropItem: Transferable {
     case image(Data, UTType)
     case failed(String)
 
+    /// Copied documents can offer only a typed file representation, without a file URL. Text
+    /// selections, including those carrying a link or picture, keep the editor's normal paste.
+    nonisolated static func acceptsPaste(_ provider: NSItemProvider) -> Bool {
+        if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier)
+            || provider.hasItemConformingToTypeIdentifier(UTType.folder.identifier)
+            || !provider.registeredTypeIdentifiers(fileOptions: .openInPlace).isEmpty
+        {
+            return true
+        }
+        return !provider.hasItemConformingToTypeIdentifier(UTType.text.identifier)
+            && !provider.hasItemConformingToTypeIdentifier(UTType.url.identifier)
+            && (provider.hasItemConformingToTypeIdentifier(UTType.image.identifier)
+                || provider.hasItemConformingToTypeIdentifier(UTType.data.identifier))
+    }
+
+    nonisolated static func load(_ provider: NSItemProvider) async throws -> ComposerDropItem {
+        try await withCheckedThrowingContinuation { continuation in
+            _ = provider.loadTransferable(type: Self.self) { continuation.resume(with: $0) }
+        }
+    }
+
     static var transferRepresentation: some TransferRepresentation {
         DataRepresentation(importedContentType: .fileURL) { data in
             guard let url = URL(dataRepresentation: data, relativeTo: nil), url.isFileURL else {

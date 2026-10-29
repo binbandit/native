@@ -139,6 +139,7 @@ struct ComposerEditor: View {
                 let start = offsets?.lowerBound ?? text.utf8.count
                 let lower = text.utf8.index(text.startIndex, offsetBy: start)
                 let upper = text.utf8.index(text.startIndex, offsetBy: offsets?.upperBound ?? text.utf8.count)
+                ComposerEditorUndo.record($text, using: undoManager, actionName: "Drop Text")
                 text.replaceSubrange(lower..<upper, with: dropped)
                 let caret = start + dropped.utf8.count
                 selection = Self.textSelection(caret..<caret, in: text)

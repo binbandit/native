@@ -45,9 +45,15 @@ for file in brief.txt pixel.png folder; do "${drive[@]}" press "Remove $file"; d
 "${drive[@]}" wait 'Remove pixel.png'
 [[ $("${drive[@]}" text Message) == "$draft" ]] || { echo 'FAIL: file paste changed the draft'; exit 1; }
 for file in brief.txt pixel.png; do "${drive[@]}" press "Remove $file"; done
-"${drive[@]}" set Message 'Before after'
-"${drive[@]}" key cmd+l cmd+left
-"${drive[@]}" drop composer --text 'Text '
-"${drive[@]}" wait 'Text Before after' --role textarea
+for original in 'Before selected' 'Before `selected`'; do
+    "${drive[@]}" set Message "$original"
+    "${drive[@]}" key cmd+l cmd+right shift+cmd+left
+    "${drive[@]}" drop composer --text 'Replaced selection'
+    "${drive[@]}" wait 'Replaced selection' --role textarea
+    "${drive[@]}" key cmd+z
+    "${drive[@]}" wait "$original" --role textarea
+    "${drive[@]}" key shift+cmd+z
+    "${drive[@]}" wait 'Replaced selection' --role textarea
+done
 "${drive[@]}" set Message "$draft"
 echo 'PASS: composer and transcript drops, multi-file and duplicate files, copied-file paste, ordinary text drop, unchanged draft'
