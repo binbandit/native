@@ -59,9 +59,9 @@ struct TaskPeekView: View {
         .focusedSceneValue(\.taskPeekInstructionFocus, showsInstructionEditor ? $wantsInstructionFocus : nil)
         .focusEffectDisabled()
         .onAppear {
-            // A usable questionnaire focuses its own answer. Confirmation rows have no field,
-            // so Peek must take focus to keep Escape away from the background sidebar.
-            if questionnaire != nil { return }
+            // Annotated questions own focus, including confirmations. Classic questionnaires focus
+            // their answer; only classic confirmation rows need Peek to own Escape.
+            if case .question = ask?.content, composerNext || questionnaire != nil { return }
             isFocused = true
         }
         .onKeyPress(.escape) {
