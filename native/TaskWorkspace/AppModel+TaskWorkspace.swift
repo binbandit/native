@@ -62,6 +62,7 @@ extension AppModel {
                 throw TaskWorkspaceSelectionError("The replacement task stopped while getting ready. Try again.")
             }
             target.draft = source.draft
+            target.adoptDiffCommentDrafts(from: source, moving: true)
             target.attachments = source.attachments
             if let title = titles.namedTitle(for: source.titleKey) { titles.rename(target.titleKey, to: title) }
             let info = SessionInfo(sessionId: target.id, cwd: folder.folderPath, title: source.title, updatedAt: .now)

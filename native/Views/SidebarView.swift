@@ -112,29 +112,28 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
                 }
                 .accessibilityLabel("Projects")
                 .onAppear { LaunchMetrics.markOnScreen(.sidebarInteractive) }
-
             }
-            .modifier(
-                PlatformFolderDrop(
-                    enabled: usesSidebarNext, excludedTypes: [SidebarDragState.contentType],
-                    accepts: { model.sidebarFolders.acceptsDrop }, begin: model.beginFolderDrop,
-                    preview: model.previewFolderDrop, end: model.endFolderDrop,
-                    open: { await model.openSidebarFolders($0, undoManager: undoManager) }
-                ) {
-                    SidebarFolderDropFeedback(names: model.sidebarFolders.hovered)
-                }
-            )
 
             if selection.isActive {
                 SidebarSelectionBar(selection: selection)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
-            if usesSidebarNext { SidebarFolderActions() }
-            SidebarFooter(isAllInView: usesSidebarNext)
+            if usesSidebarNext { SidebarFolderResult() }
+            SidebarFooter()
         }
         .background(usesSidebarNext ? Color.dsSidebarSolid : Color.clear)
         .animation(.dsQuick, value: selection.isActive)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .modifier(
+            PlatformFolderDrop(
+                enabled: usesSidebarNext, excludedTypes: [SidebarDragState.contentType],
+                accepts: { model.sidebarFolders.acceptsDrop }, begin: model.beginFolderDrop,
+                preview: model.previewFolderDrop, end: model.endFolderDrop,
+                open: { await model.openSidebarFolders($0, undoManager: undoManager) }
+            ) {
+                SidebarFolderDropFeedback(names: model.sidebarFolders.hovered)
+            }
+        )
         .environment(\.sidebarSelection, selection)
         #if os(macOS)
         .onModifierKeysChanged(mask: [.command, .shift]) { _, modifiers in

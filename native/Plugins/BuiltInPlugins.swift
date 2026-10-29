@@ -5,11 +5,20 @@ import Search
 import SessionTitling
 
 enum BuiltInPlugins {
-    static let all: [any NativePlugin] = [
-        claudeCode, codex, cursor, openCode, pi, copilot, OnDeviceTitlesPlugin(), SoundsPlugin(),
-        OrchestrationPlugin(), MCPServersPlugin(), SkillsPlugin(), usage, automation, automations, expeditions, search,
-        CelebrationsPlugin(),
-    ]
+    static let all: [any NativePlugin] = {
+        let plugins: [any NativePlugin] = [
+            claudeCode, codex, cursor, openCode, pi, copilot, OnDeviceTitlesPlugin(), SoundsPlugin(),
+            OrchestrationPlugin(), MCPServersPlugin(), SkillsPlugin(), usage, automation, automations, expeditions,
+            search,
+            CelebrationsPlugin(),
+        ]
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: "taskWellPluginFixture") {
+            return plugins + [TaskWellFixturePlugin()]
+        }
+        #endif
+        return plugins
+    }()
 
     /// Claude Code through its ACP adapter, running the user's own `claude`. Adapter versions are
     /// pinned so upgrades are deliberate; the adapters move fast.
@@ -82,6 +91,8 @@ enum BuiltInPlugins {
                     // thread of its own that keeps a second set of the user's MCP servers running for
                     // as long as the adapter does. Named first, it doesn't; `/rename` asks no model.
                     renameCommand: "/rename",
+                    // The adapter uses turn/steer, which leaves running tools intact.
+                    steeringPolicy: .nonInterrupting,
                     // The adapter offers its device code only to clients that open links, so the
                     // host starts it that way for this sign-in (`AuthMethod.Kind.link`).
                     authMethods: [

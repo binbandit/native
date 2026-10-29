@@ -42,6 +42,9 @@
   command-lifetime guarantee, the result is a failed turn warning that background commands may
   remain, never a promise of Stopped. Closing a task retains its pending cleanup. Immediate host
   restart finishes cleanup without waiting for siblings and leaves their turns for recovery.
+- **Steer preserves tools.** ACP's `SteeringGate` holds input until every reported live tool finishes,
+  unless the agent plugin declares non-interrupting steering. The host owns the editable held message
+  and its delivery across app disconnects. Stop keeps its immediate cancellation path.
 - **State is a reducer.** `SessionState` folds `session/update`s and the user's actions into a
   transcript (messages, tool calls, subagents, inter-session messages, plan, usage). It's pure and
   tested against captured traffic, and it's shared with the future companion app.
@@ -146,13 +149,15 @@ footprint with physical RAM. It has no per-core scaling.
 
 ### GitHub account selection
 
-Settings > General > Accounts lists and switches the GitHub accounts on this Mac. The Mac sidebar
-footer shows only the selected avatar and name beside Settings; clicking it or choosing Go > GitHub
-Account opens General at the Accounts group. A signed-out footer shows just Settings. With All in
-view on, the footer opens its accounts in a popover instead (switch, add, or Manage in Settings);
-when the organization manages Native (`PolicyCenter`), a lock replaces its chevron and the popover
-also names the organization once, says what its policy turns off there (GitHub, other Macs,
-pairing) and where to ask.
+Settings > General > Accounts lists and switches the GitHub accounts on this Mac, with add and
+sign-out guidance through GitHub CLI. Both sidebars have one full-width footer button that opens
+Settings > General: the selected account's cached avatar and display name (login when unnamed),
+with a gear at the trailing edge. Loading or unavailable pictures use a neutral initial. With no
+signed-in account it shows Settings and the gear. Its tooltip is "Settings" and its accessible
+name is "<name>, Settings". Go > GitHub Account still reveals the Accounts group directly.
+When an organization manages Native (`PolicyCenter`), General names the organization, says what
+its policy turns off (GitHub, other Macs, pairing), and where to ask. There is no account popover
+or separate managed control in the footer.
 `GitHubAccountsModel` lists all
 accounts from `gh auth status --json hosts`, loads names and cached avatars asynchronously, and
 remembers one chosen login per host in Native's defaults. Without a choice it follows gh's active
@@ -754,9 +759,11 @@ reported turn edits as a fallback for committed files; unavailable or binary cou
 
 ### Opening folders in All in view
 
-`SidebarFolders` owns the fixed Open Folder action, device-local successful recents, batch results
-and addition Undo. `project.open` remains the Command-O entry point. `AppModel+SidebarFolders`
-resolves a whole batch before committing, revalidates live folder policy, delegates identity to
+`SidebarFolders` owns folder admission, device-local successful recents, batch results
+and addition Undo. The Projects header's plus opens the chooser; the footer holds only account
+controls and folder feedback. Compose, Home and Quick Entry share a project picker ending in
+Open Folder…. File retains Open Recent, and `project.open` remains the Command-O entry point.
+`AppModel+SidebarFolders` resolves a whole batch before committing, revalidates live folder policy, delegates identity to
 `Projects` and opens the first new folder's home without creating a task. Existing sessions retain
 their drafts. `PlatformFolderPicker`, `PlatformFolderAccess` and `PlatformFolderDrop` adapt system
 selection, security-scoped access and external file URLs; private sidebar drags still reorder.
@@ -780,3 +787,21 @@ the separate method safely. Move to Project reopens the same agent
 conversation at an admitted project folder. A unique Task Files child receives files only when
 the user opts in; originals remain owned until task deletion. Failure preserves the original
 location and draft. Paired-host scratch allocation is not supported.
+
+## Inline comments on Changes
+
+With Fine print enabled, `native/DiffComments` anchors task comments in the Changes diff. The
+shared ACP `PromptQuote` format carries an optional `PromptDiffComment`: stable identity, task,
+side, scope, content fingerprint, exact numbered source and body. It remains one text packet in
+the existing composer draft, queue and user transcript. Bare quotes keep their existing format.
+`PromptDiffCommentSelection` refuses cross-hunk or cross-side anchors. Fingerprints are stable
+version identifiers rather than cryptographic security claims; no fuzzy line remapping occurs.
+
+`SessionModel` owns collection, unfinished editors, review and undo. `ComposerDrafts` retains
+unfinished editors separately from added quotes and keeps a pending packet before submission.
+Acceptance removes only matching accepted snapshots, preserving later edits. Existing host request
+identifiers provide reconnect deduplication within a submission. A lost acknowledgement remains
+unresolved across relaunch until matching transcript/queue evidence or explicit user-controlled
+resend; no timer implies failure. Comments use the public task submission API and retain its queue
+and steer behavior. No GitHub review is created. Source excerpt policy grants apply at collection
+and submission; they introduce no new endpoint. Inert Debug fixtures cover C1 through C13.

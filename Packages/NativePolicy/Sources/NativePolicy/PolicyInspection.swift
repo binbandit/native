@@ -118,6 +118,8 @@ extension NativePolicy {
         case .skillsBlocked: count(blockedSkills)
         case .forbiddenPermissionModes: count(forbiddenPermissionModes)
         case .scriptsEnabled: flag(scriptsEnabled)
+        case .sourceExcerptsSending: flag(sourceExcerptsSendingEnabled)
+        case .sourceExcerptsRetention: flag(sourceExcerptsRetentionEnabled)
         case .worktreeFetch: flag(worktreeFetchEnabled)
         case .taskScriptsUser: flag(taskScripts.userScriptsEnabled)
         case .taskScriptsRepository: flag(taskScripts.repositoryScriptsEnabled)

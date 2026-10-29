@@ -83,7 +83,8 @@ private struct SidebarTrioRegression {
     }
 
     static func main() async {
-        managedFooter()
+        managedSettings()
+        await accountSettings()
         await modelActions()
         await branchRefreshes()
         await wiredRefresh()
@@ -94,7 +95,7 @@ private struct SidebarTrioRegression {
         print("PASS: archive groups, full project scope, refresh gating, Retry, cache bypass and in-flight lookup")
     }
 
-    static func managedFooter() {
+    static func managedSettings() {
         let source = StaticPolicySource(managed: [
             PolicyKey.organizationName.rawValue: "Northwind Federal IT",
             PolicyKey.organizationContact.rawValue: "#it-help",
@@ -104,16 +105,36 @@ private struct SidebarTrioRegression {
         let center = PolicyCenter(source: source)
         expect(
             center.managementLine == "Managed by Northwind Federal IT · #it-help",
-            "Footer names the policy's organization and contact")
-        expect(center.policy.organizationContact == "#it-help", "Footer contact comes from policy")
+            "General names the policy's organization and contact")
+        expect(center.policy.organizationContact == "#it-help", "General contact comes from policy")
         expect(
-            SidebarManagedDetails.facts(center).map(\.name) == ["Other Macs", "Pairing"],
-            "Footer describes the two managed restrictions without inventing an account restriction")
+            SettingsManagementDetails.facts(center).map(\.name) == ["Other Macs", "Pairing"],
+            "General describes the two managed restrictions without inventing an account restriction")
         let local = PolicyCenter(source: StaticPolicySource(user: [PolicyKey.remoteHostsEnabled.rawValue: false]))
-        expect(SidebarManagedDetails.facts(local).isEmpty, "A personal preference is never called off by policy")
+        expect(SettingsManagementDetails.facts(local).isEmpty, "A personal preference is never called off by policy")
         let enabled = PolicyCenter(source: StaticPolicySource(managed: [PolicyKey.remoteHostsEnabled.rawValue: true]))
-        expect(SidebarManagedDetails.facts(enabled).isEmpty, "A managed enabled capability is never called off")
-        print("PASS: managed footer restrictions, organization, contact and personal preferences")
+        expect(SettingsManagementDetails.facts(enabled).isEmpty, "A managed enabled capability is never called off")
+        print("PASS: managed settings restrictions, organization, contact and personal preferences")
+    }
+
+    static func accountSettings() async {
+        let model = GitHubAccountPreviewFixtures.model(.switchable)
+        expect(model.accounts.current?.login == "alex-morgan", "Saved account is kept before switching")
+        await model.selectAccount(
+            GitHubAccountPreviewFixtures.status(.switchable)?.hosts["github.com"]?.last
+                ?? GitHubAccountPreviewFixtures.second)
+        expect(model.accounts.current?.login == "alex-work", "General can select the newly active GitHub account")
+        if let previous = GitHubAccountPreviewFixtures.status(.switchable)?.hosts["github.com"]?.first {
+            await model.selectAccount(previous)
+        } else {
+            expect(false, "Previous fixture account exists")
+        }
+        expect(model.accounts.current?.login == "alex-work", "A failed switch keeps the current account")
+        model.accounts.addAccount()
+        expect(model.accounts.showsSignIn, "General offers sign-in guidance when adding an account")
+        expect(model.accounts.signInCommand == "gh auth login", "Sign-in stays with GitHub CLI")
+        expect(model.accounts.signOutCommand == "gh auth logout", "Sign-out stays with GitHub CLI")
+        print("PASS: account selection, failed-switch retention, add and sign-out guidance")
     }
 
     static func modelActions() async {

@@ -63,6 +63,7 @@ public struct AgentSpec: Codable, Hashable, Sendable, Identifiable {
     /// host sends ahead of turns to keep the agent's name for it in step with Native's title
     /// (`HostCore+AgentNames.swift`). Nil leaves names to the agent.
     public var renameCommand: String?
+    public var steeringPolicy: SteeringPolicy?
     /// Nonsecret selection of a host-owned private route. Client claims never authorize a launch.
     public var routeIdentity: AgentRouteIdentity?
     /// The agent plugin declares a supported Native skill delivery mechanism. Nil keeps MCP.
@@ -74,8 +75,8 @@ public struct AgentSpec: Codable, Hashable, Sendable, Identifiable {
         id: String, name: String, command: String, args: [String] = [], env: [String: String] = [:],
         resolveExecutables: [String: String] = [:], requires: [String] = [], install: String? = nil,
         authMethods: [AuthMethod] = [], idleUnloadTimeout: Int? = nil, renameCommand: String? = nil,
-        routeIdentity: AgentRouteIdentity? = nil, nativeSkill: NativeAgentSkillFormat? = nil,
-        nativeMCPEnabled: Bool? = nil
+        steeringPolicy: SteeringPolicy? = nil, routeIdentity: AgentRouteIdentity? = nil,
+        nativeSkill: NativeAgentSkillFormat? = nil, nativeMCPEnabled: Bool? = nil
     ) {
         self.id = id
         self.name = name
@@ -88,6 +89,7 @@ public struct AgentSpec: Codable, Hashable, Sendable, Identifiable {
         self.authMethods = authMethods
         self.idleUnloadTimeout = idleUnloadTimeout
         self.renameCommand = renameCommand
+        self.steeringPolicy = steeringPolicy
         self.routeIdentity = routeIdentity
         self.nativeSkill = nativeSkill
         self.nativeMCPEnabled = nativeMCPEnabled
@@ -95,7 +97,7 @@ public struct AgentSpec: Codable, Hashable, Sendable, Identifiable {
 
     private enum CodingKeys: String, CodingKey {
         case id, name, command, args, env, resolveExecutables, requires, install, authMethods, idleUnloadTimeout
-        case renameCommand, routeIdentity, nativeSkill, nativeMCPEnabled
+        case renameCommand, steeringPolicy, routeIdentity, nativeSkill, nativeMCPEnabled
     }
 
     // `requires`, `install`, `authMethods`, `idleUnloadTimeout` and `renameCommand` came later: specs
@@ -113,6 +115,7 @@ public struct AgentSpec: Codable, Hashable, Sendable, Identifiable {
         authMethods = try container.decodeIfPresent([AuthMethod].self, forKey: .authMethods) ?? []
         idleUnloadTimeout = try container.decodeIfPresent(Int.self, forKey: .idleUnloadTimeout)
         renameCommand = try container.decodeIfPresent(String.self, forKey: .renameCommand)
+        steeringPolicy = try container.decodeIfPresent(SteeringPolicy.self, forKey: .steeringPolicy)
         routeIdentity = try container.decodeIfPresent(AgentRouteIdentity.self, forKey: .routeIdentity)
         nativeSkill = try container.decodeIfPresent(NativeAgentSkillFormat.self, forKey: .nativeSkill)
         nativeMCPEnabled = try container.decodeIfPresent(Bool.self, forKey: .nativeMCPEnabled)
@@ -169,12 +172,18 @@ public struct QueuedPrompt: Codable, Hashable, Sendable, Identifiable {
     public var isEchoed: Bool
     /// What goes with it, as the transcript will show it; without images in summaries.
     public var attachments: [EchoAttachment]
+    /// A steer held for a live tool; nil for an ordinary queued message.
+    public var waitingForTool: String?
 
-    public init(id: UUID = UUID(), text: String, isEchoed: Bool = true, attachments: [EchoAttachment] = []) {
+    public init(
+        id: UUID = UUID(), text: String, isEchoed: Bool = true, attachments: [EchoAttachment] = [],
+        waitingForTool: String? = nil
+    ) {
         self.id = id
         self.text = text
         self.isEchoed = isEchoed
         self.attachments = attachments
+        self.waitingForTool = waitingForTool
     }
 }
 

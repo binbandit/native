@@ -4,6 +4,8 @@ import NativeCommands
 import SwiftUI
 
 extension CommandID {
+    static let changesAddComment: Self = "changes.addComment"
+    static let changesReviewComments: Self = "changes.reviewComments"
     static let composerFocus: Self = "composer.focus"
     static let composerAttachFiles: Self = "composer.attachFiles"
     static let sessionStop: Self = "session.stop"
@@ -17,6 +19,17 @@ extension NativeCommand {
     /// The visible task's composer and its agent's settings.
     static func composer(model: AppModel) -> [NativeCommand] {
         [
+            NativeCommand(.changesAddComment, title: "Add Diff Comment…", category: .tasks, systemImage: "text.bubble")
+            {
+                $0.session?.beginDiffComment()
+            }
+            .available { $0.session?.diffCommentSelection != nil && $0.session?.diffCommentRetentionAllowed == true },
+            NativeCommand(
+                .changesReviewComments, title: "Review Draft Comments", category: .tasks, systemImage: "text.quote"
+            ) {
+                $0.session?.reviewDiffComments()
+            }
+            .available { $0.session?.diffComments.isEmpty == false },
             NativeCommand(
                 .sessionMoveToProject, title: "Move to Project…", category: .tasks,
                 systemImage: "folder", keywords: ["folder", "scratch"]

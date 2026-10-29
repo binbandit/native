@@ -125,6 +125,7 @@ extension SessionModel {
         let phase = Self.phase(of: summary, isSettingBackConfig: isSettingBackConfig)
         if self.phase != phase { self.phase = phase }
         sendHeldPrompts()
+        reconcileDiffCommentDelivery()
     }
 
     /// Applies one of the host's events. History (what happened before this model followed the
@@ -165,7 +166,7 @@ extension SessionModel {
         case .prompt(let prompt) where isLive && prompt.shown && !prompt.steered:
             // The host sends a turn's prompt as it shows it, so the turn's own work comes later.
             services.hooks.turnStarted(self, step.event.at)
-        case .turnEnded(let raw) where isLive:
+        case .turnEnded(let raw, _) where isLive:
             let reason = SessionMirror.stopReason(raw)
             lastStopReason = reason
             services.post(.turnEnded(context, reason))
@@ -250,11 +251,20 @@ extension SessionModel {
         heldPrompts = []
         Task {
             for prompt in held {
+                let isCommentPacket = beginHeldDiffComments(prompt.text)
+                defer {
+                    if isCommentPacket {
+                        diffCommentSending = false
+                        reconcileDiffCommentDelivery()
+                    }
+                }
                 do {
                     try await sendToHost(
                         prompt.text, attachments: prompt.attachments, behavior: prompt.behavior,
                         echo: prompt.isEchoed)
+                    finishHeldDiffComments(prompt.text, attachments: prompt.attachments)
                 } catch {
+                    finishHeldDiffComments(prompt.text, attachments: prompt.attachments, error: error)
                     addNotice(
                         "Couldn't send a message that was waiting: \(error.localizedDescription)", isError: true)
                 }
@@ -278,7 +288,11 @@ extension SessionModel {
             behavior: behavior == .steer ? .steer : .queue, echo: echo, origin: origin == .task ? .task : .user)
         services.post(.promptSent(context, text: text))
         nameAfterPrompt(text, attachments: attachments, isFirstPrompt: isFirstPrompt)
-        return switch try await host.prompt(params) {
+        let delivery = try await host.prompt(params)
+        if delivery == .unknown, PromptQuote.split(text).quotes.contains(where: { $0.comment != nil }) {
+            throw DiffCommentsUnresolvedDelivery()
+        }
+        return switch delivery {
         case .prompted: .prompted
         case .steered: .steered
         case .queued, .unknown: .queued
@@ -307,7 +321,7 @@ extension SessionModel {
                 attachments: prompt.attachments.map { attachment in
                     PromptAttachment(
                         url: attachment.url ?? URL(filePath: attachment.name), content: .reference, byteCount: nil)
-                })
+                }, waitingForTool: prompt.waitingForTool)
         }
         let held = heldPrompts.filter(\.isEchoed).map {
             QueuedPrompt(id: $0.id, $0.text, attachments: $0.attachments)
@@ -332,9 +346,11 @@ extension SessionModel {
     func removeQueuedOnHost(_ id: QueuedPrompt.ID, undoManager: UndoManager?) {
         if let index = heldPrompts.firstIndex(where: { $0.id == id }) {
             let item = heldPrompts.remove(at: index)
+            let wasPendingComment = removeLocallyQueuedDiffComments(item.text)
             undoManager?.registerUndo(withTarget: self) { session in
                 MainActor.assumeIsolated {
                     session.heldPrompts.insert(item, at: min(index, session.heldPrompts.count))
+                    if wasPendingComment { session.keepLocallyQueuedDiffComments(item.text) }
                 }
             }
             undoManager?.setActionName("Delete Queued Message")

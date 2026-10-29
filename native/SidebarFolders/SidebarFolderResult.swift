@@ -96,11 +96,6 @@ struct SidebarFolderResult: View {
     app.sidebarFolders.failures = [.init(name: "Can’t open atlas", reason: "Folder access expired.")]
     return DSPreviewPair { SidebarFolderResult().frame(width: DS.Size.sidebarWidth) }.sidebarPreviewEnvironment(app)
 }
-#Preview("Folder actions - While opening") {
-    let app = AppModel.preview()
-    app.sidebarFolders.opening = ["atlas"]
-    return DSPreviewPair { SidebarFolderActions().frame(width: DS.Size.sidebarWidth) }.sidebarPreviewEnvironment(app)
-}
 #Preview("Folder result - Missing, unreadable and rejected") {
     let app = AppModel.preview()
     app.sidebarFolders.failures = [

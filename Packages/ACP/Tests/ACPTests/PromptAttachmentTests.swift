@@ -86,6 +86,26 @@ struct PromptAttachmentLoadingTests {
         #expect(try PromptAttachment.load(folder).content == .reference)
     }
 
+    @Test func importedFilesOutliveTheirProvider() throws {
+        let source = folder.appending(path: "Brief with spaces.txt")
+        try Data("keep these bytes".utf8).write(to: source)
+        let imported = try PromptAttachment.importFile(source)
+        defer { try? FileManager.default.removeItem(at: imported.deletingLastPathComponent()) }
+        try FileManager.default.removeItem(at: source)
+        #expect(imported.lastPathComponent == "Brief with spaces.txt")
+        #expect(try PromptAttachment.load(imported).content == .text("keep these bytes"))
+    }
+
+    @Test func importedFoldersKeepTheirContents() throws {
+        let source = folder.appending(path: "Reference folder", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: source, withIntermediateDirectories: true)
+        try Data("notes".utf8).write(to: source.appending(path: "notes.txt"))
+        let imported = try PromptAttachment.importFile(source)
+        defer { try? FileManager.default.removeItem(at: imported.deletingLastPathComponent()) }
+        #expect(try PromptAttachment.load(imported).content == .reference)
+        #expect(try String(contentsOf: imported.appending(path: "notes.txt"), encoding: .utf8) == "notes")
+    }
+
     /// A picture agents take as it is goes as it is.
     @Test func smallImagesGoAsTheyAre() throws {
         let url = folder.appending(path: "small.png")

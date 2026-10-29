@@ -97,8 +97,8 @@ struct HostAgentNamesTests {
             let paused = await $0.summaries[session.id]?.isQueuePaused == true
             return ended && paused
         }
-        #expect(await recorder.turnsEnded(session.id) == ["error"])
-        #expect(harness.received == ["rename\tDo not send this"])
+        #expect(await recorder.turnsEnded(session.id) == ["cancelled"])
+        #expect(harness.received.filter { !$0.hasPrefix("resume\t") } == ["rename\tDo not send this"])
         #expect(await recorder.summaries[session.id]?.isQueuePaused == true)
         // Sending again releases the paused queue without reviving the cancelled prompt.
         _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "next"))
@@ -145,11 +145,11 @@ struct HostAgentNamesTests {
         try await recorder.client.cancel(session.id)
         try await Task.sleep(for: .milliseconds(1_100))
         try await recorder.client.cancel(session.id)
-        try await recorder.wait("the stop result") { await $0.turnsEnded(session.id) == ["error"] }
+        try await recorder.wait("the stop result") { await $0.turnsEnded(session.id) == ["cancelled"] }
         try Data().write(to: gate)
         try await send("next", to: session.id, in: recorder)
         #expect(harness.received.filter { $0.hasPrefix("prompt\t") } == ["prompt\tnext"])
-        #expect(await recorder.turnsEnded(session.id) == ["error", "end_turn"])
+        #expect(await recorder.turnsEnded(session.id) == ["cancelled", "end_turn"])
         await recorder.stop()
     }
 }

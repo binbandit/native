@@ -58,12 +58,15 @@ killing the host mid-turn under launchd: no adapters were left behind). The host
 process group of every process an agent starts (npm puts its children in groups of their own) and
 ends them all when the agent stops, crashes, or its launcher exits while the adapter holds on
 (`AgentProcessGroups`: SIGTERM, then SIGKILL after 2 s). A task's Stop instead captures owned
-process identities before `session/cancel`, allows two seconds for cancellation, then freezes and
-kills the known tree. ACP does not guarantee containment: descendants can detach between snapshots.
-Known process exit is checked, then Stop ends with an explicit unverified warning instead of Stopped.
-A shared agent waits with a warning until its other tasks finish or stop. Cleanup survives closing
-the task. Quit Native and Stop Agents waits for it; immediate restart finishes it without cancelling
-sibling turns, which the new host recovers. (The opposite failures are as bad: daemons from old versions piling up, or an
+process identities before `session/cancel`, allows three seconds for cancellation, then freezes and
+kills the known tree. Pressing Stop again skips the grace period. The turn ends as cancelled once
+those processes have exited, closing open tool calls as Stopped. If the agent did not answer, the
+receipt says "Stopped. <agent> didn't respond, so Native stopped it." A shared adapter restarts without
+waiting for sibling turns, which use crash recovery. The stopped session reattaches without replacing
+Native's partial transcript with the agent's replay; its draft and paused queue remain intact.
+Retained subagent cards keep their descendant sessions, history and routing too.
+Cleanup survives closing the task. Quit Native and Stop Agents waits for it; immediate restart finishes
+it before exiting. (The opposite failures are as bad: daemons from old versions piling up, or an
 app that reads "daemon unreachable" as "gone" and starts a second copy of a running conversation.
 The lock and the single launchd label make both impossible.)
 
@@ -624,12 +627,12 @@ form questions (`elicitation`), as the app's own `InitializeRequest` says.
 | `_native/session/set_title {sessionID, title?, source}` | `source: user`: the user's own title, from any client; nil or empty goes back to the automatic one (undo). `source: generated`: a title a client wrote because the summary's `titles.request` asked for it; the first generated title stays. See "Titles" |
 | `_native/titles/configure {provider, instructions}` | who writes titles (`on-device`, `client`, `off`) and the user's title instructions, kept in the store so they hold with no client attached. The owner, or a device allowed to manage the host |
 | `session/prompt {sessionID, requestID, text, content?, attachments, preamble?, behavior, echo, origin}` | → `prompted`, `steered` or `queued`, as soon as it's accepted. A repeated `requestID` gets the first answer and is never delivered twice, also while the first is still being handled; `NativeHostClient.prompt` resends it by itself after a dropped connection. `content` is the ACP blocks to send (attachments, images, linked files); `text` is what the transcript shows and what recovery looks for in a replay. `preamble` (a mode's instructions) goes ahead of the message unless the agent's last delivered preamble has the same id |
-| `session/cancel {sessionID}` | asks the agent to stop (`isStopping` in the summary). If it hasn't confirmed after 10 s, or the user asks again more than a second later, the host ends the turn itself ("Codex didn't confirm it stopped, so Native stopped waiting…") and ignores the late answer. Cancels a pending retry instead, if there is one. On an agent's own subagent it cancels just that subagent's work |
+| `session/cancel {sessionID}` | asks the agent to stop (`isStopping` in the summary). After 3 s, or immediately on a second press, the host ends the known process tree and the turn as cancelled, then reattaches the session. Running siblings on the same adapter recover as after a crash. Cancels a pending retry instead, if there is one. On an agent's own subagent it cancels just that subagent's work |
 | `session/set_config_option {sessionID, configID, value}` | as in ACP. The host pins every setting a session runs with (what a client chose, what the agent changed itself, what the session started on) and sets back any that a reload or a restart brings back otherwise (codex-acp reopens on its default model), model first, inside the load, so clients only see where the settings end up. A value the agent doesn't take back is said in the transcript ("Codex didn't take back High for Reasoning effort, so this session uses Low. Choose it again to retry."), and the session carries on with the agent's. A disconnected restore fails the load and keeps the saved choices for a later retry. Closing a host session keeps its settings by agent/session id; reopening uses those before any client-supplied choices from before host adoption. New sessions never start on pinned values: they start on the agent's defaults or the user's |
 | `_native/session/respond_permission {sessionID, toolCallID, optionID?}` | the first client to answer wins; the rest see it resolved |
 | `_native/session/respond_question {sessionID, questionID, response}` | answers a form question (`elicitation/create`) with ACP's response verbatim; the first client wins |
 | `_native/session/run_hidden {sessionID, text}` | → `{output}`: runs a command such as `/context` as a turn the transcript doesn't show (the reply is collected, late copies of it dropped). Only while idle; not a durable turn |
-| `_native/queue/update`, `…/remove`, `…/restore {itemID, index}`, `…/move {itemID, before?}`, `…/send_now` | edit the queue. The host keeps the last 20 messages removed from each queue, so undo sends only the id. Send Now steers where the agent can, and otherwise stops the running turn and sends the message next |
+| `_native/queue/update`, `…/remove`, `…/restore {itemID, index}`, `…/move {itemID, before?}`, `…/send_now` | edit the queue. The host keeps the last 20 messages removed from each queue, so undo sends only the id. Send Now uses the same tool-safe Steer path: non-interrupting injection where declared, otherwise delivery after all running tools finish |
 | `_native/activity/list {after?, limit, includeCommands?}` | the activity journal, for "while you were away". The record of commands clients ran only with `includeCommands` (which takes `runCommands`) |
 | `_native/notifications/list {after?, limit}` | → `{notifications, active, latestID}`: the notifications numbered after `after` (whatever their state), every one still news, and the newest id handed out. See "Notifications" |
 | `_native/notifications/acknowledge {ids}` | the user saw these on this client; older active ones in the same groups go with them. Every client hears `cleared` |
@@ -826,12 +829,16 @@ reloads the session from the agent (`session/load`), then `RecoveryPlanner` deci
 | User restarts the agent mid-turn | `_native/agents/restart` | like an agent crash, with its own cause | "You restarted Codex at 2:14 PM. Native asked it to pick up where it left off." |
 | A session the agent never saved can't load | `session/load` fails for a session started here that never finished a turn | starts a fresh agent session under the same host id; recovery then resends the message | the message, answered (nothing was lost: the agent had nothing) |
 | The prompt fails for a passing reason (network, overloaded provider) | the agent's error reads like an outage, and the turn got nowhere | puts the message back at the queue's front, unshown, and sends it again after 5, 20, then 60 s (`retryAt`); Stop cancels the retry | "Codex couldn't be reached (…). Native kept your message and will try again in 5 seconds. Use Stop to cancel." The same notice then says how it went: "Reconnected to Codex, and your message went through on retry." |
-| The agent never confirms a stop | no answer 10 s after `session/cancel`, or Stop again after a second | ends the turn as cancelled on the host's side; a late answer is ignored | "Codex didn't confirm it stopped, so Native stopped waiting. It may still be finishing its last step." Whatever it sends after that shows below the stopped turn, under "The agent kept going after the stop." |
+| The agent never confirms a stop | no answer 3 s after `session/cancel`, or Stop again | ends the owned process tree, marks the turn cancelled, reattaches the session; shared running siblings recover | "Stopped. <agent> didn't respond, so Native stopped it." |
 | Client disconnects mid-turn | socket closes | nothing: the turn runs on; the client re-attaches from its last event and takes the session's state from the answer | the finished turn, as if it never left |
 | Client quits while an approval or question waits | socket closes | nothing: the agent keeps waiting, and the request stays in the session's log | the next client to attach (the app relaunched, an iPad) shows it and can answer it |
 
 The interruption time comes from the host's heartbeat (written every 30 s), so "at 2:14" is within
 half a minute; for agent crashes it's exact.
+
+A preserving load suppresses retained history only through the load response's receive boundary.
+The peer's response hook clears that suppression before following notifications, so fresh child
+output and configuration remain live while the parent restores its own settings.
 
 **What a turn leaves behind.** ACP has no status for a tool call that didn't run to its end, and agents
 drop final updates, so whenever a turn ends, `SessionState` settles every call still open with only
@@ -1036,6 +1043,38 @@ it on); off, the app titles that host's tasks as it did before and tells the hos
   | `manageHost` | the pairing's grants | needed to configure the host; without it, the app's own titles (above) |
   | Keep Mac Awake | the paired host's own policy, kept across restarts (`host/keep_awake/set`) | not set by this path; the laptop's `NativeHostKeepAwake` affects only its own host |
   | `NativeHostTasks` | check on the paired host itself | not needed for titles |
+
+## Steering without losing tool work
+
+Steer and Queue enter through `SessionModel.submit`, then the host's `session/prompt` with
+`behavior: steer` or `queue`. Queue still waits for the whole turn. Steer uses the agent's
+`_session/steering` extension only when its delivery policy permits it. Native previously sent that
+extension immediately; adapters that interrupt generation could cancel or background a running tool.
+
+`SteeringGate` in ACP folds live `tool_call` and `tool_call_update` notifications, including partial
+updates. With the default `afterTools` plugin policy, every pending or running tool must report
+completion or failure before delivery. Parallel tools all finish first. The host keeps a waiting steer
+in its durable queue with `steersAfterTools` in the prompt extras, separately from the existing
+steering-in-flight flag. It remains editable and removable. An ordinary queued turn waits for any
+in-flight steer acknowledgement, even if the original turn ends first. Undelivered steers become
+ordinary queued input when their original turn ends, keeping the user's explicit queue order. This
+also clears steering intent from removed messages: Undo afterward restores ordinary queued input.
+Every prompt starter respects outstanding steering ownership. Send Now and hidden commands reject
+the operation as busy until acknowledgement resolves, retaining selected queued messages for retry.
+Session summaries carry `waitingForTool`
+so the composer can show "Will steer after <tool> finishes" beside that message.
+
+A plugin may declare `steeringPolicy: nonInterrupting` only when its adapter's steering preserves
+running tools. The built-in Codex plugin does this because its adapter uses `turn/steer`. Other
+adapters wait for the reported tool boundary. If an adapter has no steering extension, the host sends
+`session/cancel` at that boundary and owns the next prompt until the current prompt acknowledges it.
+This path does not invoke Stop's process cleanup. A failed or unacknowledged boundary interrupt keeps
+the message queued rather than escalating to killing tools. Tool lifetimes must be reported by the
+adapter; ACP v1 has no atomic client-side pause between notifications and an agent's next step.
+
+Stop (Command-period) retains its immediate cancellation and process cleanup. It pauses pending
+steers along with the ordinary queue. Host recovery restores held messages as queued input; a steer
+already written to the adapter still uses the existing replay reconciliation to avoid duplication.
 
 ## Native's tools in the host
 

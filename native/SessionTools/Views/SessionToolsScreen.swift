@@ -10,7 +10,7 @@ import SwiftUI
 struct SessionToolsScreen: View {
     let session: SessionModel
     var usesTaskWell = false
-    @State private var tools = SessionToolsScreenModel()
+    @State private var tools: SessionToolsScreenModel
     @State private var openSubagent: SessionID?
     /// Files dropped on the transcript, for the composer to attach.
     @State private var drops = ComposerDropInbox()
@@ -18,8 +18,7 @@ struct SessionToolsScreen: View {
     @State private var width: CGFloat = 0
     /// Where the screen starts in the window: the window controls only crowd the title without a sidebar.
     @State private var leadingEdge: CGFloat = 0
-    /// Where the well's title starts in the window, and its width shown whole.
-    @State private var wellTitleMinX: CGFloat?
+    /// The title's width shown whole, independent of the toolbar's current allocation.
     @State private var wellTitleIdealWidth: CGFloat = 0
     @State private var wellLightTrigger = 0
     @Environment(GitStore.self) private var git
@@ -30,6 +29,12 @@ struct SessionToolsScreen: View {
     /// A subagent asked for while inspectors were suspended, which opens once they aren't.
     @State private var reopensSubagent: SessionID?
     @Experiment(.transcriptWidth) private var columnWidth: TranscriptWidth
+
+    init(session: SessionModel, usesTaskWell: Bool = false) {
+        self.session = session
+        self.usesTaskWell = usesTaskWell
+        _tools = State(initialValue: SessionToolsScreenModel(session: session))
+    }
 
     private var registry: SessionToolRegistry { tools.registry }
 
@@ -82,9 +87,6 @@ struct SessionToolsScreen: View {
                             maxWidth: inspectorSuspension == nil ? toolbarLayout.titleWidth : .infinity,
                             alignment: .leading
                         )
-                        .onGeometryChange(for: CGFloat.self, of: { $0.frame(in: .global).minX }) {
-                            wellTitleMinX = $0
-                        }
                 } else {
                     SessionToolsTitle(
                         title: session.displayTitle, location: location,
@@ -164,11 +166,8 @@ struct SessionToolsScreen: View {
                 wellLightTrigger += 1
             }
         }
-        .onChange(of: tools.openTools) { previous, current in
-            for id in previous.subtracting(current) {
-                if let tool = registry.tool(id) { tool.didClose(context(tool)) }
-            }
-        }
+        .onChange(of: ObjectIdentifier(session), initial: true) { tools.bind(to: session) }
+        .onChange(of: registry.tools.map(\.id)) { tools.closeRemovedTools() }
         .onDisappear {
             tools.close(.side)
             tools.close(.fact)
@@ -237,10 +236,10 @@ struct SessionToolsScreen: View {
     /// The title takes the room up to the well, which gives way first (`SessionToolToolbarLayout`).
     private var toolbarLayout: SessionToolToolbarLayout {
         let conversationWidth = width - (isSidePanelDocked.wrappedValue ? DS.SessionTools.sidePanelIdealWidth : 0)
-        // Until it's measured, the window controls are what sits before the title.
-        let titleOffset =
-            wellTitleMinX.map { max(0, $0 - leadingEdge) }
-            ?? max(0, DS.TaskWell.leadingToolbarWidth - leadingEdge)
+        // Use the content edge, not the toolbar item's measured origin: AppKit moves that item
+        // when its width changes, feeding its new origin back here can loop during task opens
+        // and sidebar transitions and keep the main thread in layout indefinitely.
+        let titleOffset = max(0, DS.TaskWell.leadingToolbarWidth - leadingEdge)
         let wellWidth = isWellCompact ? DS.TaskWell.compactWidth : DS.TaskWell.width
         return SessionToolToolbarLayout(
             conversationWidth: conversationWidth, titleOffset: titleOffset, titleIdealWidth: wellTitleIdealWidth,

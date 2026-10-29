@@ -37,8 +37,10 @@ terminal tab instead. ⌘, brings the main window back with Settings; ⌘Q quits
 | ⌘. | | Stop the turn; again, end the cancel grace period | `session.stop` |
 | ↑ in an empty composer | Edit the last queued message, if any; else recall the last prompt | Edit the last queued message | |
 
-**Steer** adds the message to the running turn (`_session/steering`); agents that don't support
-steering queue it instead. **Queue** holds the message above the composer
+**Steer** preserves running tool calls. Agents with non-interrupting steering receive it immediately.
+Otherwise it waits until every current tool finishes, then steers between steps. The composer says
+"Will steer after <tool> finishes"; the waiting message can still be edited or removed. Agents without
+a steering extension are interrupted between steps and receive the message as their next prompt. **Queue** holds the message above the composer
 and sends it when the turn ends; queued messages go out one per turn, in order. A stopped or failed
 turn holds the queue until you send again.
 
@@ -49,16 +51,14 @@ needed in the placeholder. Code-block and queued-message editing hints remain vi
 controls row has room.
 
 **Stop** asks the agent to end the turn and answers its open permission requests as rejected. The
-host gives the agent two seconds to cancel, then ends the processes it can attribute to that agent,
-including shell commands in separate process groups. The task stays Stopping until those known
-processes have exited. Pressing Stop again ends the grace period.
-An agent process can serve several tasks: Native waits for its other tasks to finish or be stopped
-before ending that shared process, and explains that commands may still be running meanwhile.
-ACP cancellation does not guarantee that every command has exited or that commands cannot detach
-between process snapshots. Native therefore reports an unverified Stop as a failed turn with a clear warning that
-background commands may still be running, rather than labelling it Stopped. Queued messages remain
-paused unless the user explicitly chose Send Now. In-app mode, which cannot track the host's processes,
-keeps the turn Stopping and explains its limit.
+button shows that it is stopping. After three seconds, or immediately on a second press, the host
+freezes and ends the agent's known process tree, including shell commands in separate process groups.
+The transcript marks unfinished tool calls Stopped. If the agent did not answer, the receipt says
+"Stopped. <agent> didn't respond, so Native stopped it."
+
+Native restarts the adapter and reattaches the conversation, retaining the transcript, draft and
+paused queue. Other running tasks that shared the adapter recover through the same path as an agent
+crash. Queued messages remain paused unless the user explicitly chose Send Now.
 
 ### Code
 
@@ -78,15 +78,19 @@ Tab edit the code and the hint says "↩ New line · ⌘↩ Send":
 
 ### Queued messages
 
-Each queued message has Send Now, Edit and Remove on hover; its menu (a right-click, or touch and
-hold on iPad) adds Move Up and Move Down. Send Now steers the message into the running turn when the
-agent can steer; otherwise it stops the turn and sends the message next. Drag a message to reorder
-the queue. Clicking a message, or ↑ in an empty composer, opens it in the editor:
+Each queued message has Edit and Remove on hover; its menu (a right-click, or touch and hold on
+iPad) adds Move Up and Move Down. While a turn runs, Send Now appears only when the current task's agent
+advertises ACP steering or explicitly declares `afterTools` delivery in its plugin manifest. It adds the message
+to the running turn, waiting for running tools when needed. For agents advertising neither, queued
+messages send when the turn ends; mid-turn Send Now, its menu item, accessibility action and shortcut are absent.
+When the task is idle, including after Stop, Send Now is available for every agent and sends the queued
+message as the next prompt, resuming the queue without needing a new draft.
+Drag a message to reorder the queue. Clicking a message, or ↑ in an empty composer, opens it in the editor:
 
 | Keys (queued message open in the editor) | Action |
 | --- | --- |
 | Return | Save the edit; the message keeps its place |
-| ⌘Return | Save the edit and Send Now |
+| ⌘Return | Save the edit and Send Now, when available for the current task state |
 | ⌥⌘↑ / ⌥⌘↓ | Move it up / down the queue (Task ▸ Move Queued Message Up / Down) |
 | Escape | Close it without saving |
 
@@ -229,6 +233,10 @@ Files and images go out with the message as chips above the text: picked with th
 anything else goes as its path. A picture that will reach the agent as a path (the agent takes no
 images, or it's over 50 MB) says so on its chip before anything is sent. A message carries up to 20
 files; a file moved or deleted before sending is marked on its chip and holds the message.
+Dropping one or more files or folders on either composer or the transcript uses the same chips as
+Attach Files. The editor leaves the message and its caret untouched; it never inserts a file path.
+The dashed accent outline marks the composer while a file is over either drop area. This also
+applies to Fine print and iPad. Copied files paste as attachments too.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
@@ -357,7 +365,7 @@ Other file types use the platform's Quick Look preview, with its native navigati
 | ⌥⌘J | Turn the sidebar's Needs you filter on or off (its filter menu has the rest) | View | `view.needsYouFilter` |
 | ⌘⇧P | Pull requests | Go | `go.pullRequests` |
 | | GitHub Account: open Settings > General at Accounts (Mac only) | Go | `github.accounts` |
-| Tab, then Space on the sidebar account | Open Settings > General at Accounts; Tab and Space choose an account | | |
+| Tab, then Space on the sidebar footer | Open Settings > General; account controls live in Accounts | | |
 | ⌘⇧X | Expeditions | Go | `go.expeditions` |
 | ⇧⌘F | Search every task (`docs/search.md`) | Go | `search.show` |
 | ⌥⌘I | Show or hide the subagent inspector | View | `view.toggleSubagentInspector` |
@@ -395,6 +403,8 @@ Option-Cmd-O to show its error output. Cmd-Return opens the task for every ask k
 ## Task tools (Labs)
 
 With The well enabled (`NativeTaskWell`, off by default), Cmd-I opens the centered task well.
+Long tool lists scroll within the well, keeping its status, worker and checkout visible. Arrow
+navigation reveals the highlighted tool, including the first and last rows.
 Its tools appear in this fixed key order. Missing tools leave no row; their keys stay reserved.
 Clicking a waiting well focuses the composer, where the full request can be answered.
 Dev reveals the latest project action in the workbench, or its action chooser before the first run.
@@ -414,6 +424,7 @@ out of reach, Task ▸ Export Patch… (no default keys) stands in for the pull 
 | ⌥⌘3 | Dev (project actions) | View ▸ Tools | `taskWell.dev` |
 | ⌥⌘4 | Subagents | View ▸ Tools | `taskWell.subagents` |
 | ⌥⌘5 | Pull request | View ▸ Tools | `taskWell.pullRequest` |
+| | A plugin's tool, listed after Pull request (no default key; assign one in Settings ▸ Keyboard Shortcuts) | View ▸ Tools | `sessionTools.<tool id>` |
 | | Export the branch as a patch, where GitHub is out of reach | Task | `taskWell.exportPatch` |
 | Escape | Close the well and return focus to the task | | |
 
@@ -452,13 +463,14 @@ a paired host.
 ## Opening folders (All in view)
 
 File > Open Folder… (⌘O, `project.open`) opens the system folder-only chooser directly,
-including before the first project and with the sidebar hidden. The permanent Open Folder…
-action above the account does the same. Its separate Recent Folders disclosure and File >
-Open Recent list up to six successfully opened folders on this device. Arrow keys move through
-recents, Return opens one, and Escape returns to the disclosure. Tab reaches Open Folder,
-Recent Folders, then the account controls. Return or Space activates each control.
+including before the first project and with the sidebar hidden. The plus in the Projects
+header does the same, stays visible on touch, and is reachable with Tab. Return or Space
+opens the chooser. Compose, Home's start field and Quick Entry end their project pickers with
+Open Folder…. The no-project Home keeps one primary Open Folder… action. File > Open Recent
+lists up to six successfully opened folders on this device. Tab also reaches the single
+Settings button in the footer; Return or Space opens Settings.
 
-Drop one or several folders anywhere in the sidebar list to add them without starting a task.
+Drop one or several folders anywhere on the sidebar to add them without starting a task.
 The persistent addition receipt offers Undo; ⌘Z undoes that addition when it is the applicable
 window action. Text editing keeps its normal undo precedence. Choosing an already open folder
 focuses its home without adding another project or another undo action.
@@ -798,3 +810,20 @@ selecting across old and new numbers includes both versions separately. Line but
 and touch. Remove Quote is beside each quoted source; ⌘Z restores a removed quote. Quotes are
 snapshots of the selected text, including old/new line identity. File references in the draft and
 @ list show the current known additions and removals; unknown counts stay absent.
+
+## Inline diff comments (Fine print)
+
+| Keys | Action | Menu | Command |
+| --- | --- | --- | --- |
+| ⇧⌘L | Add a comment to selected diff lines, or the current line | Task | `changes.addComment` |
+| | Review the task's collected comments in the composer | Task | `changes.reviewComments` |
+| Up / Down | Move the current diff line; Shift extends the range within one side and hunk | | |
+| Left / Right | Choose Before / After on a context line | | |
+| Return in a diff comment | New line | | |
+| ⌘Return in a diff comment | Add Comment to Draft and return to its anchor | | |
+| Escape in a diff comment | Collapse the editor, keeping its text | | |
+
+Comment and Quote are separate actions. Command-L keeps quoting selected lines without adding a
+comment. Touch users can extend a selection through the line menu. Review Draft Comments expands
+the shared quote section; the normal composer sends the collection as one message. Remove, clear,
+discard and re-anchor support Undo. Comments and unfinished text survive closing Changes.

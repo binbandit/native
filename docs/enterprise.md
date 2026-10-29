@@ -211,6 +211,16 @@ when the user enabled them. True permits the user choice; neither policy enables
 Counts never enter telemetry or exports and can be purged from Settings > Privacy. See
 [command knowledge](command-knowledge.md) for the format, limits, and privacy contract.
 
+### Source excerpts
+
+`policy.sourceExcerpts.sendingEnabled` and `policy.sourceExcerpts.retentionEnabled` are Boolean
+grants, true in ordinary deployments and false until managed approval in restricted deployments.
+Sending applies to bare diff quotes and commented quotes at the task submission boundary. Retention
+controls collecting source snapshots and unfinished comment editors. Disabling retention prevents
+new local drafts and removes persisted comment editors; existing composer excerpts are removed when
+next accessed. Sending can be prohibited while local reading and drafting remain available. These
+controls add no network destination; messages use the task's already configured agent transport.
+
 ### Local folder additions
 
 `policy.folders.allowedRoots` is an array of absolute local folder paths. Missing permits all

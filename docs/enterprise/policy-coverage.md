@@ -167,3 +167,13 @@ event. A plugin revoked while preparing isn't counted as prepared and contribute
   instructions in Settings, from `NativePolicy.inspection`. Needs the main Mac for visual checks.
 - One conversion per unconverted capability above, starting with the [network admission
   backlog](network-admission.md#conversion-backlog) and the detached host's own policy.
+
+| Key | Role | Capabilities | Owners |
+| --- | --- | --- | --- |
+| `policy.sourceExcerpts.sendingEnabled` | grant | `sourceExcerpts.sending` | `native/DiffComments/` |
+| `policy.sourceExcerpts.retentionEnabled` | grant | `sourceExcerpts.retention` | `native/DiffComments/` |
+
+| Capability | Kind | Keys | Services | Owners | Enforcement |
+| --- | --- | --- | --- | --- | --- |
+| `sourceExcerpts.sending` | local | `policy.sourceExcerpts.sendingEnabled` | none | `native/DiffComments/` | converted |
+| `sourceExcerpts.retention` | storage | `policy.sourceExcerpts.retentionEnabled` | none | `native/DiffComments/` | converted |
