@@ -18,7 +18,7 @@ struct ComposerAttachmentDrop: DropDelegate {
     let targeted: (Bool) -> Void
     let perform: ([ComposerDropItem]) -> Void
 
-    static func accepts(_ provider: NSItemProvider) -> Bool {
+    nonisolated static func accepts(_ provider: NSItemProvider) -> Bool {
         if provider.hasItemConformingToTypeIdentifier(UTType.url.identifier)
             || provider.hasItemConformingToTypeIdentifier(UTType.image.identifier)
             || provider.hasItemConformingToTypeIdentifier(UTType.folder.identifier)

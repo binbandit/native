@@ -40,8 +40,7 @@ extension ComposerView {
             case .image(let data, let type):
                 return ("Dropped Image", { try PromptAttachment.pasted(data, type: type) })
             case .failed(let name):
-                feedback = .blocked("Couldn’t attach \(name). Try attaching it with Attach Files.")
-                return nil
+                return (name, { throw PromptAttachment.LoadError.unreadable(name: name) })
             }
         }
         if !links.isEmpty {
