@@ -10,7 +10,8 @@ extension ComposerView {
                 placeholder: placeholder, isFocused: $isFocused,
                 hidesCaret: selectedAttachmentIndex != nil,
                 insets: composerNext ? DS.ComposerSettings.textInsets : DS.Composer.textInsets,
-                referencesEnabled: composerNext, referenceCounts: fileReferenceCounts
+                referencesEnabled: composerNext, referenceCounts: fileReferenceCounts,
+                routesFileDropsToAttachments: true
             ) { press in
                 handleKey(press, suggestions: suggestions)
             }

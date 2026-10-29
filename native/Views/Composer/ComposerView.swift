@@ -333,12 +333,7 @@ struct ComposerView: View {
                 }
             }
         }
-        .dropDestination(for: ComposerDropItem.self) { items, _ in
-            attach(items)
-            return !items.isEmpty
-        } isTargeted: {
-            isDropTargeted = $0
-        }
+        .composerAttachmentDrop(isTargeted: { isDropTargeted = $0 }, perform: attach)
         .onChange(of: session.diffCommentAnnouncementGeneration) {
             AccessibilityNotification.Announcement(session.diffCommentAnnouncement).post()
         }
@@ -348,6 +343,7 @@ struct ComposerView: View {
         .onChange(of: PolicyCenter.shared.policy.sourceExcerptsRetentionEnabled) {
             session.enforceDiffCommentRetention()
         }
+
         .animation(.dsStandard, value: plan.isActive)
         .animation(.dsStandard, value: session.attachments.isEmpty && pendingAttachments.isEmpty)
         .animation(.dsStandard, value: showsNextSteps)

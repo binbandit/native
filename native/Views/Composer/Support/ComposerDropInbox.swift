@@ -14,12 +14,8 @@ extension View {
     /// Drops on this view go to the composer inside it, as attachments. Refused while `isEnabled` is
     /// off, when there's no composer to take them.
     func composerDropTarget(_ inbox: ComposerDropInbox, isEnabled: Bool = true) -> some View {
-        dropDestination(for: ComposerDropItem.self) { items, _ in
-            guard isEnabled else { return false }
+        composerAttachmentDrop(isEnabled: isEnabled, isTargeted: { inbox.isTargeted = isEnabled && $0 }) { items in
             inbox.items += items
-            return !items.isEmpty
-        } isTargeted: {
-            inbox.isTargeted = isEnabled && $0
         }
         .environment(inbox)
     }
