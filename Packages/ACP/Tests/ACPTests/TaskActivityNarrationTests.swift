@@ -39,7 +39,10 @@ struct TaskActivityNarrationTests {
                 if case .toolCall(let call) = item { return call }
                 return nil
             }.first)
-        #expect(activity.object == call.locations.first?.path)
+        // The transcript's words: the file's name, which the well sets in code type.
+        #expect(call.locations.first?.path.hasSuffix("/notes.txt") == true)
+        #expect(activity.object == "notes.txt")
+        #expect(activity.objectIsCode)
         #expect(activity.progress == nil)
     }
 

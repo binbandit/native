@@ -22,7 +22,7 @@ nonisolated struct BubbleGroupPosition: Hashable, Sendable {
 enum BubbleRow: Identifiable {
     case message(TranscriptMessage, BubbleSide, BubbleGroupPosition)
     case thought(TranscriptMessage)
-    /// Consecutive tool calls and folded explorations, none waiting for approval.
+    /// Consecutive tool calls and groups of them, none waiting for approval.
     case activity([TranscriptRow])
     /// A tool call waiting for approval, on its own so it stands out.
     case approval(ToolCallState)
@@ -60,12 +60,13 @@ enum BubbleRow: Identifiable {
             }
         }
 
-        for row in rows {
+        // Polling only waits on the call before it; that call's row stands for both.
+        for row in rows where !row.isPolling {
             switch row {
             case .item(.toolCall(let call)) where call.permission != nil:
                 flushActivity()
                 plan.append(.approval(call))
-            case .exploration, .item(.toolCall):
+            case .toolGroup, .item(.toolCall):
                 activity.append(row)
             case .item(.message(let message)):
                 flushActivity()

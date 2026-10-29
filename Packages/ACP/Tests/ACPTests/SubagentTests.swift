@@ -234,7 +234,7 @@ private func sessionMessage(in state: SessionState) -> SessionMessage? {
 
 /// A captured run where the parent session launches one subagent through the Agent tool. Usage
 /// updates, incremental tool input and the long hand-back `rawOutput` are left out.
-private enum SubagentWire {
+enum SubagentWire {
     static let parentID = SessionID("b9e8f5f4-c297-4a0e-819f-9229a4f29594")
     static let childID = SessionID("a7c82d0a6f0097318")
     /// The child's incoming task reuses this as its message id.

@@ -150,12 +150,12 @@ struct TranscriptTurnTests {
     @Test func summaryCountsTheCapturedTurnsWork() throws {
         let state = try capturedTurn()
         let summary = state.summary(of: try #require(state.turns.only))
-        #expect(summary.filesRead == 1)
-        #expect(summary.commands == 1)
+        #expect(summary.work.counts[.read] == 1)
+        #expect(summary.work.counts[.list] == 1)
         #expect(
             summary.changedFiles == [.init(path: "/private/tmp/acp-research/sandbox/out.txt", added: 1, removed: 0)])
         #expect(summary.linesAdded == 1)
-        #expect(summary.activityDescription == "Explored 1 file, edited 1 file, ran 1 command")
+        #expect(summary.activityDescription == "Read 1 file, listed 1 folder and edited 1 file")
     }
 
     @Test func rejectedEditsChangeNothing() throws {

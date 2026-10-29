@@ -5,7 +5,7 @@ import Testing
 
 /// An MCP call as codex-acp 2.2.2 sends it (`McpToolReporter` rendered by `AcpToolCallRenderer`):
 /// an `execute` call titled `mcp.<server>.<tool>`, then an update with the MCP result in `rawOutput`.
-private enum CodexMCPWire {
+enum CodexMCPWire {
     static let toolCall =
         #"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"01a14e13-0751-70b1-90d9-eb18ee6b63e9","update":{"sessionUpdate":"tool_call","toolCallId":"call_mcp_1","kind":"execute","title":"mcp.native.setup_status","status":"in_progress","rawInput":{"server":"native","tool":"setup_status","arguments":{"verbose":true}},"_meta":{"is_mcp_tool_call":true}}}}"#
     static let completed =
