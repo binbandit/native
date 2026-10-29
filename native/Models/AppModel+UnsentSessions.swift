@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import TaskList
 
 // New sessions that never got a message (`UnsentSessions`). Their agents never saved them, so an
 // empty one left behind would sit in the sidebar as "New Session" across launches with nothing to
@@ -10,7 +11,8 @@ extension AppModel {
     /// AppModel.swift's init.
     func dropUnsentSessions() {
         let dropped = unsentSessions.removeAll { key, draft in
-            (draft == nil && !sessions.services.modelContinuations.hasPending(key)) || !catalog.contains(key)
+            (draft == nil && !sessions.services.modelContinuations.hasPending(key)
+                && scratchTasks.folder(for: NoProjectLocation.key(key)) == nil) || !catalog.contains(key)
         }
         for key in dropped {
             catalog.remove(key)
@@ -45,11 +47,14 @@ extension AppModel {
     /// Returns false when it isn't one.
     func reopenUnsent(_ key: SessionKey, info: SessionInfo, on runtime: AgentRuntime) async -> Bool {
         let continuation = sessions.services.modelContinuations.hasPending(key)
-        guard unsentSessions.draft(for: key) != nil || (continuation && unsentSessions.contains(key)) else {
+        let privateFolder = scratchTasks.folder(for: NoProjectLocation.key(key))
+        let privateDraft = privateFolder != nil
+        guard unsentSessions.draft(for: key) != nil || ((continuation || privateDraft) && unsentSessions.contains(key))
+        else {
             return false
         }
         // Another load of it got here first and is reopening it.
-        guard let draft = unsentSessions.claim(key, includingEmpty: continuation) else { return true }
+        guard let draft = unsentSessions.claim(key, includingEmpty: continuation || privateDraft) else { return true }
         let project = catalog.lookup(key)?.project
         var prepared: SessionModel?
         do {
@@ -63,18 +68,28 @@ extension AppModel {
                 deletedSessions.remove(session.key)
             }
             session.draft = draft
+            if let privateFolder {
+                try scratchTasks.reassign(privateFolder, to: NoProjectLocation.key(session.key))
+                let previous = SessionTitles.Key(agent: key.agent, session: key.id)
+                await session.adoptConfigChoices(titles.configChoices(for: previous))
+                if let title = titles.namedTitle(for: previous) { titles.rename(session.titleKey, to: title) }
+            }
             catalog.swap(key, for: SessionInfo(sessionId: session.id, cwd: info.cwd, updatedAt: .now))
             ordering.replace(key, with: session.key)
             taskPairs.replace(key, with: session.key)
             history.replace(key, with: session.key)
             unsentSessions.forget(key)
             unsentSessions.started(session.key, draft: draft)
+            if movingProjectlessTask == key { movingProjectlessTask = session.key }
             if selection == key {
                 session.wantsComposerFocus = true
                 selection = session.key
             }
         } catch {
-            if continuation, let prepared { discardAgentChange(prepared) }
+            if let prepared {
+                deletedSessions.insert(prepared.key)
+                discardAgentChange(prepared)
+            }
             unsentSessions.release(key)
             openFailures[key] = SessionOpenFailure(error, agent: runtime.agent.displayName)
         }

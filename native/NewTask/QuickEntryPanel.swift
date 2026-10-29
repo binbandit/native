@@ -150,11 +150,15 @@ struct QuickEntryPanel: View {
 
     private var readiness: some View {
         VStack(alignment: .leading, spacing: DS.Space.sm) {
-            Text(entry.failure ?? model.quickEntryReadiness)
-                .font(.dsCaption)
-                .foregroundStyle(entry.failure == nil ? .dsTextTertiary : .dsAttention)
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityIdentifier("quick-entry-readiness")
+            Text(
+                entry.failure
+                    ?? (entry.project == nil
+                        ? "Private task files. You can move this task to a project later." : model.quickEntryReadiness)
+            )
+            .font(.dsCaption)
+            .foregroundStyle(entry.failure == nil ? .dsTextTertiary : .dsAttention)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityIdentifier("quick-entry-readiness")
             if model.quickEntryDeviceUnavailable {
                 Button("Run on This Mac") { model.chooseQuickEntryDevice(.thisMac) }
                     .buttonStyle(.ds(.secondary))
@@ -188,7 +192,7 @@ struct QuickEntryPanel: View {
             model: model.quickEntryModelName,
             device: model.deviceName(entry.device),
             deviceLook: HostLookStore.shared.look(for: entry.device, named: model.deviceName(entry.device)),
-            project: entry.project.flatMap(model.projects.project)?.name ?? "Choose project",
+            project: entry.project.flatMap(model.projects.project)?.name ?? "No project",
             branch: branch,
             isCompact: isCompact,
             picker: entry.picker, choose: entry.toggle)

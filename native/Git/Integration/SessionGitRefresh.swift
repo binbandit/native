@@ -14,11 +14,12 @@ extension View {
     /// opens (`GitChangesReview.detectLatestTurnChanges`), for the files-changed card.
     func detectsTurnChanges(of session: SessionModel, into review: GitChangesReview, in store: GitStore) -> some View {
         // Resolve through the session's host, as the inspector does, never by the local path alone.
-        let repository = store.model(for: session.cwd, session: session.key).repository
+        let repository = session.isProjectless ? nil : store.model(for: session.cwd, session: session.key).repository
         let request = GitTurnDetectionRequest(
             phase: session.phase, isRestoringHistory: session.isRestoringHistory, repository: repository,
             baseline: store.turnBaselines.latestBaseline(of: session.key))
         return task(id: request) {
+            guard !session.isProjectless else { return }
             await review.detectLatestTurnChanges(of: session, in: repository, baselines: store.turnBaselines)
         }
     }
@@ -38,11 +39,14 @@ private struct SessionGitRefresh: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onChange(of: session.phase) { old, _ in
-                if old == .prompting { store.refresh(folder: session.cwd, session: session.key) }
+                if !session.isProjectless, old == .prompting {
+                    store.refresh(folder: session.cwd, session: session.key)
+                }
             }
             // A mirror, not `state`: this updated with every streamed chunk and counted the whole
             // transcript each time.
             .onChange(of: session.completedWriteCount) {
+                guard !session.isProjectless else { return }
                 store.refreshWhenSettled(folder: session.cwd, session: session.key)
             }
     }

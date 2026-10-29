@@ -83,8 +83,8 @@ extension AppModel {
         if let selection, let listed = catalog.lookup(selection)?.project ?? startingTask(selection)?.project,
             let project = projects.project(listed)
         {
-            return project
+            return project.isNoProject ? nil : project
         }
-        return focusedProjectID.flatMap(projects.project) ?? projects.all.first
+        return focusedProjectID.flatMap(projects.project).flatMap { $0.isNoProject ? nil : $0 }
     }
 }

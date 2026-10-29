@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import TaskList
 import Undo
 
 // Archiving and deleting tasks and projects. Archive hides and can always come back; delete acts at
@@ -47,7 +48,7 @@ extension AppModel {
     func putAwayWorkspace(of key: SessionKey, titled title: String, in projectID: Project.ID) async -> String {
         // A workspace that couldn't be brought back last time stays put away now.
         problems.resolve(.workspaceRestore(key), in: projectID)
-        guard let project = projects.project(projectID) else { return "" }
+        guard projectID != NoProjectLocation.id, let project = projects.project(projectID) else { return "" }
         do {
             return try await archiveWorkspace(of: key, in: project).map { " " + $0 } ?? ""
         } catch {
@@ -89,6 +90,7 @@ extension AppModel {
     /// unarchived when its turn comes. What brings it back is kept with the project, so a failure
     /// can be retried. Internal only for AppModel+Problems.swift.
     func restoreWorkspace(of key: SessionKey) async throws {
+        if catalog.lookup(key)?.project == NoProjectLocation.id { return }
         guard let route = taskActionRoute(for: key) else { throw TaskActionRoute.Failure.missingRoute }
         let task = ArchivedTaskDetails(title: route.title, archivedAt: archiveDatesAwaitingRestore[key])
         try await inWorkspaceOrder(using: route) {
@@ -199,13 +201,16 @@ extension AppModel {
     private func carryOutDeletion(using route: TaskActionRoute) async {
         let key = route.key
         let projectID = route.project.id
-        guard pendingDeletions.removeValue(forKey: key) != nil else { return }
+        guard pendingDeletions[key] != nil else { return }
+        defer { pendingDeletions[key] = nil }
         do {
             try await releaseCoordinatorAssignments(beforeDeleting: key)
         } catch {
             actionFailure = ActionFailure("Couldn't Delete Coordinator", error.localizedDescription)
             return
         }
+        let hadPrivateFiles = scratchTasks.folder(for: NoProjectLocation.key(key)) != nil
+        if hadPrivateFiles, !(await removePrivateTaskFiles(using: route)) { return }
         let title = route.title
         deletedSessions.insert(key)
         archivedSessions.set(key, archived: false)

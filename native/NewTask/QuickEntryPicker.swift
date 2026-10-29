@@ -33,7 +33,7 @@ struct QuickEntryPicker: View {
         #if DEBUG
         if let options = entry.previewDeviceOptions { return options }
         #endif
-        return entry.project.map(model.deviceOptions(for:)) ?? []
+        return entry.project.map(model.deviceOptions(for:)) ?? [model.noProjectDeviceOption]
     }
 
     private var agents: some View {
@@ -91,6 +91,24 @@ struct QuickEntryPicker: View {
             Text("Project").font(.dsCaption).foregroundStyle(.dsTextTertiary)
                 .accessibilityAddTraits(.isHeader)
             VStack(spacing: 0) {
+                Button {
+                    model.chooseNoProject()
+                } label: {
+                    HStack(spacing: DS.Space.sm) {
+                        Image(systemName: "checkmark").font(DS.ComposerSettings.rowFont)
+                            .opacity(entry.project == nil ? 1 : 0)
+                            .frame(width: DS.ComposerSettings.selectionWidth)
+                        Text("No project").font(DS.ComposerSettings.rowFont)
+                        Spacer(minLength: DS.Space.sm)
+                    }
+                    .padding(.horizontal, DS.Space.xs)
+                    .frame(height: DS.ComposerSettings.rowHeight)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.dsTextPrimary)
+                .accessibilityAddTraits(entry.project == nil ? .isSelected : [])
+                SeparatorLine().padding(.vertical, DS.Space.xs)
                 ForEach(model.projects.all) { project in
                     Button {
                         model.chooseQuickEntryProject(project.id)

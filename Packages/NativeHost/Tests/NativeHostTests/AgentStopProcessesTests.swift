@@ -8,6 +8,7 @@ import Testing
 @Suite("Owned process tree stops", .serialized, .timeLimit(.minutes(1)))
 struct AgentStopProcessesTests {
     @Test("An empty snapshot does not prove that an unobserved writer exited")
+    @HostActor
     func escapedWriter() async throws {
         let folder = FileManager.default.temporaryDirectory.appending(path: "native-stop-escape-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -57,6 +58,20 @@ struct AgentStopProcessesTests {
         try #require(!tree.hasRemainingProcesses)
         tree.terminate()
         #expect(!tree.hasRemainingProcesses)
+        let rig = try HostStopCommandRig()
+        defer { rig.cleanup() }
+        let link = AgentLink(spec: AgentSpec(id: "fake", name: "Fixture", command: "/no-such-agent"))
+        rig.core.agents["fake"] = link
+        link.commandStopOwnsTree = true
+        link.commandsDidStop()
+        let record = StoredSession(
+            id: HostSessionID(), agentID: "fake", agentSessionID: SessionID("escaped"), cwd: folder.path,
+            parentID: nil, origin: .user)
+        try rig.core.store.insertSession(record)
+        rig.core.sessions[record.id] = HostSession(
+            record: record, agentName: "Fixture", phase: .idle, needsLoad: true)
+        await #expect(throws: (any Error).self) { try await rig.core.closeSessionConfirmed(record.id) }
+        #expect(rig.core.sessions[record.id] != nil)
         #expect(!FileManager.default.fileExists(atPath: folder.appending(path: "marker").path))
         try gate.fileHandleForWriting.write(contentsOf: Data("write\n".utf8))
         let writeDeadline = ContinuousClock.now + .seconds(5)

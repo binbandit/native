@@ -28,7 +28,7 @@ extension AppModel {
     /// it, even if it has to start first. Before the first check
     /// for agents, it assumes so; New Session waits for the check.
     func canCreateSession(in project: Project.ID? = nil, with agent: AgentDefinition.ID? = nil) -> Bool {
-        guard let project = project ?? currentProject?.id, missingFolder(of: project) == nil else { return false }
+        if let project = project ?? currentProject?.id, missingFolder(of: project) != nil { return false }
         guard let agent = agent ?? defaultAgent?.id, let runtime = runtimes[agent] else { return !hasCheckedAgents }
         return runtime.isAvailable
     }
