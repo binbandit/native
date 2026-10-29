@@ -82,6 +82,30 @@ import Testing
         #expect(report.cloned == ["dist"])
     }
 
+    @Test func preservesWorkspaceLinksOnlyWhenBothProjectTargetsAreSafe() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        try fixture.write("packages/shared/index.js", "tracked workspace")
+        try fixture.write("node_modules/cache", "dependency cache")
+        let target = fixture.destination.appending(path: "packages/shared")
+        try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
+        try Data("tracked workspace".utf8).write(to: target.appending(path: "index.js"))
+        try FileManager.default.createSymbolicLink(
+            atPath: fixture.source.appending(path: "node_modules/shared").path(),
+            withDestinationPath: "../packages/shared")
+        let report = try await fixture.clone(["node_modules"])
+        #expect(report.cloned == ["node_modules"])
+        #expect(
+            try String(contentsOf: fixture.destination.appending(path: "node_modules/shared/index.js"), encoding: .utf8)
+                == "tracked workspace")
+        try FileManager.default.removeItem(at: fixture.destination.appending(path: "node_modules"))
+        try FileManager.default.removeItem(at: target)
+        try FileManager.default.createSymbolicLink(atPath: target.path(), withDestinationPath: fixture.base.path())
+        let unsafe = try await fixture.clone(["node_modules"])
+        #expect(unsafe.cloned.isEmpty && unsafe.skipped == ["node_modules"])
+        #expect(!FileManager.default.fileExists(atPath: fixture.destination.appending(path: "node_modules").path()))
+    }
+
     @Test func preservesStandaloneCachedCheckoutsButRejectsGitdirRedirects() async throws {
         let fixture = try Fixture()
         defer { fixture.remove() }

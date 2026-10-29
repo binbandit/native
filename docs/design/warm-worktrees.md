@@ -26,5 +26,6 @@ path needs no decisions and no extra clicks. Per-project exceptions take one vis
 the old workaround required manually finding and copying folders for every task.
 
 Cache compatibility is the tool's responsibility. Absolute paths in compiler caches or virtual
-environments may cause a rebuild. Absolute or escaping links cause that cache to be skipped; a
-setup command can recreate it. Copies never refresh automatically in an existing task.
+environments may cause a rebuild. Absolute links or links outside the project cause that cache to
+be skipped; a setup command can recreate it. Relative workspace links need a safe existing target
+in both checkouts. Copies never refresh automatically in an existing task.

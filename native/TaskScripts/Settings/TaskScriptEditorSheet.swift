@@ -231,10 +231,10 @@ struct TaskScriptVariablesList: View {
 #Preview("Warm worktrees - Setup editor") {
     DSPreviewPair {
         TaskScriptEditorSheet(
-            target: .init(event: .setup, scope: .project(TaskScriptsPreviewFixtures.project)))
+            target: .init(event: .setup, scope: .project(TaskScriptWorktreePreviewFixtures.project)))
     }
-    .environment(TaskScriptsPreviewFixtures.settings())
-    .environment(TaskScriptsPreviewFixtures.center())
+    .environment(TaskScriptWorktreePreviewFixtures.settings())
+    .environment(TaskScriptWorktreePreviewFixtures.center())
     .environment(AppModel.preview())
 }
 #endif

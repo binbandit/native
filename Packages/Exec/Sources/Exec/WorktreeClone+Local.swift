@@ -47,7 +47,9 @@ extension WorktreeClone {
                 }
                 var created = false
                 do {
-                    try Self.cloneEntry(name, from: from, to: to, relative: name, created: &created)
+                    try Self.cloneEntry(
+                        name, from: from, to: to, relative: name, projectPath: path,
+                        project: sourceFD, task: destinationFD, created: &created)
                     report.cloned.append(path)
                 } catch {
                     if created { Self.removeEntry(name, in: to) }
@@ -112,7 +114,8 @@ extension WorktreeClone {
     }
 
     private static func cloneEntry(
-        _ name: String, from source: Int32, to destination: Int32, relative: String, created: inout Bool
+        _ name: String, from source: Int32, to destination: Int32, relative: String, projectPath: String,
+        project: Int32, task: Int32, created: inout Bool
     ) throws {
         try Task.checkCancellation()
         var info = stat()
@@ -137,7 +140,9 @@ extension WorktreeClone {
                 // Local env files are selected separately by Git after the user opts in.
                 guard !child.hasPrefix(".env") else { return }
                 var childCreated = false
-                try cloneEntry(child, from: from, to: to, relative: relative + "/" + child, created: &childCreated)
+                try cloneEntry(
+                    child, from: from, to: to, relative: relative + "/" + child,
+                    projectPath: projectPath + "/" + child, project: project, task: task, created: &childCreated)
             }
             guard fchmod(to, info.st_mode & 0o777) == 0 else { throw posixError() }
         case S_IFLNK:
@@ -148,7 +153,10 @@ extension WorktreeClone {
             let base = URL(filePath: "/cache/" + relative).deletingLastPathComponent()
             let resolved = base.appending(path: link).standardizedFileURL
             let cache = relative.split(separator: "/").first.map(String.init) ?? relative
-            guard !link.hasPrefix("/"), contains(resolved, in: URL(filePath: "/cache/" + cache)) else {
+            guard !link.hasPrefix("/"),
+                contains(resolved, in: URL(filePath: "/cache/" + cache))
+                    || isExistingProjectLink(link, at: projectPath, project: project, task: task)
+            else {
                 throw CommandError.refused("A cache contains a link outside the copied folder.")
             }
             guard symlinkat(link, destination, name) == 0 else { throw posixError() }
@@ -164,6 +172,27 @@ extension WorktreeClone {
         default:
             throw CommandError.refused("A cache contains a special file.")
         }
+    }
+
+    private static func isExistingProjectLink(_ link: String, at path: String, project: Int32, task: Int32) -> Bool {
+        let root = URL(filePath: "/project")
+        let target = root.appending(path: path).deletingLastPathComponent().appending(path: link).standardizedFileURL
+        guard contains(target, in: root), target != root else { return false }
+        let components = Array(target.pathComponents.dropFirst(root.pathComponents.count))
+        guard !components.contains(".git"), let name = components.last else { return false }
+        // Workspace packages may be outside node_modules, but must already exist in both
+        // checkouts. Walk every parent without following links before preserving the link.
+        for checkout in [project, task] {
+            guard let parent = try? parentDirectory(checkout, components: components.dropLast(), create: false) else {
+                return false
+            }
+            defer { close(parent) }
+            var info = stat()
+            guard fstatat(parent, name, &info, AT_SYMLINK_NOFOLLOW) == 0,
+                info.st_mode & S_IFMT == S_IFDIR || info.st_mode & S_IFMT == S_IFREG
+            else { return false }
+        }
+        return true
     }
 
     private static func forEachEntry(in descriptor: Int32, _ body: (String) throws -> Void) throws {
