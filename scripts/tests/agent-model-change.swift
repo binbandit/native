@@ -375,7 +375,9 @@ private struct AgentModelChangeRegression {
             try Data(test.source.utf8).write(to: scratch.appending(path: "source/default-mode"))
             _ = await app.ensureRunning(.init(rawValue: "fixture"))
             let modes = TaskModes(library: ModeLibrary(defaults: defaults), defaults: defaults)
-            app.sessionHooks.taskStarted = { session, earlier in await modes.taskStarted(session, continuing: earlier) }
+            app.sessionHooks.taskStarted = { session, earlier, _ in
+                await modes.taskStarted(session, continuing: earlier, projectRoot: nil)
+            }
             let config =
                 test.source == "read-only"
                 ? ComposerSettingsPreviewFixtures.codex(mode: test.source)
