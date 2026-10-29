@@ -19,5 +19,8 @@ enum ComposerDropItem: Transferable {
         DataRepresentation(importedContentType: .jpeg) { ComposerDropItem.image($0, .jpeg) }
         DataRepresentation(importedContentType: .tiff) { ComposerDropItem.image($0, .tiff) }
         DataRepresentation(importedContentType: .heic) { ComposerDropItem.image($0, .heic) }
+        DataRepresentation(importedContentType: .gif) { ComposerDropItem.image($0, .gif) }
+        DataRepresentation(importedContentType: .webP) { ComposerDropItem.image($0, .webP) }
+        DataRepresentation(importedContentType: .image) { ComposerDropItem.image($0, .image) }
     }
 }
