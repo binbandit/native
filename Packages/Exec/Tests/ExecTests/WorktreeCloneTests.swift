@@ -73,6 +73,19 @@ import Testing
         let report = try await fixture.clone(["dist"])
         #expect(report.cloned == ["dist"])
     }
+
+    @Test func preservesStandaloneCachedCheckoutsButRejectsGitdirRedirects() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        try fixture.write(".build/checkouts/package/.git/HEAD", "ref: refs/heads/main")
+        try fixture.write("dist/nested/.git", "gitdir: /outside/project")
+        let report = try await fixture.clone([".build", "dist"])
+        #expect(report.cloned == [".build"])
+        #expect(report.skipped == ["dist"])
+        #expect(
+            FileManager.default.fileExists(
+                atPath: fixture.destination.appending(path: ".build/checkouts/package/.git/HEAD").path()))
+    }
     #endif
 
     private struct Fixture {
