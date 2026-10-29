@@ -16,7 +16,10 @@ platforms, Swift style). This page is the short path to a good pull request.
 - Run: `scripts/dev/run-isolated.sh <name>`. It builds an isolated instance (own bundle id, defaults
   and host) and prints its pid and window id. `--quit` stops it, `--reset` also forgets its data.
 
-Verify UI changes in the running app, in light and dark, not just the build.
+Verify UI changes by rendering the real view in light and dark. A change confined to one view's
+look starts with its `#Preview` states below; inspect and attach those images. Build and drive the
+full app for behavior, flows or window-level layout changes, when previews cannot faithfully show
+the changed state, or before merge if the reviewer asks.
 
 ## Previews
 
@@ -33,6 +36,31 @@ for the view and the state, like `#Preview("Composer - Queued follow-up")`.
 - Fixtures are inert: no agent processes, network, git, file writes or timers that keep running.
   Models that remember things take `PreviewUserDefaults` (in-memory) rather than the user's defaults.
 - Previews and fixtures sit under `#if DEBUG`, so they never ship in Release.
+
+### Render a small visual change
+
+`scripts/dev/render-previews.py` compiles only the view and the supporting Swift source files you
+name, then renders the actual `#Preview` bodies in a short-lived, offscreen AppKit host. It needs no
+app build, agent or running Native instance. It reuses the compiler module cache across runs.
+
+```sh
+scripts/dev/render-previews.py native/<Feature>/<View>.swift /tmp/<you>-previews \
+  --support native/<Feature>/<View>PreviewFixtures.swift \
+  --support native/DesignSystem/<required-token-file>.swift
+```
+
+Supply the real source dependencies, including `DSPreviewPair` and any tokens the view needs;
+`--support` accepts files or folders and can be repeated. The compiler reports missing dependencies.
+Keep fixtures inert. The renderer does not import a previously built app or substitute mock views.
+It renders every preview in the selected file in both appearances; previews using `DSPreviewPair`
+also retain their side-by-side layout. Use `--width` and `--height` for flexible layouts, and repeat
+at narrow widths and with long text where relevant. View-only previews with explicit source
+dependencies are supported; interactive preview traits and `@Previewable` need Xcode or the app.
+The command refuses rendering while the screen is locked and exits after writing the PNGs.
+
+Inspect every changed state against its mock in light and dark and attach the PNGs to the PR.
+For view-only appearance changes this is the real UI verification; a full app build and drive is
+needed for behavior, flows, window layout, an unrepresentative preview, or a reviewer's request.
 
 ## Before you open a PR
 

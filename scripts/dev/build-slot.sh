@@ -26,7 +26,7 @@ slot=""
 lock="$slots/admit.flock"
 trap 'rm -f "$ticket"; [ -z "$slot" ] || rm -rf "$slot"' EXIT
 
-position=""
+announced=0
 while [ -z "$slot" ]; do
     exec 9>"$lock"
     lockf 9
@@ -55,9 +55,9 @@ while [ -z "$slot" ]; do
     fi
     exec 9>&-
     if [ -z "$slot" ]; then
-        if [ "$ahead" != "$position" ]; then
+        if [ "$announced" = 0 ]; then
             echo "waiting for a build slot: $limit builds running, $ahead ahead of this one" >&2
-            position=$ahead
+            announced=1
         fi
         sleep 5
     fi
@@ -84,4 +84,8 @@ if [[ " $* " != *" -jobs "* ]]; then
     [ "$jobs" -ge 4 ] || jobs=4
     arguments+=(-jobs "$jobs")
 fi
-nice -n 10 taskpolicy -c utility xcodebuild "${arguments[@]}"
+if [ -n "${NATIVE_BUILD_LOG:-}" ]; then
+    nice -n 10 taskpolicy -c utility xcodebuild "${arguments[@]}" >"$NATIVE_BUILD_LOG" 2>&1
+else
+    nice -n 10 taskpolicy -c utility xcodebuild "${arguments[@]}"
+fi
