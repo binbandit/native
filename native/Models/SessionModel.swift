@@ -187,7 +187,8 @@ final class SessionModel {
                 announceReplay()
                 // Drops what `shownConfigOptions` showed while it loaded, without taking the agent's
                 // values as chosen: a load that failed or was cut off restores again next time.
-                if configOptions != transcript.configOptions { configOptions = transcript.configOptions }
+                let options = permissionOptions(transcript.configOptions)
+                if configOptions != options { configOptions = options }
             }
         }
     }

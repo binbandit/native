@@ -104,6 +104,11 @@ private struct AgentModelChangeRegression {
                  {"id":"model","name":"Model","category":"model","type":"select","currentValue":"small",
                   "options":[{"value":"small","name":"Small"}]}]
                 """) ?? []
+        source.phase = .loading
+        source.phase = .idle
+        try require(
+            ComposerSettings(source.configOptions).autonomy?.value == "ask-first",
+            "Finishing history replay exposed raw provider permission levels")
         app.catalog.add(SessionInfo(sessionId: source.id, cwd: "/fixture"), for: source.agent.id, in: project.id)
         app.selection = source.key
         app.ordering.pin(source.key)
@@ -610,7 +615,7 @@ private struct AgentModelChangeRegression {
             }
             try require(
                 ComposerSettings(reopened.configOptions).model?.value == "gpt-6-sol"
-                    && ComposerSettings(reopened.configOptions).autonomy?.value == "read-only",
+                    && ComposerSettings(reopened.configOptions).autonomy?.value == "ask-first",
                 "Recovery lost confirmed settings")
             try require(
                 again.earlierConversations.conversation(before: key) == source.key,
