@@ -683,9 +683,9 @@ opened tasks. Claude Code and Codex use the on-demand skill while that switch is
 
 ## Search
 
-The search panel (⇧⌘F, Go ▸ Search Tasks…, or the magnifying glass in the window toolbar between
+The search panel (⇧⌘F, Go ▸ Search Tasks…, or the magnifying glass in the sidebar toolbar between
 the sidebar toggle and the history arrows) keeps focus in its field, so typing always refines the
-search. The toolbar button stays available with the sidebar collapsed.
+search. The toolbar button hides with the sidebar; the shortcut and Go menu remain available.
 
 | Keys (panel open) | Action |
 | --- | --- |

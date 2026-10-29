@@ -17,10 +17,12 @@ struct RootSidebarToolbar: ToolbarContent {
             }
         }
         .sharedBackgroundVisibility(.hidden)
-        ToolbarItem {
-            TranscriptSearchToolbarButton()
+        if columnVisibility != .detailOnly {
+            ToolbarItem {
+                TranscriptSearchToolbarButton()
+            }
+            .sharedBackgroundVisibility(.hidden)
         }
-        .sharedBackgroundVisibility(.hidden)
         if isNightly {
             ToolbarItem {
                 NightlyMark()
@@ -51,3 +53,23 @@ struct RootSidebarToolbar: ToolbarContent {
         }
     }
 }
+
+#if DEBUG
+#Preview("Sidebar toolbar - Expanded and collapsed") {
+    DSPreviewPair {
+        VStack {
+            ForEach([true, false], id: \.self) { isExpanded in
+                NavigationStack {
+                    Color.clear
+                        .toolbar {
+                            RootSidebarToolbar(
+                                columnVisibility: .constant(isExpanded ? .all : .detailOnly),
+                                model: AppModel.preview(), updates: nil, isNightly: false)
+                        }
+                }
+                .frame(width: DS.Size.sidebarWidth * 2, height: DS.Window.headerHeight * 2)
+            }
+        }
+    }
+}
+#endif
