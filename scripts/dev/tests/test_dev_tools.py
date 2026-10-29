@@ -28,6 +28,20 @@ private struct Sample: View { var body: some View { Text("{sample}") } }
         self.assertIn('VStack { Sample(); Text("}") }', rewritten)
         self.assertIn('@MainActor @ViewBuilder func nativeRenderedPreview1()', rewritten)
 
+    def test_support_comments_and_strings_do_not_consume_declarations(self):
+        source = '''// Shared by #Preview fixtures.
+struct Fixture { static let title = "Example #Preview { value }" }
+/* #Preview("Comment") { ignored } */
+#Preview("Actual") { Text(Fixture.title) }
+func afterPreview() { }
+'''
+        stripped, _ = PREVIEWS.preview_functions(source, strip=True)
+        self.assertIn('struct Fixture { static let title = "Example #Preview { value }" }', stripped)
+        self.assertIn('func afterPreview() { }', stripped)
+        self.assertNotIn('Text(Fixture.title)', stripped)
+        fixture = (ROOT / "native/NewTask/QuickEntryPreviewFixtures.swift").read_text()
+        self.assertIn('func applyLaunchState', PREVIEWS.preview_functions(fixture, strip=True)[0])
+
     def test_unsupported_preview_is_explicit(self):
         for source in ['#Preview(traits: .sizeThatFitsLayout) { Text("a") }',
                        '#Preview { @Previewable @State var value = false; Text("a") }']:

@@ -16,7 +16,7 @@ SOURCES = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(SOURCES)
 
 
-def preview_functions(text):
+def preview_functions(text, strip=False):
     """Keep each body beside its private helpers, replacing only the macro header."""
     names = []
     result = []
@@ -44,17 +44,20 @@ def preview_functions(text):
         if end is None:
             raise ValueError("#Preview has no complete body")
         header = text[position:opening]
-        if re.search(r"\btraits\s*:", header) or "@Previewable" in text[opening:end]:
+        if not strip and (re.search(r"\btraits\s*:", header) or "@Previewable" in text[opening:end]):
             raise ValueError("preview traits and @Previewable require Xcode or a full-app check")
         label = re.search(r'"([^"\n]*)"', header)
         name = f"nativeRenderedPreview{len(names)}"
         names.append((name, label[1] if label else name))
         result.append(text[start:position])
-        result.append(f"@MainActor @ViewBuilder func {name}() -> some View ")
-        result.append(text[opening:end + 1])
+        if strip:
+            result.append("\n" * text[position:end + 1].count("\n"))
+        else:
+            result.append(f"@MainActor @ViewBuilder func {name}() -> some View ")
+            result.append(text[opening:end + 1])
         position = start = end + 1
     result.append(text[start:])
-    if not names:
+    if not names and not strip:
         raise ValueError("selected source has no #Preview bodies")
     return "".join(result), names
 
@@ -92,7 +95,7 @@ def main():
                           "CFBundleExecutable": "preview-render"}, file)
         inputs = []
         for index, (path, text) in enumerate([(view, rewritten)] + [
-            (ROOT / path, SOURCES.strip_previews((ROOT / path).read_text())) for path in sorted(support)
+            (ROOT / path, preview_functions((ROOT / path).read_text(), strip=True)[0]) for path in sorted(support)
         ]):
             staged = work / f"source{index}.swift"
             staged.write_text(f"#sourceLocation(file: {json.dumps(str(path))}, line: 1)\n" + text)
