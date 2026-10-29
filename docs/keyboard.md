@@ -227,6 +227,10 @@ Files and images go out with the message as chips above the text: picked with th
 anything else goes as its path. A picture that will reach the agent as a path (the agent takes no
 images, or it's over 50 MB) says so on its chip before anything is sent. A message carries up to 20
 files; a file moved or deleted before sending is marked on its chip and holds the message.
+Dropping one or more files or folders on either composer or the transcript uses the same chips as
+Attach Files. The editor leaves the message and its caret untouched; it never inserts a file path.
+The dashed accent outline marks the composer while a file is over either drop area. This also
+applies to Fine print and iPad. Copied files paste as attachments too.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |

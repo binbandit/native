@@ -35,6 +35,18 @@ import SwiftUI
     }
 }
 
+#Preview("Editor - Dropping files keeps the draft") {
+    DSPreviewPair {
+        ComposerSurface(isDropTargeted: true) {
+            ComposerAttachmentsSection(
+                attachments: ComposerPreviewFixtures.attachments, pending: [], missing: [], selected: nil,
+                capabilities: PromptCapabilities(image: true), agentName: "Claude Code", onRemove: { _ in })
+            ComposerEditorPreview(text: "Review these files, then explain the change.", placeholder: "")
+        }
+        .frame(width: 560)
+    }
+}
+
 /// Holds the editor's text, selection and focus, which a preview can't pass as plain values.
 private struct ComposerEditorPreview: View {
     @State var text: String

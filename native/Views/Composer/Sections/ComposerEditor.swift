@@ -128,7 +128,19 @@ struct ComposerEditor: View {
         .onKeyPress(phases: [.down, .repeat], action: onKey)
         .accessibilityLabel(inputLabel)
         // Files and images dropped on the text attach instead (the composer's drop area).
-        .textViewTakesOnlyTextDrops()
+        .textViewDefersDrops()
+        .onDrop(
+            of: [.text],
+            delegate: ComposerTextDrop { dropped in
+                let offsets = Self.offsets(of: selection, in: text)
+                let start = offsets?.lowerBound ?? text.utf8.count
+                let lower = text.utf8.index(text.startIndex, offsetBy: start)
+                let upper = text.utf8.index(text.startIndex, offsetBy: offsets?.upperBound ?? text.utf8.count)
+                text.replaceSubrange(lower..<upper, with: dropped)
+                let caret = start + dropped.utf8.count
+                selection = Self.textSelection(caret..<caret, in: text)
+            }
+        )
         .textInputKeepsLiteralQuotes()
         .background {
             PlatformComposerReferenceBackground(ranges: referenceRanges)

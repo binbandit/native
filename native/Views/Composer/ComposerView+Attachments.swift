@@ -23,6 +23,7 @@ extension ComposerView {
         switch pasted {
         case .files(let urls): attach(urls)
         case .image(let data, let type): attachImage(data, type: type)
+        case .failed(let name): feedback = .blocked("Couldn’t attach \(name). Try attaching it with Attach Files.")
         }
     }
 

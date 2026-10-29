@@ -10,17 +10,17 @@ import AppKit
 enum IncomingAttachments: Equatable {
     case files([URL])
     case image(Data, UTType)
+    case failed(String)
 }
 
 extension View {
     /// While `isEnabled`, hands ⌘V of files or an image to `perform`, ahead of the focused text view,
-    /// which would paste a file's name or nothing. Text pastes as usual. Mac only: iPadOS pastes
-    /// images through its own edit menu.
+    /// which would paste a file's name or nothing. Text pastes as usual.
     func onAttachmentPaste(isEnabled: Bool, perform: @escaping (IncomingAttachments) -> Void) -> some View {
         #if canImport(AppKit)
         background(AttachmentPasteMonitor(isEnabled: isEnabled, perform: perform))
         #else
-        self
+        background(PlatformAttachmentPasteIOS(isEnabled: isEnabled, perform: perform))
         #endif
     }
 }
@@ -69,8 +69,8 @@ private struct AttachmentPasteMonitor: NSViewRepresentable {
                     return nil
                 }
                 #if DEBUG
-                debugObserver = Self.observeDebugPaste { [weak self] in
-                    if let pasted = Self.attachments(on: Self.pasteboard) { self?.perform(pasted) }
+                debugObserver = Self.observeDebugPaste { [weak self] pasteboard in
+                    if let pasted = Self.attachments(on: pasteboard) { self?.perform(pasted) }
                 }
                 #endif
             } else if !isEnabled, let monitor {
@@ -87,14 +87,20 @@ private struct AttachmentPasteMonitor: NSViewRepresentable {
         /// What ⌘V does, on a distributed notification naming this process
         /// (`dev.native.debug.pasteAttachment`, object: the pid), so an automated check can paste
         /// without a key press reaching the app.
-        private static func observeDebugPaste(_ paste: @escaping @MainActor () -> Void) -> any NSObjectProtocol {
+        private static func observeDebugPaste(
+            _ paste: @escaping @MainActor (NSPasteboard) -> Void
+        ) -> any NSObjectProtocol {
             DistributedNotificationCenter.default().addObserver(
                 forName: Notification.Name("dev.native.debug.pasteAttachment"), object: nil, queue: .main
             ) { notification in
                 guard notification.object as? String == String(ProcessInfo.processInfo.processIdentifier) else {
                     return
                 }
-                MainActor.assumeIsolated { paste() }
+                let name = notification.userInfo?["pasteboard"] as? String
+                MainActor.assumeIsolated {
+                    let board = name.map { NSPasteboard(name: NSPasteboard.Name($0)) } ?? Self.pasteboard
+                    paste(board)
+                }
             }
         }
         #endif

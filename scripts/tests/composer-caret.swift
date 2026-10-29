@@ -26,6 +26,14 @@ private struct ComposerCaretChecks {
             for draft in ["Plain draft without code", "Look at `PromptQueue` here"] {
                 let fixture = ComposerCaretFixture(editor: editor, draft: draft)
                 // Mid-draft, after "Look at " / "Plain dr".
+                // Finder files also advertise text. A native string receiver steals that drop
+                // before the composer's attachment destination can see its file URL.
+                if !fixture.textView.registeredDraggedTypes.isEmpty {
+                    print(
+                        "FAIL \(editor): the native editor still claims dragged types: \(fixture.textView.registeredDraggedTypes)"
+                    )
+                    failures += 1
+                }
                 let caret = 8
                 guard fixture.textView.string == draft else {
                     print("FAIL \(editor) [\(draft)]: the editor shows \(fixture.textView.string.debugDescription)")

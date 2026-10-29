@@ -8,6 +8,12 @@ enum ComposerDropItem: Transferable {
     case image(Data, UTType)
 
     static var transferRepresentation: some TransferRepresentation {
+        DataRepresentation(importedContentType: .fileURL) { data in
+            guard let url = URL(dataRepresentation: data, relativeTo: nil), url.isFileURL else {
+                throw CocoaError(.fileReadCorruptFile)
+            }
+            return ComposerDropItem.file(url)
+        }
         ProxyRepresentation(importing: { (url: URL) in ComposerDropItem.file(url) })
         DataRepresentation(importedContentType: .png) { ComposerDropItem.image($0, .png) }
         DataRepresentation(importedContentType: .jpeg) { ComposerDropItem.image($0, .jpeg) }

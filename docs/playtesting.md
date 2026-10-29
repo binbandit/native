@@ -152,6 +152,8 @@ first use (a few seconds) and needs the instance running. `drive.sh <name> help`
 | `type <text>` | Types into whatever has focus, a key at a time (for `/` and `@` lists); `\n` is Shift-Return |
 | `key <combo>…` | `cmd+n`, `return`, `escape`, `shift+cmd+a`, `opt+cmd+up`, `ctrl+tab` |
 | `key <combo> --hold <seconds>` | Holds each key combination before releasing it (0 to 3 seconds), for deliberate confirmation controls |
+| `drop <composer\|transcript> <file>… [--phase hover\|drop\|exit]` | Delivers a fixture drag to the isolated Debug window's registered AppKit destination. Launch with `-debugAttachmentDropChecks YES`. Uses a private pasteboard, including a file's text representation to catch path insertion. `--text <text>` checks an ordinary text drop instead |
+| `paste-files <file>…` | Delivers copied fixture files through the composer's paste handler using a private pasteboard |
 | `menu <Menu> [<Item>…]` | Lists a menu with its shortcuts and disabled items, or presses an item |
 | `action <text> <name> [--item <text>]` | Performs an accessibility action; `AXShowMenu` lists a context menu's items, or picks one |
 | `scroll <text> <up\|down\|top\|bottom\|reveal>` | Pages the scroll area at or around a match, or scrolls the match into view |
