@@ -11,6 +11,8 @@ struct TaskWellToolDetail {
     var stats: DiffStats?
     var isSelected = false
     var isRunning = false
+    /// Its last run failed.
+    var hasFailed = false
     var runningSince: Date?
     var unavailableReason: String?
     var note: String?

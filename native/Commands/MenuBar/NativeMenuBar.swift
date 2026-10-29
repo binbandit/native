@@ -111,7 +111,7 @@ private struct ViewCommands: Commands {
                     }
                     if menu.context.sessionTools?.hasWell == true {
                         ForEach(
-                            TaskWellTool.allCases.filter {
+                            SessionToolRegistry.shared.wellTools.filter {
                                 $0 != .changes && (menu.context.session?.isProjectless != true || $0 != .pullRequest)
                             }
                         ) { tool in

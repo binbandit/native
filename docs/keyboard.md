@@ -393,6 +393,8 @@ Option-Cmd-O to show its error output. Cmd-Return opens the task for every ask k
 ## Task tools (Labs)
 
 With The well enabled (`NativeTaskWell`, off by default), Cmd-I opens the centered task well.
+Long tool lists scroll within the well, keeping its status, worker and checkout visible. Arrow
+navigation reveals the highlighted tool, including the first and last rows.
 Its tools appear in this fixed key order. Missing tools leave no row; their keys stay reserved.
 Clicking a waiting well focuses the composer, where the full request can be answered.
 Dev reveals the latest project action in the workbench, or its action chooser before the first run.
@@ -412,6 +414,7 @@ out of reach, Task ▸ Export Patch… (no default keys) stands in for the pull 
 | ⌥⌘3 | Dev (project actions) | View ▸ Tools | `taskWell.dev` |
 | ⌥⌘4 | Subagents | View ▸ Tools | `taskWell.subagents` |
 | ⌥⌘5 | Pull request | View ▸ Tools | `taskWell.pullRequest` |
+| | A plugin's tool, listed after Pull request (no default key; assign one in Settings ▸ Keyboard Shortcuts) | View ▸ Tools | `sessionTools.<tool id>` |
 | | Export the branch as a patch, where GitHub is out of reach | Task | `taskWell.exportPatch` |
 | Escape | Close the well and return focus to the task | | |
 

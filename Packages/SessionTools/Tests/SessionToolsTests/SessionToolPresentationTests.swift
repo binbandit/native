@@ -15,6 +15,18 @@ struct SessionToolPresentationTests {
         #expect(!state.contains(changes.id, at: .side))
     }
 
+    @Test func toolsListsPendingAndShownOnesSoRemovedOnesCanClose() {
+        let board = SessionToolSpec(id: "acme.board", places: [.fact, .off], defaultPlace: .fact)
+        var state = SessionToolPresentation()
+        state.request(changes, arrangement: .init(), hasPane: true)
+        state.request(board, arrangement: .init(), hasPane: true)
+        state.present(board.id, at: .fact)
+        #expect(state.tools == [changes.id, board.id])
+        state.close(changes.id)
+        state.present(changes.id, at: .side)
+        #expect(state.tools == [board.id])
+    }
+
     @Test func lastRequestedToolWinsItsPlace() {
         let other = SessionToolSpec(id: "other", places: [.side], defaultPlace: .side)
         var state = SessionToolPresentation()

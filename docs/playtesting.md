@@ -118,12 +118,31 @@ Launch arguments go after `--`: `scripts/dev/run-isolated.sh playtest --no-build
 | `-nativeHostRefused YES` | Acts as if background running were refused, to see the fallback (`docs/durability.md`) |
 | `-quickEntryFixture selection` | With `NativeComposeTask` on, Cmd-N renders a Quick Entry preview state. Also accepts `empty`, `firstLaunch`, `failure`, `offline`, `narrow`, `devices`, `agents`, `projects`. Debug only; the device fixtures never connect to a paired host. Omit this argument for behavior checks. |
 | `-composeTaskFixture ready` | With `NativeComposeTask` on, Shift-Command-N renders the Compose page with inert fixture content. Also accepts `empty`, `firstLaunch`, `failure`, `offline`, `held`, `narrow`, `agents`, `devices`, `twoAgents`, `folding`, `message`, `settled`. Omit for behavior checks. |
+| `-taskWellPluginFixture YES` | Registers the inert Review Kit plugin for well/Task Tools checks: a long working side tool, a default-Off Runbook and failed over-conversation Notes. Debug only; disable Review Kit in Settings > Extensions. |
+| `-taskWellManyTools YES` | With the Review Kit fixture, adds 25 enabled plugin tools to check overflow, scrolling and keyboard reveal. Debug only. |
 | `-framePacing YES` | Logs dropped frames once a second (`drive.sh <name> logs --stream`) |
 
 For a long transcript without spending anything, install the long-session fake agent
 (`python3 scripts/perf/long-session-agent.py --install /private/tmp/native-playtest/<name>/plugins`):
 it lists sessions of 20, 100 and 500 turns to reopen. `scripts/perf/fixture.sh` fills a sidebar with
 30 tasks across four projects (it rewrites the project list, so seed again afterwards).
+
+For the plugin fixture, write the well gate as a boolean before launch:
+`defaults write dev.binbandit.native.dev.<name> experiment.NativeTaskWell -bool YES`.
+To revoke a plugin while its pane stays onscreen, mark `policy.plugins.allowed` in
+`policy.debug.managedKeys` before launch, initially allowing `review-kit` and the scripted agent's
+plugin id (`playtest-fake-agent` for `seed`). Remove `review-kit` from that allowed list while a side
+or over-conversation pane is open. Review Kit follows that policy live, as an installed plugin does.
+Check that its pane and well rows disappear, its commands leave Keyboard Shortcuts, and reallowing
+it leaves the old pane closed. This avoids Settings navigation closing the pane before revocation.
+For overflow checks, also launch with `-taskWellManyTools YES` at a short window height. In light
+and dark, open the well, scroll from Changes to Check 25 and back with the pointer or touch, then
+use Up from no highlight to reveal Check 25 and Down/Up to traverse the full list. Keep the status,
+worker and checkout visible. After scrolling away from a highlighted endpoint, press its arrow
+again to confirm it is revealed even though the selection did not change. Return or Space must
+open the highlighted tool; Escape must close the well.
+In a background instance, edit an unsent draft after changing defaults to trigger a preferences
+notification, wait for the removal, then clear the draft without sending it.
 
 ### Silent instances
 

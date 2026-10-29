@@ -6,6 +6,11 @@ public struct SessionToolPresentation: Equatable, Sendable {
 
     public init() {}
 
+    /// Every tool shown or still waiting to be, so ones that went away can be closed.
+    public var tools: Set<SessionToolID> {
+        Set(pending.values).union(openByPlace.values)
+    }
+
     public func contains(_ id: SessionToolID, at place: SessionToolPlace) -> Bool {
         pending[place] == id || openByPlace[place] == id
     }
