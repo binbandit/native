@@ -48,10 +48,13 @@ final class SessionToolsScreenModel {
     /// Makes room in the window before the side panel appears, then shows it (`InspectorRoom`).
     @ObservationIgnored var makeRoomForSidePanel: (@escaping @MainActor () -> Void) -> Void = { $0() }
     @ObservationIgnored private var states: [SessionToolID: AnyObject] = [:]
+    @ObservationIgnored private weak var session: SessionModel?
+    @ObservationIgnored private var closeHooks: [SessionToolID: () -> Void] = [:]
     @ObservationIgnored let registry: SessionToolRegistry
 
-    init(registry: SessionToolRegistry = .shared) {
+    init(registry: SessionToolRegistry = .shared, session: SessionModel? = nil) {
         self.registry = registry
+        self.session = session
     }
 
     var openTools: Set<SessionToolID> {
@@ -71,10 +74,17 @@ final class SessionToolsScreenModel {
         showsWell = false
         // The side panel appears without sliding in, once there's room: sliding lays the whole
         // window out again every frame.
-        let show: @MainActor @Sendable () -> Void = {
+        let show: @MainActor @Sendable () -> Void = { [self] in
             // Its plugin may have been turned off while the window made room.
-            guard self.registry.tool(id) != nil else { return self.presentation.close(id) }
-            withTransaction(\.disablesAnimations, true) { self.presentation.present(id, at: place) }
+            guard self.registry.tool(id) != nil else { return self.close(id) }
+            self.changePresentation { self.presentation.present(id, at: place) }
+            if self.presentation.openByPlace[place] == id, self.closeHooks[id] == nil, let session = self.session {
+                // Keep the original contribution after revocation, without retaining the screen through its hook.
+                self.closeHooks[id] = { [weak self, weak session] in
+                    guard let self, let session else { return }
+                    tool.didClose(SessionToolContext(session: session, screen: self, tool: id))
+                }
+            }
         }
         if place == .side, openByPlace[.side] == nil {
             makeRoomForSidePanel(show)
@@ -91,13 +101,21 @@ final class SessionToolsScreenModel {
     }
 
     func close(_ id: SessionToolID) {
-        withTransaction(\.disablesAnimations, true) { presentation.close(id) }
+        changePresentation { presentation.close(id) }
     }
 
     /// Closes without animation: closing the side panel animated, while the window settled its
     /// columns, sent AppKit into a constraint loop.
     func close(_ place: SessionToolPlace) {
-        withTransaction(\.disablesAnimations, true) { presentation.close(place) }
+        changePresentation { presentation.close(place) }
+    }
+
+    private func changePresentation(_ change: () -> Void) {
+        let before = Set(presentation.openByPlace.values)
+        withTransaction(\.disablesAnimations, true, change)
+        for id in before.subtracting(presentation.openByPlace.values) {
+            closeHooks.removeValue(forKey: id)?()
+        }
     }
 
     func toggle(_ id: SessionToolID) {

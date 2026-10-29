@@ -10,7 +10,7 @@ import SwiftUI
 struct SessionToolsScreen: View {
     let session: SessionModel
     var usesTaskWell = false
-    @State private var tools = SessionToolsScreenModel()
+    @State private var tools: SessionToolsScreenModel
     @State private var openSubagent: SessionID?
     /// Files dropped on the transcript, for the composer to attach.
     @State private var drops = ComposerDropInbox()
@@ -29,6 +29,12 @@ struct SessionToolsScreen: View {
     /// A subagent asked for while inspectors were suspended, which opens once they aren't.
     @State private var reopensSubagent: SessionID?
     @Experiment(.transcriptWidth) private var columnWidth: TranscriptWidth
+
+    init(session: SessionModel, usesTaskWell: Bool = false) {
+        self.session = session
+        self.usesTaskWell = usesTaskWell
+        _tools = State(initialValue: SessionToolsScreenModel(session: session))
+    }
 
     private var registry: SessionToolRegistry { tools.registry }
 
@@ -161,11 +167,6 @@ struct SessionToolsScreen: View {
             }
         }
         .onChange(of: registry.tools.map(\.id)) { tools.closeRemovedTools() }
-        .onChange(of: tools.openTools) { previous, current in
-            for id in previous.subtracting(current) {
-                if let tool = registry.tool(id) { tool.didClose(context(tool)) }
-            }
-        }
         .onDisappear {
             tools.close(.side)
             tools.close(.fact)

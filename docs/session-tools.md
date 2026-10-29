@@ -129,6 +129,12 @@ place, as Changes does, or does what its fact does. A plugin's tool id starts wi
 the conversation or over it: the workbench holds only Native's terminals and runs
 (`SessionToolSpec.isAllowed(fromPlugin:)`, tested in the package).
 
+The screen model retains each presented contribution's close hook with its original session context.
+Closing, replacing or revoking a pane runs that hook once, even after its plugin leaves the registry.
+Pending opens cancelled before presentation have no close hook to run.
+`scripts/tests/session-tool-cleanup.sh <instance>` checks both side and over-conversation tools through
+the app model harness.
+
 Where the user put each tool is a `SessionToolArrangement`, saved in user defaults
 (`sessionTools.arrangement`) as only the places that differ from each tool's default.
 
