@@ -36,6 +36,18 @@ private struct ComposerDropChecks {
             }
         }
         let image = try Data(contentsOf: fixture.appending(path: "pixel.png"))
+        let fileProvider = NSItemProvider()
+        let source = fixture.appending(path: "brief.txt")
+        fileProvider.registerFileRepresentation(
+            forTypeIdentifier: UTType.data.identifier, fileOptions: .openInPlace, visibility: .all
+        ) { done in
+            done(source, true, nil)
+            return nil
+        }
+        guard case .file(let retained) = try await load(fileProvider), retained != source,
+            try Data(contentsOf: retained) == Data(contentsOf: source)
+        else { throw Failure("A provider's temporary file was not retained") }
+        try FileManager.default.removeItem(at: retained.deletingLastPathComponent())
         let provider = NSItemProvider()
         provider.registerDataRepresentation(forTypeIdentifier: UTType.png.identifier, visibility: .all) { done in
             done(image, nil)

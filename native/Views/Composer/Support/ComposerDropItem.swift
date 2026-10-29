@@ -1,3 +1,4 @@
+import ACP
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -22,5 +23,13 @@ enum ComposerDropItem: Transferable {
         DataRepresentation(importedContentType: .gif) { ComposerDropItem.image($0, .gif) }
         DataRepresentation(importedContentType: .webP) { ComposerDropItem.image($0, .webP) }
         DataRepresentation(importedContentType: .image) { ComposerDropItem.image($0, .image) }
+        FileRepresentation(importedContentType: .item) { received in
+            try await importFile(received.file)
+        }
+    }
+
+    @concurrent
+    private nonisolated static func importFile(_ url: URL) async throws -> ComposerDropItem {
+        .file(try PromptAttachment.importFile(url))
     }
 }

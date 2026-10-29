@@ -8,6 +8,9 @@ struct ComposerTextDrop: DropDelegate {
 
     func validateDrop(info: DropInfo) -> Bool {
         !info.hasItemsConforming(to: [.url, .image]) && info.hasItemsConforming(to: [.text])
+            && !info.itemProviders(for: [.item]).contains {
+                !$0.registeredTypeIdentifiers(fileOptions: .openInPlace).isEmpty
+            }
     }
 
     func dropUpdated(info: DropInfo) -> DropProposal? { DropProposal(operation: .copy) }
