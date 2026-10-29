@@ -265,11 +265,15 @@ public struct RunHiddenResult: Codable, Sendable {
 }
 
 public struct SetConfigOptionParams: Codable, Sendable {
+    /// Native intent when several permission modes share one provider control. Never sent to ACP.
+    public static let permissionChoiceKey = "_native.permissionMode"
+    public var permissionMode: String?
     public var sessionID: HostSessionID
     public var configID: String
     public var value: String
 
-    public init(sessionID: HostSessionID, configID: String, value: String) {
+    public init(sessionID: HostSessionID, configID: String, value: String, permissionMode: String? = nil) {
+        self.permissionMode = permissionMode
         self.sessionID = sessionID
         self.configID = configID
         self.value = value

@@ -363,7 +363,7 @@ extension HostCore {
         let generation = link.generation
         var latest = reported ?? session.loadingConfigOptions
         var options = latest.map(Self.configOptions) ?? session.mirror.state.configOptions
-        let saved = session.record.configChoices
+        let saved = session.record.configChoices.filter { $0.key != SetConfigOptionParams.permissionChoiceKey }
         var choices = ConfigChoices()
         var attempted: Set<String> = []
         while true {
@@ -457,7 +457,14 @@ extension HostCore {
     /// started the session on. A reload that comes back on others gets these set back, so resumed
     /// work runs as it did. New sessions never take them: they start on the agent's defaults.
     func pinConfig(_ options: [ConfigOption], of session: HostSession) {
-        let values = Self.configValues(options)
+        var values = Self.configValues(options)
+        // Keep shared intent only while the provider still uses its matching control.
+        if let mode = options.first(where: { $0.category == "mode" }),
+            values[mode.id] == session.record.configChoices[mode.id],
+            let choice = session.record.configChoices[SetConfigOptionParams.permissionChoiceKey]
+        {
+            values[SetConfigOptionParams.permissionChoiceKey] = choice
+        }
         guard !values.isEmpty, values != session.record.configChoices else { return }
         session.record.configChoices = values
         try? store.updateSession(session.record)

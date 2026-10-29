@@ -606,31 +606,4 @@ final class SessionModel {
             to: permission.requestID, with: RequestPermissionResponse.selected(optionId: option.optionId))
     }
 
-    func setConfigOption(_ option: ConfigOption, to value: String) async {
-        guard case .select(let current, let choices) = option.kind, current != value else { return }
-        // Every way of changing a setting comes through here, so a forbidden permission mode stops here.
-        guard !PolicyPermissionModes.forbids(option, value: value) else { return }
-        // Remembered for reopening the session; from here on it follows what the agent reports.
-        services.titles.updateConfigChoices(for: titleKey) { $0.choose(option, value: value) }
-        // Show the choice right away; the agent's answer is authoritative and replaces it.
-        replaceConfigOption(option.id, with: .select(currentValue: value, options: choices))
-        do {
-            if let host {
-                // The agent's answer arrives as an update before the host answers.
-                try await host.setConfigOption(option.id, to: value)
-            } else if let connection {
-                let response = try await connection.send(
-                    SetConfigOptionRequest(sessionId: id, configId: option.id, value: value))
-                state.configOptions = response.configOptions
-            }
-        } catch {
-            replaceConfigOption(option.id, with: option.kind)
-            state.appendNotice("Couldn't change \(option.name): \(error.localizedDescription)", isError: true)
-        }
-    }
-
-    private func replaceConfigOption(_ id: String, with kind: ConfigOption.Kind) {
-        guard let index = state.configOptions.firstIndex(where: { $0.id == id }) else { return }
-        state.configOptions[index].kind = kind
-    }
 }

@@ -580,9 +580,12 @@ draft, attachments and quoted sources. Earlier conversations stay accessible. Wh
 turn runs, the choice waits for it to finish. Answer pending requests and send or remove queued
 messages first. Goals that cannot move safely must be cleared.
 
-If permission levels differ, the receipt explains the fallback. Review Permissions opens Task
+The four permission modes are Ask first, Accept edits, Auto and Full access. The permission shortcut
+cycles through allowed modes; unsupported modes use the destination plugin's closest stricter control.
+The picker explains that fallback. New tasks start with Full access unless Settings or policy changes it.
+If permission modes differ, the receipt explains the fallback. Review Permissions opens Task
 Settings with Fine print, or the autonomy choices in the classic composer. Undo restores the
-previous agent and permission level.
+previous agent and permission mode.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |

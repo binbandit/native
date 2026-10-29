@@ -52,7 +52,7 @@ struct NewTasksScopedContent: View {
                 NewTasksValueRow(model: defaults, setting: .effort, mode: startingMode)
             }
             NewTasksModeRow(library: modeLibrary, project: project)
-            NewTasksValueRow(model: defaults, setting: .permissions, mode: startingMode)
+            PermissionDefaultsRow(project: project?.id)
         } footerAccessory: {
             if let editModes { NewTasksFooterLink(title: "Edit modes in Modes", action: editModes) }
         }
@@ -88,9 +88,7 @@ struct NewTasksScopedContent: View {
 
     /// Defaults the organization sets: today only permissions can be.
     private var organizationDefaults: Int {
-        let source = defaults.receipt(.permissions, policy: PolicyCenter.shared.policy, mode: startingMode).source
-        if case .organization = source { return 1 }
-        return 0
+        PolicyCenter.shared.policy.forbiddenPermissionModes.isEmpty ? 0 : 1
     }
 
     private var footer: String {

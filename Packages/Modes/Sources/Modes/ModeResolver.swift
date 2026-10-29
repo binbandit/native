@@ -211,6 +211,7 @@ public enum ModeResolver {
     }
 
     private static let known: [String: ModeAutonomy] = [
+        "ask-first": .ask, "accept-edits": .edit, "full-access": .full,
         // codex-acp
         "read-only": .readOnly,
         "workspace-write": .edit,

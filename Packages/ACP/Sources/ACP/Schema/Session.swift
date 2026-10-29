@@ -252,6 +252,8 @@ public struct ConfigOption: Decodable, Hashable, Sendable, Identifiable {
     /// A hint such as `mode` or `model`; not an exhaustive set.
     public var category: String?
     public var kind: Kind
+    /// Native presentation metadata; never sent to the provider.
+    public var permissionMappings: [String: String]? = nil
 
     public enum Kind: Hashable, Sendable {
         case select(currentValue: String, options: [SelectOption])

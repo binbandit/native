@@ -22,11 +22,6 @@ struct AutonomyPill: View {
         levels[min(level, levels.count - 1)]
     }
 
-    /// The top level (Claude Code's Bypass permissions, Codex's Full access) skips every check.
-    private var isUnchecked: Bool {
-        levels.count > 2 && level == levels.count - 1
-    }
-
     var body: some View {
         Button {
             isPickerOpen.toggle()
@@ -40,7 +35,7 @@ struct AutonomyPill: View {
                 }
                 EffortBars(
                     total: max(levels.count - 1, 1), level: level, isMuted: isSuspended,
-                    tint: isUnchecked ? .dsDanger : .dsAccent)
+                    tint: .dsAccent)
             }
         }
         .buttonStyle(.pill(isOpen: isPickerOpen))

@@ -42,7 +42,18 @@ extension AppModel {
     /// The settings a new task with `agent` starts with: the project's model, then the agent's saved
     /// defaults and last choices, then the starting mode, never one policy forbids.
     func composeStartingOptions(for agent: AgentDefinition.ID, in project: Project?) -> [ConfigOption] {
-        var options = AgentSessionDefaults.offeredOptions(for: agent)
+        var options = AgentSessionDefaults.offeredOptions(for: agent).map {
+            plugins.permissionMapping(for: agent).presenting($0)
+        }
+        let permission = TaskPermissionDefaults.value(project: project?.id.uuidString)
+        if let index = options.firstIndex(where: { $0.category == "mode" }),
+            case .select(_, let choices) = options[index].kind
+        {
+            let allowed = TaskPermissionMode.allCases.reversed().first {
+                $0.rank <= permission.rank && !PolicyPermissionModes.forbids(options[index], value: $0.rawValue)
+            }
+            if let allowed { options[index].kind = .select(currentValue: allowed.rawValue, options: choices) }
+        }
         var categories = AgentSessionDefaults.configuredValues(for: agent)
         if let project, let model = ProjectTaskDefaults.model(for: project.id, agent: agent) {
             categories["model"] = model
