@@ -83,6 +83,10 @@ final class UsageNotifications: LimitAlerting {
     /// when it isn't about one task.
     private func deliver(_ notification: NativeNotification, unlessShowing ref: UsageSessionRef?) async {
         if activity.isActive, ref.map({ host?.isShowing($0) ?? false }) ?? true { return }
+        var notification = notification
+        if let ref, let project = host?.taskProjectName(ref) {
+            notification.subtitle = [notification.subtitle, project].compactMap { $0 }.joined(separator: " · ")
+        }
         await poster.post(notification)
     }
 

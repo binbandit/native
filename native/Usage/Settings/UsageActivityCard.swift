@@ -3,6 +3,8 @@ import SwiftUI
 /// A year of the user's work with agents as a graph, with the quiet game around it: the current and
 /// longest streak, the busiest day and the year's total. Picking a day lists its tasks.
 struct UsageActivityCard: View {
+    @Environment(\.projectDisplayName) private var projectDisplayName
+
     let activity: ActivityLog
     /// What opens a task; nil when it can't be opened anymore.
     let opener: (ActivityDay.Task) -> (() -> Void)?
@@ -120,7 +122,7 @@ struct UsageActivityCard: View {
                     .foregroundStyle(.dsTextSecondary)
             }
             ForEach(tasks) { task in
-                let detail = "\(task.agentName) · \(URL(filePath: task.project).lastPathComponent)"
+                let detail = "\(task.agentName) · \(projectDisplayName(URL(filePath: task.project)))"
                 if let open = opener(task) {
                     HStack(spacing: DS.Space.md) {
                         ContributorRow(title: task.title ?? "Untitled task", detail: detail, tokens: nil)

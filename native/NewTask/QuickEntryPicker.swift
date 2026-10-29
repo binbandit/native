@@ -130,6 +130,8 @@ struct QuickEntryPicker: View {
                         entry.project == project.id ? Color.dsSelected : .clear,
                         in: .rect(cornerRadius: DS.Radius.control)
                     )
+                    .help(project.path)
+                    .accessibilityLabel("\(project.name), \(project.path)")
                     .accessibilityAddTraits(entry.project == project.id ? .isSelected : [])
                 }
                 SeparatorLine().padding(.vertical, DS.Space.xs)

@@ -27,7 +27,8 @@ extension ComposerView {
                         breakdown: $isContextUseOpen)
                     ComposerSettingsControl(
                         session: session, settings: ComposerSettings(session.configOptions),
-                        mode: TaskModeControl(session: session, modes: taskModes),
+                        mode: TaskModeControl(
+                            session: session, modes: taskModes, resolvedProjectName: app.projectName(of: session)),
                         isPresented: $isModelPickerOpen, resumedAutonomy: autonomyBeforePlan,
                         highlightsCurrent: settingsOpenedByCommand)
                     AttachButton(isPickingFiles: $isPickingFiles, onPick: attach, isField: true)

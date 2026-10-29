@@ -346,6 +346,7 @@ Other file types use the platform's Quick Look preview, with its native navigati
 | ⌥⌘E | New expedition (`docs/expeditions.md`) | File | `expedition.new` |
 | | Continue a task without a project in a chosen folder; optionally copy its private files | Task | `session.moveToProject` |
 | ⌘O | Open folder | File | `project.open` |
+| | Rename the current project in Native; clearing the name restores its folder name. Also in both sidebar project menus and Settings ▸ Projects. The folder on disk keeps its name | File | `project.rename` |
 | | The current project's settings (Settings ▸ Projects; also in the project's menu in the sidebar) | File | `project.settings` |
 | | Refresh git and pull-request state for every task in the current project (also Refresh in its sidebar menu) | File | `project.refresh` |
 | | Clean up the current project's merged task worktrees, branches and stale worktree records, after a review (also "Clean Up Merged…" in the project's menu in the sidebar) | File | `git.cleanUpMerged` |

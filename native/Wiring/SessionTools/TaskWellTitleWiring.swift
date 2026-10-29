@@ -44,7 +44,7 @@ extension AppModel {
     func projectName(of session: SessionModel) -> String {
         guard let id = catalog.lookup(session.key)?.project else { return session.cwd.lastPathComponent }
         // A task of an archived project can still be opened from the archive.
-        return (projects.project(id) ?? projects.archived.first { $0.id == id })?.name ?? session.cwd.lastPathComponent
+        return projectName(for: session.key, in: id) ?? session.cwd.lastPathComponent
     }
 }
 

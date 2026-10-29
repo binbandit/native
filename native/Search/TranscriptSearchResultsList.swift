@@ -139,7 +139,7 @@ struct TranscriptSearchResultsList: View {
     }
 
     private func details(of group: SearchGroup) -> String {
-        var parts = [group.session.projectName]
+        var parts = [model.projects.name(for: URL(filePath: group.session.project))]
         if let updated = group.session.updatedAt {
             parts.append(DSFormat.compactAge(updated, now: .now))
         }

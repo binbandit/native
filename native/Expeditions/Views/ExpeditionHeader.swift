@@ -5,6 +5,7 @@ import SwiftUI
 /// The top of an expedition: what it's for, where it stands, what it has spent, and pause, wrap up
 /// and stop for the whole crew. The bar has one segment per assignment, colored by its status.
 struct ExpeditionHeader: View {
+    @Environment(\.projectDisplayName) private var projectDisplayName
     let expedition: Expedition
     let send: (ExpeditionEvent) -> Void
 
@@ -29,7 +30,7 @@ struct ExpeditionHeader: View {
                         .font(.dsTitle3)
                         .foregroundStyle(.dsTextPrimary)
                         .lineLimit(2)
-                    Text(expedition.metaLine(now: now))
+                    Text(expedition.metaLine(now: now, projectName: projectDisplayName(expedition.project)))
                         .font(.dsCaption)
                         .monospacedDigit()
                         .foregroundStyle(.dsTextTertiary)

@@ -5,6 +5,8 @@ import TaskScripts
 /// monospace editor, for a project whether it runs after the global script or instead of it, for a
 /// global script its time limit, the variables scripts get, and Run Test.
 struct TaskScriptEditorSheet: View {
+    @Environment(\.projectDisplayName) private var projectDisplayName
+
     /// Whose script for which event.
     struct Target: Identifiable, Hashable {
         enum Scope: Hashable {
@@ -92,8 +94,8 @@ struct TaskScriptEditorSheet: View {
     private var title: String {
         switch target.scope {
         case .global: "\(event.title) script for every project"
-        case .project(let project): "\(event.title) script for \(project.lastPathComponent)"
-        case .repository(let project): "\(project.lastPathComponent)'s \(event.repositoryPath)"
+        case .project(let project): "\(event.title) script for \(projectDisplayName(project))"
+        case .repository(let project): "\(projectDisplayName(project))'s \(event.repositoryPath)"
         }
     }
 

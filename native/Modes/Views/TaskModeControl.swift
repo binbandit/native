@@ -6,6 +6,7 @@ import Modes
 struct TaskModeControl {
     let session: SessionModel
     var modes: TaskModes = .shared
+    var resolvedProjectName: String?
 
     var current: Mode {
         modes.mode(of: session)
@@ -26,7 +27,7 @@ struct TaskModeControl {
 
     /// The name the task's project goes by, for its modes' group.
     var projectName: String? {
-        modes.projectRoot(session)?.lastPathComponent
+        resolvedProjectName ?? modes.projectRoot(session)?.lastPathComponent
     }
 
     /// What `mode` can't do as asked on this agent, in sentences.

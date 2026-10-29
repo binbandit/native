@@ -9,6 +9,8 @@ extension EnvironmentValues {
 /// gives the name room and reveals its controls on hover, keyboard focus or touch.
 struct AllInViewProjectGroup<MenuContent: View, Content: View>: View {
     let name: String
+    var qualifier: String?
+    var path: String?
     var isFirst = false
     @Binding var isExpanded: Bool
     let taskCount: Int
@@ -46,6 +48,14 @@ struct AllInViewProjectGroup<MenuContent: View, Content: View>: View {
                             .tracking(DS.Sidebar.headerTracking)
                             .foregroundStyle(.dsTextSecondary)
                             .lineLimit(1)
+                        if let qualifier {
+                            Text("· \(qualifier)")
+                                .font(DS.Sidebar.projectFont)
+                                .foregroundStyle(.dsTextTertiary)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                                .layoutPriority(1)
+                        }
                         if isRefreshing && taskCount > 0 {
                             ProjectRefreshIndicator()
                         }
@@ -75,13 +85,13 @@ struct AllInViewProjectGroup<MenuContent: View, Content: View>: View {
                 }
                 .buttonStyle(SidebarRowButtonStyle())
                 .focused($focusedControl, equals: .disclosure)
-                .accessibilityLabel(name)
+                .accessibilityLabel([name, qualifier, path].compactMap { $0 }.joined(separator: ", "))
                 .accessibilityValue(
                     isRefreshing
                         ? "Refreshing task state"
                         : isExpanded ? "Expanded" : "Collapsed, \(note ?? activity.label ?? "\(taskCount) tasks")"
                 )
-                .help(isExpanded ? "Hide tasks in \(name)" : "Show tasks in \(name)")
+                .help(path ?? (isExpanded ? "Hide tasks in \(name)" : "Show tasks in \(name)"))
 
                 Menu(content: menu) {
                     Label("\(name) Options", systemImage: "ellipsis")
@@ -144,6 +154,34 @@ struct AllInViewProjectGroup<MenuContent: View, Content: View>: View {
                 activity: ProjectActivity(), note: "No matching tasks", onNewTask: {}
             ) {
                 Button("Project Settings…") {}
+            } content: {
+                EmptyView()
+            }
+        }
+        .frame(width: DS.Window.sidebarMinWidth)
+    }
+}
+#endif
+
+#if DEBUG
+#Preview("All in view project names - Duplicates and custom name") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xs) {
+            ForEach(["work", "personal"], id: \.self) { parent in
+                AllInViewProjectGroup(
+                    name: "native", qualifier: parent, path: "/projects/\(parent)/native",
+                    isExpanded: .constant(true), taskCount: 0, activity: ProjectActivity(), note: nil, onNewTask: {}
+                ) {
+                    Button("Rename Project…") {}
+                } content: {
+                    EmptyView()
+                }
+            }
+            AllInViewProjectGroup(
+                name: "Native at Work", path: "/projects/work/native",
+                isExpanded: .constant(false), taskCount: 4, activity: ProjectActivity(), note: nil, onNewTask: {}
+            ) {
+                Button("Rename Project…") {}
             } content: {
                 EmptyView()
             }

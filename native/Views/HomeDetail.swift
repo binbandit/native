@@ -129,7 +129,7 @@ struct HomeDetail: View {
             title: model.title(for: summary),
             agentName: summary.agent.displayName,
             agentSymbolName: summary.agent.symbolName,
-            projectName: model.projects.project(summary.project)?.name ?? "",
+            projectName: model.projectName(for: summary.id, in: summary.project) ?? "",
             date: lastActivity(summary)
         )
         task.agent = summary.agent

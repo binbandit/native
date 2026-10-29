@@ -88,6 +88,8 @@ private struct ArchivedProjectRow: View {
             .help(project.path)
             .contextMenu {
                 Button("Unarchive", action: unarchive)
+                Button("Rename Project…") { model.requestRenameProject(project.id) }
+                    .disabled(project.host != .local)
                 Button("Delete Project…", role: .destructive) { isConfirmingDelete = true }
             }
             .sidebarSwipeActions(trailing: [
@@ -96,9 +98,12 @@ private struct ArchivedProjectRow: View {
             ])
             .projectDeletionConfirmation(project, isPresented: $isConfirmingDelete)
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("\(project.name), archived project")
+            .accessibilityLabel("\(project.name), archived project, \(project.path)")
             .accessibilityActions {
                 Button("Unarchive", action: unarchive)
+                if project.host == .local {
+                    Button("Rename Project") { model.requestRenameProject(project.id) }
+                }
                 Button("Delete") { isConfirmingDelete = true }
             }
     }

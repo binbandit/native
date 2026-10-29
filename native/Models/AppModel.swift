@@ -68,6 +68,8 @@ final class AppModel {
     }
     /// The sidebar row whose title is being edited.
     var renaming: SessionKey?
+    var renamingProject: Project.ID?
+    var projectNameDraft = ""
     /// Whether the folder picker for adding a project is showing.
     var isAddingProject = false
     /// Whether the agent picker for a new session is showing.

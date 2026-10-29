@@ -103,6 +103,20 @@ approval flow. Credentials never enter the skill description or command argument
 scripts keep their existing app-running requirement; task tools can work with the app closed
 when host tools are enabled. See [Native tool context measurement](native-tool-context.md).
 
+## Project display names
+
+`AppModel.renameProject` changes Native's display name, never the folder on disk, and registers
+undo. Clearing a name restores the folder name. File > Rename Project, both sidebar menus and the
+Name row in Settings > Projects use that method. Managed policy does not govern display names.
+
+`Packages/ProjectNames` normalizes names, resolves unnamed duplicates with the shortest distinct
+parent suffix, and keeps custom names in Native-owned defaults by canonical path and filesystem
+identity. Closing and re-adding a folder retains its name; moving that folder on the same volume
+retains it too. Existing project records migrate their names into this store. `Projects` resolves
+labels for all consumers, and sidebar headers render the suffix as secondary text. Their tooltips
+and accessibility labels contain the full path. Paired-host task labels resolve on their host's
+side of the project boundary; a local rename does not rename another machine's checkout.
+
 ## Clients and hosts
 
 Native is split into a **host**, which runs agents, commands and file access, and **clients**, which

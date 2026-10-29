@@ -6,12 +6,14 @@ import SwiftUI
 /// and which agents read it. A file that can't be read says why on its row; problems in files the
 /// list doesn't show, and connectors that come with an account rather than a file, follow it.
 struct MCPConfigFoldersSection: View {
+    @Environment(\.projectDisplayName) private var projectDisplayName
     let library: MCPLibrary
     /// The project the page points at; nil shows every project's files.
     let project: URL?
 
     var body: some View {
-        let folders = SettingsFolder.mcpConfigurations(library: library, project: project)
+        let folders = SettingsFolder.mcpConfigurations(
+            library: library, project: project, projectDisplayName: projectDisplayName.callAsFunction)
         SettingsFoldersSection(
             title: "Where agents look for MCP servers",
             folders: folders,
@@ -58,20 +60,24 @@ struct MCPConfigFoldersSection: View {
 
 extension SettingsFolder {
     /// One row per configuration file, read by every agent with that file's format.
-    static func mcpConfigurations(library: MCPLibrary, project: URL?) -> [SettingsFolder] {
+    static func mcpConfigurations(
+        library: MCPLibrary, project: URL?, projectDisplayName: @MainActor (URL) -> String = { $0.lastPathComponent }
+    ) -> [SettingsFolder] {
         let projects = library.host?.mcpProjects ?? []
         return MCPConfigFoldersSection.formats(of: library.agents).flatMap { format -> [SettingsFolder] in
             guard let configuration = library.configuration(of: format) else { return [] }
             let readers = library.agents.filter { $0.format == format }.map(\.definition)
             return configuration.files.compactMap { file in
-                mcpFile(file, in: configuration, readers: readers, project: project, projectCount: projects.count)
+                mcpFile(
+                    file, in: configuration, readers: readers, project: project, projectCount: projects.count,
+                    projectDisplayName: projectDisplayName)
             }
         }
     }
 
     private static func mcpFile(
         _ file: ConfigFile, in configuration: AgentMCPConfiguration, readers: [AgentDefinition], project: URL?,
-        projectCount: Int
+        projectCount: Int, projectDisplayName: @MainActor (URL) -> String
     ) -> SettingsFolder? {
         let path = file.url.path(percentEncoded: false)
         let scope: Scope
@@ -83,7 +89,8 @@ extension SettingsFolder {
             if let project, ProjectPath.key(project) != root { return nil }
             scope = .project
             section =
-                project != nil || projectCount == 1 ? "This project · \(url.lastPathComponent)" : url.lastPathComponent
+                project != nil || projectCount == 1
+                ? "This project · \(projectDisplayName(url))" : projectDisplayName(url)
             label = path.hasPrefix(root + "/") ? String(path.dropFirst(root.count + 1)) : file.url.abbreviatedPath
         case .user:
             scope = .user

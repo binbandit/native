@@ -10,6 +10,8 @@ import SwiftUI
 /// A server's details under its row: why it failed (with its own error output) and what to do,
 /// why it needs sign-in and how, or who it is and the tools it offers.
 struct MCPServerDetails: View {
+    @Environment(\.projectDisplayName) private var projectDisplayName
+
     let library: MCPLibrary
     let key: MCPServerKey
     let name: String
@@ -188,7 +190,7 @@ struct MCPServerDetails: View {
                 .buttonStyle(.ds(.primary, size: .medium))
             if case .managed(let id) = key {
                 if let project {
-                    Button("Disable in \(project.lastPathComponent)") {
+                    Button("Disable in \(projectDisplayName(project))") {
                         library.server(id).map { library.setMode(.off, of: $0.transport.endpoint.key, in: project) }
                     }
                     .buttonStyle(.ds(.secondary, size: .medium))

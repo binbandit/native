@@ -130,6 +130,7 @@ struct RootView: View {
             }
         }
         navigation
+            .projectRenamePresentation()
             .changeAgentPresentation()
             .coordinatorTaskPresentation()
             .newExpeditionSheet()
@@ -180,6 +181,7 @@ struct RootView: View {
             } message: { runtime in
                 Text("\(runtime.agent.displayName) needs you to sign in before it can start a task.")
             }
+            .environment(\.projectDisplayName, ProjectDisplayNameResolver(projects: model.projects))
     }
 
     private func importProject(_ result: Result<URL?, any Error>) {
