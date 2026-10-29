@@ -18,7 +18,9 @@ struct FileWatchingTests {
         let sent = Recorded<[String]>()
         let latency = Duration.seconds(1)
         let clock = FileWatchingTestClock()
-        let coalescer = FileChangeCoalescer(clock: clock, latency: latency, limit: 3) { paths, isOverflow in
+        let coalescer = FileChangeCoalescer(
+            latency: latency, limit: 3, now: { clock.now }, sleep: { try await clock.sleep(until: $0) }
+        ) { paths, isOverflow in
             sent.append(isOverflow ? ["overflow"] : paths)
         }
         coalescer.add(FileWatchBatch(paths: ["a"]))
@@ -118,17 +120,15 @@ struct FileWatchingTests {
 }
 
 /// Advances only when the test asks, so a busy executor cannot split a batch across windows.
-private final class FileWatchingTestClock: Clock {
-    typealias Instant = ContinuousClock.Instant
+private final class FileWatchingTestClock: Sendable {
     let time = Mutex(ContinuousClock.now)
-    var now: Instant { time.withLock { $0 } }
-    var minimumResolution: Duration { .nanoseconds(1) }
+    var now: ContinuousClock.Instant { time.withLock { $0 } }
 
     func advance(by duration: Duration) {
         time.withLock { $0 += duration }
     }
 
-    func sleep(until deadline: Instant, tolerance: Duration?) async throws {
+    func sleep(until deadline: ContinuousClock.Instant) async throws {
         while now < deadline {
             try await Task.sleep(for: .milliseconds(1))
         }
