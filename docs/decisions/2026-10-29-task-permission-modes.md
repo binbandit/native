@@ -35,6 +35,10 @@ retain their chosen permissions when reopened; changing the default affects new 
 Managed policy takes precedence over defaults and task choices. Native checks both canonical and legacy
 provider identifiers, selects an allowed stricter mode, and blocks sending when no safe choice is active.
 Switching agents retains the shared mode and applies the destination plugin's stricter equivalent.
+The host reads the same managed cap itself and checks permission changes, prompts, steering and
+hidden commands, so a paired client's local defaults cannot override it. Unknown provider controls
+are refused under a managed cap. Tightening the cap pauses affected queues and ends active agent
+processes that no longer satisfy it.
 
 Full access does not suppress permission requests an agent actually sends. User-authored ask rules and
 provider-enforced checks continue through the existing approval card and keyboard actions. Native does

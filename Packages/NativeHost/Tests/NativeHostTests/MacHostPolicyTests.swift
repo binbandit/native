@@ -31,6 +31,13 @@ struct MacHostPolicyTests {
         #expect(Self.policy() == .unrestricted)
     }
 
+    @Test("A managed permission cap reaches the host")
+    func permissionCap() {
+        let policy = Self.policy(managed: ["policy.permissions.forbiddenModes": ["bypassPermissions"]])
+        #expect(policy.forbiddenPermissionModes == ["bypassPermissions"])
+        #expect(!policy.allowsPermission("agent-full-access", intent: "ask-first"))
+    }
+
     @Test("MCP admission and loopback network policy cover Native's skill and MCP together")
     func nativeToolsAdmission() {
         for managed: [String: Any] in [

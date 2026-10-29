@@ -85,6 +85,10 @@ request. So each side effect checks the policy where it happens:
   same actor turn, and once the agent is ready. A launch revoked while its environment was read
   never spawns.
 - **Login shell**: the environment provider isn't called while the policy denies it.
+- **Task permissions**: the host reads `policy.permissions.forbiddenModes` itself. Provider controls
+  and shared permission intent must both satisfy the cap before permission changes, prompts,
+  steering and hidden commands. Unknown controls cannot satisfy a managed cap. A stricter cap
+  pauses affected queues and ends active agent processes that no longer satisfy it.
 - **Commands**: before the environment is read and again after it, before the command starts.
 - **Updates**: the background timer isn't scheduled, each check and install checks again, and a
   check that finishes after a revocation offers and installs nothing.

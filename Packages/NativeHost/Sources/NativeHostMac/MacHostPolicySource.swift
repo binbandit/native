@@ -87,6 +87,7 @@ public struct MacHostPolicySource: HostPolicySource {
         // The app filters its catalog by the same list; the host holds to it for every client.
         return HostPolicy(
             mode: .ordinary, capabilities: capabilities, allowedAgents: policy.agents.allowed,
+            forbiddenPermissionModes: policy.forbiddenPermissionModes,
             revision: policy.deployment.revision?.description)
     }
 

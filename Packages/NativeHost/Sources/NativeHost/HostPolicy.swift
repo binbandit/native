@@ -23,18 +23,21 @@ public struct HostPolicy: Equatable, Sendable {
     public let capabilities: Set<HostCapability>
     /// The agents, by id, that `agents` covers; nil covers every agent (`policy.agents.allowed`).
     public let allowedAgents: Set<String>?
+    public let forbiddenPermissionModes: Set<String>
     /// Why the host is restricted or blocked, for the people using it. Never holds policy values.
     public let reason: String?
 
     /// A restricted policy keeps only `HostCapability.qualifiedWhenRestricted`, and a blocked one
     /// keeps nothing, whatever `capabilities` asks for.
     public init(
-        mode: Mode, capabilities: Set<HostCapability>, allowedAgents: Set<String>? = nil, reason: String? = nil,
+        mode: Mode, capabilities: Set<HostCapability>, allowedAgents: Set<String>? = nil,
+        forbiddenPermissionModes: Set<String> = [], reason: String? = nil,
         revision: String? = nil
     ) {
         self.revision = revision
         self.mode = mode
         self.allowedAgents = allowedAgents
+        self.forbiddenPermissionModes = forbiddenPermissionModes
         self.reason = reason
         self.capabilities =
             switch mode {
@@ -58,6 +61,19 @@ public struct HostPolicy: Equatable, Sendable {
     /// Whether the agent with this id may run here: agents at all, and this one.
     public func allows(agent id: String) -> Bool {
         allows(.agents) && allowedAgents?.contains(id) != false
+    }
+
+    /// A client can name shared intent, but cannot override a forbidden provider control.
+    public func allowsPermission(_ value: String, intent: String? = nil) -> Bool {
+        guard !forbiddenPermissionModes.isEmpty else { return true }
+        guard !forbiddenPermissionModes.contains(value) else { return false }
+        guard let wire = TaskPermissionMode.migrating(value) else {
+            return false
+        }
+        let modes = [wire] + (intent.flatMap(TaskPermissionMode.init(rawValue:)).map { [$0] } ?? [])
+        return modes.allSatisfy { mode in
+            !forbiddenPermissionModes.contains { TaskPermissionMode.migrating($0) == mode }
+        }
     }
 }
 
