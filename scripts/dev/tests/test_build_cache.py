@@ -63,6 +63,11 @@ class BuildCacheTests(unittest.TestCase):
             snapshots = list((root / "cache/packages-v1").glob("[!.]*"))
             self.assertEqual(len(snapshots), 1)
             shutil.rmtree(before)
+            moved_repo = root / "another worktree"
+            repo.rename(moved_repo)
+            repo = moved_repo
+            resolved = repo / "native.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
+            script = repo / "scripts/dev/build-cache.sh"
             after = root / "after"
             after.mkdir()
             run("prepare", after)
@@ -71,6 +76,7 @@ class BuildCacheTests(unittest.TestCase):
             self.assertEqual(git("-C", seeded / "checkouts/A", "show", "HEAD:value").stdout, "original")
             state = json.loads((seeded / "workspace-state.json").read_text())
             self.assertEqual(state['object']['artifact'], str(seeded / "artifacts/a"))
+            self.assertEqual(state['object']['path'], str(repo / "Packages/A"))
             (seeded / "checkouts/A/value").write_text("changed")
             self.assertEqual((snapshots[0] / "checkouts/A/value").read_text(), "original")
             # Changed pins cannot seed the old graph, and dirty dependency sources cannot publish.
