@@ -47,7 +47,9 @@ final class PlatformAttachmentDropCheck {
             point = root.convert(NSPoint(x: root.bounds.midX, y: root.bounds.midY), to: nil)
         }
         let info = PlatformAttachmentDraggingInfo(window: window, point: point, pasteboard: name)
-        var candidate = root.hitTest(root.convert(point, from: nil))
+        // AppKit hit testing takes the superview's coordinates, including a flipped content view.
+        let hitPoint = root.superview?.convert(point, from: nil) ?? point
+        var candidate = root.hitTest(hitPoint)
         while let view = candidate {
             if info.draggingPasteboard.availableType(from: view.registeredDraggedTypes) != nil {
                 let operation = view.draggingEntered(info)
