@@ -59,9 +59,16 @@ extension AppModel {
     }
 
     /// Deletes the tasks after the undo window, like `deleteSession`; one undo keeps them all.
-    func deleteSessions(_ keys: [SessionKey], undoManager: UndoManager? = nil) {
+    func deleteSessions(_ keys: [SessionKey], undoManager: UndoManager? = nil, confirmedFolder: Bool = false) {
+        if !confirmedFolder, keys.contains(where: { canDelete($0) && usesProjectFolder($0) }) {
+            projectFolderDeletion = ProjectFolderDeletion(title: "Delete these tasks?") {
+                [weak self, weak undoManager] in
+                self?.deleteSessions(keys, undoManager: undoManager, confirmedFolder: true)
+            }
+            return
+        }
         if keys.count == 1, let key = keys.first {
-            return deleteSession(key, undoManager: undoManager)
+            return deleteSession(key, undoManager: undoManager, confirmedFolder: confirmedFolder)
         }
         let deletable = keys.filter { canDelete($0) }
         guard !deletable.isEmpty else { return }

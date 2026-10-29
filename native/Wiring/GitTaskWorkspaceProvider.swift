@@ -154,6 +154,7 @@ final class GitTaskWorkspaceProvider: TaskWorkspaceProvider {
     }
 
     func deleteWorkspace(at folder: URL, in project: Project) async throws {
+        guard !SessionFolder.isSame(folder.folderPath, project.path) else { return }
         try await git.forgetArchivedTaskWorktree(at: folder, of: project.url)
         guard await git.isTaskWorktree(folder, of: project.url) else { return }
         _ = try await git.removeTaskWorktree(at: folder)
@@ -180,6 +181,7 @@ final class GitTaskWorkspaceProvider: TaskWorkspaceProvider {
     /// Renames the task's provisional branch after its title, unless it was pushed or renamed. With
     /// the user's instructions for branch names, the on-device model names it, following them.
     func taskDidGetTitle(_ title: String, request: String?, workspace: URL, in project: Project) async {
+        guard !SessionFolder.isSame(workspace.folderPath, project.path) else { return }
         guard let instructions = AIInstructionsStore.shared.addition(for: .branchName, in: project.url) else {
             await git.renameProvisionalBranch(at: workspace, title: title)
             return

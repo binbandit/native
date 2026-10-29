@@ -29,7 +29,9 @@ extension AppModel {
             return try await performWorkspaceChange(of: source, to: choice, provider: provider, project: project)
         }
         workspacePreparations[project.id] = Task { _ = try? await work.value }
-        return try await work.value
+        let target = try await work.value
+        rememberTaskWorkspace(choice, in: project.id)
+        return target
     }
 
     private func performWorkspaceChange(

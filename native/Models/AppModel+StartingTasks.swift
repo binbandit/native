@@ -70,6 +70,8 @@ extension AppModel {
             workspaceLabel: project.isNoProject
                 ? "Preparing private task files"
                 : taskWorkspaces?.newTaskWorkspaceLabel(in: project) ?? "Preparing the workspace")
+        task.workspaceChoice = preferredTaskWorkspace(in: project.id)
+        if task.workspaceChoice == .project { task.workspaceLabel = "Using the project folder" }
         startingTasks.insert(task, at: 0)
         selection = task.id
         await start(task)

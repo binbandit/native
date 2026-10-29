@@ -673,6 +673,20 @@ Scroll positions remain per window in `SessionTranscriptMemory`.
 
 ### Task worktree preparation
 
+New tasks offer a quiet Task folder menu: a new branch in a separate folder (the default),
+or the project's folder on its current branch. The last explicit choice is stored per project
+in `projectDefaults.<project id>.folder`, shared by classic task creation, Quick Entry and the
+Labs Compose page. An unset choice retains the existing Git settings. Project-folder starts
+pass `.project` to the workspace provider, which returns the existing folder without Git writes,
+fetches, branch creation or setup scripts for a new worktree. Changing an already prepared classic
+task uses the existing replacement path below and cleans up its unused checkout when safe.
+
+Project-folder tasks show their live branch and "Project folder" in the header and sidebar.
+Choosing that folder shows a one-line advisory if another running task on the same device uses it.
+Their Changes and Commit surfaces read that folder's working tree, including pre-existing edits.
+Pull-request creation is hidden on the locally known default branch (or when the base is unknown).
+Deleting one first explains that its files and branch stay; cleanup never owns the project folder.
+
 Before the first message, Change Workspace replaces the empty agent conversation in the chosen
 folder, retaining its draft, attachments, title, order and settings. The model blocks sends while
 the replacement is prepared. Once a message is submitted, including a queued message, the task

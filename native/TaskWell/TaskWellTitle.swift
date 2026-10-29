@@ -5,6 +5,7 @@ struct TaskWellTitleFacts: Equatable {
     var title: String
     var project: String
     var branch: String?
+    var isProjectFolder = false
     /// The machine's name when it isn't this Mac.
     var machine: String?
     var agent: String
@@ -61,6 +62,10 @@ struct TaskWellTitle: View {
                         .foregroundStyle(.dsTextQuaternary)
                     Text(branch).lineLimit(1).truncationMode(.middle)
                 }
+                if facts.isProjectFolder {
+                    Text("·").foregroundStyle(.dsTextQuaternary)
+                    Text("Project folder").lineLimit(1)
+                }
                 if let machine = facts.machine {
                     Text("·").foregroundStyle(.dsTextQuaternary)
                     Image(systemName: "macmini")
@@ -85,7 +90,8 @@ struct TaskWellTitle: View {
     }
 
     private var subtitle: String {
-        [facts.project, facts.branch, facts.machine.map { "on \($0)" }].compactMap { $0 }.joined(separator: ", ")
+        [facts.project, facts.branch, facts.isProjectFolder ? "Project folder" : nil, facts.machine.map { "on \($0)" }]
+            .compactMap { $0 }.joined(separator: ", ")
     }
 }
 
@@ -99,6 +105,17 @@ struct TaskWellTitle: View {
                 .frame(maxWidth: 200, alignment: .leading)
         }
         .padding(.vertical, DS.Space.lg)
+    }
+}
+#Preview("Well - Project folder") {
+    DSPreviewPair {
+        TaskWellTitle(
+            facts: .init(
+                title: "Update the project note", project: "Folder demo", branch: "main",
+                isProjectFolder: true, agent: "Claude Code"),
+            isPresented: .constant(false)
+        ) { _ in }
+        .padding(DS.Space.lg)
     }
 }
 #endif

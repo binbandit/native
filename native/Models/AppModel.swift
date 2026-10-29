@@ -18,6 +18,7 @@ final class AppModel {
     var movingProjectlessTask: SessionKey?
     let experiments: ExperimentStore
     let plugins: PluginRegistry
+    var projectFolderDeletion: ProjectFolderDeletion?
     let titles: SessionTitles
     let workingSpinners: WorkingSpinnerPreferences
     let runtimes: AgentRuntimes
@@ -149,7 +150,7 @@ final class AppModel {
 
     private var lastUsedAgent: AgentDefinition.ID?
     /// Where the app's state is remembered: the user's defaults, or for previews an in-memory store.
-    @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored let defaults: UserDefaults
     /// Internal only for AppModel+Recovery.swift.
     @ObservationIgnored var restartPolicies: [AgentDefinition.ID: AgentRestartPolicy] = [:]
     @ObservationIgnored private let services: SessionServices

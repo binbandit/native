@@ -21,11 +21,13 @@ enum AppSidebarTaskInsights {
                 tasks.pullRequest(of: summary) != nil
             },
             branch: { summary in
-                guard let folder = tasks.checkout(of: summary) else { return nil }
-                return git.model(for: folder, session: summary.id).branch?.name
+                guard summary.project != NoProjectLocation.id else { return nil }
+                let folder = URL(filePath: summary.info.cwd, directoryHint: .isDirectory)
+                return git.model(for: folder, session: summary.id).branch?.displayName
             },
             prepareBranch: { summary in
-                guard let folder = tasks.checkout(of: summary) else { return }
+                guard summary.project != NoProjectLocation.id else { return }
+                let folder = URL(filePath: summary.info.cwd, directoryHint: .isDirectory)
                 let repository = git.model(for: folder, session: summary.id)
                 if repository.isLocal, !FileManager.default.fileExists(atPath: folder.path) { return }
                 if repository.status == nil { await repository.refreshNow() }

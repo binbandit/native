@@ -55,6 +55,8 @@ extension AppModel {
         let task = StartingTask(
             project: project.id, agent: runtime.agent, isAgentPicked: agent != nil, workspaceLabel: label)
         task.device = device
+        task.workspaceChoice = preferredTaskWorkspace(in: project.id)
+        if task.workspaceChoice == .project { task.workspaceLabel = "Using the project folder on \(host.name)" }
         task.draft = draft
         startingTasks.insert(task, at: 0)
         selection = task.id

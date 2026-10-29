@@ -556,7 +556,7 @@ Lists past eight models keep the filter, with the last slot showing **N more mat
 | | Edit Modes… (Settings ▸ Modes) | Task ▸ Mode | `modes.edit` |
 | ⌘⇧E | Model picker | Task | `session.chooseModel` |
 | ⌃⌥⌘A | Switch Agent: open the picker on the current agent | Task ▸ Switch Agent | `session.changeAgent` |
-| | Change Workspace…: choose a branch, new worktree or project folder before the first message | Task | `session.changeWorkspace` |
+| | Change Workspace…: choose a branch or folder before the first message (also in the inline Task folder menu) | Task | `session.changeWorkspace` |
 | ⌥⌘G | Set or edit the task's goal | Task | `goal.edit` |
 | ⌥⌘R | Run a workflow | Task | `workflow.run` |
 

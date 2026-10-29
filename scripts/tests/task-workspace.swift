@@ -114,10 +114,73 @@ private struct TaskWorkspaceRegression {
         try check(SessionFolder.isSame(inProject.cwd.path(), folder.path()), "project folder is selectable")
         try check(!FileManager.default.fileExists(atPath: checkout.path()), "second unused checkout is cleaned")
         try check(try await repository.hasBranch("feature"), "existing branch is retained")
+        // Project-folder starts remember the choice, keep dirty files, and never create a branch.
+        try check(app.preferredTaskWorkspace(in: project.id) == .project, "folder choice is remembered")
+        let otherProject = app.projects.add(scratch.appending(path: "other"))
+        try check(app.preferredTaskWorkspace(in: otherProject.id) == nil, "folder preference is per project")
+        let branchesBefore = try await repository.branches(includingRemote: false).map(\.name)
+        let treesBefore = try await repository.worktrees().map(\.path)
+        let file = folder.appending(path: "note.txt")
+        try "keep these files\n".write(to: file, atomically: true, encoding: .utf8)
+        await app.newSession(in: project.id, with: agent)
+        guard let selected = app.selection, let direct = app.session(selected) else {
+            throw Failure("remembered folder start did not open")
+        }
+        try check(SessionFolder.isSame(direct.cwd.path(), folder.path()), "classic start uses the project folder")
+        try check(
+            try await repository.branches(includingRemote: false).map(\.name) == branchesBefore,
+            "folder start creates no branch")
+        try check(try await repository.worktrees().map(\.path) == treesBefore, "folder start creates no worktree")
+        try check(try String(contentsOf: file, encoding: .utf8) == "keep these files\n", "dirty files survive start")
+        let remote = try await runner.run(
+            Command("git", ["remote", "add", "origin", folder.path()], in: folder.path(), environment: environment))
+        try check(remote.succeeded, "fixture has a local-only remote")
+        let folderModel = git.model(for: folder)
+        await folderModel.refreshNow()
+        try check(folderModel.changes.contains { $0.path == "note.txt" }, "changes read the project's working tree")
+        try check(
+            folderModel.canCommit && !folderModel.canCreatePullRequest, "main offers commit without a pull request")
+        try await folderModel.commit(message: "Keep the folder edit", files: folderModel.changes, push: false)
+        try check(try await repository.status().isClean, "commit writes to the project's main branch")
+        try check(try await repository.status().branch.name == "main", "commit keeps main checked out")
+        try await provider.deleteWorkspace(at: folder, in: project)
+        try check(FileManager.default.fileExists(atPath: file.path()), "provider deletion preserves project files")
+        direct.previewRunningTurn("Hold while another task starts")
+        try check(
+            app.projectFolderNote(in: project.id, on: .thisMac) != nil, "running folder task gets a one-line advisory")
+        try check(
+            app.projectFolderNote(in: project.id, on: .thisMac, excluding: direct.key) == nil,
+            "a task does not warn about itself")
+        direct.phase = .idle
+        try check(
+            app.projectFolderNote(in: project.id, on: .thisMac) == nil,
+            "idle tasks do not trigger the running-task note")
+        try check(app.taskActionRoute(for: direct.key)?.workspace == nil, "project folder is never owned by deletion")
+        app.deleteSession(direct.key)
+        try check(
+            app.projectFolderDeletion != nil && !app.pendingDeletionKeys.contains(direct.key),
+            "folder deletion first explains that files stay")
+        let deletion = app.projectFolderDeletion
+        app.projectFolderDeletion = nil
+        deletion?.confirm()
+        try check(app.pendingDeletionKeys.contains(direct.key), "confirmed folder deletion is scheduled")
+        app.offeredUndo?.undo()
+        try check(app.pendingDeletionKeys.isEmpty, "folder deletion can still be undone")
+        // The Compose page uses the same preference and selects it before making any session.
+        app.quickEntry.project = project.id
+        await app.readComposeWorkspaces()
+        try check(app.composeTask.workspace == .project, "Compose restores the folder choice")
+        app.chooseComposeWorkspace(.newWorktree)
+        try check(
+            app.preferredTaskWorkspace(in: project.id) == .newWorktree, "Compose saves the separate-folder choice")
+        app.chooseComposeWorkspace(.project)
         settings.newTaskWorkspace = .branch
         let inNewTree = try await app.changeWorkspace(of: inProject, to: .newWorktree)
         try check(
             !SessionFolder.isSame(inNewTree.cwd.path(), folder.path()), "explicit worktree overrides branch default")
+        let branchModel = git.model(for: inNewTree.cwd)
+        await branchModel.refreshNow()
+        try check(branchModel.canCreatePullRequest, "a separate feature branch still offers pull requests")
         try check(try await repository.status().branch.name == "main", "new worktree leaves project branch unchanged")
         app.workspaceChangeBlock = { _ in "Close the task's terminal tabs first." }
         do {

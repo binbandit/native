@@ -127,7 +127,9 @@ extension AppModel {
                 TaskWorkspaceOption(choice: $0.choice, title: $0.title, detail: $0.detail, isCurrent: false)
             }
             // Explicitly address an isolated worktree where git can make one; plain folders stay folders.
-            compose.workspace = options.contains(where: { $0.choice == .newWorktree }) ? .newWorktree : .project
+            compose.workspace =
+                options.contains(where: { $0.choice == .newWorktree })
+                ? preferredTaskWorkspace(in: project.id) ?? .newWorktree : .project
             if compose.workspace != .newWorktree { compose.second = nil }
         } catch {
             guard compose.workspaceRead == read, projectID == quickEntry.project, device == quickEntry.device else {
@@ -185,11 +187,14 @@ extension AppModel {
             project: project.id, agent: runtime.agent, isAgentPicked: true,
             workspaceLabel: project.isNoProject
                 ? "Preparing private task files"
-                : compose.workspace == .newWorktree
-                    ? "Creating a worktree"
-                    : taskWorkspaces?.newTaskWorkspaceLabel(in: project) ?? "Preparing the workspace")
+                : compose.workspace == .project
+                    ? "Using the project folder"
+                    : compose.workspace == .newWorktree
+                        ? "Creating a worktree"
+                        : taskWorkspaces?.newTaskWorkspaceLabel(in: project) ?? "Preparing the workspace")
         task.device = quickEntry.device
         task.workspaceChoice = compose.workspace
+        if let choice = compose.workspace { rememberTaskWorkspace(choice, in: project.id) }
         task.draft = editor.draft
         task.attachments = editor.attachments
         task.configChoices = compose.heldDraft?.choices ?? compose.addressedChoices

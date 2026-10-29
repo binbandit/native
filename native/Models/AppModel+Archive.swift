@@ -161,9 +161,17 @@ extension AppModel {
     /// Removes a task from Native: the agent's own copy too when it can delete sessions, and the
     /// workspace Native made for it (after a checkpoint). Nothing is removed until the undo window
     /// passes; undoing in time brings the task back untouched, and Redo deletes it again.
-    func deleteSession(_ key: SessionKey, undoManager: UndoManager? = nil) {
+    func deleteSession(_ key: SessionKey, undoManager: UndoManager? = nil, confirmedFolder: Bool = false) {
         guard canDelete(key) else { return }
-        let message = "Deleted “\(titleOfSession(key))”."
+        if !confirmedFolder, usesProjectFolder(key) {
+            projectFolderDeletion = ProjectFolderDeletion(title: "Delete this task?") { [weak self, weak undoManager] in
+                self?.deleteSession(key, undoManager: undoManager, confirmedFolder: true)
+            }
+            return
+        }
+        let message =
+            "Deleted “\(titleOfSession(key))”."
+            + (usesProjectFolder(key) ? " The project folder and branch are unchanged." : "")
         let action = UndoableAction(message, name: "Delete Task", undoManager: undoManager) { [weak self] _ in
             self?.cancelDeletion(of: key)
         } redo: { [weak self] action in

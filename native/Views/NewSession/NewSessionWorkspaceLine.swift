@@ -53,7 +53,7 @@ struct NewSessionWorkspaceLine: View {
     private var place: String? {
         switch workspace {
         case .worktree: "its own worktree"
-        case .checkout: "\(projectName)'s checkout"
+        case .checkout: "project folder"
         case .folder: "not a git repository"
         case .unknown: nil
         }
@@ -74,7 +74,7 @@ struct NewSessionWorkspaceLine: View {
             } else {
                 "Branch \(branch), in its own worktree"
             }
-        case .checkout(let branch): "On \(branch ?? "a detached head"), in \(projectName)'s checkout"
+        case .checkout(let branch): "On \(branch ?? "a detached head"), in the project folder"
         case .folder(let path): "In \(path), not a git repository"
         case .unknown(let path): "In \(path)"
         }
@@ -115,7 +115,7 @@ struct NewSessionChangesNote: View {
         let changes = count == 1 ? "1 uncommitted change" : "\(count) uncommitted changes"
         return switch workspace {
         case .worktree: "\(changes) in \(projectName) \(count == 1 ? "isn't" : "aren't") in this worktree"
-        case .checkout: "Starts with \(changes) already in the checkout"
+        case .checkout: "Starts with \(changes) already in the project folder"
         case .folder, .unknown: nil
         }
     }

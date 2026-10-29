@@ -43,7 +43,13 @@ struct NewSessionContextBuilder {
                 settings.open(.project(project.id))
             },
             device: device,
-            changeWorkspace: session.canChangeWorkspace ? { [session] in session.requestWorkspaceChange() } : nil
+            changeWorkspace: session.canChangeWorkspace ? { [session] in session.requestWorkspaceChange() } : nil,
+            chooseWorkspace: session.canChangeWorkspace
+                ? { choice in
+                    _ = try await model.changeWorkspace(of: session, to: choice)
+                } : nil,
+            sharedFolderNote: model.projectFolderNote(
+                in: project.id, on: model.device(of: session.key), excluding: session.key)
         )
     }
 
