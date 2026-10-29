@@ -211,6 +211,11 @@ extension HostCore {
             let servers = await tasks.agentServers(
                 for: session.id, agent: session.record.agentID, base: session.mcpServers)
             guard session.loadGeneration == loadGeneration else { throw PeerError.closed }
+            let meta = await tasks.agentMeta(
+                for: session.id, agent: session.record.agentID, base: session.record.meta, servers: session.mcpServers)
+            guard generation == link.generation, session.loadGeneration == loadGeneration else {
+                throw PeerError.closed
+            }
             let children = preserving ? subagents(of: session) : []
             // Buffered announcements must not recreate descendants whose history Native kept.
             for child in children {
@@ -241,9 +246,7 @@ extension HostCore {
                         preserving && link.capabilities?.resumeSessions == true ? "session/resume" : "session/load",
                         RawLoadSessionRequest(
                             sessionId: agentSessionID, cwd: session.record.cwd, mcpServers: servers,
-                            _meta: await tasks.agentMeta(
-                                for: session.id, agent: session.record.agentID, base: session.record.meta,
-                                servers: session.mcpServers)),
+                            _meta: meta),
                         as: RawConfigOptionsResponse.self)
                 }
             } catch let error as RPCError
@@ -261,6 +264,9 @@ extension HostCore {
             guard generation == link.generation, session.loadGeneration == loadGeneration else {
                 throw PeerError.closed
             }
+            // History ends at the load response; child updates during parent restoration are live.
+            session.isReplayingPreservedTranscript = false
+            for child in children { child.isReplayingPreservedTranscript = false }
             // Inside the load, so clients get where the settings end up rather than the agent's defaults.
             try await restoreConfigChoices(of: session, on: link, reported: response.configOptions)
             guard generation == link.generation, session.loadGeneration == loadGeneration else {
@@ -277,6 +283,9 @@ extension HostCore {
             if !preserving { append(.loaded, to: session) }
             session.preservesTranscriptOnLoad = false
             await tasks.writeSkillCredential(for: session)
+            guard generation == link.generation, session.loadGeneration == loadGeneration else {
+                throw PeerError.closed
+            }
             tasks.sessionLoaded(session)
             session.needsLoad = false
             session.supportsSteering = link.supportsSteering

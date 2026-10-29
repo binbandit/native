@@ -98,4 +98,48 @@ struct HostStoppedSubagentTests {
         await reader.stop()
         await recorder.stop()
     }
+    @Test("Fresh child output and settings survive parent configuration restoration")
+    func freshChildrenDuringConfigRestore() async throws {
+        let rig = try HostStopCommandRig()
+        rig.harness.agentEnvironment["FAKE_AGENT_CHILD_IDS"] = "child-0"
+        rig.harness.agentEnvironment["FAKE_AGENT_NO_RESUME"] = "1"
+        rig.harness.agentEnvironment["FAKE_AGENT_CHILD_ON_RESTORE"] = "1"
+        defer { rig.cleanup() }
+        let recorder = try await rig.connect()
+        let summary = try await recorder.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: rig.harness.root.path, attach: true))
+        let parent = try #require(rig.core.sessions[summary.id])
+        let link = try #require(rig.core.agents["fake"])
+        let announcement = try #require(
+            AgentUpdate.parse(
+                Data(
+                    #"{"params":{"sessionId":"parent","update":{"sessionUpdate":"subagent_update","sessionId":"child-0","state":{"state":"running"}}}}"#
+                        .utf8)))
+        rig.core.apply(announcement.update, to: parent, on: link)
+        let child = try #require(rig.core.sessions.values.first { $0.record.agentSessionID == SessionID("child-0") })
+        rig.core.append(
+            .update(
+                .object([
+                    "sessionUpdate": .string("agent_message_chunk"),
+                    "content": .object(["type": .string("text"), "text": .string("Child history")]),
+                ])), to: child)
+        try await recorder.client.setConfigOption(
+            SetConfigOptionParams(sessionID: parent.id, configID: "model", value: "beta"))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: parent.id, text: "stubborn 100"))
+        try await recorder.wait("the parent turn") { await $0.agentText(parent.id).contains("tick 1") }
+        try await recorder.client.cancel(parent.id)
+        try await recorder.client.cancel(parent.id)
+        try await recorder.wait("the stopped parent") { await $0.turnsEnded(parent.id) == ["cancelled"] }
+        try await recorder.wait("the restored parent settings") { _ in await !parent.needsLoad }
+        #expect(parent.record.configChoices["model"] == "beta")
+        let reader = try await rig.connect()
+        _ = try await reader.client.attach(child.id)
+        let text = await reader.agentText(child.id)
+        #expect(text.contains("Fresh during restore"))
+        #expect(text.components(separatedBy: "Child history").count == 2)
+        #expect(await reader.mirror(child.id).state.configOptions.map(\.id) == ["mode", "effort", "model"])
+        await reader.stop()
+        await recorder.stop()
+    }
+
 }

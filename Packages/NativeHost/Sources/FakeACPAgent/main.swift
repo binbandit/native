@@ -216,6 +216,17 @@ actor FakeAgent {
             try peer.respond(to: id, with: JSONValue.object(["outcome": .string("injected")]))
         case "session/set_config_option":
             let params = try message.params(as: ConfigParams.self)
+            if loaded.contains(params.sessionId), params.configId == "model",
+                ProcessInfo.processInfo.environment["FAKE_AGENT_CHILD_ON_RESTORE"] == "1"
+            {
+                try emitChildText("Fresh during restore")
+                let ids = ProcessInfo.processInfo.environment["FAKE_AGENT_CHILD_IDS"] ?? ""
+                for id in ids.split(separator: ",") {
+                    let child = SessionID(String(id))
+                    try update(
+                        child, ["sessionUpdate": .string("config_option_update"), "configOptions": options(child)])
+                }
+            }
             if loaded.contains(params.sessionId),
                 ProcessInfo.processInfo.environment["FAKE_AGENT_CRASH_ON_RESTORE"] == "1",
                 firstTime("restore-\(params.sessionId.rawValue)")
