@@ -77,12 +77,14 @@ final class SidebarDragState {
     }
 
     fileprivate func finish() -> (dragged: Item, drop: Drop)? {
-        defer {
-            dragged = nil
-            drop = nil
-        }
+        defer { end() }
         guard let dragged, let drop, accepts(drop.item) else { return nil }
         return (dragged, drop)
+    }
+
+    fileprivate func end() {
+        dragged = nil
+        drop = nil
     }
 }
 
@@ -94,6 +96,12 @@ extension View {
                 state.begin(item)
             } preview: {
                 SidebarDragPreview(title: title)
+            }
+            .onDragSessionUpdated { session in
+                // A canceled or rejected drag never reaches a destination's performDrop.
+                if case .ended = session.phase {
+                    state.end()
+                }
             }
     }
 
