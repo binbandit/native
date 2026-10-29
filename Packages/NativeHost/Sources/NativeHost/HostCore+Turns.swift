@@ -40,10 +40,10 @@ extension HostCore {
             id: params.requestID, text: text, content: params.content, attachments: params.attachments,
             preamble: params.preamble, isEchoed: params.echo, origin: params.origin)
         switch session.phase {
-        case .idle where session.turn == nil && session.hiddenCommand == nil && session.steeringInFlight == nil:
+        case .idle where session.turn == nil && session.hiddenCommand == nil:
             cancelRetry(of: session)
             // The user sending again lifts a pause after a stopped turn; waiting messages go first.
-            if !session.queue.isEmpty {
+            if !session.queue.isEmpty || session.steeringInFlight != nil {
                 try enqueue(item, in: session)
                 session.record.isQueuePaused = false
                 try store.updateSession(session.record)

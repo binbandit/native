@@ -159,7 +159,12 @@ extension SessionModel {
             return .queued
         case .disconnected:
             throw SendError.disconnected
-        case .idle where !isRunningHiddenCommand && !isDeliveringSteer && turnHold == nil:
+        case .idle where !isRunningHiddenCommand && turnHold == nil:
+            if isDeliveringSteer {
+                queue.resume()
+                queue.append(text, attachments: attachments, isEchoed: echo)
+                return .queued
+            }
             startTurn(text, attachments: attachments, echo: echo)
             return .prompted
         case .prompting where behavior == .steer && !isStopping:
