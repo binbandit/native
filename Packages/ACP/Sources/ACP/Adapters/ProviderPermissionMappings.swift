@@ -16,6 +16,10 @@ extension CodexConfigOverrides {
             values: [
                 .askFirst: ["workspace-write", "read-only"],
                 .auto: ["agent"], .fullAccess: ["agent-full-access"],
-            ], notes: [.askFirst: "Workspace edits and commands are allowed; outside access asks."])
+            ],
+            notes: [
+                "workspace-write": "Workspace edits and commands are allowed; outside access asks.",
+                "read-only": "Uses a read-only sandbox with this agent.",
+            ])
     }
 }

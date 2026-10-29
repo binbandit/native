@@ -3,9 +3,9 @@ import Foundation
 /// A plugin declares exact provider equivalents. Missing levels fall back only to a stricter one.
 public struct TaskPermissionMapping: Hashable, Sendable {
     public var values: [TaskPermissionMode: [String]]
-    public var notes: [TaskPermissionMode: String]
+    public var notes: [String: String]
 
-    public init(values: [TaskPermissionMode: [String]], notes: [TaskPermissionMode: String] = [:]) {
+    public init(values: [TaskPermissionMode: [String]], notes: [String: String] = [:]) {
         self.values = values
         self.notes = notes
     }
@@ -65,7 +65,7 @@ public struct TaskPermissionMapping: Hashable, Sendable {
                 } ?? "This agent does not offer a safe equivalent."
             return ConfigOption.SelectOption(
                 value: mode.rawValue, name: mode.title,
-                description: [mode.summary, note, selected.flatMap { notes[$0.effective] }].compactMap { $0 }.joined(
+                description: [mode.summary, note, selected.flatMap { notes[$0.value] }].compactMap { $0 }.joined(
                     separator: " "))
         }
         // Task modes can apply a plan or read-only restriction independently of permissions.
