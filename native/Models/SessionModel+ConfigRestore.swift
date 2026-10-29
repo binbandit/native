@@ -38,6 +38,8 @@ extension SessionModel {
         // From what `old` chose: this session's own record follows each of the agent's answers
         // meanwhile (setting the model resets the effort), since it isn't loading.
         await setBackConfigChoices(from: { _ in chosen }) { $0.phase != .disconnected }
+        // Two shared modes may use one provider value, so a remembered choice can change only presentation.
+        mirrorState()
     }
 
     /// The options to show for `reported`, the agent's: while the session loads, as restoring will
