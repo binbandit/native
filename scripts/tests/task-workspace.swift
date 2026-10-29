@@ -14,7 +14,11 @@ import TaskScripts
 @MainActor
 private struct TaskWorkspaceRegression {
     static func main() async throws {
-        let scratch = FileManager.default.temporaryDirectory.appending(path: "task-workspace-\(UUID())")
+        let fixtureRoot =
+            ProcessInfo.processInfo.environment["NATIVE_TASK_WORKSPACE_FIXTURES"].map {
+                URL(filePath: $0, directoryHint: .isDirectory)
+            } ?? FileManager.default.temporaryDirectory
+        let scratch = fixtureRoot.appending(path: "task-workspace-\(UUID())")
         let folder = scratch.appending(path: "project")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: scratch) }
@@ -146,6 +150,10 @@ private struct TaskWorkspaceRegression {
         let folderModel = git.model(for: folder)
         await folderModel.refreshNow()
         try check(folderModel.changes.contains { $0.path == "note.txt" }, "changes read the project's working tree")
+        try await wait { folderModel.shownDiff?.content != nil }
+        guard case .text = folderModel.shownDiff?.content else {
+            throw Failure("project-folder changes did not produce a text diff")
+        }
         try check(
             folderModel.canCommit && !folderModel.canCreatePullRequest, "main offers commit without a pull request")
         try await folderModel.commit(message: "Keep the folder edit", files: folderModel.changes, push: false)
@@ -174,6 +182,19 @@ private struct TaskWorkspaceRegression {
         try check(app.pendingDeletionKeys.contains(direct.key), "confirmed folder deletion is scheduled")
         app.offeredUndo?.undo()
         try check(app.pendingDeletionKeys.isEmpty, "folder deletion can still be undone")
+        await app.archiveSession(direct.key)
+        try check(FileManager.default.fileExists(atPath: file.path()), "archive preserves project files")
+        await app.unarchiveSession(direct.key)
+        try check(!app.isArchived(direct.key), "project-folder task can be restored without a new checkout")
+        app.deleteSession(direct.key, confirmedFolder: true)
+        let deletionDeadline = ContinuousClock.now + AppModel.deletionGracePeriod + .seconds(10)
+        while app.pendingDeletionKeys.contains(direct.key) {
+            guard ContinuousClock.now < deletionDeadline else { throw Failure("project-folder deletion timed out") }
+            try await Task.sleep(for: .milliseconds(25))
+        }
+        try check(app.catalog.lookup(direct.key) == nil, "deletion finishes after the undo window")
+        try check(try String(contentsOf: file, encoding: .utf8) == "keep these files\n", "deletion preserves files")
+        try check(try await repository.status().branch.name == "main", "deletion keeps main checked out")
         // The Compose page uses the same preference and selects it before making any session.
         app.quickEntry.project = project.id
         await app.readComposeWorkspaces()

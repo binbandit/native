@@ -17,4 +17,6 @@ nice -n 10 xcrun swiftc "${flags[@]}" "$root/scripts/tests/task-workspace.swift"
     -Xlinker -rpath -Xlinker "$app/Contents/Frameworks" \
     -Xlinker -rpath -Xlinker "$app/Contents/MacOS" -o "$work/task-workspace"
 mkdir "$work/plugins"
-nice -n 10 "$work/task-workspace" -pluginsDirectory "$work/plugins" -NativeRemoteHosts YES
+mkdir -p "$root/build/task-workspace-fixtures"
+NATIVE_TASK_WORKSPACE_FIXTURES="$root/build/task-workspace-fixtures" \
+    nice -n 10 "$work/task-workspace" -pluginsDirectory "$work/plugins" -NativeRemoteHosts YES
