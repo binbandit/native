@@ -82,7 +82,9 @@ struct ProjectActionsSettingsSection: View {
     @ViewBuilder private func repository(_ list: ProjectActionList) -> some View {
         if list.isRepositoryOff {
             SettingsNote("Actions from the repo are off", systemImage: "lock") {
-                Text("Your organization doesn't let repo files supply commands, so .native/actions.json isn't read.")
+                Text(
+                    "\(PolicyCenter.organizationSubject) doesn't let repo files supply commands, so .native/actions.json isn't read."
+                )
             }
         } else {
             switch list.repositoryFile {

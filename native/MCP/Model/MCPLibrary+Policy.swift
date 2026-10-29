@@ -14,7 +14,7 @@ extension MCPLibrary {
         guard !organizationPolicy.allows(server) else { return nil }
         let center = PolicyCenter.shared
         return center.isManaged(.mcpAllowed) || center.isManaged(.mcpBlocked)
-            ? "Not allowed by your organization" : "Not allowed by your policy settings"
+            ? "Not allowed by \(PolicyCenter.organizationName)" : "Not allowed by your policy settings"
     }
 
     /// The same for a session's server; other plugins' servers answer to `PluginRegistry`.

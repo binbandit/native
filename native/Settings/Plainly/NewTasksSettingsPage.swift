@@ -1,3 +1,4 @@
+import NativePolicy
 import SwiftUI
 
 extension SettingsPane {
@@ -6,11 +7,14 @@ extension SettingsPane {
             id: .newTasks, title: "New Tasks", systemImage: "play", group: .tasks, order: 0,
             keywords: ["defaults", "model", "effort", "agent", "workspace", "worktree", "mode"],
             searchEntries: {
-                AgentsSettingsPage.entries(in: registry).filter { registry.isEnabled($0.plugin.id) }.flatMap { entry in
+                AgentsSettingsPage.entries(in: registry).filter {
+                    registry.isEnabled($0.plugin.id) && PolicyCenter.shared.policy.agents.allows($0.agent.id)
+                }.flatMap { entry in
                     AgentSessionDefaults.Setting.allCases.map { setting in
                         SettingsSearchEntry(
                             id: AgentDefaultsRow.settingRowID(agentID: entry.definition.id, setting: setting),
-                            title: setting == .model ? "Model" : "Effort", description: entry.agent.name,
+                            title: setting == .model ? "Model" : setting == .effort ? "Effort" : "Permissions",
+                            description: entry.agent.name,
                             keywords: [entry.agent.name, "default"], scopeName: entry.agent.name)
                     }
                 } + [
@@ -25,7 +29,7 @@ extension SettingsPane {
     }
 }
 
-/// The first slice gathers existing defaults. Inheritance and context accounting build on this home.
+/// One home for the starting point of every agent and project.
 struct NewTasksSettingsPage: View {
     let registry: PluginRegistry
     let modes: SettingsPane?
@@ -37,64 +41,66 @@ struct NewTasksSettingsPage: View {
     @State private var projectID: Project.ID?
     @State private var agentID: AgentDefinition.ID?
     @State private var showsModes = false
+    @State private var organizationCount = 0
 
     private var agents: [AgentsSettingsPage.Entry] {
-        AgentsSettingsPage.entries(in: registry).filter { registry.isEnabled($0.plugin.id) }
+        AgentsSettingsPage.entries(in: registry).filter {
+            registry.isEnabled($0.plugin.id) && PolicyCenter.shared.policy.agents.allows($0.agent.id)
+        }
     }
 
     private var agent: AgentsSettingsPage.Entry? {
         agents.first { $0.definition.id == agentID }
-            ?? agents.first { $0.definition.id == model.defaultAgent?.id }
+            ?? agents.first { $0.definition.id == model.defaultAgent(in: selectedProject)?.id }
             ?? agents.first
     }
 
+    private var selectedProject: Project? { projectID.flatMap { model.projects.project($0) } }
+
     var body: some View {
         SettingsPage {
-            SettingsHeader(
-                "New Tasks", description: Text("What a task starts with. Set it for every project, or for one."))
+            SettingsHeader("New Tasks", description: Text(description))
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: DS.Space.lg) { scopes }
-                VStack(alignment: .leading, spacing: DS.Space.md) { scopes }
+                HStack(spacing: DS.Space.lg) {
+                    scopes
+                    Spacer(minLength: DS.Space.md)
+                    organizationSets
+                }
+                VStack(alignment: .leading, spacing: DS.Space.md) {
+                    scopes
+                    organizationSets
+                }
             }
-            if let projectID, let project = model.projects.project(projectID) {
-                ProjectNewTasksSection(project: project, defaultsOnly: true)
-                    .id(project.id)
+            if let agent {
+                NewTasksScopedContent(
+                    entry: agent, project: selectedProject, registry: registry, modeLibrary: modeLibrary,
+                    editModes: editModes
+                )
+                .id("\(projectID?.uuidString ?? "all")/\(agent.definition.id.rawValue)")
             } else {
-                if agent == nil {
-                    EmptyStateView(
-                        "No agents are on", systemImage: "person.2",
-                        message: "Turn on an agent to choose what its new tasks start with."
-                    ) {
-                        Button("Open Agents") { presentation.open(.agents) }
-                    }
-                }
-                SettingsGroup(title: agent == nil ? "Defaults" : "Agent") {
-                    if let agent {
-                        AgentDefaultsRow(agentName: agent.agent.name, agentID: agent.definition.id)
-                            .id(agent.definition.id)
-                    }
-                    NewTasksModeRow(library: modeLibrary)
-                }
-                SettingsGroup(
-                    title: "Workspace",
-                    footer:
-                        "A worktree is a separate copy of the project, so tasks running at once never touch each other's files."
+                EmptyStateView(
+                    "No agents are on", systemImage: "person.2",
+                    message: "Turn on an agent to choose what its new tasks start with."
                 ) {
-                    NewTasksWorkspaceRow()
+                    Button("Open Agents") { presentation.open(.agents) }
                 }
+                SettingsGroup(title: "Defaults") {
+                    NewTasksModeRow(library: modeLibrary)
+                } footerAccessory: {
+                    if let editModes { NewTasksFooterLink(title: "Edit modes in Modes", action: editModes) }
+                }
+                SettingsGroup(title: "Workspace") { NewTasksWorkspaceRow() }
             }
-            if let modes {
-                DisclosureGroup("Edit Modes", isExpanded: $showsModes) {
-                    modes.makeContent()
-                        .environment(\.settingsSectionTitle, "Modes")
-                        .settingsRevealTarget(SettingsPageMap.sectionID(.modes))
-                }
-                .font(DS.Settings.body)
-                .tint(.dsTextSecondary)
+            if let modes, showsModes {
+                modes.makeContent()
+                    .environment(\.settingsSectionTitle, "Modes")
+                    .settingsRevealTarget(SettingsPageMap.sectionID(.modes))
             }
         }
+        .onPreferenceChange(NewTasksOrganizationCount.self) { organizationCount = $0 }
         .onAppear { takeScope() }
         .onChange(of: presentation.projectScope) { takeScope() }
+        .onChange(of: presentation.agentScope) { takeScope() }
         .task(id: flash) {
             guard let row = flash?.rowID else { return }
             if row == GitSettingsPage.workspaceRow || row == .modesDefault { projectID = nil }
@@ -110,16 +116,53 @@ struct NewTasksSettingsPage: View {
         }
     }
 
+    /// The organization's name to start a sentence: "Your organization" when it gave none.
+    private var organizationName: String {
+        let name = PolicyCenter.shared.policy.organizationDisplayName
+        return name.prefix(1).uppercased() + name.dropFirst()
+    }
+
+    private var description: String {
+        let scope = selectedProject.map { "What a task in \($0.name) starts with." } ?? "What a task starts with."
+        if organizationCount > 0 {
+            return
+                "\(scope) \(organizationName) sets some of it for every Mac it manages."
+        }
+        return selectedProject.map {
+            "\(scope) Marked values are \($0.name)'s own; the rest follow your settings."
+        } ?? "\(scope) Set it for every project, or for one."
+    }
+
+    /// Opens the modes editor below and scrolls to it. Nil when the page has no modes to edit.
+    private var editModes: (() -> Void)? {
+        guard modes != nil else { return nil }
+        return { presentation.open(.newTasks, revealing: SettingsPageMap.sectionID(.modes)) }
+    }
+
+    /// "Northwind Federal IT sets 4", trailing the scopes, while the organization sets anything here.
+    @ViewBuilder private var organizationSets: some View {
+        if organizationCount > 0 {
+            SettingsSourceLabel(
+                source: .organization(
+                    "\(organizationName) sets \(organizationCount)"))
+        }
+    }
+
     @ViewBuilder private var scopes: some View {
         HStack(spacing: DS.Space.md) {
             Text("Project").foregroundStyle(.dsTextSecondary)
             SettingsSelect(
-                label: "Project", selection: $projectID,
+                label: "Project",
+                selection: Binding(
+                    get: { projectID },
+                    set: {
+                        projectID = $0; agentID = nil
+                    }),
                 options: [.init(value: nil, title: "All projects")]
                     + model.projects.all.map { .init(value: $0.id, title: $0.name) },
-                width: DS.Settings.scopeWidth, fieldStyle: true)
+                width: DS.Settings.scopeCompactWidth, fieldStyle: true)
         }
-        if projectID == nil, !agents.isEmpty {
+        if !agents.isEmpty {
             HStack(spacing: DS.Space.md) {
                 Text("Agent").foregroundStyle(.dsTextSecondary)
                 SettingsSelect(
@@ -127,14 +170,16 @@ struct NewTasksSettingsPage: View {
                     selection: Binding(
                         get: { agent?.definition.id }, set: { agentID = $0 }),
                     options: agents.map { .init(value: $0.definition.id, title: $0.agent.name) },
-                    width: DS.Settings.scopeWidth, fieldStyle: true)
+                    width: DS.Settings.scopeCompactWidth, fieldStyle: true)
             }
         }
     }
 
     private func takeScope() {
+        if let requested = presentation.takeAgentScope() { projectID = nil; agentID = requested }
         if let url = presentation.takeProjectScope(for: .newTasks) {
             projectID = model.projects.all.first { $0.url == url }?.id
+            agentID = nil
         }
     }
 }

@@ -23,6 +23,19 @@ extension DS {
         static let groupTitle = Font.ds(13, weight: .medium)
         static let navGroup = Font.ds(11.5, weight: .medium)
         static let caption = Font.ds(12)
+        static let sourceStackWidth: CGFloat = 372
+        static let sourceColumnWidth: CGFloat = 150
+        static let contextBarHeight: CGFloat = 4
+        static let contextLegendSize: CGFloat = 8
+        /// New Tasks' load rows: one right-aligned column of token counts, then one fixed slot for
+        /// a switch, a lock or nothing, so every row's trailing edge lines up.
+        static let loadTokenColumn: CGFloat = 48
+        static let loadControlSlot: CGFloat = 40
+        /// Group widths under which every New Tasks row narrows the same way: first each source tag
+        /// shrinks to its glyph, then every value moves under its label.
+        static let compactSourcesBelow: CGFloat = 540
+        static let stackedRowsBelow: CGFloat = 420
+        static let scopeCompactWidth: CGFloat = 174
         static let hairline: CGFloat = 1
     }
 }

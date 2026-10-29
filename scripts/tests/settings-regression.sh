@@ -19,4 +19,6 @@ nice -n 10 xcrun swiftc "${flags[@]}" "$root/scripts/tests/settings-regression.s
     -Xlinker -rpath -Xlinker "$app/Contents/Frameworks" \
     -Xlinker -rpath -Xlinker "$app/Contents/MacOS" -o "$work/settings-regression"
 mkdir "$work/plugins"
-"$work/settings-regression" -pluginsDirectory "$work/plugins" -NativeRemoteHosts YES
+# Argument-domain defaults, so the gate is on for this run only.
+"$work/settings-regression" -pluginsDirectory "$work/plugins" -NativeRemoteHosts YES \
+    -experiment.NativeSettingsPlainly '<true/>'

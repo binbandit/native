@@ -58,7 +58,7 @@ extension UpdateUnavailableReason {
         case .developmentBuild: "Updates are off in development builds."
         case .notConfigured: "This build has no update feed or signing key."
         case .unsupportedPlatform: "This device updates through the App Store."
-        case .managedByOrganization: "Updates are managed by your organization."
+        case .managedByOrganization: "Updates are managed by \(PolicyCenter.organizationName)."
         case .updaterFailed(let message): "The updater didn't start: \(message)"
         }
     }

@@ -1,4 +1,5 @@
 import ACP
+import Experiments
 import Foundation
 import Modes
 import Observation
@@ -71,6 +72,10 @@ final class TaskModes {
     /// next prompt, so a turn that's running carries on as it began.
     func select(_ id: Mode.ID, in session: SessionModel) async {
         guard let mode = catalog(for: session).mode(id) else { return }
+        await apply(mode, to: session)
+    }
+
+    private func apply(_ mode: Mode, to session: SessionModel) async {
         let options = session.state.configOptions
         let resolution = resolution(of: mode, on: session)
         let current = selections[Self.key(session)] ?? ModeSelection()
@@ -84,7 +89,9 @@ final class TaskModes {
         let policy = resolution.limits.filter(\.isPolicy)
         if !policy.isEmpty {
             session.addNotice(
-                policy.map { $0.text(agent: session.agentName, mode: mode.label) }.joined(separator: " "),
+                policy.map {
+                    $0.text(agent: session.agentName, mode: mode.label, organization: PolicyCenter.organizationSubject)
+                }.joined(separator: " "),
                 isError: false)
         }
     }
@@ -98,19 +105,23 @@ final class TaskModes {
         selections[Self.key(session)] = selections["\(old.agent.rawValue)/\(old.id.rawValue)"]
     }
 
-    /// A task the user just started: in the mode it carries on from (`/clear`), else in the mode
-    /// new tasks start in.
-    func taskStarted(_ session: SessionModel, continuing earlier: SessionModel?) async {
+    /// A task the user just started in the project at `projectRoot`: in the mode it carries on from
+    /// (`/clear`), else in the mode new tasks there start in. The root comes from the launch, since
+    /// `projectRoot(session)` only finds the task once the catalog lists it.
+    func taskStarted(_ session: SessionModel, continuing earlier: SessionModel?, projectRoot root: URL?) async {
         if let earlier {
             // Its settings come across with the rest of the task's (`adoptSettings`).
             selections[Self.key(session)] = selections[Self.key(earlier)]
             return
         }
-        if let root = projectRoot(session), !library.hasRead(projectAt: root) {
+        let root = root ?? projectRoot(session)
+        if let root, !library.hasRead(projectAt: root) {
             library.refresh(projectAt: root)
         }
-        let starting = library.startingMode
+        let plainly = ExperimentStore.shared.value(of: .settingsPlainly)
+        if plainly, let root { await library.finishReading(projectAt: root) }
+        let starting = plainly ? library.startingMode(forProjectAt: root) : library.startingMode
         guard starting.id != .build else { return }
-        await select(starting.id, in: session)
+        await apply(starting, to: session)
     }
 }

@@ -1,9 +1,12 @@
+import ACP
 import CodeThemes
 import Experiments
 import Foundation
+import Modes
 import NativeHostProtocol
 import NativePolicy
 import Skills
+import TaskDefaults
 
 @testable import Native
 
@@ -32,6 +35,11 @@ struct SettingsRegression {
         #endif
         navigation(registry: registry)
         #if !BEFORE
+        newTasksDefaults()
+        await startingModeAtLaunch()
+        worktreeContextReports()
+        await effectiveInstructionEnvironment()
+        await instructionScope()
         plainlyNavigation()
         combinedLibraryScope()
         accountNavigation()
@@ -73,6 +81,200 @@ struct SettingsRegression {
     }
 
     #if !BEFORE
+    private static func newTasksDefaults() {
+        let defaults = PreviewUserDefaults()
+        let id = AgentDefinition.ID(rawValue: "fixture-agent")
+        let project = Project(url: URL(filePath: "/tmp/native-newtasks-fixture"))
+        let optionsJSON = """
+            [{"id":"model","name":"Model","category":"model","type":"select","currentValue":"agent",
+            "options":[{"value":"agent","name":"Agent model"},{"value":"user","name":"User model"},{"value":"project","name":"Project model"}]},
+            {"id":"permission","name":"Permissions","category":"mode","type":"select","currentValue":"ask",
+            "options":[{"value":"ask","name":"Ask before edits"},{"value":"edit","name":"Edit files"},{"value":"auto","name":"Auto"}]}]
+            """
+        guard let options = try? JSONDecoder().decode([ConfigOption].self, from: Data(optionsJSON.utf8)) else {
+            expect(false, "Decode new-task wire fixture"); return
+        }
+        AgentSessionDefaults.remember(options, for: id, isNew: true, defaults: defaults)
+        let global = NewTasksDefaultsModel(agent: id, agentName: "Fixture", project: nil, defaults: defaults)
+        let local = NewTasksDefaultsModel(agent: id, agentName: "Fixture", project: project, defaults: defaults)
+        global.set("user", for: .model)
+        local.set("project", for: .model)
+        expect(local.receipt(.model, policy: .default).value == "Project model", "Project source wins")
+        expect(
+            global.receipt(.model, policy: .default).value == "User model", "Project changes leave All projects alone")
+        local.set(nil, for: .model)
+        expect(local.receipt(.model, policy: .default).value == "User model", "Reset follows All projects")
+        let reopened = NewTasksDefaultsModel(agent: id, agentName: "Fixture", project: project, defaults: defaults)
+        expect(
+            reopened.receipt(.model, policy: .default).value == "User model", "Defaults persist when the page reopens")
+        local.set("gone", for: .model)
+        expect(
+            local.receipt(.model, policy: .default).value == "Agent model",
+            "Unavailable project value keeps the agent default")
+        local.set(nil, for: .model)
+        global.set("gone", for: .model)
+        let inherited = local.receipt(.model, policy: .default)
+        expect(
+            inherited.unavailable && inherited.unavailableNote?.contains("set for All projects") == true
+                && local.stored(.model) == nil,
+            "A project explains an unavailable choice it inherits, without a project value to reset")
+        global.set("user", for: .model)
+        var policy = NativePolicy()
+        policy.forbiddenPermissionModes = ["auto"]
+        policy.managedKeys = [.forbiddenPermissionModes]
+        policy.organizationName = "Northwind Federal IT"
+        policy.organizationContact = "#it-help"
+        global.set("auto", for: .permissions)
+        let permissions = global.receipt(.permissions, policy: policy)
+        expect(permissions.value == "Ask before edits", "Policy uses the same allowed default as startup")
+        expect(permissions.source == .organization("Northwind Federal IT"), "Policy source uses configured identity")
+        expect(permissions.help?.contains("#it-help") == true, "Policy contact is shown")
+        let plan = global.receipt(.permissions, policy: policy, mode: .plan)
+        expect(plan.modeOverrides && plan.value == "Ask before edits", "Starting Mode supplies its own permissions")
+        expect(plan.layers.filter(\.wins).count == 1, "A mode receipt has one winning layer")
+        expect(
+            AgentSessionDefaults.configuredValues(for: id, defaults: defaults)["mode"] == nil,
+            "New permission defaults cannot change reopened tasks or the legacy path")
+        let modes = ModeLibrary(defaults: defaults)
+        modes.setStartingMode(.plan, forProjectAt: project.url)
+        expect(
+            modes.startingMode.id == .build && modes.startingMode(forProjectAt: project.url).id == .plan,
+            "Starting mode is scoped to one project")
+        let undo = UndoManager()
+        ProjectTaskDefaults.setAgent(id, for: project.id, defaults: defaults, undoManager: undo)
+        undo.undo()
+        expect(
+            ProjectTaskDefaults.agent(for: project.id, defaults: defaults) == nil, "Undo restores the starting agent")
+        modes.setStartingMode(.build, forProjectAt: project.url, undoManager: undo)
+        undo.undo()
+        expect(modes.startingMode(forProjectAt: project.url).id == .plan, "Undo restores the project's starting mode")
+        modes.setStartingMode(.init(rawValue: "removed-mode"), forProjectAt: project.url)
+        expect(modes.startingMode(forProjectAt: project.url).id == .build, "A removed mode follows All projects")
+        let git = GitSettings(defaults: defaults)
+        git.setStartingWorkspace(.branch, project: project.url)
+        expect(
+            git.newTaskWorkspace == .worktree && git.newTaskWorkspace(forProjectAt: project.url) == .branch,
+            "Workspace override leaves All projects alone")
+        let presentation = SettingsPresentation()
+        presentation.openNewTasks(agent: id)
+        expect(
+            presentation.takeAgentScope() == id && presentation.takeAgentScope() == nil,
+            "Agent links select a scope once")
+        AgentSessionDefaults.remember(Array(options.prefix(1)), for: id, defaults: defaults)
+        global.refresh()
+        expect(global.choices(.permissions).isEmpty, "Removed agent options clear their cached choices")
+    }
+
+    /// A task starts before the catalog lists it under its project, so the launch hands over the
+    /// project's folder. Global Build with project Plan must start the task in Plan.
+    private static func startingModeAtLaunch() async {
+        expect(ExperimentStore.shared.value(of: .settingsPlainly), "The runner turns Plainly on")
+        let defaults = PreviewUserDefaults()
+        let folder = URL.temporaryDirectory.appending(path: "native-starting-mode-\(UUID().uuidString)")
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let app = AppModel(
+            plugins: PluginRegistry(builtIns: [BuiltInPlugins.codex], defaults: defaults), defaults: defaults,
+            catalogURL: nil, experiments: ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage()))
+        _ = app.runtimes.sync()
+        let project = app.projects.add(folder)
+        let modes = TaskModes(library: ModeLibrary(defaults: defaults), defaults: defaults)
+        modes.projectRoot = { session in
+            app.catalog.lookup(session.key).flatMap { app.projects.project($0.project)?.url }
+        }
+        modes.library.setStartingMode(.plan, forProjectAt: project.url)
+        guard let session = SessionModel.preview(in: app, agent: "codex", cwd: folder.path) else {
+            expect(false, "Make a starting session"); return
+        }
+        expect(modes.projectRoot(session) == nil, "The catalog does not list a task that is still starting")
+        await modes.taskStarted(session, continuing: nil, projectRoot: project.url)
+        expect(modes.library.startingMode.id == .build, "All projects still start in Build")
+        expect(modes.mode(of: session).id == .plan, "The project's starting mode applies at launch")
+        expect(modes.preamble(for: session, delivered: nil) != nil, "Plan's instructions go with the first prompt")
+    }
+
+    /// A task in a worktree works outside the project's checkout but still reports for its project.
+    private static func worktreeContextReports() {
+        let defaults = PreviewUserDefaults()
+        let app = AppModel(
+            plugins: PluginRegistry(builtIns: [BuiltInPlugins.codex], defaults: defaults), defaults: defaults,
+            catalogURL: nil, experiments: ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage()))
+        _ = app.runtimes.sync()
+        let selected = app.projects.add(URL(filePath: "/fixture/reports/selected"))
+        let other = app.projects.add(URL(filePath: "/fixture/reports/other"))
+        let optionsJSON = """
+            [{"id":"model","name":"Model","category":"model","type":"select","currentValue":"sol",
+            "options":[{"value":"sol","name":"Sol"}]}]
+            """
+        guard let options = try? JSONDecoder().decode([ConfigOption].self, from: Data(optionsJSON.utf8)) else {
+            expect(false, "Decode report wire fixture"); return
+        }
+        let codex = AgentDefinition.ID(rawValue: "codex")
+        func task(_ id: String, in project: Project, cwd: String) -> SessionModel? {
+            app.catalog.add(SessionInfo(sessionId: SessionID(id), cwd: cwd, title: id), for: codex, in: project.id)
+            return SessionModel.preview(in: app, agent: "codex", id: id, cwd: cwd, configOptions: options)
+        }
+        let worktree = task("worktree", in: selected, cwd: "/fixture/worktrees/selected/task")
+        _ = task("elsewhere", in: other, cwd: "/fixture/reports/other")
+        let matches = NewTasksScopedContent.sessions(in: app, agent: codex, project: selected.id, model: "Sol")
+        expect(
+            matches.map(\.key) == [worktree?.key].compactMap { $0 },
+            "Reports come from the project's worktree tasks and no other project's")
+    }
+
+    /// The agent's own environment (its plugin's `env`) says where it reads instructions, over the shell's.
+    private static func effectiveInstructionEnvironment() async {
+        let root = URL.temporaryDirectory.appending(path: "native-instruction-env-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let shell = root.appending(path: "shell")
+        let agentHome = root.appending(path: "agent")
+        for folder in [shell, agentHome] {
+            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            try? Data("instructions in \(folder.lastPathComponent)".utf8).write(to: folder.appending(path: "AGENTS.md"))
+        }
+        let agent = AgentManifest(
+            id: "fixture", name: "Fixture", command: "/usr/bin/true", env: ["FIXTURE_HOME": agentHome.path],
+            instructionLocations: [.init(scope: .user, environmentKey: "FIXTURE_HOME", names: ["AGENTS.md"])])
+        let registry = PluginRegistry(
+            builtIns: [ManifestPlugin(manifest: PluginManifest(id: "fixture", name: "Fixture", agents: [agent]))],
+            defaults: PreviewUserDefaults())
+        let loads = NewTasksLoadsModel(agent: agent, project: nil, registry: registry)
+        await loads.readInstructions(shellEnvironment: ["HOME": shell.path, "FIXTURE_HOME": shell.path])
+        expect(
+            loads.instructions.map { $0.url.deletingLastPathComponent().lastPathComponent } == ["agent"],
+            "Only the instruction files in the agent's own folder are listed")
+    }
+
+    /// A project's own instruction files belong to that project: never listed for All projects
+    /// or for another project.
+    private static func instructionScope() async {
+        let root = URL.temporaryDirectory.appending(path: "native-instruction-scope-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let pier = root.appending(path: "pier")
+        let native = root.appending(path: "native")
+        for folder in [pier, native] {
+            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        }
+        try? Data("pier's instructions".utf8).write(to: pier.appending(path: "AGENTS.md"))
+        let agent = AgentManifest(
+            id: "fixture", name: "Fixture", command: "/usr/bin/true",
+            instructionLocations: [.init(scope: .project, names: ["AGENTS.md"])])
+        let registry = PluginRegistry(
+            builtIns: [ManifestPlugin(manifest: PluginManifest(id: "fixture", name: "Fixture", agents: [agent]))],
+            defaults: PreviewUserDefaults())
+        func listed(in project: Project?) async -> [String] {
+            let loads = NewTasksLoadsModel(agent: agent, project: project, registry: registry)
+            await loads.readInstructions(shellEnvironment: ["HOME": root.path])
+            return loads.instructionItems.map { "\($0.name) · \($0.source)" }
+        }
+        let pierProject = Project(url: pier)
+        expect(await listed(in: nil).isEmpty, "All projects lists no project's own instructions")
+        expect(await listed(in: Project(url: native)).isEmpty, "Another project doesn't list pier's instructions")
+        expect(
+            await listed(in: pierProject) == ["AGENTS.md · \(pierProject.name)"],
+            "pier lists its own instructions, named for it")
+    }
+
     private static func accountNavigation() {
         let presentation = SettingsPresentation()
         let row = GitHubAccountsSettingsSection.accountsRow

@@ -803,6 +803,11 @@ They appear only while Fine print is enabled.
 | | Count Unknown Programs Locally | `privacy.countUnknownPrograms` |
 | | Clear Unknown Program Counts | `privacy.clearUnknownPrograms` |
 
+New Tasks' Project and Agent scope menus, value menus and source buttons participate in normal
+Tab navigation. Space opens a focused menu or source stack; Escape dismisses it. Model, Effort and Permissions
+menus include Why This Value and Reset; the other defaults expose Reset in their context menus. Existing Settings
+page commands open New Tasks, and agent/project links select their scope without changing defaults.
+
 With Fine print enabled, select transcript text and choose Task > Focus Composer (⌘L) to quote
 its source lines. Quote in a transcript block's context menu quotes its selection, or the whole
 block if nothing is selected. In a diff, select a line number, then another to extend the range, and choose

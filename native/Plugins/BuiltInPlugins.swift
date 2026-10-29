@@ -3,6 +3,7 @@ import Foundation
 import NativeHostProtocol
 import Search
 import SessionTitling
+import TaskDefaults
 
 enum BuiltInPlugins {
     static let all: [any NativePlugin] = {
@@ -59,6 +60,12 @@ enum BuiltInPlugins {
                             description:
                                 "Run `claude setup-token` on a computer with a browser, then paste the token it prints.",
                             kind: .environment([AuthMethod.Variable(name: "CLAUDE_CODE_OAUTH_TOKEN", label: "Token")])),
+                    ],
+                    instructionLocations: [
+                        .init(
+                            scope: .user, directory: ".claude", environmentKey: "CLAUDE_CONFIG_DIR",
+                            names: ["CLAUDE.md"]),
+                        .init(scope: .project, names: ["CLAUDE.md", "CLAUDE.local.md", ".claude/CLAUDE.md"]),
                     ], nativeSkill: .claudeCode
                 )
             ]
@@ -101,6 +108,12 @@ enum BuiltInPlugins {
                             description:
                                 "Sign in to ChatGPT by opening a verification page and entering a one-time code",
                             kind: .link)
+                    ],
+                    instructionLocations: [
+                        .init(
+                            scope: .user, directory: ".codex", environmentKey: "CODEX_HOME",
+                            names: ["AGENTS.override.md", "AGENTS.md"], firstExisting: true),
+                        .init(scope: .project, names: ["AGENTS.override.md", "AGENTS.md"], firstExisting: true),
                     ],
                     // Its home, a CODEX_HOME override, and a trusted project's own settings.
                     settingsFiles: ["~/.codex/config.toml", "$CODEX_HOME/config.toml", ".codex/config.toml"],

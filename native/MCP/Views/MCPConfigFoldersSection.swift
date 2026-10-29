@@ -102,7 +102,7 @@ extension SettingsFolder {
             label = name
         case .managed:
             scope = .managed
-            section = "Set by your organization"
+            section = "Set by \(PolicyCenter.organizationName)"
             label = file.url.abbreviatedPath
         }
         let key = ProjectPath.key(file.url)

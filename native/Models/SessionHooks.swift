@@ -8,8 +8,11 @@ final class SessionHooks {
     /// (`SessionState.deliveredPreamble`), or nil for none.
     var preamble: (SessionModel, PromptPreamble.Marker?) -> PromptPreamble? = { _, _ in nil }
     /// A task the user started, ready for its first prompt: on its own, or `continuing` an earlier
-    /// conversation of the same task (`/clear`, or one restarted after a crash).
-    var taskStarted: (_ session: SessionModel, _ continuing: SessionModel?) async -> Void = { _, _ in }
+    /// conversation of the same task (`/clear`, or one restarted after a crash). `project` is the one
+    /// it starts in, passed because the catalog only lists the task once its start returns.
+    var taskStarted: (_ session: SessionModel, _ continuing: SessionModel?, _ project: Project.ID?) async -> Void = {
+        _, _, _ in
+    }
     /// A never-sent conversation was recreated under a new adapter id, without a new task.
     var taskRecovered: (SessionKey, SessionModel) -> Void = { _, _ in }
     /// A live turn began, at `startedAt` (its `TranscriptTurn.startedAt`), and its prompt went out.

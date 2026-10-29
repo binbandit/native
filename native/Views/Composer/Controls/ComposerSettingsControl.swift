@@ -37,7 +37,7 @@ struct ComposerSettingsControl: View {
 
     private var manager: String? {
         let keys: Set<PolicyKey> = [.agentsAllowed, .forbiddenPermissionModes, .mcpAllowed, .mcpBlocked, .mcpRequired]
-        return policy.managedKeys.isDisjoint(with: keys) ? nil : policy.organizationName ?? "your organization"
+        return policy.managedKeys.isDisjoint(with: keys) ? nil : policy.organizationDisplayName
     }
 
     var body: some View {

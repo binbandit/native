@@ -146,7 +146,7 @@ struct UpdatesSettingsPage: View {
                 detail: Text(
                     controller.current.channel.isNightly
                         ? "Native Nightly always follows nightly builds. Install Native for stable releases; the two live side by side."
-                        : "Your organization chose this channel."
+                        : "\(PolicyCenter.organizationSubject) chose this channel."
                 )
             ) {
                 SettingsValue(controller.channel.title)

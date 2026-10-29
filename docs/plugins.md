@@ -96,6 +96,7 @@ of that agent through it.
 | `args` | no | Arguments. |
 | `env` | no | Extra environment variables. |
 | `resolveExecutables` | no | Variables to set to the absolute path of a command on `PATH`, such as `{"CLAUDE_CODE_EXECUTABLE": "claude"}`, so an adapter runs the user's own CLI. |
+| `instructionLocations` | no | Instruction metadata for New Tasks: `scope` (`user` or `project`), relative `directory`, optional `environmentKey` replacing that directory, `names`, and `firstExisting`. Native checks file sizes only; it never edits or reads the contents. Missing declarations are shown as unknown, not as no instructions. |
 | `mcpConfig` | no | Where the agent keeps its own MCP configuration (`"claude-code"`, `"codex"` or `"cursor"`), so Native can show the servers it already loads. |
 | `nativeSkill` | no | Native's skill delivery mechanism: `"claude-code"` for adapters forwarding `_meta.claudeCode.options.plugins` and per-session `env`, or `"codex"` for Codex skill discovery and the shell's `CODEX_THREAD_ID`. Declare only a verified adapter mechanism. Missing keeps Native's MCP tools. This is independent of `mcpConfig`, which describes user-configured servers. |
 | `settingsFiles` | no | The settings files the agent reads as it starts (`~/…`, `$VARIABLE/…` from its environment, or a path in the task's folder). With Fine print on, a failed start that names one of them shows the line and may offer a fix-it; Native opens no other file an agent's error names. |
@@ -481,6 +482,11 @@ Fine print approvals. The versioned [command knowledge schema](command-knowledge
 format as the bundled package resource and managed policy. Invalid entries appear in Command
 Diagnostics without breaking approvals. Contributions disappear when the plugin is disabled or
 blocked by policy, and cannot replace shipped tools. This extension is declarative and local only.
+
+The built-in Codex locations follow [AGENTS.md discovery](https://developers.openai.com/codex/guides/agents-md);
+Claude Code locations follow [instruction memory](https://code.claude.com/docs/en/memory). New Tasks
+currently inventories declared user and project-root files only. Ancestor files, imports, conditional
+rules, custom fallback filenames and auto-memory remain uncounted until an agent reports them.
 
 ### Steering policy
 

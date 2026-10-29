@@ -124,7 +124,7 @@ extension AppModel {
             return nil
         }
         guard PolicyCenter.shared.policy.agents.allows(runtime.agent.id.rawValue) else {
-            quickEntry.failure = "Your organization doesn't allow this agent. Choose another agent."
+            quickEntry.failure = "\(PolicyCenter.organizationSubject) doesn't allow this agent. Choose another agent."
             quickEntry.picker = .agent
             return nil
         }

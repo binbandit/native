@@ -104,6 +104,12 @@ public struct NativePolicy: Equatable, Sendable {
     public var celebrationsEnabled = true
     /// A display name supplied by the administrator, never inferred from an account or hostname.
     public var organizationName: String?
+
+    public var organizationDisplayName: String { organizationName ?? "your organization" }
+    public var managedExplanation: String { "Managed by \(organizationDisplayName)" }
+    public var organizationHelp: String {
+        organizationContact.map { "Ask in \($0)." } ?? "Ask your administrator."
+    }
     public var labsEnabled = true
     public var companionEnabled = true
     public var remoteHostsEnabled = true

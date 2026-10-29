@@ -6,7 +6,7 @@ extension ComposerView {
     @ViewBuilder
     func settingsNote(_ settings: ComposerSettings) -> some View {
         if PolicyCenter.shared.isManaged(.forbiddenPermissionModes) {
-            let manager = PolicyCenter.shared.policy.organizationName ?? "your organization"
+            let manager = PolicyCenter.shared.policy.organizationDisplayName
             let choice = settings.autonomy?.current.map(Self.whenItAsks)
             Label(
                 "Managed by \(manager)\(choice.map { ": \($0)" } ?? "")",

@@ -127,7 +127,7 @@ struct AgentsSettingsPage: View {
         }
     }
 
-    static let notAllowed = "Not allowed by your organization"
+    static var notAllowed: String { "Not allowed by \(PolicyCenter.organizationName)" }
 
     private func isAllowed(_ entry: Entry) -> Bool {
         policy.policy.agents.allows(entry.agent.id)
@@ -155,6 +155,10 @@ struct AgentsSettingsPage: View {
             }
         } control: {
             HStack(spacing: DS.Space.md) {
+                if plainly {
+                    Button("New Tasks…") { presentation.openNewTasks(agent: entry.definition.id) }
+                        .accessibilityLabel("New Tasks for \(entry.agent.name)")
+                }
                 if let runtime {
                     AgentRowActions(runtime: runtime)
                 }
@@ -192,7 +196,7 @@ struct AgentsSettingsPage: View {
         var lines = [
             isAllowed(entry)
                 ? "When off, Native stops \(entry.agent.name) and doesn't offer it for new tasks."
-                : "Your organization doesn't allow \(entry.agent.name), so Native doesn't start it or offer it for new tasks."
+                : "\(PolicyCenter.organizationSubject) doesn't allow \(entry.agent.name), so Native doesn't start it or offer it for new tasks."
         ]
         // The switch is the plugin's, so it also covers the plugin's other agents.
         let siblings = entry.plugin.agents.filter { $0.id != entry.agent.id }.map(\.name)
