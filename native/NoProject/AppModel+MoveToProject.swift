@@ -83,7 +83,7 @@ extension AppModel {
                 candidate = target
                 target.isChangingWorkspace = true
                 await target.adoptConfigChoices(of: source)
-                await source.services.hooks.taskStarted(target, source)
+                await source.services.hooks.taskStarted(target, source, nil)
                 try scratchTasks.reassign(source.cwd, to: NoProjectLocation.key(target.key))
                 try await closeForScratchCleanup(key)
                 didCloseSource = true
