@@ -1,6 +1,7 @@
 import ACP
 import CoreText
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// The composer's text field: 13pt text that grows with the draft to a cap, then scrolls. Keys go
 /// to `onKey` first, so the composer can send, recall and drive its lists.
