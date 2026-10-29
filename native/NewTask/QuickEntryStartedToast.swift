@@ -28,9 +28,10 @@ struct QuickEntryStartedToast: View {
 
     private var message: String {
         if let failure = task.failure { return failure.title }
+        let location = task.project == NoProjectLocation.id ? "without a project" : "in \(project)"
         return task.openedSession == nil
-            ? "\(task.agent.displayName) is starting in \(project)"
-            : "Started \(task.agent.displayName) in \(project)"
+            ? "\(task.agent.displayName) is starting \(location)"
+            : "Started \(task.agent.displayName) \(location)"
     }
 }
 

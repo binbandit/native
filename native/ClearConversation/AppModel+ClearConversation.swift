@@ -40,6 +40,7 @@ extension AppModel {
                 SessionInfo(sessionId: session.id, cwd: old.cwd.folderPath, updatedAt: .now), for: old.agent.id,
                 in: project)
         }
+        retainPrivateFiles(of: old, for: session.key)
         earlierConversations.record(session.key, after: old.key)
         ordering.replace(old.key, with: session.key)
         taskPairs.replace(old.key, with: session.key)

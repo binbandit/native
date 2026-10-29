@@ -98,15 +98,23 @@ private struct ViewCommands: Commands {
                 Menu("Sidebar") { SidebarOptionsMenu(preferences: model.sidebarPreferences) }
             }
             CommandMenuItem(.viewToggleSubagentInspector, in: menu)
-            CommandMenuItem(.viewToggleChanges, in: menu)
+            if menu.context.session?.isProjectless != true {
+                CommandMenuItem(.viewToggleChanges, in: menu)
+            }
             if menu.context.sessionTools != nil {
                 if menu.context.sessionTools?.hasWell == true {
                     CommandMenuItem(.taskWellToggle, in: menu)
                 }
                 Menu("Tools") {
-                    CommandMenuItem(.sessionToolChanges, in: menu)
+                    if menu.context.session?.isProjectless != true {
+                        CommandMenuItem(.sessionToolChanges, in: menu)
+                    }
                     if menu.context.sessionTools?.hasWell == true {
-                        ForEach(TaskWellTool.allCases.filter { $0 != .changes }) { tool in
+                        ForEach(
+                            TaskWellTool.allCases.filter {
+                                $0 != .changes && (menu.context.session?.isProjectless != true || $0 != .pullRequest)
+                            }
+                        ) { tool in
                             CommandMenuItem(tool.command, in: menu)
                         }
                     }
@@ -194,7 +202,10 @@ private struct SessionCommands: Commands {
                 CommandMenuItem(.sessionCancelModelChange, in: menu)
                 CommandMenuItem(.sessionUndoModelChange, in: menu)
             }
-            CommandMenuItem(.sessionChangeWorkspace, in: menu)
+            CommandMenuItem(.sessionMoveToProject, in: menu)
+            if menu.context.session?.isProjectless != true {
+                CommandMenuItem(.sessionChangeWorkspace, in: menu)
+            }
 
             Divider()
 

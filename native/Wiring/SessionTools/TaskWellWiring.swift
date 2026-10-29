@@ -86,7 +86,8 @@ struct TaskWellWiring: View {
 
     /// Export Patch stands in for the pull request on a branch that can't reach GitHub.
     private var offersPatch: Bool {
-        policy.isGitHubOutOfReach && repository.branchName != nil && tools.registry.place(for: .pullRequest) != .off
+        !session.isProjectless && policy.isGitHubOutOfReach && repository.branchName != nil
+            && tools.registry.place(for: .pullRequest) != .off
     }
 
     private var identity: TaskWellIdentity {
@@ -107,18 +108,18 @@ struct TaskWellWiring: View {
             machine: device.isRemote ? "On \(app.deviceName(device))" : "On this Mac",
             timing: timing, contextFraction: session.usage.flatMap { $0.size > 0 ? $0.fractionUsed : nil },
             isManaged: !managed.isDisjoint(with: workerKeys), management: management,
-            project: app.projectName(of: session), branch: repository.branchName)
+            project: app.projectName(of: session), branch: session.isProjectless ? nil : repository.branchName)
     }
 
     /// A tool that's off in Settings ▸ Task Tools never reaches the well, nor does its key.
     private func available(_ tool: TaskWellTool) -> Bool {
         guard tools.registry.place(for: tool.spec) != .off else { return false }
         return switch tool {
-        case .changes: tools.registry.tool(.changes) != nil
+        case .changes: !session.isProjectless && tools.registry.tool(.changes) != nil
         case .terminal: true
         case .dev: target != nil
         case .subagents: session.hasSubagents
-        case .pullRequest: offersPatch || pullRequest != nil
+        case .pullRequest: !session.isProjectless && (offersPatch || pullRequest != nil)
         }
     }
 

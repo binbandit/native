@@ -44,9 +44,9 @@ struct ProjectList<TaskAccessory: View>: View {
             if filter.isActive {
                 SidebarFilterChips(filter: $filter)
             }
-            if model.projects.all.isEmpty {
+            if model.taskGroups.isEmpty {
                 if isAllInView {
-                    Text("Your folders and tasks will appear here.")
+                    Text("Your tasks will appear here. A folder is optional.")
                         .font(.dsBody).foregroundStyle(.dsTextSecondary)
                         .padding(.leading, DS.Sidebar.headerLeading)
                         .padding(.top, DS.Space.xxxl)
@@ -63,26 +63,38 @@ struct ProjectList<TaskAccessory: View>: View {
                 let hasNoMatches =
                     isNarrowing && !revealsEmptyHome && group.visible.isEmpty
                     && model.startingTasks(in: project.id).isEmpty
-                ProjectSection(
-                    project: project,
-                    sessions: group.current,
-                    earlier: group.earlier,
-                    isEarlierExpanded: Binding(
-                        get: { group.isEarlierExpanded },
-                        set: { folding?.setExpanded(project.id, $0) }),
-                    order: Self.positions(group.all),
-                    position: (index, listing.groups.count),
-                    isFiltered: isNarrowing && !revealsEmptyHome,
-                    hasNoMatches: hasNoMatches,
-                    followsPinned: !listing.pinned.isEmpty,
-                    isExpanded: Binding(
-                        get: { isNarrowing ? !hasNoMatches : !collapsed.contains(project.id) },
-                        set: { collapsed.set(project.id, collapsed: !$0) }
-                    ),
-                    drag: drag,
-                    taskAccessory: taskAccessory,
-                    select: select
-                )
+                if project.isNoProject {
+                    NoProjectTaskGroup(
+                        group: group, isFiltered: isNarrowing, hasNoMatches: hasNoMatches,
+                        followsPinned: !listing.pinned.isEmpty,
+                        isExpanded: Binding(
+                            get: { isNarrowing ? !hasNoMatches : !collapsed.contains(project.id) },
+                            set: { collapsed.set(project.id, collapsed: !$0) }),
+                        isEarlierExpanded: Binding(
+                            get: { group.isEarlierExpanded }, set: { folding?.setExpanded(project.id, $0) }),
+                        drag: drag, taskAccessory: taskAccessory, select: select)
+                } else {
+                    ProjectSection(
+                        project: project,
+                        sessions: group.current,
+                        earlier: group.earlier,
+                        isEarlierExpanded: Binding(
+                            get: { group.isEarlierExpanded },
+                            set: { folding?.setExpanded(project.id, $0) }),
+                        order: Self.positions(group.all),
+                        position: (index, listing.groups.count),
+                        isFiltered: isNarrowing && !revealsEmptyHome,
+                        hasNoMatches: hasNoMatches,
+                        followsPinned: !listing.pinned.isEmpty,
+                        isExpanded: Binding(
+                            get: { isNarrowing ? !hasNoMatches : !collapsed.contains(project.id) },
+                            set: { collapsed.set(project.id, collapsed: !$0) }
+                        ),
+                        drag: drag,
+                        taskAccessory: taskAccessory,
+                        select: select
+                    )
+                }
             }
             if isAllInView {
                 ForEach(Array(model.sidebarFolders.opening.enumerated()), id: \.offset) { _, name in
@@ -97,7 +109,7 @@ struct ProjectList<TaskAccessory: View>: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Project tasks")
+        .accessibilityLabel("Tasks")
         .contextMenu {
             if isAllInView {
                 SidebarOptionsMenu(preferences: model.sidebarPreferences)

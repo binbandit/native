@@ -66,7 +66,7 @@ final class SessionToolRegistry {
             SessionToolContext(session: session, screen: screen, tool: tool.id)
         }
         return SessionToolLayout(
-            tools: tools.map(\.spec), arrangement: arrangement,
+            tools: tools.filter { !session.isProjectless || $0.id != .changes }.map(\.spec), arrangement: arrangement,
             withFacts: Set(tools.filter { $0.fact(context($0)) != nil }.map(\.id)),
             withContent: Set(tools.filter { $0.hasContent(context($0)) }.map(\.id)), open: screen.openTools)
     }

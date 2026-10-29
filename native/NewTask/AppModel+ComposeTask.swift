@@ -105,7 +105,10 @@ extension AppModel {
         compose.workspaces = []
         compose.workspace = nil
         defer { if compose.workspaceRead == read { compose.isReadingWorkspaces = false } }
-        guard let project = projectID.flatMap(projects.project) else { return }
+        guard let project = projectID.flatMap(projects.project) else {
+            compose.second = nil
+            return
+        }
         do {
             let options: [TaskWorkspaceOption]
             if case .remote(let id) = device {
@@ -151,11 +154,7 @@ extension AppModel {
         guard quickEntry.isEnabled, compose.stage == .writing, !compose.isHeld,
             compose.hasContent, !compose.pendingAttachments, !compose.isReadingWorkspaces, let editor = compose.editor
         else { return }
-        guard let project = quickEntry.project.flatMap(projects.project) else {
-            quickEntry.failure = "Choose a folder before starting the task."
-            quickEntry.picker = .project
-            return
-        }
+        let project = quickEntry.project.flatMap(projects.project) ?? NoProjectLocation.group
         guard composeDeviceOption?.canStart == true else {
             quickEntry.failure = "This device can't take the task yet. Hold it here or choose another device."
             return
@@ -174,7 +173,7 @@ extension AppModel {
             quickEntry.failure = "An attached file is no longer available. Remove it or attach it again."
             return
         }
-        if quickEntry.device == .thisMac {
+        if quickEntry.device == .thisMac, !project.isNoProject {
             checkFolder(of: project)
             guard missingFolder(of: project.id) == nil else {
                 quickEntry.failure =
@@ -184,9 +183,11 @@ extension AppModel {
         }
         let task = StartingTask(
             project: project.id, agent: runtime.agent, isAgentPicked: true,
-            workspaceLabel: compose.workspace == .newWorktree
-                ? "Creating a worktree"
-                : taskWorkspaces?.newTaskWorkspaceLabel(in: project) ?? "Preparing the workspace")
+            workspaceLabel: project.isNoProject
+                ? "Preparing private task files"
+                : compose.workspace == .newWorktree
+                    ? "Creating a worktree"
+                    : taskWorkspaces?.newTaskWorkspaceLabel(in: project) ?? "Preparing the workspace")
         task.device = quickEntry.device
         task.workspaceChoice = compose.workspace
         task.draft = editor.draft
@@ -287,6 +288,7 @@ extension AppModel {
         #if DEBUG
         if let options = quickEntry.previewDeviceOptions { return options.first { $0.device == quickEntry.device } }
         #endif
+        if quickEntry.project == nil { return quickEntry.device == .thisMac ? noProjectDeviceOption : nil }
         return quickEntry.project.flatMap { id in deviceOptions(for: id).first { $0.device == quickEntry.device } }
     }
 

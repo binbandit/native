@@ -12,13 +12,13 @@ struct HomeDetail: View {
 
     var body: some View {
         let agents = model.agents.map(homeAgent)
-        if model.offersSidebarFolders,
-            model.projects.all.isEmpty
-                || (model.focusedProjectID != nil
-                    && model.currentProject.map { model.allSessions(in: $0.id).isEmpty } == true)
+        if model.taskGroups.isEmpty {
+            NoProjectHome(agents: agents)
+        } else if model.offersSidebarFolders, model.focusedProjectID != nil,
+            model.currentProject.map({ model.allSessions(in: $0.id).isEmpty }) == true
         {
             SidebarFolderHome(agents: agents)
-        } else if homeNext {
+        } else if homeNext || model.currentProject == nil {
             next(agents: agents)
         } else if let current = model.currentProject {
             HomeView(
@@ -34,9 +34,7 @@ struct HomeDetail: View {
                 onSelectTask: { model.selection = $0 }
             )
         } else {
-            HomeWelcomeView(
-                agents: agents, addProjectShortcut: CommandRegistry.shared.keyboardShortcut(for: .projectOpen),
-                onAddProject: { model.isAddingProject = true })
+            NoProjectHome(agents: agents)
         }
     }
 
