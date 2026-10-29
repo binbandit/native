@@ -3,6 +3,8 @@ import NativeHostClient
 import NativeHostProtocol
 import Testing
 
+@testable import NativeHost
+
 @Suite("Queue update ownership", .serialized, .timeLimit(.minutes(1)))
 struct HostQueueUpdateTests {
     @Test("An item removed or drained after the client snapshot cannot acknowledge an edit", arguments: [false, true])
@@ -32,4 +34,25 @@ struct HostQueueUpdateTests {
         if drained { #expect(await recorder.mirror(session.id).userMessages.contains("original comment packet")) }
         await recorder.stop()
     }
+
+    @HostActor
+    @Test("An in-flight steer cannot acknowledge an edit of its earlier queue snapshot")
+    func inFlightSteerCannotAcknowledgeEdit() async throws {
+        let rig = try HostStopCommandRig()
+        defer { rig.cleanup() }
+        let recorder = try await rig.connect()
+        let summary = try await recorder.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: rig.harness.root.path, attach: true))
+        let session = try #require(rig.core.sessions[summary.id])
+        let original = OutgoingPrompt(text: "original comment packet")
+        session.queue = [StoredQueueItem(prompt: original, isSteering: true)]
+        try rig.core.store.setQueue(session.queue, for: session.id)
+        await #expect(throws: RPCError.self) {
+            try await recorder.client.updateQueued(
+                QueueItemParams(sessionID: session.id, itemID: original.id, text: "edited comment packet"))
+        }
+        #expect(session.queue.map(\.prompt.text) == ["original comment packet"])
+        await recorder.stop()
+    }
+
 }
