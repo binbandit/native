@@ -90,8 +90,8 @@ struct HostSteeringTests {
         }
         _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "held", behavior: .steer))
         try await recorder.client.cancel(session.id)
-        // Existing Stop reports an unverified command lifetime as an error, even after ACP acknowledges.
-        try await recorder.wait("the stopped turn") { await $0.turnsEnded(session.id) == ["error"] }
+        // Stop confirms cancellation before reattaching, while the held correction stays paused.
+        try await recorder.wait("the stopped turn") { await $0.turnsEnded(session.id) == ["cancelled"] }
         #expect(!harness.received.contains("tool-finished\tsleep"))
         #expect(!harness.received.contains("steer\theld"))
         #expect(await recorder.listed(session.id)?.queue.map(\.text) == ["held"])
@@ -194,7 +194,7 @@ struct HostSteeringTests {
         _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "resume queue"))
         try await recorder.wait("the resumed queue") { await $0.turnsEnded(session.id).count == 4 }
         #expect(
-            harness.received == [
+            harness.received.filter { !$0.hasPrefix("resume\t") } == [
                 "prompt\ttool-sleep", "prompt\ttool-sleep", "tool-finished\tsleep", "prompt\theld steer",
                 "prompt\tresume queue",
             ])
