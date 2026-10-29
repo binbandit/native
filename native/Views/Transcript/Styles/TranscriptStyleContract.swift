@@ -22,7 +22,7 @@ extension ExtensionPoint where Contract == any TranscriptStyle {
 /// are, which pending request answers the permission shortcuts, and how to name other sessions.
 struct TranscriptStyleConfiguration {
     let session: SessionModel
-    /// Whether reads and searches show one by one rather than folded into exploration rows.
+    /// Whether tool calls show one by one rather than a run of them folded into one line.
     let unfoldsExploration: Bool
     let openSubagent: (SessionID) -> Void
     /// Another session's title, for naming the tasks this one exchanges messages with.
@@ -50,7 +50,7 @@ struct TranscriptStyleConfiguration {
     /// a style that plans turn by turn keeps its own per turn instead.
     var rows: [TranscriptRow] {
         let items = session.state.items
-        return unfoldsExploration ? items.map(TranscriptRow.item) : TranscriptRow.rows(from: items)
+        return TranscriptRow.rows(from: items, grouping: !unfoldsExploration)
     }
 
     /// How to refer to another session in this transcript's session messages.
@@ -79,9 +79,10 @@ extension TranscriptStyleConfiguration {
         .environment(\.permissionShortcutsEnabled, call.id == shortcutTarget)
     }
 
-    func exploration(_ calls: [ToolCallState]) -> some View {
-        // Calls waiting for approval are never folded, so a group has nothing to answer.
-        ToolActivityGroupView(calls: calls) { _ in }
+    func toolGroup(_ group: ToolWorkGroup, isLive: Bool, thinking: [Int: ThinkingClock] = [:]) -> some View {
+        // Calls waiting for approval are never in a group, so a group has nothing to answer.
+        ToolGroupView(group: group, isLive: isLive, thinking: thinking)
+            .equatable()
     }
 
     func subagent(_ subagent: SubagentState) -> some View {

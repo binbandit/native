@@ -5,6 +5,8 @@ import Foundation
 public struct TaskActivityNarration: Equatable, Sendable {
     public var verb: String
     public var object: String?
+    /// The object is code (a file, a command), which some places set in code type.
+    public var objectIsCode = false
     public var progress: Progress?
 
     public struct Progress: Equatable, Sendable {
@@ -30,23 +32,11 @@ public struct TaskActivityNarration: Equatable, Sendable {
             return call
         }.first
         if let call {
-            verb =
-                switch call.kind {
-                case .read: "Reading"
-                case .edit: "Editing"
-                case .delete: "Deleting"
-                case .move: "Moving"
-                case .search: "Searching"
-                case .execute: "Running"
-                case .fetch: "Fetching"
-                case .think: "Thinking"
-                case .switchMode, .other: "Working"
-                }
-            object =
-                call.kind == .execute ? (call.shellCommand ?? call.title) : (call.locations.first?.path ?? call.title)
-            if let value = object, value.lowercased().hasPrefix(verb.lowercased() + " ") {
-                object = String(value.dropFirst(verb.count + 1))
-            }
+            // The transcript's own words for the call, so the two never disagree.
+            let wording = call.wording
+            verb = wording.verb?.progressive ?? (wording.category == .mcp ? "Using" : "Working")
+            object = wording.object
+            objectIsCode = wording.objectIsCode
         } else {
             verb = "Working"
             object = nil

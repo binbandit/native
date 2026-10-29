@@ -1,11 +1,13 @@
 import ACP
 import SwiftUI
 
-/// What a tool row's detail panel shows, per the presentation's body style.
+/// What a tool row's detail panel shows, per the presentation's body style. Long output shows its
+/// useful end (`ToolOutputExcerpt`): a command's last lines, a file's or a search's first.
 struct ToolCallBody: View {
     let call: ToolCallState
     let presentation: ToolPresentation
-    let phase: ToolPhase
+
+    private var phase: ToolPhase { presentation.phase }
 
     var body: some View {
         let artifacts = call.artifacts
@@ -38,9 +40,7 @@ struct ToolCallBody: View {
                 phase: phase, hasArtifacts: hasArtifacts)
         case .lines:
             if let output = ToolOutput.text(of: call) {
-                Text(verbatim: output)
-                    .foregroundStyle(.dsTextSecondary)
-                    .monospacedOutput()
+                ToolOutputText(output: output, keeping: .start)
             } else {
                 GenericOutput(call: call)
             }
@@ -101,7 +101,8 @@ enum ToolOutput {
     }
 }
 
-/// `$ command` with the prompt dimmed, then the output.
+/// `$ command` with the prompt dimmed, then its output: the last of it when there's a lot, since
+/// that's where the result and the error are.
 private struct CommandOutput: View {
     let command: String
     let output: String?
@@ -110,15 +111,56 @@ private struct CommandOutput: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.xxs) {
             Text("\(Text(verbatim: "$").foregroundStyle(.dsTextTertiary)) \(Text(verbatim: command))")
+                .toolOutputType()
             if let output, !output.isEmpty {
-                Text(verbatim: output)
-                    .foregroundStyle(.dsTextSecondary)
+                ToolOutputText(output: output, keeping: .end, isPadded: false)
             } else if phase == .running {
                 Text("Waiting for command output…")
                     .foregroundStyle(.dsTextTertiary)
+                    .toolOutputType()
             }
         }
-        .monospacedOutput()
+        .toolOutputPadding()
+    }
+}
+
+/// Output as plain monospaced text, cut to `ToolOutputExcerpt` with a note of what's left out and
+/// a way to copy all of it.
+private struct ToolOutputText: View {
+    let output: String
+    let keeping: ToolOutputExcerpt.End
+    var color: Color = .dsTextSecondary
+    /// Whether it pads itself inside the panel, or sits in a block that does.
+    var isPadded = true
+
+    var body: some View {
+        let excerpt = ToolOutputExcerpt(output, keeping: keeping)
+        VStack(alignment: .leading, spacing: DS.Space.sm) {
+            if keeping == .end, let note = excerpt.note { ToolOutputExcerptNote(note: note, output: output) }
+            Text(verbatim: excerpt.text)
+                .foregroundStyle(color)
+                .toolOutputType()
+            if keeping == .start, let note = excerpt.note { ToolOutputExcerptNote(note: note, output: output) }
+        }
+        .toolOutputPadding(isPadded)
+    }
+}
+
+/// "Showing the last 400 of 12,345 lines", with Copy All.
+private struct ToolOutputExcerptNote: View {
+    let note: String
+    let output: String
+
+    var body: some View {
+        HStack(spacing: DS.Space.md) {
+            Text(note)
+                .foregroundStyle(.dsTextTertiary)
+            Button("Copy All") { DSPasteboard.copy(output) }
+                .buttonStyle(.ds(.ghost))
+                .help("Copy the whole output")
+            Spacer(minLength: 0)
+        }
+        .font(.dsCaption)
     }
 }
 
@@ -144,9 +186,8 @@ private struct MCPOutput: View {
                 Divider()
             }
             if let output, !output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                Text(verbatim: output)
-                    .foregroundStyle(phase == .failed ? Color.dsDanger : .dsTextSecondary)
-                    .monospacedOutput()
+                ToolOutputText(
+                    output: output, keeping: .start, color: phase == .failed ? Color.dsDanger : .dsTextSecondary)
             } else if !hasArtifacts {
                 Text(placeholder)
                     .foregroundStyle(phase == .failed ? Color.dsDanger : .dsTextTertiary)
@@ -175,13 +216,9 @@ private struct GenericOutput: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             if call.content.isEmpty, let output = ToolOutput.printed(by: call) {
-                Text(verbatim: output)
-                    .foregroundStyle(.dsTextSecondary)
-                    .monospacedOutput()
+                ToolOutputText(output: output, keeping: .start)
             } else if call.content.isEmpty, let rawInput = call.rawInput {
-                Text(verbatim: rawInput.prettyPrinted())
-                    .foregroundStyle(.dsTextSecondary)
-                    .monospacedOutput()
+                ToolOutputText(output: rawInput.prettyPrinted(), keeping: .start)
             }
             ForEach(call.content.indices, id: \.self) { index in
                 ContentBlockView(content: call.content[index])
@@ -200,9 +237,10 @@ private struct ContentBlockView: View {
         case .content(let block):
             if let text = block.text.map(ToolErrorMarkup.stripped) {
                 if let code = text.unfenced.map(ToolErrorMarkup.stripped) {
-                    Text(verbatim: code)
-                        .foregroundStyle(.dsTextSecondary)
-                        .monospacedOutput()
+                    ToolOutputText(output: code, keeping: .start)
+                } else if text.utf8.count > ToolOutputExcerpt.maxCharacters {
+                    // Too long to lay out as Markdown in a row's panel.
+                    ToolOutputText(output: text, keeping: .start)
                 } else {
                     MarkdownView(text)
                         .font(.dsBody)
@@ -233,11 +271,22 @@ private struct ContentBlockView: View {
 private extension View {
     /// Tool output type: small monospaced text with roomy lines, padded inside the detail panel.
     func monospacedOutput() -> some View {
+        toolOutputType().toolOutputPadding()
+    }
+
+    func toolOutputType() -> some View {
         codeTextStyle(.compact)
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, DS.Space.lg)
-            .padding(.vertical, DS.Space.md)
+    }
+
+    @ViewBuilder func toolOutputPadding(_ isPadded: Bool = true) -> some View {
+        if isPadded {
+            padding(.horizontal, DS.Space.lg)
+                .padding(.vertical, DS.Space.md)
+        } else {
+            self
+        }
     }
 }
 
@@ -278,7 +327,7 @@ private extension String {
                 return nil
             }()
             if let call {
-                ToolCallBody(call: call, presentation: ToolPresentation(call), phase: .completed)
+                ToolCallBody(call: call, presentation: ToolPresentation(call))
                     .environment(\.openTranscriptArtifact, TranscriptArtifactOpener(session: nil, filesAreLocal: true))
                     .frame(width: 440)
             }

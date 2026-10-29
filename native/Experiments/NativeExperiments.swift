@@ -154,8 +154,8 @@ extension Gate {
 
     static let unfoldExploration = Gate(
         id: "unfold-exploration",
-        title: "Show every file read and search",
-        summary: "List each read and search on its own row instead of folding runs into “Explored 3 files”.",
+        title: "Show every tool call",
+        summary: "List each tool call on its own row instead of folding a run of them into one line.",
         site: "Transcript ▸ tool activity",
         stage: .labs,
         owner: "transcript",

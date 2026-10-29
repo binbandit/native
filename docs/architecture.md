@@ -679,8 +679,11 @@ messages name other sessions.
 
 `SessionModel` owns one `TranscriptDisclosures` (the UI-free ACP state) for its lifetime. Both styles
 receive it through the transcript environment, so switching sessions, recreating a transcript or
-opening a subagent does not discard disclosure choices. Tool rows, exploration groups and long runs
-start closed; pending approvals override the visible state without changing the saved choice.
+opening a subagent does not discard disclosure choices. Tool rows and groups of tool work start
+closed. What a row or group says comes from `ToolCallWording` and `ToolWorkSummary` in the ACP
+package, which `TranscriptRow.rows` groups (two or more calls in a row, with the reasoning between
+them; approvals and questions stay on their own; polling folds into the call it waits on), so the
+transcript, the well, the pull request ask and the companion all say the same thing.
 Scroll positions remain per window in `SessionTranscriptMemory`.
 
 ### Task worktree preparation

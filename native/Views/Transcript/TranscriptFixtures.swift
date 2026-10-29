@@ -108,6 +108,20 @@ enum TranscriptFixtures {
         }
     }()
 
+    /// Calls to show opened: a failed command, a command with far more output than a panel
+    /// shows, a refused edit, and one a stop cut short.
+    static let openedToolCalls: [ToolCallState] = {
+        var state = SessionState()
+        state.appendUserMessage("Run the tests")
+        for update in [failedBashUpdate, hugeOutputUpdate, rejectedEditUpdate, longCommandUpdate] {
+            state.apply(.toolCall(decode(update)))
+        }
+        state.endTurn(.cancelled)
+        return state.items.compactMap { item in
+            if case .toolCall(let call) = item { call } else { nil }
+        }
+    }()
+
     static let plan: [PlanEntry] = decode(
         """
         [
@@ -214,6 +228,28 @@ enum TranscriptFixtures {
                           "oldText": \(json(old)), "newText": \(json(new))}]}
             """
     }()
+
+    private static let hugeOutputUpdate: String = {
+        let output = (1...5000).map { "test_case_\($0) ... ok" }.joined(separator: "\n")
+        return """
+            {"toolCallId": "toolu_bash_huge", "name": "Bash", "title": "swift test", "kind": "execute", "status": "completed",
+             "rawInput": {"command": "cd /Users/me/Developer/app && swift test --parallel", "description": "Run every test"},
+             "content": [{"type": "content", "content": {"type": "text", "text": \(json("```console\n" + output + "\n```"))}}]}
+            """
+    }()
+
+    private static let rejectedEditUpdate = """
+        {"toolCallId": "toolu_edit_rejected", "name": "Edit", "title": "Edit /Users/me/Developer/app/Sources/Values.swift",
+         "kind": "edit", "status": "failed", "_meta": {"claudeCode": {"nonExecutionKind": "user-rejected"}},
+         "rawInput": {"file_path": "/Users/me/Developer/app/Sources/Values.swift"},
+         "content": [{"type": "diff", "path": "/Users/me/Developer/app/Sources/Values.swift", "oldText": "let a = 1\\n",
+                      "newText": "let a = 2\\n"}]}
+        """
+
+    private static let longCommandUpdate = """
+        {"toolCallId": "toolu_bash_long", "name": "Bash", "title": "Terminal", "kind": "execute", "status": "in_progress",
+         "rawInput": {"command": "xcodebuild -project native.xcodeproj -scheme native -configuration Debug -derivedDataPath /tmp/native-dd/preview build | xcbeautify --quiet --renderer terminal", "description": "Build the app"}}
+        """
 
     private static let failedUpdate = """
         {"toolCallId": "toolu_fetch", "name": "WebFetch", "title": "Fetch https://example.com/docs", "kind": "fetch", "status": "failed",

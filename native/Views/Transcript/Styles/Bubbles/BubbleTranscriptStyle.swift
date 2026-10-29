@@ -109,7 +109,8 @@ private struct BubbleRowView: View {
                 BubbleActivityTray {
                     ForEach(rows) { row in
                         switch row {
-                        case .exploration(let calls): transcript.exploration(calls)
+                        case .toolGroup(let group):
+                            transcript.toolGroup(group, isLive: transcript.isWorking && group.isRunning)
                         case .item(.toolCall(let call)): transcript.toolCall(call)
                         // Trays only hold tool activity.
                         case .item: EmptyView()

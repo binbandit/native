@@ -6,31 +6,22 @@ import Observation
 public final class TranscriptDisclosures {
     public init() {}
 
-    /// Rows open, by id. Tool rows and exploration groups start closed.
+    /// Tool rows and groups of tool work open, by id. They start closed.
     private var opened: Set<String> = []
-    /// Long runs of tool work the user opened. They start closed.
-    private var openedRuns: Set<String> = []
     /// Earlier turns the user opened back up.
     public var unfoldedTurns: Set<TranscriptTurn.ID> = []
 
-    public func isOpen(_ id: String, hasPendingApproval: Bool = false) -> Bool {
-        hasPendingApproval || opened.contains(id)
+    public func isOpen(_ id: String) -> Bool {
+        opened.contains(id)
     }
 
     public func toggle(_ id: String) {
         if opened.remove(id) == nil { opened.insert(id) }
     }
 
-    /// Approval visibility is derived, so answering returns to the user's unchanged choice.
-    public func isRunOpen(_ id: String, hasPendingApproval: Bool = false) -> Bool {
-        hasPendingApproval || openedRuns.contains(id)
-    }
-
-    public func toggleRun(_ id: String) {
-        if openedRuns.remove(id) == nil { openedRuns.insert(id) }
-    }
-
-    public func openRun(_ id: String) {
-        openedRuns.insert(id)
+    /// Opens a row or group without closing it if it's open already, as revealing a search result
+    /// inside it does.
+    public func open(_ id: String) {
+        opened.insert(id)
     }
 }
