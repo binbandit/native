@@ -182,7 +182,7 @@ leaving a partial installation. Env files inside dependency caches
 are omitted; the env switch selects project env files separately.
 
 **Setup command** edits the existing Setup script. It runs once after cloning, holds messages until
-it finishes or is skipped, and keeps output in the task's setup banner and terminal rather than
+it finishes or is skipped, and keeps output in the task's expandable setup banner rather than
 sending it to the agent. Existing script trust, managed policy, timeouts, Stop and Retry apply.
 Clones are independent snapshots. Tool caches containing absolute paths may rebuild after moving;
 Python environments with absolute interpreter links are skipped and should be recreated by setup.
