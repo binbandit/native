@@ -268,7 +268,9 @@ Peek for review. The full request is always shown there. The current task and it
 A click on a row's signal, a force click, or Peek in its context menu opens the same 600pt Peek,
 drawn in the window beside its row and never over the toolbar. Escape returns focus to the list
 when it opened Peek; clicking outside closes Peek and keeps focus with the clicked control.
-Questions keep their digit, arrow and Return controls. An answer closes Peek. Hidden or filtered
+While it is open, Peek owns the ask keys: ⌘Y allows (or holds, for an irreversible command) and
+⌘⇧⌫ declines the ask it shows, with the same hints as the composer, and Answer Oldest Ask waits
+until it closes. Questions keep their digit, arrow and Return controls. An answer closes Peek. Hidden or filtered
 rows open it at the top of the content. The experiment defaults to off; the shortcuts below keep today's
 behavior while it is off. Workflow and expedition approvals retain their local shortcut when no
 task ask owns ⌘Y and the user has not reassigned it to another command.

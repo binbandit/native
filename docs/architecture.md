@@ -448,9 +448,11 @@ when the scene becomes active, then holds still. Reduce Motion is always still. 
 the oldest reachable ask across projects and child tasks, using the same request identity as ⌘Y.
 
 Slice 2 adds `TaskPeek`: Space in the sidebar, the signal button, force click and the context menu
-all open one 600pt popover without changing selection. A visible row supplies its anchor; hidden
-rows and Settings use the window anchor. The model routes captured requests to their owning
-session and checks identity again before answering. Questions, plans and commands with unknown
+all open one in-window card, up to 600pt wide, without changing selection. A visible row supplies
+its anchor; the shared `TaskPeekFrame` places the card beside it when space permits and keeps the
+whole card below the toolbar and inside the window. Narrow windows, hidden rows and Settings use
+a bounded fallback, with tall content scrolling inside the card. The model routes captured requests
+to their owning session and checks identity again before answering. Questions, plans and commands with unknown
 or irreversible effects open Peek from ⌘Y; a small ACP vocabulary permits routine approvals.
 Peek reuses `AnnotatedApprovalView` and the composer's question (`AnnotatedQuestionView` with Fine
 print, `AgentQuestionSection` without), including command explanations,

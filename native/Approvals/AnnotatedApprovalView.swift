@@ -9,10 +9,16 @@ struct AnnotatedApprovalView: View {
     let call: ToolCallState
     let agentName: String
     let workingDirectory: String
+    /// The agent's own words for why it asks (`SessionState.reason(forToolCall:)`).
+    var reason: String? = nil
+    /// The task the request belongs to, so a push's remote is read on the task's machine.
+    var session: SessionKey? = nil
     var homeDirectory: String? = nil
     var knowledge: CommandKnowledge = .bundled
     var isAvailable = true
     var responseAttempt = 0
+    /// Peek supplies scrolling for the whole card, including the instruction field.
+    var capsBodyHeight = true
     var forceReducedMotion = false
     var focusRequested = false
     var didFocus: () -> Void = {}
@@ -27,6 +33,7 @@ struct AnnotatedApprovalView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.legacyAskShortcutEnabled) private var legacyShortcut
     @Environment(\.permissionShortcutsEnabled) private var shortcutsEnabled
+    @Environment(\.approvalPushReach) private var loadPushReach
     @FocusState private var instructionFocused: Bool
     @State var instruction = ""
     @State var sending = false
@@ -34,13 +41,91 @@ struct AnnotatedApprovalView: View {
     @State private var keyboardHeld = false
     @State private var committed = false
     @State var failure: String?
+    @State var pushReach: ApprovalPushReach?
+
+    private var approvalBody: some View {
+        VStack(alignment: .leading, spacing: DS.Space.xl) {
+            VStack(alignment: .leading, spacing: DS.Space.xxs) {
+                Text(requestTitle)
+                    .font(DS.Approval.titleFont).foregroundStyle(.dsTextPrimary)
+                if let subline {
+                    DSInlineCodeText(subline, codeFont: .dsMonoCaption)
+                        .font(.dsBody).foregroundStyle(.dsTextSecondary)
+                        .lineLimit(DS.Approval.reasonLineLimit)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .help(subline)
+                }
+            }
+            if !planEntries.isEmpty {
+                ComposerPlanSection(
+                    plan: PlanProgress(entries: planEntries), isWorking: false,
+                    isExpanded: $planExpanded, presentation: .review, showMore: showMorePlan)
+            }
+            if let analysis {
+                VStack(spacing: 0) {
+                    ApprovalCommandDiagram(analysis: analysis)
+                    if let pushReach, !pushReach.dropped.isEmpty {
+                        Rectangle().fill(DS.Approval.separator(colorScheme)).frame(height: DS.Approval.rule)
+                        ApprovalPushDrops(reach: pushReach)
+                    }
+                    if let replacement = analysis.suggestedCommand, rejection != nil {
+                        Rectangle().fill(DS.Approval.separator(colorScheme)).frame(height: DS.Approval.rule)
+                        fixIt(replacement)
+                    }
+                }
+                .background(DS.Approval.well(colorScheme), in: .rect(cornerRadius: DS.Radius.control))
+            } else if call.kind == .switchMode,
+                case .object(let input) = call.rawInput, input.count == 1,
+                let proposal = input["plan"]?.stringValue, call.content.isEmpty, call.rawOutput == nil
+            {
+                // The permission proposal can differ from its progress checklist. Keep its
+                // exact words visible without exposing the surrounding wire-format object.
+                Text(verbatim: proposal).font(.dsBody).foregroundStyle(.dsTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
+            } else {
+                ToolCallBody(call: call, presentation: ToolPresentation(call), phase: ToolPhase(call))
+            }
+            if !isAvailable {
+                Text("Waiting for the task to reconnect before you can answer.")
+                    .font(.dsBody).foregroundStyle(.dsTextSecondary)
+            }
+            if let policy = policy?.policy, policy.isManaged(.forbiddenPermissionModes) {
+                Label(
+                    "Permission modes are managed by \(policy.organizationName ?? "your organization").",
+                    systemImage: "lock"
+                )
+                .font(.dsBody).foregroundStyle(.dsTextTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+            footer
+            if sending {
+                Text("Sending your instruction...").font(.dsBody).foregroundStyle(.dsTextTertiary)
+            }
+            if let failure {
+                Text(failure).font(.dsBody).foregroundStyle(.dsDanger)
+            }
+        }
+        .padding(.horizontal, DS.Approval.inset)
+        .padding(.top, DS.Space.xl)
+        .padding(.bottom, DS.Approval.commandInset)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var commandDirectory: String { call.rawInput?["cwd"]?.stringValue ?? workingDirectory }
 
     private var analysis: ApprovalCommand? {
-        call.shellCommand.map {
-            ApprovalCommand(
-                command: $0,
-                workingDirectory: call.rawInput?["cwd"]?.stringValue ?? workingDirectory,
-                worktreeDirectory: workingDirectory, homeDirectory: homeDirectory, knowledge: knowledge)
+        guard let command = call.shellCommand else { return nil }
+        let analysis = ApprovalCommand(
+            command: command, workingDirectory: commandDirectory, worktreeDirectory: workingDirectory,
+            homeDirectory: homeDirectory, knowledge: knowledge)
+        return pushReach.map { analysis.describingPushTarget($0.description) } ?? analysis
+    }
+
+    private var pushRequest: ApprovalPushReach.Request? {
+        analysis?.pushTarget.map {
+            .init(
+                session: session, permission: call.permission?.requestID,
+                folder: URL(filePath: commandDirectory, directoryHint: .isDirectory), target: $0)
         }
     }
     private var options: [PermissionOption] { call.permission?.options ?? [] }
@@ -53,71 +138,25 @@ struct AnnotatedApprovalView: View {
             return planEntries.isEmpty
                 ? "\(agentName) has a plan" : "\(agentName) has a plan: \(planEntries.count) steps"
         }
-        return "\(agentName) wants to \(analysis?.action ?? call.title)"
+        guard let analysis else { return "\(agentName) wants to \(call.title)" }
+        return
+            "\(agentName) wants to \(analysis.pushTarget?.headline(place: pushReach?.place, destination: pushReach?.branch) ?? analysis.headline)"
+    }
+
+    /// Under the headline: the agent's reason in its own words, or the plan's title. Never a line
+    /// about Native itself.
+    private var subline: String? {
+        reason ?? (call.kind == .switchMode ? call.title : nil)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ApprovalScrollView {
-                VStack(alignment: .leading, spacing: DS.Space.xl) {
-                    VStack(alignment: .leading, spacing: DS.Space.xxs) {
-                        Text(requestTitle)
-                            .font(DS.Approval.titleFont).foregroundStyle(.dsTextPrimary)
-                        Text(
-                            analysis?.reason
-                                ?? (call.kind == .switchMode ? call.title : "The agent asked for permission.")
-                        )
-                        .font(.dsBody).foregroundStyle(.dsTextTertiary)
-                    }
-                    if !planEntries.isEmpty {
-                        ComposerPlanSection(
-                            plan: PlanProgress(entries: planEntries), isWorking: false,
-                            isExpanded: $planExpanded, presentation: .review, showMore: showMorePlan)
-                    }
-                    if let analysis {
-                        VStack(spacing: 0) {
-                            ApprovalCommandDiagram(analysis: analysis)
-                            if let replacement = analysis.suggestedCommand, rejection != nil {
-                                Rectangle().fill(DS.Approval.separator(colorScheme)).frame(height: DS.Approval.rule)
-                                fixIt(replacement)
-                            }
-                        }
-                        .background(DS.Approval.well(colorScheme), in: .rect(cornerRadius: DS.Radius.control))
-                    } else if call.kind == .switchMode,
-                        case .object(let input) = call.rawInput, input.count == 1,
-                        let proposal = input["plan"]?.stringValue, call.content.isEmpty, call.rawOutput == nil
-                    {
-                        // The permission proposal can differ from its progress checklist. Keep its
-                        // exact words visible without exposing the surrounding wire-format object.
-                        Text(verbatim: proposal).font(.dsBody).foregroundStyle(.dsTextSecondary)
-                            .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
-                    } else {
-                        ToolCallBody(call: call, presentation: ToolPresentation(call), phase: ToolPhase(call))
-                    }
-                    if !isAvailable {
-                        Text("Waiting for the task to reconnect before you can answer.")
-                            .font(.dsBody).foregroundStyle(.dsTextSecondary)
-                    }
-                    if let policy = policy?.policy, policy.isManaged(.forbiddenPermissionModes) {
-                        Label(
-                            "Permission modes are managed by \(policy.organizationName ?? "your organization").",
-                            systemImage: "lock"
-                        )
-                        .font(.dsBody).foregroundStyle(.dsTextTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    }
-                    footer
-                    if sending {
-                        Text("Sending your instruction...").font(.dsBody).foregroundStyle(.dsTextTertiary)
-                    }
-                    if let failure {
-                        Text(failure).font(.dsBody).foregroundStyle(.dsDanger)
-                    }
+            Group {
+                if capsBodyHeight {
+                    ApprovalScrollView { approvalBody }
+                } else {
+                    approvalBody
                 }
-                .padding(.horizontal, DS.Approval.inset)
-                .padding(.top, DS.Space.xl)
-                .padding(.bottom, DS.Approval.commandInset)
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .disabled(sending || committed || !isAvailable)
             if rejection != nil {
@@ -157,6 +196,13 @@ struct AnnotatedApprovalView: View {
             } else if openTask != nil {
                 taskLink.frame(maxWidth: .infinity, alignment: .trailing).padding(DS.Approval.inset)
             }
+        }
+        .task(id: pushRequest) {
+            pushReach = nil
+            guard let pushRequest, let loadPushReach else { return }
+            let reach = await loadPushReach(pushRequest)
+            guard !Task.isCancelled else { return }
+            pushReach = reach
         }
         .onChange(of: focusRequested, initial: true) { _, requested in
             if requested { instructionFocused = true; didFocus() }
@@ -199,8 +245,11 @@ struct AnnotatedApprovalView: View {
     private var fixItExplanation: some View {
         HStack(spacing: DS.Approval.fixItGap) {
             Text("Fix-it").font(.dsCaption).foregroundStyle(.dsTextTertiary)
-            Text(analysis?.suggestedExplanation ?? "Review the suggested alternative before running it.")
-                .font(.dsBody).foregroundStyle(.dsTextSecondary)
+            DSInlineCodeText(
+                analysis?.suggestedExplanation ?? "Review the suggested alternative before running it.",
+                codeFont: DS.Approval.fixItFont, codeColor: .dsTextPrimary
+            )
+            .font(.dsBody).foregroundStyle(.dsTextSecondary)
         }
     }
 
@@ -338,43 +387,3 @@ struct AnnotatedApprovalView: View {
         }
     }
 }
-
-#if DEBUG
-#Preview("Approval - force, cache, unknown, narrow, failed, reconnecting") {
-    DSPreviewPair {
-        ScrollView {
-            VStack(spacing: DS.Space.xl) {
-                ForEach(ApprovalPreviewFixtures.commands, id: \.self) { command in
-                    ApprovalPreviewFixtures.card(command: command).frame(width: 760)
-                }
-                ApprovalPreviewFixtures.card(command: ApprovalPreviewFixtures.commands[0]).frame(width: 360)
-                ApprovalPreviewFixtures.card(
-                    command: ApprovalPreviewFixtures.commands[0], options: ApprovalPreviewFixtures.distinctOptions
-                ).frame(width: 760)
-                ApprovalPreviewFixtures.card(
-                    command: ApprovalPreviewFixtures.commands[2], options: ApprovalPreviewFixtures.distinctOptions
-                ).frame(width: 760)
-                ApprovalPreviewFixtures.card(
-                    command: ApprovalPreviewFixtures.commands[0],
-                    failure: "Couldn't send your instruction. Your words are kept. Try again."
-                ).frame(width: 760)
-                ApprovalPreviewFixtures.card(command: ApprovalPreviewFixtures.commands[0], sending: true)
-                    .frame(width: 760)
-                ApprovalPreviewFixtures.card(command: ApprovalPreviewFixtures.commands[0], isAvailable: false)
-                    .frame(width: 760)
-            }.padding(DS.Space.xl)
-        }.frame(height: 900)
-    }
-}
-#Preview("Approval - global ask owns the shortcut") {
-    DSPreviewPair {
-        VStack(spacing: DS.Space.xl) {
-            ApprovalPreviewFixtures.card(command: ApprovalPreviewFixtures.commands[0])
-            ApprovalPreviewFixtures.card(command: ApprovalPreviewFixtures.commands[2])
-        }
-        .environment(\.legacyAskShortcutEnabled, false)
-        .frame(width: 760)
-        .padding(DS.Space.xl)
-    }
-}
-#endif

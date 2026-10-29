@@ -72,12 +72,27 @@ struct SidebarDesignFixture: View {
             )
             .environment(\.projectIconStore, SidebarPreviewFixtures.iconStore)
             .environment(\.taskSignalReducedMotion, scenario == "reduce-motion")
+            .environment(\.approvalPushReach, { _ in ApprovalPreviewFixtures.forceReach })
             .task {
                 CommandRegistry.shared.register(NativeCommand.taskPeek(model: app))
                 if let state = TaskPeekPreviewFixtures.State(rawValue: String(scenario.dropFirst(5))),
                     scenario.hasPrefix("peek-")
                 {
                     app.taskPeek.request = TaskPeekPreviewFixtures.prepare(app, state: state)
+                }
+                if scenario.hasPrefix("composer-") {
+                    let key = SessionKey(
+                        agent: AgentDefinition.ID(rawValue: "codex"),
+                        id: SessionID(scenario == "composer-destructive" ? "native-4" : "native-1"))
+                    if scenario == "composer-unknown", let session = app.session(key) {
+                        for call in session.permissionRequests {
+                            session.state.resolvePermission(toolCallID: call.id)
+                        }
+                        session.previewPermissionRequest(
+                            command: ApprovalPreviewFixtures.commands[2], reason: ApprovalPreviewFixtures.reasons[2]
+                        )
+                    }
+                    app.selection = key
                 }
             }
         }

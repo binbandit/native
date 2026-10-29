@@ -76,6 +76,7 @@ struct HomeNextAskView: View {
         } else if let request = task.request, let call = request.call {
             AnnotatedApprovalView(
                 call: call, agentName: request.session.agentName, workingDirectory: request.session.cwd.path,
+                reason: request.session.state.reason(forToolCall: call.id), session: request.session.key,
                 homeDirectory: model.device(of: task.id) == .thisMac ? NSHomeDirectory() : nil,
                 knowledge: model.plugins.commandKnowledge,
                 isAvailable: request.session.phase != .disconnected && model.taskIsReachable(task.id),

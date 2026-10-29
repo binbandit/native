@@ -10,7 +10,13 @@ These are descriptions of conventional tool syntax, not proof of an executable's
 successful result. An executable on PATH, alias, configuration, hook, script, server, or file may
 behave differently. Native does not claim to have inspected any of them. Unknown programs,
 subcommands, flags, missing option values, or unsupported shell syntax produce no annotations or
-alternative. They retain the existing unknown-command approval behavior.
+alternative. Their approval says Native makes no claims about them and where they run, and offers a
+plain Allow: an unknown command never borrows the irreversible treatment.
+
+Copy is written for the person deciding, not as tool output: the action reads as the headline
+("Codex wants to run Swift tests"), the consequence leads with what happens and then the one thing
+worth knowing ("Runs from the worktree. Builds and executes project code."), and operands are only annotated
+where Native adds something, like a path's known location and whether it is inside the worktree.
 
 ## Version 1 schema
 
@@ -48,14 +54,16 @@ The root object has exactly three fields. Unknown fields are rejected to catch m
 | `commands` | 1 to 128 command grammars. |
 | `words` | Exact subcommand words (0 to 4), immediately after the executable. The longest matching sequence wins. Empty means the program itself. |
 | `summary` | Short action text, up to 300 characters. Optional `{count}` is the parsed operand count. |
-| `consequence` | Short plain text, up to 300 characters. No template variables. Describe effects and what was not inspected, without promising success, safety or undo. |
-| `destructive` | Required Boolean. True uses deliberate confirmation. An option can raise this to true, never lower it. Build tools and script runners use true because their inputs execute code. |
+| `consequence` | Up to 300 characters: what happens, then the one thing worth knowing, as two short sentences. The first is set in bold. Optional `{folder}` is "the worktree" when the command starts there, otherwise the folder's name. Never promise success, safety or an undo Native can't perform. |
+| `destructive` | Required Boolean. True when the effect can't be taken back from here: it deletes or overwrites data without a copy (files, uncommitted changes, stashes, recovery records, remote history), publishes something that can't be withdrawn (a package version, a merge), or runs as root. Those asks use a 0.6-second hold and never offer Always Allow. Building, testing, running project scripts, committing and pushing new commits are false: they are a plain Allow. An option or operand can raise this to true, never lower it. |
+| `destructiveConsequence` | Optional, like `consequence`. Said instead of it when an option or operand makes a routine command irreversible (`git push --force`). |
+| `destructiveOperandPrefixes` | Optional, up to 16 nonempty literal prefixes of up to 64 characters. An operand starting with one makes the command irreversible, as `+main` and `:main` do for a push. |
 | `options` | Up to 128 known options. An unknown option rejects the whole command. Names must be unique within a command. |
 | `optionsBeforeOperands` | Optional Boolean, default false. True ends option parsing at the first operand, for wrappers such as `sudo` and `ssh`. Remaining arguments are explicitly uninspected. |
 | `allowsTerminator` | Optional Boolean, default true. False rejects a standalone `--`; used for `find`, whose expression predicates must never become unexamined operands. |
 | `shortClusters` | Optional Boolean, default false. Enables combinations such as `rm -rf` and `tar -xzf`. Every flag must be known; a value-taking flag consumes the rest or the next word. |
 | `operands.minimum`, `maximum` | Required nonnegative minimum and optional maximum, each up to 128. Omit maximum (or use null) for no grammar-specific upper bound. The parser still caps the entire command at 512 tokens. |
-| `operands.summary` | Up to 300 characters. `{value}` is the literal unquoted argument. `{scope}` is lexical reach and `{location}` is a conventional location name when `paths` is true. User text is substituted last. |
+| `operands.summary` | Optional, up to 300 characters. Omit it when the operand speaks for itself; it is then not annotated. `{value}` is the literal unquoted argument. When `paths` is true, `{scope}` is "inside the worktree" or "outside the worktree" (lexically) and `{location}` is a known location's name, or the argument as typed. User text is substituted last. |
 | `operands.paths` | Required Boolean. True permits lexical normalization against the requested working directory and task worktree. It never resolves symlinks or reads contents. |
 
 An option has `names`, `summary`, `destructive`, and `value`. Its names start with `-` (the reserved
@@ -71,7 +79,8 @@ own. Only whole valueless option tokens can be replaced. Short clusters containi
 are rejected. Every matching occurrence is replaced, preserving all other characters, quoting, and
 whitespace. The alternative is a suggestion the person can send as a new instruction, never a
 command executed by Native. The shipped `git push --force` alternative is `--force-with-lease`;
-both remain destructive because a lease may still replace remote history. Optional command fields
+both remain destructive because a lease may still replace remote history. An alternative may quote
+flags in backticks, which are shown as code. Optional command fields
 `noSuggestionWithOptions` (known option names) and `noSuggestionWithOperandPrefixes` (nonempty
 literal prefixes, up to 64 characters) suppress alternatives in incompatible forms. The shipped
 push rule blocks them with `--mirror`, `--delete`, or operands starting with `+` or `:`. These forms
@@ -82,8 +91,20 @@ A location has `kind`, `path`, and `summary` (up to 300 characters, no templates
 component boundaries after lexical normalization, so `.build/../source` is not a build cache.
 `~/` only expands when the shell token was unquoted and the task's home directory is known. A remote
 task does not borrow the client's home. The shipped entries identify DerivedData, node_modules,
-and .build as conventional locations. They never lower deletion risk or claim files are rebuildable:
-local edits, replaced directories and symbolic links have not been measured.
+and .build as conventional locations ("Xcode's build cache"). They never lower deletion risk or claim
+files are rebuildable: local edits, replaced directories and symbolic links have not been measured.
+
+## Pushes
+
+`git push` has a describer of its own (`GitPushTarget`), because its arguments name a place and
+the ask should name it too. When the remote and a single branch are plain words, the headline names
+the consequence ("overwrite main on origin", "delete old-topic on origin", "push fix/x to origin")
+and the remote and refspec are annotated as one part. The approval then asks the Git feature to read,
+from the task's own clone on the task's machine, the remote's host and repository and, for a force,
+the commits on the remote-tracking branch that the pushed commit doesn't have: "main on github.com ·
+binbandit/native · 3 commits ahead of yours" with the newest three listed. This never fetches, so it
+is as fresh as that clone's last fetch, and nothing leaves the machine to answer it. Several
+refspecs, `--all`, `--tags` and `--mirror` get no target. Source-only refs such as `HEAD` are resolved to local branches only when the remote has no configured push mapping and `push.default` is a known mode that preserves the source name. Upstream/tracking mode leaves the destination unknown, even without a remote push mapping. Otherwise the destination and dropped commits stay unknown; explicit `source:destination` refspecs retain their named destination.
 
 The document is limited to 1 MiB and 64 locations. Identifiers use ASCII letters, digits, `.`, `_`,
 `+`, and `-`, with `/` additionally allowed between executable path components. Text cannot contain

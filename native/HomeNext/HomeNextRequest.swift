@@ -34,7 +34,8 @@ struct HomeNextRequest {
     var summary: String {
         if let question { return question.request.message }
         guard let call else { return status.label }
-        return call.kind == .switchMode ? "Review the plan: \(call.title)" : "Allow \(call.title)?"
+        return call.kind == .switchMode
+            ? "Review the plan: \(call.title)" : call.approvalQuestion(workingDirectory: session.cwd.path)
     }
 
     func taskPeekID(task: SessionKey) -> TaskPeekAsk.ID? {

@@ -7,6 +7,8 @@ struct CommandKnowledgeMatch {
         let range: Range<Int>
         let option: CommandKnowledge.Option
     }
+    /// The program's names, so a family's own describer can recognize its commands.
+    let executables: [String]
     let rule: CommandKnowledge.Command
     let prefix: Range<Int>
     var options: [MatchedOption] = []
@@ -21,6 +23,7 @@ struct CommandKnowledgeMatch {
                 tokens.dropFirst().prefix($0.words.count).map(\.value) == $0.words
             })
         else { return nil }
+        executables = program.executables
         self.rule = rule
         prefix = first.range.lowerBound..<tokens[rule.words.count].range.upperBound
         var index = 1 + rule.words.count
@@ -103,11 +106,11 @@ struct CommandKnowledgeMatch {
 
     static func pathFacts(
         _ token: Token, cwd: String, root: String, home: String?, knowledge: CommandKnowledge
-    ) -> (scope: String, location: String) {
+    ) -> (scope: String, location: String?) {
         var path = token.value
         if path.hasPrefix("~") && token.expandsHome {
             guard path.hasPrefix("~/"), let home else {
-                return ("home directory unknown", "path; contents not inspected")
+                return ("home folder unknown", nil)
             }
             path = home + path.dropFirst()
         }
@@ -122,8 +125,7 @@ struct CommandKnowledgeMatch {
             }
         }
         return (
-            isInside(path, root: root) ? "lexically inside the worktree" : "lexically outside the worktree",
-            location?.summary ?? "path; contents not inspected"
+            isInside(path, root: root) ? "inside the worktree" : "outside the worktree", location?.summary
         )
     }
 }

@@ -13,9 +13,13 @@ extension AppModel {
         sessionList.flatMap { taskAsks(for: $0.id) }.min { $0.since < $1.since }
     }
 
+    /// An open Peek answers with its own buttons: ⌘Y and ⌘⇧⌫ act on the ask in front of the user,
+    /// never on an older one elsewhere.
+    var peekOwnsAskShortcut: Bool { taskPeek.request != nil && !taskPeek.showsAttentionList }
+
     /// What Answer Oldest Ask would answer right now. Rows show its keycap only on this ask, so a
-    /// hint never points at a keystroke Home has taken for its own approval.
-    var answerShortcutAsk: TaskPeekAsk? { homeNextOwnsAskShortcut ? nil : oldestTaskAsk }
+    /// hint never points at a keystroke Home or Peek has taken for its own approval.
+    var answerShortcutAsk: TaskPeekAsk? { homeNextOwnsAskShortcut || peekOwnsAskShortcut ? nil : oldestTaskAsk }
 
     func taskAsks(for key: SessionKey) -> [TaskPeekAsk] {
         guard taskIsAvailable(key), taskIsReachable(key), let session = session(key) else { return [] }

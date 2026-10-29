@@ -290,6 +290,9 @@ enum HomeNextPreviewFixtures {
             {"optionId":"allow","name":"Allow","kind":"allow_once"}]}
             """
         guard let request = SessionModel.previewDecode(RequestPermissionRequest.self, json) else { return }
+        if let reason = ApprovalPreviewFixtures.reason(for: command) {
+            session.state.apply(.agentMessageChunk(ContentChunk(content: .text(reason))), at: date)
+        }
         session.state.apply(.toolCall(request.toolCall), at: date)
         session.state.requestPermission(request, id: .int(1))
     }
