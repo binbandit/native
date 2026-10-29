@@ -42,6 +42,7 @@ struct ComposerView: View {
     /// Fine print's Task Settings was opened by Choose Model (⇧⌘E), so it highlights the current model.
     @State var settingsOpenedByCommand = false
     @State var settingsOpenedForPermissions = false
+    @State var isPermissionPickerOpen = false
     /// Fine print's context breakdown, which View ▸ Show Context Use opens below 70% too.
     @State var isContextUseOpen = false
     @State var isDropTargeted = false
@@ -293,11 +294,7 @@ struct ComposerView: View {
             }
             VStack(spacing: 0) {
                 if let change = session.modelChange {
-                    ComposerAgentReceiptSection(change: change) {
-                        settingsOpenedByCommand = false
-                        settingsOpenedForPermissions = true
-                        isModelPickerOpen = true
-                    }
+                    agentChangeReceipt(change)
                 }
                 if composerNext,
                     session.diffCommentStatus != nil || session.unresolvedCommentPacket != nil
