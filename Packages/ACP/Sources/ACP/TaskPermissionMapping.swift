@@ -68,7 +68,7 @@ public struct TaskPermissionMapping: Hashable, Sendable {
             })
         shown.name = "Permissions"
         shown.kind = .select(
-            currentValue: ["plan", "read-only"].contains(current) ? current : mode.rawValue,
+            currentValue: current == "plan" || (current == "read-only" && retained == nil) ? current : mode.rawValue,
             options: choices + restrictions)
         return shown
     }
