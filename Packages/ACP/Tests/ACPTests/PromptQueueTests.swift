@@ -76,4 +76,24 @@ struct PromptQueueTests {
         queue.update(queue.items[0].id, text: "  ")
         #expect(texts(queue) == ["b"])
     }
+    @Test func aSteerWhoseTurnEndedKeepsItsExplicitQueuePosition() throws {
+        var queue = PromptQueue()
+        let held = PromptQueue.Item("held steer", steersAfterTools: true, waitingForTool: "sleep 20")
+        queue.restore(held, at: 0)
+        queue.append("ordinary queue")
+        let ordinary = try #require(queue.items.last)
+        queue.pause()
+        queue.endSteering()
+        queue.move(ordinary.id, before: held.id)
+        #expect(queue.isPaused)
+        #expect(queue.visible.map(\.text) == ["ordinary queue", "held steer"])
+        queue.resume()
+        #expect(queue.next()?.id == ordinary.id)
+        let popped = queue.next()
+        let next = try #require(popped)
+        #expect(next.id == held.id)
+        #expect(!next.steersAfterTools)
+        #expect(next.waitingForTool == nil)
+    }
+
 }

@@ -82,7 +82,7 @@ private struct TaskWorkspaceRegression {
         let choices = try await app.workspaceOptions(for: source)
         try check(choices.contains { $0.choice == .branch("feature") }, "local branches are offered")
         try check(choices.contains { $0.isCurrent }, "current checkout is identified")
-        let command = NativeCommand.composer.first { $0.id.rawValue == "session.changeWorkspace" }
+        let command = NativeCommand.composer(model: app).first { $0.id.rawValue == "session.changeWorkspace" }
         try check(command?.isAvailable(CommandContext(session: source)) == true, "Task menu offers workspace change")
         command?.perform(CommandContext(session: source))
         try check(source.isWorkspacePickerRequested, "menu opens the picker through the model")
@@ -141,6 +141,21 @@ private struct TaskWorkspaceRegression {
         try check(
             try await repository.worktrees().count == countBeforeFailure, "failed replacement leaves no unused worktree"
         )
+
+        let unfinished = DiffCommentsPreviewFixtures.quotes(task: inNewTree.clientID)[0]
+        inNewTree.beginDiffComment(unfinished)
+        let editorsBeforeFailure = inNewTree.diffCommentEditors
+        await host.configure(disconnectOnConfig: true)
+        do {
+            _ = try await app.changeWorkspace(of: inNewTree, to: .newWorktree)
+            throw Failure("disconnected candidate was accepted")
+        } catch is Failure { throw Failure("disconnected candidate was accepted") } catch {}
+        try check(
+            inNewTree.diffCommentEditors == editorsBeforeFailure
+                && inNewTree.activeDiffComment == unfinished.comment?.id,
+            "failed candidate configuration keeps the source's unfinished comment")
+        inNewTree.diffCommentEditors = []
+        inNewTree.activeDiffComment = nil
 
         // Hold session/new at the wire: both composer sends and API sends must be refused before any await.
         await host.configure()

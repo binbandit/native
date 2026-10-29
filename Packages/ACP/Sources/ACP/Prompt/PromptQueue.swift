@@ -12,12 +12,19 @@ public struct PromptQueue: Equatable, Sendable {
         public let isEchoed: Bool
         /// Files and images that go with the text.
         public let attachments: [PromptAttachment]
+        public var steersAfterTools = false
+        public var waitingForTool: String?
 
-        public init(id: UUID = UUID(), _ text: String, attachments: [PromptAttachment] = [], isEchoed: Bool = true) {
+        public init(
+            id: UUID = UUID(), _ text: String, attachments: [PromptAttachment] = [], isEchoed: Bool = true,
+            steersAfterTools: Bool = false, waitingForTool: String? = nil
+        ) {
             self.id = id
             self.text = text
             self.attachments = attachments
             self.isEchoed = isEchoed
+            self.steersAfterTools = steersAfterTools
+            self.waitingForTool = waitingForTool
         }
     }
 
@@ -106,6 +113,15 @@ public struct PromptQueue: Equatable, Sendable {
     public mutating func next() -> Item? {
         guard !isPaused, !items.isEmpty else { return nil }
         return items.removeFirst()
+    }
+
+    /// A steer belongs to the turn it targeted. If that turn ends first, it becomes ordinary
+    /// queued input, retaining its position and any explicit reorder the user made.
+    public mutating func endSteering() {
+        for index in items.indices {
+            items[index].steersAfterTools = false
+            items[index].waitingForTool = nil
+        }
     }
 
     public mutating func pause() {

@@ -113,6 +113,7 @@ import Testing
                 "policy.celebrations.baseURL": "https://internal.example/art/", "policy.catalog.enabled": true,
                 "policy.catalog.indexURL": "https://internal.example/index.json", "policy.skills.blocked": [String](),
                 "policy.permissions.forbiddenModes": [String](), "policy.scripts.enabled": true,
+                "policy.sourceExcerpts.sendingEnabled": true, "policy.sourceExcerpts.retentionEnabled": true,
                 "policy.git.worktreeFetch": true, "policy.taskScripts.userScripts": true,
                 "policy.taskScripts.repositoryScripts": true, "policy.celebrations.enabled": true,
                 "policy.organization.name": "Example", "policy.labs.enabled": true, "policy.companion.enabled": true,

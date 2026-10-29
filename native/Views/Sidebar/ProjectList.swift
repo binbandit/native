@@ -30,7 +30,9 @@ struct ProjectList<TaskAccessory: View>: View {
                     sessions: listing.pinned, order: Self.positions(listing.allPinned), drag: drag,
                     taskAccessory: taskAccessory, select: select)
             }
-            if !isAllInView {
+            if isAllInView {
+                SidebarProjectsHeader()
+            } else {
                 SectionHeader("Projects") {
                     SidebarFilterButton(filter: $filter, isSelecting: $selection.isSelecting)
                     IconButton("Add Project", systemImage: "folder.badge.plus") {
@@ -115,6 +117,7 @@ struct ProjectList<TaskAccessory: View>: View {
                 SidebarOptionsMenu(preferences: model.sidebarPreferences)
                 Divider()
                 Button("Open Folder…") { model.requestOpenFolder() }
+                    .disabled(!model.canOpenFolders || !model.sidebarFolders.opening.isEmpty)
                 Menu("Filter Tasks") {
                     ForEach(SidebarFilterOption.all(filter: $filter, agents: model.agents.map(\.agent))) { option in
                         Toggle(option.title, isOn: option.isOn)

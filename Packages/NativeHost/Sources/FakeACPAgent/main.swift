@@ -216,6 +216,15 @@ actor FakeAgent {
                 return
             }
             received("steer", text)
+            if let gate = ProcessInfo.processInfo.environment["FAKE_AGENT_STEER_GATE"] {
+                while !FileManager.default.fileExists(atPath: gate) {
+                    try await Task.sleep(for: .milliseconds(10))
+                }
+                received("steer-accepted", text)
+            } else if ProcessInfo.processInfo.environment["FAKE_AGENT_DELAY_STEER"] == "1" {
+                try await Task.sleep(for: .seconds(3))
+                received("steer-accepted", text)
+            }
             try append(Message(role: "user", text: text), to: params.sessionId)
             try peer.respond(to: id, with: JSONValue.object(["outcome": .string("injected")]))
         case "session/set_config_option":
@@ -318,6 +327,25 @@ actor FakeAgent {
                     "title": .string("sleep 600"), "kind": .string("execute"), "status": .string("in_progress"),
                 ])
             return try await cancelLeavingCommand(session, ignoringCancel: true)
+        } else if text == "tool-sleep" {
+            try update(
+                session,
+                [
+                    "sessionUpdate": .string("tool_call"), "toolCallId": .string("sleep"),
+                    "title": .string("sleep 20"), "kind": .string("execute"), "status": .string("in_progress"),
+                ])
+            for _ in 0..<20 {
+                try await Task.sleep(for: .milliseconds(100))
+                if cancelled.contains(session) { return "cancelled" }
+            }
+            received("tool-finished", "sleep")
+            try update(
+                session,
+                [
+                    "sessionUpdate": .string("tool_call_update"), "toolCallId": .string("sleep"),
+                    "status": .string("completed"),
+                ])
+            return try await tick(session, count: 4, stoppable: true)
         } else if text == "cancel-leaves-command" {
             return try await cancelLeavingCommand(session)
         } else if text.hasPrefix("slow") || text.hasPrefix("stubborn") {

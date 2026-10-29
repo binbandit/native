@@ -398,6 +398,8 @@ protocol NativePlugin: Sendable {
     func mcpServers(for session: SessionContext) -> [MCPServer]
     /// Session lifecycle hooks, delivered to every enabled plugin in order.
     func handle(_ event: SessionEvent) async
+    /// Tools for the task screen, listed in the well and on Settings ▸ Task Tools.
+    var sessionTools: [SessionToolContribution] { get }
 }
 ```
 
@@ -411,6 +413,13 @@ the agent, the agent's `sessionID` once it exists, `cwd`, `title`, and `parentID
 `SessionEvent` is one of `sessionStarted`, `promptSent`, `turnEnded`, `turnFailed`,
 `permissionRequested` and `usageUpdated`. Native's notifications, sounds, session titles and
 orchestration tools are built-in plugins written this way.
+
+A tool for the task screen is a `SessionToolContribution`: a `SessionToolSpec` whose id starts with
+the plugin's id (`acme.tickets`) and whose places are beside the conversation (`side`), over it
+(`fact`) or `off`, a title, a glyph, a one-sentence `summary` for Settings, its fact and its pane.
+Native lists it after its own tools in the well and on Settings ▸ Task Tools, says which plugin
+added it, gives it a command the user can bind a key to, and drops it while the plugin is off. A tool
+with another id or a workbench place is left out. See `docs/session-tools.md`, "Adding a tool".
 
 ### Titles with the app closed
 
@@ -472,3 +481,17 @@ Fine print approvals. The versioned [command knowledge schema](command-knowledge
 format as the bundled package resource and managed policy. Invalid entries appear in Command
 Diagnostics without breaking approvals. Contributions disappear when the plugin is disabled or
 blocked by policy, and cannot replace shipped tools. This extension is declarative and local only.
+
+### Steering policy
+
+An agent manifest can set `"steeringPolicy": "nonInterrupting"` when its `_session/steering`
+extension preserves running tools. Native can then deliver Steer immediately. The default,
+`"afterTools"`, holds a steer until all reported tool calls complete or fail, and keeps it editable
+and removable in the composer. Without a steering extension, Native interrupts only at that boundary
+and submits the held message as the next prompt. Do not opt an interrupting adapter into
+`nonInterrupting`. Stop always cancels immediately regardless of this setting.
+
+The queue's Send Now action requires an advertised ACP steering extension or an explicit
+`"steeringPolicy": "afterTools"` declaration. Without either, queued messages wait for the turn to
+end and the action is hidden, including its menu item, accessibility action and queued-edit shortcut.
+An omitted or unknown policy does not opt an agent without ACP steering into this action.

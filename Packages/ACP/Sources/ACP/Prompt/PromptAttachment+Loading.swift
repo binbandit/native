@@ -68,6 +68,26 @@ extension PromptAttachment {
         return existing + [attachment]
     }
 
+    /// Retains a transferred file before its provider releases the temporary URL. Blocks while
+    /// copying, so call off the main actor and inside the provider's file-representation callback.
+    public static func importFile(_ source: URL) throws -> URL {
+        let folder = URL.temporaryDirectory.appending(
+            path: "Native Attachments/\(UUID().uuidString)", directoryHint: .isDirectory)
+        let destination = folder.appending(path: source.lastPathComponent)
+        #if canImport(UniformTypeIdentifiers)
+        let scoped = source.startAccessingSecurityScopedResource()
+        defer { if scoped { source.stopAccessingSecurityScopedResource() } }
+        #endif
+        do {
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            try FileManager.default.copyItem(at: source, to: destination)
+            return destination
+        } catch {
+            try? FileManager.default.removeItem(at: folder)
+            throw LoadError.unreadable(name: source.lastPathComponent)
+        }
+    }
+
     /// Reads `url` into an attachment. Blocks while it reads and scales, so call it off the main
     /// actor.
     public static func load(_ url: URL, origin: Origin = .attached) throws -> PromptAttachment {

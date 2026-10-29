@@ -35,6 +35,7 @@ extension AppModel {
         let session = try await launcher.start(
             on: runtime, cwd: old.cwd, project: catalog.lookup(old.key)?.project, continuing: old)
         await session.adoptSettings(of: old)
+        session.adoptDiffCommentDrafts(from: old, moving: true)
         if let project = catalog.lookup(old.key)?.project {
             catalog.add(
                 SessionInfo(sessionId: session.id, cwd: old.cwd.folderPath, updatedAt: .now), for: old.agent.id,

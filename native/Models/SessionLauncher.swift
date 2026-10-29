@@ -85,6 +85,7 @@ final class SessionLauncher {
         _ session: SessionModel, on runtime: AgentRuntime, project: Project.ID?, origin: SessionModel.Origin,
         parent: SessionModel?, earlier: SessionModel?
     ) async -> SessionModel {
+        if let earlier { session.adoptDiffCommentDrafts(from: earlier) }
         AgentSessionDefaults.remember(session.state.configOptions, for: runtime.agent.id, isNew: true)
         await AgentSessionDefaults.apply(to: session, project: project)
         if origin == .user, parent == nil {

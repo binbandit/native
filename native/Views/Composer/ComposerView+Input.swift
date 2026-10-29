@@ -10,7 +10,8 @@ extension ComposerView {
                 placeholder: placeholder, isFocused: $isFocused,
                 hidesCaret: selectedAttachmentIndex != nil,
                 insets: composerNext ? DS.ComposerSettings.textInsets : DS.Composer.textInsets,
-                referencesEnabled: composerNext, referenceCounts: fileReferenceCounts
+                referencesEnabled: composerNext, referenceCounts: fileReferenceCounts,
+                routesFileDropsToAttachments: true
             ) { press in
                 handleKey(press, suggestions: suggestions)
             }
@@ -76,16 +77,21 @@ extension ComposerView {
 
     /// Disabled in place when something blocks sending, saying why.
     var sendButton: some View {
-        let behavior = session.supportsSteering ? followUp : .queue
+        let behavior = followUp
         // An item can leave the queue while its editor stays open; submission then sends a new message.
         let isEditingQueued =
             session.queuedPrompts.contains { $0.id == session.editingQueuedPrompt }
             && !session.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        return ComposerSendButton(disabledReason: session.sendBlockedReason ?? attachmentsBlockedReason) {
+        return ComposerSendButton(
+            disabledReason: session.diffCommentSendBlock ?? session.sendBlockedReason ?? attachmentsBlockedReason
+        ) {
             submit(followUp)
         }
         .accessibilityLabel(
-            isEditingQueued ? "Save Queued Message" : isWorking ? "\(behavior.title) Message" : "Send Message"
+            (isEditingQueued ? "Save Queued Message" : isWorking ? "\(behavior.title) Message" : "Send Message")
+                + (session.diffComments.isEmpty
+                    ? ""
+                    : " and \(session.diffComments.count) \(session.diffComments.count == 1 ? "Comment" : "Comments") to \(session.agentName)")
         )
         .help(
             isEditingQueued

@@ -111,7 +111,7 @@ private struct ViewCommands: Commands {
                     }
                     if menu.context.sessionTools?.hasWell == true {
                         ForEach(
-                            TaskWellTool.allCases.filter {
+                            SessionToolRegistry.shared.wellTools.filter {
                                 $0 != .changes && (menu.context.session?.isProjectless != true || $0 != .pullRequest)
                             }
                         ) { tool in
@@ -187,6 +187,8 @@ private struct SessionCommands: Commands {
                 Divider()
             }
             CommandMenuItem(.composerFocus, in: menu)
+            CommandMenuItem(.changesAddComment, in: menu)
+            CommandMenuItem(.changesReviewComments, in: menu)
             CommandMenuItem(.sessionStop, in: menu)
             CommandMenuItem(.sessionClearConversation, in: menu)
             if model.offersAgentModels { SwitchAgentMenu(model: model, menu: menu) }

@@ -39,6 +39,9 @@ through 5). The list reuses `SessionToolsScreenModel` for Changes and existing t
 action and pull request actions for the other tools. Subagents and the pull request appear only
 when present.
 
+Only the rows scroll when the list grows beyond its height limit; the status header, worker and
+checkout stay visible. Up and Down reveal the highlighted tool, including after scrolling by hand.
+
 The worker block reports the agent's selected model, machine, last measured turn duration and
 reported context use. The checkout moves to the footer. Managed worker settings carry a lock;
 the footer names the administrator once, using the configured organization name or "your
@@ -116,6 +119,23 @@ its fact, whether its pane has something now, and its pane, or what its fact doe
 The screen reads tools only from the registry, so features never reach into it, and the registry is
 the task panel seam the lean-core plan (`docs/plans/lean-core.md`) builds modules on.
 
+A plugin adds tools the same way, from `NativePlugin.sessionTools` (`docs/plugins.md`). While the
+plugin is on, each is listed after Native's own in the well, in View ▸ Tools and on Settings ▸ Task
+Tools, with a summary and "Added by" its plugin, and follows the same rules: off means no row and a
+key that does nothing. Its command (`sessionTools.<id>`) has no default key, so the user assigns one
+in Settings ▸ Keyboard Shortcuts. Its row says what its fact says; choosing it opens its pane in its
+place, as Changes does, or does what its fact does. A plugin's tool id starts with the plugin's id
+(`acme.tickets`), so it can't take a built-in tool's place or saved arrangement, and it lives beside
+the conversation or over it: the workbench holds only Native's terminals and runs
+(`SessionToolSpec.isAllowed(fromPlugin:)`, tested in the package).
+
+The screen model retains each presented contribution's close hook with its original session context.
+Closing, replacing or revoking a pane runs that hook once, even after its plugin leaves the registry.
+Pending opens cancelled before presentation have no close hook to run. Task continuations rebind
+the model for newly opened panes; already-presented hooks keep their original session until closure.
+`scripts/tests/session-tool-cleanup.sh <instance>` checks both side and over-conversation tools through
+the app model harness.
+
 Where the user put each tool is a `SessionToolArrangement`, saved in user defaults
 (`sessionTools.arrangement`) as only the places that differ from each tool's default.
 
@@ -136,8 +156,8 @@ it. Opening and closing the inspector disables animation to avoid the prototype'
 still needs a visual check on the main Mac in both appearances.
 
 The original Task Tools gate registers only Changes, with Side, Fact and Off placements.
-The well adds the shared workbench and tool adapters described above, and Settings ▸ Task Tools
-to place them. Plugin-contributed well tools and the default-on transition remain later slices.
+The well adds the shared workbench and tool adapters described above, Settings ▸ Task Tools
+to place them, and plugins' tools. The default-on transition remains a later slice.
 The standard screen is unchanged while both Labs switches are off.
 
 ## Narrow Changes

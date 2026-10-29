@@ -57,6 +57,7 @@ extension AppModel {
     }
 
     private func moveAgentModelDraft(from source: SessionModel, to target: SessionModel) {
+        target.adoptDiffCommentDrafts(from: source, moving: true)
         source.attachmentReads.move(to: target)
         target.draft = source.draft
         target.attachments = source.attachments
