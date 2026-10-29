@@ -76,7 +76,7 @@ extension GitStore {
         return try await setUp(worktree, of: repository, branch: branch)
     }
 
-    /// Copies the project's ignored env files into a new task worktree before returning, so the
+    /// Prepares project files in a new task worktree before returning, so the
     /// agent sees them from its first turn, then tells `onTaskWorktreeCreated`, which starts its
     /// setup scripts. Internal only for GitStore+ArchivedWorktrees.swift, which sets up a worktree
     /// it brings back the same way.
