@@ -1,16 +1,21 @@
 import GitHub
 import SwiftUI
 
-/// Account controls have one home; the sidebar and Go command both reveal this group.
+/// Account controls live in General; the Go command can reveal this group directly.
 struct GitHubAccountsSettingsSection: View {
+    init(showsSignOut: Bool = false) {
+        _showsSignOut = State(initialValue: showsSignOut)
+    }
+
     static let accountsRow = SettingsRowID("general.github-accounts")
     static var searchEntry: SettingsSearchEntry {
         SettingsSearchEntry(
             id: accountsRow, title: "GitHub accounts",
             description: "Choose the GitHub account Native uses.",
-            keywords: ["login", "sign in", "switch", "add", "gh"])
+            keywords: ["login", "sign in", "sign out", "logout", "switch", "add", "gh"])
     }
 
+    @State private var showsSignOut = false
     @Environment(GitHubModel.self) private var gitHub
     private var accounts: GitHubAccountsModel { gitHub.accounts }
     private var isChecking: Bool {
@@ -42,22 +47,36 @@ struct GitHubAccountsSettingsSection: View {
                     }
                 }
                 if !accounts.accounts.isEmpty || isChecking {
-                    HStack {
-                        addButton
-                        Spacer(minLength: DS.Space.md)
-                        if accounts.guidance != nil || showsCommand { checkButton }
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: DS.Space.md) {
+                            accountActions.fixedSize()
+                            Spacer(minLength: DS.Space.md)
+                            checkButton.fixedSize()
+                        }
+                        VStack(alignment: .leading, spacing: DS.Space.md) {
+                            accountActions
+                            checkButton
+                        }
                     }
                 } else {
                     checkButton
                 }
             }
             .settingsRevealTarget(Self.accountsRow)
+            if showsSignOutGuidance {
+                SettingsNote("Sign out of GitHub") {
+                    Text(
+                        "Run this in a terminal and choose the account to sign out, then check again. This also signs that account out of GitHub CLI on this Mac."
+                    )
+                    CommandSnippet(command: accounts.signOutCommand, expands: true) { accounts.copySignOutCommand() }
+                }
+            }
             if let guidance = accounts.guidance {
                 SettingsFooter(guidance)
             }
-            if showsCommand {
+            if showsCommand && !showsSignOutGuidance {
                 VStack(alignment: .leading, spacing: DS.Space.md) {
-                    CommandSnippet(command: accounts.signInCommand) { accounts.copySignInCommand() }
+                    CommandSnippet(command: accounts.signInCommand, expands: true) { accounts.copySignInCommand() }
                     if accounts.copiedCommand {
                         Text("Copied").font(DS.Settings.caption).foregroundStyle(.dsTextSecondary)
                     }
@@ -80,9 +99,24 @@ struct GitHubAccountsSettingsSection: View {
         return "Not signed in to GitHub"
     }
 
+    private var showsSignOutGuidance: Bool { showsSignOut && !accounts.accounts.isEmpty }
+
+    private var accountActions: some View {
+        HStack(spacing: DS.Space.md) {
+            addButton
+            if !accounts.accounts.isEmpty {
+                Button("Sign Out…") { showsSignOut.toggle() }
+                    .buttonStyle(.settings)
+            }
+        }
+    }
+
     private var addButton: some View {
-        Button("Add GitHub Account…") { accounts.addAccount() }
-            .buttonStyle(.settings)
+        Button("Add GitHub Account…") {
+            showsSignOut = false
+            accounts.addAccount()
+        }
+        .buttonStyle(.settings)
     }
 
     private var checkButton: some View {
@@ -166,5 +200,16 @@ struct GitHubAccountsSettingsSection: View {
             .settingsPreviewPage(width: 360)
     }
     .environment(\.settingsPlainly, true)
+}
+#Preview("GitHub accounts - Sign out") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xxl) {
+            GitHubAccountsSettingsSection(showsSignOut: true)
+                .environment(GitHubAccountPreviewFixtures.model(.multiple))
+            GitHubAccountsSettingsSection(showsSignOut: true)
+                .environment(GitHubAccountPreviewFixtures.model(.signedOut))
+        }
+        .settingsPreviewPage(width: 360)
+    }
 }
 #endif

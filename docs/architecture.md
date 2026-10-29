@@ -146,13 +146,15 @@ footprint with physical RAM. It has no per-core scaling.
 
 ### GitHub account selection
 
-Settings > General > Accounts lists and switches the GitHub accounts on this Mac. The Mac sidebar
-footer shows only the selected avatar and name beside Settings; clicking it or choosing Go > GitHub
-Account opens General at the Accounts group. A signed-out footer shows just Settings. With All in
-view on, the footer opens its accounts in a popover instead (switch, add, or Manage in Settings);
-when the organization manages Native (`PolicyCenter`), a lock replaces its chevron and the popover
-also names the organization once, says what its policy turns off there (GitHub, other Macs,
-pairing) and where to ask.
+Settings > General > Accounts lists and switches the GitHub accounts on this Mac, with add and
+sign-out guidance through GitHub CLI. Both sidebars have one full-width footer button that opens
+Settings > General: the selected account's cached avatar and display name (login when unnamed),
+with a gear at the trailing edge. Loading or unavailable pictures use a neutral initial. With no
+signed-in account it shows Settings and the gear. Its tooltip is "Settings" and its accessible
+name is "<name>, Settings". Go > GitHub Account still reveals the Accounts group directly.
+When an organization manages Native (`PolicyCenter`), General names the organization, says what
+its policy turns off (GitHub, other Macs, pairing), and where to ask. There is no account popover
+or separate managed control in the footer.
 `GitHubAccountsModel` lists all
 accounts from `gh auth status --json hosts`, loads names and cached avatars asynchronously, and
 remembers one chosen login per host in Native's defaults. Without a choice it follows gh's active

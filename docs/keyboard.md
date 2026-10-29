@@ -357,7 +357,7 @@ Other file types use the platform's Quick Look preview, with its native navigati
 | ⌥⌘J | Turn the sidebar's Needs you filter on or off (its filter menu has the rest) | View | `view.needsYouFilter` |
 | ⌘⇧P | Pull requests | Go | `go.pullRequests` |
 | | GitHub Account: open Settings > General at Accounts (Mac only) | Go | `github.accounts` |
-| Tab, then Space on the sidebar account | Open Settings > General at Accounts; Tab and Space choose an account | | |
+| Tab, then Space on the sidebar footer | Open Settings > General; account controls live in Accounts | | |
 | ⌘⇧X | Expeditions | Go | `go.expeditions` |
 | ⇧⌘F | Search every task (`docs/search.md`) | Go | `search.show` |
 | ⌥⌘I | Show or hide the subagent inspector | View | `view.toggleSubagentInspector` |
@@ -456,7 +456,7 @@ including before the first project and with the sidebar hidden. The permanent Op
 action above the account does the same. Its separate Recent Folders disclosure and File >
 Open Recent list up to six successfully opened folders on this device. Arrow keys move through
 recents, Return opens one, and Escape returns to the disclosure. Tab reaches Open Folder,
-Recent Folders, then the account controls. Return or Space activates each control.
+Recent Folders, then the single Settings button. Return or Space activates each control.
 
 Drop one or several folders anywhere in the sidebar list to add them without starting a task.
 The persistent addition receipt offers Undo; ⌘Z undoes that addition when it is the applicable

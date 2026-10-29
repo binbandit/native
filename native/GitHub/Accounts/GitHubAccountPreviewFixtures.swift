@@ -5,7 +5,8 @@ import GitHub
 
 nonisolated enum GitHubAccountPreviewFixtures {
     enum State: String, CaseIterable, Identifiable {
-        case loading, single, multiple, signedOut, missing, expired, offline, longName, failedSwitch
+        case loading, single, multiple, signedOut, missing, expired, offline, longName, loginOnly, failedSwitch,
+            switchable
         var id: Self { self }
     }
 
@@ -17,19 +18,42 @@ nonisolated enum GitHubAccountPreviewFixtures {
     ]
 
     @MainActor static func model(_ state: State) -> GitHubModel {
-        let model = GitHubModel.preview()
+        let defaults = PreviewUserDefaults()
+        if state == .switchable {
+            defaults.set(["github.com": first.login], forKey: GitHubAccountsModel.selectionKey)
+        }
+        let model = GitHubModel(
+            environment: { _ in [:] }, runner: GitHubAccountFixtureRunner(state: state), defaults: defaults)
         var profileData = profiles
         if state == .longName {
             profileData["github.com/alex-morgan"] = GitHubUser(login: "alex-morgan", name: "Alexandra Morgan-Williams")
         }
-        model.accounts.configurePreview(status: status(state), error: error(state), profiles: profileData)
+        if state == .loginOnly {
+            profileData["github.com/alex-morgan"] = GitHubUser(login: "alex-morgan", name: "  ")
+        }
+        model.accounts.configurePreview(
+            status: status(state), error: error(state), profiles: profileData,
+            avatars: state == .multiple || state == .switchable
+                ? ["github.com/alex-morgan": avatarData].compactMapValues { $0 } : [:])
         return model
     }
+
+    /// Authored portrait data exercises the cached-image path without contacting an avatar server.
+    static let avatarData = Data(
+        base64Encoded:
+            "iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAAn0lEQVR4nO3XsRHAIAwEQYqjWpq0O7CReHgYLlCKbhMGSq31OXmKOwCAOwCAOwCAOwCA+sDW2udsDfiLn4GQAXrj1QgJIBqvRADIxqsQAAAAGDxgBKHYDSCLUO3lLRRFqPfxH3APAPdwjR79lBiNVyBSAFW4AhIGzIrPIu4CzI7PILoBq+KjiDsAq+MjCADbA1zxvQgAAAAA2BzgRPS0vQ6IlkLDoYLEAAAAAElFTkSuQmCC"
+    )
 
     static func status(_ state: State) -> AuthStatus? {
         switch state {
         case .loading, .missing: return nil
         case .signedOut: return AuthStatus(hosts: [:])
+        case .switchable:
+            var previous = first
+            previous.active = false
+            var next = second
+            next.active = true
+            return AuthStatus(hosts: ["github.com": [previous, next]])
         case .multiple, .failedSwitch: return AuthStatus(hosts: ["github.com": [first, second]])
         default:
             var account = first
@@ -72,7 +96,7 @@ nonisolated struct GitHubAccountFixtureRunner: CommandRunner {
         if arguments.starts(with: ["api", "user"]) || arguments.contains(where: { $0.hasPrefix("users/") }) {
             let login =
                 arguments.first(where: { $0.hasPrefix("users/") })?.replacingOccurrences(of: "users/", with: "")
-                ?? "alex-morgan"
+                ?? (state == .switchable ? "alex-work" : "alex-morgan")
             if state == .failedSwitch, login == "alex-work" { return failure("HTTP 401: Bad credentials") }
             return success(
                 try JSONEncoder().encode(

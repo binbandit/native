@@ -130,7 +130,7 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
             if usesSidebarNext { SidebarFolderActions() }
-            SidebarFooter(isAllInView: usesSidebarNext)
+            SidebarFooter()
         }
         .background(usesSidebarNext ? Color.dsSidebarSolid : Color.clear)
         .animation(.dsQuick, value: selection.isActive)

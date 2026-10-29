@@ -37,15 +37,14 @@ struct SidebarDesignFixture: View {
         _app = State(
             initialValue: Self.makeApp(
                 scenario == "peek-plan" ? "plan" : scenario == "facts-details" ? "facts" : scenario))
-        // "account" lists two accounts in the footer's popover; "managed" adds an organization's
-        // policy (and "managed-signed-out" leaves GitHub signed out under it).
+        // Account and managed states share the same Settings footer, including signed out.
         _gitHub = State(
             initialValue: GitHubAccountPreviewFixtures.model(
-                scenario == "account" ? .multiple : scenario == "managed-signed-out" ? .signedOut : .single))
+                Self.accountState(scenario)))
         _policy = State(
             initialValue: scenario.hasPrefix("managed")
-                ? PolicyCenter(source: StaticPolicySource(managed: SidebarManagedDetailsPreview.northwind.dictionary))
-                : PolicyCenter.shared)
+                ? PolicyCenter(source: StaticPolicySource(managed: SettingsManagementPreview.northwind.dictionary))
+                : PolicyCenter(source: StaticPolicySource()))
     }
 
     var body: some View {
@@ -82,6 +81,15 @@ struct SidebarDesignFixture: View {
                 }
             }
         }
+    }
+
+    private static func accountState(_ scenario: String) -> GitHubAccountPreviewFixtures.State {
+        if scenario == "account" || scenario == "managed" { return .multiple }
+        if scenario.hasSuffix("signed-out") { return .signedOut }
+        if scenario.hasPrefix("account-") {
+            return GitHubAccountPreviewFixtures.State(rawValue: String(scenario.dropFirst(8))) ?? .single
+        }
+        return .single
     }
 
     static func makeApp(_ scenario: String) -> AppModel {
