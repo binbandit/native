@@ -29,9 +29,13 @@ on:
         type: boolean
         default: true
       notes_from:
-        description: Previous beta tag, or the last stable tag for the first beta
+        description: Previous published beta tag, or the last published stable tag for the first beta
         type: string
         default: ''
+      notes_from_start:
+        description: Include the whole history when no release has been published
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -51,6 +55,7 @@ jobs:
       NATIVE_SENTRY_DSN: ${{ secrets.NATIVE_SENTRY_DSN }}
       NATIVE_SPARKLE_PUBLIC_KEY: ${{ vars.NATIVE_SPARKLE_PUBLIC_KEY }}
       NATIVE_RELEASE_NOTES_FROM: ${{ inputs.notes_from }}
+      NATIVE_RELEASE_NOTES_FROM_START: ${{ inputs.notes_from_start }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         id: checkout

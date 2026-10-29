@@ -72,7 +72,7 @@ if [ "$(rustc --version 2>/dev/null | cut -d' ' -f2)" != "$rust" ]; then
         # Installed once and then used offline (--no-update), one install at a time since several
         # builds can get here at once.
         lockf -k "${TMPDIR:-/tmp}/native-rustup-install.lock" \
-            rustup toolchain install "$rust" --profile minimal --no-self-update --no-update >/dev/null 2>&1 \
+            rustup toolchain install "$rust" --profile minimal --no-self-update --no-update \
             || give_up "couldn't install Rust $rust with rustup."
         # By path: a rustc earlier on the PATH (Homebrew's) would ignore rustup's choice.
         cargo=("$(rustup which --toolchain "$rust" cargo)")
