@@ -72,7 +72,9 @@ public struct TaskPermissionMapping: Hashable, Sendable {
         let restrictions = offered.filter { $0.value == "plan" || $0.value == "read-only" }
         shown.permissionMappings = Dictionary(
             uniqueKeysWithValues: TaskPermissionMode.allCases.compactMap { mode in
-                selection(mode, offered: wire, forbidden: forbidden).map { (mode.rawValue, $0.value) }
+                // Retain provider availability so a policy lock is attributed to the organization.
+                (selection(mode, offered: wire, forbidden: forbidden) ?? selection(mode, offered: wire))
+                    .map { (mode.rawValue, $0.value) }
             })
         shown.name = "Permissions"
         shown.kind = .select(
