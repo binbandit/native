@@ -67,7 +67,7 @@ private struct AgentModelChangeRegression {
         defer { try? FileManager.default.removeItem(at: scratch) }
         let defaults = PreviewUserDefaults()
         let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
-        experiments.set(true, for: .changeAgent)
+        try require(experiments.value(of: .changeAgent), "Composer agent switching requires opting into Labs")
         experiments.set(true, for: .composerNext)
         let manifest = PluginManifest(
             id: "fixture", name: "Fixture",
@@ -217,6 +217,14 @@ private struct AgentModelChangeRegression {
             app.selection == source.key && source.attachments.count == 3, "Legacy Undo lost the task or attachments")
         experiments.set(true, for: .composerNext)
         print("PASS: Switch Agent command, default model, invisible handoff and Undo with Fine print off")
+
+        experiments.set(false, for: .changeAgent)
+        try require(!command.isAvailable(context), "Switch Agent ignored the explicit Labs opt-out")
+        try require(app.composerAgentModels(for: source).isEmpty, "The disabled composer still offers other agents")
+        app.requestAgentChange(source)
+        try require(!source.isAgentPickerRequested, "The disabled command opened the agent picker")
+        experiments.set(true, for: .changeAgent)
+        print("PASS: an explicit Labs opt-out still hides agent switching")
 
         source.phase = .prompting
         source.lastStopReason = nil

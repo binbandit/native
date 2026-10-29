@@ -35,6 +35,10 @@ struct ModelPill: View {
                 if let effort, !effort.levels.isEmpty {
                     effortMeter(effort)
                 }
+                Image(systemName: "chevron.down")
+                    .font(.dsMicro)
+                    .foregroundStyle(.dsTextTertiary)
+                    .accessibilityHidden(true)
             }
         }
         .buttonStyle(.pill(isOpen: isPickerOpen))
@@ -67,12 +71,15 @@ struct ModelPill: View {
     DSPreviewPair {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             ModelPill(
+                agentName: "Claude Code",
                 model: settings.model, effort: settings.effort, switches: settings.modelSwitches,
                 isPickerOpen: .constant(false), onSet: { _, _ in }, onCycleEffort: {})
             ModelPill(
+                agentName: "Claude Code",
                 model: settings.model, effort: nil, switches: [], isPickerOpen: .constant(true), onSet: { _, _ in },
                 onCycleEffort: {})
             ModelPill(
+                agentName: "Local Agent",
                 model: nil, effort: settings.effort, switches: [], isPickerOpen: .constant(false), onSet: { _, _ in },
                 onCycleEffort: {})
         }

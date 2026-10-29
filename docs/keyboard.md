@@ -564,8 +564,9 @@ Lists past eight models keep the filter, with the last slot showing **N more mat
 
 ## Choosing an agent
 
-With Change Agent enabled in Settings > Labs, the composer's model control names both the
-agent and model ("Claude Code · Haiku 5.5"). Its first section is Agent: installed agents in a
+The composer's model control names both the agent and model ("Claude Code · Haiku 5.5") and
+opens with a click or tap. Agent switching is on by default; Change Agent in Settings > Labs
+can turn it off. Its first section is Agent: installed agents in a
 compact row, with the current one checked. The models below belong only to the current agent.
 This works with Fine print on or off. Task ▸ Switch Agent lists the same agents; Choose Agent…
 (⌃⌥⌘A, `session.changeAgent`) opens the picker on its Agent section. The command palette finds
