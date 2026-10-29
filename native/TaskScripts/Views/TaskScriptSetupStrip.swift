@@ -129,8 +129,10 @@ struct TaskScriptSetupStrip: View {
             parts.append("Copied \(files) from the project.")
         }
         if let copyFailure = run.copyFailure {
+            let reason = copyFailure.trimmingCharacters(in: .whitespacesAndNewlines)
+            let punctuation = reason.hasSuffix(".") ? "" : "."
             parts.append(
-                "Couldn't bring the project's files along: \(copyFailure). The worktree is ready without them.")
+                "Couldn't bring the project's files along: \(reason)\(punctuation) The worktree is ready without them.")
         }
         return parts.isEmpty ? nil : parts.joined(separator: " ")
     }
