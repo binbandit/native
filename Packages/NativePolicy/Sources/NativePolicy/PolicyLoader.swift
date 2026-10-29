@@ -58,6 +58,10 @@ public enum PolicyLoader {
             PolicyParse.stringSet)
         policy.scriptsEnabled = resolver.resolve(
             .scriptsEnabled, expecting: "a Boolean", ordinary: true, restricted: false, PolicyParse.bool)
+        policy.sourceExcerptsSendingEnabled = resolver.resolve(
+            .sourceExcerptsSending, expecting: "a Boolean", ordinary: true, restricted: false, PolicyParse.bool)
+        policy.sourceExcerptsRetentionEnabled = resolver.resolve(
+            .sourceExcerptsRetention, expecting: "a Boolean", ordinary: true, restricted: false, PolicyParse.bool)
         policy.worktreeFetchEnabled = resolver.resolve(
             .worktreeFetch, expecting: "a Boolean", ordinary: true, restricted: false, PolicyParse.bool)
         policy.taskScripts.userScriptsEnabled = resolver.resolve(

@@ -26,6 +26,7 @@ extension SessionModel {
         case loading
         case disconnected
         case busy
+        case sourceExcerptsProhibited
 
         var errorDescription: String? {
             switch self {
@@ -34,6 +35,7 @@ extension SessionModel {
             case .earlierConversation: SessionSendBlock.earlierConversation.message
             case .loading: "The task is still loading."
             case .disconnected: "The task's agent stopped running."
+            case .sourceExcerptsProhibited: "Comments can’t be sent from this project."
             case .busy: "The task is busy."
             }
         }
@@ -53,8 +55,16 @@ extension SessionModel {
 
     /// Sends the user's draft as a prompt, if the agent is idle, and waits for the turn to end.
     func send() async {
+        guard prepareDiffCommentsSubmission() else { return }
+        if !diffComments.isEmpty {
+            guard origin == .user, canSend else { return }
+            await submitDiffComments(.queue)
+            for await phase in Observations({ self.phase }) where phase != .prompting { break }
+            return
+        }
         let text = PromptQuote.trimmed(draft)
         let attachments = self.attachments
+        guard sourceExcerptBlock(for: text) == nil else { return }
         guard origin == .user, acceptsPrompts, phase == .idle, !isRunningHiddenCommand, turnHold == nil,
             !text.isEmpty || !attachments.isEmpty
         else {
@@ -80,8 +90,15 @@ extension SessionModel {
     /// Sends the user's draft whatever the agent is doing: right away when it's idle, otherwise
     /// queued for when the turn ends or steered into the running turn, as `behavior` says.
     func submit(_ behavior: FollowUpBehavior) async {
+        guard prepareDiffCommentsSubmission() else { return }
+        if !diffComments.isEmpty {
+            guard origin == .user, acceptsPrompts, phase == .idle || phase == .prompting else { return }
+            await submitDiffComments(behavior)
+            return
+        }
         let text = PromptQuote.trimmed(draft)
         let attachments = self.attachments
+        guard sourceExcerptBlock(for: text) == nil else { return }
         guard origin == .user, acceptsPrompts, phase == .idle || phase == .prompting,
             !text.isEmpty || !attachments.isEmpty
         else {
@@ -115,6 +132,7 @@ extension SessionModel {
         _ text: String, attaching attachments: [PromptAttachment] = [], _ behavior: FollowUpBehavior, echo: Bool = true
     ) async throws -> FollowUpDelivery {
         let text = PromptQuote.trimmed(text)
+        guard sourceExcerptBlock(for: text) == nil else { throw SendError.sourceExcerptsProhibited }
         guard !text.isEmpty || !attachments.isEmpty else { throw SendError.emptyMessage }
         guard !isChangingAgent, !isChangingWorkspace, !isWorkspaceReplaced else { throw SendError.busy }
         guard acceptsPrompts else {
@@ -154,9 +172,11 @@ extension SessionModel {
     func removeQueued(_ id: QueuedPrompt.ID, undoManager: UndoManager? = nil) {
         guard host == nil else { return removeQueuedOnHost(id, undoManager: undoManager) }
         guard let index = queue.index(of: id), let item = queue.remove(id) else { return }
+        let wasPendingComment = removeLocallyQueuedDiffComments(item.text)
         undoManager?.registerUndo(withTarget: self) { session in
             MainActor.assumeIsolated {
                 session.queue.restore(item, at: index)
+                if wasPendingComment { session.keepLocallyQueuedDiffComments(item.text) }
             }
         }
         undoManager?.setActionName("Delete Queued Message")
@@ -267,6 +287,7 @@ extension SessionModel {
         // A mode's instructions, say, which the transcript shows as a marker (`SessionHooks`).
         let preamble = services.hooks.preamble(for: self, prompt: text)
         if echo {
+            finishHeldDiffComments(text, attachments: attachments)
             let startedAt = Date.now
             state.appendUserMessage(
                 text, attachments: MessageAttachment.shown(attachments, capabilities: promptCapabilities),
