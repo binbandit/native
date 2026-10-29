@@ -14,7 +14,7 @@ You report issues; you don't fix product code. If the guide or the driver gets i
 These come from [AGENTS.md](../AGENTS.md) and apply to everyone on this Mac. A playtest shares the Mac
 with its owner: Brayden is often at it while you play, and a dozen agents build and run Native on it.
 
-- **Leave the Mac usable.** `run-isolated.sh` queues app builds (three at a time, at a low priority);
+- **Leave the Mac usable.** `run-isolated.sh` queues app builds (four at a time, at a low priority);
   run any other `xcodebuild` through `scripts/dev/build-slot.sh`. Quit your instance whenever you
   aren't using it, even between scenarios.
 - **Automate only your instance's process.** `scripts/dev/drive.sh` does this for you: it finds your
@@ -48,6 +48,21 @@ with its owner: Brayden is often at it while you play, and a dozen agents build 
   with a bare `kt` from the repo root; never `git add`, `commit`, `reset`, `checkout`, `restore`,
   `stash`, `switch` or `rebase` in the shared tree; never `kt land`, `undo`, `go`, `publish`, `pr` or
   `ship`; never delete `.git/index.lock`.
+
+## Choose the check
+
+For a change confined to one view's appearance, render and inspect its actual `#Preview` states
+first with `scripts/dev/render-previews.py`; see [CONTRIBUTING.md](../CONTRIBUTING.md#render-a-small-visual-change)
+for source dependencies and usage. Attach light and dark images for each changed state. This
+verifies the real view without starting Native. Use the full playtest below when behavior, flows
+or window-level layout change, when previews cannot faithfully show the changed state, or before
+merge if the reviewer asks.
+
+Run builds and tests in the foreground in one tool call with a timeout of at least 60 minutes,
+including queue time. Never background them and poll with sleeps, `ps` checks or repeated `tail`.
+The build slot script prints one queue message, then blocks quietly until it can run. If the tool
+limits wait duration, resume its continuation handle with the longest supported wait. Read the
+build log once after a failure; do not restart a still-running build.
 
 ## Run it
 

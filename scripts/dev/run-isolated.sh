@@ -125,9 +125,8 @@ if [ "$build" = 1 ]; then
     log="$derived/build.log"
     mkdir -p "$derived"
     # Many agents build at once on a Mac someone is using: builds take turns at a lower priority.
-    if ! "$root/scripts/dev/build-slot.sh" -project "$root/native.xcodeproj" -scheme native -configuration Debug \
-        -skipPackageUpdates -derivedDataPath "$derived" NATIVE_BUNDLE_IDENTIFIER_SUFFIX=".dev.$name" build \
-        >"$log" 2>&1; then
+    if ! NATIVE_BUILD_LOG="$log" "$root/scripts/dev/build-slot.sh" -project "$root/native.xcodeproj" -scheme native -configuration Debug \
+        -skipPackageUpdates -derivedDataPath "$derived" NATIVE_BUNDLE_IDENTIFIER_SUFFIX=".dev.$name" build; then
         grep -E "^/.*error:" "$log" | sort -u | head -20 >&2
         echo "build failed; full log: $log" >&2
         exit 1
