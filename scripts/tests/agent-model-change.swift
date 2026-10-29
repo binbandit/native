@@ -63,6 +63,20 @@ private struct AgentModelChangeRegression {
     }
 
     static func run() async throws {
+        let permission: ConfigOption = try JSONDecoder().decode(
+            ConfigOption.self,
+            from: Data(
+                #"{"id":"mode","name":"Mode","category":"mode","type":"select","currentValue":"workspace-write","options":[{"value":"workspace-write","name":"Workspace"},{"value":"read-only","name":"Read only"}]}"#
+                    .utf8))
+        let cap: Set<String> = ["accept-edits", "auto", "full-access"]
+        try require(
+            PolicyPermissionModes.forbids(permission, value: "workspace-write", forbidden: cap),
+            "Managed edit cap allowed workspace writes")
+        let capped = CodexConfigOverrides.permissionMapping.presenting(
+            permission, remembered: "ask-first", forbidden: cap)
+        try require(
+            !PolicyPermissionModes.forbids(capped, value: "ask-first", forbidden: cap),
+            "Managed edit cap blocked the read-only equivalent")
         let scratch = FileManager.default.temporaryDirectory.appending(path: "agent-model-\(UUID())")
         defer { try? FileManager.default.removeItem(at: scratch) }
         let defaults = PreviewUserDefaults()
