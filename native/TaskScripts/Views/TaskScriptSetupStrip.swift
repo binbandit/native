@@ -171,8 +171,13 @@ extension String {
             ) { notice in
                 let run = TaskScriptWorktreePreviewFixtures.localBase
                 let _ = run.baseNotice = notice
+                let _ = run.output.appendLine(notice)
                 TaskScriptSetupStrip(run: run, edit: { _ in })
             }
+            let failedCopy = TaskScriptWorktreePreviewFixtures.localBase
+            let _ = failedCopy.baseNotice = nil
+            let _ = failedCopy.copyFailure = "The project folder is unavailable."
+            TaskScriptSetupStrip(run: failedCopy, edit: { _ in })
         }
         .frame(width: SettingsMetrics.pageMaxWidth)
     }
