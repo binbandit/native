@@ -13,6 +13,27 @@ struct SessionMirrorTests {
         return .update(.object(update))
     }
 
+    @Test("A forced stop receipt survives the host wire without adding a second Stopped notice")
+    func forcedStopReceipt() throws {
+        let receipt = "Stopped. Example didn't respond, so Native stopped it."
+        let event = HostEvent(seq: 3, payload: .turnEnded(stopReason: "cancelled", message: receipt))
+        let decoded = try JSONDecoder().decode(HostEvent.self, from: JSONEncoder().encode(event))
+        var mirror = SessionMirror()
+        mirror.apply([
+            HostEvent(seq: 1, payload: .reset(loading: false)),
+            HostEvent(seq: 2, payload: .prompt(PromptEcho(text: "Hello"))), decoded,
+        ])
+        #expect(mirror.state.turns.last?.stopReason == .cancelled)
+        #expect(
+            mirror.state.items.compactMap { if case .notice(let notice) = $0 { notice.text } else { nil } } == [receipt]
+        )
+        let older = try JSONDecoder().decode(
+            HostEvent.self,
+            from: Data(
+                #"{"seq":4,"at":0,"type":"turn_ended","stopReason":"cancelled"}"#.utf8))
+        #expect(older.payload == .turnEnded(stopReason: "cancelled"))
+    }
+
     @Test("Folds a turn into the same transcript ACP's reducer builds")
     func foldsATurn() {
         var mirror = SessionMirror()

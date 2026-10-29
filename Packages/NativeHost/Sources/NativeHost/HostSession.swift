@@ -38,6 +38,7 @@ final class HostSession {
     private(set) var lastEventAt = Date.now
     /// The load in flight, shared by everyone who needs it.
     var loading: Task<Void, any Error>?
+    var loadGeneration = 0
     /// Config notifications during a load stay private until restoration has settled.
     var loadingConfigOptions: JSONValue?
     /// Settings supplied by the client opening this session. Saved choices always win; after a
@@ -49,6 +50,10 @@ final class HostSession {
     /// ends to confirm.
     var stopRequestedAt: Date?
     var stopTimeout: Task<Void, Never>?
+    var stopAcknowledged = false
+    /// A forced stop keeps Native's partial transcript when reattaching to the agent.
+    var preservesTranscriptOnLoad = false
+    var isReplayingPreservedTranscript = false
     /// The queued message to send once the turn being stopped ends ("Send Now" on an agent that
     /// can't steer).
     var sendAfterStop: UUID?

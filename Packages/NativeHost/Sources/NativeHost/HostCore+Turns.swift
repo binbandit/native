@@ -56,6 +56,11 @@ extension HostCore {
         case .prompting where params.behavior == .steer && session.supportsSteering && !session.isStopping:
             return try await steer(item, into: session)
         default:
+            // Sending during reattachment is the same explicit resume as sending while idle.
+            if (session.phase == .loading || session.phase == .disconnected) && session.preservesTranscriptOnLoad {
+                session.record.isQueuePaused = false
+                try store.updateSession(session.record)
+            }
             try enqueue(item, in: session)
             if session.phase == .disconnected {
                 // A message for a session whose agent couldn't run is a cue to try again.
@@ -95,6 +100,7 @@ extension HostCore {
             try store.updateSession(session.record)
         }
         session.turn = turn
+        session.stopAcknowledged = false
         session.phase = .prompting
         session.hiddenCommandEcho = nil
         // Instructions go ahead of the message unless the agent already has these.
@@ -168,7 +174,10 @@ extension HostCore {
 
     func finish(_ turn: UnfinishedTurn, in session: HostSession, stopReason: String) {
         guard session.turn?.requestID == turn.requestID else { return }
-        guard !session.isStopping else { return }
+        guard !session.isStopping else {
+            session.stopAcknowledged = true
+            return
+        }
         // Queued messages wait out a stopped turn until the user sends again.
         let pause = stopReason == "cancelled"
         endTurn(in: session, stopReason: stopReason, pauseQueue: pause)

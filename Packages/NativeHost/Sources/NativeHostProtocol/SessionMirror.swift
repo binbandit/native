@@ -74,9 +74,9 @@ public struct SessionMirror: Sendable {
             questions.append(Question(id: questionID, request: request, requestedAt: event.at))
         case (.questionResolved(let questionID), _):
             questions.removeAll { $0.id == questionID }
-        case (.turnEnded(let stopReason), _):
+        case (.turnEnded(let stopReason, let message), _):
             retryRequestID = nil
-            state.endTurn(Self.stopReason(stopReason), at: event.at)
+            state.endTurn(Self.stopReason(stopReason), at: event.at, stoppedMessage: message)
         case (.turnFailed(let message, _, let retry), _):
             // The notice says what went wrong, and what Native does about it when it retries.
             state.failTurn(message, retry: retry, at: event.at)

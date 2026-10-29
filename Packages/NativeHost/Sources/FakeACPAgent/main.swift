@@ -84,6 +84,7 @@ actor FakeAgent {
         guard let id = message.id, let peer else {
             if message.method == "session/cancel", let params = try? message.params(as: SessionParams.self) {
                 cancelled.insert(params.sessionId)
+                note("cancels.log", params.sessionId.rawValue)
                 if ProcessInfo.processInfo.environment["FAKE_AGENT_EXIT_ON_CANCEL"] == "1" { exit(0) }
             }
             return
@@ -106,11 +107,12 @@ actor FakeAgent {
                 with: JSONValue.object([
                     "protocolVersion": .number(1),
                     "agentCapabilities": .object([
-                        "loadSession": .bool(true),
+                        "loadSession": .bool(ProcessInfo.processInfo.environment["FAKE_AGENT_NO_LOAD"] != "1"),
                         "sessionCapabilities": .object(
                             [
                                 "list": .object([:]), "delete": .object([:]),
-                                "resume": .object([:]),
+                                "resume": ProcessInfo.processInfo.environment["FAKE_AGENT_NO_RESUME"] == "1"
+                                    ? .null : .object([:]),
                             ].merging(Self.closeCapability) { $1 }),
                     ]),
                     "agentInfo": .object(["name": .string("fake-agent"), "version": .string("1")]),
@@ -133,6 +135,11 @@ actor FakeAgent {
                 to: id,
                 with: JSONValue.object(["sessionId": .string(session.rawValue), "configOptions": options(session)]))
         case "session/load":
+            try emitChildText("Child history")
+            if ProcessInfo.processInfo.environment["FAKE_AGENT_LOAD_HANG_ONCE"] == "1", firstTime("load-hang") {
+                note("loads.log", "waiting")
+                try await Task.sleep(for: .seconds(3_600))
+            }
             let session = try message.params(as: SessionParams.self).sessionId
             let servers =
                 (try? message.params(as: LoadParams.self))?.mcpServers.map { "\($0.name) \($0.command ?? "")" } ?? []
@@ -157,7 +164,12 @@ actor FakeAgent {
             }
             try reportReloadConfig(session)
             try peer.respond(to: id, with: JSONValue.object(["configOptions": options(session)]))
+            if ProcessInfo.processInfo.environment["FAKE_AGENT_CHILD_AFTER_LOAD"] == "1" {
+                try emitChildText("Fresh at boundary")
+                try emitChildConfig()
+            }
         case "session/resume":
+            try emitChildText("Fresh child update")
             // Like a load without the replay.
             let session = try message.params(as: SessionParams.self).sessionId
             guard FileManager.default.fileExists(atPath: file(session).path(percentEncoded: false)) else {
@@ -208,6 +220,12 @@ actor FakeAgent {
             try peer.respond(to: id, with: JSONValue.object(["outcome": .string("injected")]))
         case "session/set_config_option":
             let params = try message.params(as: ConfigParams.self)
+            if loaded.contains(params.sessionId), params.configId == "model",
+                ProcessInfo.processInfo.environment["FAKE_AGENT_CHILD_ON_RESTORE"] == "1"
+            {
+                try emitChildText("Fresh during restore")
+                try emitChildConfig()
+            }
             if loaded.contains(params.sessionId),
                 ProcessInfo.processInfo.environment["FAKE_AGENT_CRASH_ON_RESTORE"] == "1",
                 firstTime("restore-\(params.sessionId.rawValue)")
@@ -292,6 +310,14 @@ actor FakeAgent {
             try update(session, ["sessionUpdate": .string("agent_message_chunk"), "content": Self.text("working…")])
             try await Task.sleep(for: .milliseconds(200))
             exit(3)
+        } else if text == "stuck-tool" {
+            try update(
+                session,
+                [
+                    "sessionUpdate": .string("tool_call"), "toolCallId": .string("sleep"),
+                    "title": .string("sleep 600"), "kind": .string("execute"), "status": .string("in_progress"),
+                ])
+            return try await cancelLeavingCommand(session, ignoringCancel: true)
         } else if text == "cancel-leaves-command" {
             return try await cancelLeavingCommand(session)
         } else if text.hasPrefix("slow") || text.hasPrefix("stubborn") {
@@ -464,6 +490,25 @@ actor FakeAgent {
     }
 
     // MARK: - Store
+
+    private func emitChildConfig() throws {
+        let ids = ProcessInfo.processInfo.environment["FAKE_AGENT_CHILD_IDS"] ?? ""
+        for id in ids.split(separator: ",") {
+            let child = SessionID(String(id))
+            try update(child, ["sessionUpdate": .string("config_option_update"), "configOptions": options(child)])
+        }
+    }
+
+    private func emitChildText(_ text: String) throws {
+        let ids = ProcessInfo.processInfo.environment["FAKE_AGENT_CHILD_IDS"] ?? ""
+        for id in ids.split(separator: ",") {
+            try update(
+                SessionID(String(id)),
+                [
+                    "sessionUpdate": .string("agent_message_chunk"), "content": Self.text(text),
+                ])
+        }
+    }
 
     private func update(_ session: SessionID, _ update: [String: JSONValue]) throws {
         try peer?.notify(

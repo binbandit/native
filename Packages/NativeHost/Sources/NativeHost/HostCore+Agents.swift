@@ -236,6 +236,7 @@ extension HostCore {
                 (try? JSONDecoder().decode(JSONValue.self, from: update.json))?["configOptions"]
             return
         }
+        if session.isReplayingPreservedTranscript { return }
         let hadTitle = session.record.title
         // Only a subagent's own updates change whether it works in the background.
         let tracksBackground = update.kind?.hasPrefix("subagent_") == true
