@@ -73,4 +73,15 @@ struct PermissionDefaultsRow: View {
     }
     .defaultAppStorage(PreviewUserDefaults())
 }
+
+#Preview("Project permission override") {
+    let project = UUID()
+    let defaults = PreviewUserDefaults()
+    let _ = defaults.set(
+        TaskPermissionMode.askFirst.rawValue, forKey: TaskPermissionDefaults.key(project: project.uuidString))
+    DSPreviewPair {
+        SettingsRowGroup { PermissionDefaultsRow(project: project) }.settingsPreviewPage()
+    }
+    .defaultAppStorage(defaults)
+}
 #endif
