@@ -176,10 +176,11 @@ env patterns apply only while the Labs feature is off.
 The host makes APFS copy-on-write clones, sharing storage until files change. Both checkouts must
 be on the same APFS volume. Other filesystems and cross-volume worktrees start without copies,
 with an explanation in the task. There is no full-copy fallback. Paths outside either checkout,
-absolute or escaping symlinks, Git directory redirects and special files are refused. Standalone
-dependency checkouts inside a cache are cloned too. A failed cache clone is removed rather than
-leaving a partial installation. Env files inside dependency caches
-are omitted; the env switch selects project env files separately.
+absolute symlinks, links outside the project, Git directory redirects and special files are refused.
+Relative workspace links outside a cache are preserved only when their targets already exist safely
+inside both checkouts. Standalone dependency checkouts inside a cache are cloned too. A failed cache
+clone is removed rather than leaving a partial installation. Env files inside dependency caches are
+omitted; the env switch selects project env files separately.
 
 **Setup command** edits the existing Setup script. It runs once after cloning, holds messages until
 it finishes or is skipped, and keeps output in the task's expandable setup banner rather than
