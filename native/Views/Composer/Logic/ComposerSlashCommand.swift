@@ -5,6 +5,7 @@ import ACP
 struct ComposerSlashCommand: Equatable, Identifiable {
     let name: String
     let description: String
+    let invocation: String
     /// Native runs it rather than sending it to the agent.
     let isNative: Bool
 
@@ -13,12 +14,14 @@ struct ComposerSlashCommand: Equatable, Identifiable {
     init(native name: String, description: String) {
         self.name = name
         self.description = description
+        invocation = "/\(name)"
         isNative = true
     }
 
     init(_ command: AvailableCommand) {
         name = command.name
         description = command.description
+        invocation = command.invocation
         isNative = false
     }
 }

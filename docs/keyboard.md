@@ -192,6 +192,9 @@ The list has Native's own commands first, then the agent's. Native runs its own 
 sending them; an agent's command of the same name stays listed, and picking it from the list sends
 it to the agent.
 
+Skills advertised with a `$` prefix appear and insert as `$skill-name`, without an extra slash.
+They stay searchable from the `/` list by name, alongside ordinary `/command` entries.
+
 | Slash command | What Native does |
 | --- | --- |
 | `/clear` | Starts a fresh conversation in the same task, using the same agent, in the same folder, with the same settings and title. The earlier conversation stays with the agent, a click away: Earlier Conversation in the toolbar, or Task ▸ Open Earlier Conversation. It opens read-only, with Current Conversation (or Task ▸ Open Current Conversation) where the composer was. Task ▸ Clear Conversation and the palette do the same as `/clear` |

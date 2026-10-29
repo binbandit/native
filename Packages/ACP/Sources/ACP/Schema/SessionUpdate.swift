@@ -88,6 +88,11 @@ public struct PlanEntry: Decodable, Hashable, Sendable {
 public struct AvailableCommand: Decodable, Hashable, Sendable {
     public var name: String
     public var description: String
+
+    /// Skills already carry their invocation prefix in the advertised name.
+    public var invocation: String {
+        name.hasPrefix("$") ? name : "/\(name)"
+    }
 }
 
 public struct Usage: Decodable, Hashable, Sendable {

@@ -34,6 +34,7 @@ enum ComposerPreviewFixtures {
             [
               {"name": "compact", "description": "Clear conversation history but keep a summary in context"},
               {"name": "review", "description": "Review a pull request"},
+              {"name": "$review", "description": "Use the review skill"},
               {"name": "init", "description": "Initialize a new AGENTS.md file with codebase documentation"},
               {"name": "security-review", "description": "Complete a security review of the pending changes on the current branch"}
             ]

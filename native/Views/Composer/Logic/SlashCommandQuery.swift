@@ -14,7 +14,7 @@ struct SlashCommandQuery: Equatable {
     /// for its argument.
     static func draft(_ draft: String, inserting command: ComposerSlashCommand) -> (text: String, cursor: String.Index)
     {
-        CompletionInsertion.draft(draft, replacing: draft.startIndex..<draft.endIndex, with: "/\(command.name)")
+        CompletionInsertion.draft(draft, replacing: draft.startIndex..<draft.endIndex, with: command.invocation)
     }
 
     /// The commands matching the query, best first: exact names, then prefixes,
