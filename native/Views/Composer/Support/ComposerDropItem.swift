@@ -24,7 +24,8 @@ enum ComposerDropItem: Transferable {
                 || provider.hasItemConformingToTypeIdentifier(UTType.data.identifier))
     }
 
-    nonisolated static func load(_ provider: NSItemProvider) async throws -> ComposerDropItem {
+    @MainActor
+    static func load(_ provider: NSItemProvider) async throws -> ComposerDropItem {
         try await withCheckedThrowingContinuation { continuation in
             _ = provider.loadTransferable(type: Self.self) { continuation.resume(with: $0) }
         }
