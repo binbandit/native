@@ -554,7 +554,7 @@ final class SessionModel {
         // The agent may have gone away meanwhile.
         guard phase == .loading else { return }
         phase = .idle
-        services.titles.updateConfigChoices(for: titleKey) { $0.follow(configOptions) }
+        services.titles.updateConfigChoices(for: titleKey) { $0.follow(self.configOptions) }
         // Messages sent while it loaded.
         drainQueue()
     }
