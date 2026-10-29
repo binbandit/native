@@ -166,6 +166,7 @@ struct SessionToolsScreen: View {
                 wellLightTrigger += 1
             }
         }
+        .onChange(of: ObjectIdentifier(session), initial: true) { tools.bind(to: session) }
         .onChange(of: registry.tools.map(\.id)) { tools.closeRemovedTools() }
         .onDisappear {
             tools.close(.side)

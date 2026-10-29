@@ -79,7 +79,52 @@ private struct SessionToolCleanupRegression {
             require(otherClosed == 1, "replacement pane closes once")
             registry.setPluginTools([])
         }
-        print("Tool removal, original context, reset, pending-open cancellation and close-once checks passed")
+        checkContinuationSessions(app)
+        print("Tool removal, original context, continuation, reset and close-once checks passed")
+    }
+
+    private static func checkContinuationSessions(_ app: AppModel) {
+        for sameKey in [false, true] {
+            for alreadyOpen in [false, true] {
+                var original = SessionModel.preview(in: app)
+                guard let originalKey = original?.key, let originalID = original.map({ ObjectIdentifier($0) }) else {
+                    exit(1)
+                }
+                weak let retired: SessionModel? = original
+                let registry = SessionToolRegistry(defaults: PreviewUserDefaults())
+                let screen = SessionToolsScreenModel(registry: registry, session: original)
+                let id: SessionToolID = "fixture.continuation"
+                var closed: [ObjectIdentifier] = []
+                let tool = SessionToolContribution(
+                    spec: SessionToolSpec(id: id, places: [.fact], defaultPlace: .fact),
+                    title: "Continuation", systemImage: "wrench", pane: { _ in AnyView(EmptyView()) },
+                    didClose: { closed.append(ObjectIdentifier($0.session)) })
+                registry.setPluginTools([tool])
+                if alreadyOpen { screen.open(id) }
+                if let original { app.sessions.remove(original) }
+                guard
+                    let replacement = SessionModel.preview(
+                        in: app, id: sameKey ? originalKey.id.rawValue : UUID().uuidString)
+                else { exit(1) }
+                replacement.continuedTaskKey = originalKey
+                require(replacement.taskPresentationKey == originalKey, "continuation retains view identity")
+                screen.bind(to: replacement)
+                original = nil
+                if alreadyOpen {
+                    require(retired != nil, "an existing pane retains its original cleanup context")
+                    screen.close(id)
+                    require(closed == [originalID], "an existing pane closes with its original session")
+                }
+                require(retired == nil, "the previous session releases after its panes close")
+                screen.open(id)
+                registry.setPluginTools([])
+                screen.closeRemovedTools()
+                screen.close(id)
+                let expected = (alreadyOpen ? [originalID] : []) + [ObjectIdentifier(replacement)]
+                require(closed == expected, "new panes close once with the replacement session")
+                app.sessions.remove(replacement)
+            }
+        }
     }
 
     private static func require(_ condition: @autoclosure () -> Bool, _ message: String) {

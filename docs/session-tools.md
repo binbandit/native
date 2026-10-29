@@ -131,7 +131,8 @@ the conversation or over it: the workbench holds only Native's terminals and run
 
 The screen model retains each presented contribution's close hook with its original session context.
 Closing, replacing or revoking a pane runs that hook once, even after its plugin leaves the registry.
-Pending opens cancelled before presentation have no close hook to run.
+Pending opens cancelled before presentation have no close hook to run. Task continuations rebind
+the model for newly opened panes; already-presented hooks keep their original session until closure.
 `scripts/tests/session-tool-cleanup.sh <instance>` checks both side and over-conversation tools through
 the app model harness.
 

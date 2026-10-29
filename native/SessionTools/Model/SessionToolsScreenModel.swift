@@ -57,6 +57,11 @@ final class SessionToolsScreenModel {
         self.session = session
     }
 
+    /// Task continuations keep the view tree while replacing its transport session.
+    func bind(to session: SessionModel) {
+        self.session = session
+    }
+
     var openTools: Set<SessionToolID> {
         Set(openByPlace.values)
     }
@@ -80,8 +85,8 @@ final class SessionToolsScreenModel {
             self.changePresentation { self.presentation.present(id, at: place) }
             if self.presentation.openByPlace[place] == id, self.closeHooks[id] == nil, let session = self.session {
                 // Keep the original contribution after revocation, without retaining the screen through its hook.
-                self.closeHooks[id] = { [weak self, weak session] in
-                    guard let self, let session else { return }
+                self.closeHooks[id] = { [weak self, session] in
+                    guard let self else { return }
                     tool.didClose(SessionToolContext(session: session, screen: self, tool: id))
                 }
             }
