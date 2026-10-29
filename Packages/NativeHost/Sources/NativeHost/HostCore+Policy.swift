@@ -105,6 +105,10 @@ extension HostCore {
     /// again without the user, here or after a restart), their recoveries and retries stop, and
     /// their process trees are ended. Transcripts, queues and sessions stay.
     private func endDeniedAgentWork() {
+        let permissionDeniedAgents = Set(
+            sessions.values.filter {
+                ($0.turn != nil || $0.hiddenCommand != nil) && (try? requirePermission(in: $0)) == nil
+            }.map { $0.record.agentID })
         endDeniedAgentTurns()
         // A Stop already owns its turn's processes: it ends them now, without waiting out its grace
         // period, and sends nothing after.
@@ -114,7 +118,9 @@ extension HostCore {
         }
         // A starting agent ends too: its launch checks the policy again before it spawns anything.
         for link in agents.values
-        where !allowsAgentRoute(link.spec.id) && (link.status == .ready || link.status == .starting) {
+        where (!allowsAgentRoute(link.spec.id) || permissionDeniedAgents.contains(link.spec.id))
+            && (link.status == .ready || link.status == .starting)
+        {
             let generation = link.generation
             link.end()
             agentExited(link.spec.id, generation: generation)
@@ -127,8 +133,12 @@ extension HostCore {
     /// (a task handing another a message, a queue draining) can't run, so it ends now instead of
     /// waiting for a restart.
     func endDeniedAgentTurns() {
-        for session in sessions.values where !allowsAgentRoute(session.record.agentID) {
-            let denial = denial(forAgentOf: session)
+        for session in sessions.values {
+            let agentDenied = !allowsAgentRoute(session.record.agentID)
+            guard agentDenied || (try? requirePermission(in: session)) == nil else { continue }
+            let denial =
+                agentDenied
+                ? denial(forAgentOf: session) : HostPolicyDenial("use this task's permissions", policy: policy)
             session.isRecoveryCancelled = true
             let wasRetrying = session.retryAt != nil
             cancelRetry(of: session)
