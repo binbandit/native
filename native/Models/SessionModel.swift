@@ -3,6 +3,7 @@ import AppAppearance
 import Foundation
 import NativeHostClient
 import NativeHostProtocol
+import NativePolicy
 import Observation
 
 /// One agent session: its transcript and settings, plus the user's actions on it. Turns (sending,
@@ -70,6 +71,24 @@ final class SessionModel {
     /// What the composer holds. Saved as it changes, so it outlives the app (`ComposerDrafts`).
     var draft = "" {
         didSet { services.drafts.keep(draft, for: key) }
+    }
+    var diffCommentsPolicy: () -> NativePolicy = { PolicyCenter.shared.policy }
+    var diffCommentEditors: [PromptQuote] = [] {
+        didSet { services.drafts.keepCommentEditors(diffCommentEditors, for: key) }
+    }
+    var reanchoringDiffComment: UUID?
+    var activeDiffComment: UUID?
+    var diffCommentsExpanded = false
+    var diffCommentEditsInComposer = false
+    var diffCommentRequestedSource: PromptQuote?
+    var diffCommentSelection: PromptQuote?
+    var diffCommentFocusRequest = 0
+    var diffCommentAnnouncement = ""
+    var diffCommentAnnouncementGeneration = 0
+    var diffCommentStatus: String?
+    var diffCommentSending = false
+    var unresolvedCommentPacket: String? {
+        didSet { services.drafts.keepCommentDelivery(unresolvedCommentPacket, for: key) }
     }
     var quoteSelection: [PromptQuote] = []
     /// The current or latest model selection, shared by its source and replacement conversations.
@@ -470,6 +489,7 @@ final class SessionModel {
 
     /// Writes only what changed, since writing notifies observers even with an equal value.
     func mirrorState() {
+        reconcileDiffCommentDelivery()
         if title != transcript.title {
             title = transcript.title
         }

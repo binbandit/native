@@ -21,7 +21,7 @@ extension SessionModel {
     }
 
     func quote(_ quotes: [PromptQuote]) {
-        guard acceptsPrompts, permissionRequests.isEmpty, !quotes.isEmpty else { return }
+        guard diffCommentRetentionAllowed, acceptsPrompts, permissionRequests.isEmpty, !quotes.isEmpty else { return }
         let current = PromptQuote.split(draft)
         draft = PromptQuote.draft(quotes: current.quotes + quotes, message: current.message)
         quoteSelection = []

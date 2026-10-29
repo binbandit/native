@@ -182,7 +182,7 @@ private struct QueuedPromptRow: View {
         }
         .trackHover($isHovered)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(isEditing ? "Editing: \(prompt.text)" : isNext ? "Next: \(prompt.text)" : prompt.text)
+        .accessibilityLabel(isEditing ? "Editing: \(summary)" : isNext ? "Next: \(summary)" : summary)
         // The hover actions, for VoiceOver and Switch Control, which don't hover.
         .accessibilityAction(named: "Send Now") { if sendNow != nil { onSendNow(prompt.id) } }
         .accessibilityAction(named: "Edit Message") { onEdit(prompt) }
@@ -192,8 +192,10 @@ private struct QueuedPromptRow: View {
     }
 
     private var line: String {
-        prompt.text.split(whereSeparator: \.isNewline).joined(separator: " ")
+        summary.split(whereSeparator: \.isNewline).joined(separator: " ")
     }
+
+    private var summary: String { PromptQuote.summary(prompt.text) }
 
     private func action(
         _ title: String, systemImage: String, help: String? = nil, perform: @escaping () -> Void
@@ -260,6 +262,20 @@ private struct ActionIcon: View {
                 onSendNow: { _ in }, onMove: { _, _ in }, onDrop: { _, _ in }, onEdit: { _ in }, onRemove: { _ in })
         }
         .frame(width: 320)
+    }
+}
+
+#Preview("Queued messages - Diff comments") {
+    DSPreviewPair {
+        ComposerSurface {
+            QueuedPromptsSection(
+                prompts: [
+                    .init(
+                        PromptQuote.draft(
+                            quotes: DiffCommentsPreviewFixtures.quotes(task: UUID()), message: "Please fix both."))
+                ], editing: nil, sendNow: .steer, agentName: "Claude Code", onSendNow: { _ in },
+                onMove: { _, _ in }, onDrop: { _, _ in }, onEdit: { _ in }, onRemove: { _ in })
+        }.frame(width: 548)
     }
 }
 #endif

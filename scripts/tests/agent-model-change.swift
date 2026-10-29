@@ -89,6 +89,10 @@ private struct AgentModelChangeRegression {
         app.selection = source.key
         app.ordering.pin(source.key)
         source.draft = "Keep my unsent draft"
+        let commentEditors = DiffCommentsPreviewFixtures.quotes(task: source.clientID)
+        source.diffCommentEditors = commentEditors
+        source.unresolvedCommentPacket = "Recover this comment packet"
+
         let attachment = PromptAttachment(
             url: URL(filePath: "/fixture/notes.txt"), content: .text("Fixture"), byteCount: 7)
         source.attachments = [attachment]
@@ -131,6 +135,11 @@ private struct AgentModelChangeRegression {
         try require(await process.accepted.isEmpty, "Choosing a model submitted a working prompt")
         try require(target.draft == "Keep my unsent draft" && target.attachments == [attachment], "Draft was lost")
         try require(
+            target.diffCommentEditors == commentEditors
+                && target.unresolvedCommentPacket == "Recover this comment packet"
+                && source.diffCommentEditors.isEmpty && source.unresolvedCommentPacket == nil,
+            "Comment editor or recovery ownership was lost during model selection")
+        try require(
             target.cwd == source.cwd && source.isEarlierConversation && app.ordering.isPinned(target.key),
             "Task moved or duplicated")
         try require(ComposerSettings(target.configOptions).model?.value == "large", "Exact model not confirmed")
@@ -148,6 +157,13 @@ private struct AgentModelChangeRegression {
             source.draft == "Draft edited after selection" && source.attachments == [attachment, firstFile],
             "Undo lost current edits")
         try require(await process.accepted.isEmpty, "Undo submitted a prompt")
+        try require(
+            source.diffCommentEditors == commentEditors
+                && source.unresolvedCommentPacket == "Recover this comment packet"
+                && target.diffCommentEditors.isEmpty && target.unresolvedCommentPacket == nil,
+            "Undo lost comment editor or recovery ownership")
+        source.diffCommentEditors = []
+        source.unresolvedCommentPacket = nil
         await secondRead.release(secondFile)
         try await readingSecond.value
         try require(

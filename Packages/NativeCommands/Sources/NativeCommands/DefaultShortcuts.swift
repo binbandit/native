@@ -16,6 +16,7 @@ public enum DefaultShortcuts {
         "session.openInDefaultApp": "⇧⌘O",
         "pullRequest.openForTask": "⌥⌘P",
         "composer.focus": "⌘L",
+        "changes.addComment": "⇧⌘L",
         "go.back": "⌘[",
         "go.forward": "⌘]",
         "session.select1": "⌘1",

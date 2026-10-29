@@ -12,6 +12,8 @@ actor WorkspaceTestHost: HostTransport {
     private var holdNew = false
     private var failClose = false
     private var resetsEffort = false
+    private var disconnectsOnConfig = false
+    private var failsPrompt = false
     private var settings: [HostSessionID: (model: String, effort: String, sequence: Int)] = [:]
     private var pendingNew: JSONRPCPeer.Message?
     private var summaries: [HostSessionSummary] = []
@@ -24,11 +26,16 @@ actor WorkspaceTestHost: HostTransport {
 
     init(idPrefix: String = "task") { self.idPrefix = idPrefix }
 
-    func configure(fail: Bool = false, hold: Bool = false, failClose: Bool = false, resetEffort: Bool = false) {
+    func configure(
+        fail: Bool = false, hold: Bool = false, failClose: Bool = false, resetEffort: Bool = false,
+        disconnectOnConfig: Bool = false, failPrompt: Bool = false
+    ) {
         failNew = fail
         holdNew = hold
         self.failClose = failClose
         resetsEffort = resetEffort
+        disconnectsOnConfig = disconnectOnConfig
+        failsPrompt = failPrompt
     }
 
     func releaseNew() throws {
@@ -99,6 +106,13 @@ actor WorkspaceTestHost: HostTransport {
         case HostProtocol.Method.setConfigOption:
             let change = try message.params(as: SetConfigOptionParams.self)
             configChanges.append(change)
+            if disconnectsOnConfig, let index = summaries.firstIndex(where: { $0.id == change.sessionID }) {
+                summaries[index].phase = .disconnected
+                try peer.notify(
+                    HostProtocol.Method.sessionChanged, SessionChangedNotification(summary: summaries[index]))
+                try peer.respond(to: id, error: RPCError(code: -32603, message: "Fixture disconnected during config"))
+                return
+            }
             if resetsEffort, var current = settings[change.sessionID] {
                 if change.configID == "model" { current.model = change.value; current.effort = "low" }
                 if change.configID == "effort" { current.effort = change.value }
@@ -125,7 +139,14 @@ actor WorkspaceTestHost: HostTransport {
             try peer.respond(to: id, with: EmptyMessage())
         case HostProtocol.Method.prompt:
             prompts.append(try message.params(as: PromptParams.self))
+            if failsPrompt {
+                try peer.respond(to: id, error: RPCError(code: -32603, message: "Fixture rejected the waiting prompt"))
+                return
+            }
             try peer.respond(to: id, with: PromptResult(delivery: .prompted))
+        case HostProtocol.Method.updateQueued:
+            // An older host acknowledges a missing item without publishing an accepted edit.
+            try peer.respond(to: id, with: EmptyMessage())
         default:
             try peer.respond(to: id, error: .methodNotFound(message.method))
         }

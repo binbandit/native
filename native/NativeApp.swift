@@ -151,6 +151,7 @@ struct NativeApp: App {
             RootView()
                 .platformTitlebarDoubleClick()
                 .sidebarDesignFixture()
+                .diffCommentsDesignFixture()
                 .commandPalette(palette)
                 .onAppear {
                     LaunchMetrics.markOnScreen(.firstFrame)

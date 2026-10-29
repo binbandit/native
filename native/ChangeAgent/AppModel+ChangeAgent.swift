@@ -154,6 +154,7 @@ extension AppModel {
         ordering.replace(source.key, with: target.key)
         taskPairs.replace(source.key, with: target.key)
         target.draft = source.draft
+        target.adoptDiffCommentDrafts(from: source, moving: true)
         target.attachments = source.attachments
         source.draft = ""
         source.attachments = []

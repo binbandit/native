@@ -11,7 +11,9 @@ extension HostCore {
     /// Edits a queued message; emptying one that carries no attachments removes it.
     func updateQueued(_ params: QueueItemParams) throws {
         let session = try session(params.sessionID)
-        guard let index = session.queue.firstIndex(where: { $0.prompt.id == params.itemID }) else { return }
+        guard let index = session.queue.firstIndex(where: { $0.prompt.id == params.itemID }) else {
+            throw HostError.notInQueue
+        }
         let text = params.text.map(PromptQuote.trimmed) ?? ""
         if text.isEmpty, session.queue[index].prompt.attachments.isEmpty {
             remember(session.queue.remove(at: index).prompt, in: session)
