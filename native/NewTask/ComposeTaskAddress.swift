@@ -106,7 +106,7 @@ struct ComposeTaskAddress: View {
                         VStack(alignment: .leading, spacing: DS.Space.xs) {
                             HStack(spacing: DS.Space.sm) {
                                 TaskFolderChoice(
-                                    isProjectFolder: compose.workspace == .project,
+                                    location: folderLocation,
                                     sharedFolderNote: nil,
                                     choose: model.chooseComposeWorkspace,
                                     more: compose.beginWorkspaceSelection
@@ -256,6 +256,13 @@ struct ComposeTaskAddress: View {
         case .branch(let name): name
         case .worktree(let folder): folder.lastPathComponent
         default: branch ?? (entry.project == nil ? "Choose a folder first" : "Current branch")
+        }
+    }
+    private var folderLocation: TaskFolderChoice.Location {
+        switch compose.workspace {
+        case .project: .project
+        case .branch, .worktree: .separate
+        default: .newBranch
         }
     }
     private var workspaceDetail: String {

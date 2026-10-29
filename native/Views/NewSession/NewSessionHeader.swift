@@ -32,7 +32,7 @@ struct NewSessionHeader: View {
                 NewSessionWorkspaceLine(workspace: context.workspace, projectName: context.projectName)
                 if let choose = context.chooseWorkspace {
                     TaskFolderChoice(
-                        isProjectFolder: isProjectFolder, sharedFolderNote: context.sharedFolderNote,
+                        location: isProjectFolder ? .project : .separate, sharedFolderNote: context.sharedFolderNote,
                         isChanging: isChangingFolder,
                         choose: { choice in
                             isChangingFolder = true
