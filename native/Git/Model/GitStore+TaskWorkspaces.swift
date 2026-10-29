@@ -1,3 +1,4 @@
+import Experiments
 import Foundation
 import Git
 
@@ -87,9 +88,15 @@ extension GitStore {
         var created = GitTaskWorktree(
             folder: worktree.path, projectRoot: main, branch: branch, baseBranch: baseBranch, baseNotice: baseNotice)
         do {
-            created.copiedFiles = try await requireRepository(at: main).copyIgnoredFiles(
-                matching: settings.envFilePatterns, to: worktree.path)
+            if ExperimentStore.shared.value(of: .warmWorktrees) {
+                let notice = try await warmTaskWorktree(worktree.path, from: repository.root)
+                created.baseNotice = [baseNotice, notice].compactMap { $0 }.joined(separator: " ")
+            } else {
+                created.copiedFiles = try await requireRepository(at: main).copyIgnoredFiles(
+                    matching: settings.envFilePatterns, to: worktree.path)
+            }
         } catch {
+            if Task.isCancelled { throw CancellationError() }
             created.copyFailure = error.localizedDescription
         }
         onTaskWorktreeCreated?(created)

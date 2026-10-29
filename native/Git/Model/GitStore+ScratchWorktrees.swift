@@ -1,3 +1,4 @@
+import Experiments
 import Foundation
 import Git
 
@@ -19,7 +20,11 @@ extension GitStore {
         let base = try? await repository.currentBranchName()
         let worktree = try await repository.createWorktree(
             forTask: "script-test", in: worktreesBase(of: repository), detached: true)
-        _ = try? await repository.copyIgnoredFiles(matching: settings.envFilePatterns, to: worktree.path)
+        if ExperimentStore.shared.value(of: .warmWorktrees) {
+            _ = try? await warmTaskWorktree(worktree.path, from: project)
+        } else {
+            _ = try? await repository.copyIgnoredFiles(matching: settings.envFilePatterns, to: worktree.path)
+        }
         return (worktree.path, base)
     }
 
