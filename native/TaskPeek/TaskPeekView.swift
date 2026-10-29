@@ -23,6 +23,13 @@ struct TaskPeekView: View {
         return model.allSessions(in: found.project).first { $0.id == request.task }
     }
 
+    private var questionnaire: AgentQuestionnaire? {
+        guard case .question(let question) = ask?.content, let schema = question.request.requestedSchema else {
+            return nil
+        }
+        return AgentQuestionnaire(message: question.request.message, schema: schema)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -38,14 +45,23 @@ struct TaskPeekView: View {
             if let summary { await insights.prepare([summary]) }
         }
         .background(.dsOverlay)
-        .environment(\.permissionShortcutsEnabled, false)
+        .overlay {
+            RoundedRectangle(cornerRadius: DS.Radius.card)
+                .strokeBorder(.dsSeparator, lineWidth: DS.Approval.rule)
+                .allowsHitTesting(false)
+        }
+        // Shadow the card's surface once rather than casting shadows from its text and controls.
+        .compositingGroup()
+        .dsShadow(.modal)
         .accessibilityIdentifier("task-peek")
         .focusable()
         .focused($isFocused)
         .focusedSceneValue(\.taskPeekInstructionFocus, showsInstructionEditor ? $wantsInstructionFocus : nil)
         .focusEffectDisabled()
         .onAppear {
-            if case .question = ask?.content { return }
+            // A usable questionnaire focuses its own answer. Confirmation rows have no field,
+            // so Peek must take focus to keep Escape away from the background sidebar.
+            if questionnaire != nil { return }
             isFocused = true
         }
         .onKeyPress(.escape) {
@@ -177,9 +193,10 @@ struct TaskPeekView: View {
         case .permission(let call):
             AnnotatedApprovalView(
                 call: call, agentName: ask.session.agentName, workingDirectory: ask.session.cwd.path,
+                reason: ask.session.state.reason(forToolCall: call.id), session: ask.session.key,
                 homeDirectory: model.device(of: ask.task) == .thisMac ? NSHomeDirectory() : nil,
                 knowledge: model.plugins.commandKnowledge,
-                responseAttempt: model.taskPeek.approvalAttempt,
+                responseAttempt: model.taskPeek.approvalAttempt, capsBodyHeight: false,
                 focusRequested: wantsInstructionFocus, didFocus: { wantsInstructionFocus = false },
                 planEntries: call.kind == .switchMode ? ask.session.state.currentTurnPlan : [],
                 planExpanded: true,
@@ -238,6 +255,7 @@ extension FocusedValues {
 #Preview("Peek - Question, Fine print, narrow") {
     TaskPeekPreviewFixtures.view(.question, width: 360, finePrint: true)
 }
+#Preview("Peek - Confirmation question") { TaskPeekPreviewFixtures.view(.confirmation) }
 #Preview("Peek - Answer delivery failed") { TaskPeekPreviewFixtures.view(.answerFailure) }
 #Preview("Peek - Failure") { TaskPeekPreviewFixtures.view(.failure) }
 #Preview("Peek - Recovering") { TaskPeekPreviewFixtures.view(.recovering) }

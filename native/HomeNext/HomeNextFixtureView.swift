@@ -34,6 +34,7 @@ struct HomeNextFixtureView: View {
                 .environment(model)
                 .environment(policy)
                 .environment(gitHub)
+                .environment(\.approvalPushReach, { _ in ApprovalPreviewFixtures.forceReach })
                 .defaultAppStorage(storage)
             } else {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)

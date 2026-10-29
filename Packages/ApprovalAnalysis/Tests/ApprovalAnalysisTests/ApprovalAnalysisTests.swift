@@ -15,7 +15,7 @@ import Testing
         #expect(analysis.risk == .irreversible)
         #expect(analysis.parts.count == 3)
         #expect(analysis.parts.last?.explanation.contains("outside") == true)
-        #expect(analysis.consequence.contains("not been inspected"))
+        #expect(analysis.consequence.contains("Trash"))
     }
 
     @Test(arguments: [
@@ -35,8 +35,8 @@ import Testing
         #expect(analysis.command == command)
         #expect(analysis.suggestedCommand == "git  push --force-with-lease origin main")
         #expect(
-            analysis.parts.map { String(Array(command)[$0.range]) } == ["git  push", "--force", "origin", "main"])
-        #expect(describe("git push origin main").risk == .irreversible)
+            analysis.parts.map { String(Array(command)[$0.range]) } == ["git  push", "--force", "origin main"])
+        #expect(describe("git push origin main").risk == .routine)
     }
 
     @Test(arguments: [
@@ -71,9 +71,12 @@ import Testing
         let nested = ApprovalCommand(
             command: "./script", workingDirectory: cwd + "/tools", worktreeDirectory: cwd)
         #expect(nested.action == "run script")
-        #expect(nested.reason == "Requested from this task's worktree.")
+        #expect(
+            nested.consequence
+                == "Native can't describe script, so it makes no claims about it. It runs in tools, with your permissions."
+        )
         let outside = ApprovalCommand(command: "./script", workingDirectory: home, worktreeDirectory: cwd)
-        #expect(outside.reason == "Requested from a folder outside the worktree.")
+        #expect(outside.consequence.hasSuffix("It runs in developer, outside the worktree, with your permissions."))
         #expect(outside.parts.isEmpty)
         #expect(outside.risk == .unknown)
     }

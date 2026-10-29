@@ -17,6 +17,8 @@ struct SessionRow<Accessory: View>: View {
     @Environment(\.sidebarAllInView) private var isAllInView
     @Environment(\.homePresentedTaskNeeds) private var homeNeeds
     @Environment(\.answerShortcutAskID) private var answerShortcutAskID
+    @Environment(\.approvalPushReach) private var loadPushReach
+    @State private var approvalReach: ApprovalPushReach?
     let summary: SessionSummary
     /// Grouped under a project header, or flush in the Pinned section.
     var indent: TaskRowIndent = .grouped
@@ -33,6 +35,18 @@ struct SessionRow<Accessory: View>: View {
 
     private var session: SessionModel? {
         model.session(summary.id)
+    }
+
+    private var attention: SidebarSessionAttention? {
+        session.flatMap {
+            SidebarSessionAttention(
+                session: $0, task: summary.id, oldest: answerShortcutAskID, pushPlace: approvalReach?.place,
+                pushBranch: approvalReach?.branch)
+        }
+    }
+
+    private var askSentence: String? {
+        isAllInView ? attention?.sentence : session?.sidebarAsk
     }
 
     private var title: String {
@@ -120,9 +134,6 @@ struct SessionRow<Accessory: View>: View {
 
     @ViewBuilder private var taskRow: some View {
         if isAllInView {
-            let attention = session.flatMap {
-                SidebarSessionAttention(session: $0, task: summary.id, oldest: answerShortcutAskID)
-            }
             let preferences = model.sidebarPreferences
             let isOnHome =
                 attention.map { homeNeeds.contains(.request($0.id)) }
@@ -150,6 +161,13 @@ struct SessionRow<Accessory: View>: View {
             }
             .task(id: showsBranch) {
                 if showsBranch || folderLocation != nil { await insights.prepareBranch(summary) }
+            }
+            .task(id: attention?.pushRequest) {
+                approvalReach = nil
+                guard let request = attention?.pushRequest, let loadPushReach else { return }
+                let reach = await loadPushReach(request)
+                guard !Task.isCancelled else { return }
+                approvalReach = reach
             }
         } else {
             TaskRow(
@@ -293,14 +311,14 @@ struct SessionRow<Accessory: View>: View {
         let project = indent == .flat ? model.projectName(for: summary.id, in: summary.project).map { " · \($0)" } : nil
         let line = "\(summary.agent.displayName) · \(title)\(project ?? "")\(isArchived ? " · Archived" : "")"
         let removed = model.removedWorkspaces[summary.id].map { "Its worktree was removed. \($0.detail)" }
-        return [line, folderLocation, removed, session?.sidebarAsk].compactMap(\.self).joined(separator: "\n")
+        return [line, folderLocation, removed, askSentence].compactMap(\.self).joined(separator: "\n")
     }
 
     private var accessibilityLabel: String {
         let removed = model.removedWorkspaces[summary.id] != nil ? "worktree removed" : nil
         let pullRequest = insights.pullRequestMenu(summary)?.spokenSummary
-        return [title, folderLocation, removed, pullRequest, session?.sidebarAsk].compactMap(\.self).joined(
-            separator: ", ")
+        return [title, folderLocation, removed, pullRequest, askSentence?.replacingOccurrences(of: "`", with: "")]
+            .compactMap(\.self).joined(separator: ", ")
     }
 
     private func rename() {

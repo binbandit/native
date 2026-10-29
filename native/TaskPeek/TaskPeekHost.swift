@@ -22,8 +22,13 @@ private struct TaskPeekHost: ViewModifier {
     }
 
     func body(content: Content) -> some View {
+        // While Peek owns the ask keys, the window behind it keeps none of its own.
         content
-            .environment(\.legacyAskShortcutEnabled, model.legacyAskShortcutEnabled(in: .shared))
+            .environment(\.permissionShortcutsEnabled, !model.peekOwnsAskShortcut)
+            .environment(
+                \.legacyAskShortcutEnabled,
+                model.legacyAskShortcutEnabled(in: .shared) && !model.peekOwnsAskShortcut
+            )
             .simultaneousGesture(
                 TapGesture().onEnded { model.closeTaskPeek(restoringSidebarFocus: false) },
                 including: presented == nil ? .subviews : .all
@@ -52,6 +57,8 @@ private struct TaskPeekHost: ViewModifier {
             settings.close(); model.openPeekedTask(key)
         }
         .id(request.id)
+        .environment(\.permissionShortcutsEnabled, true)
+        .environment(\.legacyAskShortcutEnabled, model.legacyAskShortcutEnabled(in: .shared))
     }
 }
 

@@ -19,6 +19,9 @@ import FoundationNetworking
 //   lose-once …         never records the prompt and hangs, the first time (a prompt that didn't arrive)
 //   flaky-once …        fails with a network error the first time, answers normally after that
 //   permission …        asks to approve a tool call and reports the answer
+//   ask-run <why> :: <command>
+//                       says why, then asks to run the shell command as Claude Code does, and reports
+//                       the answer (`ask-run :: <command>` says nothing first)
 //   question …          asks a form question (elicitation/create) and reports the answer
 //   mode?               answers with the session's current mode
 //   config?             answers with its mode, model and effort, as "config: mode=… model=… effort=…"
@@ -365,6 +368,14 @@ actor FakeAgent {
             reply = "streamed \(count)"
         } else if text.hasPrefix("permission") {
             reply = "permission: \(try await askPermission(session))"
+        } else if text.hasPrefix("ask-run "), let separator = text.range(of: " :: ") {
+            let reason = text[text.index(text.startIndex, offsetBy: 8)..<separator.lowerBound]
+            let command = String(text[separator.upperBound...])
+            if !reason.trimmingCharacters(in: .whitespaces).isEmpty {
+                try update(
+                    session, ["sessionUpdate": .string("agent_message_chunk"), "content": Self.text(String(reason))])
+            }
+            reply = "ran: \(try await askToRun(session, command: command))"
         } else if text.hasPrefix("question") {
             reply = "question: \(try await askQuestion(session))"
         } else if text == "leave-plan" {
@@ -499,6 +510,30 @@ actor FakeAgent {
                 "options": .array([
                     .object(["optionId": .string("allow"), "name": .string("Allow"), "kind": .string("allow_once")]),
                     .object(["optionId": .string("reject"), "name": .string("Reject"), "kind": .string("reject_once")]),
+                ]),
+            ]), as: JSONValue.self)
+        return answer?["outcome"]?["optionId"]?.stringValue ?? answer?["outcome"]?["outcome"]?.stringValue ?? "none"
+    }
+
+    /// The shape claude-agent-acp sends for its Bash tool: the call first, then the request.
+    private func askToRun(_ session: SessionID, command: String) async throws -> String {
+        let call: [String: JSONValue] = [
+            "toolCallId": .string("call-\(UUID().uuidString.prefix(8))"), "title": .string(command),
+            "kind": .string("execute"), "status": .string("pending"),
+            "rawInput": .object(["command": .string(command), "description": .string("Run the command")]),
+        ]
+        try update(session, call.merging(["sessionUpdate": .string("tool_call")]) { $1 })
+        let answer = try await peer?.request(
+            "session/request_permission",
+            JSONValue.object([
+                "sessionId": .string(session.rawValue), "toolCall": .object(call),
+                "options": .array([
+                    .object(["optionId": .string("allow"), "name": .string("Yes"), "kind": .string("allow_once")]),
+                    .object([
+                        "optionId": .string("always"), "name": .string("Yes, and don't ask again"),
+                        "kind": .string("allow_always"),
+                    ]),
+                    .object(["optionId": .string("reject"), "name": .string("No"), "kind": .string("reject_once")]),
                 ]),
             ]), as: JSONValue.self)
         return answer?["outcome"]?["optionId"]?.stringValue ?? answer?["outcome"]?["outcome"]?.stringValue ?? "none"

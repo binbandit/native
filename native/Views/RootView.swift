@@ -27,6 +27,7 @@ struct RootView: View {
     @State private var showsPullRequests = false
     @Environment(GitHubModel.self) private var gitHub
     @Environment(GitStore.self) private var git
+    @Environment(\.approvalPushReach) private var suppliedApprovalPushReach
     @Environment(AutomationCenter.self) private var automation
     /// Workflows or Automations, when one of them has the detail column.
     @State private var automationPage: AutomationPage?
@@ -67,6 +68,7 @@ struct RootView: View {
         .noProjectMovePresentation()
         .projectFolderDeletePresentation()
         .environment(\.sidebarTaskInsights, sidebarInsights)
+        .environment(\.approvalPushReach, suppliedApprovalPushReach ?? AppApprovalPushReach.make(git: git))
         .onPreferenceChange(HomePresentedTaskAskKey.self) { homeNeeds = $0 }
         .onGeometryChange(for: CGSize.self, of: \.size) { contentSize = $0 }
         .approvalHoldKeyRoot()

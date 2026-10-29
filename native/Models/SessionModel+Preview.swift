@@ -45,8 +45,10 @@ extension SessionModel {
     }
 
     /// The agent asks to run a shell command, as Codex's adapter asks.
-    func previewPermissionRequest(command: String = "swift test --filter PermissionRequestTests", at date: Date = .now)
-    {
+    func previewPermissionRequest(
+        command: String = "swift test --filter PermissionRequestTests", reason: String? = nil, at date: Date = .now
+    ) {
+        if let reason { state.apply(.agentMessageChunk(ContentChunk(content: .text(reason))), at: date) }
         let call = """
             {"toolCallId": "call_preview_\(UUID().uuidString.prefix(8))", "title": "\(command)", "kind": "execute",
              "status": "pending", "rawInput": {"command": ["/bin/zsh", "-lc", "\(command)"]}}

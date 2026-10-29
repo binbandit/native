@@ -41,7 +41,7 @@ enum CommandKnowledgeValidation {
                 keys: [
                     "words", "summary", "consequence", "destructive", "options", "operands",
                     "optionsBeforeOperands", "shortClusters", "allowsTerminator", "noSuggestionWithOptions",
-                    "noSuggestionWithOperandPrefixes",
+                    "noSuggestionWithOperandPrefixes", "destructiveConsequence", "destructiveOperandPrefixes",
                 ])
             _ = try self.object(fields["operands"] as Any, keys: ["minimum", "maximum", "summary", "paths"])
             guard let options = fields["options"] as? [Any], options.count <= 128 else {
@@ -69,11 +69,15 @@ enum CommandKnowledgeValidation {
         }
         for rule in program.commands {
             guard rule.words.count <= 4, rule.words.allSatisfy(identifier),
-                text(rule.summary, placeholders: ["count"]), text(rule.consequence, placeholders: []),
+                text(rule.summary, placeholders: ["count"]), text(rule.consequence, placeholders: ["folder"]),
+                rule.destructiveConsequence.map({ text($0, placeholders: ["folder"]) }) ?? true,
                 rule.operands.minimum >= 0, rule.operands.minimum <= 128,
                 rule.operands.maximum.map({ $0 >= rule.operands.minimum && $0 <= 128 }) ?? true,
-                text(rule.operands.summary, placeholders: ["value", "scope", "location"])
+                rule.operands.summary.map({ text($0, placeholders: ["value", "scope", "location"]) }) ?? true
             else { throw Invalid("invalid command words, text template, or operand bounds") }
+            guard (rule.destructiveOperandPrefixes ?? []).allSatisfy({ !$0.isEmpty && $0.count <= 64 }),
+                (rule.destructiveOperandPrefixes?.count ?? 0) <= 16
+            else { throw Invalid("invalid destructive operand prefixes") }
             let names = rule.options.flatMap(\.names)
             guard Set(names).count == names.count else { throw Invalid("duplicate option names") }
             guard (rule.noSuggestionWithOptions ?? []).allSatisfy({ names.contains($0) }),

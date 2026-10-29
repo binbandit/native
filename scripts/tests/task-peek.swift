@@ -88,7 +88,10 @@ private struct TaskPeekChecks {
         require(app.oldestTaskAsk?.task == current.key, "Child ask anchors to its parent row")
         require(app.oldestTaskAsk?.session === child, "Child ask keeps its responding session")
         await app.answerOldestTaskAsk()
-        require(child.permissionRequests.isEmpty, "Child answer reaches the child")
+        require(child.permissionRequests.count == 1, "An open Peek keeps the global shortcut off another task")
+        app.closeTaskPeek()
+        await app.answerOldestTaskAsk()
+        require(child.permissionRequests.isEmpty, "Child answer reaches the child after Peek closes")
         require(destructive.permissionRequests.count == 1, "Child answer leaves other asks intact")
         let disconnected = try firstAsk(app, destructive.key)
         destructive.phase = .disconnected
@@ -140,7 +143,28 @@ private struct TaskPeekChecks {
         let loose = TaskPeekFrame(anchor: nil, size: size, in: window)
         require(loose.arrow == nil && loose.card.minY == DS.Peek.toolbarGap, "Without a row, Peek sits at the top")
         require(abs(loose.card.midX - window.midX) < 1, "Without a row, Peek is centered")
-        print("PASS: placement beside, below and without a row; toolbar, window and arrow bounds")
+        // The approval card can be taller than the window, especially at narrow widths. Exercise
+        // the shared presenter with that height, lower rows and the collapsed-sidebar fallback.
+        for width: CGFloat in [480, 720, 900, 1440] {
+            for height: CGFloat in [360, 480, 848] {
+                let bounds = CGRect(x: 0, y: 0, width: width, height: height)
+                let anchors: [CGRect?] = [
+                    CGRect(x: 8, y: 0, width: 240, height: 46),
+                    CGRect(x: 8, y: height - 60, width: 240, height: 46),
+                    CGRect(x: 8, y: 100, width: width - 16, height: 60),
+                    nil,
+                ]
+                for anchor in anchors {
+                    let frame = TaskPeekFrame(
+                        anchor: anchor, size: CGSize(width: DS.Peek.width, height: 2000), in: bounds)
+                    require(frame.card.minX >= DS.Peek.windowInset, "Tall approval clears the leading window edge")
+                    require(frame.card.maxX <= width - DS.Peek.windowInset, "Tall approval clears the trailing edge")
+                    require(frame.card.minY >= DS.Peek.toolbarGap, "Tall approval clears the toolbar")
+                    require(frame.card.maxY <= height - DS.Peek.windowInset, "Tall approval clears the bottom edge")
+                }
+            }
+        }
+        print("PASS: placement beside, below and without a row; tall approvals in 12 window sizes")
     }
 
     static func checkAttentionList() async throws {

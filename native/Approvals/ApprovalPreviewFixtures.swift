@@ -10,9 +10,33 @@ enum ApprovalPreviewFixtures {
     static let home = "/Users/developer"
     static let commands = [
         "git push --force origin main",
-        "rm -rf ~/Library/Developer/Xcode/DerivedData/native-bfhqjzxkdyowmrtglcaevpsnui",
+        "swift test --package-path Packages/ACP --filter PermissionRequestTests",
         "./tools/acp-schema-gen --lang swift --strict --out Packages/ACP/Sources/ACP/Generated schema/v2.json",
+        "git push origin fix/stale-build",
+        "rm -rf ~/Library/Developer/Xcode/DerivedData/native-bfhqjzxkdyowmrtglcaevpsnui",
     ]
+    /// What the agent said before each command, as the subline shows it.
+    static let reasons = [
+        "Squashed into one commit, `docs: release notes for 0.9`. main's history changed, so the push needs `--force`.",
+        "It fails about one run in five on CI, so I want to see it fail here before touching the fixture.",
+        "I'll run the generator the repo uses, then build the package to see what changed.",
+        "The fix is committed, so I'll push the branch.",
+        "Every failure is a stale `.swiftmodule` in DerivedData. Clearing this project's folder there fixes it.",
+    ]
+    /// The force-push once its remote has been read: three commits only github.com has.
+    static let forceReach = ApprovalPushReach(
+        remote: "origin", branch: "main", host: "github.com", repository: "binbandit/native", ahead: 3,
+        dropped: [
+            .init(
+                hash: "d608cec8", subject: "perf(ui): share minute updates for pull requests and usage (#42)",
+                date: .now.addingTimeInterval(-7_200)),
+            .init(
+                hash: "3b04b19a", subject: "fix(composer): quiet follow-up prompts while agents work (#57)",
+                date: .now.addingTimeInterval(-10_800)),
+            .init(
+                hash: "fe4ae1e1", subject: "fix(host): build and test native-host on Linux (#28)",
+                date: .now.addingTimeInterval(-18_000)),
+        ])
     // Several decisions can share the same ACP lifetime. Keep every one visible and distinct.
     static let distinctOptions: [PermissionOption] = [
         .init(optionId: "grant", name: "Grant for this turn", kind: .allowOnce),
@@ -22,9 +46,17 @@ enum ApprovalPreviewFixtures {
         .init(optionId: "cancel", name: "Cancel this turn", kind: .rejectOnce),
         .init(optionId: "block", name: "Block this host", kind: .rejectAlways),
     ]
-    static let force = analyze(commands[0])
+    static let force = analyze(commands[0]).describingPushTarget(forceReach.description)
     static let routine = analyze(commands[1])
     static let unknown = analyze(commands[2])
+
+    /// What an agent says before asking for a fixture command, matched by its program and subcommand.
+    static func reason(for command: String) -> String? {
+        if command.hasPrefix("git push --force") { return reasons[0] }
+        if command.hasPrefix("swift test") { return reasons[1] }
+        if command.hasPrefix("git push") { return reasons[3] }
+        return commands.firstIndex(of: command).map { reasons[$0] }
+    }
 
     static func analyze(_ command: String) -> ApprovalCommand {
         ApprovalCommand(command: command, workingDirectory: folder, homeDirectory: home)
@@ -36,7 +68,7 @@ enum ApprovalPreviewFixtures {
             title: "Review the requested command", phase: .prompting,
             configOptions: ComposerPreviewFixtures.configOptions)
         session?.previewRunningTurn("Check the build and explain what needs approval.")
-        session?.previewPermissionRequest(command: command)
+        session?.previewPermissionRequest(command: command, reason: reason(for: command))
         return session
     }
 
@@ -49,10 +81,12 @@ enum ApprovalPreviewFixtures {
             let describedCall = replacingOptions(in: call, with: options)
             ApprovalSurface {
                 AnnotatedApprovalView(
-                    call: describedCall, agentName: "Codex", workingDirectory: folder, homeDirectory: home,
+                    call: describedCall, agentName: "Codex", workingDirectory: folder,
+                    reason: session.state.reason(forToolCall: call.id), homeDirectory: home,
                     isAvailable: isAvailable,
                     onChoose: { _ in }, onInstruct: { _ in }, sending: sending, failure: failure)
             }
+            .environment(\.approvalPushReach, { _ in forceReach })
         }
     }
 
@@ -75,6 +109,7 @@ enum ApprovalPreviewFixtures {
             ComposerView(session: session, taskModes: modes)
                 .environment(app).environment(automation).environment(CommandRegistry.shared)
                 .environment(\.experimentStore, experiments)
+                .environment(\.approvalPushReach, { _ in forceReach })
         }
     }
 }
