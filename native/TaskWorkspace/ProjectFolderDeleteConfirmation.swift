@@ -1,57 +1,31 @@
 import SwiftUI
 
-struct ProjectFolderDeleteConfirmation: View {
-    let title: String
-    let cancel: () -> Void
-    let confirm: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: DS.Space.lg) {
-            Text(title).font(.dsHeadline).foregroundStyle(.dsTextPrimary)
-            Text(
-                "The conversation is removed from Native. Files in the project folder and its current branch stay as they are."
-            )
-            .font(.dsBody).foregroundStyle(.dsTextSecondary)
-            .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: DS.Space.md) {
-                Spacer(minLength: 0)
-                Button("Cancel", action: cancel).buttonStyle(.ds(.secondary, size: .medium))
-                    .keyboardShortcut(.cancelAction)
-                Button("Delete Task", role: .destructive, action: confirm)
-                    .buttonStyle(.ds(.destructive, size: .medium))
-            }
-        }
-        .padding(DS.Space.xxl)
-        .frame(idealWidth: DS.TaskWorkspace.sheetWidth, maxWidth: DS.TaskWorkspace.sheetWidth)
-        .background(.dsBackground)
-    }
-}
-
 extension View {
     func projectFolderDeletePresentation() -> some View {
-        modifier(ProjectFolderDeleteModifier())
+        modifier(ProjectFolderDeleteConfirmation())
     }
 }
 
-private struct ProjectFolderDeleteModifier: ViewModifier {
+private struct ProjectFolderDeleteConfirmation: ViewModifier {
     @Environment(AppModel.self) private var app
 
     func body(content: Content) -> some View {
-        content.sheet(
+        content.confirmationDialog(
+            app.projectFolderDeletion?.title ?? "Delete this task?",
             isPresented: Binding(
                 get: { app.projectFolderDeletion != nil },
                 set: { if !$0 { app.projectFolderDeletion = nil } }
-            )
-        ) {
-            if let request = app.projectFolderDeletion {
-                ProjectFolderDeleteConfirmation(
-                    title: request.title,
-                    cancel: { app.projectFolderDeletion = nil },
-                    confirm: {
-                        app.projectFolderDeletion = nil
-                        request.confirm()
-                    })
+            ), titleVisibility: .visible, presenting: app.projectFolderDeletion
+        ) { request in
+            Button("Cancel", role: .cancel) { app.projectFolderDeletion = nil }
+            Button("Delete", role: .destructive) {
+                app.projectFolderDeletion = nil
+                request.confirm()
             }
+        } message: { _ in
+            Text(
+                "Conversations are removed from Native. Files in the project folder and its current branch stay as they are."
+            )
         }
     }
 }
@@ -59,7 +33,17 @@ private struct ProjectFolderDeleteModifier: ViewModifier {
 #if DEBUG
 #Preview("Delete project folder task - Files stay") {
     DSPreviewPair {
-        ProjectFolderDeleteConfirmation(title: "Delete this task?", cancel: {}, confirm: {})
+        let app = AppModel.preview(.empty)
+        VStack {
+            Button("Delete this task") {
+                app.projectFolderDeletion = ProjectFolderDeletion(title: "Delete this task?", confirm: {})
+            }
+            Button("Delete these tasks") {
+                app.projectFolderDeletion = ProjectFolderDeletion(title: "Delete these tasks?", confirm: {})
+            }
+        }
+        .projectFolderDeletePresentation()
+        .environment(app)
     }
 }
 #endif
