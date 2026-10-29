@@ -216,7 +216,12 @@ actor FakeAgent {
                 return
             }
             received("steer", text)
-            if ProcessInfo.processInfo.environment["FAKE_AGENT_DELAY_STEER"] == "1" {
+            if let gate = ProcessInfo.processInfo.environment["FAKE_AGENT_STEER_GATE"] {
+                while !FileManager.default.fileExists(atPath: gate) {
+                    try await Task.sleep(for: .milliseconds(10))
+                }
+                received("steer-accepted", text)
+            } else if ProcessInfo.processInfo.environment["FAKE_AGENT_DELAY_STEER"] == "1" {
                 try await Task.sleep(for: .seconds(3))
                 received("steer-accepted", text)
             }

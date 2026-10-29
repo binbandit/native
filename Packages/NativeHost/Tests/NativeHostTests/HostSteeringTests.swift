@@ -199,4 +199,84 @@ struct HostSteeringTests {
         await recorder.stop()
     }
 
+    @Test(arguments: ["send now", "prompt", "hidden"])
+    func directPromptStartersWaitForSteeringAcknowledgement(_ starter: String) async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        let gate = harness.root.appending(path: "steering-ack")
+        harness.agentEnvironment["FAKE_AGENT_STEER_GATE"] = gate.path
+        try harness.start()
+        let recorder = try await harness.connect()
+        let session = try await recorder.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: harness.root.path, attach: true))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "tool-sleep"))
+        try await recorder.wait("the command") {
+            await $0.mirror(session.id).state.items.contains { if case .toolCall = $0 { true } else { false } }
+        }
+        let queued = PromptParams(sessionID: session.id, text: "next")
+        _ = try await recorder.client.prompt(queued)
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "correction", behavior: .steer))
+        try await recorder.wait("the original turn ending before the steering acknowledgement") {
+            await $0.turnsEnded(session.id).count == 1 && harness.received.contains("steer\tcorrection")
+        }
+        switch starter {
+        case "send now":
+            await #expect(throws: (any Error).self) {
+                try await recorder.client.sendQueuedNow(
+                    QueueItemParams(sessionID: session.id, itemID: queued.requestID))
+            }
+        case "prompt":
+            try await recorder.client.removeQueued(QueueItemParams(sessionID: session.id, itemID: queued.requestID))
+            #expect(try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "direct")) == .queued)
+        default:
+            await #expect(throws: (any Error).self) {
+                try await recorder.client.runHidden(RunHiddenParams(sessionID: session.id, text: "/context"))
+            }
+        }
+        #expect(!harness.received.contains("prompt\tnext"))
+        #expect(!harness.received.contains("prompt\tdirect"))
+        #expect(!harness.received.contains("prompt\t/context"))
+        try Data().write(to: gate)
+        try await recorder.wait("the queue after acknowledgement") {
+            await $0.turnsEnded(session.id).count == 2
+        }
+        let received = harness.received
+        let ack = try #require(received.firstIndex(of: "steer-accepted\tcorrection"))
+        let next = try #require(received.firstIndex(of: starter == "prompt" ? "prompt\tdirect" : "prompt\tnext"))
+        #expect(ack < next)
+        await recorder.stop()
+    }
+
+    @Test(arguments: [false, true])
+    func removedSteerUndoKeepsItsOriginalTurn(_ crossesTurn: Bool) async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let session = try await recorder.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: harness.root.path, attach: true))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "tool-sleep"))
+        try await recorder.wait("the command") {
+            await $0.mirror(session.id).state.items.contains { if case .toolCall = $0 { true } else { false } }
+        }
+        let held = PromptParams(sessionID: session.id, text: "original correction", behavior: .steer)
+        _ = try await recorder.client.prompt(held)
+        try await recorder.client.removeQueued(QueueItemParams(sessionID: session.id, itemID: held.requestID))
+        if crossesTurn {
+            try await recorder.wait("the original turn") { await $0.turnsEnded(session.id).count == 1 }
+            _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "slow 20"))
+        }
+        try await recorder.client.restoreQueued(
+            RestoreQueuedParams(sessionID: session.id, itemID: held.requestID, index: 0))
+        if crossesTurn {
+            #expect(await recorder.listed(session.id)?.queue.map(\.text) == ["original correction"])
+            #expect(!harness.received.contains("steer\toriginal correction"))
+        } else {
+            try await recorder.wait("the original turn's restored steer") {
+                _ in harness.received.contains("steer\toriginal correction")
+            }
+        }
+        await recorder.stop()
+    }
+
 }

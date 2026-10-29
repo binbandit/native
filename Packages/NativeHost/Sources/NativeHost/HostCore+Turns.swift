@@ -40,7 +40,7 @@ extension HostCore {
             id: params.requestID, text: text, content: params.content, attachments: params.attachments,
             preamble: params.preamble, isEchoed: params.echo, origin: params.origin)
         switch session.phase {
-        case .idle where session.turn == nil && session.hiddenCommand == nil:
+        case .idle where session.turn == nil && session.hiddenCommand == nil && session.steeringInFlight == nil:
             cancelRetry(of: session)
             // The user sending again lifts a pause after a stopped turn; waiting messages go first.
             if !session.queue.isEmpty {
@@ -93,6 +93,7 @@ extension HostCore {
     func startTurn(
         in session: HostSession, prompt: OutgoingPrompt, kind: UnfinishedTurn.Kind = .prompt, attempts: Int = 0
     ) throws {
+        guard session.steeringInFlight == nil else { throw HostError.busy("The task is busy.") }
         let turn = UnfinishedTurn(sessionID: session.id, prompt: prompt, kind: kind, attempts: attempts)
         session.record.lastActivity = .now
         session.record.isQueuePaused = false
@@ -234,6 +235,7 @@ extension HostCore {
         session.steeringGate.reset()
         session.steeringInterruptTurn = nil
         for index in session.queue.indices { session.queue[index].prompt.steersAfterTools = false }
+        for index in session.removedFromQueue.indices { session.removedFromQueue[index].steersAfterTools = false }
         session.turn = nil
         session.phase = .idle
         session.record.lastStopReason = stopReason
@@ -253,7 +255,9 @@ extension HostCore {
     /// What follows a turn's end: the message the user sent while stopping goes first (even though
     /// stopping pauses the queue), otherwise the queue, unless it's paused.
     func continueAfterTurn(_ session: HostSession) {
-        guard !isStoppingAllAgents, !isRestartingImmediately else { return }
+        guard !isStoppingAllAgents, !isRestartingImmediately, session.steeringInFlight == nil,
+            session.phase == .idle, session.turn == nil, session.hiddenCommand == nil
+        else { return }
         if let id = session.sendAfterStop {
             session.sendAfterStop = nil
             if let index = session.queue.firstIndex(where: { $0.prompt.id == id }) {
@@ -318,7 +322,9 @@ extension HostCore {
         let session = try session(params.sessionID)
         guard session.record.origin != .announced else { throw HostError.notAcceptingPrompts }
         try await load(session)
-        guard session.phase == .idle, session.turn == nil, session.hiddenCommand == nil else {
+        guard session.phase == .idle, session.turn == nil, session.hiddenCommand == nil,
+            session.steeringInFlight == nil
+        else {
             throw HostError.busy("The task is busy.")
         }
         guard let peer = agents[session.record.agentID]?.peer, let agentSessionID = session.record.agentSessionID else {

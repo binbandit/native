@@ -64,7 +64,7 @@ extension HostCore {
         defer {
             session.steeringInFlight = nil
             deliverPendingSteer(in: session)
-            drainQueue(session)
+            continueAfterTurn(session)
         }
         if let index = session.queue.firstIndex(where: { $0.prompt.id == item.id }) {
             session.queue[index].isSteering = true
