@@ -77,6 +77,7 @@ extension HostCore {
             try store.setQueue(session.queue, for: session.id)
             _ = try await submitSteer(item.prompt, into: session)
         case .idle where session.turn == nil && session.hiddenCommand == nil:
+            guard session.steeringInFlight == nil else { throw HostError.busy("The task is busy.") }
             cancelRetry(of: session)
             let item = session.queue.remove(at: index)
             try startTurn(in: session, prompt: item.prompt)

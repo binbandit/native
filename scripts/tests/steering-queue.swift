@@ -58,6 +58,54 @@ private struct SteeringQueueRegression {
             print("FAIL: resume bypassed the explicit queue order or carried a steer into the next turn")
             exit(1)
         }
-        print("In-app hold, edit, removal and queue-order checks passed")
+        try await checkUndoAcrossTurn(app)
+        try await checkAcknowledgementOwnership(app)
+        print("In-app hold, edit, undo, acknowledgement ownership and queue-order checks passed")
     }
+    private static func checkUndoAcrossTurn(_ app: AppModel) async throws {
+        guard let session = SessionModel.preview(in: app, phase: .prompting) else { exit(1) }
+        session.apply(.toolCall(ToolCallUpdate(toolCallId: "sleep", title: "sleep", status: .inProgress)))
+        _ = try await session.submit("removed correction", .steer)
+        guard let item = session.queuedPrompts.first else { exit(1) }
+        let undo = UndoManager()
+        undo.groupsByEvent = false
+        undo.beginUndoGrouping()
+        session.removeQueued(item.id, undoManager: undo)
+        undo.endUndoGrouping()
+        session.phase = .idle
+        session.lastStopReason = .cancelled
+        session.turnDidEnd()
+        session.phase = .prompting
+        undo.undo()
+        guard session.queue.items.map(\.text) == ["removed correction"],
+            session.queue.items.allSatisfy({ !$0.steersAfterTools })
+        else {
+            print("FAIL: Undo carried a correction into a different turn")
+            exit(1)
+        }
+    }
+
+    private static func checkAcknowledgementOwnership(_ app: AppModel) async throws {
+        guard let session = SessionModel.preview(in: app, phase: .idle) else { exit(1) }
+        session.isDeliveringSteer = true
+        session.queue.append("selected")
+        guard let item = session.queuedPrompts.first, session.sendNowRoute == nil else { exit(1) }
+        await session.sendQueuedNow(item.id)
+        guard session.queue.items.map(\.text) == ["selected"] else { exit(1) }
+        session.draft = "draft"
+        await session.send()
+        guard session.draft == "draft", session.phase == .idle else { exit(1) }
+        let delivery = try await session.submit("direct", .queue)
+        guard delivery == .queued, session.phase == .idle,
+            session.queue.items.map(\.text) == ["selected", "direct"]
+        else { exit(1) }
+        do {
+            _ = try await session.runHiddenCommand("/context")
+            print("FAIL: a hidden command bypassed the steering acknowledgement")
+            exit(1)
+        } catch SessionModel.SendError.busy {
+            // The caller can retry after the outstanding acknowledgement.
+        }
+    }
+
 }

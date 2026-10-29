@@ -72,7 +72,8 @@ extension SessionModel {
         let text = PromptQuote.trimmed(draft)
         let attachments = self.attachments
         guard sourceExcerptBlock(for: text) == nil else { return }
-        guard origin == .user, acceptsPrompts, phase == .idle, !isRunningHiddenCommand, turnHold == nil,
+        guard origin == .user, acceptsPrompts, phase == .idle, !isRunningHiddenCommand, !isDeliveringSteer,
+            turnHold == nil,
             !text.isEmpty || !attachments.isEmpty
         else {
             return
@@ -158,7 +159,7 @@ extension SessionModel {
             return .queued
         case .disconnected:
             throw SendError.disconnected
-        case .idle where !isRunningHiddenCommand && turnHold == nil:
+        case .idle where !isRunningHiddenCommand && !isDeliveringSteer && turnHold == nil:
             startTurn(text, attachments: attachments, echo: echo)
             return .prompted
         case .prompting where behavior == .steer && !isStopping:
@@ -180,10 +181,13 @@ extension SessionModel {
         guard host == nil else { return removeQueuedOnHost(id, undoManager: undoManager) }
         guard let index = queue.index(of: id), let item = queue.remove(id) else { return }
         let wasPendingComment = removeLocallyQueuedDiffComments(item.text)
+        let generation = turnGeneration
         undoManager?.registerUndo(withTarget: self) { session in
             MainActor.assumeIsolated {
-                session.queue.restore(item, at: index)
-                if wasPendingComment { session.keepLocallyQueuedDiffComments(item.text) }
+                var restored = item
+                if session.turnGeneration != generation { restored.steersAfterTools = false }
+                session.queue.restore(restored, at: index)
+                if wasPendingComment { session.keepLocallyQueuedDiffComments(restored.text) }
                 session.deliverPendingSteer()
             }
         }
@@ -201,7 +205,7 @@ extension SessionModel {
     var sendNowRoute: SendNowRoute? {
         switch phase {
         case .prompting where !isStopping: .steer
-        case .idle where !isRunningHiddenCommand && turnHold == nil: .send
+        case .idle where !isRunningHiddenCommand && !isDeliveringSteer && turnHold == nil: .send
         case .idle, .prompting, .loading, .disconnected: nil
         }
     }
