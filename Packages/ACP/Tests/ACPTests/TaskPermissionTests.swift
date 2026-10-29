@@ -60,8 +60,10 @@ import Testing
                     .utf8))
         let shown = mapping.presenting(raw, remembered: "ask-first", forbidden: forbidden)
         #expect(shown.permissionMappings?["ask-first"] == "read-only")
-        guard case .select(let current, _) = shown.kind else { Issue.record("Missing mode"); return }
+        guard case .select(let current, let choices) = shown.kind else { Issue.record("Missing mode"); return }
         #expect(current == "ask-first")
+        #expect(choices.first?.description?.contains("read-only sandbox") == true)
+        #expect(choices.first?.description?.contains("Workspace edits") == false)
     }
 
     @Test func policyChecksNativeAndProviderValuesWithoutChoosingLooserMode() {
