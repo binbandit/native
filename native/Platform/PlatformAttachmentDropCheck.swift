@@ -17,12 +17,15 @@ final class PlatformAttachmentDropCheck {
             forName: Notification.Name("dev.native.debug.dropAttachment"), object: nil, queue: .main
         ) { [weak self] notification in
             guard notification.object as? String == String(ProcessInfo.processInfo.processIdentifier) else { return }
-            MainActor.assumeIsolated { self?.receive(notification.userInfo ?? [:]) }
+            let request = ["token", "phase", "target", "pasteboard"].reduce(into: [String: String]()) { values, key in
+                values[key] = notification.userInfo?[key] as? String
+            }
+            MainActor.assumeIsolated { self?.receive(request) }
         }
     }
 
-    private func receive(_ request: [AnyHashable: Any]) {
-        guard let token = request["token"] as? String else { return }
+    private func receive(_ request: [String: String]) {
+        guard let token = request["token"] else { return }
         var result = "No drop destination"
         defer {
             DistributedNotificationCenter.default().postNotificationName(
@@ -33,12 +36,12 @@ final class PlatformAttachmentDropCheck {
             view.draggingExited(info)
             hovering = nil
         }
-        guard request["phase"] as? String != "exit" else { result = "Exited"; return }
+        guard request["phase"] != "exit" else { result = "Exited"; return }
         guard let window = anchor?.window, let root = window.contentView,
-            let name = request["pasteboard"] as? String
+            let name = request["pasteboard"]
         else { return }
         let point: NSPoint
-        if request["target"] as? String == "composer", let editor = Self.editor(in: root) {
+        if request["target"] == "composer", let editor = Self.editor(in: root) {
             point = editor.convert(NSPoint(x: editor.bounds.midX, y: editor.visibleRect.midY), to: nil)
         } else {
             point = root.convert(NSPoint(x: root.bounds.midX, y: root.bounds.midY), to: nil)
@@ -50,7 +53,7 @@ final class PlatformAttachmentDropCheck {
                 let operation = view.draggingEntered(info)
                 if !operation.isEmpty {
                     result = "Hover: \(NSStringFromClass(type(of: view)))"
-                    if request["phase"] as? String == "hover" {
+                    if request["phase"] == "hover" {
                         hovering = (view, info)
                     } else if view.prepareForDragOperation(info), view.performDragOperation(info) {
                         view.concludeDragOperation(info)

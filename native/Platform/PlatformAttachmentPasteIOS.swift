@@ -15,15 +15,19 @@ struct PlatformAttachmentPasteIOS: UIViewRepresentable {
         context.coordinator.perform = perform
         let coordinator = context.coordinator
         DispatchQueue.main.async { [weak view] in
-            guard let view else { return }
+            guard let view, coordinator.isMounted else { return }
             coordinator.update(in: view, enabled: isEnabled)
         }
     }
 
-    static func dismantleUIView(_ view: UIView, coordinator: Coordinator) { coordinator.restore() }
+    static func dismantleUIView(_ view: UIView, coordinator: Coordinator) {
+        coordinator.isMounted = false
+        coordinator.restore()
+    }
 
     final class Coordinator: NSObject, UITextPasteDelegate {
         var perform: ((IncomingAttachments) -> Void)?
+        var isMounted = true
         private weak var editor: UITextView?
         // NSObject's capability queries are nonisolated. UIKit installs and invokes this delegate
         // on the main actor; these overrides only forward its optional method availability.
@@ -39,10 +43,10 @@ struct PlatformAttachmentPasteIOS: UIViewRepresentable {
                     if editor !== text {
                         restore()
                         editor = text
-                        previousDelegate = text.pasteDelegate
-                        previousConfiguration = text.pasteConfiguration
                     }
                     if text.pasteDelegate !== self {
+                        previousDelegate = text.pasteDelegate
+                        previousConfiguration = text.pasteConfiguration
                         text.pasteDelegate = self
                         let configuration = UIPasteConfiguration(forAccepting: NSString.self)
                         configuration.addAcceptableTypeIdentifiers([UTType.fileURL.identifier, UTType.image.identifier])
