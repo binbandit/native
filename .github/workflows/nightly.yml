@@ -63,14 +63,14 @@ jobs:
       # build, V8 included. release.sh builds both before archiving; these keep that quick.
       - name: Cache libghostty
         if: steps.changes.outputs.skip != 'true'
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/Library/Caches/native-build/libghostty
           key: libghostty-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/build-libghostty.sh') }}
           restore-keys: libghostty-${{ runner.os }}-${{ runner.arch }}-
       - name: Cache the script runtime
         if: steps.changes.outputs.skip != 'true'
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/Library/Caches/Native/ScriptRuntime
           key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'Runtime/ScriptRuntime/rust-toolchain.toml', 'scripts/build-script-runtime.sh') }}
