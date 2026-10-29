@@ -20,7 +20,7 @@ extension SessionModel {
         // about to get back (`shownConfigOptions`), which the agent isn't on yet.
         let agentHad = state.configOptions.first { $0.id == option.id }
         let settled = phase != .loading && !mirror.isLoading && !isSettingBackConfig
-        await setConfigOption(agentHad ?? option, to: value)
+        await setConfigOption(option.category == "mode" ? option : agentHad ?? option, to: value)
         let agentHas = state.configOptions.first { $0.id == option.id }
         guard
             NewSessionChoices.remembersPick(

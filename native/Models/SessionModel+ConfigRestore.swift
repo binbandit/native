@@ -16,14 +16,14 @@ extension SessionModel {
         // session's settings come back in the host instead (`setBackConfigAfterLoad`).
         let defaults = AgentSessionDefaults.configuredValues(for: agent.id)
         await setBackConfigChoices(from: {
-            $0.services.titles.configChoices(for: $0.titleKey).fillingDefaults(defaults, in: $0.state.configOptions)
+            $0.services.titles.configChoices(for: $0.titleKey).fillingDefaults(defaults, in: $0.configOptions)
         }) {
             $0.phase == .loading
         }
         guard phase == .loading else { return }
         // A default already matching the agent needs no request, but is still this task's choice.
         services.titles.updateConfigChoices(for: titleKey) {
-            $0 = $0.fillingDefaults(defaults, in: state.configOptions)
+            $0 = $0.fillingDefaults(defaults, in: configOptions)
         }
     }
 
@@ -43,6 +43,7 @@ extension SessionModel {
     /// The options to show for `reported`, the agent's: while the session loads, as restoring will
     /// leave them; otherwise as they are.
     func shownConfigOptions(_ reported: [ConfigOption]) -> [ConfigOption] {
+        let reported = permissionOptions(reported)
         guard phase == .loading else { return reported }
         var choices = services.titles.configChoices(for: titleKey)
         if host == nil {
@@ -59,13 +60,16 @@ extension SessionModel {
         var notes: [String] = []
         var forbidden: [(id: String, choice: ConfigChoices.Choice)] = []
         var attempted: Set<String> = []
-        while let id = chosen(self).restoreOrder(in: state.configOptions).first(where: { !attempted.contains($0) }) {
+        while let id = chosen(self).restoreOrder(in: permissionOptions(state.configOptions)).first(where: {
+            !attempted.contains($0)
+        }) {
             attempted.insert(id)
             guard isOpen(self) else { return }
             // Against the options as they are now: an earlier change (the model) can change what
             // this one offers.
             switch chosen(self).restoration(
-                of: id, in: state.configOptions, allows: { !PolicyPermissionModes.forbids($0, value: $1) })
+                of: id, in: permissionOptions(state.configOptions),
+                allows: { !PolicyPermissionModes.forbids($0, value: $1) })
             {
             case .set(let option, let value)?:
                 await setConfigOption(option, to: value)
@@ -95,7 +99,7 @@ extension SessionModel {
     }
 
     private func currentValueName(of id: String) -> String {
-        guard case .select(let current, let values)? = state.configOptions.first(where: { $0.id == id })?.kind else {
+        guard case .select(let current, let values)? = configOptions.first(where: { $0.id == id })?.kind else {
             return "the agent's default"
         }
         return values.first { $0.value == current }?.name ?? current

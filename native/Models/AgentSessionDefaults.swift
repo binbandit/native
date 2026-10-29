@@ -198,7 +198,7 @@ enum AgentSessionDefaults {
             categories[Setting.model.category] = model
         }
         if ExperimentStore.shared.value(of: .settingsPlainly) {
-            for setting in Setting.allCases {
+            for setting in [Setting.model, .effort] {
                 categories[setting.category] =
                     project.flatMap {
                         ProjectTaskDefaults.value(for: $0, agent: agent, setting: setting, defaults: defaults)
@@ -207,7 +207,9 @@ enum AgentSessionDefaults {
         }
         let start = NewSessionChoices(defaults: categories, lastUsed: lastUsed(for: agent, defaults: defaults))
         let allows: (ConfigOption, String) -> Bool = { !PolicyPermissionModes.forbids($0, value: $1) }
-        for id in start.order(in: session.state.configOptions) {
+        for id in start.order(in: session.state.configOptions).filter({ id in
+            session.state.configOptions.first(where: { $0.id == id })?.category != "mode"
+        }) {
             // Read again each time: setting the model can change what the rest offer.
             switch start.start(of: id, in: session.state.configOptions, allows: allows) {
             case .set(let option, let value)?:
@@ -223,6 +225,7 @@ enum AgentSessionDefaults {
                     "\(session.agentName, privacy: .public) keeps its own \(id, privacy: .public) for a new session")
             }
         }
+        await session.applyPermissionDefault(project: project?.uuidString, defaults: defaults)
         await PolicyPermissionModes.enforce(on: session)
     }
 }

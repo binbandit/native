@@ -7,10 +7,14 @@ import ImageIO
 /// Sample composer data for previews. Session settings are the configuration options Claude Code's
 /// adapter (claude-agent-acp) sends with `session/new`, decoded the way the app receives them.
 enum ComposerPreviewFixtures {
-    /// Model, effort, Fast mode, Agent and output style, with Auto as the permission mode.
-    static let configOptions: [ConfigOption] = decode(configJSON(mode: "auto")) ?? []
+    /// Model, effort, Fast mode, Agent and output style, with Full access as the permission mode.
+    static let configOptions: [ConfigOption] = (decode(configJSON(mode: "bypassPermissions")) ?? []).map {
+        ClaudeCodeSessionSettings.permissionMapping.presenting($0)
+    }
     /// The same, while Plan Mode stands in for the permission mode.
-    static let planModeOptions: [ConfigOption] = decode(configJSON(mode: "plan")) ?? []
+    static let planModeOptions: [ConfigOption] = (decode(configJSON(mode: "plan")) ?? []).map {
+        ClaudeCodeSessionSettings.permissionMapping.presenting($0)
+    }
 
     static let settings = ComposerSettings(configOptions)
     static let settingsWithoutExtras = ComposerSettings(configOptions.filter { $0.category != "other" })

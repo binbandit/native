@@ -221,12 +221,13 @@ struct ComposerSettingsPopover: View {
     }
 
     func isForbidden(_ value: String) -> Bool {
-        forbiddenModes.contains(value)
+        guard let option = settings.autonomy?.option else { return forbiddenModes.contains(value) }
+        return PolicyPermissionModes.forbids(option, value: value, forbidden: forbiddenModes)
     }
 
     private func autonomySection(showsCaption: Bool) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            ComposerSettingsHeader(title: "When \(agentName) asks") {
+            ComposerSettingsHeader(title: "Permissions") {
                 if permissionsManaged {
                     Image(systemName: "lock").font(DS.ComposerSettings.lockFont)
                         .accessibilityLabel("Managed by \(manager ?? PolicyCenter.organizationName)")
@@ -246,6 +247,7 @@ struct ComposerSettingsPopover: View {
     private func autonomyRow(_ choice: SelectSetting.Choice, setting: SelectSetting) -> some View {
         let target = Target.autonomy(choice.value)
         let locked = isForbidden(choice.value)
+        let unavailable = setting.option.permissionMappings.map { $0[choice.value] == nil } ?? false
         let mark: ComposerSettingsMark =
             locked ? .lock : mark(for: setting, value: choice.value, isCurrent: choice.value == shownAutonomy)
         return Button {
@@ -255,7 +257,8 @@ struct ComposerSettingsPopover: View {
                 Text(choice.askingTitle)
             } trailing: {
                 if locked && !showsLockedConsequences {
-                    Text("Not allowed").font(DS.ComposerSettings.detailFont).foregroundStyle(.dsTextTertiary)
+                    Text(unavailable ? "Unavailable" : "Not allowed").font(DS.ComposerSettings.detailFont)
+                        .foregroundStyle(.dsTextTertiary)
                 }
             }
         }
@@ -263,7 +266,11 @@ struct ComposerSettingsPopover: View {
         .disabled(locked)
         .composerSettingsHover(target, hovered: $hovered)
         .accessibilityLabel(choice.askingTitle)
-        .accessibilityValue(locked ? "Managed by \(manager ?? PolicyCenter.organizationName)" : "")
+        .accessibilityValue(
+            unavailable
+                ? "No safe equivalent with this agent"
+                : locked ? "Managed by \(manager ?? PolicyCenter.organizationName)" : ""
+        )
         .help(caption(for: choice) ?? choice.askingTitle)
         .accessibilityHint(caption(for: choice) ?? "")
         .accessibilityAddTraits(choice.value == shownAutonomy ? .isSelected : [])
@@ -307,8 +314,8 @@ struct ComposerSettingsPopover: View {
         lead.foregroundColor = .dsTextPrimary
         let then: String =
             switch level?.askingTitle {
-            case "Never": " Then it never asks."
-            case let title?: " Then it asks \(title.prefix(1).lowercased() + title.dropFirst())."
+            case "Full access": " Then Full access applies."
+            case let title?: " Then \(title) applies."
             case nil: ""
             }
         return lead + AttributedString(" \(agentName) changes nothing until you approve its plan.\(then)")

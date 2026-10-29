@@ -206,7 +206,8 @@ final class HostSession {
             }, isQueuePaused: record.isQueuePaused, supportsSteering: supportsSteering,
             lastActivity: record.lastActivity, lastStopReason: record.lastStopReason, problem: problem,
             isStopping: isStopping, isRunningHiddenCommand: hiddenCommand != nil, retryAt: retryAt,
-            titles: titleState.hostTitles, isHoldingRestart: holdsRestart
+            titles: titleState.hostTitles, isHoldingRestart: holdsRestart,
+            permissionMode: record.configChoices[SetConfigOptionParams.permissionChoiceKey]
         )
     }
 

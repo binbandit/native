@@ -16,11 +16,15 @@ extension SettingsPane {
         searchEntries: {
             var entries = [
                 SettingsSearchEntry(
+                    id: SettingsRowID("permissions.default"), title: "Permissions",
+                    description: "Default permissions for all new tasks.",
+                    keywords: ["ask", "edits", "auto", "full access"]),
+                SettingsSearchEntry(
                     id: GeneralSettingsPage.followUpRow,
                     title: "Follow-up behavior",
                     description: "Queue messages to send after the agent finishes, or steer the agent mid-turn.",
                     keywords: ["queue", "steer", "return", "send", "message"], plainly: .followUp
-                )
+                ),
             ]
             if ExperimentStore.shared.value(of: .homeNext) {
                 entries += HomeNextSettingsSection.searchEntries
@@ -94,6 +98,7 @@ struct GeneralSettingsPage: View {
             } else {
                 SettingsRowGroup { followUpControl }
             }
+            SettingsGroup(title: "New tasks") { PermissionDefaultsRow() }
             if homeNext {
                 HomeNextSettingsSection()
             }

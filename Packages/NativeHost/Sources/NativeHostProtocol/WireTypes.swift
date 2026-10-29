@@ -189,6 +189,8 @@ public struct QueuedPrompt: Codable, Hashable, Sendable, Identifiable {
 
 /// What every client knows about a session the host has open, whether or not it's attached.
 public struct HostSessionSummary: Codable, Hashable, Sendable, Identifiable {
+    /// Shared permission intent, distinct from the provider control used to enforce it.
+    public var permissionMode: String?
     public var id: HostSessionID
     public var agentID: String
     public var agentName: String
@@ -234,8 +236,9 @@ public struct HostSessionSummary: Codable, Hashable, Sendable, Identifiable {
         isQueuePaused: Bool = false, supportsSteering: Bool = false, lastActivity: Date? = nil,
         lastStopReason: String? = nil, problem: String? = nil, isStopping: Bool = false,
         isRunningHiddenCommand: Bool = false, retryAt: Date? = nil, titles: HostSessionTitles? = nil,
-        isHoldingRestart: Bool? = nil
+        isHoldingRestart: Bool? = nil, permissionMode: String? = nil
     ) {
+        self.permissionMode = permissionMode
         self.id = id
         self.agentID = agentID
         self.agentName = agentName

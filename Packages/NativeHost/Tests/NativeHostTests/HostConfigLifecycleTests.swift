@@ -8,6 +8,34 @@ import Testing
 
 @Suite("Host config lifecycle, end to end", .serialized, .timeLimit(.minutes(1)))
 struct HostConfigLifecycleTests {
+    @Test("Shared permission intent survives client reconnect and host restart")
+    func sharedPermissionSurvivesRestart() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let first = try await harness.connect()
+        let session = try await first.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: harness.root.path(percentEncoded: false), attach: true))
+        // This provider has only default: Accept edits must keep its distinct shared intent.
+        try await first.client.setConfigOption(
+            SetConfigOptionParams(
+                sessionID: session.id, configID: "mode", value: "default", permissionMode: "accept-edits"))
+        harness.kill()
+        await first.stop()
+        try harness.start()
+        let second = try await harness.connect()
+        let reopened = try await second.client.openSession(
+            OpenSessionParams(agentID: "fake", agentSessionID: try #require(session.agentSessionID), cwd: session.cwd))
+        #expect(reopened.permissionMode == "accept-edits")
+        try await second.client.attach(reopened.id)
+        let options = await second.mirror(reopened.id).state.configOptions
+        guard case .select(let value, _) = options.first(where: { $0.category == "mode" })?.kind else {
+            Issue.record("Missing restored permissions"); return
+        }
+        #expect(value == "default")
+        await second.stop()
+    }
+
     private func savedSession(_ harness: HostHarness) async throws -> (Recorder, HostSessionSummary) {
         try harness.start()
         let recorder = try await harness.connect()

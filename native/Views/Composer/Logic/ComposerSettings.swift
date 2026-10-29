@@ -45,8 +45,7 @@ struct ComposerSettings: Equatable {
         plan = (collaboration ?? autonomy).flatMap(PlanToggle.init)
     }
 
-    /// Permission modes from least to most autonomous (for Claude Code: Manual, Accept edits, Auto,
-    /// Bypass permissions), without Plan Mode.
+    /// The four shared permission modes, without the provider's Plan setting.
     var autonomyLevels: [SelectSetting.Choice] {
         autonomy?.choices.filter { $0.value != Self.planValue } ?? []
     }

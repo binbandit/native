@@ -49,6 +49,7 @@ nonisolated enum SessionSendBlock: Equatable {
     case signInNeeded(agentName: String)
     /// The usage limit's message.
     case usageLimit(String)
+    case permissionPolicy(String)
 
     var message: String {
         switch self {
@@ -58,7 +59,7 @@ nonisolated enum SessionSendBlock: Equatable {
         case .changingWorkspace: "Wait for the workspace change to finish before sending a message."
         case .disconnected(let agentName): "\(agentName) stopped running. Restart it from the sidebar to send."
         case .signInNeeded(let agentName): "Sign in to \(agentName) to send messages."
-        case .usageLimit(let message): message
+        case .usageLimit(let message), .permissionPolicy(let message): message
         }
     }
 }

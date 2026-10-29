@@ -313,6 +313,11 @@ extension HostCore {
             session.record.configChoices[params.configID] = params.value
             try? store.updateSession(session.record)
         }
+        if let mode = params.permissionMode, TaskPermissionMode(rawValue: mode) != nil {
+            session.record.configChoices[SetConfigOptionParams.permissionChoiceKey] = mode
+            try store.updateSession(session.record)
+            publish(session)
+        }
     }
 
     /// Runs a command such as `/context` as a turn the transcript doesn't show, and returns the

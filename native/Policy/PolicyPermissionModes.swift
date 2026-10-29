@@ -1,23 +1,37 @@
 import ACP
 import NativePolicy
 
-/// Keeps sessions out of permission modes the organization forbids.
+/// Checks both Native's shared choice and the actual provider control. Legacy policy IDs continue
+/// to cap their equivalent Native mode after migration.
 enum PolicyPermissionModes {
-    /// The ACP config option category agents use for their permission mode.
     static let category = "mode"
 
     static func forbids(_ option: ConfigOption, value: String) -> Bool {
-        option.category == category && PolicyCenter.shared.policy.forbids(permissionMode: value)
+        forbids(option, value: value, forbidden: PolicyCenter.shared.policy.forbiddenPermissionModes)
     }
 
-    /// Moves a session that starts in a forbidden mode (an agent's own default, say) to the first
-    /// allowed one.
+    static func forbids(_ option: ConfigOption, value: String, forbidden: Set<String>) -> Bool {
+        guard option.category == category else { return false }
+        if forbidden.contains(value) { return true }
+        if let mode = TaskPermissionMode(rawValue: value) {
+            if let mappings = option.permissionMappings {
+                guard let wire = mappings[value], !forbidden.contains(wire) else { return true }
+            }
+            return forbidden.contains { TaskPermissionMode.migrating($0) == mode }
+        }
+        return TaskPermissionMode.migrating(value).map { forbidden.contains($0.rawValue) } ?? false
+    }
+
     static func enforce(on session: SessionModel) async {
-        guard let option = session.state.configOptions.first(where: { $0.category == category }),
+        guard let option = session.configOptions.first(where: { $0.category == category }),
             case .select(let current, let choices) = option.kind,
-            PolicyCenter.shared.policy.forbids(permissionMode: current),
-            let allowed = choices.first(where: { !PolicyCenter.shared.policy.forbids(permissionMode: $0.value) })
+            forbids(option, value: current)
         else { return }
-        await session.setConfigOption(option, to: allowed.value)
+        let rank = TaskPermissionMode.migrating(current)?.rank ?? 0
+        let allowed = choices.reversed().first {
+            guard let mode = TaskPermissionMode(rawValue: $0.value) else { return false }
+            return mode.rank <= rank && !forbids(option, value: $0.value)
+        }
+        if let allowed { await session.setConfigOption(option, to: allowed.value) }
     }
 }

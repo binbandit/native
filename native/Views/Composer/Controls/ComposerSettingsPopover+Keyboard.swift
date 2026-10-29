@@ -235,7 +235,7 @@ extension ComposerSettingsPopover {
             }
         case .autonomy(let value):
             // Picking a level while Plan suspends it leaves Plan, as the agent does.
-            if let autonomy = settings.autonomy, value != autonomy.value { onSet(autonomy, value) }
+            if let autonomy = settings.autonomy, !isForbidden(value), value != autonomy.value { onSet(autonomy, value) }
         case .effort:
             break
         case .fastMode:
