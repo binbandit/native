@@ -40,6 +40,11 @@ struct SessionRow<Accessory: View>: View {
     }
 
     /// A pair's tasks always say their branch: it's what tells the two versions apart.
+    private var folderLocation: String? {
+        guard model.offersProjectFolderTasks, model.usesProjectFolder(summary.id) else { return nil }
+        return "\(insights.branch(summary) ?? "Current branch") · Project folder"
+    }
+
     private var showsBranch: Bool {
         isPairMember || model.sidebarPreferences.shows(.branches)
     }
@@ -135,7 +140,7 @@ struct SessionRow<Accessory: View>: View {
                 date: preferences.shows(.ages) ? model.lastActivity(for: summary) : nil,
                 changes: preferences.shows(.changes) ? finishedChanges : nil,
                 agentName: !isPairMember && preferences.shows(.agents) ? summary.agent.displayName : nil,
-                branchName: showsBranch ? insights.branch(summary) : nil,
+                branchName: folderLocation ?? (showsBranch ? insights.branch(summary) : nil),
                 outcome: insights.pullRequestBadge(summary),
                 peek: { model.peekTask(summary.id) },
                 action: { if model.taskPeek.request?.task != summary.id { select() } }
@@ -144,14 +149,20 @@ struct SessionRow<Accessory: View>: View {
                 await insights.prepare([summary])
             }
             .task(id: showsBranch) {
-                if showsBranch { await insights.prepareBranch(summary) }
+                if showsBranch || folderLocation != nil { await insights.prepareBranch(summary) }
             }
         } else {
             TaskRow(
                 title: title, status: TaskStatus(session), isSelected: isSelected, isUnread: isUnread,
-                date: model.lastActivity(for: summary), badge: badge, indent: indent,
+                subtitle: folderLocation, date: model.lastActivity(for: summary), badge: badge, indent: indent,
                 leading: AgentIcon(agent: summary.agent).opacity(showAgentIcons ? 1 : 0), accessory: accessory,
-                action: select, onArchive: archiveAction)
+                action: select, onArchive: archiveAction
+            )
+            .task(id: summary.info.cwd) {
+                if model.offersProjectFolderTasks, model.usesProjectFolder(summary.id) {
+                    await insights.prepareBranch(summary)
+                }
+            }
         }
     }
 
@@ -282,13 +293,14 @@ struct SessionRow<Accessory: View>: View {
         let project = indent == .flat ? model.projectName(for: summary.id, in: summary.project).map { " · \($0)" } : nil
         let line = "\(summary.agent.displayName) · \(title)\(project ?? "")\(isArchived ? " · Archived" : "")"
         let removed = model.removedWorkspaces[summary.id].map { "Its worktree was removed. \($0.detail)" }
-        return [line, removed, session?.sidebarAsk].compactMap(\.self).joined(separator: "\n")
+        return [line, folderLocation, removed, session?.sidebarAsk].compactMap(\.self).joined(separator: "\n")
     }
 
     private var accessibilityLabel: String {
         let removed = model.removedWorkspaces[summary.id] != nil ? "worktree removed" : nil
         let pullRequest = insights.pullRequestMenu(summary)?.spokenSummary
-        return [title, removed, pullRequest, session?.sidebarAsk].compactMap(\.self).joined(separator: ", ")
+        return [title, folderLocation, removed, pullRequest, session?.sidebarAsk].compactMap(\.self).joined(
+            separator: ", ")
     }
 
     private func rename() {

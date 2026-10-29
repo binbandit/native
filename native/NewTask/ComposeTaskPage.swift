@@ -61,7 +61,12 @@ struct ComposeTaskPage: View {
                 isLoading: compose.isReadingWorkspaces, isChanging: false, error: compose.workspaceFailure,
                 cancel: compose.cancelWorkspaceSelection,
                 retry: { Task { await model.readComposeWorkspaces() } },
-                apply: compose.applyWorkspaceSelection)
+                apply: {
+                    compose.applyWorkspaceSelection()
+                    if let choice = compose.workspace, let project = entry.project {
+                        model.rememberTaskWorkspace(choice, in: project)
+                    }
+                })
         }
         .task(id: "\(String(describing: entry.project))/\(entry.device)") { await loadWorkspace() }
         .task(id: compose.starting?.id) {

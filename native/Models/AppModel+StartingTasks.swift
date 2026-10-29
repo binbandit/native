@@ -70,6 +70,8 @@ extension AppModel {
             workspaceLabel: project.isNoProject
                 ? "Preparing private task files"
                 : taskWorkspaces?.newTaskWorkspaceLabel(in: project) ?? "Preparing the workspace")
+        task.workspaceChoice = preferredTaskWorkspace(in: project.id)
+        if task.workspaceChoice == .project { task.workspaceLabel = "Using the project folder" }
         startingTasks.insert(task, at: 0)
         selection = task.id
         await start(task)
@@ -95,6 +97,8 @@ extension AppModel {
     func startInProjectFolder(_ task: StartingTask) async {
         guard task.failure?.canUseProjectFolder == true, let project = projects.project(task.project) else { return }
         task.folder = project.url
+        task.workspaceChoice = .project
+        rememberTaskWorkspace(.project, in: project.id)
         await start(task)
     }
 
@@ -149,6 +153,7 @@ extension AppModel {
         do {
             let session = try await launcher.start(
                 on: ready, cwd: folder, project: project.isNoProject ? nil : project.id)
+            if task.workspaceChoice == .project { preserveProjectBranch(for: session.key) }
             if project.isNoProject { privateSession = session }
             guard !task.isDiscarded else {
                 if !project.isNoProject { sessions.remove(session) }

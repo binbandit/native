@@ -22,6 +22,9 @@ struct NewSessionContext {
     /// Where the task runs, while paired hosts are on (`RemoteHosts.isEnabled`) and one is paired.
     var device: Device? = nil
     var changeWorkspace: (() -> Void)? = nil
+    var chooseWorkspace: ((TaskWorkspaceChoice) async throws -> Void)? = nil
+    var sharedFolderNote: String? = nil
+    var canCreateSeparateFolder = true
 
     /// The device picker's rows, the device the task is on, and moving it to another.
     struct Device {

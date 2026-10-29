@@ -21,6 +21,7 @@ struct SessionToolsScreen: View {
     /// The title's width shown whole, independent of the toolbar's current allocation.
     @State private var wellTitleIdealWidth: CGFloat = 0
     @State private var wellLightTrigger = 0
+    @Environment(AppModel.self) private var app
     @Environment(GitStore.self) private var git
     @Environment(\.inspectorRoom) private var inspectorRoom
     @Environment(\.inspectorSuspension) private var inspectorSuspension
@@ -339,9 +340,10 @@ struct SessionToolsScreen: View {
     private var location: String {
         if session.isProjectless { return "No project" }
         guard case .branch(let name)? = git.model(for: session.cwd, session: session.key).branch?.head else {
-            return session.cwd.abbreviatedPath
+            return app.offersProjectFolderTasks && app.usesProjectFolder(session.key)
+                ? "Project folder" : session.cwd.abbreviatedPath
         }
-        return name
+        return app.offersProjectFolderTasks && app.usesProjectFolder(session.key) ? "\(name) · Project folder" : name
     }
 }
 

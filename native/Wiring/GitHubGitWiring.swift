@@ -26,13 +26,16 @@ enum GitHubGitWiring {
     /// The commit UI's "Create PR": pushes the branch if the remote doesn't have it yet (gh never
     /// pushes), then opens the GitHub feature's sheet with the branch's commits and diff to draft from.
     static func createPullRequest(from model: GitRepositoryModel, gitHub: GitHubModel) async {
-        guard let repository = model.repository, let head = model.branch?.name else { return }
+        guard model.canCreatePullRequest, let repository = model.repository, let head = model.branch?.name else {
+            return
+        }
+        let base = (try? await gitHub.repository(of: repository.root))?.defaultBranch ?? model.defaultBranchName
+        guard let base, head != base else { return }
         if model.canPush {
             await model.push()
             // The changes inspector already says why the push failed and what to do.
             if model.notice?.tone == .failure { return }
         }
-        let base = (try? await gitHub.repository(of: repository.root))?.defaultBranch ?? "main"
         let comparison = (try? await repository.comparisonBase(for: base)) ?? base
         let commits = (try? await repository.commitLog(since: comparison)) ?? ""
         let diff = try? await repository.branchDiff(since: comparison)

@@ -107,9 +107,15 @@ struct SessionView: View {
         .focusedSceneValue(\.activeSession, session)
         .navigationTitle(DSInlineCode.plain(session.displayTitle))
         .navigationSubtitle(
-            (session.isProjectless ? ["No project"] : [session.cwd.abbreviatedPath, repository.summary]).compactMap(
-                \.self
-            ).joined(separator: " · ")
+            (session.isProjectless
+                ? ["No project"]
+                : [
+                    model.offersProjectFolderTasks && model.usesProjectFolder(session.key)
+                        ? "Project folder" : session.cwd.abbreviatedPath,
+                    repository.summary,
+                ]).compactMap(
+                    \.self
+                ).joined(separator: " · ")
         )
         // The inspector makes the task its own column, which the window's minimum-size question measures
         // on its own: never at no width (docs/performance.md).

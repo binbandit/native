@@ -17,7 +17,7 @@ enum TaskWorkspacePreviewFixtures {
             projectName: "Sample", projectIcon: .initial,
             workspace: .worktree(branch: "fix/long-branch-name-for-the-task", base: "main"),
             checkoutChanges: 0, tasks: [], pullRequests: [], actions: [], draft: { _ in }, editActions: {},
-            changeWorkspace: editable ? {} : nil)
+            changeWorkspace: editable ? {} : nil, chooseWorkspace: editable ? { _ in } : nil)
     }
 }
 #endif

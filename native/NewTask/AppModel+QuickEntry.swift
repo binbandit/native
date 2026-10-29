@@ -141,6 +141,8 @@ extension AppModel {
                 ? "Preparing private task files"
                 : taskWorkspaces?.newTaskWorkspaceLabel(in: project) ?? "Preparing the workspace")
         task.device = quickEntry.device
+        task.workspaceChoice = preferredTaskWorkspace(in: project.id)
+        if task.workspaceChoice == .project { task.workspaceLabel = "Using the project folder" }
         task.draft = quickEntry.message
         task.attachments = quickEntry.attachments
         task.isSendRequested = send

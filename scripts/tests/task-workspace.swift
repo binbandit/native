@@ -1,5 +1,6 @@
 import ACP
 import Exec
+import Experiments
 import Foundation
 import Git
 import NativeHostClient
@@ -13,7 +14,11 @@ import TaskScripts
 @MainActor
 private struct TaskWorkspaceRegression {
     static func main() async throws {
-        let scratch = FileManager.default.temporaryDirectory.appending(path: "task-workspace-\(UUID())")
+        let fixtureRoot =
+            ProcessInfo.processInfo.environment["NATIVE_TASK_WORKSPACE_FIXTURES"].map {
+                URL(filePath: $0, directoryHint: .isDirectory)
+            } ?? FileManager.default.temporaryDirectory
+        let scratch = fixtureRoot.appending(path: "task-workspace-\(UUID())")
         let folder = scratch.appending(path: "project")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: scratch) }
@@ -22,14 +27,16 @@ private struct TaskWorkspaceRegression {
         await client.start()
         _ = try await client.connected()
         let defaults = PreviewUserDefaults()
+        let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
         let manifest = PluginManifest(
             id: "workspace-fixture", name: "Fixture",
             agents: [
-                AgentManifest(id: "workspace-fake", name: "Fixture", command: "/usr/bin/true")
+                AgentManifest(id: "workspace-fake", name: "Fixture", command: "/usr/bin/true"),
+                AgentManifest(id: "workspace-second", name: "Second Fixture", command: "/usr/bin/true"),
             ])
         let app = AppModel(
             plugins: PluginRegistry(builtIns: [ManifestPlugin(manifest: manifest)], defaults: defaults),
-            defaults: defaults, catalogURL: scratch.appending(path: "catalog.json"),
+            defaults: defaults, catalogURL: scratch.appending(path: "catalog.json"), experiments: experiments,
             hosts: RemoteHosts(store: FilePairedHostStore(directory: scratch.appending(path: "hosts"))))
         app.connectHost(client: client)
         await app.followHost()
@@ -58,6 +65,8 @@ private struct TaskWorkspaceRegression {
         let github = GitHubModel(environment: { _ in environment }, runner: runner, defaults: defaults)
         let provider = GitTaskWorkspaceProvider(git: git, gitHub: github, scripts: scripts)
         app.taskWorkspaces = provider
+        try check(!app.offersProjectFolderTasks, "project-folder controls are off by default until UI review")
+        experiments.set(true, for: .projectFolderTasks)
         let project = app.projects.add(folder)
         let agent = AgentDefinition.ID(rawValue: "workspace-fake")
         guard let runtime = await app.ensureRunning(agent) else { throw Failure("fixture agent is ready") }
@@ -114,10 +123,106 @@ private struct TaskWorkspaceRegression {
         try check(SessionFolder.isSame(inProject.cwd.path(), folder.path()), "project folder is selectable")
         try check(!FileManager.default.fileExists(atPath: checkout.path()), "second unused checkout is cleaned")
         try check(try await repository.hasBranch("feature"), "existing branch is retained")
+        // Project-folder starts remember the choice, keep dirty files, and never create a branch.
+        try check(app.preferredTaskWorkspace(in: project.id) == .project, "folder choice is remembered")
+        experiments.set(false, for: .projectFolderTasks)
+        try check(
+            app.preferredTaskWorkspace(in: project.id) == nil, "disabling Labs restores the existing start behavior")
+        experiments.set(true, for: .projectFolderTasks)
+        let otherProject = app.projects.add(scratch.appending(path: "other"))
+        try check(app.preferredTaskWorkspace(in: otherProject.id) == nil, "folder preference is per project")
+        let branchesBefore = try await repository.branches(includingRemote: false).map(\.name)
+        let treesBefore = try await repository.worktrees().map(\.path)
+        let file = folder.appending(path: "note.txt")
+        try "keep these files\n".write(to: file, atomically: true, encoding: .utf8)
+        await app.newSession(in: project.id, with: agent)
+        guard let selected = app.selection, let direct = app.session(selected) else {
+            throw Failure("remembered folder start did not open")
+        }
+        try check(SessionFolder.isSame(direct.cwd.path(), folder.path()), "classic start uses the project folder")
+        try check(
+            try await repository.branches(includingRemote: false).map(\.name) == branchesBefore,
+            "folder start creates no branch")
+        try check(try await repository.worktrees().map(\.path) == treesBefore, "folder start creates no worktree")
+        try check(try String(contentsOf: file, encoding: .utf8) == "keep these files\n", "dirty files survive start")
+        let remote = try await runner.run(
+            Command("git", ["remote", "add", "origin", folder.path()], in: folder.path(), environment: environment))
+        try check(remote.succeeded, "fixture has a local-only remote")
+        let folderModel = git.model(for: folder)
+        await folderModel.refreshNow()
+        try check(folderModel.changes.contains { $0.path == "note.txt" }, "changes read the project's working tree")
+        try await wait { folderModel.shownDiff?.content != nil }
+        guard case .text = folderModel.shownDiff?.content else {
+            throw Failure("project-folder changes did not produce a text diff")
+        }
+        try check(
+            folderModel.canCommit && !folderModel.canCreatePullRequest, "main offers commit without a pull request")
+        try await folderModel.commit(message: "Keep the folder edit", files: folderModel.changes, push: false)
+        try check(try await repository.status().isClean, "commit writes to the project's main branch")
+        try check(try await repository.status().branch.name == "main", "commit keeps main checked out")
+        try await provider.deleteWorkspace(at: folder, in: project)
+        try check(FileManager.default.fileExists(atPath: file.path()), "provider deletion preserves project files")
+        direct.previewRunningTurn("Hold while another task starts")
+        try check(
+            app.projectFolderNote(in: project.id, on: .thisMac) != nil, "running folder task gets a one-line advisory")
+        try check(
+            app.projectFolderNote(in: project.id, on: .thisMac, excluding: direct.key) == nil,
+            "a task does not warn about itself")
+        direct.phase = .idle
+        try check(
+            app.projectFolderNote(in: project.id, on: .thisMac) == nil,
+            "idle tasks do not trigger the running-task note")
+        try check(app.taskActionRoute(for: direct.key)?.workspace == nil, "project folder is never owned by deletion")
+        app.deleteSession(direct.key)
+        try check(
+            app.projectFolderDeletion != nil && !app.pendingDeletionKeys.contains(direct.key),
+            "folder deletion first explains that files stay")
+        let deletion = app.projectFolderDeletion
+        app.projectFolderDeletion = nil
+        deletion?.confirm()
+        try check(app.pendingDeletionKeys.contains(direct.key), "confirmed folder deletion is scheduled")
+        app.offeredUndo?.undo()
+        try check(app.pendingDeletionKeys.isEmpty, "folder deletion can still be undone")
+        await app.archiveSession(direct.key)
+        try check(FileManager.default.fileExists(atPath: file.path()), "archive preserves project files")
+        await app.unarchiveSession(direct.key)
+        try check(!app.isArchived(direct.key), "project-folder task can be restored without a new checkout")
+        app.deleteSession(direct.key, confirmedFolder: true)
+        let deletionDeadline = ContinuousClock.now + AppModel.deletionGracePeriod + .seconds(10)
+        while app.pendingDeletionKeys.contains(direct.key) {
+            guard ContinuousClock.now < deletionDeadline else { throw Failure("project-folder deletion timed out") }
+            try await Task.sleep(for: .milliseconds(25))
+        }
+        try check(app.catalog.lookup(direct.key) == nil, "deletion finishes after the undo window")
+        try check(try String(contentsOf: file, encoding: .utf8) == "keep these files\n", "deletion preserves files")
+        try check(try await repository.status().branch.name == "main", "deletion keeps main checked out")
+        // The Compose page uses the same preference and selects it before making any session.
+        app.quickEntry.project = project.id
+        await app.readComposeWorkspaces()
+        try check(app.composeTask.workspace == .project, "Compose restores the folder choice")
+        app.chooseComposeWorkspace(.newWorktree)
+        try check(
+            app.preferredTaskWorkspace(in: project.id) == .newWorktree, "Compose saves the separate-folder choice")
+        app.chooseComposeWorkspace(.project)
         settings.newTaskWorkspace = .branch
         let inNewTree = try await app.changeWorkspace(of: inProject, to: .newWorktree)
         try check(
             !SessionFolder.isSame(inNewTree.cwd.path(), folder.path()), "explicit worktree overrides branch default")
+        let branchModel = git.model(for: inNewTree.cwd)
+        await branchModel.refreshNow()
+        try check(branchModel.canCreatePullRequest, "a separate feature branch still offers pull requests")
+        // A managed checkout can itself be added as a project. That project's own folder is still user-owned.
+        let nestedProject = Project(url: inNewTree.cwd)
+        try check(
+            try await provider.archiveWorkspace(at: nestedProject.url, in: nestedProject) == nil,
+            "archiving never owns the project's folder, even inside Native's checkout location")
+        try check(
+            try await provider.removeUnusedWorkspace(at: nestedProject.url, in: nestedProject) == false,
+            "draft cleanup never owns the project's folder")
+        try await provider.deleteWorkspace(at: nestedProject.url, in: nestedProject)
+        try check(
+            FileManager.default.fileExists(atPath: nestedProject.path),
+            "deleting keeps a project added from a task checkout")
         try check(try await repository.status().branch.name == "main", "new worktree leaves project branch unchanged")
         app.workspaceChangeBlock = { _ in "Close the task's terminal tabs first." }
         do {
@@ -304,6 +409,9 @@ private struct TaskWorkspaceRegression {
         await host.configure()
         try await remoteReplacement(
             app: app, provider: provider, project: project, scratch: scratch, localHost: host, defaults: defaults)
+        try await TaskProjectFolderChecks.run(
+            app: app, provider: provider, git: git, experiments: experiments, agent: agent,
+            folder: folder, scratch: scratch, runner: runner, environment: environment)
         await client.stop()
         print(
             "PASS: workspace choices, replacement, cleanup, draft/settings, failures, send races and first-message lock"

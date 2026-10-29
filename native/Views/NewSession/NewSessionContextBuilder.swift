@@ -23,7 +23,8 @@ struct NewSessionContextBuilder {
     let repositories: [String]
 
     func context() -> NewSessionContext {
-        let checkout = git.model(for: project.url)
+        let path = project.checkoutPath(on: model.device(of: session.key)) ?? project.path
+        let checkout = git.model(for: URL(filePath: path), session: session.key)
         return NewSessionContext(
             projectName: project.name,
             projectIcon: ProjectIconStore.shared.icon(for: project, size: NewSessionMetrics.titleIcon),
@@ -43,7 +44,14 @@ struct NewSessionContextBuilder {
                 settings.open(.project(project.id))
             },
             device: device,
-            changeWorkspace: session.canChangeWorkspace ? { [session] in session.requestWorkspaceChange() } : nil
+            changeWorkspace: session.canChangeWorkspace ? { [session] in session.requestWorkspaceChange() } : nil,
+            chooseWorkspace: session.canChangeWorkspace && model.offersProjectFolderTasks
+                ? { choice in
+                    _ = try await model.changeWorkspace(of: session, to: choice)
+                } : nil,
+            sharedFolderNote: model.projectFolderNote(
+                in: project.id, on: model.device(of: session.key), excluding: session.key),
+            canCreateSeparateFolder: checkout.state == .ready && checkout.branch?.isUnborn == false
         )
     }
 
@@ -68,7 +76,7 @@ struct NewSessionContextBuilder {
             return .folder(path: session.cwd.abbreviatedPath)
         case .ready:
             let branch = folder.branch?.name
-            guard !SessionFolder.isSame(session.cwd.folderPath, project.path) else { return .checkout(branch: branch) }
+            guard !model.usesProjectFolder(session.key) else { return .checkout(branch: branch) }
             // The branch the worktree was made from, as its setup recorded it; else what the project's
             // checkout is on, which it was made from a moment ago.
             let base = scripts.setupRun(in: session.cwd)?.context.baseBranch ?? checkout.branch?.name

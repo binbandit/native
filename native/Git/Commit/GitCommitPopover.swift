@@ -135,7 +135,7 @@ struct GitCommitPopover: View {
         let canCommit =
             !selected.isEmpty && !model.commitMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         return HStack(spacing: DS.Space.sm) {
-            if let onCreatePullRequest, model.branch?.isDetached == false {
+            if let onCreatePullRequest, model.canCreatePullRequest {
                 Button("Commit & Create PR") {
                     Task { await commit(files, push: true, then: onCreatePullRequest) }
                 }
