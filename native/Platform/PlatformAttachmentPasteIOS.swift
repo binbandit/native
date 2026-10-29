@@ -90,6 +90,7 @@ struct PlatformAttachmentPasteIOS: UIViewRepresentable {
             }
             item.setNoResult()
             let type = isFile ? UTType.fileURL : image ?? .image
+            let accept = perform
             Task {
                 let data: Data? = await withCheckedContinuation { continuation in
                     provider.loadDataRepresentation(forTypeIdentifier: type.identifier) { data, _ in
@@ -97,11 +98,11 @@ struct PlatformAttachmentPasteIOS: UIViewRepresentable {
                     }
                 }
                 if let data, isFile, let url = URL(dataRepresentation: data, relativeTo: nil), url.isFileURL {
-                    perform?(.files([url]))
+                    accept?(.files([url]))
                 } else if let data, !isFile {
-                    perform?(.image(data, type))
+                    accept?(.image(data, type))
                 } else {
-                    perform?(.failed(provider.suggestedName ?? "file"))
+                    accept?(.failed(provider.suggestedName ?? "file"))
                 }
             }
         }
