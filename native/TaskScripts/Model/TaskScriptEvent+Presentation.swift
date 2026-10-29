@@ -41,7 +41,7 @@ extension TaskScriptEvent {
         case .afterWorktree:
             "Runs in the new task's worktree in the background. Its output and Retry are in the task's terminal; your first message does not wait."
         case .setup:
-            "When Native makes a task's worktree, after copying its env files. The agent waits for it, so install dependencies or start services here."
+            "When Native makes a task's worktree, after preparing its project files. The agent waits for it, so install dependencies or start services here."
         case .taskStarted: "When a task starts, in its worktree or the project's folder."
         case .turnFinished: "Each time the agent finishes a turn."
         case .teardown:
