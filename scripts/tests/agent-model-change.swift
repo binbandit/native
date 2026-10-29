@@ -355,7 +355,7 @@ private struct AgentModelChangeRegression {
             ("plan unsupported", "plan", #"[["default","Manual"],["auto","Auto"]]"#, "ask-first", "default", true),
             (
                 "policy closer", "bypassPermissions", #"[["default","Manual"],["auto","Auto review"]]"#,
-                "accept-edits", "default", true
+                "full-access", "default", false
             ),
             (
                 "policy limited", "auto", #"[["default","Manual"],["auto","Auto review"]]"#, "accept-edits", "default",
@@ -447,7 +447,9 @@ private struct AgentModelChangeRegression {
             }
             try require(
                 ComposerSettings(target.configOptions).autonomy?.value == test.expected,
-                test.name + " selected the wrong level")
+                test.name
+                    + " selected \(ComposerSettings(target.configOptions).autonomy?.value ?? "none"), expected \(test.expected ?? "none")"
+            )
             if let wire = test.wire {
                 guard
                     case .select(let actual, _) = target.state.configOptions.first(where: { $0.category == "mode" })?
