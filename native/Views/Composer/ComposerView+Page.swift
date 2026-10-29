@@ -34,12 +34,7 @@ extension ComposerView {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .dropDestination(for: ComposerDropItem.self) { items, _ in
-            attach(items)
-            return !items.isEmpty
-        } isTargeted: {
-            isDropTargeted = $0
-        }
+        .composerAttachmentDrop(isTargeted: { isDropTargeted = $0 }, perform: attach)
     }
 }
 

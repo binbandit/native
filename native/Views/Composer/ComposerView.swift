@@ -307,12 +307,7 @@ struct ComposerView: View {
                 }
             }
         }
-        .dropDestination(for: ComposerDropItem.self) { items, _ in
-            attach(items)
-            return !items.isEmpty
-        } isTargeted: {
-            isDropTargeted = $0
-        }
+        .composerAttachmentDrop(isTargeted: { isDropTargeted = $0 }, perform: attach)
         .animation(.dsStandard, value: plan.isActive)
         .animation(.dsStandard, value: session.attachments.isEmpty && pendingAttachments.isEmpty)
         .animation(.dsStandard, value: showsNextSteps)

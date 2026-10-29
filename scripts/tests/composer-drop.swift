@@ -8,6 +8,9 @@ import UniformTypeIdentifiers
 private struct ComposerDropChecks {
     static func main() async throws {
         let fixture = URL(filePath: CommandLine.arguments[1], directoryHint: .isDirectory)
+        guard !ComposerAttachmentDrop.accepts(NSItemProvider(object: "a text selection" as NSString)) else {
+            throw Failure("An ordinary text selection was admitted as a file attachment")
+        }
         for name in ["brief.txt", "pixel.png", "folder"] {
             let url = fixture.appending(path: name)
             let provider = NSItemProvider()
@@ -17,6 +20,7 @@ private struct ComposerDropChecks {
                 return nil
             }
             provider.registerObject(url.path as NSString, visibility: .all)
+            guard ComposerAttachmentDrop.accepts(provider) else { throw Failure("A file/text payload was refused") }
             let result = try await load(provider)
             guard case .file(let imported) = result, imported == url else {
                 throw Failure("A mixed file/text payload did not import as its file URL: \(name)")
@@ -44,6 +48,7 @@ private struct ComposerDropChecks {
             done(source, true, nil)
             return nil
         }
+        guard ComposerAttachmentDrop.accepts(fileProvider) else { throw Failure("A file representation was refused") }
         guard case .file(let retained) = try await load(fileProvider), retained != source,
             try Data(contentsOf: retained) == Data(contentsOf: source)
         else { throw Failure("A provider's temporary file was not retained") }

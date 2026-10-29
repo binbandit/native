@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 enum ComposerDropItem: Transferable {
     case file(URL)
     case image(Data, UTType)
+    case failed(String)
 
     static var transferRepresentation: some TransferRepresentation {
         DataRepresentation(importedContentType: .fileURL) { data in
