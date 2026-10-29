@@ -44,7 +44,7 @@ extension HostCore {
 /// One folder a client watches: its watcher's changes, made relative to the folder and coalesced,
 /// go to the client as they happen.
 final class HostFileWatch: Sendable {
-    private let coalescer: FileChangeCoalescer
+    private let coalescer: FileChangeCoalescer<ContinuousClock>
     private let forwarding: Task<Void, Never>
 
     init(id: UUID, root: String, changes: AsyncStream<FileWatchBatch>, peer: JSONRPCPeer) {
@@ -85,25 +85,27 @@ final class HostFileWatch: Sendable {
 /// Batches changes the way FSEvents does: the first change after a quiet spell goes out at once,
 /// later ones at most once every `latency`, each batch without duplicates. Past `limit` paths a
 /// batch becomes an overflow, which tells the client to look at everything again.
-final class FileChangeCoalescer: Sendable {
+final class FileChangeCoalescer<C: Clock>: Sendable where C.Duration == Duration {
     typealias Send = @Sendable (_ paths: [String], _ isOverflow: Bool) -> Void
 
     private struct State {
         var pending: Set<String> = []
         var isOverflow = false
-        var lastSent: ContinuousClock.Instant?
+        var lastSent: C.Instant?
         var flush: Task<Void, Never>?
         var isStopped = false
 
         var hasPending: Bool { isOverflow || !pending.isEmpty }
     }
 
+    private let clock: C
     private let latency: Duration
     private let limit: Int
     private let send: Send
     private let state = Mutex(State())
 
-    init(latency: Duration, limit: Int, send: @escaping Send) {
+    init(clock: C, latency: Duration, limit: Int, send: @escaping Send) {
+        self.clock = clock
         self.latency = latency
         self.limit = limit
         self.send = send
@@ -125,11 +127,11 @@ final class FileChangeCoalescer: Sendable {
                 state.pending = []
             }
             guard state.hasPending, state.flush == nil else { return }
-            let now = ContinuousClock.now
-            if let lastSent = state.lastSent, now < lastSent + latency {
-                let deadline = lastSent + latency
-                state.flush = Task { [weak self] in
-                    try? await Task.sleep(until: deadline)
+            let now = clock.now
+            if let lastSent = state.lastSent, now < lastSent.advanced(by: latency) {
+                let deadline = lastSent.advanced(by: latency)
+                state.flush = Task { [weak self, clock] in
+                    try? await clock.sleep(until: deadline, tolerance: nil)
                     self?.flush()
                 }
             } else {
@@ -138,11 +140,15 @@ final class FileChangeCoalescer: Sendable {
         }
     }
 
-    func stop() {
+    /// Returns pending work so a caller that needs quiescence can wait for its cancellation.
+    @discardableResult
+    func stop() -> Task<Void, Never>? {
         state.withLock { state in
+            let flush = state.flush
             state.isStopped = true
-            state.flush?.cancel()
+            flush?.cancel()
             state.flush = nil
+            return flush
         }
     }
 
@@ -150,15 +156,21 @@ final class FileChangeCoalescer: Sendable {
         state.withLock { state in
             state.flush = nil
             guard !state.isStopped, state.hasPending else { return }
-            sendPending(&state, at: .now)
+            sendPending(&state, at: clock.now)
         }
     }
 
     /// Sent under the lock, so batches leave in the order they were made.
-    private func sendPending(_ state: inout State, at now: ContinuousClock.Instant) {
+    private func sendPending(_ state: inout State, at now: C.Instant) {
         send(state.isOverflow ? [] : state.pending.sorted(), state.isOverflow)
         state.pending = []
         state.isOverflow = false
         state.lastSent = now
+    }
+}
+
+extension FileChangeCoalescer where C == ContinuousClock {
+    convenience init(latency: Duration, limit: Int, send: @escaping Send) {
+        self.init(clock: ContinuousClock(), latency: latency, limit: limit, send: send)
     }
 }
