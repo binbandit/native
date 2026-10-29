@@ -54,7 +54,8 @@ extension AppModel {
         let privateFolder = scratchTasks.folder(for: NoProjectLocation.key(key))
         let privateDraft = privateFolder != nil
         guard unsentSessions.contains(key),
-            unsentSessions.draft(for: key) != nil || continuation || privateDraft || hasPersistedDiffCommentDraft(for: key)
+            unsentSessions.draft(for: key) != nil || continuation || privateDraft
+                || hasPersistedDiffCommentDraft(for: key)
         else { return false }
         // Another load of it got here first and is reopening it.
         guard let draft = unsentSessions.claim(key, includingEmpty: true) else { return true }

@@ -800,4 +800,3 @@ unresolved across relaunch until matching transcript/queue evidence or explicit 
 resend; no timer implies failure. Comments use the public task submission API and retain its queue
 and steer behavior. No GitHub review is created. Source excerpt policy grants apply at collection
 and submission; they introduce no new endpoint. Inert Debug fixtures cover C1 through C13.
-
