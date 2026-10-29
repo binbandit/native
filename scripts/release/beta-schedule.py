@@ -83,7 +83,8 @@ def plan_beta(published_tags=None):
         version = f"{major}.{minor}.{patch}-beta.{number + 1}"
     else:
         version = "0.1.0-beta.1"
-    return {"skip": "false", "version": version, "sha": sha, "notes_from": notes_from}
+    return {"skip": "false", "version": version, "sha": sha, "notes_from": notes_from,
+            "notes_from_start": str(previous is None).lower()}
 
 
 def main():

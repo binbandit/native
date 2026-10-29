@@ -359,6 +359,8 @@ the local planner uses tags alone as an offline approximation. If publishing fai
 leave the tag in place. The next scheduled run allocates a new version and includes all commits since
 the last published beta in its notes, even when main still points at the failed tag. It does not
 rebuild the old tag or move it. API failures stop planning instead of assuming publication succeeded.
+When no matching release has ever been published, the scheduler explicitly requests notes from the
+whole history; manual releases keep their existing tag-based default.
 
 A cold libghostty build retries a Zig segmentation fault once with a single build job. Other build
 errors fail immediately, and a failed retry still blocks publication. The script runtime pins Rust

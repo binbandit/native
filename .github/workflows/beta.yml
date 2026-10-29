@@ -30,6 +30,7 @@ jobs:
       skip: ${{ steps.plan.outputs.skip }}
       version: ${{ steps.plan.outputs.version }}
       notes_from: ${{ steps.plan.outputs.notes_from }}
+      notes_from_start: ${{ steps.plan.outputs.notes_from_start }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -65,4 +66,5 @@ jobs:
     with:
       version: ${{ needs.plan.outputs.version }}
       notes_from: ${{ needs.plan.outputs.notes_from }}
+      notes_from_start: ${{ needs.plan.outputs.notes_from_start == 'true' }}
     secrets: inherit

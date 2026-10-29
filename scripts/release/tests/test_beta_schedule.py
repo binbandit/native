@@ -183,6 +183,29 @@ class BetaScheduleTests(unittest.TestCase):
         self.assertEqual(plan["version"], "0.2.0-beta.21")
         self.assertEqual(plan["notes_from"], "")
 
+    def test_no_published_release_preserves_whole_history_in_notes_consumer(self):
+        self.git("tag", "v0.2.0-beta.19")
+        self.commit("fix: before failed beta 20")
+        self.git("tag", "v0.2.0-beta.20")
+        self.commit("fix: after failed beta 20")
+        plan, _ = self.run_plan("--check-releases", releases=[])
+        selection = (RELEASE / "release.sh").read_text().split('previous_tag=""\n', 1)[1].split('\nnotes=', 1)[0]
+        script = 'sha=$(git rev-parse HEAD)\nchannel=beta\n' + selection
+        script += '\nprintf "%s" "$previous_tag"'
+        for explicit, expected in ((plan["notes_from_start"], ""), ("false", "v0.2.0-beta.20")):
+            previous = subprocess.check_output(
+                ["bash", "-eu", "-c", script], cwd=self.root, text=True,
+                env={**os.environ, "NATIVE_RELEASE_NOTES_FROM": plan["notes_from"],
+                     "NATIVE_RELEASE_NOTES_FROM_START": explicit},
+            )
+            self.assertEqual(previous, expected)
+            notes = subprocess.check_output(
+                ["bash", str(RELEASE / "release-notes.sh"), previous, "HEAD"], cwd=self.root, text=True,
+            )
+            self.assertEqual("first feature" in notes, explicit == "true")
+            self.assertEqual("before failed beta 20" in notes, explicit == "true")
+            self.assertIn("after failed beta 20", notes)
+
     def test_release_aware_dry_run_writes_no_outputs(self):
         self.git("tag", "v0.2.0-beta.20")
         plan, result = self.run_plan("--check-releases", "--dry-run", releases=[])
