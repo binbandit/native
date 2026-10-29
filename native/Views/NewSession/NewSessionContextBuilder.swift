@@ -50,7 +50,8 @@ struct NewSessionContextBuilder {
                     _ = try await model.changeWorkspace(of: session, to: choice)
                 } : nil,
             sharedFolderNote: model.projectFolderNote(
-                in: project.id, on: model.device(of: session.key), excluding: session.key)
+                in: project.id, on: model.device(of: session.key), excluding: session.key),
+            canCreateSeparateFolder: checkout.state == .ready && checkout.branch?.isUnborn == false
         )
     }
 

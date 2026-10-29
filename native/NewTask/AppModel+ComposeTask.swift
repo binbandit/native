@@ -194,7 +194,6 @@ extension AppModel {
                         : taskWorkspaces?.newTaskWorkspaceLabel(in: project) ?? "Preparing the workspace")
         task.device = quickEntry.device
         task.workspaceChoice = compose.workspace
-        if let choice = compose.workspace { rememberTaskWorkspace(choice, in: project.id) }
         task.draft = editor.draft
         task.attachments = editor.attachments
         task.configChoices = compose.heldDraft?.choices ?? compose.addressedChoices

@@ -49,9 +49,30 @@ extension AppModel {
     }
 
     func chooseComposeWorkspace(_ choice: TaskWorkspaceChoice) {
-        guard offersProjectFolderTasks, !composeTask.isHeld, composeTask.stage == .writing, composeTask.second == nil
+        guard offersProjectFolderTasks, !composeTask.isHeld, composeTask.stage == .writing,
+            composeTask.second == nil
+                && composeTask.workspaces.contains(where: { $0.choice == choice })
         else { return }
         composeTask.workspace = choice
         if let project = quickEntry.project { rememberTaskWorkspace(choice, in: project) }
+    }
+
+    /// A task borrowing the current branch must never name it, even if another task created it.
+    func preserveProjectBranch(for key: SessionKey) {
+        defaults.set(true, forKey: projectBranchPreservationKey(key))
+    }
+
+    func preservesProjectBranch(for key: SessionKey) -> Bool {
+        var current: SessionKey? = key
+        var visited: Set<SessionKey> = []
+        while let key = current, visited.insert(key).inserted {
+            if defaults.bool(forKey: projectBranchPreservationKey(key)) { return true }
+            current = earlierConversations.conversation(before: key)
+        }
+        return false
+    }
+
+    private func projectBranchPreservationKey(_ key: SessionKey) -> String {
+        "taskWorkspace.keepsBranch.\(key.agent.rawValue)/\(key.id.rawValue)"
     }
 }

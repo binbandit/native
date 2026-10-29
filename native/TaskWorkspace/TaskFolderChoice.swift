@@ -18,6 +18,7 @@ struct TaskFolderChoice: View {
     private var isProjectFolder: Bool { location == .project }
     var sharedFolderNote: String?
     var isChanging = false
+    var canCreateSeparateFolder = true
     let choose: (TaskWorkspaceChoice) -> Void
     var more: (() -> Void)?
 
@@ -31,6 +32,7 @@ struct TaskFolderChoice: View {
                         "New branch in a separate folder",
                         systemImage: location == .newBranch ? "checkmark" : "arrow.triangle.branch")
                 }
+                .disabled(!canCreateSeparateFolder)
                 Button {
                     choose(.project)
                 } label: {
@@ -68,6 +70,7 @@ struct TaskFolderChoice: View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             TaskFolderChoice(location: .newBranch, choose: { _ in })
             TaskFolderChoice(location: .project, choose: { _ in })
+            TaskFolderChoice(location: .project, canCreateSeparateFolder: false, choose: { _ in })
             TaskFolderChoice(
                 location: .project,
                 sharedFolderNote: "Another running task uses this folder. You would edit the same files.",

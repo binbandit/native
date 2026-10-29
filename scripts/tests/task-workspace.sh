@@ -13,6 +13,7 @@ for map in "$derived"/Build/Intermediates.noindex/GeneratedModuleMaps*/*.modulem
     [ ! -e "$map" ] || flags+=(-Xcc "-fmodule-map-file=$map")
 done
 nice -n 10 xcrun swiftc "${flags[@]}" "$root/scripts/tests/task-workspace.swift" "$root/scripts/tests/task-workspace-host.swift" \
+    "$root/scripts/tests/task-project-folder.swift" \
     "$app/Contents/MacOS/Native.debug.dylib" \
     -Xlinker -rpath -Xlinker "$app/Contents/Frameworks" \
     -Xlinker -rpath -Xlinker "$app/Contents/MacOS" -o "$work/task-workspace"

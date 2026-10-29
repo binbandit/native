@@ -24,6 +24,7 @@ struct NewSessionContext {
     var changeWorkspace: (() -> Void)? = nil
     var chooseWorkspace: ((TaskWorkspaceChoice) async throws -> Void)? = nil
     var sharedFolderNote: String? = nil
+    var canCreateSeparateFolder = true
 
     /// The device picker's rows, the device the task is on, and moving it to another.
     struct Device {

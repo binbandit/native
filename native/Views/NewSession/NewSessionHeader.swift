@@ -34,6 +34,7 @@ struct NewSessionHeader: View {
                     TaskFolderChoice(
                         location: isProjectFolder ? .project : .separate, sharedFolderNote: context.sharedFolderNote,
                         isChanging: isChangingFolder,
+                        canCreateSeparateFolder: context.canCreateSeparateFolder,
                         choose: { choice in
                             isChangingFolder = true
                             folderFailure = nil

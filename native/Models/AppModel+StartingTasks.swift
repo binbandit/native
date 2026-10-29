@@ -153,6 +153,7 @@ extension AppModel {
         do {
             let session = try await launcher.start(
                 on: ready, cwd: folder, project: project.isNoProject ? nil : project.id)
+            if task.workspaceChoice == .project { preserveProjectBranch(for: session.key) }
             if project.isNoProject { privateSession = session }
             guard !task.isDiscarded else {
                 if !project.isNoProject { sessions.remove(session) }

@@ -108,6 +108,7 @@ struct ComposeTaskAddress: View {
                                 TaskFolderChoice(
                                     location: folderLocation,
                                     sharedFolderNote: nil,
+                                    canCreateSeparateFolder: model.composeOffersSecondAgent,
                                     choose: model.chooseComposeWorkspace,
                                     more: compose.beginWorkspaceSelection
                                 )

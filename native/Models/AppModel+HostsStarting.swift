@@ -131,6 +131,7 @@ extension AppModel {
         do {
             let session = try await launcher.start(
                 on: runtime, cwd: URL(filePath: folder, directoryHint: .isDirectory), project: project.id)
+            if task.workspaceChoice == .project { preserveProjectBranch(for: session.key) }
             guard !task.isDiscarded else {
                 sessions.remove(session)
                 return removeWorkspace(of: task)

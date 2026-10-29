@@ -182,7 +182,6 @@ final class GitTaskWorkspaceProvider: TaskWorkspaceProvider {
     /// Renames the task's provisional branch after its title, unless it was pushed or renamed. With
     /// the user's instructions for branch names, the on-device model names it, following them.
     func taskDidGetTitle(_ title: String, request: String?, workspace: URL, in project: Project) async {
-        guard !SessionFolder.isSame(workspace.folderPath, project.path) else { return }
         guard let instructions = AIInstructionsStore.shared.addition(for: .branchName, in: project.url) else {
             await git.renameProvisionalBranch(at: workspace, title: title)
             return

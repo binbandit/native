@@ -65,6 +65,7 @@ extension AppModel {
             let session = try await launcher.start(
                 on: runtime, cwd: URL(filePath: info.cwd, directoryHint: .isDirectory), project: project,
                 preparingModel: continuation)
+            if preservesProjectBranch(for: key) { preserveProjectBranch(for: session.key) }
             prepared = session
             if continuation {
                 deletedSessions.insert(session.key)

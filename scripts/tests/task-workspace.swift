@@ -31,7 +31,8 @@ private struct TaskWorkspaceRegression {
         let manifest = PluginManifest(
             id: "workspace-fixture", name: "Fixture",
             agents: [
-                AgentManifest(id: "workspace-fake", name: "Fixture", command: "/usr/bin/true")
+                AgentManifest(id: "workspace-fake", name: "Fixture", command: "/usr/bin/true"),
+                AgentManifest(id: "workspace-second", name: "Second Fixture", command: "/usr/bin/true"),
             ])
         let app = AppModel(
             plugins: PluginRegistry(builtIns: [ManifestPlugin(manifest: manifest)], defaults: defaults),
@@ -408,6 +409,9 @@ private struct TaskWorkspaceRegression {
         await host.configure()
         try await remoteReplacement(
             app: app, provider: provider, project: project, scratch: scratch, localHost: host, defaults: defaults)
+        try await TaskProjectFolderChecks.run(
+            app: app, provider: provider, git: git, experiments: experiments, agent: agent,
+            folder: folder, scratch: scratch, runner: runner, environment: environment)
         await client.stop()
         print(
             "PASS: workspace choices, replacement, cleanup, draft/settings, failures, send races and first-message lock"
