@@ -620,11 +620,12 @@ The behavior, tool order and remaining slices are described in `docs/session-too
 
 ### Changing a task's agent (Labs)
 
-`change-agent` is off by default. With Fine print enabled, the composer's Model list includes
-other plugin agents' reported choices on the task's existing host. Opening the list reads live
-options or Native-owned cached options; only Load Models explicitly initializes an unknown catalog.
+`change-agent` is on by default as a beta. Both composers name the current agent and model and
+open a picker with installed agents above the current agent's models, on the task's existing host.
+Opening the list reads live options or Native-owned cached options; selecting another agent
+prepares its default model and then shows that agent's reported models.
 Model names never imply agent identity. The reporting adapter owns each choice, including gateway
-models. The list retains its opening order until closed, and filters names, IDs and agent names.
+models. The list retains its opening order until closed, and filters the current agent's model names and IDs.
 
 `ComposerAgentChange` prepares an unused conversation in the same folder, validates the exact model
 and a supported permission level, then publishes the selection. Permission translation prefers an
@@ -662,8 +663,8 @@ Pending choices have Cancel in the composer and Task menu. The title has no agen
 
 Paired-host choices stay on that host, using its runtimes, reported catalogs and connection. Policy
 is rechecked before preparation, commit and normal submission. Forbidden agents' known models stay
-legible with locks. Unknown permission semantics fail closed. With Fine print off, the existing
-review-sheet path remains available behind Change Agent. Disabling the gate hides the entry points;
+legible with locks. Unknown permission semantics fail closed. Both composers use the same direct
+selection and Undo path. Disabling Change Agent in Labs hides the agent-switching entry points;
 earlier conversation links stay readable. Combined transcripts, cross-device moves and transactional
 goal migration remain separate work.
 

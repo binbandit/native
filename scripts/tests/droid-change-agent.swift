@@ -569,7 +569,8 @@ private struct DroidChangeAgentRegression {
             try require(source.host?.client != nil && source.cwd.folderPath == folder, "\(what): moved the task")
         }
 
-        try require(!experiments.value(of: .changeAgent), "Change Agent is on by default")
+        experiments.set(false, for: .changeAgent)
+        try require(!experiments.value(of: .changeAgent), "Change Agent ignored its opt-out")
         try require(
             app.changeAgentBlock(for: source) == "Enable Change Agent in Settings > Labs first.",
             "Change Agent isn't behind its Labs switch")
