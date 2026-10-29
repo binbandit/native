@@ -43,7 +43,7 @@ struct ConfirmedSessionCloseTests {
         #expect(FileManager.default.fileExists(atPath: file.path))
         await recorder.stop()
     }
-    @Test func unverifiedStopKeepsTheSessionForCleanupRetry() async throws {
+    @Test func stoppedTaskKeepsTheSessionForCleanupRetry() async throws {
         let harness = try HostHarness()
         defer { harness.cleanup() }
         harness.agentEnvironment["FAKE_AGENT_NO_CLOSE"] = "1"
@@ -51,14 +51,19 @@ struct ConfirmedSessionCloseTests {
         let recorder = try await harness.connect()
         let summary = try await recorder.client.newSession(
             NewSessionParams(agentID: "fake", cwd: harness.root.path, attach: true))
+        let originalPID = try #require(try await recorder.client.agents().first { $0.id == "fake" }?.processID)
         _ = try await recorder.client.prompt(PromptParams(sessionID: summary.id, text: "slow 100"))
         await #expect(throws: (any Error).self) { try await recorder.client.closeSessionConfirmed(summary.id) }
         try await recorder.client.cancel(summary.id)
         try await recorder.wait("the owned processes to stop") {
             let agent = await $0.agents["fake"]
             let task = await $0.summaries[summary.id]
-            return agent?.state == .stopped && task?.isStopping == false
+            return agent?.state == .ready && agent?.processID != originalPID
+                && task?.phase == .idle && task?.isStopping == false
         }
+        #expect(kill(originalPID, 0) == -1)
+        #expect(errno == ESRCH)
+        #expect(await recorder.turnsEnded(summary.id) == ["cancelled"])
         await #expect(throws: (any Error).self) { try await recorder.client.closeSessionConfirmed(summary.id) }
         #expect(try await recorder.client.sessions().contains { $0.id == summary.id })
         await recorder.stop()

@@ -98,12 +98,12 @@ struct HostStoppedSubagentTests {
         await reader.stop()
         await recorder.stop()
     }
-    @Test("Fresh child output and settings survive parent configuration restoration")
-    func freshChildrenDuringConfigRestore() async throws {
+    @Test("Fresh child output and settings survive the load response and parent restoration", arguments: [false, true])
+    func freshChildrenAfterLoad(atBoundary: Bool) async throws {
         let rig = try HostStopCommandRig()
         rig.harness.agentEnvironment["FAKE_AGENT_CHILD_IDS"] = "child-0"
         rig.harness.agentEnvironment["FAKE_AGENT_NO_RESUME"] = "1"
-        rig.harness.agentEnvironment["FAKE_AGENT_CHILD_ON_RESTORE"] = "1"
+        rig.harness.agentEnvironment[atBoundary ? "FAKE_AGENT_CHILD_AFTER_LOAD" : "FAKE_AGENT_CHILD_ON_RESTORE"] = "1"
         defer { rig.cleanup() }
         let recorder = try await rig.connect()
         let summary = try await recorder.client.newSession(
@@ -135,7 +135,7 @@ struct HostStoppedSubagentTests {
         let reader = try await rig.connect()
         _ = try await reader.client.attach(child.id)
         let text = await reader.agentText(child.id)
-        #expect(text.contains("Fresh during restore"))
+        #expect(text.contains(atBoundary ? "Fresh at boundary" : "Fresh during restore"))
         #expect(text.components(separatedBy: "Child history").count == 2)
         #expect(await reader.mirror(child.id).state.configOptions.map(\.id) == ["mode", "effort", "model"])
         await reader.stop()

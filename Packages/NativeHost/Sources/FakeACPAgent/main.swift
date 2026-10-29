@@ -164,6 +164,10 @@ actor FakeAgent {
             }
             try reportReloadConfig(session)
             try peer.respond(to: id, with: JSONValue.object(["configOptions": options(session)]))
+            if ProcessInfo.processInfo.environment["FAKE_AGENT_CHILD_AFTER_LOAD"] == "1" {
+                try emitChildText("Fresh at boundary")
+                try emitChildConfig()
+            }
         case "session/resume":
             try emitChildText("Fresh child update")
             // Like a load without the replay.
@@ -220,12 +224,7 @@ actor FakeAgent {
                 ProcessInfo.processInfo.environment["FAKE_AGENT_CHILD_ON_RESTORE"] == "1"
             {
                 try emitChildText("Fresh during restore")
-                let ids = ProcessInfo.processInfo.environment["FAKE_AGENT_CHILD_IDS"] ?? ""
-                for id in ids.split(separator: ",") {
-                    let child = SessionID(String(id))
-                    try update(
-                        child, ["sessionUpdate": .string("config_option_update"), "configOptions": options(child)])
-                }
+                try emitChildConfig()
             }
             if loaded.contains(params.sessionId),
                 ProcessInfo.processInfo.environment["FAKE_AGENT_CRASH_ON_RESTORE"] == "1",
@@ -491,6 +490,14 @@ actor FakeAgent {
     }
 
     // MARK: - Store
+
+    private func emitChildConfig() throws {
+        let ids = ProcessInfo.processInfo.environment["FAKE_AGENT_CHILD_IDS"] ?? ""
+        for id in ids.split(separator: ",") {
+            let child = SessionID(String(id))
+            try update(child, ["sessionUpdate": .string("config_option_update"), "configOptions": options(child)])
+        }
+    }
 
     private func emitChildText(_ text: String) throws {
         let ids = ProcessInfo.processInfo.environment["FAKE_AGENT_CHILD_IDS"] ?? ""

@@ -247,7 +247,14 @@ extension HostCore {
                         RawLoadSessionRequest(
                             sessionId: agentSessionID, cwd: session.record.cwd, mcpServers: servers,
                             _meta: meta),
-                        as: RawConfigOptionsResponse.self)
+                        as: RawConfigOptionsResponse.self,
+                        onResponse: { @HostActor in
+                            guard generation == link.generation, session.loadGeneration == loadGeneration else {
+                                return
+                            }
+                            session.isReplayingPreservedTranscript = false
+                            for child in children { child.isReplayingPreservedTranscript = false }
+                        })
                 }
             } catch let error as RPCError
                 where session.loadGeneration == loadGeneration && !session.record.isAdopted

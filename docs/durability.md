@@ -836,6 +836,10 @@ reloads the session from the agent (`session/load`), then `RecoveryPlanner` deci
 The interruption time comes from the host's heartbeat (written every 30 s), so "at 2:14" is within
 half a minute; for agent crashes it's exact.
 
+A preserving load suppresses retained history only through the load response's receive boundary.
+The peer's response hook clears that suppression before following notifications, so fresh child
+output and configuration remain live while the parent restores its own settings.
+
 **What a turn leaves behind.** ACP has no status for a tool call that didn't run to its end, and agents
 drop final updates, so whenever a turn ends, `SessionState` settles every call still open with only
 what Native knows, and stops its clock: "Stopped" when the user stopped the turn, "Interrupted" when
