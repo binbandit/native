@@ -223,7 +223,10 @@ struct HostSessionTests {
         try await recorder.client.sendQueuedNow(QueueItemParams(sessionID: session, itemID: next.requestID))
         #expect(await recorder.listed(session)?.queue.first?.waitingForTool == "sleep 20")
         try await recorder.wait("both turns") { await $0.turnsEnded(session) == ["cancelled", "end_turn"] }
-        #expect(harness.received.filter { $0.hasPrefix("prompt\t") || $0.hasPrefix("tool-finished\t") } == ["prompt\ttool-sleep", "tool-finished\tsleep", "prompt\tnext"])
+        #expect(
+            harness.received.filter { $0.hasPrefix("prompt\t") || $0.hasPrefix("tool-finished\t") } == [
+                "prompt\ttool-sleep", "tool-finished\tsleep", "prompt\tnext",
+            ])
         await recorder.stop()
     }
 
