@@ -89,6 +89,7 @@ extension GitTaskWorkspaceProvider {
     }
 
     func removeUnusedWorkspace(at folder: URL, in project: Project) async throws -> Bool {
+        guard !SessionFolder.isSame(folder.folderPath, project.path) else { return false }
         guard !scripts.runs(in: folder).contains(where: { $0.isRunning || $0.state == .awaitingApproval })
         else { return false }
         let repository = try await git.requireRepository(at: project.url)

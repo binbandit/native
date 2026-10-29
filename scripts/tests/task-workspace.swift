@@ -181,6 +181,18 @@ private struct TaskWorkspaceRegression {
         let branchModel = git.model(for: inNewTree.cwd)
         await branchModel.refreshNow()
         try check(branchModel.canCreatePullRequest, "a separate feature branch still offers pull requests")
+        // A managed checkout can itself be added as a project. That project's own folder is still user-owned.
+        let nestedProject = Project(url: inNewTree.cwd)
+        try check(
+            try await provider.archiveWorkspace(at: nestedProject.url, in: nestedProject) == nil,
+            "archiving never owns the project's folder, even inside Native's checkout location")
+        try check(
+            try await provider.removeUnusedWorkspace(at: nestedProject.url, in: nestedProject) == false,
+            "draft cleanup never owns the project's folder")
+        try await provider.deleteWorkspace(at: nestedProject.url, in: nestedProject)
+        try check(
+            FileManager.default.fileExists(atPath: nestedProject.path),
+            "deleting keeps a project added from a task checkout")
         try check(try await repository.status().branch.name == "main", "new worktree leaves project branch unchanged")
         app.workspaceChangeBlock = { _ in "Close the task's terminal tabs first." }
         do {
