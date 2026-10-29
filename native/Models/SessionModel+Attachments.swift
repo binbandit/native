@@ -42,8 +42,13 @@ extension SessionModel {
         if phase == .disconnected, host == nil { return .disconnected(agentName: agentName) }
         if let option = configOptions.first(where: { $0.category == "mode" }),
             case .select(let current, _) = option.kind,
-            PolicyPermissionModes.forbids(
+            (PolicyPermissionModes.forbids(
                 option, value: current, forbidden: services.plugins.policyCenter.policy.forbiddenPermissionModes)
+                || state.configOptions.contains { raw in
+                    guard raw.id == option.id, case .select(let value, _) = raw.kind else { return false }
+                    return PolicyPermissionModes.forbids(
+                        raw, value: value, forbidden: services.plugins.policyCenter.policy.forbiddenPermissionModes)
+                })
         {
             if option.permissionMappings?.isEmpty == true {
                 return .permissionPolicy(

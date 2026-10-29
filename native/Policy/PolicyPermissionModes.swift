@@ -16,16 +16,26 @@ enum PolicyPermissionModes {
         if let mode = TaskPermissionMode(rawValue: value) {
             if let mappings = option.permissionMappings {
                 guard let wire = mappings[value], !forbidden.contains(wire) else { return true }
+                if let wireMode = TaskPermissionMode.migrating(wire),
+                    forbidden.contains(where: { TaskPermissionMode.migrating($0) == wireMode })
+                {
+                    return true
+                }
             }
             return forbidden.contains { TaskPermissionMode.migrating($0) == mode }
         }
-        return TaskPermissionMode.migrating(value).map { forbidden.contains($0.rawValue) } ?? false
+        return TaskPermissionMode.migrating(value).map { mode in
+            forbidden.contains { TaskPermissionMode.migrating($0) == mode }
+        } ?? false
     }
 
     static func enforce(on session: SessionModel) async {
-        guard let option = session.configOptions.first(where: { $0.category == category }),
+        guard let raw = session.state.configOptions.first(where: { $0.category == category }),
+            case .select(let wire, _) = raw.kind,
+            let option = session.permissionOptions(session.state.configOptions).first(where: { $0.category == category }
+            ),
             case .select(let current, let choices) = option.kind,
-            forbids(option, value: current)
+            forbids(option, value: current) || forbids(raw, value: wire)
         else { return }
         let rank = TaskPermissionMode.migrating(current)?.rank ?? 0
         let allowed = choices.reversed().first {
