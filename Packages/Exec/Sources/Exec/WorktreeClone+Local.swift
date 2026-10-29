@@ -126,7 +126,14 @@ extension WorktreeClone {
             let to = try openDirectory(name, at: destination)
             defer { close(to) }
             try forEachEntry(in: from) { child in
-                guard child != ".git" else { throw CommandError.refused("A cache contains another repository.") }
+                if child == ".git" {
+                    // SwiftPM caches contain standalone checkouts. A gitdir file could instead
+                    // redirect git's later writes into a checkout we did not copy.
+                    var metadata = stat()
+                    guard fstatat(from, child, &metadata, AT_SYMLINK_NOFOLLOW) == 0,
+                        metadata.st_mode & S_IFMT == S_IFDIR
+                    else { throw CommandError.refused("A cached checkout uses an external git directory.") }
+                }
                 // Local env files are selected separately by Git after the user opts in.
                 guard !child.hasPrefix(".env") else { return }
                 var childCreated = false
