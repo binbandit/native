@@ -184,6 +184,9 @@ struct AgentManifest: Codable, Hashable, Sendable {
     /// that titles sessions with a model of its own doesn't then), and any once Native's title for it
     /// differs, so the agent's own session list shows Native's titles. Nil leaves names to the agent.
     var renameCommand: String?
+    /// `afterTools` explicitly offers queued steering at tool boundaries without an ACP extension.
+    /// `nonInterrupting` permits immediate delivery when the adapter advertises ACP steering.
+    var steeringPolicy: SteeringPolicy?
     /// Ways to sign the agent in that it accepts without advertising them, in ACP's shape
     /// (`AuthMethod`): a key in a variable it reads (`"type": "env_var"`), or a device code it
     /// offers only to clients that open links (`"type": "_native/link"`). For hosts nobody sits
@@ -201,6 +204,7 @@ struct AgentManifest: Codable, Hashable, Sendable {
         env: [String: String] = [:], resolveExecutables: [String: String] = [:], mcpConfig: String? = nil,
         icon: AgentIconSource? = nil, requires: [String] = [], setup: AgentSetupGuide? = nil,
         idleSessionTimeout: Int? = nil, idleUnloadTimeout: Int? = nil, renameCommand: String? = nil,
+        steeringPolicy: SteeringPolicy? = nil,
         authMethods: [AuthMethod] = [], settingsFiles: [String] = [],
         networkCapabilities: AgentNetworkCapabilities? = nil, nativeSkill: NativeAgentSkillFormat? = nil
     ) {
@@ -219,6 +223,7 @@ struct AgentManifest: Codable, Hashable, Sendable {
         self.idleSessionTimeout = idleSessionTimeout
         self.idleUnloadTimeout = idleUnloadTimeout
         self.renameCommand = renameCommand
+        self.steeringPolicy = steeringPolicy
         self.authMethods = authMethods
         self.settingsFiles = settingsFiles
         self.networkCapabilities = networkCapabilities
@@ -241,6 +246,7 @@ struct AgentManifest: Codable, Hashable, Sendable {
         idleSessionTimeout = try container.decodeIfPresent(Int.self, forKey: .idleSessionTimeout)
         idleUnloadTimeout = try container.decodeIfPresent(Int.self, forKey: .idleUnloadTimeout)
         renameCommand = try container.decodeIfPresent(String.self, forKey: .renameCommand)
+        steeringPolicy = try container.decodeIfPresent(SteeringPolicy.self, forKey: .steeringPolicy)
         authMethods = try container.decodeIfPresent([AuthMethod].self, forKey: .authMethods) ?? []
         settingsFiles = try container.decodeIfPresent([String].self, forKey: .settingsFiles) ?? []
         networkCapabilities = try container.decodeIfPresent(AgentNetworkCapabilities.self, forKey: .networkCapabilities)

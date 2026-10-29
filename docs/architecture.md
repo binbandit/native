@@ -42,6 +42,9 @@
   command-lifetime guarantee, the result is a failed turn warning that background commands may
   remain, never a promise of Stopped. Closing a task retains its pending cleanup. Immediate host
   restart finishes cleanup without waiting for siblings and leaves their turns for recovery.
+- **Steer preserves tools.** ACP's `SteeringGate` holds input until every reported live tool finishes,
+  unless the agent plugin declares non-interrupting steering. The host owns the editable held message
+  and its delivery across app disconnects. Stop keeps its immediate cancellation path.
 - **State is a reducer.** `SessionState` folds `session/update`s and the user's actions into a
   transcript (messages, tool calls, subagents, inter-session messages, plan, usage). It's pure and
   tested against captured traffic, and it's shared with the future companion app.

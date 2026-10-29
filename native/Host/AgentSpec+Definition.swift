@@ -8,7 +8,8 @@ extension AgentSpec {
             env: agent.manifest.env, resolveExecutables: agent.manifest.resolveExecutables,
             requires: agent.manifest.requires, install: agent.manifest.setup?.install,
             authMethods: agent.manifest.authMethods, idleUnloadTimeout: AppModel.idleUnloadTimeout(for: agent),
-            renameCommand: agent.manifest.renameCommand, nativeSkill: agent.manifest.nativeSkill
+            renameCommand: agent.manifest.renameCommand, steeringPolicy: agent.manifest.steeringPolicy,
+            nativeSkill: agent.manifest.nativeSkill
         )
     }
 }

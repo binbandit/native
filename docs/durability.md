@@ -632,7 +632,7 @@ form questions (`elicitation`), as the app's own `InitializeRequest` says.
 | `_native/session/respond_permission {sessionID, toolCallID, optionID?}` | the first client to answer wins; the rest see it resolved |
 | `_native/session/respond_question {sessionID, questionID, response}` | answers a form question (`elicitation/create`) with ACP's response verbatim; the first client wins |
 | `_native/session/run_hidden {sessionID, text}` | → `{output}`: runs a command such as `/context` as a turn the transcript doesn't show (the reply is collected, late copies of it dropped). Only while idle; not a durable turn |
-| `_native/queue/update`, `…/remove`, `…/restore {itemID, index}`, `…/move {itemID, before?}`, `…/send_now` | edit the queue. The host keeps the last 20 messages removed from each queue, so undo sends only the id. Send Now steers where the agent can, and otherwise stops the running turn and sends the message next |
+| `_native/queue/update`, `…/remove`, `…/restore {itemID, index}`, `…/move {itemID, before?}`, `…/send_now` | edit the queue. The host keeps the last 20 messages removed from each queue, so undo sends only the id. Send Now uses the same tool-safe Steer path: non-interrupting injection where declared, otherwise delivery after all running tools finish |
 | `_native/activity/list {after?, limit, includeCommands?}` | the activity journal, for "while you were away". The record of commands clients ran only with `includeCommands` (which takes `runCommands`) |
 | `_native/notifications/list {after?, limit}` | → `{notifications, active, latestID}`: the notifications numbered after `after` (whatever their state), every one still news, and the newest id handed out. See "Notifications" |
 | `_native/notifications/acknowledge {ids}` | the user saw these on this client; older active ones in the same groups go with them. Every client hears `cleared` |
@@ -1043,6 +1043,38 @@ it on); off, the app titles that host's tasks as it did before and tells the hos
   | `manageHost` | the pairing's grants | needed to configure the host; without it, the app's own titles (above) |
   | Keep Mac Awake | the paired host's own policy, kept across restarts (`host/keep_awake/set`) | not set by this path; the laptop's `NativeHostKeepAwake` affects only its own host |
   | `NativeHostTasks` | check on the paired host itself | not needed for titles |
+
+## Steering without losing tool work
+
+Steer and Queue enter through `SessionModel.submit`, then the host's `session/prompt` with
+`behavior: steer` or `queue`. Queue still waits for the whole turn. Steer uses the agent's
+`_session/steering` extension only when its delivery policy permits it. Native previously sent that
+extension immediately; adapters that interrupt generation could cancel or background a running tool.
+
+`SteeringGate` in ACP folds live `tool_call` and `tool_call_update` notifications, including partial
+updates. With the default `afterTools` plugin policy, every pending or running tool must report
+completion or failure before delivery. Parallel tools all finish first. The host keeps a waiting steer
+in its durable queue with `steersAfterTools` in the prompt extras, separately from the existing
+steering-in-flight flag. It remains editable and removable. An ordinary queued turn waits for any
+in-flight steer acknowledgement, even if the original turn ends first. Undelivered steers become
+ordinary queued input when their original turn ends, keeping the user's explicit queue order. This
+also clears steering intent from removed messages: Undo afterward restores ordinary queued input.
+Every prompt starter respects outstanding steering ownership. Send Now and hidden commands reject
+the operation as busy until acknowledgement resolves, retaining selected queued messages for retry.
+Session summaries carry `waitingForTool`
+so the composer can show "Will steer after <tool> finishes" beside that message.
+
+A plugin may declare `steeringPolicy: nonInterrupting` only when its adapter's steering preserves
+running tools. The built-in Codex plugin does this because its adapter uses `turn/steer`. Other
+adapters wait for the reported tool boundary. If an adapter has no steering extension, the host sends
+`session/cancel` at that boundary and owns the next prompt until the current prompt acknowledges it.
+This path does not invoke Stop's process cleanup. A failed or unacknowledged boundary interrupt keeps
+the message queued rather than escalating to killing tools. Tool lifetimes must be reported by the
+adapter; ACP v1 has no atomic client-side pause between notifications and an agent's next step.
+
+Stop (Command-period) retains its immediate cancellation and process cleanup. It pauses pending
+steers along with the ordinary queue. Host recovery restores held messages as queued input; a steer
+already written to the adapter still uses the existing replay reconciliation to avoid duplication.
 
 ## Native's tools in the host
 

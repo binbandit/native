@@ -15,6 +15,7 @@ extension ComposerView {
             isWorking: isWorking,
             hasQueuedPrompts: !session.queuedPrompts.isEmpty,
             isEditingQueued: session.editingQueuedPrompt != nil,
+            canSendQueuedNow: session.sendNowRoute != nil,
             canStop: session.canCancel,
             hasLastPrompt: session.state.lastPrompt != nil,
             isComposing: PlatformTextInput.isComposing,

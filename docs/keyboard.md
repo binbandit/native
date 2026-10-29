@@ -37,8 +37,10 @@ terminal tab instead. ⌘, brings the main window back with Settings; ⌘Q quits
 | ⌘. | | Stop the turn; again, end the cancel grace period | `session.stop` |
 | ↑ in an empty composer | Edit the last queued message, if any; else recall the last prompt | Edit the last queued message | |
 
-**Steer** adds the message to the running turn (`_session/steering`); agents that don't support
-steering queue it instead. **Queue** holds the message above the composer
+**Steer** preserves running tool calls. Agents with non-interrupting steering receive it immediately.
+Otherwise it waits until every current tool finishes, then steers between steps. The composer says
+"Will steer after <tool> finishes"; the waiting message can still be edited or removed. Agents without
+a steering extension are interrupted between steps and receive the message as their next prompt. **Queue** holds the message above the composer
 and sends it when the turn ends; queued messages go out one per turn, in order. A stopped or failed
 turn holds the queue until you send again.
 
@@ -76,15 +78,19 @@ Tab edit the code and the hint says "↩ New line · ⌘↩ Send":
 
 ### Queued messages
 
-Each queued message has Send Now, Edit and Remove on hover; its menu (a right-click, or touch and
-hold on iPad) adds Move Up and Move Down. Send Now steers the message into the running turn when the
-agent can steer; otherwise it stops the turn and sends the message next. Drag a message to reorder
-the queue. Clicking a message, or ↑ in an empty composer, opens it in the editor:
+Each queued message has Edit and Remove on hover; its menu (a right-click, or touch and hold on
+iPad) adds Move Up and Move Down. While a turn runs, Send Now appears only when the current task's agent
+advertises ACP steering or explicitly declares `afterTools` delivery in its plugin manifest. It adds the message
+to the running turn, waiting for running tools when needed. For agents advertising neither, queued
+messages send when the turn ends; mid-turn Send Now, its menu item, accessibility action and shortcut are absent.
+When the task is idle, including after Stop, Send Now is available for every agent and sends the queued
+message as the next prompt, resuming the queue without needing a new draft.
+Drag a message to reorder the queue. Clicking a message, or ↑ in an empty composer, opens it in the editor:
 
 | Keys (queued message open in the editor) | Action |
 | --- | --- |
 | Return | Save the edit; the message keeps its place |
-| ⌘Return | Save the edit and Send Now |
+| ⌘Return | Save the edit and Send Now, when available for the current task state |
 | ⌥⌘↑ / ⌥⌘↓ | Move it up / down the queue (Task ▸ Move Queued Message Up / Down) |
 | Escape | Close it without saving |
 
