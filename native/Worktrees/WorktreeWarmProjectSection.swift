@@ -12,6 +12,7 @@ struct WorktreeWarmProjectSection: View {
     @Environment(\.undoManager) private var undoManager
     @State private var editing: TaskScriptEditorSheet.Target?
     @State private var repositorySetup = false
+    @State private var folderDraft: String?
 
     private var configuration: WorktreeWarmSettings { settings.warmWorktree(forProjectAt: project.url) }
     private var invalidFolders: [String] { configuration.folders.filter { !WorktreeWarmSettings.isValidFolder($0) } }
@@ -41,6 +42,7 @@ struct WorktreeWarmProjectSection: View {
                         .frame(width: WorktreeWarmMetrics.foldersWidth)
                         .lineLimit(3...6)
                         .accessibilityLabel("Folders to bring along")
+                        .onSubmit { folderDraft = nil }
                 }
                 .disabled(!configuration.enabled)
                 SettingsRow(
@@ -79,6 +81,10 @@ struct WorktreeWarmProjectSection: View {
         }
         .sheet(item: $editing) { target in TaskScriptEditorSheet(target: target) }
         .task(id: project.url) { repositorySetup = scripts.repositoryScripts(at: project.url)[.setup] != nil }
+        .onChange(of: project.url) { folderDraft = nil }
+        .onChange(of: configuration.folders) { _, updated in
+            if folderDraft.map(Self.parseFolders) != updated { folderDraft = nil }
+        }
     }
 
     private var hasSetup: Bool { scripts.project(at: project.url).scripts[.setup] != nil }
@@ -95,12 +101,18 @@ struct WorktreeWarmProjectSection: View {
 
     private var folders: Binding<String> {
         Binding(
-            get: { configuration.folders.joined(separator: ", ") },
+            get: { folderDraft ?? configuration.folders.joined(separator: ", ") },
             set: { text in
+                // Keep delimiters while typing, so a comma can start the next entry.
+                folderDraft = text
                 var updated = configuration
-                updated.folders = text.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                updated.folders = Self.parseFolders(text)
                 settings.setWarmWorktree(updated, forProjectAt: project.url, undoManager: undoManager)
             })
+    }
+
+    private static func parseFolders(_ text: String) -> [String] {
+        text.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
     }
 }
 
