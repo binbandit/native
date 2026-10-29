@@ -102,7 +102,7 @@ struct ComposeTaskAddress: View {
                         }
                         // The first line centers on the label's row, as a single line would.
                         .padding(.vertical, (DS.ComposeTask.rowHeight - DS.ComposeTask.tokenHeight) / 2)
-                    } else {
+                    } else if model.offersProjectFolderTasks {
                         VStack(alignment: .leading, spacing: DS.Space.xs) {
                             HStack(spacing: DS.Space.sm) {
                                 TaskFolderChoice(
@@ -122,6 +122,22 @@ struct ComposeTaskAddress: View {
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                         }
+                    } else {
+                        Button {
+                            compose.beginWorkspaceSelection()
+                        } label: {
+                            HStack(spacing: DS.Space.sm) {
+                                Text(workspaceBranch).font(.dsMono).foregroundStyle(.dsTextSecondary)
+                                if compose.workspace == .newWorktree {
+                                    Text("→").font(.dsMono).foregroundStyle(.dsTextTertiary)
+                                    Text("a new branch").foregroundStyle(.dsTextSecondary)
+                                }
+                                Text(workspaceDetail).foregroundStyle(.dsTextTertiary)
+                            }
+                        }
+                        .buttonStyle(ComposeAddressButtonStyle()).dsHitTarget(DS.ComposeTask.rowHeight)
+                        .disabled(entry.project == nil || compose.isHeld)
+                        .accessibilityLabel("Choose task workspace")
                     }
                 }
             }
@@ -240,6 +256,15 @@ struct ComposeTaskAddress: View {
         case .branch(let name): name
         case .worktree(let folder): folder.lastPathComponent
         default: branch ?? (entry.project == nil ? "Choose a folder first" : "Current branch")
+        }
+    }
+    private var workspaceDetail: String {
+        switch compose.workspace {
+        case .newWorktree, .newWorktreeFrom:
+            entry.device.isRemote ? "its own worktree on \(deviceName)" : "its own worktree"
+        case .project: "in the project folder"
+        case .branch, .worktree: "in its workspace"
+        case nil: compose.isReadingWorkspaces ? "Reading workspaces…" : "project default"
         }
     }
     private var consequences: [String] {

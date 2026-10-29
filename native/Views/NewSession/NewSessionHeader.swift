@@ -43,7 +43,7 @@ struct NewSessionHeader: View {
                             }
                         }, more: context.changeWorkspace)
                 } else if let changeWorkspace = context.changeWorkspace {
-                    Button("Change Folder…", action: changeWorkspace).buttonStyle(.plain).font(.dsCallout)
+                    Button("Change Workspace…", action: changeWorkspace).buttonStyle(.plain).font(.dsCallout)
                 }
                 if let folderFailure {
                     Text(folderFailure).font(.dsCallout).foregroundStyle(.dsDanger)

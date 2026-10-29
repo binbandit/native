@@ -340,9 +340,10 @@ struct SessionToolsScreen: View {
     private var location: String {
         if session.isProjectless { return "No project" }
         guard case .branch(let name)? = git.model(for: session.cwd, session: session.key).branch?.head else {
-            return app.usesProjectFolder(session.key) ? "Project folder" : session.cwd.abbreviatedPath
+            return app.offersProjectFolderTasks && app.usesProjectFolder(session.key)
+                ? "Project folder" : session.cwd.abbreviatedPath
         }
-        return app.usesProjectFolder(session.key) ? "\(name) · Project folder" : name
+        return app.offersProjectFolderTasks && app.usesProjectFolder(session.key) ? "\(name) · Project folder" : name
     }
 }
 

@@ -32,7 +32,7 @@ struct TaskWellTitleWiring: View {
         return TaskWellTitleFacts(
             title: session.displayTitle, project: app.projectName(of: session),
             branch: session.isProjectless ? nil : git.model(for: session.cwd, session: session.key).branchName,
-            isProjectFolder: app.usesProjectFolder(session.key),
+            isProjectFolder: app.offersProjectFolderTasks && app.usesProjectFolder(session.key),
             machine: device.isRemote ? app.deviceName(device) : nil, agent: session.agentName,
             model: ComposerSettings(session.configOptions).model?.shortModelName,
             isWorkerManaged: isWorkerManaged,

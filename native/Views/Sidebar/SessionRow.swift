@@ -41,7 +41,7 @@ struct SessionRow<Accessory: View>: View {
 
     /// A pair's tasks always say their branch: it's what tells the two versions apart.
     private var folderLocation: String? {
-        guard model.usesProjectFolder(summary.id) else { return nil }
+        guard model.offersProjectFolderTasks, model.usesProjectFolder(summary.id) else { return nil }
         return "\(insights.branch(summary) ?? "Current branch") · Project folder"
     }
 
@@ -159,7 +159,9 @@ struct SessionRow<Accessory: View>: View {
                 action: select, onArchive: archiveAction
             )
             .task(id: summary.info.cwd) {
-                if model.usesProjectFolder(summary.id) { await insights.prepareBranch(summary) }
+                if model.offersProjectFolderTasks, model.usesProjectFolder(summary.id) {
+                    await insights.prepareBranch(summary)
+                }
             }
         }
     }

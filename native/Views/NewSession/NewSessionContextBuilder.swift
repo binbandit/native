@@ -45,7 +45,7 @@ struct NewSessionContextBuilder {
             },
             device: device,
             changeWorkspace: session.canChangeWorkspace ? { [session] in session.requestWorkspaceChange() } : nil,
-            chooseWorkspace: session.canChangeWorkspace
+            chooseWorkspace: session.canChangeWorkspace && model.offersProjectFolderTasks
                 ? { choice in
                     _ = try await model.changeWorkspace(of: session, to: choice)
                 } : nil,

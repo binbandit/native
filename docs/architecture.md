@@ -673,7 +673,9 @@ Scroll positions remain per window in `SessionTranscriptMemory`.
 
 ### Task worktree preparation
 
-New tasks offer a quiet Task folder menu: a new branch in a separate folder (the default),
+The default-off Project Folder Tasks Labs switch (`NativeProjectFolderTasks`) keeps the new
+controls and remembered choice off until visual and real-session verification finishes. With it
+enabled, new tasks offer a quiet Task folder menu: a new branch in a separate folder (the default),
 or the project's folder on its current branch. The last explicit choice is stored per project
 in `projectDefaults.<project id>.folder`, shared by classic task creation, Quick Entry and the
 Labs Compose page. An unset choice retains the existing Git settings. Project-folder starts

@@ -110,7 +110,8 @@ struct SessionView: View {
             (session.isProjectless
                 ? ["No project"]
                 : [
-                    model.usesProjectFolder(session.key) ? "Project folder" : session.cwd.abbreviatedPath,
+                    model.offersProjectFolderTasks && model.usesProjectFolder(session.key)
+                        ? "Project folder" : session.cwd.abbreviatedPath,
                     repository.summary,
                 ]).compactMap(
                     \.self

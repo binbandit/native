@@ -97,6 +97,8 @@ extension AppModel {
     func startInProjectFolder(_ task: StartingTask) async {
         guard task.failure?.canUseProjectFolder == true, let project = projects.project(task.project) else { return }
         task.folder = project.url
+        task.workspaceChoice = .project
+        rememberTaskWorkspace(.project, in: project.id)
         await start(task)
     }
 

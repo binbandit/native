@@ -1,5 +1,6 @@
 import ACP
 import Exec
+import Experiments
 import Foundation
 import Git
 import NativeHostClient
@@ -22,6 +23,7 @@ private struct TaskWorkspaceRegression {
         await client.start()
         _ = try await client.connected()
         let defaults = PreviewUserDefaults()
+        let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
         let manifest = PluginManifest(
             id: "workspace-fixture", name: "Fixture",
             agents: [
@@ -29,7 +31,7 @@ private struct TaskWorkspaceRegression {
             ])
         let app = AppModel(
             plugins: PluginRegistry(builtIns: [ManifestPlugin(manifest: manifest)], defaults: defaults),
-            defaults: defaults, catalogURL: scratch.appending(path: "catalog.json"),
+            defaults: defaults, catalogURL: scratch.appending(path: "catalog.json"), experiments: experiments,
             hosts: RemoteHosts(store: FilePairedHostStore(directory: scratch.appending(path: "hosts"))))
         app.connectHost(client: client)
         await app.followHost()
@@ -58,6 +60,8 @@ private struct TaskWorkspaceRegression {
         let github = GitHubModel(environment: { _ in environment }, runner: runner, defaults: defaults)
         let provider = GitTaskWorkspaceProvider(git: git, gitHub: github, scripts: scripts)
         app.taskWorkspaces = provider
+        try check(!app.offersProjectFolderTasks, "project-folder controls are off by default until UI review")
+        experiments.set(true, for: .projectFolderTasks)
         let project = app.projects.add(folder)
         let agent = AgentDefinition.ID(rawValue: "workspace-fake")
         guard let runtime = await app.ensureRunning(agent) else { throw Failure("fixture agent is ready") }
@@ -116,6 +120,10 @@ private struct TaskWorkspaceRegression {
         try check(try await repository.hasBranch("feature"), "existing branch is retained")
         // Project-folder starts remember the choice, keep dirty files, and never create a branch.
         try check(app.preferredTaskWorkspace(in: project.id) == .project, "folder choice is remembered")
+        experiments.set(false, for: .projectFolderTasks)
+        try check(
+            app.preferredTaskWorkspace(in: project.id) == nil, "disabling Labs restores the existing start behavior")
+        experiments.set(true, for: .projectFolderTasks)
         let otherProject = app.projects.add(scratch.appending(path: "other"))
         try check(app.preferredTaskWorkspace(in: otherProject.id) == nil, "folder preference is per project")
         let branchesBefore = try await repository.branches(includingRemote: false).map(\.name)

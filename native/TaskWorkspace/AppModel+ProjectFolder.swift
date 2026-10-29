@@ -2,8 +2,11 @@ import ACP
 import Foundation
 
 extension AppModel {
+    var offersProjectFolderTasks: Bool { experiments.value(of: .projectFolderTasks) }
+
     func preferredTaskWorkspace(in project: Project.ID) -> TaskWorkspaceChoice? {
-        switch defaults.string(forKey: "projectDefaults.\(project.uuidString).folder") {
+        guard offersProjectFolderTasks else { return nil }
+        return switch defaults.string(forKey: "projectDefaults.\(project.uuidString).folder") {
         case "project": .project
         case "separate": .newWorktree
         default: nil
@@ -11,6 +14,7 @@ extension AppModel {
     }
 
     func rememberTaskWorkspace(_ choice: TaskWorkspaceChoice, in project: Project.ID) {
+        guard offersProjectFolderTasks else { return }
         let value: String
         switch choice {
         case .project: value = "project"
@@ -34,6 +38,7 @@ extension AppModel {
     func projectFolderNote(
         in project: Project.ID, on device: SessionDevice, excluding key: SessionKey? = nil
     ) -> String? {
+        guard offersProjectFolderTasks else { return nil }
         let shares = sessions(in: project).contains { summary in
             summary.id != key && self.device(of: summary.id) == device && !isArchived(summary.id)
                 && !pendingDeletionKeys.contains(summary.id) && usesProjectFolder(summary.id)
@@ -43,7 +48,8 @@ extension AppModel {
     }
 
     func chooseComposeWorkspace(_ choice: TaskWorkspaceChoice) {
-        guard !composeTask.isHeld, composeTask.stage == .writing, composeTask.second == nil else { return }
+        guard offersProjectFolderTasks, !composeTask.isHeld, composeTask.stage == .writing, composeTask.second == nil
+        else { return }
         composeTask.workspace = choice
         if let project = quickEntry.project { rememberTaskWorkspace(choice, in: project) }
     }
