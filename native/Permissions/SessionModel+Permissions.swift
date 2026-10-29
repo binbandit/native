@@ -13,7 +13,7 @@ extension SessionModel {
             guard option.category == "mode" else { return option }
             let old = remembered.choices[option.id]?.value ?? hostSummary?.permissionMode
             // Migrate only explicit saved levels, never turn an adapter default into a user choice.
-            if let old, TaskPermissionMode(rawValue: old) == nil, old != "plan",
+            if let old, TaskPermissionMode(rawValue: old) == nil, old != "plan", old != "read-only",
                 let mode = TaskPermissionMode.migrating(old)
             {
                 let shown = mapping.presenting(option, remembered: mode.rawValue)

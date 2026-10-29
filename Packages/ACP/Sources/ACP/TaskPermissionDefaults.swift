@@ -40,7 +40,12 @@ public enum TaskPermissionDefaults {
 
     public static func value(project: String? = nil, defaults: UserDefaults = .standard) -> TaskPermissionMode {
         migrate(in: defaults)
-        return defaults.string(forKey: key(project: project)).flatMap(TaskPermissionMode.init(rawValue:))
-            ?? defaults.string(forKey: key).flatMap(TaskPermissionMode.init(rawValue:)) ?? .fullAccess
+        if let saved = defaults.string(forKey: key(project: project)) {
+            return TaskPermissionMode.migrating(saved) ?? .askFirst
+        }
+        if let saved = defaults.string(forKey: key) {
+            return TaskPermissionMode.migrating(saved) ?? .askFirst
+        }
+        return .fullAccess
     }
 }

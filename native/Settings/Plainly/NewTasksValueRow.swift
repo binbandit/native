@@ -41,7 +41,6 @@ struct NewTasksValueRow: View {
                                     Text(choice.name)
                                 }
                             }
-                            .disabled(setting == .permissions && policy.forbids(permissionMode: choice.value))
                         }
                         Divider()
                         Button("Why This Value…") { showsSource = true }
@@ -67,9 +66,7 @@ struct NewTasksValueRow: View {
         if choices.isEmpty {
             return model.hasReportedOptions ? "Not offered by \(model.agentName)" : "Not reported yet"
         }
-        if !receipt.unavailable, !receipt.modeOverrides, model.stored(setting) == nil, model.project == nil,
-            setting != .permissions
-        {
+        if !receipt.unavailable, !receipt.modeOverrides, model.stored(setting) == nil, model.project == nil {
             return model.followTitle(setting)
         }
         return receipt.value

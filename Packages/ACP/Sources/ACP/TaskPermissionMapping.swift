@@ -14,7 +14,7 @@ public struct TaskPermissionMapping: Hashable, Sendable {
     public static let standard = Self(values: [
         .askFirst: ["ask-first", "default", "ask", "manual", "read-only"],
         .acceptEdits: ["accept-edits", "acceptEdits"],
-        .auto: ["auto", "agent"],
+        .auto: ["auto"],
         .fullAccess: ["bypassPermissions", "agent-full-access", "full-access"],
     ])
 
@@ -60,14 +60,16 @@ public struct TaskPermissionMapping: Hashable, Sendable {
                 description: [mode.summary, note, selected.flatMap { notes[$0.effective] }].compactMap { $0 }.joined(
                     separator: " "))
         }
-        // Plan can occupy the provider's permission option; it is never a fifth permission mode.
-        let plan = offered.filter { $0.value == "plan" }
+        // Task modes can apply a plan or read-only restriction independently of permissions.
+        let restrictions = offered.filter { $0.value == "plan" || $0.value == "read-only" }
         shown.permissionMappings = Dictionary(
             uniqueKeysWithValues: TaskPermissionMode.allCases.compactMap { mode in
                 selection(mode, offered: wire).map { (mode.rawValue, $0.value) }
             })
         shown.name = "Permissions"
-        shown.kind = .select(currentValue: current == "plan" ? current : mode.rawValue, options: choices + plan)
+        shown.kind = .select(
+            currentValue: ["plan", "read-only"].contains(current) ? current : mode.rawValue,
+            options: choices + restrictions)
         return shown
     }
 }

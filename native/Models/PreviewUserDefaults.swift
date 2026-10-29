@@ -15,6 +15,10 @@ nonisolated final class PreviewUserDefaults: UserDefaults {
         lock.withLock { values[key] = value }
     }
 
+    override func dictionaryRepresentation() -> [String: Any] {
+        lock.withLock { values }
+    }
+
     override func removeObject(forKey key: String) {
         lock.withLock { values[key] = nil }
     }

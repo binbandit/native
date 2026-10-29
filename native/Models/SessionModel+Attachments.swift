@@ -52,6 +52,12 @@ extension SessionModel {
             return .permissionPolicy(
                 "No permitted permission mode is active. Choose an allowed mode or contact your administrator.")
         }
+        if !configOptions.contains(where: { $0.category == "mode" }),
+            !services.plugins.policyCenter.policy.forbiddenPermissionModes.isEmpty
+        {
+            return .permissionPolicy(
+                "This agent does not expose permission controls required by your organization. Choose another agent.")
+        }
         return services.sendGate.block(for: agent)
     }
 

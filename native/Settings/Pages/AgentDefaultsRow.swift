@@ -6,7 +6,6 @@ extension AgentSessionDefaults.Setting {
         switch self {
         case .model: "Default model"
         case .effort: "Default effort"
-        case .permissions: "Permissions"
         }
     }
 

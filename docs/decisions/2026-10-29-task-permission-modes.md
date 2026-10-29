@@ -45,3 +45,5 @@ not infer approval from the displayed mode or add a blanket approval bypass.
 Focused Swift Testing covers Claude/Codex mappings, conservative ACP fallback, unavailable modes,
 policy exclusions, picker presentation and saved-default migration. Host integration coverage checks
 shared intent after restart. Runtime checks and light/dark screenshots are recorded in the pull request.
+
+Provider Plan and read-only controls remain available to task modes. They are separate restrictions, not additional permission choices in the composer. An organization that requires permission controls blocks sending with an agent that exposes none.

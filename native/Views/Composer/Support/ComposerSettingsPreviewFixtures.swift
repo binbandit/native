@@ -25,7 +25,7 @@ enum ComposerSettingsPreviewFixtures {
                   {"id":"fast-mode","name":"Fast mode","category":"model_config","type":"select","currentValue":"off","options":[
                     {"value":"off","name":"Off"},{"value":"on","name":"On"}]}
                 ]
-                """) ?? [])
+                """)?.map { CodexConfigOverrides.permissionMapping.presenting($0) } ?? [])
     }
 
     static func claude(mode: String = "acceptEdits", models: String = claudeModels) -> ComposerSettings {
@@ -44,7 +44,7 @@ enum ComposerSettingsPreviewFixtures {
                     {"value":"default","name":"Default"},{"value":"low","name":"Low"},{"value":"medium","name":"Medium"},
                     {"value":"high","name":"High"},{"value":"xhigh","name":"Xhigh"},{"value":"max","name":"Max"}]}
                 ]
-                """) ?? [])
+                """)?.map { ClaudeCodeSessionSettings.permissionMapping.presenting($0) } ?? [])
     }
 
     static let claudeModels = """

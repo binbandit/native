@@ -29,7 +29,7 @@ import Testing
         #expect(mapping.selection(.acceptEdits, offered: ["default", "bypassPermissions"])?.value == "default")
         #expect(mapping.selection(.auto, offered: ["default", "acceptEdits"])?.value == "acceptEdits")
         #expect(mapping.selection(.askFirst, offered: ["auto", "bypassPermissions"]) == nil)
-        #expect(mapping.selection(.fullAccess, offered: ["custom", "yolo"]) == nil)
+        #expect(mapping.selection(.fullAccess, offered: ["custom", "yolo", "agent"]) == nil)
     }
 
     @Test func switchingNeverWidensSharedPermissionMode() {
@@ -76,6 +76,19 @@ import Testing
         #expect(AgentModelPermissions.replacement(for: "accept-edits", offered: choices.map(\.value)) == "accept-edits")
     }
 
+    @Test func taskModeRestrictionsRemainSeparateFromPermissionChoices() throws {
+        let option = try JSONDecoder().decode(
+            ConfigOption.self,
+            from: Data(
+                #"{"id":"mode","name":"Mode","category":"mode","type":"select","currentValue":"read-only","options":[{"value":"read-only","name":"Read only"},{"value":"workspace-write","name":"Workspace"},{"value":"agent-full-access","name":"Full access"}]}"#
+                    .utf8))
+        let shown = CodexConfigOverrides.permissionMapping.presenting(option)
+        guard case .select(let current, let choices) = shown.kind else { Issue.record("Missing select"); return }
+        #expect(current == "read-only")
+        #expect(choices.filter { TaskPermissionMode(rawValue: $0.value) != nil }.count == 4)
+        #expect(choices.contains { $0.value == "read-only" })
+    }
+
     @Test func migratesAllLegacyLevels() {
         let cases: [String: TaskPermissionMode] = [
             "default": .askFirst, "read-only": .askFirst, "dontAsk": .askFirst, "plan": .askFirst,
@@ -91,6 +104,8 @@ import Testing
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         defaults.set("future-provider-mode", forKey: "agentDefaults.first.permissions")
+        #expect(TaskPermissionDefaults.value(defaults: defaults) == .askFirst)
+        defaults.set("unknown-native-mode", forKey: TaskPermissionDefaults.key)
         #expect(TaskPermissionDefaults.value(defaults: defaults) == .askFirst)
     }
 

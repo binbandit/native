@@ -13,11 +13,14 @@ extension SettingsPane {
                     AgentSessionDefaults.Setting.allCases.map { setting in
                         SettingsSearchEntry(
                             id: AgentDefaultsRow.settingRowID(agentID: entry.definition.id, setting: setting),
-                            title: setting == .model ? "Model" : setting == .effort ? "Effort" : "Permissions",
+                            title: setting == .model ? "Model" : "Effort",
                             description: entry.agent.name,
                             keywords: [entry.agent.name, "default"], scopeName: entry.agent.name)
                     }
                 } + [
+                    SettingsSearchEntry(
+                        id: SettingsRowID("permissions.default"), title: "Permissions",
+                        keywords: ["ask", "accept edits", "auto", "full access"]),
                     SettingsSearchEntry(
                         id: GitSettingsPage.workspaceRow, title: "Work in", keywords: ["branch", "worktree"]),
                     SettingsSearchEntry(id: .modesDefault, title: "Mode", keywords: ["build", "plan", "review"]),
