@@ -22,6 +22,11 @@ import Testing
         try fixture.write("node_modules/.env", "fixture credentials")
         try FileManager.default.createSymbolicLink(
             atPath: fixture.source.appending(path: "node_modules/link").path(), withDestinationPath: "pkg")
+        try FileManager.default.createDirectory(
+            at: fixture.source.appending(path: "node_modules/.bin"), withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(
+            atPath: fixture.source.appending(path: "node_modules/.bin/tool").path(),
+            withDestinationPath: "../pkg/index.js")
         let report = try await fixture.clone(["node_modules"])
         #expect(report.cloned == ["node_modules"])
         #expect(
@@ -35,6 +40,9 @@ import Testing
         #expect(
             try FileManager.default.destinationOfSymbolicLink(
                 atPath: fixture.destination.appending(path: "node_modules/link").path()) == "pkg")
+        #expect(
+            try FileManager.default.destinationOfSymbolicLink(
+                atPath: fixture.destination.appending(path: "node_modules/.bin/tool").path()) == "../pkg/index.js")
     }
 
     @Test func rejectsEscapesAndLeavesExistingFilesAlone() async throws {
