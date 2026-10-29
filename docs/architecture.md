@@ -723,6 +723,14 @@ and never hold a task's turns. The same script runner retains policy, timeout an
 `TaskScriptsTerminalWiring` exposes its capped output through `TerminalLog` tabs alongside
 Project Actions' interactive terminal jobs. See `docs/scripts.md`.
 
+The default-off `NativeWarmWorktrees` Labs gate adds project-owned cache choices to `GitSettings`.
+`Repository.warmWorktree` selects wholly ignored folders and consented untracked env files, then
+sends a reserved `WorktreeClone` operation through the existing `CommandRunner` transport. Exec's
+local runner handles the operation on the host using no-follow directory descriptors and APFS
+`fclonefileat`; clients never read a paired host's local filesystem. Unsupported or cross-volume
+copies stay cold, with no byte-copy fallback. Preparation finishes before setup and after-commands
+start; its summary joins the task's existing setup notice and output, outside agent context.
+
 ## Persistence
 
 | What | Where |

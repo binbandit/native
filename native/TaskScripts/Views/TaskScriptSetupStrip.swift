@@ -100,7 +100,7 @@ struct TaskScriptSetupStrip: View {
         case .running: "Setting up the worktree"
         case .awaitingApproval: "This repository has a setup script"
         case .succeeded where run.plan.scripts.isEmpty && run.copyFailure != nil:
-            "Couldn't copy the project's env files"
+            "Couldn't bring the project's files along"
         case .succeeded, .skipped:
             (run.duration ?? 0) < 1 ? "Worktree set up" : "Worktree set up in \(DSFormat.duration(run.duration ?? 0))"
         case .failed(let failure): "\(failure.script.name) \(failure.result.outcome.phrase)"
@@ -129,7 +129,8 @@ struct TaskScriptSetupStrip: View {
             parts.append("Copied \(files) from the project.")
         }
         if let copyFailure = run.copyFailure {
-            parts.append("Couldn't copy the project's env files: \(copyFailure)")
+            parts.append(
+                "Couldn't bring the project's files along: \(copyFailure). The worktree is ready without them.")
         }
         return parts.isEmpty ? nil : parts.joined(separator: " ")
     }

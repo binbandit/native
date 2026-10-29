@@ -16,6 +16,7 @@ extension ExperimentCatalog {
         Gate.composerNext,
         Gate.composeTask,
         Gate.projectFolderTasks,
+        Gate.warmWorktrees,
         Gate.changeAgent,
         Gate.coordinatorTasks,
         Gate.homeNext,
@@ -64,6 +65,13 @@ extension Parameter where Value == TranscriptWidth {
 // MARK: - Gates
 
 extension Gate {
+    static let warmWorktrees = Gate(
+        id: "NativeWarmWorktrees", title: "Warm Worktrees",
+        summary: "Start tasks with copies of the project's installed dependencies and build caches.",
+        site: "Project Settings", stage: .labs, owner: "worktrees",
+        reviewBy: ReviewDate(year: 2026, month: 12, day: 15), default: false
+    )
+
     static let projectFolderTasks = Gate(
         id: "NativeProjectFolderTasks", title: "Project Folder Tasks",
         summary: "Choose a separate branch or work in the project folder on its current branch.",
