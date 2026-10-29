@@ -28,7 +28,13 @@ public struct TaskPermissionMapping: Hashable, Sendable {
         guard !forbidden.contains(mode.rawValue) else { return nil }
         for candidate in TaskPermissionMode.allCases.reversed() where candidate.rank <= mode.rank {
             guard !forbidden.contains(candidate.rawValue),
-                let value = values[candidate]?.first(where: { offered.contains($0) && !forbidden.contains($0) })
+                let value = values[candidate]?.first(where: { value in
+                    offered.contains(value) && !forbidden.contains(value)
+                        && !forbidden.contains { blocked in
+                            guard let wireMode = TaskPermissionMode.migrating(value) else { return false }
+                            return TaskPermissionMode.migrating(blocked) == wireMode
+                        }
+                })
             else { continue }
             return Selection(value: value, effective: candidate, isExact: candidate == mode)
         }
@@ -40,17 +46,19 @@ public struct TaskPermissionMapping: Hashable, Sendable {
     }
 
     /// The requested mode is retained when two Native modes use the same provider control.
-    public func presenting(_ option: ConfigOption, remembered: String? = nil) -> ConfigOption {
+    public func presenting(
+        _ option: ConfigOption, remembered: String? = nil, forbidden: Set<String> = []
+    ) -> ConfigOption {
         guard option.category == "mode", case .select(let current, let offered) = option.kind else { return option }
         if Set(TaskPermissionMode.allCases.map(\.rawValue)).isSubset(of: Set(offered.map(\.value))) { return option }
         let wire = offered.map(\.value)
         let retained = remembered.flatMap(TaskPermissionMode.init(rawValue:)).flatMap { mode in
-            selection(mode, offered: wire)?.value == current ? mode : nil
+            selection(mode, offered: wire, forbidden: forbidden)?.value == current ? mode : nil
         }
         var shown = option
         let mode = retained ?? mode(for: current) ?? TaskPermissionMode.migrating(current) ?? .askFirst
         let choices = TaskPermissionMode.allCases.map { mode in
-            let selected = selection(mode, offered: wire)
+            let selected = selection(mode, offered: wire, forbidden: forbidden)
             let note =
                 selected.map {
                     $0.isExact ? nil : "Uses \($0.effective.title) with this agent."
@@ -64,7 +72,7 @@ public struct TaskPermissionMapping: Hashable, Sendable {
         let restrictions = offered.filter { $0.value == "plan" || $0.value == "read-only" }
         shown.permissionMappings = Dictionary(
             uniqueKeysWithValues: TaskPermissionMode.allCases.compactMap { mode in
-                selection(mode, offered: wire).map { (mode.rawValue, $0.value) }
+                selection(mode, offered: wire, forbidden: forbidden).map { (mode.rawValue, $0.value) }
             })
         shown.name = "Permissions"
         shown.kind = .select(

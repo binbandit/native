@@ -47,6 +47,23 @@ import Testing
                 == .init(value: "acceptEdits", effective: .acceptEdits, isExact: false))
     }
 
+    @Test func managedEditCapUsesReadOnlyInsteadOfWorkspaceWrites() throws {
+        let forbidden: Set<String> = ["accept-edits", "auto", "full-access"]
+        let mapping = CodexConfigOverrides.permissionMapping
+        #expect(
+            mapping.selection(.askFirst, offered: ["read-only", "workspace-write"], forbidden: forbidden)?.value
+                == "read-only")
+        let raw = try JSONDecoder().decode(
+            ConfigOption.self,
+            from: Data(
+                #"{"id":"mode","name":"Mode","category":"mode","type":"select","currentValue":"read-only","options":[{"value":"read-only","name":"Read only"},{"value":"workspace-write","name":"Workspace"}]}"#
+                    .utf8))
+        let shown = mapping.presenting(raw, remembered: "ask-first", forbidden: forbidden)
+        #expect(shown.permissionMappings?["ask-first"] == "read-only")
+        guard case .select(let current, _) = shown.kind else { Issue.record("Missing mode"); return }
+        #expect(current == "ask-first")
+    }
+
     @Test func policyChecksNativeAndProviderValuesWithoutChoosingLooserMode() {
         let mapping = ClaudeCodeSessionSettings.permissionMapping
         let offered = ["default", "acceptEdits", "auto", "bypassPermissions"]
