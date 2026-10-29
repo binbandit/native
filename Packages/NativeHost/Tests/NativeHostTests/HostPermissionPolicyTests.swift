@@ -19,12 +19,13 @@ struct HostPermissionPolicyTests {
     }
 
     @Test func hostChecksSettingsAndRefusesUnreportedPermissions() throws {
+        let previous = try PolicyRig(.unrestricted)
+        let id = try previous.seedSession()
         let rig = try PolicyRig(
             HostPolicy(
-                mode: .ordinary, capabilities: Set(HostCapability.allCases), forbiddenPermissionModes: ["full-access"]))
-        let id = try rig.seedSession()
-        rig.core.start()
-        defer { rig.stop() }
+                mode: .ordinary, capabilities: Set(HostCapability.allCases), forbiddenPermissionModes: ["full-access"]),
+            root: previous.root)
+        defer { rig.stop(); previous.stop() }
         let session = try #require(rig.core.sessions[id])
         #expect(throws: HostPolicyDenial.self) {
             try rig.core.requirePermission(in: session, value: "agent-full-access", intent: "ask-first")
@@ -37,10 +38,11 @@ struct HostPermissionPolicyTests {
     }
 
     @Test func tighteningHostCapPausesRecoveryAndQueues() throws {
-        let rig = try PolicyRig(.unrestricted)
-        let id = try rig.seedInterruptedTurn()
+        let previous = try PolicyRig(.unrestricted)
+        let id = try previous.seedInterruptedTurn()
+        let rig = try PolicyRig(.unrestricted, root: previous.root)
         rig.core.start()
-        defer { rig.stop() }
+        defer { rig.stop(); previous.stop() }
         rig.core.apply(
             HostPolicy(
                 mode: .ordinary, capabilities: Set(HostCapability.allCases), forbiddenPermissionModes: ["full-access"]))
