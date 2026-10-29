@@ -42,9 +42,12 @@ struct FileWatchingTests {
         #expect(sent.values.last == ["quiet"])
 
         coalescer.add(FileWatchBatch(paths: ["late"]))
-        coalescer.stop()
+        let stoppedFlush = try #require(coalescer.stop())
         clock.advance(by: latency + .milliseconds(100))
-        #expect(sent.values.count == 4, "nothing goes out once stopped")
+        await stoppedFlush.value
+        withExtendedLifetime(coalescer) {
+            #expect(sent.values.count == 4, "nothing goes out once stopped")
+        }
     }
 
     @Test(

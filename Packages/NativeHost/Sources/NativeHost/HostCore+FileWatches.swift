@@ -140,11 +140,15 @@ final class FileChangeCoalescer<C: Clock>: Sendable where C.Duration == Duration
         }
     }
 
-    func stop() {
+    /// Returns pending work so a caller that needs quiescence can wait for its cancellation.
+    @discardableResult
+    func stop() -> Task<Void, Never>? {
         state.withLock { state in
+            let flush = state.flush
             state.isStopped = true
-            state.flush?.cancel()
+            flush?.cancel()
             state.flush = nil
+            return flush
         }
     }
 
