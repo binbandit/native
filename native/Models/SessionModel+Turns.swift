@@ -208,9 +208,8 @@ extension SessionModel {
     }
 
     var sendNowRoute: SendNowRoute? {
-        guard supportsQueuedSteering else { return nil }
-        return switch phase {
-        case .prompting where !isStopping: .steer
+        switch phase {
+        case .prompting where supportsQueuedSteering && !isStopping: .steer
         case .idle where !isRunningHiddenCommand && !isDeliveringSteer && turnHold == nil: .send
         case .idle, .prompting, .loading, .disconnected: nil
         }

@@ -33,8 +33,30 @@ private struct SteeringQueueRegression {
             exit(1)
         }
         unsupported.phase = .idle
+        unsupported.lastStopReason = .cancelled
+        unsupported.turnDidEnd()
+        guard unsupported.queue.isPaused, unsupported.draft.isEmpty, unsupported.sendNowRoute == .send else {
+            print("FAIL: Stop leaves an unsupported agent's queued message without idle Send Now")
+            exit(1)
+        }
+        unsupported.isDeliveringSteer = true
         guard unsupported.sendNowRoute == nil else {
-            print("FAIL: an unsupported agent exposes Send Now after the turn")
+            print("FAIL: idle Send Now bypassed an outstanding steering acknowledgement")
+            exit(1)
+        }
+        unsupported.isDeliveringSteer = false
+        await unsupported.sendQueuedNow(queued.id)
+        guard unsupported.queuedPrompts.isEmpty, !unsupported.queue.isPaused,
+            unsupported.editingQueuedPrompt == nil, unsupported.draft.isEmpty,
+            unsupported.state.items.contains(where: {
+                if case .message(let message) = $0 {
+                    message.role == .user && message.text == queued.text
+                } else {
+                    false
+                }
+            })
+        else {
+            print("FAIL: idle Send Now didn't deliver the stopped queue without a new draft")
             exit(1)
         }
         let boundary = SessionModel(
