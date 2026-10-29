@@ -43,7 +43,8 @@ extension AppModel {
     /// defaults and last choices, then the starting mode, never one policy forbids.
     func composeStartingOptions(for agent: AgentDefinition.ID, in project: Project?) -> [ConfigOption] {
         var options = AgentSessionDefaults.offeredOptions(for: agent).map {
-            plugins.permissionMapping(for: agent).presenting($0)
+            plugins.permissionMapping(for: agent).presenting(
+                $0, forbidden: plugins.policyCenter.policy.forbiddenPermissionModes)
         }
         let permission = TaskPermissionDefaults.value(project: project?.id.uuidString)
         if let index = options.firstIndex(where: { $0.category == "mode" }),

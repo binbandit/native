@@ -8,6 +8,7 @@ extension SessionModel {
     /// recovery journal retain the provider's real controls, so old clients can still reopen them.
     func permissionOptions(_ reported: [ConfigOption]) -> [ConfigOption] {
         let mapping = services.plugins.permissionMapping(for: agent.id)
+        let forbidden = services.plugins.policyCenter.policy.forbiddenPermissionModes
         let remembered = services.titles.configChoices(for: titleKey)
         return reported.map { option in
             guard option.category == "mode" else { return option }
@@ -16,13 +17,13 @@ extension SessionModel {
             if let old, TaskPermissionMode(rawValue: old) == nil, old != "plan", old != "read-only",
                 let mode = TaskPermissionMode.migrating(old)
             {
-                let shown = mapping.presenting(option, remembered: mode.rawValue)
+                let shown = mapping.presenting(option, remembered: mode.rawValue, forbidden: forbidden)
                 services.titles.updateConfigChoices(for: titleKey) { $0.choose(shown, value: mode.rawValue) }
             }
             return mapping.presenting(
                 option,
                 remembered: services.titles.configChoices(for: titleKey).choices[option.id]?.value
-                    ?? hostSummary?.permissionMode)
+                    ?? hostSummary?.permissionMode, forbidden: forbidden)
         }
     }
 
