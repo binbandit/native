@@ -1,0 +1,8 @@
+{
+  "status": 0,
+  "buildSeconds": 0.116,
+  "label": "node-warm",
+  "taskToBuildSeconds": 1.415,
+  "startUTC": "2026-10-29T13:10:02.697453+00:00",
+  "worktree": "gtul5"
+}

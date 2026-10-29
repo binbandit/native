@@ -1,0 +1,64 @@
+iPad check attempt stopped after about 31 minutes of dependency expansion. Captured diagnostics from unchanged dependency files; this is not a passing check.
+
+native/Plugins/Plugin.swift:346:52: error: cannot find type 'AgentCommand' in scope
+native/Host/DurableHost+Updates.swift:23:63: error: missing argument label 'from:' in call
+native/Host/DurableHost+Updates.swift:23:63: error: argument type 'UpdateSnapshot' does not conform to expected type 'Decoder'
+native/MCP/Model/MCPLibrary.swift:65:37: error: cannot find 'LocalCommandRunner' in scope
+native/MCP/Model/MCPLibrary.swift:66:39: error: cannot find 'LocalStdioLauncher' in scope
+native/Plugins/Plugin.swift:354:16: error: cannot find 'AgentCommand' in scope
+native/Terminal/Settings/TerminalSettingsPreview.swift:30:38: error: type 'DSTypography' has no member 'nsFont'
+native/Terminal/Settings/TerminalShellRow.swift:67:51: error: type 'GhosttyConfigLocations' has no member 'current'
+native/Terminal/Settings/TerminalGhosttySection.swift:120:38: error: type 'GhosttyConfigLocations' has no member 'ghosttyThemes'
+native/Terminal/Settings/TerminalGhosttySection.swift:121:45: error: type 'GhosttyConfigLocations' has no member 'current'
+native/Terminal/Model/TerminalStore.swift:137:48: error: type 'GhosttyConfigLocations' has no member 'current'
+native/Terminal/Model/TerminalStore.swift:201:77: error: type 'GhosttyConfigLocations' has no member 'current'
+native/Terminal/Model/TerminalStore.swift:222:51: error: type 'GhosttyConfigLocations' has no member 'current'
+native/Terminal/Views/TerminalPanel.swift:113:22: error: value of type 'some View' has no member 'pointerStyle'
+native/Usage/Adapters/UsageComposerNotices.swift:21:37: error: missing arguments for parameters 'agent', 'limits' in call
+native/Usage/Adapters/UsageComposerNotices.swift:21:47: error: cannot convert value of type 'SessionModel' to expected argument type 'SessionID'
+native/Models/ShellEnvironment.swift:13:36: error: cannot find 'LoginShell' in scope
+native/Models/AppModel+HostSessions.swift:132:34: error: missing argument label 'from:' in call
+native/Models/AppModel+HostSessions.swift:132:34: error: argument type 'AgentDefinition' does not conform to expected type 'Decoder'
+native/Models/AgentRuntime.swift:44:26: error: cannot find type 'AgentProcess' in scope
+macro expansion @ObservationTracked:2:24: error: cannot find type 'AgentProcess' in scope
+native/Models/AgentRuntime.swift:253:48: error: cannot find type 'AgentCommand' in scope
+native/Models/AgentRuntime.swift:135:31: error: cannot find 'AgentProcess' in scope
+native/Wiring/AppSettingsPanes.swift:12:9: error: the compiler is unable to type-check this expression in reasonable time; try breaking up the expression into distinct sub-expressions
+native/GitHub/Accounts/GitHubAccountAvatar.swift:11:43: error: extraneous argument label 'decoding:' in call
+native/GitHub/Accounts/GitHubAccountAvatar.swift:11:54: error: cannot convert value of type 'Data' to expected argument type 'ImageResource'
+native/Expeditions/Integration/ExpeditionCenter.swift:71:37: error: extra arguments at positions #1, #2 in call
+native/Expeditions/Integration/ExpeditionCenter.swift:71:38: error: missing argument for parameter 'from' in call
+native/Expeditions/Integration/ExpeditionCenter.swift:71:69: error: 'nil' requires a contextual type
+native/Expeditions/Views/View+ExpeditionSheet.swift:17:13: error: cannot find 'NewExpeditionSheet' in scope
+native/Orchestration/OrchestrationScriptTool.swift:23:17: error: cannot find type 'ScriptRunner' in scope
+native/Orchestration/OrchestrationScriptTool.swift:85:13: error: cannot infer type of closure parameter 'caller' without a type annotation
+native/Orchestration/OrchestrationScriptTool.swift:107:26: error: cannot infer type of closure parameter 'caller' without a type annotation
+native/Orchestration/OrchestrationScriptTool.swift:110:25: error: cannot infer contextual base in reference to member 'init'
+native/Commands/CommandContext.swift:38:19: error: cannot convert value of type 'KeyPath<Root, Value>' to expected argument type 'Value.Type'
+native/Commands/CommandContext.swift:38:6: error: generic parameter 'Value' could not be inferred
+native/Commands/CommandContext.swift:38:19: error: cannot infer key path type from context; consider explicitly specifying a root type
+native/Automation/Integration/AutomationCenter.swift:130:58: error: extra arguments at positions #1, #2 in call
+native/Automation/Integration/AutomationCenter.swift:130:59: error: missing argument for parameter 'from' in call
+native/Automation/Integration/AutomationCenter.swift:130:90: error: 'nil' requires a contextual type
+native/SessionTools/Views/SessionToolsScreen.swift:166:16: error: the compiler is unable to type-check this expression in reasonable time; try breaking up the expression into distinct sub-expressions
+native/Views/Composer/ComposerView+Input.swift:26:34: error: extra argument 'session' in call
+native/Views/Composer/ComposerView+Input.swift:26:25: error: missing argument for parameter 'source' in call
+native/Views/Composer/ComposerView+Controls.swift:73:47: error: extra argument 'session' in call
+native/Views/Composer/ComposerView+Controls.swift:73:38: error: missing argument for parameter 'source' in call
+native/Views/Composer/ComposerView+Keyboard.swift:10:25: error: 'ComposerKeyMap.Key' cannot be constructed because it has no accessible initializers
+native/Views/Composer/ComposerView+Keyboard.swift:25:25: error: initializer 'init(_:)' requires that 'KeyPress' conform to 'Sequence'
+native/Views/Composer/ComposerView+Keyboard.swift:97:18: error: 'DraftAttachmentKeys.Key' cannot be constructed because it has no accessible initializers
+native/Views/Transcript/Styles/Standard/StandardTranscriptLineView.swift:96:37: error: incorrect argument labels in call (have 'session:stop:isLatestTurn:', expected 'stop:agent:agentName:session:isLatestTurn:limits:')
+native/Views/Transcript/Styles/Standard/StandardTranscriptLineView.swift:96:37: error: missing arguments for parameters 'agent', 'agentName', 'limits' in call
+native/Views/Transcript/Styles/Standard/StandardTranscriptLineView.swift:96:58: error: cannot convert value of type 'SessionModel' to expected argument type 'SessionID'
+native/Views/Transcript/Styles/Bubbles/BubbleTranscriptStyle.swift:136:41: error: incorrect argument labels in call (have 'session:stop:isLatestTurn:', expected 'stop:agent:agentName:session:isLatestTurn:limits:')
+native/Views/Transcript/Styles/Bubbles/BubbleTranscriptStyle.swift:136:41: error: missing arguments for parameters 'agent', 'agentName', 'limits' in call
+native/Views/Transcript/Styles/Bubbles/BubbleTranscriptStyle.swift:137:41: error: cannot convert value of type 'SessionModel' to expected argument type 'SessionID'
+native/Views/Transcript/ToolPresentation.swift:155:33: error: missing argument label 'into:' in call
+native/Views/Transcript/ToolCallDetails.swift:49:38: error: cannot convert value of type 'Range<Array<ToolCallContent>.Index>' (aka 'Range<Int>') to expected argument type 'Binding<C>'
+native/Views/Transcript/ToolCallDetails.swift:49:17: error: generic parameter 'C' could not be inferred
+native/Views/Transcript/ToolCallDetails.swift:50:60: error: cannot convert value of type 'Binding<C.Element>' to expected argument type 'Int'
+native/Views/Transcript/ToolCallDetails.swift:217:28: error: extra argument 'diff' in call
+native/Views/Transcript/ToolCallDetails.swift:217:21: error: missing arguments for parameters 'path', 'oldText', 'newText' in call
+native/Views/SidebarView.swift:91:27: error: the compiler is unable to type-check this expression in reasonable time; try breaking up the expression into distinct sub-expressions
+native/Views/RootView.swift:161:14: error: value of type 'some View' has no member 'agentPicker'

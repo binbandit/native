@@ -1,0 +1,28 @@
+{
+  "head": "ecd4379d4725a960fb1b5bcf2236f0c041efce4f",
+  "base": "5fd6e789e38ad8dd1c32f0c85f254fccc1b332de",
+  "trackedChanges": "",
+  "fixtures": {
+    "node": {
+      "commit": "2ec003ba8faa447e07b5a570db47c630b81a4f49",
+      "sourcePriming": {
+        "status": 0,
+        "buildSeconds": 0.936
+      }
+    },
+    "swift": {
+      "commit": "9781d42cd40a5d73392fa388d57346334fba5bac",
+      "sourcePriming": {
+        "status": 0,
+        "buildSeconds": 2.927
+      }
+    }
+  },
+  "captureRevision": "9c422e343701ef571b0b70947dcffa85f763550d",
+  "sourceTrees": {
+    "native": "84a7b2c21e17add37f88d8f70d2056c95218a85e",
+    "Packages": "acb122d23eda3462e3c8b3f38ee16b8783139e49"
+  },
+  "captureNote": "Screenshots and timings precede a documentation/dev-tool-only main rebase. Native and Packages trees are identical at captureRevision and head.",
+  "debugDylibSHA256": "b31f0950a8abe2a049b7df486a07f65f0c835c9ba235c313c745f4e941e05510"
+}
