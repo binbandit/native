@@ -19,6 +19,13 @@ extension View {
     func onAttachmentPaste(isEnabled: Bool, perform: @escaping (IncomingAttachments) -> Void) -> some View {
         #if canImport(AppKit)
         background(AttachmentPasteMonitor(isEnabled: isEnabled, perform: perform))
+            .onPasteCommand(
+                of: [.fileURL, .image],
+                validator: { _ -> IncomingAttachments? in
+                    guard isEnabled else { return nil }
+                    return AttachmentPasteMonitor.Coordinator.attachments(
+                        on: AttachmentPasteMonitor.Coordinator.pasteboard)
+                }, perform: perform)
         #else
         background(PlatformAttachmentPasteIOS(isEnabled: isEnabled, perform: perform))
         #endif
@@ -112,7 +119,7 @@ private struct AttachmentPasteMonitor: NSViewRepresentable {
 
         /// The general pasteboard; a development build can read a named one instead
         /// (`-debugAttachmentPasteboard <name>`), so a test never touches the user's clipboard.
-        private static var pasteboard: NSPasteboard {
+        fileprivate static var pasteboard: NSPasteboard {
             #if DEBUG
             if let name = UserDefaults.standard.string(forKey: "debugAttachmentPasteboard") {
                 return NSPasteboard(name: NSPasteboard.Name(name))
