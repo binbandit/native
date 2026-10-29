@@ -95,8 +95,9 @@ private struct SteeringQueueRegression {
         session.draft = "draft"
         await session.send()
         guard session.draft == "draft", session.phase == .idle else { exit(1) }
+        session.queue.pause()
         let delivery = try await session.submit("direct", .queue)
-        guard delivery == .queued, session.phase == .idle,
+        guard delivery == .queued, session.phase == .idle, !session.queue.isPaused,
             session.queue.items.map(\.text) == ["selected", "direct"]
         else { exit(1) }
         do {

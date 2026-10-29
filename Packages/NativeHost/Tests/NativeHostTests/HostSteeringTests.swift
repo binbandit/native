@@ -4,6 +4,8 @@ import NativeHostClient
 import NativeHostProtocol
 import Testing
 
+@testable import NativeHost
+
 @Suite("Tool-safe steering", .serialized, .timeLimit(.minutes(1)))
 struct HostSteeringTests {
     @Test func holdsSteerUntilToolFinishes() async throws {
@@ -276,6 +278,32 @@ struct HostSteeringTests {
                 _ in harness.received.contains("steer\toriginal correction")
             }
         }
+        await recorder.stop()
+    }
+
+    @Test @HostActor
+    func idleSubmissionDuringAcknowledgementResumesPausedInput() async throws {
+        let rig = try HostStopCommandRig()
+        defer { rig.cleanup() }
+        let recorder = try await rig.connect()
+        let summary = try await recorder.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: rig.harness.root.path, attach: true))
+        let session = try #require(rig.core.sessions[summary.id])
+        session.record.isQueuePaused = true
+        session.steeringInFlight = UUID()
+        #expect(
+            try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "resume after ack")) == .queued)
+        #expect(!session.record.isQueuePaused)
+        #expect(session.phase == .idle && session.turn == nil)
+        #expect(session.queue.map(\.prompt.text) == ["resume after ack"])
+        guard !session.record.isQueuePaused else {
+            await recorder.stop()
+            return
+        }
+        session.steeringInFlight = nil
+        rig.core.continueAfterTurn(session)
+        try await recorder.wait("the resumed input") { await $0.turnsEnded(session.id).count == 1 }
+        #expect(await recorder.agentText(session.id).contains("echo: resume after ack"))
         await recorder.stop()
     }
 
