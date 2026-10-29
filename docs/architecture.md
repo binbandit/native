@@ -756,9 +756,11 @@ reported turn edits as a fallback for committed files; unavailable or binary cou
 
 ### Opening folders in All in view
 
-`SidebarFolders` owns the fixed Open Folder action, device-local successful recents, batch results
-and addition Undo. `project.open` remains the Command-O entry point. `AppModel+SidebarFolders`
-resolves a whole batch before committing, revalidates live folder policy, delegates identity to
+`SidebarFolders` owns folder admission, device-local successful recents, batch results
+and addition Undo. The Projects header's plus opens the chooser; the footer holds only account
+controls and folder feedback. Compose, Home and Quick Entry share a project picker ending in
+Open Folder…. File retains Open Recent, and `project.open` remains the Command-O entry point.
+`AppModel+SidebarFolders` resolves a whole batch before committing, revalidates live folder policy, delegates identity to
 `Projects` and opens the first new folder's home without creating a task. Existing sessions retain
 their drafts. `PlatformFolderPicker`, `PlatformFolderAccess` and `PlatformFolderDrop` adapt system
 selection, security-scoped access and external file URLs; private sidebar drags still reorder.

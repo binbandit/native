@@ -453,13 +453,14 @@ a paired host.
 ## Opening folders (All in view)
 
 File > Open Folder… (⌘O, `project.open`) opens the system folder-only chooser directly,
-including before the first project and with the sidebar hidden. The permanent Open Folder…
-action above the account does the same. Its separate Recent Folders disclosure and File >
-Open Recent list up to six successfully opened folders on this device. Arrow keys move through
-recents, Return opens one, and Escape returns to the disclosure. Tab reaches Open Folder,
-Recent Folders, then the single Settings button. Return or Space activates each control.
+including before the first project and with the sidebar hidden. The plus in the Projects
+header does the same, stays visible on touch, and is reachable with Tab. Return or Space
+opens the chooser. Compose, Home's start field and Quick Entry end their project pickers with
+Open Folder…. The no-project Home keeps one primary Open Folder… action. File > Open Recent
+lists up to six successfully opened folders on this device. Tab also reaches the single
+Settings button in the footer; Return or Space opens Settings.
 
-Drop one or several folders anywhere in the sidebar list to add them without starting a task.
+Drop one or several folders anywhere on the sidebar to add them without starting a task.
 The persistent addition receipt offers Undo; ⌘Z undoes that addition when it is the applicable
 window action. Text editing keeps its normal undo precedence. Choosing an already open folder
 focuses its home without adding another project or another undo action.
