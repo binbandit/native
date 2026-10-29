@@ -98,7 +98,7 @@ struct AutonomyLevelPicker: View {
     DSPreviewPair {
         if let autonomy = settings.autonomy, let suspended = plan.autonomy {
             VStack(alignment: .leading, spacing: DS.Space.lg) {
-                // Every level, least to most autonomous; the last skips every check.
+                // Every shared mode, least to most autonomous.
                 ForEach(settings.autonomyLevels.indices, id: \.self) { level in
                     AutonomyPill(
                         setting: autonomy, levels: settings.autonomyLevels, level: level, isSuspended: false,

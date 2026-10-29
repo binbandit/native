@@ -87,6 +87,9 @@ import Testing
         #expect(current == "read-only")
         #expect(choices.filter { TaskPermissionMode(rawValue: $0.value) != nil }.count == 4)
         #expect(choices.contains { $0.value == "read-only" })
+        let retained = TaskPermissionMapping.standard.presenting(option, remembered: "ask-first")
+        guard case .select(let canonical, _) = retained.kind else { Issue.record("Missing select"); return }
+        #expect(canonical == "ask-first")
     }
 
     @Test func migratesAllLegacyLevels() {
