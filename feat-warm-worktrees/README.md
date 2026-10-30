@@ -34,7 +34,7 @@ Sources: [Node fixture](node-fixture.tar.gz), [SwiftPM fixture](swift-fixture.ta
 | Invalid folders and env opt-in | [light](settings-invalid-light.png), [dark](settings-invalid-dark.png) | [light](mock-invalid-light.png), [dark](mock-invalid-dark.png) |
 | Setup editor | [light](settings-editor-light.png), [dark](settings-editor-dark.png) | [light](mock-editor-light.png), [dark](mock-editor-dark.png) |
 
-Task preparation: [live light screenshot](task-ready-light.png), [live dark screenshot](task-ready-dark.png), compared with [ready light preview](notice-ready-light.png) and [ready dark preview](notice-ready-dark.png). The preview isolates the banner and the app screenshot includes its task context.
+Task preparation: [live light screenshot](task-ready-light.png), [live dark screenshot](task-ready-dark.png), compared with [ready light preview](notice-ready-light.png) and [ready dark preview](notice-ready-dark.png). The preview isolates the banner and the app screenshot includes its task context. The task screenshots crop the window title bar to omit generated local paths.
 
 Additional rendered preview states, both schemes: [ready light](notice-ready-light.png), [ready dark](notice-ready-dark.png), [unsupported light](notice-unsupported-light.png), [unsupported dark](notice-unsupported-dark.png), [skipped light](notice-skipped-light.png), [skipped dark](notice-skipped-dark.png), [copy failure light](notice-copy-failure-light.png), [copy failure dark](notice-copy-failure-dark.png). These are fixture renders, not live off-APFS or failure reproduction. The no-copy fallback is forced in an Exec test; no real non-APFS volume was mounted.
 
@@ -42,7 +42,7 @@ The folder editor was exercised with a trailing comma followed by another entry,
 
 ## Validation and limits
 
-Package checks: `nice -n 10 swift test -j 4 --filter WorktreeCloneTests` (7 passed) and `nice -n 10 swift test -j 4 --filter WarmWorktreeTests` (3 passed). Isolated Debug build, repository warning check, setup integration harness and strict formatting passed. See the PR for the final configuration checks.
+Package checks: `nice -n 10 swift test -j 4 --filter WorktreeCloneTests` (7 passed) and `nice -n 10 swift test -j 4 --filter WarmWorktreeTests` (3 passed). Isolated Debug build, repository warning check, setup integration harness and strict formatting passed. Release and Nightly compiled through the build-slot wrapper. Their installed sizes were 119.0 MB and 119.1 MB, and download sizes were 48.8 MB and 48.9 MB, within the existing budgets. See the PR for the final checks.
 
 The iPad typecheck attempt expanded into unrelated app dependencies and reported existing plugin, host, MCP and terminal errors. It was stopped after about 31 minutes; it is not a passing check. None of the captured diagnostics names a changed warm-worktree file. [Captured diagnostics](ios-attempt-diagnostics.txt). The feature defaults off in Labs. No real non-APFS volume or paired iPad host was available for end-to-end cloning. Absolute interpreter links cause Python environment caches to be skipped; use setup to recreate them.
 
