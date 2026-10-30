@@ -65,10 +65,14 @@ struct CodeModeProgram: Equatable {
                     ?? Self.string(named: "command", in: arguments)
                 {
                     steps.append(.command(command))
+                } else {
+                    steps.append(.other(tool: name))
                 }
             case "apply_patch":
                 if let patch = Self.string(named: "input", in: arguments) ?? Self.firstString(in: arguments) {
                     steps.append(.patch(Patch(patch)))
+                } else {
+                    steps.append(.other(tool: name))
                 }
             case "write_stdin":
                 steps.append(.input(Self.string(named: "chars", in: arguments) ?? ""))
@@ -167,9 +171,16 @@ struct CodeModeProgram: Equatable {
 }
 
 extension ToolCallState {
+    /// Only output-free, successful polls can disappear. Results belong to this call's ID,
+    /// so hiding one with content would lose the only way to inspect that output.
+    public var isSuppressiblePolling: Bool {
+        isPolling && status == .completed && permission == nil && content.isEmpty
+            && rawOutput == nil && terminalOutput == nil && (exitCode ?? 0) == 0
+    }
+
     /// A call that only waits on another: Codex polling a running command for output (an empty
     /// `write_stdin`, alone or in a code mode program) or sleeping between polls. Its time belongs
-    /// to the step it waits on, so it never shows as a row of its own.
+    /// to the step it waits on; result-bearing polls still need their own accessible row.
     public var isPolling: Bool {
         guard mcpTool == nil else { return false }
         if let program = CodeModeProgram(self) { return program.isPolling }

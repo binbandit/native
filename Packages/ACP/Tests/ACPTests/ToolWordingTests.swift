@@ -219,6 +219,50 @@ struct ToolWordingTests {
         #expect(two.sentence == "Ran swift build and 1 more step")
     }
 
+    @Test func dynamicCodeModeArgumentsKeepGenericWording() {
+        for program in [
+            "const cmd = 'swift test'; text(await tools.exec_command({cmd}));",
+            "const patch = buildPatch(); text(await tools.apply_patch(patch));",
+            "await tools.exec_command({cmd}); await tools.write_stdin({session_id:11732,chars: \"\"});",
+        ] {
+            let call = CodexExecWire.call("dynamic", program)
+            #expect(!call.isPolling)
+            #expect(call.wording.verb != .wait)
+        }
+    }
+
+    @Test func explicitSearchPatternsArePreserved() {
+        #expect(ToolCommandIntent("rg -n -e TODO Sources") == .search(pattern: "TODO", path: "Sources"))
+        #expect(ToolCommandIntent("grep --regexp=TODO Sources") == .search(pattern: "TODO", path: "Sources"))
+        #expect(ToolCommandIntent("rg -e TODO -e FIXME Sources") == nil)
+    }
+
+    @Test func pollingResultsRemainAccessible() {
+        let command = CodexExecWire.call("run", #"await tools.exec_command({cmd:"swift test"})"#)
+        let empty = CodexExecWire.call("poll", #"await tools.write_stdin({session_id:11732,chars:""})"#)
+        var result = empty
+        result.content = [.content(.text("Process exited with code 1\nFAILED: testExample"))]
+        var failed = empty
+        failed.status = .failed
+        var raw = empty
+        raw.rawOutput = .object(["exit_code": .number(1)])
+        var terminal = empty
+        terminal.terminalOutput = "FAILED: testExample"
+        for poll in [result, failed, raw, terminal] {
+            for grouping in [true, false] {
+                let rows = TranscriptRow.rows(from: [command, poll].map(TranscriptItem.toolCall), grouping: grouping)
+                #expect(rows.contains { $0.id == "tool-poll" && !$0.isPolling })
+            }
+            let other = CodexExecWire.call("other", #"await tools.exec_command({cmd:"swift build"})"#)
+            let rows = TranscriptRow.rows(from: [command, poll, other].map(TranscriptItem.toolCall))
+            guard case .toolGroup(let group)? = rows.first else {
+                Issue.record("Expected one group")
+                continue
+            }
+            #expect(group.calls.contains { $0.id == poll.id })
+        }
+    }
+
     @Test func pollingFoldsIntoTheStepItWaitsOn() {
         let poll = CodexExecWire.call(
             "poll", #"text(await tools.write_stdin({session_id:11732,chars:"",yield_time_ms:30000}))"#)
@@ -231,9 +275,9 @@ struct ToolWordingTests {
 
         let command = CodexExecWire.call("run", #"text(await tools.exec_command({cmd:"swift test"}))"#)
         let alone = TranscriptRow.rows(from: [command, poll, sleep].map(TranscriptItem.toolCall))
-        // One step and its waiting are no group; the waiting is never a row anyone sees.
+        // One step and its waiting are no group; a poll with output remains accessible.
         #expect(alone.count == 3)
-        #expect(alone.filter(\.isPolling).count == 2)
+        #expect(alone.filter(\.isPolling).count == 1)
         let edit = CodexExecWire.call(
             "edit", #"await tools.apply_patch("*** Begin Patch\n*** Add File: notes.txt\n+done\n*** End Patch")"#)
         let rows = TranscriptRow.rows(from: [command, poll, sleep, edit].map(TranscriptItem.toolCall))
@@ -241,7 +285,7 @@ struct ToolWordingTests {
             Issue.record("Expected one group")
             return
         }
-        #expect(group.calls.map(\.id) == ["run", "edit"])
+        #expect(group.calls.map(\.id) == ["run", "sleep", "edit"])
         #expect(group.summary == "Edited 1 file and ran 1 command")
     }
 

@@ -49,10 +49,42 @@ enum ToolCommandIntent: Equatable {
         case "rg" where arguments.contains("--files"):
             self = .list(path: operands.first)
         case "rg", "grep":
-            let valueFlags: Set<String> = ["-g", "--glob", "-t", "--type", "-A", "-B", "-C", "-m", "--max-count", "-e"]
-            let values = Self.operands(arguments, valueFlags: valueFlags)
-            guard let pattern = values.first, values.count <= 2 else { return nil }
-            self = .search(pattern: pattern, path: values.dropFirst().first)
+            let valueFlags: Set<String> = ["-g", "--glob", "-t", "--type", "-A", "-B", "-C", "-m", "--max-count"]
+            var patterns: [String] = []
+            var remaining: [String] = []
+            var index = 0
+            while index < arguments.count {
+                let argument = arguments[index]
+                if argument == "--" {
+                    remaining += arguments[index...]
+                    break
+                } else if valueFlags.contains(argument) {
+                    guard index + 1 < arguments.count else { return nil }
+                    remaining += arguments[index...index + 1]
+                    index += 2
+                    continue
+                } else if argument == "-e" || argument == "--regexp" {
+                    index += 1
+                    guard index < arguments.count else { return nil }
+                    patterns.append(arguments[index])
+                } else if argument.hasPrefix("--regexp=") {
+                    patterns.append(String(argument.dropFirst("--regexp=".count)))
+                } else if argument.hasPrefix("-e"), argument.count > 2 {
+                    patterns.append(String(argument.dropFirst(2)))
+                } else {
+                    remaining.append(argument)
+                }
+                index += 1
+            }
+            let values = Self.operands(remaining, valueFlags: valueFlags)
+            if patterns.isEmpty {
+                guard let pattern = values.first, values.count <= 2 else { return nil }
+                self = .search(pattern: pattern, path: values.dropFirst().first)
+            } else {
+                // Multiple expressions cannot be represented faithfully by a single query.
+                guard patterns.count == 1, values.count <= 1 else { return nil }
+                self = .search(pattern: patterns[0], path: values.first)
+            }
         case "ls":
             guard operands.count <= 1 else { return nil }
             self = .list(path: operands.first)

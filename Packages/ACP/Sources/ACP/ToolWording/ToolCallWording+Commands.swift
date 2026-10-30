@@ -51,7 +51,9 @@ extension ToolCallWording {
     /// more there are.
     static func codeMode(_ program: CodeModeProgram, call: ToolCallState) -> Self {
         let steps = program.steps.filter { !$0.isPolling }
-        guard let first = steps.first else { return waiting(call) }
+        guard let first = steps.first else {
+            return program.isPolling ? waiting(call) : Self(verb: .run, object: "a command", category: .command)
+        }
         var wording: Self
         switch first {
         case .command(let command):

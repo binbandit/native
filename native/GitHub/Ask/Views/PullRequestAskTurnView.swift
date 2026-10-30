@@ -63,7 +63,7 @@ struct PullRequestAskTurnView: View {
         case .toolGroup(let group):
             ToolGroupView(group: group, isLive: turn.isRunning && group.isRunning)
         // Polling only waits on the call before it, whose row stands for both.
-        case .item(.toolCall(let call)) where call.isPolling:
+        case .item(.toolCall(let call)) where call.isSuppressiblePolling:
             EmptyView()
         case .item(.toolCall(let call)):
             ToolCallView(call: call) { option in choose(option, for: call) }

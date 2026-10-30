@@ -28,9 +28,9 @@ public enum TranscriptRow: Identifiable, Hashable, Sendable {
         }
     }
 
-    /// A call that only polls another, which no transcript shows as a row of its own.
+    /// An output-free poll that can safely be omitted from the transcript.
     public var isPolling: Bool {
-        if case .item(.toolCall(let call)) = self { call.isPolling } else { false }
+        if case .item(.toolCall(let call)) = self { call.isSuppressiblePolling } else { false }
     }
 
     /// Whether the row is tool work, which reads as one dense block.
@@ -93,10 +93,10 @@ public struct ToolWorkGroup: Identifiable, Hashable, Sendable {
         "group-\(items.first?.id ?? "")"
     }
 
-    /// The group's calls, without the polling that only waits on them (`ToolCallState.isPolling`).
+    /// The group's calls, keeping polling results accessible alongside their originating work.
     public var calls: [ToolCallState] {
         items.compactMap { item in
-            if case .toolCall(let call) = item, !call.isPolling { call } else { nil }
+            if case .toolCall(let call) = item, !call.isSuppressiblePolling { call } else { nil }
         }
     }
 
