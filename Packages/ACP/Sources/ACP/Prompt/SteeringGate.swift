@@ -46,6 +46,11 @@ public struct SteeringGate: Equatable, Sendable {
         let call: ToolCallUpdate
         switch update {
         case .toolCall(let value), .toolCallUpdate(let value): call = value
+        case .compaction(let value):
+            guard let status = value.status.toolStatus else { return }
+            call = ToolCallUpdate(
+                toolCallId: "compaction:\(value.compactionId)", title: "Compact conversation", kind: .think,
+                status: status)
         default: return
         }
         if let index = tools.firstIndex(where: { $0.id == call.toolCallId }) {

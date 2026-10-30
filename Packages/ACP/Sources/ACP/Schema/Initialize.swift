@@ -23,11 +23,14 @@ public struct InitializeRequest: ACPRequest {
     public var protocolVersion: Int
     /// Native shows subagents as their own sessions; Cursor reads that from `_meta` and Claude from
     /// the top level. It answers form elicitations (Claude Code only offers its AskUserQuestion tool
-    /// to clients that do). It implements no other optional client capabilities yet (fs, terminals,
-    /// URL elicitation), so agents do that work themselves.
-    public var clientCapabilities: [String: JSONValue] = [
+    /// to clients that do). Session compaction invalidates context totals. Other capabilities (fs, terminals,
+    /// URL elicitation) remain with the agent.
+    public var clientCapabilities = Self.defaultClientCapabilities
+
+    public static let defaultClientCapabilities: [String: JSONValue] = [
         "subagents": .object([:]),
         "elicitation": .object(["form": .object([:])]),
+        "session": .object(["compaction": .object([:])]),
         "_meta": .object(["subagents": .object([:])]),
     ]
     public var clientInfo: Implementation

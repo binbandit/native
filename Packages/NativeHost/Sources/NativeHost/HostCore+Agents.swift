@@ -245,7 +245,8 @@ extension HostCore {
         let wasWorkingInBackground = tracksBackground && session.isWorkingInBackground
         append(update, to: session)
         if session.phase == .prompting, session.loading == nil,
-            update.kind == "tool_call" || update.kind == "tool_call_update", let decoded = update.decoded
+            update.kind == "tool_call" || update.kind == "tool_call_update" || update.kind == "compaction_update",
+            let decoded = update.decoded
         {
             session.steeringGate.apply(decoded)
             if session.queue.contains(where: { $0.prompt.steersAfterTools }) {
