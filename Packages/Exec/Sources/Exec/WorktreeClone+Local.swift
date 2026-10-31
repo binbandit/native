@@ -135,9 +135,6 @@ extension WorktreeClone {
                     guard fstatat(from, child, &metadata, AT_SYMLINK_NOFOLLOW) == 0,
                         metadata.st_mode & S_IFMT == S_IFDIR
                     else { throw CommandError.refused("A cached checkout uses an external git directory.") }
-                    let gitDirectory = try openDirectory(child, at: from)
-                    defer { close(gitDirectory) }
-                    try validateGitMetadata(gitDirectory)
                 }
                 // Local env files are selected separately by Git after the user opts in.
                 guard !child.hasPrefix(".env") else { return }
@@ -145,6 +142,12 @@ extension WorktreeClone {
                 try cloneEntry(
                     child, from: from, to: to, relative: relative + "/" + child,
                     projectPath: projectPath + "/" + child, project: project, task: task, created: &childCreated)
+                if child == ".git" {
+                    // Inspect the private copy so source edits during cloning cannot bypass validation.
+                    let gitDirectory = try openDirectory(child, at: to)
+                    defer { close(gitDirectory) }
+                    try validateGitMetadata(gitDirectory)
+                }
             }
             guard fchmod(to, info.st_mode & 0o777) == 0 else { throw posixError() }
         case S_IFLNK:
