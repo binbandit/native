@@ -233,6 +233,24 @@ actor FakeAgent {
         case "session/set_config_option":
             let params = try message.params(as: ConfigParams.self)
             try await waitForPermissionRelease(params)
+            if params.configId == "model",
+                ProcessInfo.processInfo.environment["FAKE_AGENT_DELAY_MODEL"] == "1"
+                    || ProcessInfo.processInfo.environment["FAKE_AGENT_CONFIG_GATE"] != nil
+            {
+                received("config-pending", "\(params.configId)=\(params.value)")
+                if let gate = ProcessInfo.processInfo.environment["FAKE_AGENT_CONFIG_GATE"] {
+                    while !FileManager.default.fileExists(atPath: gate) {
+                        try await Task.sleep(for: .milliseconds(10))
+                    }
+                } else {
+                    try await Task.sleep(for: .seconds(1))
+                }
+            }
+            if params.configId == "model",
+                ProcessInfo.processInfo.environment["FAKE_AGENT_REJECT_MODEL"] == "1"
+            {
+                throw RPCError(code: -32603, message: "The requested model is unavailable")
+            }
             if loaded.contains(params.sessionId), params.configId == "model",
                 ProcessInfo.processInfo.environment["FAKE_AGENT_CHILD_ON_RESTORE"] == "1"
             {

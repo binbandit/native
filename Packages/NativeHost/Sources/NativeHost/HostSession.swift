@@ -43,6 +43,8 @@ final class HostSession {
     private(set) var lastEventAt = Date.now
     /// The load in flight, shared by everyone who needs it.
     var loading: Task<Void, any Error>?
+    /// All clients share this tail: model changes can reset effort, and replies replace whole snapshots.
+    var configChange: (id: UUID, task: Task<Void, any Error>)?
     var loadGeneration = 0
     /// Config notifications during a load stay private until restoration has settled.
     var loadingConfigOptions: JSONValue?
@@ -162,15 +164,15 @@ final class HostSession {
     /// Whether anything is under way that stopping the agent would cut off.
     var isWorking: Bool {
         turn != nil || phase == .recovering || hiddenCommand != nil || retryAt != nil
-            || (!queue.isEmpty && !record.isQueuePaused)
+            || configChange != nil || (!queue.isEmpty && !record.isQueuePaused)
     }
 
     /// Whether restarting the host for an update would cut something off: a turn (with its
-    /// approvals), its recovery, a retry waiting to go out, a hidden command, a load, or background
-    /// work. Queued messages don't hold it: they're stored, and the new host sends them.
+    /// approvals), its recovery, a retry waiting to go out, a hidden command, a load, a settings
+    /// change, or background work. Queued messages don't hold it: they're stored, and the new host sends them.
     var holdsRestart: Bool {
         turn != nil || phase == .recovering || retryAt != nil || hiddenCommand != nil || loading != nil
-            || isWorkingInBackground
+            || configChange != nil || isWorkingInBackground
     }
 
     /// A subagent it started still works after its turn ended (a background agent). Only while the

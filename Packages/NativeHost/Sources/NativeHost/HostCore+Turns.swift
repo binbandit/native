@@ -293,52 +293,6 @@ extension HostCore {
 
     // MARK: - Settings and hidden commands
 
-    func setConfigOption(_ params: SetConfigOptionParams) async throws {
-        let session = try session(params.sessionID)
-        try await load(session)
-        let changesPermissions =
-            params.permissionMode != nil
-            || session.mirror.state.configOptions.contains(where: { $0.id == params.configID && $0.category == "mode" })
-        let changeID = UUID()
-        if changesPermissions {
-            try requirePermission(in: session, value: params.value, intent: params.permissionMode)
-            session.pendingPermissionChanges[changeID] = (params.value, params.permissionMode)
-        }
-        defer { session.pendingPermissionChanges[changeID] = nil }
-        guard let peer = agents[session.record.agentID]?.peer, let agentSessionID = session.record.agentSessionID else {
-            throw HostError.agentUnavailable(session.agentName)
-        }
-        let response = try await peer.request(
-            "session/set_config_option",
-            RawSetConfigOptionRequest(sessionId: agentSessionID, configId: params.configID, value: params.value),
-            as: RawConfigOptionsResponse.self
-        )
-        if let options = response.configOptions {
-            append(.update(SessionMirror.configOptionsUpdate(options)), to: session)
-            // As the agent took it (setting the model can move the effort too), so a reload that
-            // comes back on other values gets these set back.
-            pinConfig(Self.configOptions(options), of: session)
-        } else {
-            // The agent didn't say what it's on: as asked.
-            session.record.configChoices[params.configID] = params.value
-            try? store.updateSession(session.record)
-        }
-        // Both the policy and the provider's permission controls can change during the RPC.
-        endDeniedAgentWork()
-        if changesPermissions {
-            try requirePermission(in: session, value: params.value, intent: params.permissionMode)
-        }
-        // Check the actual provider response against the replacement intent, even when two
-        // shared modes use the same provider control and pinConfig retained the previous intent.
-        try requirePermission(in: session, intent: params.permissionMode, replacingIntent: changesPermissions)
-        if changesPermissions {
-            session.record.configChoices[SetConfigOptionParams.permissionChoiceKey] =
-                params.permissionMode.flatMap { TaskPermissionMode(rawValue: $0)?.rawValue }
-            try store.updateSession(session.record)
-            publish(session)
-        }
-    }
-
     /// Runs a command such as `/context` as a turn the transcript doesn't show, and returns the
     /// agent's reply. Meanwhile the session looks idle, but messages queue. Not a durable turn: if
     /// the host stops, it's simply gone.
