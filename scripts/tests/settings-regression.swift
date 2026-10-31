@@ -119,22 +119,11 @@ struct SettingsRegression {
                 && local.stored(.model) == nil,
             "A project explains an unavailable choice it inherits, without a project value to reset")
         global.set("user", for: .model)
-        var policy = NativePolicy()
-        policy.forbiddenPermissionModes = ["auto"]
-        policy.managedKeys = [.forbiddenPermissionModes]
-        policy.organizationName = "Northwind Federal IT"
-        policy.organizationContact = "#it-help"
-        global.set("auto", for: .permissions)
-        let permissions = global.receipt(.permissions, policy: policy)
-        expect(permissions.value == "Ask before edits", "Policy uses the same allowed default as startup")
-        expect(permissions.source == .organization("Northwind Federal IT"), "Policy source uses configured identity")
-        expect(permissions.help?.contains("#it-help") == true, "Policy contact is shown")
-        let plan = global.receipt(.permissions, policy: policy, mode: .plan)
-        expect(plan.modeOverrides && plan.value == "Ask before edits", "Starting Mode supplies its own permissions")
-        expect(plan.layers.filter(\.wins).count == 1, "A mode receipt has one winning layer")
+        defaults.set("default", forKey: "agentDefaults.\(id.rawValue).permissions")
+        expect(TaskPermissionDefaults.value(defaults: defaults) == .askFirst, "Legacy permission defaults migrate")
         expect(
             AgentSessionDefaults.configuredValues(for: id, defaults: defaults)["mode"] == nil,
-            "New permission defaults cannot change reopened tasks or the legacy path")
+            "Shared defaults never change reopened tasks")
         let modes = ModeLibrary(defaults: defaults)
         modes.setStartingMode(.plan, forProjectAt: project.url)
         expect(
@@ -162,7 +151,7 @@ struct SettingsRegression {
             "Agent links select a scope once")
         AgentSessionDefaults.remember(Array(options.prefix(1)), for: id, defaults: defaults)
         global.refresh()
-        expect(global.choices(.permissions).isEmpty, "Removed agent options clear their cached choices")
+        expect(global.choices(.effort).isEmpty, "Removed agent options clear their cached choices")
     }
 
     /// A task starts before the catalog lists it under its project, so the launch hands over the

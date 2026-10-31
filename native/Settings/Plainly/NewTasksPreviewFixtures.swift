@@ -20,7 +20,6 @@ enum NewTasksPreviewFixtures {
                     "gpt-6.1-sol"
                 ),
                 (.effort, [("low", "Low"), ("high", "High")], "low"),
-                (.permissions, [("ask", "Ask before edits"), ("edit", "Edit files"), ("auto", "Auto")], "ask"),
             ] {
                 let cache = values.map { ["value": $0.0, "name": $0.1] }
                 defaults.set(
@@ -30,7 +29,7 @@ enum NewTasksPreviewFixtures {
             }
             defaults.set("high", forKey: AgentSessionDefaults.Setting.effort.key(for: agent))
             if state == "managed" {
-                defaults.set("auto", forKey: AgentSessionDefaults.Setting.permissions.key(for: agent))
+                defaults.set("auto", forKey: TaskPermissionDefaults.key)
             }
             if state == "unavailable" {
                 defaults.set("retired-model", forKey: AgentSessionDefaults.Setting.model.key(for: agent))

@@ -16,6 +16,7 @@ source = (root / 'scripts/tests/droid-change-agent.swift').read_text().split('@m
 # The fixture reports and confirms both settings, like an ACP adapter. Keep model state when the
 # permission choice is applied; a permission response is a complete config snapshot.
 source = source.replace('private var failsStart = false', 'private var chosenModel = "small"\n    private var chosenMode = "read-only"\n    private var failsStart = false')
+source = source.replace('started.append(params)', 'chosenModel = "small"\n        chosenMode = "read-only"\n        started.append(params)')
 source = source.replace('static func models(_ current: String)', 'static func models(_ current: String, mode: String = "read-only")')
 source = source.replace('return .update(.object(["sessionUpdate": .string("config_option_update"), "configOptions": .array([model])]))', '''let permission: JSONValue = .object([
     "id": .string("mode"), "name": .string("Permissions"), "category": .string("mode"),

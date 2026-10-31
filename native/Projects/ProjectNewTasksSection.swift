@@ -57,6 +57,7 @@ struct ProjectNewTasksSection: View {
                             .disabled(true)
                         }
                     }
+                    PermissionDefaultsRow(project: project.id)
                     SettingsRow(
                         id: rows.workspace, "New tasks get", plainly: .workspace,
                         description: Text("A worktree keeps parallel tasks from editing the same files.")

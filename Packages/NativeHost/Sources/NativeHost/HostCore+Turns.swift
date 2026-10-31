@@ -152,6 +152,7 @@ extension HostCore {
                 && agents[session.record.agentID] === link && link.generation == generation && link.peer === peer
         }
         do {
+            try requirePermission(in: session)
             if session.stopRequestedAt != nil {
                 finish(turn, in: session, stopReason: "cancelled")
                 return
@@ -295,6 +296,11 @@ extension HostCore {
     func setConfigOption(_ params: SetConfigOptionParams) async throws {
         let session = try session(params.sessionID)
         try await load(session)
+        if params.permissionMode != nil
+            || session.mirror.state.configOptions.contains(where: { $0.id == params.configID && $0.category == "mode" })
+        {
+            try requirePermission(in: session, value: params.value, intent: params.permissionMode)
+        }
         guard let peer = agents[session.record.agentID]?.peer, let agentSessionID = session.record.agentSessionID else {
             throw HostError.agentUnavailable(session.agentName)
         }
@@ -313,6 +319,11 @@ extension HostCore {
             session.record.configChoices[params.configID] = params.value
             try? store.updateSession(session.record)
         }
+        if let mode = params.permissionMode, TaskPermissionMode(rawValue: mode) != nil {
+            session.record.configChoices[SetConfigOptionParams.permissionChoiceKey] = mode
+            try store.updateSession(session.record)
+            publish(session)
+        }
     }
 
     /// Runs a command such as `/context` as a turn the transcript doesn't show, and returns the
@@ -322,6 +333,7 @@ extension HostCore {
         let session = try session(params.sessionID)
         guard session.record.origin != .announced else { throw HostError.notAcceptingPrompts }
         try await load(session)
+        try requirePermission(in: session)
         guard session.phase == .idle, session.turn == nil, session.hiddenCommand == nil,
             session.steeringInFlight == nil
         else {

@@ -17,6 +17,15 @@ public enum AgentModelPermissions {
     ) -> Selection? {
         let allowed = offered.filter { !forbidden.contains($0) }
         guard let first = allowed.first else { return nil }
+        let sharedValues: Set<String> = ["ask-first", "accept-edits", "full-access"]
+        if let source, let wanted = TaskPermissionMode(rawValue: source),
+            sharedValues.contains(source) || offered.contains(where: sharedValues.contains)
+        {
+            let modes = allowed.compactMap(TaskPermissionMode.init(rawValue:))
+                .filter { $0.rank <= wanted.rank }
+            guard let selected = modes.max(by: { $0.rank < $1.rank }) else { return nil }
+            return Selection(value: selected.rawValue, reason: selected == wanted ? .equivalent : .stricter)
+        }
         let ranked = allowed.compactMap { value in level(value).map { (value: value, level: $0) } }
         let safest = ranked.min { $0.level.rank < $1.level.rank }?.value ?? first
         guard let source, let wanted = level(source) else {
@@ -76,14 +85,14 @@ public enum AgentModelPermissions {
 
     private static func level(_ value: String) -> Level? {
         switch value {
-        case "default": .asks
+        case "ask-first", "default": .asks
         case "read-only": .readOnly
         case "plan": .planning
         case "dontAsk": .refuses
-        case "acceptEdits": .edits
+        case "accept-edits", "acceptEdits": .edits
         case "workspace-write": .workspace
         case "auto", "agent": .review
-        case "bypassPermissions", "agent-full-access": .full
+        case "full-access", "bypassPermissions", "agent-full-access": .full
         default: nil
         }
     }

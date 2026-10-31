@@ -8,7 +8,7 @@ import Foundation
 enum ComposerSettingsPreviewFixtures {
     static func codex(model: String = "gpt-6.1-sol", mode: String = "workspace-write") -> ComposerSettings {
         ComposerSettings(
-            ComposerPreviewFixtures.decode(
+            (ComposerPreviewFixtures.decode(
                 """
                 [
                   {"id":"mode","name":"Mode","category":"mode","type":"select","currentValue":"\(mode)","options":[
@@ -25,12 +25,12 @@ enum ComposerSettingsPreviewFixtures {
                   {"id":"fast-mode","name":"Fast mode","category":"model_config","type":"select","currentValue":"off","options":[
                     {"value":"off","name":"Off"},{"value":"on","name":"On"}]}
                 ]
-                """) ?? [])
+                """) as [ConfigOption]?)?.map { CodexConfigOverrides.permissionMapping.presenting($0) } ?? [])
     }
 
     static func claude(mode: String = "acceptEdits", models: String = claudeModels) -> ComposerSettings {
         ComposerSettings(
-            ComposerPreviewFixtures.decode(
+            (ComposerPreviewFixtures.decode(
                 """
                 [
                   {"id":"mode","name":"Mode","category":"mode","type":"select","currentValue":"\(mode)","options":[
@@ -44,7 +44,7 @@ enum ComposerSettingsPreviewFixtures {
                     {"value":"default","name":"Default"},{"value":"low","name":"Low"},{"value":"medium","name":"Medium"},
                     {"value":"high","name":"High"},{"value":"xhigh","name":"Xhigh"},{"value":"max","name":"Max"}]}
                 ]
-                """) ?? [])
+                """) as [ConfigOption]?)?.map { ClaudeCodeSessionSettings.permissionMapping.presenting($0) } ?? [])
     }
 
     static let claudeModels = """

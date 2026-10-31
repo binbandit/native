@@ -5,6 +5,8 @@ import Foundation
 /// ACP package, which has the adapter's details and its known limit). There's no per-session
 /// equivalent, so intents for one project can't be applied.
 struct CodexPolicyTranslator: AgentPrivateRouteTranslator {
+    var permissionMapping: TaskPermissionMapping { CodexConfigOverrides.permissionMapping }
+
     func launchEnvironment(for policy: SessionPolicy) -> [String: String] {
         let reach = policy.allProjectsOnly
         return CodexConfigOverrides(

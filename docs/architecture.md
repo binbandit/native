@@ -503,6 +503,21 @@ loader marks the project while work runs; failures retain the last known state a
 with recovery guidance. Remote git runs on the task's host; unavailable remote pull-request reads
 are reported rather than running against a local folder with the same path.
 
+### Task permissions
+
+Every task uses the shared `TaskPermissionMode`: Ask first, Accept edits, Auto or Full access.
+Full access is the default for new tasks. `TaskPermissionDefaults` stores a user default and optional
+project override independently of the selected agent. Existing explicit provider defaults migrate once,
+using the strictest choice when providers disagree. Reopened tasks keep their saved choice.
+
+Each plugin supplies a `TaskPermissionMapping`. SessionModel presents the four modes to the composer,
+Settings and companion clients and sends the mapped provider control over ACP. Unavailable modes use
+the closest stricter equivalent with a quiet explanation. Managed policy checks canonical and legacy
+values before defaults, changes and sends. The host retains shared intent in its config journal and
+optional session-summary field so paired clients preserve choices that map to the same provider value.
+Agent permission requests still reach the approval card, including user ask rules in Full access.
+See [the decision](decisions/2026-10-29-task-permission-modes.md) for mappings and migration details.
+
 ### Plainly Settings
 
 `NativeSettingsPlainly` (Settings ▸ Labs ▸ Plainly settings) defaults to off. `SettingsPageMap`
@@ -521,8 +536,8 @@ New Tasks owns the agent model, effort and permissions defaults, starting mode a
 Both scope menus remain available for every project. Project overrides, user defaults, remembered
 choices and agent-reported defaults form a source stack; organization restrictions and the starting
 mode show when they supersede a choice. Unavailable choices remain explainable and can be Reset.
-Permissions and the new project effort/mode overrides apply only to new tasks while Plainly is on;
-reopened tasks and the original page map retain their behavior. Agent and project pages link here.
+Shared permission defaults apply to new tasks in both page maps. Project effort/mode overrides apply
+while Plainly is on. Reopened tasks retain their choices. Agent and project pages link here.
 Branch prefixes stay on project pages.
 
 `Packages/TaskDefaults` holds the tested default resolution, instruction metadata inventory and
@@ -628,11 +643,10 @@ Model names never imply agent identity. The reporting adapter owns each choice, 
 models. The list retains its opening order until closed, and filters the current agent's model names and IDs.
 
 `ComposerAgentChange` prepares an unused conversation in the same folder, validates the exact model
-and a supported permission level, then publishes the selection. Permission translation prefers an
-equivalent level, then the closest stricter level, otherwise the safest advertised level allowed by
-policy. Unknown semantics are never treated as equivalent by matching IDs; a wholly unfamiliar list
-uses its first advertised level with an explicit review notice. A missing permission setting does
-not block the switch. Only a policy denying every advertised level blocks permission translation.
+and a supported permission mode, then publishes the selection. Shared permission intent stays the
+same across agents; each plugin enforces its closest stricter control. A destination that cannot
+supply a sufficiently restrictive control leaves the source selected with recovery guidance.
+Unknown provider values never justify widening permissions. A missing permission setting is disclosed.
 Planning and read-only restrictions remain distinct from ordinary approvals. A supported agent plan
 setting is confirmed before committing, including separate collaboration settings; Native rebinds
 its mode ownership to the target's option IDs. A missing planning restriction is disclosed.

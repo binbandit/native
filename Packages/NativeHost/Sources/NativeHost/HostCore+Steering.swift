@@ -59,6 +59,7 @@ extension HostCore {
     /// Adds a message to the running turn. It's recorded as steering first, so if the host stops
     /// before the agent answers, recovery can tell whether it arrived.
     func steer(_ item: OutgoingPrompt, into session: HostSession) async throws -> PromptDelivery {
+        try requirePermission(in: session)
         guard session.steeringInFlight == nil else { return .queued }
         session.steeringInFlight = item.id
         defer {

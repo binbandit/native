@@ -71,8 +71,9 @@ final class HostSessionLink {
         try? await request { try await $0.respondPermission(params) }
     }
 
-    func setConfigOption(_ configID: String, to value: String) async throws {
-        let params = SetConfigOptionParams(sessionID: id, configID: configID, value: value)
+    func setConfigOption(_ configID: String, to value: String, permissionMode: String? = nil) async throws {
+        let params = SetConfigOptionParams(
+            sessionID: id, configID: configID, value: value, permissionMode: permissionMode)
         try await request { try await $0.setConfigOption(params) }
     }
 }
@@ -112,7 +113,14 @@ extension SessionModel {
 
     /// Takes in what the host says about the session now.
     func apply(_ summary: HostSessionSummary) {
+        let changedPermission = hostSummary?.permissionMode != summary.permissionMode
         hostSummary = summary
+        if changedPermission, let mode = summary.permissionMode,
+            let option = configOptions.first(where: { $0.category == "mode" })
+        {
+            services.titles.updateConfigChoices(for: titleKey) { $0.choose(option, value: mode) }
+            mirrorState()
+        }
         let stopReason = summary.lastStopReason.map(SessionMirror.stopReason)
         if lastStopReason != stopReason { lastStopReason = stopReason }
         if lastActivity != summary.lastActivity { lastActivity = summary.lastActivity }
@@ -217,7 +225,7 @@ extension SessionModel {
         Task {
             await PolicyPermissionModes.enforce(on: self)
             isSettingBackConfig = false
-            services.titles.updateConfigChoices(for: titleKey) { $0.follow(state.configOptions) }
+            services.titles.updateConfigChoices(for: titleKey) { $0.follow(configOptions) }
             if let hostSummary { apply(hostSummary) }
         }
     }

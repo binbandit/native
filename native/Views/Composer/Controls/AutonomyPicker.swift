@@ -31,6 +31,9 @@ struct AutonomyPicker: View {
                 }
             }
             .padding(.horizontal, DS.Space.xs)
+            Text("Your ask rules and the agent’s own checks can still ask for approval.")
+                .font(.dsCaption).foregroundStyle(.dsTextTertiary)
+                .padding(.horizontal, DS.Space.lg).padding(.vertical, DS.Space.sm)
             SeparatorLine()
                 .padding(.top, DS.Space.xs)
             footer
@@ -40,19 +43,22 @@ struct AutonomyPicker: View {
     }
 
     private func levelRow(_ choice: SelectSetting.Choice, isCurrent: Bool) -> some View {
+        let unavailable = setting.option.permissionMappings.map { $0[choice.value] == nil } ?? false
         let isForbidden = PolicyPermissionModes.forbids(setting.option, value: choice.value)
         let isSuspended = isSuspended && isCurrent
         return ComposerPickerRow(
             title: choice.name,
             detail: isForbidden
-                ? "Not allowed by \(PolicyCenter.organizationName)" : AutonomySummary.summary(of: choice),
+                ? (unavailable
+                    ? "No safe equivalent with this agent" : "Not allowed by \(PolicyCenter.organizationName)")
+                : AutonomySummary.summary(of: choice),
             trailing: isForbidden ? .locked : isCurrent ? .checked(dimmed: isSuspended) : .none,
             isEnabled: !isForbidden
         ) {
             onSet(setting, choice.value)
             dismiss()
         }
-        .help(isSuspended ? "Resumes when Plan Mode ends" : choice.descriptionWithoutName ?? choice.name)
+        .help(isSuspended ? "Resumes when the task mode ends" : choice.descriptionWithoutName ?? choice.name)
     }
 
     private var footer: some View {
@@ -90,7 +96,7 @@ struct AutonomyPicker: View {
         if let autonomy = settings.autonomy {
             AutonomyPicker(
                 setting: autonomy, levels: settings.autonomyLevels,
-                level: settings.shownAutonomyLevel(resumed: "acceptEdits"), isSuspended: true,
+                level: settings.shownAutonomyLevel(resumed: "accept-edits"), isSuspended: true,
                 agentName: "Claude Code", onSet: { _, _ in }, dismiss: {}
             )
             .dsPopoverBackground()

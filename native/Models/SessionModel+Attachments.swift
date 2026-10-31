@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import NativePolicy
 
 // What goes out with the draft besides its text, and what would stop a message going out at all.
 extension SessionModel {
@@ -39,6 +40,29 @@ extension SessionModel {
         if !acceptsPrompts { return isEarlierConversation ? .earlierConversation : .notAcceptingPrompts }
         // A host session whose agent couldn't run takes a message as its cue to try again.
         if phase == .disconnected, host == nil { return .disconnected(agentName: agentName) }
+        if let option = configOptions.first(where: { $0.category == "mode" }),
+            case .select(let current, _) = option.kind,
+            (PolicyPermissionModes.forbids(
+                option, value: current, forbidden: services.plugins.policyCenter.policy.forbiddenPermissionModes)
+                || state.configOptions.contains { raw in
+                    guard raw.id == option.id, case .select(let value, _) = raw.kind else { return false }
+                    return PolicyPermissionModes.forbids(
+                        raw, value: value, forbidden: services.plugins.policyCenter.policy.forbiddenPermissionModes)
+                })
+        {
+            if option.permissionMappings?.isEmpty == true {
+                return .permissionPolicy(
+                    "This agent does not offer a safe permission equivalent. Choose another agent to send.")
+            }
+            return .permissionPolicy(
+                "No permitted permission mode is active. Choose an allowed mode or contact your administrator.")
+        }
+        if !configOptions.contains(where: { $0.category == "mode" }),
+            !services.plugins.policyCenter.policy.forbiddenPermissionModes.isEmpty
+        {
+            return .permissionPolicy(
+                "This agent does not expose permission controls required by your organization. Choose another agent.")
+        }
         return services.sendGate.block(for: agent)
     }
 

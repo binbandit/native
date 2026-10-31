@@ -13,14 +13,13 @@ enum AgentSessionDefaults {
     /// A setting Settings can give a default, in the order they're applied: the model first, since
     /// changing it can change the efforts on offer.
     enum Setting: String, CaseIterable, Sendable {
-        case model, effort, permissions
+        case model, effort
 
         /// The ACP config option category that holds it.
         var category: String {
             switch self {
             case .model: "model"
             case .effort: "thought_level"
-            case .permissions: "mode"
             }
         }
 
@@ -156,8 +155,7 @@ enum AgentSessionDefaults {
     static func lastValue(
         for agent: AgentDefinition.ID, setting: Setting, defaults: UserDefaults = .standard
     ) -> String? {
-        guard setting != .permissions,
-            let id = defaults.string(forKey: setting.key(for: agent) + ".option")
+        guard let id = defaults.string(forKey: setting.key(for: agent) + ".option")
         else { return nil }
         return lastUsed(for: agent, defaults: defaults).choices[id]?.value
     }
@@ -198,7 +196,7 @@ enum AgentSessionDefaults {
             categories[Setting.model.category] = model
         }
         if ExperimentStore.shared.value(of: .settingsPlainly) {
-            for setting in Setting.allCases {
+            for setting in [Setting.model, .effort] {
                 categories[setting.category] =
                     project.flatMap {
                         ProjectTaskDefaults.value(for: $0, agent: agent, setting: setting, defaults: defaults)
@@ -207,7 +205,9 @@ enum AgentSessionDefaults {
         }
         let start = NewSessionChoices(defaults: categories, lastUsed: lastUsed(for: agent, defaults: defaults))
         let allows: (ConfigOption, String) -> Bool = { !PolicyPermissionModes.forbids($0, value: $1) }
-        for id in start.order(in: session.state.configOptions) {
+        for id in start.order(in: session.state.configOptions).filter({ id in
+            session.state.configOptions.first(where: { $0.id == id })?.category != "mode"
+        }) {
             // Read again each time: setting the model can change what the rest offer.
             switch start.start(of: id, in: session.state.configOptions, allows: allows) {
             case .set(let option, let value)?:
@@ -223,6 +223,7 @@ enum AgentSessionDefaults {
                     "\(session.agentName, privacy: .public) keeps its own \(id, privacy: .public) for a new session")
             }
         }
+        await session.applyPermissionDefault(project: project?.uuidString, defaults: defaults)
         await PolicyPermissionModes.enforce(on: session)
     }
 }
