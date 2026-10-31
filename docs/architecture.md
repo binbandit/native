@@ -727,7 +727,10 @@ The default-off `NativeWarmWorktrees` Labs gate adds project-owned cache choices
 `Repository.warmWorktree` selects wholly ignored folders and consented untracked env files, then
 sends a reserved `WorktreeClone` operation through the existing `CommandRunner` transport. Exec's
 local runner handles the operation on the host using no-follow directory descriptors and APFS
-`fclonefileat`; clients never read a paired host's local filesystem. Unsupported or cross-volume
+`fclonefileat`; clients never read a paired host's local filesystem. Cache links are resolved in
+filesystem order before parent traversal and must stay inside the copied cache; workspace links
+must have safe existing targets in both checkouts. Directory-form Git metadata is accepted only
+without common-directory, working-tree or configuration-include redirects. Unsupported or cross-volume
 copies stay cold, with no byte-copy fallback. Preparation finishes before setup and after-commands
 start; its summary joins the task's existing setup notice and output, outside agent context.
 

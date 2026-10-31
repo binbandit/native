@@ -130,12 +130,14 @@ extension WorktreeClone {
             defer { close(to) }
             try forEachEntry(in: from) { child in
                 if child == ".git" {
-                    // SwiftPM caches contain standalone checkouts. A gitdir file could instead
-                    // redirect git's later writes into a checkout we did not copy.
+                    // SwiftPM caches may contain standalone checkouts, but not Git redirects.
                     var metadata = stat()
                     guard fstatat(from, child, &metadata, AT_SYMLINK_NOFOLLOW) == 0,
                         metadata.st_mode & S_IFMT == S_IFDIR
                     else { throw CommandError.refused("A cached checkout uses an external git directory.") }
+                    let gitDirectory = try openDirectory(child, at: from)
+                    defer { close(gitDirectory) }
+                    try validateGitMetadata(gitDirectory)
                 }
                 // Local env files are selected separately by Git after the user opts in.
                 guard !child.hasPrefix(".env") else { return }
@@ -150,11 +152,8 @@ extension WorktreeClone {
             let count = readlinkat(source, name, &buffer, buffer.count)
             guard count > 0, count < buffer.count else { throw posixError() }
             let link = String(decoding: buffer.prefix(count), as: UTF8.self)
-            let base = URL(filePath: "/cache/" + relative).deletingLastPathComponent()
-            let resolved = base.appending(path: link).standardizedFileURL
-            let cache = relative.split(separator: "/").first.map(String.init) ?? relative
-            guard !link.hasPrefix("/"),
-                contains(resolved, in: URL(filePath: "/cache/" + cache))
+            guard
+                isInternalCacheLink(link, relative: relative, projectPath: projectPath, project: project)
                     || isExistingProjectLink(link, at: projectPath, project: project, task: task)
             else {
                 throw CommandError.refused("A cache contains a link outside the copied folder.")
@@ -174,24 +173,66 @@ extension WorktreeClone {
         }
     }
 
-    private static func isExistingProjectLink(_ link: String, at path: String, project: Int32, task: Int32) -> Bool {
-        let root = URL(filePath: "/project")
-        let target = root.appending(path: path).deletingLastPathComponent().appending(path: link).standardizedFileURL
-        guard contains(target, in: root), target != root else { return false }
-        let components = Array(target.pathComponents.dropFirst(root.pathComponents.count))
-        guard !components.contains(".git"), let name = components.last else { return false }
-        // Workspace packages may be outside node_modules, but must already exist in both
-        // checkouts. Walk every parent without following links before preserving the link.
-        for checkout in [project, task] {
-            guard let parent = try? parentDirectory(checkout, components: components.dropLast(), create: false) else {
-                return false
+    private static func isInternalCacheLink(
+        _ link: String, relative: String, projectPath: String, project: Int32
+    ) -> Bool {
+        let relativeParts = relative.split(separator: "/").map(String.init)
+        let projectParts = projectPath.split(separator: "/").map(String.init)
+        let cacheParts = Array(projectParts.dropLast(relativeParts.count - 1))
+        guard let cache = try? parentDirectory(project, components: cacheParts[...], create: false) else {
+            return false
+        }
+        defer { close(cache) }
+        return resolveLink(
+            link, base: Array(relativeParts.dropFirst().dropLast()), root: cache, followLinks: true) != nil
+    }
+
+    private static func resolveLink(_ link: String, base: [String], root: Int32, followLinks: Bool) -> [String]? {
+        guard !link.hasPrefix("/") else { return nil }
+        var resolved = base
+        var pending = link.split(separator: "/").map(String.init)
+        var followed = 0
+        while !pending.isEmpty {
+            let part = pending.removeFirst()
+            if part == "." { continue }
+            if part == ".." {
+                guard !resolved.isEmpty else { return nil }
+                resolved.removeLast()
+                continue
             }
+            guard part != ".git",
+                let parent = try? parentDirectory(root, components: resolved[...], create: false)
+            else { return nil }
             defer { close(parent) }
             var info = stat()
-            guard fstatat(parent, name, &info, AT_SYMLINK_NOFOLLOW) == 0,
-                info.st_mode & S_IFMT == S_IFDIR || info.st_mode & S_IFMT == S_IFREG
-            else { return false }
+            guard fstatat(parent, part, &info, AT_SYMLINK_NOFOLLOW) == 0 else { return nil }
+            if info.st_mode & S_IFMT == S_IFLNK {
+                guard followLinks, followed < 40 else { return nil }
+                followed += 1
+                var buffer = [UInt8](repeating: 0, count: Int(PATH_MAX))
+                let count = readlinkat(parent, part, &buffer, buffer.count)
+                guard count > 0, count < buffer.count else { return nil }
+                let target = String(decoding: buffer.prefix(count), as: UTF8.self)
+                guard !target.hasPrefix("/") else { return nil }
+                // Expand links before processing subsequent '..' components, as the filesystem does.
+                pending = target.split(separator: "/").map(String.init) + pending
+                continue
+            }
+            guard
+                info.st_mode & S_IFMT == S_IFDIR
+                    || (pending.isEmpty && info.st_mode & S_IFMT == S_IFREG)
+            else { return nil }
+            resolved.append(part)
         }
+        return resolved
+    }
+
+    private static func isExistingProjectLink(_ link: String, at path: String, project: Int32, task: Int32) -> Bool {
+        let base = Array(path.split(separator: "/").map(String.init).dropLast())
+        // Workspace targets must already exist in both checkouts without any link indirection.
+        guard let target = resolveLink(link, base: base, root: project, followLinks: false), !target.isEmpty,
+            resolveLink(link, base: base, root: task, followLinks: false) == target
+        else { return false }
         return true
     }
 
