@@ -106,10 +106,70 @@ import Testing
         #expect(!FileManager.default.fileExists(atPath: fixture.destination.appending(path: "node_modules").path()))
     }
 
+    @Test func rejectsSymlinkChainsBeforeParentTraversal() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        try fixture.write("node_modules/deep/file", "cache")
+        try Data("outside sentinel".utf8).write(to: fixture.base.appending(path: "outside"))
+        try FileManager.default.createSymbolicLink(
+            atPath: fixture.source.appending(path: "node_modules/deep/link").path(), withDestinationPath: "..")
+        try FileManager.default.createSymbolicLink(
+            atPath: fixture.source.appending(path: "node_modules/escape").path(),
+            withDestinationPath: "deep/link/../../outside")
+        let report = try await fixture.clone(["node_modules"])
+        #expect(report.cloned.isEmpty && report.skipped == ["node_modules"])
+        #expect(!FileManager.default.fileExists(atPath: fixture.destination.appending(path: "node_modules").path()))
+        #expect(try String(contentsOf: fixture.base.appending(path: "outside"), encoding: .utf8) == "outside sentinel")
+    }
+
+    @Test func preservesContainedSymlinkChains() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        try fixture.write("node_modules/pkg/index.js", "executable")
+        try FileManager.default.createDirectory(
+            at: fixture.source.appending(path: "node_modules/deep"), withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(
+            atPath: fixture.source.appending(path: "node_modules/deep/link").path(), withDestinationPath: "..")
+        try FileManager.default.createSymbolicLink(
+            atPath: fixture.source.appending(path: "node_modules/tool").path(),
+            withDestinationPath: "deep/link/pkg/index.js")
+        let report = try await fixture.clone(["node_modules"])
+        #expect(report.cloned == ["node_modules"])
+        #expect(
+            try String(contentsOf: fixture.destination.appending(path: "node_modules/tool"), encoding: .utf8)
+                == "executable")
+    }
+
+    @Test(arguments: [
+        "commondir", "core.worktree", "quoted core.worktree", "include", "config.worktree",
+    ])
+    func rejectsDirectoryFormGitRedirects(_ redirect: String) async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        let metadata = ".build/checkouts/package/.git/"
+        try fixture.write(metadata + "HEAD", "ref: refs/heads/main\n")
+        switch redirect {
+        case "commondir":
+            try fixture.write(metadata + "commondir", fixture.source.appending(path: ".git").path())
+        case "core.worktree":
+            try fixture.write(metadata + "config", "[core]\nworktree = \(fixture.source.path())\n")
+        case "quoted core.worktree":
+            try fixture.write(metadata + "config", "[CORE] WoRkTrEe = \"\(fixture.source.path())\"\n")
+        case "include":
+            try fixture.write(metadata + "config", "[include]\npath = /outside/config\n")
+        default:
+            try fixture.write(metadata + "config.worktree", "[core]\nworktree = /outside\n")
+        }
+        let report = try await fixture.clone([".build"])
+        #expect(report.cloned.isEmpty && report.skipped == [".build"])
+        #expect(!FileManager.default.fileExists(atPath: fixture.destination.appending(path: ".build").path()))
+    }
+
     @Test func preservesStandaloneCachedCheckoutsButRejectsGitdirRedirects() async throws {
         let fixture = try Fixture()
         defer { fixture.remove() }
         try fixture.write(".build/checkouts/package/.git/HEAD", "ref: refs/heads/main")
+        try fixture.write(".build/checkouts/package/.git/config", "[core]\nrepositoryformatversion = 0\nbare = false\n")
         try fixture.write("dist/nested/.git", "gitdir: /outside/project")
         let report = try await fixture.clone([".build", "dist"])
         #expect(report.cloned == [".build"])
