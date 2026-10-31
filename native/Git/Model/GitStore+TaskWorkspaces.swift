@@ -1,3 +1,4 @@
+import Experiments
 import Foundation
 import Git
 
@@ -75,7 +76,7 @@ extension GitStore {
         return try await setUp(worktree, of: repository, branch: branch)
     }
 
-    /// Copies the project's ignored env files into a new task worktree before returning, so the
+    /// Prepares project files in a new task worktree before returning, so the
     /// agent sees them from its first turn, then tells `onTaskWorktreeCreated`, which starts its
     /// setup scripts. Internal only for GitStore+ArchivedWorktrees.swift, which sets up a worktree
     /// it brings back the same way.
@@ -87,9 +88,15 @@ extension GitStore {
         var created = GitTaskWorktree(
             folder: worktree.path, projectRoot: main, branch: branch, baseBranch: baseBranch, baseNotice: baseNotice)
         do {
-            created.copiedFiles = try await requireRepository(at: main).copyIgnoredFiles(
-                matching: settings.envFilePatterns, to: worktree.path)
+            if ExperimentStore.shared.value(of: .warmWorktrees) {
+                let notice = try await warmTaskWorktree(worktree.path, from: repository.root)
+                created.baseNotice = [baseNotice, notice].compactMap { $0 }.joined(separator: " ")
+            } else {
+                created.copiedFiles = try await requireRepository(at: main).copyIgnoredFiles(
+                    matching: settings.envFilePatterns, to: worktree.path)
+            }
         } catch {
+            if Task.isCancelled { throw CancellationError() }
             created.copyFailure = error.localizedDescription
         }
         onTaskWorktreeCreated?(created)

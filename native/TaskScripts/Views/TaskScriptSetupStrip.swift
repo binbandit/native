@@ -100,7 +100,7 @@ struct TaskScriptSetupStrip: View {
         case .running: "Setting up the worktree"
         case .awaitingApproval: "This repository has a setup script"
         case .succeeded where run.plan.scripts.isEmpty && run.copyFailure != nil:
-            "Couldn't copy the project's env files"
+            "Couldn't bring the project's files along"
         case .succeeded, .skipped:
             (run.duration ?? 0) < 1 ? "Worktree set up" : "Worktree set up in \(DSFormat.duration(run.duration ?? 0))"
         case .failed(let failure): "\(failure.script.name) \(failure.result.outcome.phrase)"
@@ -129,7 +129,10 @@ struct TaskScriptSetupStrip: View {
             parts.append("Copied \(files) from the project.")
         }
         if let copyFailure = run.copyFailure {
-            parts.append("Couldn't copy the project's env files: \(copyFailure)")
+            let reason = copyFailure.trimmingCharacters(in: .whitespacesAndNewlines)
+            let punctuation = reason.hasSuffix(".") ? "" : "."
+            parts.append(
+                "Couldn't bring the project's files along: \(reason)\(punctuation) The worktree is ready without them.")
         }
         return parts.isEmpty ? nil : parts.joined(separator: " ")
     }
@@ -158,6 +161,31 @@ extension String {
 #endif
 
 #if DEBUG
+#Preview("Warm worktrees - Task notices") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            ForEach(
+                [
+                    "Cloned from the project: node_modules, dist. Storage is shared until files change.",
+                    "Caches weren't copied. Warm worktrees need both folders on the same APFS volume. Setup commands still run.",
+                    "No matching caches were found to bring along. Left unchanged or skipped unsafe paths: .venv. Run the setup command to rebuild them.",
+                ], id: \.self
+            ) { notice in
+                let run = TaskScriptWorktreePreviewFixtures.localBase
+                let _ = run.baseNotice = notice
+                let _ = run.output.appendLine(notice)
+                TaskScriptSetupStrip(run: run, edit: { _ in })
+            }
+            let failedCopy = TaskScriptWorktreePreviewFixtures.localBase
+            let _ = failedCopy.baseNotice = nil
+            let _ = failedCopy.copyFailure = "The project folder is unavailable."
+            TaskScriptSetupStrip(run: failedCopy, edit: { _ in })
+        }
+        .frame(width: SettingsMetrics.pageMaxWidth)
+    }
+    .environment(TaskScriptWorktreePreviewFixtures.center())
+}
+
 #Preview("Worktree - Local base after failed fetch") {
     DSPreviewPair {
         TaskScriptSetupStrip(run: TaskScriptWorktreePreviewFixtures.localBase, edit: { _ in })

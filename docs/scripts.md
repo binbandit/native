@@ -162,3 +162,28 @@ docker compose down --remove-orphans 2>/dev/null || true
 
 Print progress as you go: the banner shows each line as it arrives. Exit non-zero when something
 the task needs didn't happen, so the task waits and you see why.
+
+## Warm worktrees (Labs)
+
+Enable **Warm Worktrees** in Settings > Labs, then open a project's settings. **Warm worktrees**
+selects ignored dependency and build folders to bring into each new task: `node_modules`, `.venv`,
+`.build`, `target`, `Pods`, `DerivedData`, `.next`, and `dist`. Names match at any depth, including
+monorepos; a project-relative path selects one folder. Only wholly ignored directories are copied,
+so tracked files and existing task files are never replaced. Local `.env` and `.env.local` files,
+including unignored ones, require the project's **Include local env files** switch. The old global
+env patterns apply only while the Labs feature is off.
+
+The host makes APFS copy-on-write clones, sharing storage until files change. Both checkouts must
+be on the same APFS volume. Other filesystems and cross-volume worktrees start without copies,
+with an explanation in the task. There is no full-copy fallback. Paths outside either checkout,
+absolute symlinks, links outside the project, Git directory redirects and special files are refused.
+Relative workspace links outside a cache are preserved only when their targets already exist safely
+inside both checkouts. Standalone dependency checkouts inside a cache are cloned too. A failed cache
+clone is removed rather than leaving a partial installation. Env files inside dependency caches are
+omitted; the env switch selects project env files separately.
+
+**Setup command** edits the existing Setup script. It runs once after cloning, holds messages until
+it finishes or is skipped, and keeps output in the task's expandable setup banner rather than
+sending it to the agent. Existing script trust, managed policy, timeouts, Stop and Retry apply.
+Clones are independent snapshots. Tool caches containing absolute paths may rebuild after moving;
+Python environments with absolute interpreter links are skipped and should be recreated by setup.

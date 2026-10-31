@@ -1,3 +1,4 @@
+import Experiments
 import SwiftUI
 
 extension SettingsPane.ID {
@@ -20,7 +21,7 @@ extension SettingsPane {
             order: order,
             keywords: ["project", "repository", project.folderName],
             searchEntries: {
-                let entries = [
+                var entries = [
                     SettingsSearchEntry(id: rows.name, title: "Name", keywords: ["rename", project.name]),
                     SettingsSearchEntry(id: rows.folder, title: "Folder", keywords: ["finder", "path", "reveal"]),
                     SettingsSearchEntry(
@@ -31,6 +32,9 @@ extension SettingsPane {
                         id: rows.workspace, title: "New tasks get", keywords: ["worktree", "branch"],
                         plainly: .workspace),
                     SettingsSearchEntry(id: rows.prefix, title: "Branch prefix", keywords: ["github", "username"]),
+                    SettingsSearchEntry(
+                        id: rows.warmWorktree, title: "Warm worktrees",
+                        keywords: ["dependencies", "cache", "setup", "env"]),
                     ProjectActionsSettingsSection.searchEntry(project.id),
                     SettingsSearchEntry(id: rows.mcp, title: "MCP servers", keywords: ["mcp", "tools"]),
                     SettingsSearchEntry(id: rows.skills, title: "Skills", keywords: ["skill"]),
@@ -38,6 +42,9 @@ extension SettingsPane {
                     SettingsSearchEntry(
                         id: rows.remove, title: "Delete from Native", keywords: ["remove", "forget"]),
                 ]
+                if !ExperimentStore.shared.value(of: .warmWorktrees) {
+                    entries.removeAll { $0.id == rows.warmWorktree }
+                }
                 guard SettingsPageMap.isEnabled else { return entries }
                 return entries.filter { ![rows.agent, rows.model, rows.workspace].contains($0.id) }
                     + [
@@ -68,6 +75,7 @@ struct ProjectSettingsRows {
     var model: SettingsRowID { row("model") }
     var workspace: SettingsRowID { row("workspace") }
     var prefix: SettingsRowID { row("prefix") }
+    var warmWorktree: SettingsRowID { row("warm-worktree") }
     var mcp: SettingsRowID { row("mcp") }
     var skills: SettingsRowID { row("skills") }
     var archive: SettingsRowID { row("archive") }

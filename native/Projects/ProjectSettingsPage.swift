@@ -1,3 +1,4 @@
+import Experiments
 import SwiftUI
 
 /// One project's settings: what it's called and how it looks, how its new tasks start, its scripts,
@@ -11,6 +12,7 @@ struct ProjectSettingsPage: View {
 
     @Environment(AppModel.self) private var model
     @Environment(SettingsPresentation.self) private var settings
+    @Experiment(.warmWorktrees) private var warmWorktrees
 
     var body: some View {
         content
@@ -41,7 +43,8 @@ struct ProjectSettingsPage: View {
                 } else {
                     ProjectNewTasksSection(project: project)
                 }
-                ProjectScriptsSection(projectRoot: project.url)
+                if warmWorktrees { WorktreeWarmProjectSection(project: project) }
+                ProjectScriptsSection(projectRoot: project.url, showsSetup: !warmWorktrees)
                 AIInstructionsProjectSection(projectRoot: project.url)
                 ModesProjectSection(project: project)
                 ProjectActionsSettingsSection(project: project)

@@ -166,7 +166,7 @@ field; Space activates Open Browser. Closing the sheet stops its pending command
 | Keys | Action |
 | --- | --- |
 | ⌘Return in Smart Commit | Commit the planned groups |
-| ⌘Return in the setup-script editor | Save the script new worktrees run (Settings ▸ Scripts) |
+| ⌘Return in the setup-script editor | Save the script new worktrees run (Settings ▸ Scripts, or Project Settings ▸ Warm worktrees ▸ Setup command with Warm Worktrees enabled in Labs) |
 | ⌘Return in Clean Up Merged | Clean up the included items |
 
 ## Pull request page
