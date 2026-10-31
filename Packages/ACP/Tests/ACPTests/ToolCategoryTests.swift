@@ -5,7 +5,7 @@ import Testing
 
 /// codex-acp 2.2.2 driving Codex through one prompt that lists files, reads one, searches, runs a
 /// command, fails one, and searches the web. Verbatim apart from the project path and user name.
-private enum CodexToolWire {
+enum CodexToolWire {
     static let lines = [
         #"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"01a15233-d007-7fb1-8aaa-1764ce9b4d44","update":{"sessionUpdate":"tool_call","toolCallId":"exec-22338a01-0465-4d5b-b935-f17f2603d5c3","name":"exec_command","kind":"read","title":"List files","status":"in_progress"}}}"#,
         #"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"01a15233-d007-7fb1-8aaa-1764ce9b4d44","update":{"sessionUpdate":"tool_call_update","toolCallId":"exec-22338a01-0465-4d5b-b935-f17f2603d5c3","status":"completed","rawOutput":{"exit_code":0},"_meta":{"terminal_output_delta":{"data":"total 24\ndrwxr-xr-x@  5 me  staff  160 Oct 19 14:28 .\n-rw-r--r--@  1 me  staff   65 Oct 19 14:28 calc.py\n","terminal_id":"exec-22338a01-0465-4d5b-b935-f17f2603d5c3"}}}}}"#,

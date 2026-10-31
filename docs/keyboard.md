@@ -308,17 +308,16 @@ expedition's lead (the composer key, on a page without a composer).
 
 ## Transcript
 
-Tool rows, exploration groups and condensed runs of tool calls start closed. Each is a button, so
-it opens with a click, a tap, or from the keyboard. The task remembers opened and closed rows,
-groups, runs and earlier turns while the app runs, including after switching tasks or transcript
-styles. A run's header still counts running and failed calls while closed. Pending approvals stay
-visible outside the groups; a container that holds one stays open until it is answered, then returns
-to the user's choice.
+Tool rows and groups of tool work start closed. Each is a button, so it opens with a click, a tap,
+or from the keyboard. The task remembers opened and closed rows, groups and earlier turns while the
+app runs, including after switching tasks or transcript styles. A closed group still says what it is
+doing while it runs and how its last call ended. Pending approvals are never in a group: they stay
+on their own row, with their details open, until they are answered.
 
 | Keys | Action |
 | --- | --- |
 | Space on a focused tool row (Tab moves focus, with Keyboard Navigation on) | Show or hide its output |
-| Space on a focused run of tool calls | Show or hide the run's list |
+| Space on a focused group of tool work | Show or hide its calls |
 
 ## Images and artifacts
 

@@ -122,15 +122,11 @@ extension TranscriptItem {
     }
 }
 
-/// What one turn did, in counts: the facts behind "Explored 6 files, edited 3 files, ran 4
-/// commands" and "1m 12s · 7 files changed +120 −14".
+/// What one turn did, in counts: the facts behind "Read 6 files, edited 3 files and ran 4 commands"
+/// and "1m 12s · 7 files changed +120 −14".
 public struct TurnSummary: Hashable, Sendable {
-    /// Distinct files the agent read.
-    public var filesRead = 0
-    public var searches = 0
-    public var commands = 0
-    /// Fetches, MCP tools and anything else that isn't reading, searching, editing or running.
-    public var otherTools = 0
+    /// The turn's tool work, counted for its one-line summary.
+    public var work = ToolWorkSummary(calls: [ToolCallState]())
     /// Files the turn's completed edits touched, in the order first touched.
     public var changedFiles: [ChangedFile] = []
     public var subagents = 0
@@ -161,43 +157,34 @@ public struct TurnSummary: Hashable, Sendable {
     public init(items: some Collection<TranscriptItem>, duration: TimeInterval? = nil, stopReason: StopReason? = nil) {
         self.duration = duration
         self.stopReason = stopReason
-        var read = Set<String>()
+        var calls: [ToolCallState] = []
         for item in items {
             switch item {
             case .toolCall(let call):
-                count(call, reads: &read)
+                calls.append(call)
+                countChanges(of: call)
             case .subagent:
                 subagents += 1
             case .message, .notice, .sessionMessage:
                 break
             }
         }
-        filesRead = read.count
+        work = ToolWorkSummary(calls: calls)
     }
 
-    private mutating func count(_ call: ToolCallState, reads: inout Set<String>) {
+    private mutating func countChanges(of call: ToolCallState) {
         let diffs = call.content.compactMap { content -> FileDiff? in
             if case .diff(let diff) = content { diff } else { nil }
         }
-        if !diffs.isEmpty || [.edit, .delete, .move].contains(call.kind) {
-            // Rejected or failed edits changed nothing.
-            guard call.status == .completed else { return }
-            for diff in diffs {
-                let lines = diff.lineCounts
-                change(diff.path, added: lines.added, removed: lines.removed)
-            }
-            if diffs.isEmpty, let path = call.locations.first?.path {
-                change(path, added: 0, removed: 0)
-            }
-            return
+        guard !diffs.isEmpty || [.edit, .delete, .move].contains(call.kind) else { return }
+        // Rejected or failed edits changed nothing.
+        guard call.status == .completed else { return }
+        for diff in diffs {
+            let lines = diff.lineCounts
+            change(diff.path, added: lines.added, removed: lines.removed)
         }
-        switch call.kind {
-        case .read: reads.insert(call.locations.first?.path ?? call.title)
-        case .search: searches += 1
-        case .execute: commands += 1
-        // Plans and mode switches aren't tool work worth counting.
-        case .think, .switchMode: break
-        case .fetch, .other, .edit, .delete, .move: otherTools += 1
+        if diffs.isEmpty, let path = call.locations.first?.path {
+            change(path, added: 0, removed: 0)
         }
     }
 
@@ -210,20 +197,9 @@ public struct TurnSummary: Hashable, Sendable {
         }
     }
 
-    /// The turn's tool work in one sentence ("Explored 6 files, edited 3 files, ran 4 commands"),
-    /// or nil when it used no tools.
+    /// The turn's tool work in one sentence ("Read 6 files, edited 3 files and ran 4 commands",
+    /// `ToolWorkSummary`), or nil when it used no tools.
     public var activityDescription: String? {
-        func counted(_ count: Int, _ singular: String, _ plural: String) -> String {
-            "\(count) \(count == 1 ? singular : plural)"
-        }
-        let parts = [
-            filesRead > 0 ? "explored \(counted(filesRead, "file", "files"))" : nil,
-            searches > 0 ? "ran \(counted(searches, "search", "searches"))" : nil,
-            changedFiles.isEmpty ? nil : "edited \(counted(changedFiles.count, "file", "files"))",
-            commands > 0 ? "ran \(counted(commands, "command", "commands"))" : nil,
-            otherTools > 0 ? "used \(counted(otherTools, "tool", "tools"))" : nil,
-        ].compactMap(\.self)
-        guard let first = parts.first else { return nil }
-        return ([first.prefix(1).uppercased() + first.dropFirst()] + parts.dropFirst()).joined(separator: ", ")
+        work.sentence
     }
 }

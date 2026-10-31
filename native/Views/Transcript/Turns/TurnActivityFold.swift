@@ -1,36 +1,35 @@
 import ACP
 import SwiftUI
 
-/// An earlier turn's tool work as one line, "Explored 6 files, edited 3 files, ran 4 commands",
-/// that opens the turn's rows back up in place.
+/// An earlier turn's tool work as one line, "Read 6 files, edited 3 files and ran 4 commands", that
+/// opens the turn's rows back up in place. It reads like a group of tool work (`ToolGroupView`):
+/// the same line, glyph and chevron.
 struct TurnActivityFold: View {
     let summary: TurnSummary
     let isUnfolded: Bool
     let toggle: () -> Void
 
-    @State private var isHovering = false
-
     var body: some View {
-        Button(action: toggle) {
-            HStack(spacing: DS.Space.sm) {
-                Image(systemName: "square.stack.3d.up")
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.dsTextTertiary)
-                    .frame(width: DS.Size.rowLeading)
-                Text(summary.activityDescription ?? "Worked")
-                    .foregroundStyle(isHovering ? .dsTextPrimary : .dsTextSecondary)
-                    .lineLimit(1)
-                DisclosureChevron(isExpanded: isUnfolded)
-                    .opacity(isHovering || isUnfolded ? 1 : 0)
-                Spacer(minLength: 0)
-            }
-            .font(.dsCallout)
-            .padding(.vertical, DS.Space.xs)
-            .contentShape(.rect)
+        ToolLine(
+            glyph: .mixed, sentence: summary.activityDescription ?? "Worked", isExpandable: true,
+            isExpanded: isUnfolded, toggle: toggle
+        ) {
+            EmptyView()
         }
-        .buttonStyle(.plain)
-        .onHover { isHovering = $0 }
-        .animation(.dsHoverOut, value: isHovering)
         .accessibilityHint(isUnfolded ? "Folds the turn's tool calls" : "Shows the turn's tool calls")
     }
 }
+
+#if DEBUG
+#Preview("Turn activity fold - Folded and unfolded") {
+    let summary = TurnSummary(items: ToolGroupPreviewFixtures.done.flatMap(\.items))
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xxs) {
+            TurnActivityFold(summary: summary, isUnfolded: false) {}
+            TurnActivityFold(summary: summary, isUnfolded: true) {}
+        }
+        .padding(DS.Space.xl)
+        .frame(width: 560)
+    }
+}
+#endif

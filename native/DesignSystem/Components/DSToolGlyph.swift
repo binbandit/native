@@ -21,6 +21,8 @@ public enum DSToolGlyph: String, CaseIterable, Sendable {
     /// Work handed to a subagent.
     case subagent
     case other
+    /// Several kinds of work together, for a line that stands for them all.
+    case mixed
 
     public var systemImage: String {
         switch self {
@@ -33,6 +35,7 @@ public enum DSToolGlyph: String, CaseIterable, Sendable {
         case .think: "brain"
         case .subagent: "sparkles"
         case .other: "wrench.and.screwdriver"
+        case .mixed: "square.stack.3d.up"
         }
     }
 
@@ -49,6 +52,7 @@ public enum DSToolGlyph: String, CaseIterable, Sendable {
             case .think: ("plan", "plans")
             case .subagent: ("subagent", "subagents")
             case .other: ("other tool", "other tools")
+            case .mixed: ("tool call", "tool calls")
             }
         return "\(count) \(count == 1 ? singular : plural)"
     }
