@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 import sys
+import subprocess
 
 
 def relocate(value, mappings):
@@ -38,6 +39,39 @@ def relocate_packages(packages, old_repo, old_packages, new_repo, new_packages):
         path.write_text(text)
 
 
+def validate_revisions(packages, resolved):
+    """Workspace state is only a record: check the copied Git HEADs against the actual pins."""
+    pins = {pin["identity"]: pin["state"]["revision"]
+            for pin in json.loads(resolved.read_text())["pins"]
+            if pin["kind"] in {"remoteSourceControl", "localSourceControl"}}
+    dependencies = json.loads((packages / "workspace-state.json").read_text())["object"]["dependencies"]
+    checked = set()
+    for dependency in dependencies:
+        state = dependency["state"]
+        if "checkoutState" not in state:
+            continue
+        identity = dependency["packageRef"]["identity"]
+        revision = pins[identity]
+        checkout = packages / "checkouts" / dependency["subpath"]
+        if checkout.parent != packages / "checkouts" or not (checkout / ".git").is_dir():
+            return False
+        actual = subprocess.run(["git", "-C", str(checkout), "rev-parse", "HEAD"],
+                                check=True, capture_output=True, text=True).stdout.strip()
+        if actual != revision or state["checkoutState"]["revision"] != revision:
+            return False
+        checked.add(checkout.name)
+    # Fail closed for checkouts missing from the recorded dependency graph.
+    return checked == {path.name for path in (packages / "checkouts").iterdir()}
+
+
 if __name__ == "__main__":
+    if sys.argv[1] == "--validate":
+        try:
+            valid = validate_revisions(Path(sys.argv[2]), Path(sys.argv[3]))
+        except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError):
+            valid = False
+        if not valid:
+            print("package snapshot skipped: checkout revisions do not match resolved pins", file=sys.stderr)
+        sys.exit(0 if valid else 1)
     directory, old_repo, old_packages, new_repo, new_packages = sys.argv[1:]
     relocate_packages(Path(directory), old_repo, old_packages, new_repo, new_packages)

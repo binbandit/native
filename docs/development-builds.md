@@ -8,7 +8,7 @@ Shared data lives in `~/Library/Caches/native-build/isolated` (`NATIVE_DEV_CACHE
 
 | Cache | Reuse and invalidation |
 | --- | --- |
-| `packages-v1/<graph hash>` | Successful builds publish immutable APFS clones of repositories, checkouts and binary artifacts. The key includes Package.resolved, local package manifests, the project and Swift toolchain. A new instance clones the snapshot into its own SourcePackages. SwiftPM JSON state and Git administrative paths are relocated before use. Modified dependency checkouts are never published. Publication is locked and atomic; readers never see a partial snapshot. |
+| `packages-v2/<graph hash>` | Successful builds publish immutable APFS clones of repositories, checkouts and binary artifacts. The key includes Package.resolved, local package manifests, the project and Swift toolchain. A new instance clones the snapshot into its own SourcePackages. SwiftPM JSON state and Git administrative paths are relocated before use. Modified dependency checkouts and clean checkouts at revisions different from the resolved pins are never published. The v2 namespace excludes snapshots published without revision verification. Publication is locked and atomic; readers never see a partial snapshot. |
 | `xcode/<toolchain hash>/ModuleCache.noindex` | The compiler's shared module cache, keyed by Swift toolchain, SDK build and host architecture. |
 | `xcode/<toolchain hash>/CompilationCache.noindex` | Xcode's content-addressed compile cache, bounded at 2 GB. Compiler inputs and flags determine reuse. Swift and Clang prefix mappings normalize source, product and derived paths across worktrees. Each instance still gets its own object files and linked app. |
 

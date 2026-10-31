@@ -47,20 +47,35 @@ class BuildCacheTests(unittest.TestCase):
             git("-C", source, "add", "value")
             git("-C", source, "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
                 "commit", "-m", "fixture")
+            revision = git("-C", source, "rev-parse", "HEAD").stdout.strip()
+            resolved.write_text(json.dumps({"version": 3, "pins": [{
+                "identity": "a", "kind": "remoteSourceControl", "location": str(source),
+                "state": {"revision": revision}}]}))
             git("clone", "--bare", source, bare)
             checkout = packages / "checkouts/A"
             checkout.parent.mkdir()
             git("clone", "--shared", bare, checkout)
             (packages / "artifacts").mkdir()
             (packages / "workspace-state.json").write_text(json.dumps({
-                "object": {"path": str(repo / "Packages/A"), "artifact": str(packages / "artifacts/a")}}))
+                "object": {"path": str(repo / "Packages/A"), "artifact": str(packages / "artifacts/a"),
+                           "dependencies": [{"packageRef": {"identity": "a", "kind": "remoteSourceControl"},
+                                             "subpath": "A", "state": {"checkoutState": {"revision": revision}}}]}}))
             env = dict(os.environ, NATIVE_DEV_CACHE=str(root / "cache"))
             script = repo / "scripts/dev/build-cache.sh"
             def run(action, derived):
                 subprocess.run([str(script), action, str(repo), str(derived)], env=env, check=True,
                                capture_output=True, text=True)
+            # Committed edits are clean, but must not publish under the original revision's key.
+            (checkout / "value").write_text("committed edit")
+            git("-C", checkout, "add", "value")
+            git("-C", checkout, "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+                "commit", "-m", "dependency edit")
+            self.assertEqual(git("-C", checkout, "status", "--porcelain").stdout, "")
             run("publish", before)
-            snapshots = list((root / "cache/packages-v1").glob("[!.]*"))
+            self.assertEqual(list((root / "cache/packages-v2").glob("[!.]*")), [])
+            git("-C", checkout, "checkout", "--detach", revision)
+            run("publish", before)
+            snapshots = list((root / "cache/packages-v2").glob("[!.]*"))
             self.assertEqual(len(snapshots), 1)
             shutil.rmtree(before)
             moved_repo = root / "another worktree"
@@ -86,7 +101,7 @@ class BuildCacheTests(unittest.TestCase):
             run("prepare", fresh)
             self.assertFalse((fresh / "SourcePackages").exists())
             run("publish", after)
-            self.assertEqual(len(list((root / "cache/packages-v1").glob("[!.]*"))), 1)
+            self.assertEqual(len(list((root / "cache/packages-v2").glob("[!.]*"))), 1)
 
 
 if __name__ == "__main__":

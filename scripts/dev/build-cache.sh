@@ -17,7 +17,7 @@ package_key=$({
     done
     xcrun swiftc --version 2>/dev/null
 } | shasum -a 256 | awk '{print $1}')
-snapshot="$cache/packages-v1/$package_key"
+snapshot="$cache/packages-v2/$package_key"
 packages="$derived/SourcePackages"
 
 clone_folder() {
@@ -51,13 +51,13 @@ publish)
         [ -d "$checkout/.git" ] || exit 0
         [ -z "$(git -C "$checkout" status --porcelain --untracked-files=all)" ] || exit 0
     done
-    mkdir -p "$cache/packages-v1"
+    mkdir -p "$cache/packages-v2"
     # Readers see only complete snapshots. First successful publisher wins for these exact pins.
     if [ -z "${NATIVE_DEV_CACHE_LOCKED:-}" ]; then
-        exec env NATIVE_DEV_CACHE_LOCKED=1 lockf -k "$cache/packages-v1/.publish.lock" "$0" "$@"
+        exec env NATIVE_DEV_CACHE_LOCKED=1 lockf -k "$cache/packages-v2/.publish.lock" "$0" "$@"
     fi
     [ ! -e "$snapshot" ] || exit 0
-    staged=$(mktemp -d "$cache/packages-v1/.seed.XXXXXX")
+    staged=$(mktemp -d "$cache/packages-v2/.seed.XXXXXX")
     trap 'rm -rf "$staged"' EXIT
     for folder in repositories checkouts artifacts; do
         [ ! -d "$packages/$folder" ] || clone_folder "$packages/$folder" "$staged/$folder"
@@ -65,6 +65,8 @@ publish)
     [ ! -f "$packages/workspace-state.json" ] || cp "$packages/workspace-state.json" "$staged/"
     python3 "$root/scripts/dev/build-cache-state.py" "$staged" \
         "$root" "$packages" '@NATIVE_REPO@' '@NATIVE_PACKAGES@'
+    # Validate the private copy, so committed edits cannot masquerade as the recorded pin.
+    python3 "$root/scripts/dev/build-cache-state.py" --validate "$staged" "$resolved" || exit 0
     mv "$staged" "$snapshot"
     ;;
 *) echo "unknown cache action: $mode" >&2; exit 2 ;;
