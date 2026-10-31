@@ -682,8 +682,10 @@ receive it through the transcript environment, so switching sessions, recreating
 opening a subagent does not discard disclosure choices. Tool rows and groups of tool work start
 closed. What a row or group says comes from `ToolCallWording` and `ToolWorkSummary` in the ACP
 package, which `TranscriptRow.rows` groups (two or more calls in a row, with the reasoning between
-them; approvals and questions stay on their own; output-free successful polls can be hidden,
-while polling results and failures remain accessible), so the transcript, the well, the pull request
+them; approvals and questions stay on their own). Polling output and completion fold into the
+command with the matching process session ID before grouping, without changing captured items.
+Matched polls and output-free successful polls disappear from individual and grouped rows;
+unmatched results and failures keep their own accessible row. The transcript, the well, the pull request
 ask and the companion all say the same thing.
 Scroll positions remain per window in `SessionTranscriptMemory`.
 

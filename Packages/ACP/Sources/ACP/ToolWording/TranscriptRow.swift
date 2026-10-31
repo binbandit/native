@@ -46,6 +46,7 @@ public enum TranscriptRow: Identifiable, Hashable, Sendable {
     /// anything else: prose, a notice, a subagent, a request waiting for the user, a question. With
     /// `grouping` off every item is its own row.
     public static func rows(from items: some Sequence<TranscriptItem>, grouping: Bool = true) -> [TranscriptRow] {
+        let items = ToolPollingTranscript.folding(Array(items))
         guard grouping else { return items.map(TranscriptRow.item) }
         var rows: [TranscriptRow] = []
         var run: [TranscriptItem] = []
@@ -53,7 +54,7 @@ public enum TranscriptRow: Identifiable, Hashable, Sendable {
 
         func flush() {
             if calls > 1 {
-                rows.append(.toolGroup(ToolWorkGroup(items: run)))
+                rows.append(.toolGroup(ToolWorkGroup(foldedItems: run)))
             } else {
                 rows += run.map(TranscriptRow.item)
             }
@@ -85,7 +86,15 @@ public struct ToolWorkGroup: Identifiable, Hashable, Sendable {
     public let items: [TranscriptItem]
 
     public init(items: [TranscriptItem]) {
-        self.items = items
+        self.init(foldedItems: ToolPollingTranscript.folding(items))
+    }
+
+    // The row builder has already matched polls across the whole turn. Repeating the match here
+    // could associate an orphan poll with a command whose process already finished.
+    fileprivate init(foldedItems: [TranscriptItem]) {
+        self.items = foldedItems.filter { item in
+            if case .toolCall(let call) = item { !call.isSuppressiblePolling } else { true }
+        }
     }
 
     /// The first item never changes as the group grows, so the group keeps its identity.

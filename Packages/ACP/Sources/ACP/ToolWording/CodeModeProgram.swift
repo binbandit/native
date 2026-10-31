@@ -41,6 +41,7 @@ struct CodeModeProgram: Equatable {
     }
 
     let steps: [Step]
+    let polledSessions: Set<String>
 
     /// The program in a call's input, when the call is code mode's: its source names `tools.`.
     init?(_ call: ToolCallState) {
@@ -52,6 +53,7 @@ struct CodeModeProgram: Equatable {
 
     init(source: String) {
         var steps: [Step] = []
+        var polledSessions: Set<String> = []
         var rest = Substring(source)
         while let call = rest.range(of: "tools.") {
             rest = rest[call.upperBound...]
@@ -76,11 +78,17 @@ struct CodeModeProgram: Equatable {
                 }
             case "write_stdin":
                 steps.append(.input(Self.string(named: "chars", in: arguments) ?? ""))
+                if let session = Self.string(named: "session_id", in: arguments)
+                    ?? ToolPollingTranscript.capture(#"\bsession_id["']?\s*:\s*(\d+)\b"#, in: String(arguments))
+                {
+                    polledSessions.insert(session)
+                }
             default:
                 steps.append(.other(tool: name))
             }
         }
         self.steps = steps
+        self.polledSessions = polledSessions
     }
 
     /// Every step only polls a running command.
@@ -171,8 +179,8 @@ struct CodeModeProgram: Equatable {
 }
 
 extension ToolCallState {
-    /// Only output-free, successful polls can disappear. Results belong to this call's ID,
-    /// so hiding one with content would lose the only way to inspect that output.
+    /// Only output-free, successful polls can disappear without a matched command. Results that
+    /// cannot be associated safely keep their own row so their output remains accessible.
     public var isSuppressiblePolling: Bool {
         isPolling && status == .completed && permission == nil && content.isEmpty
             && rawOutput == nil && terminalOutput == nil && (exitCode ?? 0) == 0
@@ -180,7 +188,7 @@ extension ToolCallState {
 
     /// A call that only waits on another: Codex polling a running command for output (an empty
     /// `write_stdin`, alone or in a code mode program) or sleeping between polls. Its time belongs
-    /// to the step it waits on; result-bearing polls still need their own accessible row.
+    /// to the step it waits on; unmatched result-bearing polls keep their own accessible row.
     public var isPolling: Bool {
         guard mcpTool == nil else { return false }
         if let program = CodeModeProgram(self) { return program.isPolling }

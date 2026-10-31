@@ -235,6 +235,88 @@ struct ToolWordingTests {
         #expect(ToolCommandIntent("rg -n -e TODO Sources") == .search(pattern: "TODO", path: "Sources"))
         #expect(ToolCommandIntent("grep --regexp=TODO Sources") == .search(pattern: "TODO", path: "Sources"))
         #expect(ToolCommandIntent("rg -e TODO -e FIXME Sources") == nil)
+        let search = CodexExecWire.call("search", #"await tools.exec_command({cmd:"rg -n -e alpha notes.txt"})"#)
+        #expect(search.sentence == "Searched for \"alpha\" in notes.txt")
+    }
+
+    @Test func matchedPollingResultsBelongToTheOriginalCommand() throws {
+        var command = CodexExecWire.call("run", #"await tools.exec_command({cmd:"swift test"})"#)
+        command.content = [.content(.text("Process running with session ID 11732\ninitial output"))]
+        var poll = CodexExecWire.call("poll", #"await tools.write_stdin({session_id:11732,chars:""})"#)
+        poll.content = [.content(.text("Process exited with code 1\nFAILED: testExample"))]
+        let other = CodexExecWire.call("other", #"await tools.exec_command({cmd:"swift build"})"#)
+        for grouping in [true, false] {
+            for grouped in [true, false] {
+                let items = (grouped ? [command, poll, other] : [command, poll]).map(TranscriptItem.toolCall)
+                let rows = TranscriptRow.rows(from: items, grouping: grouping)
+                let visible = rows.flatMap { row -> [TranscriptItem] in
+                    switch row {
+                    case .item(let item): [item]
+                    case .toolGroup(let group): group.items
+                    }
+                }
+                #expect(!visible.contains { $0.toolCall?.id == poll.id })
+                let result = try #require(visible.compactMap(\.toolCall).first { $0.id == command.id })
+                #expect(result.status == .failed)
+                #expect(result.exitCode == 1)
+                #expect(result.content.contains(.content(.text("Process exited with code 1\nFAILED: testExample"))))
+                #expect(
+                    result.content.contains(.content(.text("Process running with session ID 11732\ninitial output"))))
+            }
+        }
+        let group = ToolWorkGroup(items: [command, poll, other].map(TranscriptItem.toolCall))
+        #expect(group.items.count == 2)
+        #expect(group.calls.first?.status == .failed)
+    }
+
+    @Test func pollingTracksTheMatchingProcessAndKeepsEveryChunk() throws {
+        var first = CodexExecWire.call("first", #"await tools.exec_command({cmd:"swift test"})"#)
+        first.rawOutput = .object(["session_id": .number(11732)])
+        var second = CodexExecWire.call("second", #"await tools.exec_command({cmd:"swift build"})"#)
+        second.rawOutput = .object(["session_id": .number(221)])
+        var poll = CodexExecWire.call("poll", #"await tools.write_stdin({"session_id":11732,"chars":""})"#)
+        poll.rawOutput = .object(["session_id": .number(11732), "output": .string("still running")])
+        poll.terminalOutput = "chunk one\n"
+        var final = ToolCallState(id: "final", title: "write_stdin", name: "write_stdin", status: .completed)
+        final.rawInput = .object(["session_id": .number(11732), "chars": .string("")])
+        final.rawOutput = .object(["exit_code": .number(0)])
+        final.terminalOutput = "chunk two\n"
+        let running = TranscriptRow.rows(from: [first, second, poll].map(TranscriptItem.toolCall), grouping: false)
+        #expect(running.first?.id == "tool-first")
+        if case .item(.toolCall(let call))? = running.first { #expect(call.status == .inProgress) }
+        let done = TranscriptRow.rows(from: [first, second, poll, final].map(TranscriptItem.toolCall), grouping: false)
+        #expect(done.count == 2)
+        let call = try #require(done.first.flatMap { if case .item(let item) = $0 { item.toolCall } else { nil } })
+        #expect(call.status == .completed)
+        #expect(call.terminalOutput == "chunk one\nchunk two\n")
+        #expect(call.exitCode == 0)
+        var orphan = ToolCallState(id: "orphan", title: "write_stdin", name: "write_stdin", status: .failed)
+        orphan.rawInput = final.rawInput
+        orphan.terminalOutput = "Unknown process"
+        let rows = TranscriptRow.rows(from: [first, second, poll, final, orphan].map(TranscriptItem.toolCall))
+        guard case .toolGroup(let group)? = rows.first else {
+            Issue.record("Expected a group with the unmatched poll still accessible")
+            return
+        }
+        #expect(group.calls.map(\.id) == ["first", "second", "orphan"])
+    }
+
+    @Test func pollingPreservesOutputBehindATerminalReference() throws {
+        var command = CodexExecWire.call("run", #"await tools.exec_command({cmd:"swift test"})"#)
+        command.content = [.terminal(id: "terminal-run")]
+        command.rawOutput = .object(["session_id": .number(11732)])
+        command.terminalOutput = "initial diagnostics\n"
+        var poll = CodexExecWire.call("poll", #"await tools.write_stdin({session_id:11732,chars:""})"#)
+        poll.content = [.content(.text("Process exited with code 1\nFAILED: testExample"))]
+        let rows = TranscriptRow.rows(from: [command, poll].map(TranscriptItem.toolCall))
+        let row = try #require(rows.first)
+        guard case .item(.toolCall(let result)) = row else {
+            Issue.record("Expected the original command")
+            return
+        }
+        #expect(result.content.contains(.terminal(id: "terminal-run")))
+        #expect(result.content.contains(.content(.text("initial diagnostics\n"))))
+        #expect(result.content.contains(.content(.text("Process exited with code 1\nFAILED: testExample"))))
     }
 
     @Test func pollingResultsRemainAccessible() {
