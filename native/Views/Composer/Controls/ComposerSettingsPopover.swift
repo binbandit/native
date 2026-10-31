@@ -248,17 +248,24 @@ struct ComposerSettingsPopover: View {
         let target = Target.autonomy(choice.value)
         let locked = isForbidden(choice.value)
         let unavailable = setting.option.permissionMappings.map { $0[choice.value] == nil } ?? false
+        let unknownCurrent =
+            choice.value == shownAutonomy && unavailable && TaskPermissionMode(rawValue: choice.value) == nil
         let mark: ComposerSettingsMark =
-            locked ? .lock : mark(for: setting, value: choice.value, isCurrent: choice.value == shownAutonomy)
+            locked && !unknownCurrent
+            ? .lock : mark(for: setting, value: choice.value, isCurrent: choice.value == shownAutonomy)
         return Button {
             choose(target, closing: false)
         } label: {
-            ComposerSettingsRow(mark: mark, highlight: highlight(of: target), isDimmed: locked || isStopped) {
+            ComposerSettingsRow(
+                mark: mark, highlight: highlight(of: target), isDimmed: (locked && !unknownCurrent) || isStopped
+            ) {
                 Text(choice.askingTitle)
             } trailing: {
                 if locked && !showsLockedConsequences {
-                    Text(unavailable ? "Unavailable" : "Not allowed").font(DS.ComposerSettings.detailFont)
-                        .foregroundStyle(.dsTextTertiary)
+                    Text(unknownCurrent ? "Active" : unavailable ? "Unavailable" : "Not allowed").font(
+                        DS.ComposerSettings.detailFont
+                    )
+                    .foregroundStyle(.dsTextTertiary)
                 }
             }
         }
@@ -267,9 +274,11 @@ struct ComposerSettingsPopover: View {
         .composerSettingsHover(target, hovered: $hovered)
         .accessibilityLabel(choice.askingTitle)
         .accessibilityValue(
-            unavailable
-                ? "No safe equivalent with this agent"
-                : locked ? "Managed by \(manager ?? PolicyCenter.organizationName)" : ""
+            unknownCurrent
+                ? "Active permissions are unknown. Choose a known mode to set them."
+                : unavailable
+                    ? "No safe equivalent with this agent"
+                    : locked ? "Managed by \(manager ?? PolicyCenter.organizationName)" : ""
         )
         .help(caption(for: choice) ?? choice.askingTitle)
         .accessibilityHint(caption(for: choice) ?? "")

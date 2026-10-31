@@ -56,7 +56,7 @@ public struct TaskPermissionMapping: Hashable, Sendable {
             selection(mode, offered: wire, forbidden: forbidden)?.value == current ? mode : nil
         }
         var shown = option
-        let mode = retained ?? mode(for: current) ?? TaskPermissionMode.migrating(current) ?? .askFirst
+        let mode = retained ?? mode(for: current) ?? TaskPermissionMode.migrating(current)
         let choices = TaskPermissionMode.allCases.map { mode in
             let selected = selection(mode, offered: wire, forbidden: forbidden)
             let note =
@@ -65,11 +65,18 @@ public struct TaskPermissionMapping: Hashable, Sendable {
                 } ?? "This agent does not offer a safe equivalent."
             return ConfigOption.SelectOption(
                 value: mode.rawValue, name: mode.title,
-                description: [mode.summary, note, selected.flatMap { notes[$0.value] }].compactMap { $0 }.joined(
+                description: [selected.flatMap { notes[$0.value] } ?? mode.summary, note].compactMap { $0 }.joined(
                     separator: " "))
         }
         // Task modes can apply a plan or read-only restriction independently of permissions.
-        let restrictions = offered.filter { $0.value == "plan" || $0.value == "read-only" }
+        var restrictions = offered.filter { $0.value == "plan" || $0.value == "read-only" }
+        if mode == nil, current != "plan", current != "read-only" {
+            restrictions.append(
+                .init(
+                    value: current, name: offered.first { $0.value == current }?.name ?? current,
+                    description:
+                        "Native cannot describe this agent's active permissions. Choose a known mode to set them."))
+        }
         shown.permissionMappings = Dictionary(
             uniqueKeysWithValues: TaskPermissionMode.allCases.compactMap { mode in
                 // Retain provider availability so a policy lock is attributed to the organization.
@@ -78,7 +85,8 @@ public struct TaskPermissionMapping: Hashable, Sendable {
             })
         shown.name = "Permissions"
         shown.kind = .select(
-            currentValue: current == "plan" || (current == "read-only" && retained == nil) ? current : mode.rawValue,
+            currentValue: current == "plan" || (current == "read-only" && retained == nil)
+                ? current : mode?.rawValue ?? current,
             options: choices + restrictions)
         return shown
     }

@@ -53,7 +53,11 @@ extension AppModel {
             let allowed = TaskPermissionMode.allCases.reversed().first {
                 $0.rank <= permission.rank && !PolicyPermissionModes.forbids(options[index], value: $0.rawValue)
             }
-            if let allowed { options[index].kind = .select(currentValue: allowed.rawValue, options: choices) }
+            if TaskPermissionDefaults.requestedValue(project: project?.id.uuidString) == "read-only" {
+                options[index].kind = .select(currentValue: "read-only", options: choices)
+            } else if let allowed {
+                options[index].kind = .select(currentValue: allowed.rawValue, options: choices)
+            }
         }
         var categories = AgentSessionDefaults.configuredValues(for: agent)
         if let project, let model = ProjectTaskDefaults.model(for: project.id, agent: agent) {
@@ -272,8 +276,12 @@ extension AppModel {
                     isError: true)
                 continue
             }
-            if case .select(let current, _) = option.kind, current == value { continue }
-            await session.setConfigOption(option, to: value)
+            if category == "mode" {
+                await session.pick(option, value: value)
+            } else {
+                if case .select(let current, _) = option.kind, current == value { continue }
+                await session.setConfigOption(option, to: value)
+            }
             guard case .select(let actual, _)? = session.configOptions.first(where: { $0.category == category })?.kind,
                 actual == value
             else {

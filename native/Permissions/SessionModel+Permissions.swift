@@ -4,6 +4,20 @@ import NativeHostProtocol
 import NativePolicy
 
 extension SessionModel {
+    var inactiveReadOnlyDefault: String? {
+        guard services.titles.configChoices(for: titleKey).requiresReadOnly == true,
+            !state.configOptions.contains(where: {
+                guard $0.category == "mode", case .select(let value, _) = $0.kind else { return false }
+                return value == "read-only"
+            })
+        else { return nil }
+        return "Your read-only default is not active. Choose this task's permissions explicitly before sending."
+    }
+
+    func checkReadOnlyDefault() throws {
+        if let message = inactiveReadOnlyDefault { throw SendError.permissionRestriction(message) }
+    }
+
     /// Presentation is shared by Mac, iPad and paired-host sessions. Transport and the host's
     /// recovery journal retain the provider's real controls, so old clients can still reopen them.
     func permissionOptions(_ reported: [ConfigOption]) -> [ConfigOption] {
@@ -28,7 +42,21 @@ extension SessionModel {
     }
 
     func applyPermissionDefault(project: String?, defaults: UserDefaults) async {
-        let wanted = TaskPermissionDefaults.value(project: project, defaults: defaults)
+        let requested = TaskPermissionDefaults.requestedValue(project: project, defaults: defaults)
+        let wanted = TaskPermissionMode.migrating(requested) ?? .askFirst
+        if requested == "read-only" {
+            services.titles.updateConfigChoices(for: titleKey) { $0.requiresReadOnly = true }
+            if let option = configOptions.first(where: { $0.category == "mode" }),
+                case .select(_, let choices) = option.kind, choices.contains(where: { $0.value == requested })
+            {
+                await setConfigOption(option, to: requested)
+            } else {
+                addNotice(
+                    "This agent cannot retain your read-only default. Choose permissions explicitly before sending.",
+                    isError: false)
+            }
+            return
+        }
         guard let option = configOptions.first(where: { $0.category == "mode" }) else {
             addNotice(
                 "This agent does not expose permission controls. Review its permissions before sending.", isError: false

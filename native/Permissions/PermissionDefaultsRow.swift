@@ -27,6 +27,9 @@ struct PermissionDefaultsRow: View {
         guard let effective else {
             return "Your organization does not allow any permission mode. Contact your administrator."
         }
+        if (stored ?? global) == "read-only" {
+            return "Keeps the saved read-only restriction. Agents without it need an explicit permission choice."
+        }
         return effective.summary + (effective == selected ? "" : " Your organization restricts the saved choice.")
     }
 
@@ -37,7 +40,10 @@ struct PermissionDefaultsRow: View {
         ) {
             NewTasksValueMenu(
                 label: "Default permissions",
-                value: effective.map { project != nil && stored == nil ? "Default (\($0.title))" : $0.title }
+                value: effective.map {
+                    let title = (stored ?? global) == "read-only" ? "Read only" : $0.title
+                    return project != nil && stored == nil ? "Default (\(title))" : title
+                }
                     ?? "No allowed mode",
                 isDefault: project != nil && stored == nil
             ) {
@@ -51,7 +57,7 @@ struct PermissionDefaultsRow: View {
                     } label: {
                         Text(mode.title)
                         Text(mode.summary)
-                        if mode == selected { Image(systemName: "checkmark") }
+                        if mode == selected, (stored ?? global) != "read-only" { Image(systemName: "checkmark") }
                     }
                     .disabled(isForbidden(mode))
                 }
@@ -83,5 +89,12 @@ struct PermissionDefaultsRow: View {
         SettingsRowGroup { PermissionDefaultsRow(project: project) }.settingsPreviewPage()
     }
     .defaultAppStorage(defaults)
+}
+#Preview("Permission defaults - Migrated read only") {
+    let defaults = PreviewUserDefaults()
+    let _ = defaults.set("read-only", forKey: TaskPermissionDefaults.key)
+    DSPreviewPair {
+        SettingsRowGroup { PermissionDefaultsRow() }.settingsPreviewPage()
+    }.defaultAppStorage(defaults)
 }
 #endif

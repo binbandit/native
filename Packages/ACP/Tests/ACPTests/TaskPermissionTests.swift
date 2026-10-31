@@ -111,6 +111,63 @@ import Testing
         #expect(canonical == "ask-first")
     }
 
+    @Test func codexCaptionsDescribeOnlyEffectiveProviderBehavior() throws {
+        let option = try JSONDecoder().decode(
+            ConfigOption.self,
+            from: Data(
+                #"{"id":"mode","name":"Mode","category":"mode","type":"select","currentValue":"workspace-write","options":[{"value":"workspace-write","name":"Workspace"}]}"#
+                    .utf8))
+        let shown = CodexConfigOverrides.permissionMapping.presenting(option)
+        guard case .select(_, let choices) = shown.kind else { Issue.record("Missing select"); return }
+        for choice in choices.prefix(2) {
+            #expect(choice.description?.contains("without asking") == true)
+            #expect(choice.description?.contains("Asks before") == false)
+        }
+    }
+
+    @Test func unknownActivePermissionIsPreservedAlongsideKnownChoices() throws {
+        let option = try JSONDecoder().decode(
+            ConfigOption.self,
+            from: Data(
+                #"{"id":"mode","name":"Mode","category":"mode","type":"select","currentValue":"custom-autopilot","options":[{"value":"default","name":"Default"},{"value":"custom-autopilot","name":"Custom autopilot"}]}"#
+                    .utf8))
+        let shown = TaskPermissionMapping.standard.presenting(option)
+        guard case .select(let current, let choices) = shown.kind else { Issue.record("Missing select"); return }
+        #expect(current == "custom-autopilot")
+        #expect(choices.contains { $0.value == current && $0.name == "Custom autopilot" })
+        #expect(choices.first { $0.value == current }?.description?.contains("cannot describe") == true)
+    }
+
+    @Test(arguments: [nil, "sample"] as [String?])
+    func readOnlyDefaultsRetainTheirRestriction(project: String?) throws {
+        let suite = "TaskPermissionTests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let oldKey = project.map { "projectDefaults.\($0).codex.permissions" } ?? "agentDefaults.codex.permissions"
+        defaults.set("read-only", forKey: oldKey)
+        _ = TaskPermissionDefaults.value(project: project, defaults: defaults)
+        #expect(defaults.string(forKey: TaskPermissionDefaults.key(project: project)) == "read-only")
+        let requested = TaskPermissionDefaults.requestedValue(project: project, defaults: defaults)
+        let selected = AgentModelPermissions.selection(for: requested, offered: ["read-only", "workspace-write"])
+        #expect(selected?.value == "read-only")
+        #expect(defaults.string(forKey: oldKey) == nil)
+        // Migration is stable, including after another agent's less restrictive default is seen.
+        defaults.set("bypassPermissions", forKey: "agentDefaults.other.permissions")
+        #expect(TaskPermissionDefaults.requestedValue(project: project, defaults: defaults) == "read-only")
+    }
+
+    @Test func readOnlyRequirementSurvivesPersistenceAndProviderUpdates() throws {
+        var choices = ConfigChoices()
+        choices.requiresReadOnly = true
+        #expect(!choices.isEmpty)
+        let data = try JSONEncoder().encode(choices)
+        var restored = try JSONDecoder().decode(ConfigChoices.self, from: data)
+        restored.follow([])
+        #expect(restored.requiresReadOnly == true)
+        #expect(
+            try JSONDecoder().decode(ConfigChoices.self, from: Data(#"{"choices":{}}"#.utf8)).requiresReadOnly == nil)
+    }
+
     @Test func migratesAllLegacyLevels() {
         let cases: [String: TaskPermissionMode] = [
             "default": .askFirst, "read-only": .askFirst, "dontAsk": .askFirst, "plan": .askFirst,

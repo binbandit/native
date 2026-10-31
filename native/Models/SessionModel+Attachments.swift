@@ -40,6 +40,7 @@ extension SessionModel {
         if !acceptsPrompts { return isEarlierConversation ? .earlierConversation : .notAcceptingPrompts }
         // A host session whose agent couldn't run takes a message as its cue to try again.
         if phase == .disconnected, host == nil { return .disconnected(agentName: agentName) }
+        if let message = inactiveReadOnlyDefault { return .permissionPolicy(message) }
         if let option = configOptions.first(where: { $0.category == "mode" }),
             case .select(let current, _) = option.kind,
             (PolicyPermissionModes.forbids(

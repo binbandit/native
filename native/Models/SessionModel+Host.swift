@@ -286,6 +286,7 @@ extension SessionModel {
     private func sendToHost(
         _ text: String, attachments: [PromptAttachment], behavior: FollowUpBehavior, echo: Bool
     ) async throws -> FollowUpDelivery {
+        try checkReadOnlyDefault()
         guard let host else { throw SendError.disconnected }
         let isFirstPrompt = !hasStarted
         let params = PromptParams(

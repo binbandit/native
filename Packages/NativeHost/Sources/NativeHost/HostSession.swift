@@ -24,6 +24,8 @@ final class HostSession {
     var removedFromQueue: [OutgoingPrompt] = []
     /// Permission requests waiting on the user, by tool call: the agent's request id to answer.
     var pendingPermissions: [String: RequestID] = [:]
+    /// Revocation must include permission RPCs whose provider response has not arrived yet.
+    var pendingPermissionChanges: [UUID: (value: String, intent: String?)] = [:]
     /// Questions waiting on the user, oldest first: the host's id for each and the agent's request.
     var pendingQuestions: [(id: String, request: RequestID)] = []
     var supportsSteering = false

@@ -1,4 +1,5 @@
 #if DEBUG
+import ACP
 import SwiftUI
 
 // Task Settings' states (popover.html, a to h), each in light and dark.
@@ -130,4 +131,21 @@ private struct PopoverPreview: View {
     }
 }
 
+#Preview("Task settings - Codex Accept edits fallback") {
+    PopoverPreview(
+        popover: ComposerSettingsPopover(
+            settings: Fixtures.codex(), agentName: "Codex", workspace: "fix/queued-row",
+            onSet: { _, _ in }, highlighted: .autonomy("accept-edits")))
+}
+
+#Preview("Task settings - Unknown active permission") {
+    let options: [ACP.ConfigOption] =
+        ComposerPreviewFixtures.decode(
+            #"[{"id":"mode","name":"Mode","category":"mode","type":"select","currentValue":"custom-autopilot","options":[{"value":"default","name":"Default"},{"value":"custom-autopilot","name":"Custom autopilot"}]}]"#
+        ) ?? []
+    PopoverPreview(
+        popover: ComposerSettingsPopover(
+            settings: ComposerSettings(options.map { ACP.TaskPermissionMapping.standard.presenting($0) }),
+            agentName: "Example Agent", onSet: { _, _ in }))
+}
 #endif

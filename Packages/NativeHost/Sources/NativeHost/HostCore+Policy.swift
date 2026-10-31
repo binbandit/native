@@ -104,10 +104,10 @@ extension HostCore {
     /// The policy no longer allows some agents, or any: their turns end (paused, so nothing is sent
     /// again without the user, here or after a restart), their recoveries and retries stop, and
     /// their process trees are ended. Transcripts, queues and sessions stay.
-    private func endDeniedAgentWork() {
+    func endDeniedAgentWork() {
         let permissionDeniedAgents = Set(
             sessions.values.filter {
-                ($0.turn != nil || $0.hiddenCommand != nil) && (try? requirePermission(in: $0)) == nil
+                ($0.turn != nil || $0.hiddenCommand != nil) && hasDeniedPermissions(in: $0)
             }.map { $0.record.agentID })
         endDeniedAgentTurns()
         // A Stop already owns its turn's processes: it ends them now, without waiting out its grace
@@ -135,7 +135,7 @@ extension HostCore {
     func endDeniedAgentTurns() {
         for session in sessions.values {
             let agentDenied = !allowsAgentRoute(session.record.agentID)
-            guard agentDenied || (try? requirePermission(in: session)) == nil else { continue }
+            guard agentDenied || hasDeniedPermissions(in: session) else { continue }
             let denial =
                 agentDenied
                 ? denial(forAgentOf: session) : HostPolicyDenial("use this task's permissions", policy: policy)

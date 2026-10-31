@@ -122,7 +122,10 @@ enum SettingsPageMap {
         if pane.id == .agents { entries.removeAll { $0.id.rawValue.hasSuffix(".defaults") } }
         if pane.id == .git { entries.removeAll { $0.id == GitSettingsPage.workspaceRow } }
         if pane.id == .notifications { entries.removeAll { $0.id == NotificationSettingsPage.dockBadgeRow } }
-        if pane.id == .general { entries.append(GeneralSettingsPage.badgeEntry) }
+        if pane.id == .general {
+            entries.removeAll { $0.id == SettingsRowID("permissions.default") }
+            entries.append(GeneralSettingsPage.badgeEntry)
+        }
         if pane.id == .extensions {
             let agentRows = Set(
                 registry.plugins.filter { $0.source == .builtIn && !$0.plugin.manifest.agents.isEmpty }

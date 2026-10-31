@@ -11,7 +11,7 @@ public enum TaskPermissionDefaults {
 
     public static func migrate(in defaults: UserDefaults) {
         let saved = defaults.dictionaryRepresentation()
-        var scopes: [String: [TaskPermissionMode]] = [:]
+        var scopes: [String: [String]] = [:]
         for (key, value) in saved where key.hasSuffix(".permissions") {
             guard let value = value as? String, !value.isEmpty else { continue }
             let mode = TaskPermissionMode.migrating(value) ?? .askFirst
@@ -24,10 +24,15 @@ public enum TaskPermissionDefaults {
             } else {
                 continue
             }
-            scopes[destination, default: []].append(mode)
+            scopes[destination, default: []].append(value == "read-only" ? value : mode.rawValue)
         }
         for (key, modes) in scopes where defaults.string(forKey: key) == nil {
-            defaults.set(modes.min { $0.rank < $1.rank }?.rawValue, forKey: key)
+            defaults.set(
+                modes.min {
+                    let left = $0 == "read-only" ? -1 : (TaskPermissionMode.migrating($0)?.rank ?? 0)
+                    let right = $1 == "read-only" ? -1 : (TaskPermissionMode.migrating($1)?.rank ?? 0)
+                    return left < right
+                }, forKey: key)
         }
         // Removing migrated keys prevents a reset from reviving a provider-specific choice.
         for key in saved.keys
@@ -39,13 +44,13 @@ public enum TaskPermissionDefaults {
     }
 
     public static func value(project: String? = nil, defaults: UserDefaults = .standard) -> TaskPermissionMode {
+        TaskPermissionMode.migrating(requestedValue(project: project, defaults: defaults)) ?? .askFirst
+    }
+
+    /// Read-only is an additional provider restriction, not permission to use workspace-write.
+    public static func requestedValue(project: String? = nil, defaults: UserDefaults = .standard) -> String {
         migrate(in: defaults)
-        if let saved = defaults.string(forKey: key(project: project)) {
-            return TaskPermissionMode.migrating(saved) ?? .askFirst
-        }
-        if let saved = defaults.string(forKey: key) {
-            return TaskPermissionMode.migrating(saved) ?? .askFirst
-        }
-        return .fullAccess
+        return defaults.string(forKey: key(project: project)) ?? defaults.string(forKey: key)
+            ?? TaskPermissionMode.fullAccess.rawValue
     }
 }

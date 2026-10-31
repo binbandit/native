@@ -259,6 +259,7 @@ extension HostCore {
         {
             // The agent changed a setting itself; what a load reports is set back instead (`performLoad`).
             pinConfig(options, of: session)
+            endDeniedAgentWork()
         }
         if session.record.title != hadTitle {
             try? store.updateSession(session.record)

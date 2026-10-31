@@ -56,10 +56,61 @@ private struct AgentModelChangeRegression {
         defer { UserDefaults.standard.removePersistentDomain(forName: domain) }
         do {
             try duplicateModels()
+            try await readOnlyDefaultMigration()
             try await run()
             try await inAppRecovery()
             try await permissionFallbacks()
         } catch { print("FAIL: \(error)"); exit(1) }
+    }
+
+    static func readOnlyDefaultMigration() async throws {
+        for project in [nil, "sample"] as [String?] {
+            let defaults = PreviewUserDefaults()
+            let old = project.map { "projectDefaults.\($0).codex.permissions" } ?? "agentDefaults.codex.permissions"
+            defaults.set("read-only", forKey: old)
+            let app = AppModel(defaults: defaults, catalogURL: nil)
+            guard
+                let session = SessionModel.preview(in: app, agent: "codex", id: "read-only-default", configOptions: [])
+            else { throw ChangeFailure("No Codex fixture") }
+            // Use the recorded provider controls, before Native's presentation mapping.
+            session.state.configOptions =
+                ComposerPreviewFixtures.decode(
+                    #"[{"id":"mode","name":"Mode","category":"mode","type":"select","currentValue":"workspace-write","options":[{"value":"read-only","name":"Read only"},{"value":"workspace-write","name":"Workspace"}]}]"#
+                ) ?? []
+            await session.applyPermissionDefault(project: project, defaults: defaults)
+            guard case .select(let current, _) = session.state.configOptions.first?.kind else {
+                throw ChangeFailure("No mode")
+            }
+            try require(current == "read-only", "Migrated read-only default granted workspace writes")
+            try require(
+                session.services.titles.configChoices(for: session.titleKey).requiresReadOnly == true,
+                "Read-only requirement was not retained")
+            session.state.configOptions =
+                ComposerPreviewFixtures.decode(
+                    #"[{"id":"mode","name":"Mode","category":"mode","type":"select","currentValue":"workspace-write","options":[{"value":"workspace-write","name":"Workspace"}]}]"#
+                ) ?? []
+            try require(
+                session.sendBlockedReason?.contains("read-only") == true, "Lost read-only restriction allowed sending")
+            do {
+                _ = try await session.submit("Keep the restriction", .queue)
+                throw ChangeFailure("Direct submission bypassed the read-only requirement")
+            } catch let error as SessionModel.SendError {
+                try require(error.localizedDescription.contains("read-only"), "Wrong direct-submission refusal")
+            }
+            session.draft = "Keep this draft"
+            await session.submit(.queue)
+            await session.send()
+            try require(session.draft == "Keep this draft", "Blocked send discarded the draft")
+            try require(!session.hasSubmittedPrompt, "Blocked send submitted work")
+            guard let raw = session.state.configOptions.first else { throw ChangeFailure("Missing mode fixture") }
+            let shown = CodexConfigOverrides.permissionMapping.presenting(raw)
+            await session.pick(shown, value: "ask-first")
+            try require(
+                session.services.titles.configChoices(for: session.titleKey).requiresReadOnly == nil,
+                "Explicit replacement did not release the migrated restriction")
+        }
+        print(
+            "PASS: user and project read-only migration, provider selection, blocked widening and explicit replacement")
     }
 
     static func run() async throws {

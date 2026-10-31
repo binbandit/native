@@ -2,6 +2,13 @@ import ACP
 import NativeHostProtocol
 
 extension HostCore {
+    func hasDeniedPermissions(in session: HostSession) -> Bool {
+        (try? requirePermission(in: session)) == nil
+            || session.pendingPermissionChanges.values.contains {
+                (try? requirePermission(in: session, value: $0.value, intent: $0.intent)) == nil
+            }
+    }
+
     /// The host checks its own cap, including when a companion has no managed policy of its own.
     func requirePermission(in session: HostSession, value: String? = nil, intent: String? = nil) throws {
         guard !policy.forbiddenPermissionModes.isEmpty else { return }

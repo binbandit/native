@@ -232,6 +232,7 @@ actor FakeAgent {
             try peer.respond(to: id, with: JSONValue.object(["outcome": .string("injected")]))
         case "session/set_config_option":
             let params = try message.params(as: ConfigParams.self)
+            try await waitForPermissionRelease(params)
             if loaded.contains(params.sessionId), params.configId == "model",
                 ProcessInfo.processInfo.environment["FAKE_AGENT_CHILD_ON_RESTORE"] == "1"
             {
@@ -604,7 +605,7 @@ actor FakeAgent {
         return true
     }
 
-    private func received(_ kind: String, _ text: String) {
+    func received(_ kind: String, _ text: String) {
         note("received.log", "\(kind)\t\(text)")
     }
 

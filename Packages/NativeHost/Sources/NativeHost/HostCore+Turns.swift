@@ -296,11 +296,15 @@ extension HostCore {
     func setConfigOption(_ params: SetConfigOptionParams) async throws {
         let session = try session(params.sessionID)
         try await load(session)
-        if params.permissionMode != nil
+        let changesPermissions =
+            params.permissionMode != nil
             || session.mirror.state.configOptions.contains(where: { $0.id == params.configID && $0.category == "mode" })
-        {
+        let changeID = UUID()
+        if changesPermissions {
             try requirePermission(in: session, value: params.value, intent: params.permissionMode)
+            session.pendingPermissionChanges[changeID] = (params.value, params.permissionMode)
         }
+        defer { session.pendingPermissionChanges[changeID] = nil }
         guard let peer = agents[session.record.agentID]?.peer, let agentSessionID = session.record.agentSessionID else {
             throw HostError.agentUnavailable(session.agentName)
         }
@@ -319,6 +323,12 @@ extension HostCore {
             session.record.configChoices[params.configID] = params.value
             try? store.updateSession(session.record)
         }
+        // Both the policy and the provider's permission controls can change during the RPC.
+        endDeniedAgentWork()
+        if changesPermissions {
+            try requirePermission(in: session, value: params.value, intent: params.permissionMode)
+        }
+        try requirePermission(in: session)
         if let mode = params.permissionMode, TaskPermissionMode(rawValue: mode) != nil {
             session.record.configChoices[SetConfigOptionParams.permissionChoiceKey] = mode
             try store.updateSession(session.record)

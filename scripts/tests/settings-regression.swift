@@ -353,6 +353,13 @@ struct SettingsRegression {
                 matches.count == 1 && matches.first?.title == title && matches.first?.paneID == page,
                 "\(title) has one search result at its new home")
         }
+        row(SettingsRowID("permissions.default"), title: "Permissions", page: .newTasks)
+        let legacyPermissions = SettingsSearchIndex(panes: legacy).items.filter {
+            $0.rowID == SettingsRowID("permissions.default")
+        }
+        expect(
+            legacyPermissions.count == 1 && legacyPermissions.first?.paneID == .general,
+            "Legacy permissions remain in General")
         row(GeneralSettingsPage.followUpRow, title: "Return", page: .general)
         row(GitHubAccountsSettingsSection.accountsRow, title: "GitHub accounts", page: .general)
         row(NotificationSettingsPage.dockBadgeRow, title: "Badge", page: .general)

@@ -97,8 +97,8 @@ struct GeneralSettingsPage: View {
                 }
             } else {
                 SettingsRowGroup { followUpControl }
+                SettingsGroup(title: "New tasks") { PermissionDefaultsRow() }
             }
-            SettingsGroup(title: "New tasks") { PermissionDefaultsRow() }
             if homeNext {
                 HomeNextSettingsSection()
             }

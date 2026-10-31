@@ -13,7 +13,8 @@ changes only the current task. There is no experiment switch and no confirmation
 | Full access | `bypassPermissions` | `agent-full-access`: never, danger-full-access |
 
 The Codex adapter's workspace mode permits workspace edits and commands. Its picker explains that
-outside access asks. It does not claim a read-only sandbox. If Auto is unavailable for a Claude model,
+outside access asks. Provider consequence captions replace generic summaries, with a separate fallback
+sentence where needed. It does not claim a read-only sandbox. If Auto is unavailable for a Claude model,
 Native uses Accept edits, or Ask first when edits are unavailable. Other ACP agents use recognized
 permission controls through the plugin mapping. Unfamiliar values are never guessed from their order
 or display names. A missing mode uses the closest stricter equivalent; choices with no safe equivalent
@@ -27,7 +28,10 @@ preserves distinct Native choices that share one provider control. Older clients
 field. Plan remains a task mode, separate from the four permission modes.
 
 Saved task choices migrate to their closest Native mode. Existing workspace-write choices become
-Accept edits; read-only and manual choices become Ask first. Unknown saved defaults become Ask first.
+Accept edits; manual choices become Ask first. Explicit read-only defaults retain their raw restriction
+in both shared and project scopes. New tasks select the provider's read-only control; if that control is
+unavailable or fails, sending stays blocked until the user explicitly chooses replacement permissions.
+The requirement persists with the task's config choices. Unknown saved defaults become Ask first.
 Provider-specific user/project defaults migrate once to shared keys. If several provider defaults differ,
 the strictest explicit choice wins. Clearing a project override follows the shared default. Existing tasks
 retain their chosen permissions when reopened; changing the default affects new tasks only.
@@ -38,7 +42,9 @@ Switching agents retains the shared mode and applies the destination plugin's st
 The host reads the same managed cap itself and checks permission changes, prompts, steering and
 hidden commands, so a paired client's local defaults cannot override it. Unknown provider controls
 are refused under a managed cap. Tightening the cap pauses affected queues and ends active agent
-processes that no longer satisfy it.
+processes that no longer satisfy it, including permission changes still waiting on a provider response.
+Late provider responses and live config updates are checked against the current cap too. Unknown active
+provider values retain their name and explain that Native cannot describe their permissions.
 
 Full access does not suppress permission requests an agent actually sends. User-authored ask rules and
 provider-enforced checks continue through the existing approval card and keyboard actions. Native does
