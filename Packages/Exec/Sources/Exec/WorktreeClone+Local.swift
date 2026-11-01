@@ -9,27 +9,26 @@ extension WorktreeClone {
     /// No byte-copy fallback: a large cache must never silently become a large duplicate.
     func perform(supportsClones check: ((URL, URL) -> Bool)? = nil) throws -> Report {
         var report = Report()
-        let source = source.resolvingSymlinksInPath().standardizedFileURL
-        let destination = destination.resolvingSymlinksInPath().standardizedFileURL
-        guard source != destination, !Self.contains(destination, in: source), !Self.contains(source, in: destination)
-        else { throw CommandError.refused("Warm worktrees need separate project and worktree folders.") }
         #if os(macOS)
-        guard (check ?? Self.supportsClones)(source, destination) else {
-            report.unsupported = true
-            return report
-        }
         let sourceFD = try Self.openDirectory(source.path(percentEncoded: false))
         defer { close(sourceFD) }
         let destinationFD = try Self.openDirectory(destination.path(percentEncoded: false))
         defer { close(destinationFD) }
+        let sourcePath = try Self.canonicalPath(sourceFD)
+        let taskPath = try Self.canonicalPath(destinationFD)
+        guard !Self.contains(taskPath, in: sourcePath), !Self.contains(sourcePath, in: taskPath) else {
+            throw CommandError.refused("Warm worktrees need separate project and worktree folders.")
+        }
+        guard check?(source, destination) ?? Self.supportsClones(sourceFD, destinationFD) else {
+            report.unsupported = true
+            return report
+        }
         for path in paths {
             try Task.checkCancellation()
-            guard Self.validRelativePath(path) else {
+            guard let components = Self.relativeComponents(path), let name = components.last else {
                 report.skipped.append(path)
                 continue
             }
-            let components = Self.pathComponents(path)
-            guard let name = components.last else { continue }
             do {
                 let from = try Self.parentDirectory(sourceFD, components: components.dropLast(), create: false)
                 defer { close(from) }
@@ -47,12 +46,10 @@ extension WorktreeClone {
                 }
                 var created = false
                 do {
-                    try Self.cloneEntry(
-                        name, from: from, to: to, relative: name, projectPath: path,
-                        project: sourceFD, task: destinationFD, created: &created)
+                    try Self.cloneEntry(name, from: from, to: to, created: &created)
                     // Package links may be copied after their executables. Validate the completed
                     // task tree so preserved raw links cannot use a different checkout-side chain.
-                    try Self.validateClonedLinks(name, in: to, path: path, task: destinationFD)
+                    try Self.validateClonedLinks(name, in: to, taskPath: taskPath)
                     report.cloned.append(path)
                 } catch {
                     if created { Self.removeEntry(name, in: to) }
@@ -69,29 +66,34 @@ extension WorktreeClone {
         return report
     }
 
-    private static func pathComponents(_ path: String, omittingEmpty: Bool = true) -> [String] {
-        // A slash followed by a combining mark is one Swift Character, but two POSIX components.
-        path.utf8.split(separator: UInt8(ascii: "/"), omittingEmptySubsequences: omittingEmpty)
-            .map { String(decoding: $0, as: UTF8.self) }
-    }
-
-    private static func validRelativePath(_ path: String) -> Bool {
-        !path.isEmpty && path.utf8.first != UInt8(ascii: "/") && !path.utf8.contains(0)
-            && !pathComponents(path, omittingEmpty: false).contains {
-                $0.isEmpty || $0 == "." || $0 == ".." || $0.lowercased() == ".git"
-            }
-    }
-
-    private static func contains(_ url: URL, in root: URL) -> Bool {
-        url.pathComponents.starts(with: root.pathComponents)
-    }
-
     #if os(macOS)
-    private static func supportsClones(_ source: URL, _ destination: URL) -> Bool {
+    private static func relativeComponents(_ path: String) -> [String]? {
+        // POSIX separators are bytes. A combining mark can hide a slash from Character splitting.
+        let components = path.utf8.split(separator: UInt8(ascii: "/"), omittingEmptySubsequences: false)
+            .map { String(decoding: $0, as: UTF8.self) }
+        guard components.allSatisfy({ isEntryName($0) && $0.lowercased() != ".git" }) else { return nil }
+        return components
+    }
+
+    private static func isEntryName(_ name: String) -> Bool {
+        !name.isEmpty && name != "." && name != ".." && !name.utf8.contains { $0 == 0 || $0 == UInt8(ascii: "/") }
+    }
+
+    private static func canonicalPath(_ descriptor: Int32) throws -> [UInt8] {
+        var buffer = [UInt8](repeating: 0, count: Int(PATH_MAX))
+        guard fcntl(descriptor, F_GETPATH, &buffer) == 0 else { throw posixError() }
+        // Keep the filesystem's spelling as bytes, without Swift's Unicode equivalence rules.
+        return Array(buffer.prefix(while: { $0 != 0 }))
+    }
+
+    private static func contains(_ path: [UInt8], in root: [UInt8]) -> Bool {
+        path == root || path.starts(with: root + (root.last == UInt8(ascii: "/") ? [] : [UInt8(ascii: "/")]))
+    }
+
+    private static func supportsClones(_ source: Int32, _ destination: Int32) -> Bool {
         var from = statfs()
         var to = statfs()
-        guard statfs(source.path(percentEncoded: false), &from) == 0,
-            statfs(destination.path(percentEncoded: false), &to) == 0
+        guard fstatfs(source, &from) == 0, fstatfs(destination, &to) == 0
         else { return false }
         let apfs = withUnsafeBytes(of: from.f_fstypename) { bytes in
             String(decoding: bytes.prefix(while: { $0 != 0 }), as: UTF8.self) == "apfs"
@@ -100,6 +102,9 @@ extension WorktreeClone {
     }
 
     private static func openDirectory(_ path: String, at parent: Int32 = AT_FDCWD) throws -> Int32 {
+        guard parent == AT_FDCWD || isEntryName(path) else {
+            throw CommandError.refused("A directory lookup needs one filesystem component.")
+        }
         let descriptor = openat(parent, path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC)
         guard descriptor >= 0 else { throw posixError() }
         return descriptor
@@ -110,6 +115,9 @@ extension WorktreeClone {
         guard descriptor >= 0 else { throw posixError() }
         do {
             for part in components {
+                guard isEntryName(part) else {
+                    throw CommandError.refused("A directory lookup needs one filesystem component.")
+                }
                 if create, mkdirat(descriptor, part, 0o755) != 0, errno != EEXIST { throw posixError() }
                 let next = try openDirectory(part, at: descriptor)
                 close(descriptor)
@@ -123,10 +131,10 @@ extension WorktreeClone {
     }
 
     private static func cloneEntry(
-        _ name: String, from source: Int32, to destination: Int32, relative: String, projectPath: String,
-        project: Int32, task: Int32, created: inout Bool
+        _ name: String, from source: Int32, to destination: Int32, created: inout Bool
     ) throws {
         try Task.checkCancellation()
+        guard isEntryName(name) else { throw CommandError.refused("A clone needs one filesystem component.") }
         var info = stat()
         guard fstatat(source, name, &info, AT_SYMLINK_NOFOLLOW) == 0 else { throw posixError() }
         switch info.st_mode & S_IFMT {
@@ -149,9 +157,7 @@ extension WorktreeClone {
                 // Local env files are selected separately by Git after the user opts in.
                 guard !child.hasPrefix(".env") else { return }
                 var childCreated = false
-                try cloneEntry(
-                    child, from: from, to: to, relative: relative + "/" + child,
-                    projectPath: projectPath + "/" + child, project: project, task: task, created: &childCreated)
+                try cloneEntry(child, from: from, to: to, created: &childCreated)
                 if child.lowercased() == ".git" {
                     // Inspect the private copy so source edits during cloning cannot bypass validation.
                     let gitDirectory = try openDirectory(child, at: to)
@@ -164,12 +170,8 @@ extension WorktreeClone {
             var buffer = [UInt8](repeating: 0, count: Int(PATH_MAX))
             let count = readlinkat(source, name, &buffer, buffer.count)
             guard count > 0, count < buffer.count else { throw posixError() }
-            let link = String(decoding: buffer.prefix(count), as: UTF8.self)
-            guard
-                isInternalCacheLink(link, relative: relative, projectPath: projectPath, project: project)
-                    || isExistingProjectLink(link, at: projectPath, project: project, task: task)
-            else {
-                throw CommandError.refused("A cache contains a link outside the copied folder.")
+            guard let link = String(bytes: buffer.prefix(count), encoding: .utf8) else {
+                throw CommandError.refused("A cache contains a link with an unsupported encoding.")
             }
             guard symlinkat(link, destination, name) == 0 else { throw posixError() }
             created = true
@@ -186,90 +188,31 @@ extension WorktreeClone {
         }
     }
 
-    private static func isInternalCacheLink(
-        _ link: String, relative: String, projectPath: String, project: Int32
-    ) -> Bool {
-        let relativeParts = pathComponents(relative)
-        let projectParts = pathComponents(projectPath)
-        let cacheParts = Array(projectParts.dropLast(relativeParts.count - 1))
-        guard let cache = try? parentDirectory(project, components: cacheParts[...], create: false) else {
-            return false
-        }
-        defer { close(cache) }
-        return resolveLink(
-            link, base: Array(relativeParts.dropFirst().dropLast()), root: cache, followLinks: true) != nil
-    }
-
-    private static func resolveLink(_ link: String, base: [String], root: Int32, followLinks: Bool) -> [String]? {
-        guard link.utf8.first != UInt8(ascii: "/") else { return nil }
-        var resolved = base
-        var pending = pathComponents(link)
-        var followed = 0
-        while !pending.isEmpty {
-            let part = pending.removeFirst()
-            if part == "." { continue }
-            if part == ".." {
-                guard !resolved.isEmpty else { return nil }
-                resolved.removeLast()
-                continue
-            }
-            guard part.lowercased() != ".git",
-                let parent = try? parentDirectory(root, components: resolved[...], create: false)
-            else { return nil }
-            defer { close(parent) }
-            var info = stat()
-            guard fstatat(parent, part, &info, AT_SYMLINK_NOFOLLOW) == 0 else { return nil }
-            if info.st_mode & S_IFMT == S_IFLNK {
-                guard followLinks, followed < 40 else { return nil }
-                followed += 1
-                var buffer = [UInt8](repeating: 0, count: Int(PATH_MAX))
-                let count = readlinkat(parent, part, &buffer, buffer.count)
-                guard count > 0, count < buffer.count else { return nil }
-                let target = String(decoding: buffer.prefix(count), as: UTF8.self)
-                guard target.utf8.first != UInt8(ascii: "/") else { return nil }
-                // Expand links before processing subsequent '..' components, as the filesystem does.
-                pending = pathComponents(target) + pending
-                continue
-            }
-            guard
-                info.st_mode & S_IFMT == S_IFDIR
-                    || (pending.isEmpty && info.st_mode & S_IFMT == S_IFREG)
-            else { return nil }
-            resolved.append(part)
-        }
-        return resolved
-    }
-
-    private static func isExistingProjectLink(_ link: String, at path: String, project: Int32, task: Int32) -> Bool {
-        let base = Array(pathComponents(path).dropLast())
-        // Expand package links in the source before checking the tracked task target. The cache is
-        // still being cloned, so its package links may not exist in the task yet. Each copied
-        // link is checked separately, and the final task target must have no link indirection.
-        guard let target = resolveLink(link, base: base, root: project, followLinks: true), !target.isEmpty,
-            resolveLink(target.joined(separator: "/"), base: [], root: task, followLinks: false) == target
-        else { return false }
-        return true
-    }
-
-    private static func validateClonedLinks(_ name: String, in parent: Int32, path: String, task: Int32) throws {
+    private static func validateClonedLinks(_ name: String, in parent: Int32, taskPath: [UInt8]) throws {
         try Task.checkCancellation()
+        guard isEntryName(name) else { throw CommandError.refused("A link lookup needs one filesystem component.") }
         var info = stat()
         guard fstatat(parent, name, &info, AT_SYMLINK_NOFOLLOW) == 0 else { throw posixError() }
         if info.st_mode & S_IFMT == S_IFDIR {
             let directory = try openDirectory(name, at: parent)
             defer { close(directory) }
             try forEachEntry(in: directory) { child in
-                try validateClonedLinks(child, in: directory, path: path + "/" + child, task: task)
+                try validateClonedLinks(child, in: directory, taskPath: taskPath)
             }
         } else if info.st_mode & S_IFMT == S_IFLNK {
-            var buffer = [UInt8](repeating: 0, count: Int(PATH_MAX))
-            let count = readlinkat(parent, name, &buffer, buffer.count)
-            guard count > 0, count < buffer.count else { throw posixError() }
-            let link = String(decoding: buffer.prefix(count), as: UTF8.self)
-            let base = Array(pathComponents(path).dropLast())
-            guard resolveLink(link, base: base, root: task, followLinks: true) != nil else {
-                throw CommandError.refused("A cache contains a link outside the copied folder.")
-            }
+            // Only this metadata-only lookup follows links. The kernel resolves the actual finished
+            // task chain, including parent traversal, case and Unicode. No file contents are read.
+            let target = openat(parent, name, O_EVTONLY | O_CLOEXEC)
+            guard target >= 0 else { throw posixError() }
+            defer { close(target) }
+            let resolved = try canonicalPath(target)
+            guard fstat(target, &info) == 0,
+                info.st_mode & S_IFMT == S_IFDIR || info.st_mode & S_IFMT == S_IFREG,
+                contains(resolved, in: taskPath),
+                !resolved.dropFirst(taskPath.count).split(separator: UInt8(ascii: "/")).contains(where: {
+                    String(decoding: $0, as: UTF8.self).lowercased() == ".git"
+                })
+            else { throw CommandError.refused("A cache contains a link outside the copied folder.") }
         }
     }
 
@@ -285,13 +228,17 @@ extension WorktreeClone {
                 break
             }
             let name = withUnsafeBytes(of: entry.pointee.d_name) { bytes in
-                String(decoding: bytes.prefix(while: { $0 != 0 }), as: UTF8.self)
+                String(bytes: bytes.prefix(while: { $0 != 0 }), encoding: .utf8)
             }
-            if name != ".", name != ".." { try body(name) }
+            guard let name else { throw CommandError.refused("A cache contains an unsupported filename encoding.") }
+            if name == "." || name == ".." { continue }
+            guard isEntryName(name) else { throw CommandError.refused("A cache contains an invalid filename.") }
+            try body(name)
         }
     }
 
     private static func removeEntry(_ name: String, in parent: Int32) {
+        guard isEntryName(name) else { return }
         if let directory = try? openDirectory(name, at: parent) {
             defer { close(directory) }
             _ = fchmod(directory, 0o755)

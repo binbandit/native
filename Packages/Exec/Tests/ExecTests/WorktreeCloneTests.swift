@@ -288,6 +288,74 @@ import Testing
             FileManager.default.fileExists(
                 atPath: fixture.destination.appending(path: ".build/checkouts/package/.git/HEAD").path()))
     }
+
+    @Test(arguments: ["alias/\u{301}/file", "alias/\u{301}file"])
+    func rejectsUnicodeWriteThroughDestinationLink(_ path: String) async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        try fixture.write(path, "cache file")
+        let outside = fixture.base.appending(path: "outside")
+        try FileManager.default.createDirectory(
+            at: outside.appending(path: "\u{301}"), withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(
+            atPath: fixture.destination.appending(path: "alias").path(), withDestinationPath: outside.path())
+        let report = try await fixture.clone([path])
+        #expect(report.cloned.isEmpty && report.skipped == [path])
+        #expect(
+            try FileManager.default.contentsOfDirectory(
+                atPath: outside.appending(path: "\u{301}").path(percentEncoded: false)
+            ).isEmpty)
+        #expect(
+            !FileManager.default.fileExists(atPath: outside.appending(path: "\u{301}file").path(percentEncoded: false)))
+    }
+
+    @Test func rejectsCachedLinkToOutsideWithoutChangingOutside() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        try fixture.write("node_modules/cache", "dependency cache")
+        // A shared prefix must not count as containment in the task root.
+        let outside = fixture.base.appending(path: "task-other")
+        try FileManager.default.createDirectory(at: outside, withIntermediateDirectories: true)
+        try Data("external sentinel".utf8).write(to: outside.appending(path: "file"))
+        try FileManager.default.createSymbolicLink(
+            atPath: fixture.source.appending(path: "node_modules/outside").path(), withDestinationPath: outside.path())
+        let report = try await fixture.clone(["node_modules"])
+        #expect(report.cloned.isEmpty && report.skipped == ["node_modules"])
+        #expect(!FileManager.default.fileExists(atPath: fixture.destination.appending(path: "node_modules").path()))
+        #expect(try String(contentsOf: outside.appending(path: "file"), encoding: .utf8) == "external sentinel")
+        #expect(try FileManager.default.contentsOfDirectory(atPath: outside.path()) == ["file"])
+    }
+
+    @Test func preservesFilesystemEquivalentInternalLinks() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        try fixture.write("node_modules/caf\u{e9}/file", "cache file")
+        try FileManager.default.createSymbolicLink(
+            atPath: fixture.source.appending(path: "node_modules/link").path(),
+            withDestinationPath: "cafe\u{301}/file")
+        let report = try await fixture.clone(["node_modules"])
+        #expect(report.cloned == ["node_modules"])
+        #expect(
+            try String(contentsOf: fixture.destination.appending(path: "node_modules/link"), encoding: .utf8)
+                == "cache file")
+    }
+
+    @Test(arguments: [".git", ".GIT"])
+    func rejectsLinksIntoTaskGitMetadata(_ name: String) async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        try fixture.write("node_modules/cache", "dependency cache")
+        try FileManager.default.createDirectory(
+            at: fixture.destination.appending(path: name), withIntermediateDirectories: true)
+        let config = fixture.destination.appending(path: name + "/config")
+        try Data("task metadata".utf8).write(to: config)
+        try FileManager.default.createSymbolicLink(
+            atPath: fixture.source.appending(path: "node_modules/link").path(), withDestinationPath: "../" + name)
+        let report = try await fixture.clone(["node_modules"])
+        #expect(report.cloned.isEmpty && report.skipped == ["node_modules"])
+        #expect(!FileManager.default.fileExists(atPath: fixture.destination.appending(path: "node_modules").path()))
+        #expect(try String(contentsOf: config, encoding: .utf8) == "task metadata")
+    }
     #endif
 
     private struct Fixture {
