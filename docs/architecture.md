@@ -70,6 +70,10 @@
   host, live-session or agent-listing date for both ages and order; opening history doesn't change it.
 - **Subagents** are child sessions: announced by agents (the ACP subagents RFD) or started by
   Native's orchestration tools on any agent. Both look and behave the same in the UI.
+  `start_task` can select exact advertised model/effort values and an existing checkout directory.
+  The runtime translates inherited permissions semantically, refuses escalation or unknown modes,
+  and confirms all requested settings before the first prompt. `list_agents` reports bounded last
+  observations; the fresh session is authoritative, and discovery does not probe authentication.
 
 ### Native's tools on demand
 

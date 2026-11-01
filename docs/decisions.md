@@ -651,3 +651,19 @@ produced each item, and what each agent session has seen. Switching back to an a
 reopens its own conversation and sends only what happened while it was away; the transcript of a
 mixed-agent task reads from the history. Agents still keep and replay their own conversations. See
 [the decision](decisions/2026-11-01-one-task-history.md) for the model, migration and slices.
+
+## 2026-11-01: Delegation validates the new session before prompting
+
+`start_task` accepts exact model and effort identifiers, a known semantic permission value, and an
+existing absolute checkout directory on the executing host. Omitted permissions inherit only an
+equivalent or stricter mode recognized by the existing ACP permission translator. Unknown semantics,
+unsupported explicit values, escalation, and unacknowledged settings fail before the first prompt.
+Users can authorize broader work by changing the parent's permissions in Native; a tool argument
+cannot grant that authority. Plan and read-only restrictions remain distinct and must be preserved.
+
+`list_agents` reports bounded, last-observed ACP config options. An unobserved catalog or unknown
+sign-in status is unknown, not evidence that a model is available or authenticated. Launch validates
+the new session, checks model-dependent effort after selecting the model, and rechecks the live
+parent, managed policy, permissions and acknowledged settings at the prompt boundary. Selecting an
+existing directory does not create or claim worktree isolation. No second capability catalog or
+agent-specific permission rules are introduced. No external implementation was copied for this step.

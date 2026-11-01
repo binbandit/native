@@ -9,6 +9,8 @@ extension SessionModel {
     /// Cancels the current turn. For a subagent, that stops only its work, never its parent's turn.
     func cancel() async {
         guard canCancel else { return }
+        // Cancelling a scheduled retry is a boundary too, even though no turn enters isStopping.
+        delegationStopGeneration += 1
         // The host keeps the stop's grace period and retries itself, so they work with the app closed.
         if host != nil {
             return await cancelOnHost()
