@@ -69,7 +69,7 @@ extension WorktreeClone {
     private static func validRelativePath(_ path: String) -> Bool {
         !path.isEmpty && !path.hasPrefix("/") && !path.contains("\0")
             && !path.split(separator: "/", omittingEmptySubsequences: false).contains {
-                $0.isEmpty || $0 == "." || $0 == ".." || $0 == ".git"
+                $0.isEmpty || $0 == "." || $0 == ".." || $0.lowercased() == ".git"
             }
     }
 
@@ -129,7 +129,8 @@ extension WorktreeClone {
             let to = try openDirectory(name, at: destination)
             defer { close(to) }
             try forEachEntry(in: from) { child in
-                if child == ".git" {
+                if child.lowercased() == ".git" {
+                    // Recognize Git metadata on case-insensitive volumes as well as case-sensitive ones.
                     // SwiftPM caches may contain standalone checkouts, but not Git redirects.
                     var metadata = stat()
                     guard fstatat(from, child, &metadata, AT_SYMLINK_NOFOLLOW) == 0,
@@ -142,7 +143,7 @@ extension WorktreeClone {
                 try cloneEntry(
                     child, from: from, to: to, relative: relative + "/" + child,
                     projectPath: projectPath + "/" + child, project: project, task: task, created: &childCreated)
-                if child == ".git" {
+                if child.lowercased() == ".git" {
                     // Inspect the private copy so source edits during cloning cannot bypass validation.
                     let gitDirectory = try openDirectory(child, at: to)
                     defer { close(gitDirectory) }
@@ -203,7 +204,7 @@ extension WorktreeClone {
                 resolved.removeLast()
                 continue
             }
-            guard part != ".git",
+            guard part.lowercased() != ".git",
                 let parent = try? parentDirectory(root, components: resolved[...], create: false)
             else { return nil }
             defer { close(parent) }
@@ -232,9 +233,11 @@ extension WorktreeClone {
 
     private static func isExistingProjectLink(_ link: String, at path: String, project: Int32, task: Int32) -> Bool {
         let base = Array(path.split(separator: "/").map(String.init).dropLast())
-        // Workspace targets must already exist in both checkouts without any link indirection.
-        guard let target = resolveLink(link, base: base, root: project, followLinks: false), !target.isEmpty,
-            resolveLink(link, base: base, root: task, followLinks: false) == target
+        // Expand package links in the source before checking the tracked task target. The cache is
+        // still being cloned, so its package links may not exist in the task yet. Each copied
+        // link is checked separately, and the final task target must have no link indirection.
+        guard let target = resolveLink(link, base: base, root: project, followLinks: true), !target.isEmpty,
+            resolveLink(target.joined(separator: "/"), base: [], root: task, followLinks: false) == target
         else { return false }
         return true
     }

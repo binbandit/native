@@ -167,8 +167,8 @@ extension String {
             ForEach(
                 [
                     "Copied node_modules, dist.",
-                    "Caches weren't copied. Warm worktrees need both folders on the same APFS volume. Setup commands still run.",
-                    "No matching folders to copy. Left unchanged or skipped unsafe paths: .venv. Run the setup command to rebuild them.",
+                    "Caches weren't copied because the project and task folders are on different drives.",
+                    "No matching folders to copy. Some folders were left out. Run Setup to rebuild them.",
                 ], id: \.self
             ) { notice in
                 let run = TaskScriptWorktreePreviewFixtures.localBase

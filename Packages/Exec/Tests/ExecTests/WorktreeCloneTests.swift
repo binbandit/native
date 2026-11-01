@@ -165,6 +165,44 @@ import Testing
         #expect(!FileManager.default.fileExists(atPath: fixture.destination.appending(path: ".build").path()))
     }
 
+    @Test(arguments: [".GIT", ".Git"])
+    func rejectsMixedCaseGitRedirects(_ name: String) async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        try fixture.write(".build/checkouts/package/" + name + "/HEAD", "ref: refs/heads/main\n")
+        try fixture.write(".build/checkouts/package/" + name + "/commondir", fixture.source.path())
+        let report = try await fixture.clone([".build"])
+        #expect(report.cloned.isEmpty && report.skipped == [".build"])
+        #expect(!FileManager.default.fileExists(atPath: fixture.destination.appending(path: ".build").path()))
+    }
+
+    @Test func preservesWorkspaceExecutableLinks() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        try fixture.write("packages/tool/bin/tool", "workspace executable")
+        let target = fixture.destination.appending(path: "packages/tool/bin")
+        try FileManager.default.createDirectory(at: target, withIntermediateDirectories: true)
+        try Data("task executable".utf8).write(to: target.appending(path: "tool"))
+        try FileManager.default.createDirectory(
+            at: fixture.source.appending(path: "node_modules/.bin"), withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(
+            atPath: fixture.source.appending(path: "node_modules/tool").path(),
+            withDestinationPath: "../packages/tool")
+        try FileManager.default.createSymbolicLink(
+            atPath: fixture.source.appending(path: "node_modules/.bin/tool").path(),
+            withDestinationPath: "../tool/bin/tool")
+        let report = try await fixture.clone(["node_modules"])
+        #expect(report.cloned == ["node_modules"])
+        #expect(
+            try String(contentsOf: fixture.destination.appending(path: "node_modules/.bin/tool"), encoding: .utf8)
+                == "task executable")
+        try FileManager.default.removeItem(at: fixture.destination.appending(path: "node_modules"))
+        try FileManager.default.removeItem(at: target)
+        try FileManager.default.createSymbolicLink(atPath: target.path(), withDestinationPath: fixture.source.path())
+        let unsafe = try await fixture.clone(["node_modules"])
+        #expect(unsafe.cloned.isEmpty && unsafe.skipped == ["node_modules"])
+    }
+
     @Test func preservesStandaloneCachedCheckoutsButRejectsGitdirRedirects() async throws {
         let fixture = try Fixture()
         defer { fixture.remove() }

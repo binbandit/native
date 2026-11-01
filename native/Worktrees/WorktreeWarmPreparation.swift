@@ -12,7 +12,7 @@ extension GitStore {
         let report = try await requireRepository(at: project).warmWorktree(at: folder, settings: configuration)
         if report.unsupported {
             return
-                "Caches weren't copied. Warm worktrees need both folders on the same APFS volume. Setup commands still run."
+                "Caches weren't copied because the project and task folders are on different drives."
         }
         var parts: [String] = []
         if !report.cloned.isEmpty {
@@ -24,7 +24,7 @@ extension GitStore {
         }
         if !report.skipped.isEmpty {
             parts.append(
-                "Left unchanged or skipped unsafe paths: \(report.skipped.joined(separator: ", ")). Run the setup command to rebuild them."
+                "Some folders were left out. Run Setup to rebuild them."
             )
         }
         return parts.joined(separator: " ")
