@@ -102,8 +102,10 @@ struct ComposerBottomRow: View {
     @ViewBuilder
     private var actionControl: some View {
         if state.isWorking {
-            ComposerStopButton(isStopping: state.isStopping, isEscapeEnabled: false, action: actions.stop)
-                .keyboardShortcut(".", modifiers: .command)
+            ComposerStopButton(
+                isStopping: state.isStopping, isEscapeEnabled: false, shortcutHint: "⌘.", action: actions.stop
+            )
+            .keyboardShortcut(".", modifiers: .command)
         } else {
             ComposerSendButton(disabledReason: state.disabledReason, action: actions.send)
                 .keyboardShortcut(.return, modifiers: .command)
