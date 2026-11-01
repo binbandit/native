@@ -9,6 +9,7 @@ struct ComposerField<Attachments: View>: View {
     @Binding var text: String
     @Binding var isFocused: Bool
     @Binding var openMenu: ComposerBottomRow.Menu?
+    var editorFocus: FocusState<Bool>.Binding? = nil
     let state: ComposerRowState
     let actions: ComposerRowActions
     var placeholder = "What would you like to work on?"
@@ -39,28 +40,24 @@ struct ComposerField<Attachments: View>: View {
     var body: some View {
         VStack(spacing: 0) {
             attachments()
-            DSTextInput(
-                document: $document, placeholder: placeholder, isFocused: $isFocused, selection: $selection,
-                onSubmit: actions.send, onKey: handleKey, onAttachments: onAttachments,
-                onStateChange: { inputState = $0 }
-            )
-            .overlay(alignment: .topLeading) {
-                GeometryReader { geometry in
-                    if !completions.isEmpty, let caret = inputState?.caret {
-                        let width = min(DS.ComposerField.completionWidth, geometry.size.width)
-                        ComposerFieldSuggestions(
-                            items: completions, highlighted: $highlighted, choose: accept
-                        )
-                        .frame(width: width)
-                        .padding(.bottom, DS.Space.xs)
-                        .frame(height: 0, alignment: .bottom)
-                        .offset(x: max(0, min(caret.minX, geometry.size.width - width)), y: max(0, caret.minY))
+            editor
+                .overlay(alignment: .topLeading) {
+                    GeometryReader { geometry in
+                        if !completions.isEmpty, let caret = inputState?.caret {
+                            let width = min(DS.ComposerField.completionWidth, geometry.size.width)
+                            ComposerFieldSuggestions(
+                                items: completions, highlighted: $highlighted, choose: accept
+                            )
+                            .frame(width: width)
+                            .padding(.bottom, DS.Space.xs)
+                            .frame(height: 0, alignment: .bottom)
+                            .offset(x: max(0, min(caret.minX, geometry.size.width - width)), y: max(0, caret.minY))
+                        }
                     }
                 }
-            }
-            .padding(.horizontal, DS.Space.xs)
-            .padding(.top, DS.Space.xs)
-            .zIndex(1)
+                .padding(.horizontal, DS.Space.xs)
+                .padding(.top, DS.Space.xs)
+                .zIndex(1)
             ComposerBottomRow(state: state, actions: actions, openMenu: $openMenu)
         }
         .background(.dsSurface, in: .rect(cornerRadius: DS.ComposerField.radius))
@@ -80,6 +77,16 @@ struct ComposerField<Attachments: View>: View {
             onQuery(query?.kind == .file ? query?.text : nil)
         }
         .onChange(of: completions) { highlighted = min(highlighted, max(0, completions.count - 1)) }
+    }
+
+    @ViewBuilder
+    private var editor: some View {
+        let input = DSTextInput(
+            document: $document, placeholder: placeholder, isFocused: $isFocused, selection: $selection,
+            onSubmit: actions.send, onKey: handleKey, onAttachments: onAttachments,
+            onStateChange: { inputState = $0 })
+        // SwiftUI clears an unregistered FocusState on draft updates. Only the editor owns it, not the row.
+        if let editorFocus { input.focused(editorFocus) } else { input }
     }
 
     private func synchronizeText() {

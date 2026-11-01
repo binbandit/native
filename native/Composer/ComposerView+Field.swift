@@ -22,7 +22,7 @@ extension ComposerView {
             ComposerField(
                 text: Binding(get: { draftText }, set: { draftText = $0 }),
                 isFocused: Binding(get: { isFocused }, set: { isFocused = $0 }),
-                openMenu: $fieldMenu, state: fieldRowState, actions: fieldActions,
+                openMenu: $fieldMenu, editorFocus: $isFocused, state: fieldRowState, actions: fieldActions,
                 placeholder: placeholder,
                 files: fieldFileQuery.flatMap { mentionSource?.matches(for: $0) } ?? [],
                 commands: nativeCommands + session.availableCommands.map(ComposerSlashCommand.init),
