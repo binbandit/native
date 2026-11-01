@@ -22,11 +22,14 @@ extension OfflineAdapterBundleTests {
         }
     }
 
-    @Test(arguments: ["complete", "missing-optional", "poisoned-cache"])
+    @Test(
+        .enabled(
+            if: LocalNodeTools.installed != nil,
+            "Requires an installed Node and npm; never fetch a tool to run this fixture"
+        ), arguments: ["complete", "missing-optional", "poisoned-cache"])
     func realNpmWithOutboundDenied(_ mode: String) async throws {
         let omitOptional = mode == "missing-optional"
-        let tools = try #require(
-            LocalNodeTools.installed, "BLOCKER: local Node/npm missing; never fetch a tool to run this fixture")
+        let tools = try #require(LocalNodeTools.installed)
         let node = tools.node
         let npm = tools.npmCLI
         let scratch = temporaryRoot.appending(path: "offline-tools-\(UUID().uuidString)")
@@ -72,7 +75,8 @@ extension OfflineAdapterBundleTests {
                 ] = archive
             }
             var record: [String: Any] = [
-                "version": "1.0.0", "resolved": "https://fixture.invalid/\(name).tgz",
+                // Match npm's registry origin so npm 12 accepts these synthetic cached tarballs.
+                "version": "1.0.0", "resolved": "https://registry.npmjs.org/\(name)/-/\(name)-1.0.0.tgz",
                 "integrity": "sha512-" + Data(digest).base64EncodedString(), "hasInstallScript": true,
             ]
             if index == 0 {
