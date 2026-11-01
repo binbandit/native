@@ -154,10 +154,11 @@ struct ToolUseEvalTests {
         let session = EvalSession(test)
         for arguments: JSON in [
             ["agent": "claude-code"],
-            ["agent": "claude-code", "prompt": "Review", "model": "invented"],
+            ["agent": "claude-code", "prompt": "Review", "unsupported_option": "invented"],
+            ["agent": "claude-code", "prompt": "Review", "model": 7],
             ["agent": 7, "prompt": "Review"],
         ] {
-            #expect(await session.call("start_task", arguments: arguments)["isError"] == true)
+            #expect(await session.call("start_task", arguments: arguments)["isError"] == true, "\(arguments)")
         }
         for timeout: JSON in [0, 241, 1.5, "120"] {
             #expect(
