@@ -3,7 +3,8 @@
 # that only shows up outside Debug (an unguarded #Preview fixture, a DEBUG-only helper) is caught
 # before a release needs it. Like a release, it builds the terminal and the script runtime for real
 # first (the first time fetches Zig, Ghostty and V8). Then checks each app against its size budget
-# and that both made it in (size-check.sh, docs/app-size.md).
+# and that both made it in. size-check.sh uses pack_update_archive for the same .tar.xz download
+# measurement as release.sh (docs/app-size.md).
 #
 #   scripts/release/check.sh [--derived-data <dir>] [--source-packages <dir>]
 #                            [--compilation-cache <dir>] [configuration...]
@@ -39,7 +40,7 @@ cd "$ROOT"
 build_embedded
 for configuration in "${configurations[@]}"; do
     log "Building $configuration"
-    run xcodebuild build -project native.xcodeproj -scheme native -configuration "$configuration" \
+    run "$ROOT/scripts/dev/build-slot.sh" build -project native.xcodeproj -scheme native -configuration "$configuration" \
         -derivedDataPath "$derived" ${packages[@]+"${packages[@]}"} -disableAutomaticPackageResolution \
         -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ${caching[@]+"${caching[@]}"} -quiet
 done
