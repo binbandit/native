@@ -29,10 +29,16 @@ struct ManagedAdapterInstallerTests {
 
     private struct OfflineNpmRunner: CommandRunner {
         let cache: URL
+        let node: URL
+        let npmCLI: URL
         func run(_ command: Command) async throws -> CommandResult {
             let stage = URL(filePath: try #require(command.directory))
             try FileManager.default.copyItem(at: cache, to: stage.appending(path: ".npm-cache"))
-            let result = try await LocalCommandRunner().run(command)
+            // Use the selected tools even if Node's directory has a different npm on PATH.
+            var invocation = command
+            invocation.executable = node.path
+            invocation.arguments = [npmCLI.path] + command.arguments
+            let result = try await LocalCommandRunner().run(invocation)
             try #require(result.succeeded, "Offline fixture npm failed: \(result.errorOutput)")
             return result
         }
@@ -52,11 +58,13 @@ struct ManagedAdapterInstallerTests {
             "PATH": tools.path, "HOME": root.path, "npm_config_cache": cache.path,
             "npm_config_userconfig": root.appending(path: "user.npmrc").path,
             "npm_config_globalconfig": root.appending(path: "global.npmrc").path,
-            "npm_config_offline": "true", "npm_config_omit": "optional",
+            "npm_config_offline": "true", "npm_config_omit": "optional", "npm_config_update_notifier": "false",
         ]
         func npm(_ arguments: [String], in directory: URL) async throws -> Data {
             let result = try await LocalCommandRunner().run(
-                Command("npm", arguments, in: directory.path, environment: environment, timeout: .seconds(30)))
+                Command(
+                    tools.node.path, [tools.npmCLI.path] + arguments, in: directory.path,
+                    environment: environment, timeout: .seconds(30)))
             try #require(result.succeeded)
             return result.standardOutput
         }
@@ -73,11 +81,15 @@ struct ManagedAdapterInstallerTests {
             try Data("// Never executed.\n".utf8).write(to: folder.appending(path: "main.js"))
             let packed = try await npm(
                 ["pack", "--ignore-scripts", "--json", "--pack-destination", root.path], in: folder)
-            let metadata = try #require((try JSONSerialization.jsonObject(with: packed) as? [[String: Any]])?.first)
+            let report = try JSONSerialization.jsonObject(with: packed)
+            // npm 12 keys the report by package name; earlier versions return an array.
+            let metadata = try #require(
+                (report as? [[String: Any]])?.first ?? (report as? [String: [String: Any]])?[name])
             let archive = root.appending(path: try #require(metadata["filename"] as? String))
             _ = try await npm(["cache", "add", archive.path], in: root)
             var record: [String: Any] = [
-                "version": "1.0.0", "resolved": "https://adapter-fixture.invalid/\(name)-1.0.0.tgz",
+                // npm 12 recognizes registry tarballs by their origin, even with a warm offline cache.
+                "version": "1.0.0", "resolved": "https://registry.npmjs.org/\(name)/-/\(name)-1.0.0.tgz",
                 "integrity": try #require(metadata["integrity"] as? String), "hasInstallScript": true,
             ]
             if name == "fixture" {
@@ -88,7 +100,9 @@ struct ManagedAdapterInstallerTests {
             packages["node_modules/\(name)"] = record
         }
         let destination = root.appending(path: "install")
-        _ = try await ManagedAdapterInstaller(runner: OfflineNpmRunner(cache: cache)).install(
+        _ = try await ManagedAdapterInstaller(
+            runner: OfflineNpmRunner(cache: cache, node: tools.node, npmCLI: tools.npmCLI)
+        ).install(
             auditedPackageJSON: JSONSerialization.data(withJSONObject: manifest),
             auditedPackageLock: JSONSerialization.data(withJSONObject: [
                 "name": "fixture-root", "version": "1.0.0", "lockfileVersion": 3, "requires": true,
