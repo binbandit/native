@@ -15,7 +15,7 @@ struct ComposerBottomRow: View {
     var body: some View {
         HStack(spacing: DS.Space.xs) {
             menuButton(.agent, label: state.agentLabel)
-                .layoutPriority(-1)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .keyboardShortcut("e", modifiers: [.command, .shift])
                 .popover(isPresented: presented(.agent), arrowEdge: .bottom) {
                     ComposerAgentModelMenu(
@@ -24,18 +24,16 @@ struct ComposerBottomRow: View {
                         close: { openMenu = nil })
                 }
             modeControl
-                .fixedSize(horizontal: true, vertical: false)
+                .frame(width: DS.ComposerRow.modeWidth, alignment: .leading)
             locationControl
-                .fixedSize(horizontal: true, vertical: false)
-            Spacer(minLength: DS.Space.sm)
+                .frame(width: DS.ComposerRow.locationWidth, alignment: .leading)
             IconButton("Attach files (⌘U)", systemImage: "paperclip", size: .large, action: actions.attach)
                 .keyboardShortcut("u", modifiers: .command)
                 .frame(width: DS.ComposerRow.actionWidth)
-            if showsContext {
-                contextControl
-                    .frame(width: DS.ComposerRow.actionWidth)
-            }
+            contextControl
+                .frame(width: DS.ComposerRow.actionWidth)
             actionControl
+                .frame(width: DS.ComposerRow.actionWidth)
         }
         .padding(.horizontal, DS.Space.md)
         .frame(height: DS.ComposerRow.height)
@@ -80,6 +78,8 @@ struct ComposerBottomRow: View {
                         openMenu = nil
                     }
                 }
+        } else {
+            Color.clear.accessibilityHidden(true)
         }
     }
 
@@ -102,15 +102,10 @@ struct ComposerBottomRow: View {
     @ViewBuilder
     private var actionControl: some View {
         if state.isWorking {
-            HStack(spacing: DS.Space.xs) {
-                if state.isStopping {
-                    Text("Stopping").foregroundStyle(.dsTextSecondary)
-                }
-                ComposerStopButton(
-                    isStopping: state.isStopping, isEscapeEnabled: false, shortcutHint: "⌘.", action: actions.stop
-                )
-                .keyboardShortcut(".", modifiers: .command)
-            }
+            ComposerStopButton(
+                isStopping: state.isStopping, isEscapeEnabled: false, shortcutHint: "⌘.", action: actions.stop
+            )
+            .keyboardShortcut(".", modifiers: .command)
         } else {
             ComposerSendButton(disabledReason: state.disabledReason, action: actions.send)
                 .keyboardShortcut(.return, modifiers: .command)

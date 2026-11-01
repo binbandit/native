@@ -2,6 +2,7 @@ import ACP
 import Experiments
 import Foundation
 import Synchronization
+import TextInput
 
 @testable import Native
 
@@ -82,13 +83,14 @@ private struct ComposerRowSettingsRegression {
     }
 
     static func fixture(
-        _ connection: ACPConnection
+        _ connection: ACPConnection, changeAgent: Bool = true
     ) throws -> (
         AppModel, SessionModel, [JSONValue]
     ) {
         let defaults = PreviewUserDefaults()
         let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
-        experiments.set(true, for: .changeAgent)
+        experiments.set(changeAgent, for: .changeAgent)
+        experiments.set(true, for: .composerV3)
         let app = AppModel(
             plugins: PluginRegistry(previewing: [BuiltInPlugins.claudeCode]), defaults: defaults,
             catalogURL: nil, experiments: experiments)
@@ -202,12 +204,85 @@ private struct ComposerRowSettingsRegression {
         print("PASS: repeated effort selections survive in-flight and queued replies")
     }
 
+    static func currentAgentWithoutTransitions() async throws {
+        let agent = await RowSettingsAgent()
+        defer { agent.close() }
+        let (app, session, initial) = try fixture(agent.connection, changeAgent: false)
+        let state = ComposerRowModelAdapter(app: app, session: session).state
+        try require(state.agents.count == 1, "Only the current agent may be offered")
+        guard let model = state.agents.first?.models.first(where: { $0.title.lowercased().contains("sonnet") }) else {
+            throw RowCheckFailure("Current agent model choices disappeared")
+        }
+        actions(app, session).chooseModel(model.id)
+        try await wait("model request with Change Agent off") { agent.received.count == 1 }
+        var reply = initial
+        try apply(agent.received[0], to: &reply)
+        try agent.reply(agent.received[0], options: reply)
+        try await wait("model confirmation") { ComposerSettings(session.configOptions).model?.value == "sonnet" }
+        actions(app, session).chooseEffort("high")
+        try await wait("effort request with Change Agent off") { agent.received.count == 2 }
+        try apply(agent.received[1], to: &reply)
+        try agent.reply(agent.received[1], options: reply)
+        try await wait("effort confirmation") { ComposerSettings(session.configOptions).effort?.value == "high" }
+        try require(session.modelChange == nil, "Current model or effort created a handoff")
+        print("PASS: Composer field preserves model and effort with Change Agent off")
+    }
+
+    static func folderContinuation() async throws {
+        for paths in [
+            ["native/", "native/Composer/", "native/Composer/ComposerField.swift"],
+            ["my folder/", "my folder/child folder/", "my folder/child folder/file.swift"],
+        ] {
+            var document = TextInputDocument("@./")
+            var selection = NSRange(location: 3, length: 0)
+            for path in paths {
+                guard let query = TextInputQuery(document: document, selection: selection),
+                    let result = ComposerFieldCompletion.file(path).inserting(in: document, query: query)
+                else {
+                    throw RowCheckFailure("Folder query ended before \(path)")
+                }
+                document = result.document
+                selection = result.selection
+                try require(result.continues == path.hasSuffix("/"), "Wrong completion dismissal")
+                if result.continues {
+                    try require(
+                        TextInputQuery(document: document, selection: selection)?.text == path,
+                        "Folder caret must stay inside the editable path")
+                }
+            }
+            try require(document.runs == [.mention(path: paths[2]), .text(" ")], "Final file must be atomic")
+        }
+        print("PASS: assembled field accepts repeated folders and quoted folder paths")
+    }
+
+    static func cancelQueuedFieldEdit() async throws {
+        let agent = await RowSettingsAgent()
+        defer { agent.close() }
+        let (_, session, _) = try fixture(agent.connection)
+        session.queue.append("original queued message")
+        let queued = session.queuedPrompts
+        for phase in [SessionModel.Phase.idle, .prompting] {
+            session.phase = phase
+            session.editingQueuedPrompt = queued.first?.id
+            session.draft = "unsaved change"
+            try require(ComposerView(session: session).cancelFieldQueuedEdit(), "Escape must consume queued edit")
+            try require(session.editingQueuedPrompt == nil && session.draft.isEmpty, "Queued edit stayed open")
+            try require(session.queuedPrompts == queued, "Escape changed queued content")
+            try require(session.phase == phase && !session.isStopping, "Escape interrupted the running turn")
+        }
+        try require(agent.received.isEmpty, "Queued edit cancellation sent an agent request")
+        print("PASS: queued field edits cancel without saving or stopping in idle and running tasks")
+    }
+
     static func main() async {
         let domain = ProcessInfo.processInfo.processName
         UserDefaults.standard.removePersistentDomain(forName: domain)
         defer { UserDefaults.standard.removePersistentDomain(forName: domain) }
         var failures = 0
-        for check in [freshModel, orderedSnapshots, repeatedSelections] {
+        for check in [
+            freshModel, orderedSnapshots, repeatedSelections, currentAgentWithoutTransitions, folderContinuation,
+            cancelQueuedFieldEdit,
+        ] {
             do { try await check() } catch {
                 failures += 1
                 print("FAIL: \(error)")

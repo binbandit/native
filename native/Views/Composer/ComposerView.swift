@@ -17,6 +17,7 @@ struct ComposerView: View {
     @Experiment(.composerV3) var composerV3
     @State var fieldMenu: ComposerBottomRow.Menu?
     @State var fieldFileQuery: String?
+    @State var fieldGoalEditorOpen = false
 
     @AppStorage(FollowUpBehavior.storageKey) var followUp = FollowUpBehavior.defaultValue
     @Environment(\.undoManager) var undoManager

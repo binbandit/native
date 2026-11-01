@@ -105,16 +105,11 @@ struct ComposerField<Attachments: View>: View {
 
     private func accept(_ completion: ComposerFieldCompletion) {
         guard let query = inputState?.query else { return }
-        let replacement: TextInputDocument
-        switch completion {
-        case .file(let path): replacement = TextInputDocument(runs: [.mention(path: path), .text(" ")])
-        case .command(let command): replacement = TextInputDocument(command.invocation + " ")
-        }
-        guard let updated = document.replacing(query.range, with: replacement) else { return }
-        document = updated
-        text = updated.plainText
-        selection = NSRange(location: query.range.location + replacement.displayText.utf16.count, length: 0)
-        dismissed = true
+        guard let result = completion.inserting(in: document, query: query) else { return }
+        document = result.document
+        text = result.document.plainText
+        selection = result.selection
+        dismissed = !result.continues
         isFocused = true
         if case .command(let command) = completion { onCommand(command) }
     }

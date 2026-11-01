@@ -1,4 +1,5 @@
 import ACP
+import NativeAutomation
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -31,7 +32,9 @@ extension ComposerView {
                 onAttachments: attachFieldItems,
                 onEscape: {
                     if let overlayDismissal { overlayDismissal.dismiss(); return true }
-                    guard session.canCancel, !windowClaimsCancelKeys else { return false }
+                    guard !windowClaimsCancelKeys else { return false }
+                    if cancelFieldQueuedEdit() { return true }
+                    guard session.canCancel else { return false }
                     stop()
                     return true
                 }
@@ -49,6 +52,18 @@ extension ComposerView {
                 ContextBreakdownView(source: SessionContextSource(session: session)).dsPopoverBackground()
             }
             .focusedSceneValue(\.contextUsePopover, $isContextUseOpen)
+            .popover(isPresented: $fieldGoalEditorOpen, arrowEdge: .top) {
+                if let controller = automation.goal(for: session) {
+                    SessionGoalEditor(controller: controller, agentName: session.agentName) {
+                        fieldGoalEditorOpen = false
+                    }
+                }
+            }
+            .onChange(of: automation.goal(for: session)?.isEditorRequested, initial: true) { _, requested in
+                guard requested == true else { return }
+                fieldGoalEditorOpen = true
+                automation.goal(for: session)?.isEditorRequested = false
+            }
             if session.diffCommentStatus != nil || session.unresolvedCommentPacket != nil {
                 DiffCommentsDeliveryStatus(session: session, retry: { submit(.queue) })
             }
@@ -65,6 +80,12 @@ extension ComposerView {
         .task(id: fieldFileQuery != nil) {
             if fieldFileQuery != nil { await mentionSource?.loadIfNeeded() }
         }
+    }
+
+    func cancelFieldQueuedEdit() -> Bool {
+        guard session.editingQueuedPrompt != nil else { return false }
+        stopEditingQueued()
+        return true
     }
 
     @ViewBuilder
