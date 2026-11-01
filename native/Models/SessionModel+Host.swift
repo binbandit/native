@@ -289,15 +289,21 @@ extension SessionModel {
         try checkReadOnlyDefault()
         guard let host else { throw SendError.disconnected }
         let isFirstPrompt = !hasStarted
+        let transferID = services.modelContinuations.pendingTransferID(for: key)
+        let preamble = services.hooks.preamble(for: self, prompt: text)
         let params = PromptParams(
-            sessionID: host.id, text: text, content: promptBlocks(text, attachments: attachments),
+            sessionID: host.id, text: text,
+            content: promptBlocks(text, attachments: attachments, preamble: preamble),
             attachments: MessageAttachment.shown(attachments, capabilities: promptCapabilities).map(
                 EchoAttachment.init),
-            preamble: services.hooks.preamble(for: self, prompt: text).map(PromptPreambleSpec.init),
+            preamble: preamble.map(PromptPreambleSpec.init),
             behavior: behavior == .steer ? .steer : .queue, echo: echo, origin: origin == .task ? .task : .user)
         services.post(.promptSent(context, text: text))
         nameAfterPrompt(text, attachments: attachments, isFirstPrompt: isFirstPrompt)
         let delivery = try await host.prompt(params)
+        if delivery != .unknown {
+            services.modelContinuations.acknowledge(transferID, for: key, as: .acceptedByHost)
+        }
         if delivery == .unknown, PromptQuote.split(text).quotes.contains(where: { $0.comment != nil }) {
             throw DiffCommentsUnresolvedDelivery()
         }

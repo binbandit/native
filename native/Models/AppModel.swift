@@ -89,6 +89,11 @@ final class AppModel {
     @ObservationIgnored var changeAgentHandoff: @MainActor (SessionModel) async -> String = { source in
         TaskHandoff.draft(title: source.displayTitle, state: source.state)
     }
+    @ObservationIgnored var changeAgentContext: @MainActor (SessionModel) async -> ContextTransfer.Draft = { source in
+        TaskHandoff.context(
+            source: .init(agent: source.agent.id.rawValue, session: source.id),
+            title: source.displayTitle, state: source.state)
+    }
     /// Whether Add Agent (agents that aren't installed, and how to install them) is showing.
     var isAddingAgent = false
     /// Which agents are installed. Ones that aren't are offered in Add Agent and never started.

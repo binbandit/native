@@ -55,12 +55,65 @@ private struct AgentModelChangeRegression {
         UserDefaults.standard.removePersistentDomain(forName: domain)
         defer { UserDefaults.standard.removePersistentDomain(forName: domain) }
         do {
+            try transferOmissionNotices()
             try duplicateModels()
             try await readOnlyDefaultMigration()
+            try await directModePreambleBudget()
             try await run()
             try await inAppRecovery()
             try await permissionFallbacks()
         } catch { print("FAIL: \(error)"); exit(1) }
+    }
+
+    static func transferOmissionNotices() throws {
+        let defaults = PreviewUserDefaults()
+        let app = AppModel(
+            plugins: PluginRegistry(previewing: [BuiltInPlugins.codex]), defaults: defaults, catalogURL: nil)
+        guard let agent = app.plugins.agent(.init(rawValue: "codex")) else {
+            throw ChangeFailure("No receipt fixture")
+        }
+        let session = SessionModel(
+            agent: agent, id: SessionID("omission-receipt"), cwd: URL(filePath: "/fixture"),
+            connection: nil, services: app.sessions.services, supportsSteering: true,
+            promptCapabilities: .init(), phase: .idle)
+        let reference = ContextTransfer.SessionReference(agent: agent.id.rawValue, session: session.id)
+        var state = SessionState()
+        state.appendUserMessage("Keep the branch")
+        state.apply(.agentThoughtChunk(ContentChunk(content: .text("Private reasoning"))))
+        state.apply(.agentMessageChunk(ContentChunk(content: .text("Ready"))))
+        let draft = TaskHandoff.context(source: reference, title: "Receipt", state: state)
+        let fitting = ContextTransfer(
+            draft: draft, destination: reference, model: "small",
+            plan: .resolve(.freshConversation, target: .init(negotiated: nil)), budget: .init())
+        try require(fitting.receipt.included.count == 2, "Visible messages did not fit")
+        try require(fitting.receipt.omitted.map(\.reason) == [.reasoning], "Lost the typed reasoning exclusion")
+        let change = ComposerAgentChange(
+            restoring: .init(
+                source: session.key, sourceName: "Fixture", sourceModel: "Small", agent: agent.id,
+                agentName: "Fixture", modelValue: "small", modelName: "Small"), current: session, app: app)
+        for delivery in [ContextTransfer.Delivery.prepared, .acceptedByHost, .agentResponded] {
+            for budgetLoss in [false, true] {
+                var transfer =
+                    budgetLoss
+                    ? ContextTransfer(
+                        draft: draft, destination: reference, model: "small", plan: fitting.receipt.plan,
+                        budget: .init(windowTokens: 100)) : fitting
+                transfer.receipt.delivery = delivery
+                app.sessions.services.modelContinuations.prepare(transfer, for: session.key)
+                if budgetLoss {
+                    try require(
+                        change.transferNotice?.contains("left out 2") == true
+                            || change.transferNotice?.contains("Left out 2") == true,
+                        "Budget notice counted private reasoning as a third message")
+                } else {
+                    try require(change.transferNotice == nil, "Intentional exclusions produced a budget-loss warning")
+                }
+                try require(
+                    AgentModelContinuations(defaults: defaults).transfer(for: session.key) == transfer,
+                    "Displaying the notice changed the stored receipt")
+            }
+        }
+        print("PASS: real handoff reasoning exclusions stay quiet; budget notices count only budget loss")
     }
 
     static func readOnlyDefaultMigration() async throws {
@@ -117,6 +170,41 @@ private struct AgentModelChangeRegression {
         }
         print(
             "PASS: user and project read-only migration, provider selection, blocked widening and explicit replacement")
+    }
+
+    static func directModePreambleBudget() async throws {
+        let defaults = PreviewUserDefaults()
+        let app = AppModel(
+            plugins: PluginRegistry(previewing: [BuiltInPlugins.codex]), defaults: defaults, catalogURL: nil)
+        guard let agent = app.plugins.agent(.init(rawValue: "codex")) else {
+            throw ChangeFailure("No direct-send fixture")
+        }
+        // No transport or subprocess: exercise the real direct-send path through prompt assembly.
+        let session = SessionModel(
+            agent: agent, id: SessionID("direct-preamble"), cwd: URL(filePath: "/fixture"),
+            connection: nil, services: app.sessions.services, supportsSteering: true,
+            promptCapabilities: .init(), phase: .idle)
+        let mode = Mode(
+            id: .custom("large"), name: "Large", symbol: "text.alignleft", summary: "",
+            instructions: String(repeating: "x", count: 20_000), source: .custom)
+        app.sessionHooks.preamble = { _, delivered in
+            ModeInstructions.preamble(for: mode, ModeResolver.resolve(mode, options: []), delivered: delivered)
+        }
+        app.sessions.services.modelContinuations.prepare("Keep the branch", for: session.key)
+        session.draft = "Continue"
+        await session.send()
+        try require(
+            session.state.items.contains { item in
+                if case .message(let message) = item { message.preamble != nil } else { false }
+            }, "Direct send did not echo the custom mode")
+        guard let receipt = app.sessions.services.modelContinuations.transfer(for: session.key)?.receipt else {
+            throw ChangeFailure("Missing direct-send context receipt")
+        }
+        try require(receipt.budget.promptCost > 20_000, "Captured mode instructions were absent from the budget")
+        try require(receipt.budget.limit == 0, "Large custom mode consumed the handoff work reserve")
+        try require(receipt.delivery == .notSent, "Context was sent despite the custom mode filling its budget")
+        session.cancelRetry()
+        print("PASS: first direct send budgets the captured custom mode after its marker is echoed")
     }
 
     static func run() async throws {
@@ -354,6 +442,15 @@ private struct AgentModelChangeRegression {
             app.sessions.services.modelContinuations.context(for: current.key)?.contains(
                 "Final context at the idle boundary") == true,
             "Busy selection captured stale context")
+        guard let transfer = app.sessions.services.modelContinuations.transfer(for: current.key) else {
+            throw ChangeFailure("No typed context receipt")
+        }
+        try require(transfer.receipt.delivery == .prepared, "Context was sent while choosing a model")
+        try require(transfer.receipt.plan.outcome == .fallback, "A fresh conversation claimed an exact transition")
+        try require(
+            transfer.receipt.included.contains { $0.source.session == source.id }, "Receipt lost source identity")
+        let persisted = AgentModelContinuations(defaults: defaults).transfer(for: current.key)
+        try require(persisted == transfer, "Prepared transfer did not survive reload")
         let reverse = app.agentModels(for: current).first { $0.agent == source.agent.id }
         try require(
             reverse != nil && reverse?.unavailable == nil,
@@ -371,6 +468,13 @@ private struct AgentModelChangeRegression {
         try require(
             app.sessions.services.modelContinuations.take(for: current.key) == nil, "Context would repeat automatically"
         )
+        let delivered = app.sessions.services.modelContinuations.transfer(for: current.key)
+        try require(delivered?.receipt.delivery == .acceptedByHost, "Host acceptance was not recorded")
+        try require(
+            delivered?.receipt.summary.contains("not confirmed") == true, "Host acceptance claimed agent delivery")
+        try require(
+            AgentModelContinuations(defaults: defaults).transfer(for: current.key) == delivered,
+            "Delivery receipt did not survive reload")
         print("PASS: next explicit message carries context once with unchanged user echo")
 
         let store = AgentModelContinuations(defaults: defaults)
@@ -379,9 +483,30 @@ private struct AgentModelChangeRegression {
         try require(
             reopened.take(for: source.key) != nil && reopened.take(for: source.key) == nil,
             "Pending context didn't survive reload or was reused")
-        try require(reopened.context(for: source.key) == "Context fixture", "A later selection lost earlier context")
+        try require(
+            reopened.context(for: source.key)?.contains("Context fixture") == true,
+            "A later selection lost earlier context")
         print(
             "PASS: locally prepared context survives relaunch, is consumed once and remains available to later choices")
+        store.prepare(transfer, for: source.key)
+        try require(store.take(for: source.key) != nil, "Prepared transfer did not begin delivery")
+        let uncertain = AgentModelContinuations(defaults: defaults)
+        try require(
+            uncertain.transfer(for: source.key)?.receipt.delivery == .uncertain,
+            "Unacknowledged attempt was not persisted as uncertain")
+        try require(uncertain.take(for: source.key) == nil, "Recovered uncertain transfer would replay")
+        uncertain.acknowledge(UUID(), for: source.key, as: .acceptedByHost)
+        try require(
+            uncertain.transfer(for: source.key)?.receipt.delivery == .uncertain,
+            "An unrelated acknowledgement confirmed an uncertain attempt")
+        print("PASS: uncertain delivery survives reload, cannot replay and rejects unrelated acknowledgements")
+        store.prepare(String(repeating: "oversized legacy item", count: 2_000), for: source.key)
+        try require(store.take(for: source.key) == nil, "Legacy pending context bypassed the budget")
+        let migrated = AgentModelContinuations(defaults: defaults).transfer(for: source.key)
+        try require(
+            migrated?.receipt.delivery == .notSent && migrated?.receipt.omitted.first?.reason == .budget,
+            "Oversized legacy context was cut or omitted without a receipt")
+        print("PASS: legacy pending handoffs migrate as a whole budgeted item")
         await client.stop()
     }
 

@@ -693,11 +693,22 @@ until commit. Normal running turns finish first; approvals, questions, queued me
 work and goals that cannot migrate safely block the choice with a specific recovery instruction.
 Goal controllers cannot migrate transactionally yet, so any existing goal must be cleared first.
 
-`TaskHandoff` in ACP assembles bounded excerpts locally, without another model request. Native keeps
-that context until the next explicit submission, where it becomes an internal content block ahead
-of the unchanged user echo. The context and receipt survive relaunch in Native-owned storage. Taking
-the pending context consumes it before delivery; uncertain-send recovery never invents a second
-submission. Bounded earlier excerpts stay local for a later model choice. In-app agents that never
+`TaskHandoff.context` in ACP assembles whole historical items with source session, local item identity,
+kind and position. `ContextTransferSelector` selects the latest user and assistant, initial request,
+then recent remaining items, restoring chronological order. It never cuts an item. The target's
+reported context window minus usage, the current encoded prompt and a work reserve bounds the
+transfer. Missing window data uses an explicitly estimated 32,000-token window. The conservative
+encoded-byte estimate and image allowance are not tokenizer guarantees. Unsupported reasoning,
+tool state, attachments and budget exclusions receive typed omission reasons.
+
+`ContextTransfer.Receipt` records the destination, selected model, transition plan, budget, included
+references, omissions and delivery evidence in Native-owned continuation storage, separate from the
+host's task-history schema. On the next explicit submission, Native rebudgets against its actual
+prompt and durably marks delivery uncertain before sending the internal context block ahead of the
+unchanged user echo. A host response records acceptance only; a direct ACP prompt response records
+an agent response. A lost acknowledgement stays uncertain and is never automatically replayed.
+The composer receipt explains coverage and recovery through Earlier Conversations. Later choices
+reuse intact selected items rather than nested excerpts. In-app agents that never
 saved the empty conversation recreate it with the confirmed settings, receipt and history link;
 new-task defaults and hooks do not run again. Accepted attachment reads follow the continuing draft
 through preparation, commit, Undo and recovery.

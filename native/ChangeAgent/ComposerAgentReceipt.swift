@@ -3,6 +3,8 @@ import SwiftUI
 /// The model choice is a section of the existing composer, kept until explicitly dismissed.
 struct ComposerAgentReceipt: View {
     let text: String
+    var transferNotice: String?
+    var onEarlierConversations: (() -> Void)?
     var permissionNotice: String?
     var onPermissions: (() -> Void)?
     var isWorking = false
@@ -40,15 +42,39 @@ struct ComposerAgentReceipt: View {
                         .dsHitTarget(DS.ComposerSettings.controlHeight)
                 }
             }
+            if let transferNotice {
+                HStack(spacing: DS.Space.sm) {
+                    Text(transferNotice)
+                        .foregroundStyle(.dsTextSecondary)
+                        .lineLimit(1)
+                        .help(transferNotice)
+                    if let onEarlierConversations {
+                        Button("Open Earlier Conversations", action: onEarlierConversations)
+                            .buttonStyle(.plain)
+                            .foregroundStyle(.dsTextPrimary)
+                            .fixedSize()
+                            .dsHitTarget(DS.ComposerSettings.controlHeight)
+                            .help("Recover all earlier messages.")
+                    }
+                }
+            }
             if let permissionNotice {
-                Text(permissionNotice)
+                HStack(spacing: DS.Space.sm) {
+                    Text(
+                        onPermissions == nil
+                            ? permissionNotice
+                            : permissionNotice.replacingOccurrences(of: " Review permissions before sending.", with: "")
+                    )
                     .foregroundStyle(.dsTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                if let onPermissions {
-                    Button("Review Permissions", action: onPermissions)
-                        .buttonStyle(.plain)
-                        .foregroundStyle(.dsTextPrimary)
-                        .dsHitTarget(DS.ComposerSettings.controlHeight)
+                    .lineLimit(1)
+                    .help(permissionNotice)
+                    if let onPermissions {
+                        Button("Review Permissions", action: onPermissions)
+                            .buttonStyle(.plain)
+                            .foregroundStyle(.dsTextPrimary)
+                            .fixedSize()
+                            .dsHitTarget(DS.ComposerSettings.controlHeight)
+                    }
                 }
             }
         }
@@ -113,6 +139,44 @@ struct ComposerAgentReceipt: View {
                 permissionNotice:
                     "Target Agent can't require plan approval. It will ask before any change instead. Review permissions before sending.",
                 onPermissions: {}, actionTitle: "Undo", action: {}, onDismiss: {})
+        }.frame(width: DS.ComposerSettings.width).background(.dsSurface)
+    }
+}
+#Preview("Model choice - Quiet handoffs without omissions") {
+    DSPreviewPair {
+        VStack(spacing: 0) {
+            // Prepared, host accepted and agent responded all have the same quiet receipt.
+            ForEach(0..<3) { _ in
+                ComposerAgentReceipt(
+                    text: "Using Target Agent · Small",
+                    actionTitle: "Undo", action: {}, onDismiss: {})
+            }
+        }.frame(width: DS.ComposerSettings.width).background(.dsSurface)
+    }
+}
+#Preview("Model choice - Omitted messages, uncertain delivery and permissions") {
+    DSPreviewPair {
+        VStack(spacing: 0) {
+            ComposerAgentReceipt(
+                text: "Using Target Agent · Small",
+                transferNotice: "Left out 2 older messages that didn't fit. Earlier Conversations has them all.",
+                actionTitle: "Undo", action: {}, onDismiss: {})
+            ComposerAgentReceipt(
+                text: "Using Target Agent · Small",
+                transferNotice: "Sent 6 earlier messages, left out 2. We can't confirm Target Agent got them.",
+                onDismiss: {})
+            ComposerAgentReceipt(
+                text: "Using Target Agent · Small",
+                transferNotice: "Couldn't confirm Target Agent got your earlier messages; they won't be sent again.",
+                onEarlierConversations: {}, onDismiss: {})
+            ComposerAgentReceipt(
+                text: "Using Target Agent · Small",
+                transferNotice: "None of the earlier messages fit.",
+                onEarlierConversations: {}, onDismiss: {})
+            ComposerAgentReceipt(
+                text: "Using Target Agent · Small",
+                transferNotice: "Left out 2 older messages that didn't fit.",
+                permissionNotice: "Target Agent will ask before any change instead.", onPermissions: {}, onDismiss: {})
         }.frame(width: DS.ComposerSettings.width).background(.dsSurface)
     }
 }

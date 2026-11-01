@@ -625,6 +625,25 @@ this change; removing the ZIP can follow a separate first-install check. Delta s
 `.tar.xz` and fall back to earlier releases' ZIPs. Signing, notarization and the local disk image
 keep their existing behavior. Evidence and the remaining signing gate are in `docs/releasing.md`.
 
+
+## 2026-11-01: Whole historical items and explicit handoff delivery
+
+An agent change creates a fresh ACP conversation, not a native fork or a promise of equivalent
+context. Keep a typed transition plan and transfer receipt alongside the existing continuation
+storage without changing host task-history records. Select complete items inside the target's
+remaining context estimate, reserve working room, disclose exclusions, and retain source references.
+A missing window report is an estimate, never an inferred capability from a model name. Rebudget
+against the user's actual prompt before sending. Mark the attempt uncertain durably before the
+request; a host acknowledgement is only acceptance, and an interrupted request cannot replay context
+automatically. Earlier Conversations remains the recovery path.
+
+The whole-item selection priority and context-reserve calculation in
+`Packages/ACP/Sources/ACP/ContextTransferSelector.swift` adapt MIT-licensed source at upstream revision
+`ce9e01640636c0884c4a7574a722bf1d773cfa07`, `packages/provider-core/src/server/handoffBudget.ts`.
+That file retains its copyright and full MIT license notice. Native adds ACP encoding costs, prompt
+and image allowances, omission references, persistence and delivery states; it adds no runtime
+or dependency from that source.
+
 ## 2026-11-01: One task history
 
 The host keeps one provider-neutral history per task: what was said and done, which agent session

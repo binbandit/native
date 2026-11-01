@@ -9,6 +9,8 @@ struct ComposerAgentReceiptSection: View {
         if !change.isReceiptDismissed, change.stage != .cancelled {
             ComposerAgentReceipt(
                 text: change.receipt,
+                transferNotice: change.stage == .applied ? change.transferNotice : nil,
+                onEarlierConversations: earlierConversationsAction,
                 permissionNotice: change.stage == .applied ? change.permissionNotice : nil,
                 onPermissions: change.hasPermissionChoice ? onPermissions : nil,
                 isWorking: change.stage == .preparing && change.showsLoader,
@@ -17,6 +19,11 @@ struct ComposerAgentReceiptSection: View {
                 action: receiptAction,
                 onDismiss: dismissAction)
         }
+    }
+
+    private var earlierConversationsAction: (() -> Void)? {
+        guard change.needsTransferRecovery else { return nil }
+        return { change.openEarlierConversations() }
     }
 
     private var receiptAction: (() -> Void)? {
