@@ -136,6 +136,9 @@ import Testing
         #expect(current == "custom-autopilot")
         #expect(choices.contains { $0.value == current && $0.name == "Custom autopilot" })
         #expect(choices.first { $0.value == current }?.description?.contains("cannot describe") == true)
+        for choice in choices.prefix(4) {
+            #expect(choice.description?.hasPrefix(TaskPermissionMode.askFirst.summary) == true)
+        }
     }
 
     @Test(arguments: [nil, "sample"] as [String?])

@@ -65,7 +65,8 @@ public struct TaskPermissionMapping: Hashable, Sendable {
                 } ?? "This agent does not offer a safe equivalent."
             return ConfigOption.SelectOption(
                 value: mode.rawValue, name: mode.title,
-                description: [selected.flatMap { notes[$0.value] } ?? mode.summary, note].compactMap { $0 }.joined(
+                description: [selected.map { notes[$0.value] ?? $0.effective.summary } ?? mode.summary, note].compactMap
+                { $0 }.joined(
                     separator: " "))
         }
         // Task modes can apply a plan or read-only restriction independently of permissions.

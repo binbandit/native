@@ -290,8 +290,14 @@ final class ComposerAgentChange {
 
     private func permissionLevels(_ setting: SelectSetting) -> [String] {
         let forbidden = app?.plugins.policyCenter.policy.forbiddenPermissionModes ?? []
-        let offered = setting.choices.filter {
-            !PolicyPermissionModes.forbids(setting.option, value: $0.value, forbidden: forbidden)
+        let offered = setting.choices.filter { choice in
+            // An unknown active control is displayed for disclosure, not a safe switching equivalent.
+            let available =
+                setting.option.permissionMappings.map { mappings in
+                    mappings[choice.value] != nil || choice.value == "plan" || choice.value == "read-only"
+                } ?? true
+            return available
+                && !PolicyPermissionModes.forbids(setting.option, value: choice.value, forbidden: forbidden)
         }
         if includesPlanLevel { return offered.map(\.value) }
         let levels = offered.map(\.value).filter { $0 != ComposerSettings.planValue }

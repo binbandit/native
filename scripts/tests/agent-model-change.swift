@@ -68,10 +68,16 @@ private struct AgentModelChangeRegression {
             let defaults = PreviewUserDefaults()
             let old = project.map { "projectDefaults.\($0).codex.permissions" } ?? "agentDefaults.codex.permissions"
             defaults.set("read-only", forKey: old)
-            let app = AppModel(defaults: defaults, catalogURL: nil)
-            guard
-                let session = SessionModel.preview(in: app, agent: "codex", id: "read-only-default", configOptions: [])
-            else { throw ChangeFailure("No Codex fixture") }
+            let app = AppModel(
+                plugins: PluginRegistry(previewing: [BuiltInPlugins.codex]), defaults: defaults, catalogURL: nil)
+            guard let agent = app.plugins.agent(.init(rawValue: "codex")) else {
+                throw ChangeFailure("No Codex fixture")
+            }
+            // No transport: a preview's /dev/null connection cannot answer permission RPCs.
+            let session = SessionModel(
+                agent: agent, id: SessionID("read-only-default"), cwd: URL(filePath: "/fixture"),
+                connection: nil, services: app.sessions.services, supportsSteering: true,
+                promptCapabilities: .init(), phase: .idle)
             // Use the recorded provider controls, before Native's presentation mapping.
             session.state.configOptions =
                 ComposerPreviewFixtures.decode(
