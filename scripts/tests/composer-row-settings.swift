@@ -231,6 +231,7 @@ private struct ComposerRowSettingsRegression {
     static func folderContinuation() async throws {
         for paths in [
             ["native/", "native/Composer/", "native/Composer/ComposerField.swift"],
+            ["src/", "src/@scope/", "src/@scope/foo.swift"],
             ["my folder/", "my folder/child folder/", "my folder/child folder/file.swift"],
         ] {
             var document = TextInputDocument("@./")
@@ -252,7 +253,15 @@ private struct ComposerRowSettingsRegression {
             }
             try require(document.runs == [.mention(path: paths[2]), .text(" ")], "Final file must be atomic")
         }
-        print("PASS: assembled field accepts repeated folders and quoted folder paths")
+        let adjacent = TextInputDocument(runs: [.mention(path: "one.swift"), .text("@two")])
+        let selection = NSRange(location: adjacent.displayText.utf16.count, length: 0)
+        guard let query = TextInputQuery(document: adjacent, selection: selection),
+            let accepted = ComposerFieldCompletion.file("two.swift").inserting(in: adjacent, query: query)
+        else { throw RowCheckFailure("A query after an atomic mention was rejected") }
+        try require(
+            accepted.document.runs == [.mention(path: "one.swift"), .mention(path: "two.swift"), .text(" ")],
+            "Completion must preserve the adjacent atomic mention")
+        print("PASS: field accepts folders, quoted paths, embedded @ paths and atomic-token boundaries")
     }
 
     static func cancelQueuedFieldEdit() async throws {

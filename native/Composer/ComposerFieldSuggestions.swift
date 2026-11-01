@@ -18,10 +18,12 @@ enum ComposerFieldCompletion: Equatable {
         switch self {
         case .file(let path):
             let display = document.displayText
-            guard let indices = Range(query.range, in: display),
-                let mention = FileMentionQuery(draft: display, cursor: indices.upperBound)
-            else { return nil }
-            range = NSRange(mention.range, in: display)
+            guard let indices = Range(query.range, in: display) else { return nil }
+            // The editor already validated the trigger, including atomic-token boundaries.
+            // A quoted folder leaves its closing quote immediately after the caret.
+            if display[indices].hasPrefix("@\""), display[indices.upperBound...].first == "\"" {
+                range.length += 1
+            }
             continues = FileMention.isFolder(path)
             if continues {
                 let text = FileMention.mention(of: path)
