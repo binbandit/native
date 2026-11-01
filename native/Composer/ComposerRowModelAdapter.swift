@@ -92,8 +92,9 @@ struct ComposerRowModelAdapter {
                         session.addNotice("Couldn't load models: \(error.localizedDescription)", isError: true)
                     }
                 }
-            case .model:
-                if row.agent == session.agent.id, case .model(let value) = row.kind, value == settings.model?.value {
+            case .model(let value):
+                if row.agent == session.agent.id {
+                    if let value, value != settings.model?.value { pick(category: "model", value: value) }
                     return
                 }
                 app.chooseAgentModel(row, for: session, undoManager: undoManager)
@@ -122,7 +123,7 @@ struct ComposerRowModelAdapter {
             !PolicyPermissionModes.forbids(setting.option, value: value)
         else { return }
         if let session {
-            Task { await session.pick(setting.option, value: value) }
+            session.enqueueComposerPick(setting.option, value: value)
         } else {
             app.composeTask.choose(setting, value: value)
         }

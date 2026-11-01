@@ -160,6 +160,8 @@ final class SessionModel {
     /// bar, menus) doesn't update with every streamed chunk, which changes `state`.
     private(set) var title: String?
     private(set) var configOptions: [ConfigOption] = []
+    /// Menu dismissal and adapter recomputation must not reset the order of complete settings replies.
+    @ObservationIgnored let composerConfigChanges = ConfigOptionChangeQueue()
     private(set) var plan: [PlanEntry] = []
     /// Mirrored independently of text chunks, so the toolbar doesn't render for each token.
     private(set) var taskActivity = TaskActivityNarration(verb: "Working")
