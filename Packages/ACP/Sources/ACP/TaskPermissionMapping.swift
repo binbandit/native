@@ -82,6 +82,11 @@ public struct TaskPermissionMapping: Hashable, Sendable {
                 (selection(mode, offered: wire, forbidden: forbidden) ?? selection(mode, offered: wire))
                     .map { (mode.rawValue, $0.value) }
             })
+        shown.permissionEffectiveModes = Dictionary(
+            uniqueKeysWithValues: TaskPermissionMode.allCases.compactMap { mode in
+                (selection(mode, offered: wire, forbidden: forbidden) ?? selection(mode, offered: wire))
+                    .map { (mode.rawValue, $0.effective) }
+            })
         shown.name = "Permissions"
         shown.kind = .select(
             currentValue: current == "plan" || (current == "read-only" && retained == nil)

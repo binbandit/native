@@ -7,7 +7,6 @@ import Experiments
 extension ExperimentCatalog {
     /// In the order Labs lists them.
     static let native = ExperimentCatalog([
-        Variant.bubbles,
         Parameter<TranscriptWidth>.transcriptWidth,
         Gate.unfoldExploration,
         Gate.sessionTools,
@@ -26,21 +25,6 @@ extension ExperimentCatalog {
 extension ExperimentStore {
     /// The user's experiments, saved in user defaults.
     static let shared = ExperimentStore(catalog: .native, storage: UserDefaultsExperimentStorage())
-}
-
-// MARK: - Variants
-
-extension Variant {
-    static let bubbles = Variant(
-        id: "bubbles",
-        title: "Bubbles",
-        summary: "Show conversations as chat bubbles: your messages on the right, the agent's on the left, "
-            + "with its tool activity in between.",
-        stage: .labs,
-        owner: "transcript",
-        reviewBy: ReviewDate(year: 2027, month: 1, day: 31),
-        claims: [Claim(.transcriptStyle, BubbleTranscriptStyle())]
-    )
 }
 
 // MARK: - Parameters
