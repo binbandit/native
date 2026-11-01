@@ -50,6 +50,9 @@ extension WorktreeClone {
                     try Self.cloneEntry(
                         name, from: from, to: to, relative: name, projectPath: path,
                         project: sourceFD, task: destinationFD, created: &created)
+                    // Package links may be copied after their executables. Validate the completed
+                    // task tree so preserved raw links cannot use a different checkout-side chain.
+                    try Self.validateClonedLinks(name, in: to, path: path, task: destinationFD)
                     report.cloned.append(path)
                 } catch {
                     if created { Self.removeEntry(name, in: to) }
@@ -240,6 +243,28 @@ extension WorktreeClone {
             resolveLink(target.joined(separator: "/"), base: [], root: task, followLinks: false) == target
         else { return false }
         return true
+    }
+
+    private static func validateClonedLinks(_ name: String, in parent: Int32, path: String, task: Int32) throws {
+        try Task.checkCancellation()
+        var info = stat()
+        guard fstatat(parent, name, &info, AT_SYMLINK_NOFOLLOW) == 0 else { throw posixError() }
+        if info.st_mode & S_IFMT == S_IFDIR {
+            let directory = try openDirectory(name, at: parent)
+            defer { close(directory) }
+            try forEachEntry(in: directory) { child in
+                try validateClonedLinks(child, in: directory, path: path + "/" + child, task: task)
+            }
+        } else if info.st_mode & S_IFMT == S_IFLNK {
+            var buffer = [UInt8](repeating: 0, count: Int(PATH_MAX))
+            let count = readlinkat(parent, name, &buffer, buffer.count)
+            guard count > 0, count < buffer.count else { throw posixError() }
+            let link = String(decoding: buffer.prefix(count), as: UTF8.self)
+            let base = Array(path.split(separator: "/").map(String.init).dropLast())
+            guard resolveLink(link, base: base, root: task, followLinks: true) != nil else {
+                throw CommandError.refused("A cache contains a link outside the copied folder.")
+            }
+        }
     }
 
     private static func forEachEntry(in descriptor: Int32, _ body: (String) throws -> Void) throws {

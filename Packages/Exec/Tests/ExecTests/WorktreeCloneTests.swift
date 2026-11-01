@@ -203,6 +203,39 @@ import Testing
         #expect(unsafe.cloned.isEmpty && unsafe.skipped == ["node_modules"])
     }
 
+    @Test(arguments: ["safe", "../outside", "absolute"])
+    func validatesTaskSideWorkspaceLinkChains(_ taskAlias: String) async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        try fixture.write("node_modules/cache", "dependency cache")
+        try fixture.write("safe/file", "source file")
+        let taskSafe = fixture.destination.appending(path: "safe")
+        let outside = fixture.base.appending(path: "outside")
+        try FileManager.default.createDirectory(at: taskSafe, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: outside, withIntermediateDirectories: true)
+        try Data("task file".utf8).write(to: taskSafe.appending(path: "file"))
+        try Data("external sentinel".utf8).write(to: outside.appending(path: "file"))
+        try FileManager.default.createSymbolicLink(
+            atPath: fixture.source.appending(path: "alias").path(), withDestinationPath: "safe")
+        try FileManager.default.createSymbolicLink(
+            atPath: fixture.destination.appending(path: "alias").path(),
+            withDestinationPath: taskAlias == "absolute" ? outside.path() : taskAlias)
+        try FileManager.default.createSymbolicLink(
+            atPath: fixture.source.appending(path: "node_modules/link").path(),
+            withDestinationPath: "../alias/file")
+        let report = try await fixture.clone(["node_modules"])
+        if taskAlias == "safe" {
+            #expect(report.cloned == ["node_modules"])
+            #expect(
+                try String(contentsOf: fixture.destination.appending(path: "node_modules/link"), encoding: .utf8)
+                    == "task file")
+        } else {
+            #expect(report.cloned.isEmpty && report.skipped == ["node_modules"])
+            #expect(!FileManager.default.fileExists(atPath: fixture.destination.appending(path: "node_modules").path()))
+        }
+        #expect(try String(contentsOf: outside.appending(path: "file"), encoding: .utf8) == "external sentinel")
+    }
+
     @Test func preservesStandaloneCachedCheckoutsButRejectsGitdirRedirects() async throws {
         let fixture = try Fixture()
         defer { fixture.remove() }
