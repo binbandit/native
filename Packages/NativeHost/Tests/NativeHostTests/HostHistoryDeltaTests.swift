@@ -105,15 +105,16 @@ struct HostHistoryDeltaTests {
         }
         try await recorder.client.cancel(first.id)
         try await recorder.wait("the stop") { await $0.turnsEnded(first.id).count == 2 }
+        // The stopped attempt gives way to a fresh delta, chosen again for the next message.
         let stopped = try await recorder.client.historySummary(of: first.id)
-        #expect(stopped.transfers.filter { $0.strategy == .delta }.map(\.state) == [.prepared])
+        #expect(stopped.transfers.filter { $0.strategy == .delta }.map(\.state) == [.superseded, .prepared])
 
         _ = try await recorder.client.prompt(PromptParams(sessionID: first.id, text: "three"))
         try await recorder.wait("the next turn") { await $0.turnsEnded(first.id).count == 3 }
         let sent = try #require(prompts(harness).last)
         #expect(sent.contains("item=history/5") && sent.hasSuffix("three"))
         let delivered = try await recorder.client.historySummary(of: first.id)
-        #expect(delivered.transfers.filter { $0.strategy == .delta }.map(\.state) == [.delivered])
+        #expect(delivered.transfers.filter { $0.strategy == .delta }.map(\.state) == [.superseded, .delivered])
         await recorder.stop()
     }
 
@@ -134,7 +135,10 @@ struct HostHistoryDeltaTests {
         _ = try await join(recorder, first, after: second)
         // The agent never records this one: the host stops before it answers.
         _ = try await recorder.client.prompt(PromptParams(sessionID: first.id, text: "lose-once go"))
-        try await recorder.wait("the lost message") { _ in harness.received.contains { $0.hasSuffix("lose-once go") } }
+        // It goes with the delta, so it ends after the frame.
+        try await recorder.wait("the lost message") { _ in
+            harness.received.contains { $0.hasSuffix("</native_instructions>lose-once go") }
+        }
         await recorder.stop()
         harness.kill()
 
@@ -151,6 +155,48 @@ struct HostHistoryDeltaTests {
                 $0.strategy == .delta && $0.state == .delivered
             } == true
         }
+        await restarted.stop()
+    }
+
+    @Test("A replayed earlier attempt never vouches for context chosen again after it")
+    func freshMarkerAfterStop() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let (first, second) = try await returning(recorder)
+        _ = try await join(recorder, first, after: second)
+        // The agent records this attempt and its frame, then it's stopped before any answer.
+        _ = try await recorder.client.prompt(
+            PromptParams(sessionID: first.id, text: "silent-until-stopped lose-once go"))
+        try await recorder.wait("the agent to get the attempt") { _ in
+            harness.received.contains { $0.hasSuffix("silent-until-stopped lose-once go") }
+        }
+        try await recorder.client.cancel(first.id)
+        try await recorder.wait("the stop") { await $0.turnsEnded(first.id).count == 2 }
+        // More happens elsewhere, then a message the agent never records, cut off by a host stop.
+        _ = try await recorder.client.prompt(PromptParams(sessionID: second.id, text: "more"))
+        try await recorder.wait("more work") { await $0.turnsEnded(second.id).count == 2 }
+        _ = try await recorder.client.prompt(PromptParams(sessionID: first.id, text: "lose-once go"))
+        try await recorder.wait("the lost message") { _ in
+            harness.received.contains { $0.hasSuffix("</native_instructions>lose-once go") }
+        }
+        await recorder.stop()
+        harness.kill()
+
+        try harness.start()
+        let restarted = try await harness.connect()
+        // Recovery takes the earlier attempt for the lost message; its frame isn't this context's.
+        try await restarted.wait("the delta delivered with the recovery") {
+            (try? await $0.client.historySummary(of: first.id))?.transfers.contains {
+                $0.strategy == .delta && $0.state == .delivered
+            } == true
+        }
+        let resumed = try #require(harness.received.filter { $0.hasPrefix("prompt\t") }.last)
+        #expect(resumed.contains("echo: more"))
+        let deltas = try await restarted.client.historySummary(of: first.id).transfers.filter { $0.strategy == .delta }
+        #expect(deltas.map(\.state) == [.superseded, .superseded, .delivered])
+        #expect(Set(deltas.map(\.markerID)).count == 3)
         await restarted.stop()
     }
 }

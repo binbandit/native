@@ -372,7 +372,7 @@ actor FakeAgent {
             return try await tick(session, count: 4, stoppable: true)
         } else if text == "cancel-leaves-command" {
             return try await cancelLeavingCommand(session)
-        } else if text == "silent-until-stopped" {
+        } else if text.hasPrefix("silent-until-stopped") {
             while !cancelled.contains(session) { try await Task.sleep(for: .milliseconds(20)) }
             return "cancelled"
         } else if text.hasPrefix("slow") || text.hasPrefix("stubborn") {

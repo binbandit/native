@@ -273,14 +273,17 @@ extension HostStore {
             try JSONColumn.encode(delta.receipt), .text(delta.transfer.uuidString))
     }
 
-    /// Sent transfers that didn't arrive are prepared again, to be chosen afresh for the next message.
-    func reprepareTransfers(_ ids: [UUID]) throws {
-        for id in ids {
+    /// Deltas that didn't arrive give way to fresh ones, chosen anew for the next message under
+    /// markers of their own, so a replay of an earlier attempt never vouches for different context.
+    func replaceUndeliveredDeltas(_ deltas: [TaskHistoryTransfer], in history: TaskHistoryID) throws {
+        for delta in deltas {
             try database.run(
-                """
-                UPDATE history_transfers SET state = 'prepared', request_id = NULL, covered = '[]', receipt = NULL
-                WHERE id = ? AND state = 'sent'
-                """, .text(id.uuidString))
+                "UPDATE history_transfers SET state = 'superseded' WHERE id = ? AND state = 'sent'",
+                .text(delta.id.uuidString))
+            try insertTransfer(
+                TaskHistoryTransfer(
+                    sourceHistory: delta.sourceHistory, target: delta.target, from: delta.from, through: delta.through,
+                    conveyed: [], strategy: .delta), into: history)
         }
     }
 

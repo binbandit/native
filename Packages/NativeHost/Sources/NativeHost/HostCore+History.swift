@@ -173,12 +173,12 @@ extension HostCore {
                     let unshown = deltas.filter { delta in
                         shownMarkers.map { !$0.contains(delta.markerID) } ?? false
                     }
-                    try store.reprepareTransfers(unshown.map(\.id))
+                    try store.replaceUndeliveredDeltas(unshown, in: history.id)
                     try store.deliverHistoryTransfers(in: history.id, to: history.participant, with: turn)
                 } else {
                     // Stopped before the agent answered: a delta goes again with the next message. A
                     // client's handoff, which the host can't send again, stays sent.
-                    try store.reprepareTransfers(deltas.map(\.id))
+                    try store.replaceUndeliveredDeltas(deltas, in: history.id)
                 }
             }
         } catch {
