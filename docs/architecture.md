@@ -444,10 +444,10 @@ Adding a **variant**:
    with today's behavior as the default. The point's owner exposes the seam.
 2. Read it where the behavior happens: `@Resolved(.transcriptStyle) private var style: any
    TranscriptStyle` in a view, or `snapshot.implementation(of: .point)` in an engine.
-3. Write the alternative as its own type in its own folder (`Styles/Bubbles/`), never as `if`
+3. Write the alternative as its own type in its own folder (say `Styles/Compact/`), never as `if`
    branches in the default.
-4. Declare `extension Variant { static let bubbles = Variant(id:, …, claims: [Claim(.transcriptStyle,
-   BubbleTranscriptStyle())]) }` and list it in the catalog.
+4. Declare `extension Variant { static let compactRows = Variant(id:, …, claims: [Claim(.transcriptStyle,
+   CompactTranscriptStyle())]) }` and list it in the catalog.
 5. To promote it, make it the point's default and delete the variant; to drop it, delete its folder
    and declaration.
 
@@ -704,9 +704,8 @@ goal migration remain separate work.
 ### Transcript styles
 
 `TranscriptView` keeps scrolling and the loading and empty states; the rows come from the
-`TranscriptStyle` in effect. `StandardTranscriptStyle` is the default; `BubbleTranscriptStyle` (the
-Bubbles experiment, `native/Views/Transcript/Styles/Bubbles/`) shows the same rows as chat bubbles,
-reusing the transcript's leaf views. Both get a `TranscriptStyleConfiguration`, which owns the shared
+`TranscriptStyle` in effect. `StandardTranscriptStyle` is the default and, today, the only style; an
+alternative would reuse the transcript's leaf views. Every style gets a `TranscriptStyleConfiguration`, which owns the shared
 rules: which rows there are, which pending request answers the permission shortcuts, and how session
 messages name other sessions.
 
