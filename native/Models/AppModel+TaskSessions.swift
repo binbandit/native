@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import NativeHostClient
 
 /// Sessions Native's own tools start and reopen (orchestration, automations, expeditions), which
 /// stay out of the sidebar.
@@ -32,6 +33,19 @@ extension AppModel {
         } catch {
             runtime.noteSignInRequired(by: error)
             throw SessionLauncher.LaunchError.failed(agent: runtime.agent.displayName, underlying: error)
+        }
+    }
+
+    /// A rejected candidate has no delegated work to preserve. Forget it locally and ask the
+    /// agent to release it when its advertised close capability supports that.
+    func discardTaskCandidate(_ session: SessionModel, parent: SessionModel) async {
+        parent.removeSubagent(session)
+        sessions.remove(session)
+        taskRecords.remove(session.key)
+        if let link = session.host {
+            try? await link.client.closeSession(link.id, closeInAgent: true)
+        } else if runtimes[session.agent.id]?.capabilities?.closeSessions == true {
+            _ = try? await session.connection?.send(CloseSessionRequest(sessionId: session.id))
         }
     }
 

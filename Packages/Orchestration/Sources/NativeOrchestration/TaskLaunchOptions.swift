@@ -93,12 +93,22 @@ public enum TaskLaunchValidation {
     private static func selection(
         for source: String, offered: [String]
     ) -> (value: String, reason: AgentModelPermissions.Reason)? {
-        if let mode = TaskPermissionMode(rawValue: source),
-            let mapped = TaskPermissionMapping.standard.selection(mode, offered: offered)
-        {
-            return (mapped.value, mapped.isExact ? .equivalent : .stricter)
+        // Normalize Native's display vocabulary before translation. Its ordered picker fallback
+        // cannot prove that risk review, trusted edits and workspace access are interchangeable.
+        let values = offered.map(semanticValue)
+        guard let selected = AgentModelPermissions.selection(for: semanticValue(source), offered: values),
+            let index = values.firstIndex(of: selected.value)
+        else { return nil }
+        return (offered[index], selected.reason)
+    }
+
+    private static func semanticValue(_ value: String) -> String {
+        switch value {
+        case "ask-first": "default"
+        case "accept-edits": "acceptEdits"
+        case "full-access": "bypassPermissions"
+        default: value
         }
-        return AgentModelPermissions.selection(for: source, offered: offered).map { ($0.value, $0.reason) }
     }
 
     public static func verify(_ id: String, value: String, in options: [ConfigOption]) throws {

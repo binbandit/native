@@ -37,6 +37,10 @@ final class TaskSessionRecords {
         records[record.key] = record
     }
 
+    func remove(_ key: SessionKey) {
+        records[key] = nil
+    }
+
     private func save() {
         if let data = try? JSONEncoder().encode(Array(records.values)) {
             defaults.set(data, forKey: Self.key)

@@ -113,6 +113,9 @@ extension SessionModel {
 
     /// Takes in what the host says about the session now.
     func apply(_ summary: HostSessionSummary) {
+        if summary.lastStopReason == "cancelled", hostSummary?.lastStopReason != "cancelled" {
+            delegationStopGeneration += 1
+        }
         let changedPermission = hostSummary?.permissionMode != summary.permissionMode
         hostSummary = summary
         if changedPermission, let mode = summary.permissionMode,

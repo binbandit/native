@@ -116,17 +116,26 @@ final class AppTaskRuntime {
     func startTask(_ request: TaskRequest) async throws -> OrchestrationTask {
         let parent = try session(request.parent)
         guard let model else { throw RuntimeError.closed }
+        guard !parent.isStopping else {
+            throw TaskLaunchValidation.Refusal("The parent is stopping. Resume it before delegating.")
+        }
+        let stopGeneration = parent.delegationStopGeneration
         let cwd = try TaskLaunchValidation.checkout(request.options.checkout, inherited: parent.cwd)
         let task = try await model.startTaskSession(
             agent: AgentDefinition.ID(rawValue: request.agent.id), cwd: cwd, parent: parent.clientID)
-        try await task.prepareDelegation(request.options, parent: parent)
-        guard model.session(parent.key) === parent, !parent.isStopping,
-            parent.lastStopReason != .cancelled
-        else { throw TaskLaunchValidation.Refusal("The parent stopped or closed before delegation finished.") }
+        do {
+            try await task.prepareDelegation(request.options, parent: parent)
+            guard model.session(parent.key) === parent, !parent.isStopping,
+                parent.delegationStopGeneration == stopGeneration
+            else { throw TaskLaunchValidation.Refusal("The parent stopped or closed before delegation finished.") }
+            try await task.submit(request.prompt, .queue, echo: false)
+        } catch {
+            await model.discardTaskCandidate(task, parent: parent)
+            throw error
+        }
         // Recorded the way agents record their own subagents' tasks: in the subagent's transcript,
         // from its parent, while the parent's shows the subagent itself.
         task.apply(.sessionMessage(Self.message(request.text, from: parent, to: task)))
-        try await task.submit(request.prompt, .queue, echo: false)
         show(task, titled: request.title, in: parent)
         let record = OrchestrationTask(
             id: request.id, session: TaskSessionRef(task.key), agentName: request.agent.name, title: request.title,

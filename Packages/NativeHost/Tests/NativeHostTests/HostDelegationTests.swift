@@ -1,3 +1,5 @@
+// These tools require the host's Network and CryptoKit MCP transport.
+#if canImport(Network) && canImport(CryptoKit)
 import ACP
 import Foundation
 import NativeHostClient
@@ -68,3 +70,4 @@ struct HostDelegationTests {
         await recorder.stop()
     }
 }
+#endif

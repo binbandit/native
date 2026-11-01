@@ -22,6 +22,19 @@ import Testing
         }
     }
 
+    @Test func autoDoesNotAuthorizeTrustedEdits() throws {
+        for (source, values) in [("auto", ["default", "acceptEdits"]), ("agent", ["ask-first", "accept-edits"])] {
+            let parent = try options(source, [source])
+            let child = try options(values[1], values)
+            #expect(try TaskLaunchValidation.permission(parent: parent, child: child, requested: nil).1 == values[0])
+            for requested in ["accept-edits", "acceptEdits"] {
+                #expect(throws: TaskLaunchValidation.Refusal.self) {
+                    try TaskLaunchValidation.permission(parent: parent, child: child, requested: requested)
+                }
+            }
+        }
+    }
+
     @Test func explicitModesAreNeverSilentlyNarrowed() throws {
         let parent = try options("bypassPermissions", ["default", "bypassPermissions"])
         #expect(throws: TaskLaunchValidation.Refusal.self) {
