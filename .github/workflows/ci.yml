@@ -76,9 +76,11 @@ jobs:
           package_temp=$(mktemp -d /tmp/native-pkg.XXXXXX)
           echo "NATIVE_PACKAGE_TEMP=$package_temp" >> "$GITHUB_ENV"
           if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
-            echo "NATIVE_PACKAGE_BUILD_ROOT=$RUNNER_TEMP/package-builds" >> "$GITHUB_ENV"
-            echo "NATIVE_SCRIPT_RUNTIME_CACHE=$RUNNER_TEMP/ScriptRuntime" >> "$GITHUB_ENV"
-            echo "NATIVE_SCRIPT_RUNTIME=$RUNNER_TEMP/ScriptRuntime/native-script-runtime" >> "$GITHUB_ENV"
+            {
+              echo "NATIVE_PACKAGE_BUILD_ROOT=$RUNNER_TEMP/package-builds"
+              echo "NATIVE_SCRIPT_RUNTIME_CACHE=$RUNNER_TEMP/ScriptRuntime"
+              echo "NATIVE_SCRIPT_RUNTIME=$RUNNER_TEMP/ScriptRuntime/native-script-runtime"
+            } >> "$GITHUB_ENV"
           fi
       - name: Xcode
         run: xcodebuild -version
