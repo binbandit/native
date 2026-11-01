@@ -134,6 +134,9 @@ extension HostCore {
         // Failing before the agent did anything leaves only the message: a retry or the user's next
         // message carries on from it.
         guard stopReason != "error" || !bodies.isEmpty, let history = recordableHistory(of: session) else { return }
+        // A turn stopped before the agent said or did anything may never have reached it, so the
+        // context that went with its message stays sent rather than counted as seen.
+        let answered = !bodies.isEmpty || stopReason != "cancelled"
         do {
             try store.transaction {
                 guard try !store.hasHistoryItem(turn: turn, kind: "turn_ended", in: history.id) else { return }
@@ -145,8 +148,9 @@ extension HostCore {
                 bodies.append(.turnEnded(stopReason: stopReason))
                 try store.appendHistoryItems(
                     bodies, to: history.id, source: history.participant, turn: turn, at: .now)
-                // The agent answered, so the context that went with the message arrived.
-                try store.deliverHistoryTransfers(in: history.id, to: history.participant, with: turn)
+                if answered {
+                    try store.deliverHistoryTransfers(in: history.id, to: history.participant, with: turn)
+                }
             }
         } catch {
             logger.error("Couldn't record a turn in its task's history: \(error.localizedDescription)")
@@ -184,6 +188,12 @@ extension HostCore {
             let agentSessionID = target.record.agentSessionID
         else { throw HostError.noHistory }
         let participant: TaskHistoryParticipant = try store.transaction {
+            // A repeated join (a client retrying after a lost reply) records its handoff only once.
+            if let (current, joined) = try store.historyParticipant(
+                agentID: target.record.agentID, agentSessionID: agentSessionID), current == source.id
+            {
+                return joined
+            }
             guard
                 let joined = try store.joinHistory(
                     source.id, agentID: target.record.agentID, agentSessionID: agentSessionID,

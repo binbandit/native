@@ -180,6 +180,10 @@ struct HostHistoryTests {
         #expect(joined.participants.map(\.seen) == [3, 0])
         #expect(joined.transfers.map(\.state) == [.prepared])
         #expect(joined.transfers.map(\.conveyed) == [[2...2]])
+        // A client retrying the join after a lost reply records its handoff once.
+        let again = try await recorder.client.joinHistory(
+            JoinHistoryParams(sessionID: second, source: first, conveyed: [2...2]))
+        #expect(again.transfers.count == 1)
 
         _ = try await recorder.client.prompt(PromptParams(sessionID: second, text: "two"))
         try await recorder.wait("the second turn") { await $0.turnsEnded(second).count == 1 }
@@ -214,6 +218,28 @@ struct HostHistoryTests {
         try await recorder.wait("the second turn") { await $0.turnsEnded(second).count == 1 }
         #expect(try await recorder.client.historySummary(of: second).participants.map(\.seen) == [3, 6])
         #expect(try await recorder.client.missingHistory(of: second).items.isEmpty)
+        await recorder.stop()
+    }
+
+    @Test("A handoff whose message was stopped before the agent answered isn't counted as seen")
+    func stoppedBeforeAnswer() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let (first, second) = try await twoSessions(recorder)
+        _ = try await recorder.client.joinHistory(
+            JoinHistoryParams(sessionID: second, source: first, conveyed: [1...3]))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: second, text: "silent-until-stopped"))
+        try await recorder.wait("the agent to get the message") { _ in
+            harness.received.contains("prompt\tsilent-until-stopped")
+        }
+        try await recorder.client.cancel(second)
+        try await recorder.wait("the stop") { await $0.turnsEnded(second) == ["cancelled"] }
+        let summary = try await recorder.client.historySummary(of: second)
+        #expect(summary.transfers.map(\.state) == [.sent])
+        #expect(summary.participants.map(\.seen) == [3, 0])
+        #expect(try await recorder.client.missingHistory(of: second).items.map(\.seq) == [1, 2, 3])
         await recorder.stop()
     }
 
