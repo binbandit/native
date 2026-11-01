@@ -1,3 +1,4 @@
+import ACP
 import Foundation
 
 /// The session calling one of Native's tools, named by the token in the URL it was given.
@@ -21,9 +22,14 @@ public struct OrchestrationCaller: Hashable, Sendable {
 public struct TaskAgent: Hashable, Sendable {
     public var id: String
     public var name: String
+    /// Last observed settings, not a promise about a new session. Empty means unknown.
+    public var configOptions: [ConfigOption]
+    public var unavailableReason: String?
 
-    public init(id: String, name: String) {
+    public init(id: String, name: String, configOptions: [ConfigOption] = [], unavailableReason: String? = nil) {
         self.id = id
         self.name = name
+        self.configOptions = configOptions
+        self.unavailableReason = unavailableReason
     }
 }

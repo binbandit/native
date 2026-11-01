@@ -24,7 +24,8 @@ public protocol TaskRuntime: Sendable {
     /// Every task sessions handed each other, in the order they started.
     func tasks() async -> [OrchestrationTask]
 
-    /// Starts a session on the request's agent in its parent's working directory, shows it as a
+    /// Validates exact launch options and bounded inherited permissions before the first prompt.
+    /// Starts a session on the requested agent and checkout (parent's directory by default), shows it as a
     /// task of the parent, remembers it, and sends it the request's prompt. Returns once the prompt
     /// is on its way: from then on `snapshot` must report the turn (running or later), never the
     /// idle state before it, or a wait could end before the task begins. The new session gets
