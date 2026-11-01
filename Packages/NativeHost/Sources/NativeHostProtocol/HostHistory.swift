@@ -22,12 +22,18 @@ public struct TaskHistorySummary: Codable, Hashable, Sendable {
     public var participants: [TaskHistoryParticipant]
     /// The asking session's own participant ordinal.
     public var current: Int
+    /// The context each participant was given, oldest first.
+    public var transfers: [TaskHistoryTransfer]
 
-    public init(id: TaskHistoryID, head: Int, participants: [TaskHistoryParticipant], current: Int) {
+    public init(
+        id: TaskHistoryID, head: Int, participants: [TaskHistoryParticipant], current: Int,
+        transfers: [TaskHistoryTransfer] = []
+    ) {
         self.id = id
         self.head = head
         self.participants = participants
         self.current = current
+        self.transfers = transfers
     }
 }
 
@@ -45,5 +51,54 @@ public struct ReadHistoryParams: Codable, Hashable, Sendable {
         self.after = after
         self.through = through
         self.limit = limit
+    }
+}
+
+extension HostProtocol.Method {
+    /// Client → host: a change of agent committed, so the new agent session joins the task's history
+    /// (`JoinHistoryParams` → `TaskHistorySummary`). With `conveyed`, the client's own handoff went
+    /// with its next message and is recorded as a `client` transfer.
+    public static let joinHistory = "_native/history/join"
+    /// Client → host: what a session's agent hasn't seen of its task (`SessionParams` →
+    /// `TaskHistoryMissing`), for the context a return to it needs.
+    public static let missingHistory = "_native/history/missing"
+}
+
+public struct JoinHistoryParams: Codable, Hashable, Sendable {
+    /// The session joining: the agent session the task continues with.
+    public var sessionID: HostSessionID
+    /// A session of the task it joins.
+    public var source: HostSessionID
+    /// The items of the task's history the client's handoff conveyed, from its receipt; nil when the
+    /// client sends none.
+    public var conveyed: [ClosedRange<Int>]?
+    /// The handoff's receipt, kept with the transfer for audit.
+    public var receipt: JSONValue?
+
+    public init(
+        sessionID: HostSessionID, source: HostSessionID, conveyed: [ClosedRange<Int>]? = nil, receipt: JSONValue? = nil
+    ) {
+        self.sessionID = sessionID
+        self.source = source
+        self.conveyed = conveyed
+        self.receipt = receipt
+    }
+}
+
+/// What a session's agent hasn't seen of its task.
+public struct TaskHistoryMissing: Codable, Hashable, Sendable {
+    /// The session's watermark: it has everything up to here.
+    public var seen: Int
+    public var head: Int
+    /// The newest 500 it hasn't seen, oldest first.
+    public var items: [TaskHistoryItem]
+    /// How many older ones were left out of `items`.
+    public var omitted: Int
+
+    public init(seen: Int, head: Int, items: [TaskHistoryItem], omitted: Int) {
+        self.seen = seen
+        self.head = head
+        self.items = items
+        self.omitted = omitted
     }
 }

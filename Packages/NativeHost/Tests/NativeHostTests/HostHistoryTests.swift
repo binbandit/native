@@ -157,6 +157,82 @@ struct HostHistoryTests {
         await second.stop()
     }
 
+    /// Two sessions on the fake agent standing in for two agents of one task.
+    private func twoSessions(_ recorder: Recorder) async throws -> (HostSessionID, HostSessionID) {
+        let first = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: first.id, text: "one"))
+        try await recorder.wait("the first turn") { await $0.turnsEnded(first.id) == ["end_turn"] }
+        let second = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
+        return (first.id, second.id)
+    }
+
+    @Test("A joined session sees what its handoff conveyed once its message is answered, and nothing more")
+    func joinedWatermark() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let (first, second) = try await twoSessions(recorder)
+        // The handoff quoted the reply (item 2) but not the message before it.
+        let joined = try await recorder.client.joinHistory(
+            JoinHistoryParams(sessionID: second, source: first, conveyed: [2...2, 7...9]))
+        #expect(joined.current == 2)
+        #expect(joined.participants.map(\.seen) == [3, 0])
+        #expect(joined.transfers.map(\.state) == [.prepared])
+        #expect(joined.transfers.map(\.conveyed) == [[2...2]])
+
+        _ = try await recorder.client.prompt(PromptParams(sessionID: second, text: "two"))
+        try await recorder.wait("the second turn") { await $0.turnsEnded(second).count == 1 }
+        let after = try await recorder.client.historySummary(of: second)
+        #expect(after.head == 6)
+        #expect(after.transfers.map(\.state) == [.delivered])
+        // Item 1 was never conveyed, so the second session's watermark can't pass it.
+        #expect(after.participants.map(\.seen) == [3, 0])
+        #expect(try await recorder.client.missingHistory(of: second).items.map(\.seq) == [1, 3])
+        // The first session missed everything the second did.
+        let missed = try await recorder.client.missingHistory(of: first)
+        #expect(missed.seen == 3)
+        #expect(
+            missed.items.map(\.body) == [
+                .user(.init(text: "two", origin: "user")), .agent("echo: two"), .turnEnded(stopReason: "end_turn"),
+            ])
+        await recorder.stop()
+    }
+
+    @Test("A handoff that conveyed everything carries the watermark to the head")
+    func fullHandoff() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let (first, second) = try await twoSessions(recorder)
+        _ = try await recorder.client.joinHistory(
+            JoinHistoryParams(sessionID: second, source: first, conveyed: [1...3]))
+        // Before its message is answered, nothing it was given counts.
+        #expect(try await recorder.client.missingHistory(of: second).items.count == 3)
+        _ = try await recorder.client.prompt(PromptParams(sessionID: second, text: "two"))
+        try await recorder.wait("the second turn") { await $0.turnsEnded(second).count == 1 }
+        #expect(try await recorder.client.historySummary(of: second).participants.map(\.seen) == [3, 6])
+        #expect(try await recorder.client.missingHistory(of: second).items.isEmpty)
+        await recorder.stop()
+    }
+
+    @Test("A change of agent undone before its first message leaves the task's history as it was")
+    func undoneJoin() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let (first, second) = try await twoSessions(recorder)
+        _ = try await recorder.client.joinHistory(
+            JoinHistoryParams(sessionID: second, source: first, conveyed: [1...3]))
+        try await recorder.client.closeSession(second, closeInAgent: true)
+        let summary = try await recorder.client.historySummary(of: first)
+        #expect(summary.participants.count == 1)
+        #expect(summary.transfers.isEmpty)
+        await recorder.stop()
+    }
+
     @Test("Deleting a task's agent session deletes its history")
     func deleted() async throws {
         let harness = try HostHarness()

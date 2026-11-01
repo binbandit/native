@@ -44,10 +44,12 @@ extension HostCore {
         }
     }
 
-    /// Records the message a turn starts with, inside the transaction that commits the turn. A retry
-    /// of the same request finds it recorded already.
+    /// Records the message a turn starts with, inside the transaction that commits the turn, and
+    /// sends the context prepared for the session with it. A retry of the same request finds it
+    /// recorded already.
     func recordPrompt(_ prompt: OutgoingPrompt, in history: HostSessionHistory) {
         do {
+            try store.sendHistoryTransfers(in: history.id, to: history.participant, with: prompt.id)
             guard try !store.hasHistoryItem(turn: prompt.id, in: history.id) else { return }
             let body = TaskHistoryRecording.user(
                 prompt.text, attachments: prompt.attachments.map(\.name), origin: prompt.origin.rawValue)
@@ -143,6 +145,8 @@ extension HostCore {
                 bodies.append(.turnEnded(stopReason: stopReason))
                 try store.appendHistoryItems(
                     bodies, to: history.id, source: history.participant, turn: turn, at: .now)
+                // The agent answered, so the context that went with the message arrived.
+                try store.deliverHistoryTransfers(in: history.id, to: history.participant, with: turn)
             }
         } catch {
             logger.error("Couldn't record a turn in its task's history: \(error.localizedDescription)")
@@ -172,6 +176,51 @@ extension HostCore {
         }
     }
 
+    /// A change of agent committed: the target's agent session joins the source's task history, with
+    /// the client's handoff recorded as a transfer when it says what it conveyed.
+    func joinHistory(_ params: JoinHistoryParams) throws -> TaskHistorySummary {
+        let target = try session(params.sessionID)
+        guard let source = try history(of: try session(params.source)), target.record.origin != .announced,
+            let agentSessionID = target.record.agentSessionID
+        else { throw HostError.noHistory }
+        let participant: TaskHistoryParticipant = try store.transaction {
+            guard
+                let joined = try store.joinHistory(
+                    source.id, agentID: target.record.agentID, agentSessionID: agentSessionID,
+                    model: target.mirror.state.configOptions.modelValue)
+            else { throw HostError.busy("This conversation already has a history of its own.") }
+            if let conveyed = params.conveyed, let head = try store.historyHead(source.id) {
+                let considered = joined.seen < head ? (joined.seen + 1)...head : nil
+                try store.insertTransfer(
+                    TaskHistoryTransfer(
+                        sourceHistory: source.id, target: joined.ordinal, from: joined.seen, through: head,
+                        conveyed: considered.map { range in
+                            conveyed.filter { $0.overlaps(range) }.map { $0.clamped(to: range) }
+                        } ?? [],
+                        strategy: .client), into: source.id, receipt: params.receipt)
+            }
+            return joined
+        }
+        target.history = HostSessionHistory(id: source.id, participant: participant.ordinal)
+        return try historySummary(SessionParams(sessionID: target.id))
+    }
+
+    func missingHistory(_ params: SessionParams) throws -> TaskHistoryMissing {
+        let session = try session(params.sessionID)
+        guard let history = try history(of: session), let head = try store.historyHead(history.id),
+            let participant = try store.historyParticipants(of: history.id).first(where: {
+                $0.ordinal == history.participant
+            })
+        else { throw HostError.noHistory }
+        let conveyed = TaskHistoryCoverage.conveyed(
+            to: participant.ordinal, by: try store.historyTransfers(of: history.id), in: history.id)
+        let missing = TaskHistoryCoverage.missing(
+            try store.historyItems(of: history.id, after: participant.seen, limit: .max),
+            participant: participant.ordinal, conveyed: conveyed)
+        return TaskHistoryMissing(
+            seen: participant.seen, head: head, items: Array(missing.suffix(500)), omitted: max(missing.count - 500, 0))
+    }
+
     func historySummary(_ params: SessionParams) throws -> TaskHistorySummary {
         let session = try session(params.sessionID)
         guard let history = try history(of: session), let head = try store.historyHead(history.id) else {
@@ -179,7 +228,7 @@ extension HostCore {
         }
         return TaskHistorySummary(
             id: history.id, head: head, participants: try store.historyParticipants(of: history.id),
-            current: history.participant)
+            current: history.participant, transfers: try store.historyTransfers(of: history.id))
     }
 
     func readHistory(_ params: ReadHistoryParams) throws -> [TaskHistoryItem] {

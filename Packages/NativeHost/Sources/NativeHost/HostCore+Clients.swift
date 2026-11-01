@@ -289,6 +289,10 @@ extension HostCore {
             try reply(try historySummary(try message.params(as: SessionParams.self)))
         case Method.readHistory:
             try reply(try readHistory(try message.params(as: ReadHistoryParams.self)))
+        case Method.joinHistory:
+            try reply(try joinHistory(try message.params(as: JoinHistoryParams.self)))
+        case Method.missingHistory:
+            try reply(try missingHistory(try message.params(as: SessionParams.self)))
         case Method.listNotifications:
             try reply(try listNotifications(try message.params(as: ListNotificationsParams.self)))
         case Method.acknowledgeNotifications:
