@@ -57,6 +57,7 @@ private struct AgentModelChangeRegression {
         do {
             try duplicateModels()
             try await readOnlyDefaultMigration()
+            try await directModePreambleBudget()
             try await run()
             try await inAppRecovery()
             try await permissionFallbacks()
@@ -117,6 +118,41 @@ private struct AgentModelChangeRegression {
         }
         print(
             "PASS: user and project read-only migration, provider selection, blocked widening and explicit replacement")
+    }
+
+    static func directModePreambleBudget() async throws {
+        let defaults = PreviewUserDefaults()
+        let app = AppModel(
+            plugins: PluginRegistry(previewing: [BuiltInPlugins.codex]), defaults: defaults, catalogURL: nil)
+        guard let agent = app.plugins.agent(.init(rawValue: "codex")) else {
+            throw ChangeFailure("No direct-send fixture")
+        }
+        // No transport or subprocess: exercise the real direct-send path through prompt assembly.
+        let session = SessionModel(
+            agent: agent, id: SessionID("direct-preamble"), cwd: URL(filePath: "/fixture"),
+            connection: nil, services: app.sessions.services, supportsSteering: true,
+            promptCapabilities: .init(), phase: .idle)
+        let mode = Mode(
+            id: .custom("large"), name: "Large", symbol: "text.alignleft", summary: "",
+            instructions: String(repeating: "x", count: 20_000), source: .custom)
+        app.sessionHooks.preamble = { _, delivered in
+            ModeInstructions.preamble(for: mode, ModeResolver.resolve(mode, options: []), delivered: delivered)
+        }
+        app.sessions.services.modelContinuations.prepare("Keep the branch", for: session.key)
+        session.draft = "Continue"
+        await session.send()
+        try require(
+            session.state.items.contains { item in
+                if case .message(let message) = item { message.preamble != nil } else { false }
+            }, "Direct send did not echo the custom mode")
+        guard let receipt = app.sessions.services.modelContinuations.transfer(for: session.key)?.receipt else {
+            throw ChangeFailure("Missing direct-send context receipt")
+        }
+        try require(receipt.budget.promptCost > 20_000, "Captured mode instructions were absent from the budget")
+        try require(receipt.budget.limit == 0, "Large custom mode consumed the handoff work reserve")
+        try require(receipt.delivery == .notSent, "Context was sent despite the custom mode filling its budget")
+        session.cancelRetry()
+        print("PASS: first direct send budgets the captured custom mode after its marker is echoed")
     }
 
     static func run() async throws {

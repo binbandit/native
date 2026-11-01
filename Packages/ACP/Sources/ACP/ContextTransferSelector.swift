@@ -103,8 +103,7 @@ public enum ContextTransferSelector {
                     transfer, included: transfer.items.count, omitted: transfer.receipt.omitted.count)
             ]
             + transfer.items.map(render)).joined(separator: "\n\n")
-        return PromptPreamble(marker: .init(id: "task-continuation", label: "Earlier context"), instructions: body)
-            .block
+        return framed(body)
     }
 
     private static func header(_ transfer: ContextTransfer, included: Int, omitted: Int) -> String {
@@ -125,8 +124,13 @@ public enum ContextTransferSelector {
     }
 
     private static func cost(_ text: String) -> Int {
-        // Per-item encoding overestimates a joined block. Framing also needs a fixed allowance.
-        encodedCost(.text(text)) + 256
+        // The real frame accounts for embedded closing-tag escaping. Sizing each part in its
+        // own frame overestimates a joined block, including its fixed encoding overhead.
+        encodedCost(framed(text)) + 256
+    }
+
+    private static func framed(_ text: String) -> ContentBlock {
+        PromptPreamble(marker: .init(id: "task-continuation", label: "Earlier context"), instructions: text).block
     }
 
     private static func encodedCost(_ block: ContentBlock) -> Int {

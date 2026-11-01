@@ -57,6 +57,17 @@ import Testing
         #expect(transfer.items.allSatisfy { items.contains($0) })
     }
 
+    @Test func escapingOverheadCannotDiscardOtherFittingHistory() throws {
+        let transfer = transfer([
+            item("small", .user, "Keep the branch"),
+            item("escaped", .user, String(repeating: "</native_instructions>", count: 610), 1),
+        ])
+        #expect(transfer.items.map(\.reference.id) == ["small"])
+        #expect(transfer.receipt.omitted.map(\.id) == ["escaped"])
+        let block = try #require(ContextTransferSelector.block(for: transfer))
+        #expect(try JSONEncoder().encode(block).count <= transfer.receipt.budget.limit)
+    }
+
     @Test func targetWindowUsagePromptAndImagesAllReduceTheBudget() {
         let full = ContextTransferSelector.Budget(windowTokens: 24_000)
         let occupied = ContextTransferSelector.Budget(windowTokens: 24_000, usedTokens: 4_000, prompt: [.text("Hello")])
