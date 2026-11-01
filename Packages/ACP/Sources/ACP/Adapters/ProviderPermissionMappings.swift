@@ -18,7 +18,8 @@ extension CodexConfigOverrides {
                 .auto: ["agent"], .fullAccess: ["agent-full-access"],
             ],
             notes: [
-                "workspace-write": "Workspace edits and commands run without asking; outside access asks.",
+                "workspace-write":
+                    "Asks before anything outside this project. Edits and commands inside it run without asking.",
                 "read-only": "Uses a read-only sandbox with this agent.",
             ])
     }

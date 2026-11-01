@@ -88,9 +88,9 @@ import Testing
         guard case .select(let current, let choices) = shown.kind else { Issue.record("Missing select"); return }
         #expect(current == "accept-edits")
         #expect(choices.map(\.name) == ["Ask first", "Accept edits", "Auto", "Full access"])
-        #expect(choices[1].description?.contains("Uses Ask first with this agent.") == true)
+        #expect(choices[1].description == "Same as Ask first with this agent.")
         #expect(choices[0].description?.contains("safe equivalent") == false)
-        #expect(choices[0].description?.contains("outside access asks") == true)
+        #expect(choices[0].description?.hasPrefix("Asks before anything outside this project.") == true)
         #expect(shown.permissionMappings?["accept-edits"] == "workspace-write")
         #expect(AgentModelPermissions.replacement(for: "accept-edits", offered: choices.map(\.value)) == "accept-edits")
     }
@@ -119,10 +119,9 @@ import Testing
                     .utf8))
         let shown = CodexConfigOverrides.permissionMapping.presenting(option)
         guard case .select(_, let choices) = shown.kind else { Issue.record("Missing select"); return }
-        for choice in choices.prefix(2) {
-            #expect(choice.description?.contains("without asking") == true)
-            #expect(choice.description?.contains("Asks before") == false)
-        }
+        #expect(choices[0].description?.contains("outside this project") == true)
+        #expect(choices[0].description != TaskPermissionMode.askFirst.summary)
+        #expect(choices[1].description == "Same as Ask first with this agent.")
     }
 
     @Test func unknownActivePermissionIsPreservedAlongsideKnownChoices() throws {
@@ -136,8 +135,9 @@ import Testing
         #expect(current == "custom-autopilot")
         #expect(choices.contains { $0.value == current && $0.name == "Custom autopilot" })
         #expect(choices.first { $0.value == current }?.description?.contains("cannot describe") == true)
-        for choice in choices.prefix(4) {
-            #expect(choice.description?.hasPrefix(TaskPermissionMode.askFirst.summary) == true)
+        #expect(choices[0].description == TaskPermissionMode.askFirst.summary)
+        for choice in choices.dropFirst().prefix(3) {
+            #expect(choice.description == "Same as Ask first with this agent.")
         }
     }
 

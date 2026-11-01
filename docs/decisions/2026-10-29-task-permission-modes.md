@@ -12,9 +12,9 @@ changes only the current task. There is no experiment switch and no confirmation
 | Auto | `auto` | `agent`: on-request, workspace-write, auto_review reviewer |
 | Full access | `bypassPermissions` | `agent-full-access`: never, danger-full-access |
 
-The Codex adapter's workspace mode permits workspace edits and commands. Its picker explains that
-outside access asks. Provider consequence captions replace generic summaries, with a separate fallback
-sentence where needed. It does not claim a read-only sandbox. If Auto is unavailable for a Claude model,
+The Codex adapter's workspace mode permits workspace edits and commands. Its picker says it asks
+before anything outside the project. Provider consequence captions replace generic summaries. A mode an
+agent lacks says only which mode it behaves as ("Same as Ask first with this agent"). It does not claim a read-only sandbox. If Auto is unavailable for a Claude model,
 Native uses Accept edits, or Ask first when edits are unavailable. Other ACP agents use recognized
 permission controls through the plugin mapping. Unfamiliar values are never guessed from their order
 or display names. A missing mode uses the closest stricter equivalent; choices with no safe equivalent

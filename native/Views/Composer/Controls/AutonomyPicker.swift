@@ -19,7 +19,7 @@ struct AutonomyPicker: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("What \(agentName) may do without asking")
+            Text("Permissions")
                 .font(.dsCaption)
                 .foregroundStyle(.dsTextTertiary)
                 .padding(.horizontal, DS.Space.lg)

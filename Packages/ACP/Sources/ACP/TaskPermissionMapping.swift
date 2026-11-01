@@ -59,15 +59,13 @@ public struct TaskPermissionMapping: Hashable, Sendable {
         let mode = retained ?? mode(for: current) ?? TaskPermissionMode.migrating(current)
         let choices = TaskPermissionMode.allCases.map { mode in
             let selected = selection(mode, offered: wire, forbidden: forbidden)
-            let note =
+            // A stand-in mode only says which mode it behaves as, so its caption never repeats that mode's.
+            let description =
                 selected.map {
-                    $0.isExact ? nil : "Uses \($0.effective.title) with this agent."
-                } ?? "This agent does not offer a safe equivalent."
-            return ConfigOption.SelectOption(
-                value: mode.rawValue, name: mode.title,
-                description: [selected.map { notes[$0.value] ?? $0.effective.summary } ?? mode.summary, note].compactMap
-                { $0 }.joined(
-                    separator: " "))
+                    $0.isExact
+                        ? notes[$0.value] ?? $0.effective.summary : "Same as \($0.effective.title) with this agent."
+                } ?? "\(mode.summary) This agent does not offer a safe equivalent."
+            return ConfigOption.SelectOption(value: mode.rawValue, name: mode.title, description: description)
         }
         // Task modes can apply a plan or read-only restriction independently of permissions.
         var restrictions = offered.filter { $0.value == "plan" || $0.value == "read-only" }
