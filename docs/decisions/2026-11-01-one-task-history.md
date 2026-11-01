@@ -195,7 +195,9 @@ The model is built so these need no migration:
 - `TaskHistoryID`, `TaskHistoryItem`, `TaskHistoryParticipant`, `TaskHistoryTransfer` (ACP): stable,
   `Codable`, with unknown cases for newer values.
 - `TaskHistoryCoverage.missing(for:)` and the watermark: what a participant hasn't seen.
-- `_native/history/read` and `_native/history/participants` on the host.
+- On the host: `_native/history/summary` (participants, watermarks, transfers), `_native/history/read`
+  (items), `_native/history/missing` (what a session hasn't seen) and `_native/history/join` (a change
+  of agent joins the task, with what its handoff conveyed).
 - Switching back uses the budgeted handoff's selection and receipt; the history only says what is
   missing and records what the receipt conveyed.
 - Capability work can take "same session" evidence from the participant list rather than agent names.
@@ -205,12 +207,13 @@ The model is built so these need no migration:
 Each is one pull request, small enough to review in one sitting.
 
 1. **Store and migration.** Schema 14, `HostStore+History`, ACP types, a history per new or adopted
-   host session, participants found by agent session, `read`/`participants`/`forget`, retention, the
-   data inventory. No behavior change.
+   host session, participants found by agent session, `summary`/`read`, retention, the data
+   inventory. No behavior change.
 2. **Recording.** User items at turn start, the turn's items at its end, recovery, import of earlier
    history. Tests on captured Claude Code and Codex traffic. No behavior change.
-3. **Watermarks.** Coverage, `seen`, transfers and their states, `client` transfers from today's
-   change-agent commits (`_native/history/continue`). No behavior change.
+3. **Watermarks.** Coverage, `seen`, transfers and their states, `_native/history/join` for a
+   committed change of agent with its handoff's conveyed items, `_native/history/missing`. No
+   behavior change until the change-agent flow calls `join`.
 4. **Switch back with a delta.** After the budgeted handoff work is on main, building on its
    selection and receipt: the `task-history` gate, reuse of the earlier session in the change flow,
    the host's lazy delta in the turn, Undo, fallback, a linear chain.
