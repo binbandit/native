@@ -101,6 +101,19 @@ struct ByteChannelTests {
         #expect(channel.isClosed)
     }
 
+    @Test("A stalled reader cannot hold a bounded flush open")
+    func boundedFlush() async throws {
+        let (ours, theirs) = try UnixSocket.pair()
+        defer { _ = close(theirs) }
+        let channel = ByteChannel.socket(ours, label: "bounded flush")
+        defer { channel.close(discardingPendingWrites: true) }
+        #expect(channel.write(Data(count: 4 << 20)))
+        let started = ContinuousClock.now
+        await channel.flushed(timeout: .milliseconds(20))
+        #expect(ContinuousClock.now - started < .seconds(1))
+        #expect(!channel.isClosed)
+    }
+
     @Test("A write that would pass the backlog limit is refused and closes the channel")
     func backlogLimit() throws {
         let (ours, theirs) = try UnixSocket.pair()

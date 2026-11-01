@@ -49,6 +49,10 @@ final class LinkPolicyStream: ByteStream {
         channel.write(data)
     }
 
+    func flushed(timeout: Duration) async {
+        await channel.flushed(timeout: timeout)
+    }
+
     func close() {
         channel.close()
     }

@@ -121,6 +121,8 @@ extension HostCore {
 
     private func serve(_ message: JSONRPCPeer.Message, from client: ClientLink) async {
         guard let requestID = message.id else { return }
+        let changesConfig = message.method == HostProtocol.Method.setConfigOption
+        if changesConfig { pendingConfigReplies += 1 }
         do {
             try await answer(message, from: client) { result in
                 try client.peer.respond(to: requestID, with: result)
@@ -137,6 +139,13 @@ extension HostCore {
             try? client.peer.respond(to: requestID, error: .invalidParams(error))
         } catch {
             try? client.peer.respond(to: requestID, error: RPCError(code: -32000, message: error.localizedDescription))
+        }
+        if changesConfig {
+            // respond queues bytes. Keep heartbeats and sibling completions from exiting mid-drain,
+            // while a client that stopped reading cannot hold the host open indefinitely.
+            await client.peer.flushed(timeout: .seconds(2))
+            pendingConfigReplies -= 1
+            exitIfIdleForRestart()
         }
     }
 

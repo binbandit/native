@@ -48,6 +48,10 @@
 - **State is a reducer.** `SessionState` folds `session/update`s and the user's actions into a
   transcript (messages, tool calls, subagents, inter-session messages, plan, usage). It's pure and
   tested against captured traffic, and it's shared with the future companion app.
+- **Settings are ordered on the host.** Changes from every client share a queue per session:
+  a model change finishes before a later effort change, including saving the returned settings.
+  A rejected change releases the next one; replacing the agent or closing the task invalidates
+  pending changes. Other sessions keep changing independently, and idle unloading waits for settings.
 - **History lives with the agent.** Sessions are listed with `session/list` and reopened with
   `session/load`, which replays them. Native stores only its own additions (titles, order, goals).
 - **Transcript artifacts retain their bytes.** User attachments, agent images and tool results,

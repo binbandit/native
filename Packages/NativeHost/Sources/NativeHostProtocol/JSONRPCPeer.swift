@@ -89,6 +89,10 @@ public final class JSONRPCPeer: Sendable {
         channel.close()
     }
 
+    public func flushed(timeout: Duration) async {
+        await channel.flushed(timeout: timeout)
+    }
+
     // MARK: - Sending
 
     public func request<Result: Decodable & Sendable>(

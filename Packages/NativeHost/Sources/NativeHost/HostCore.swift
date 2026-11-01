@@ -144,6 +144,8 @@ public final class HostCore {
     var idleUnloadChecks: Task<Void, Never>?
     /// Set once a restart was asked for, to exit when nothing is running.
     var isRestartingWhenIdle = false
+    /// Settings replies keep their restart hold until the transport has drained or timed out.
+    var pendingConfigReplies = 0
     /// Quit and Stop Agents authorizes ending shared trees, including hidden commands.
     var isStoppingAllAgents = false
     /// An immediate update ends shared processes while leaving sibling turns committed for recovery.

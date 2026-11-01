@@ -147,6 +147,13 @@ public final class NetworkByteStream: ByteStream {
         return true
     }
 
+    public func flushed(timeout: Duration) async {
+        let deadline = ContinuousClock.now + timeout
+        while state.withLock({ $0.backlog > 0 }), !Task.isCancelled, ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(5))
+        }
+    }
+
     /// Hangs up once what's queued has gone out: the host's last word (a refusal, or "revoked")
     /// has to reach the device, and cancelling a connection drops its pending sends.
     public func close() {

@@ -62,7 +62,8 @@ extension HostCore {
     /// Exits for an update once nothing it would cut off is under way. Called whenever work ends,
     /// and on every heartbeat for work that ends quietly (a subagent working in the background).
     func exitIfIdleForRestart() {
-        guard isRestartingWhenIdle, !isStoppingAllAgents, !isRestartingImmediately, stoppingSessions.isEmpty,
+        guard pendingConfigReplies == 0, isRestartingWhenIdle, !isStoppingAllAgents, !isRestartingImmediately,
+            stoppingSessions.isEmpty,
             !sessions.values.contains(where: \.holdsRestart)
         else { return }
         try? store.setMeta(MetaKey.cleanShutdown, "1")

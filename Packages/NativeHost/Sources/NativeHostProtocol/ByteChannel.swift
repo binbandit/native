@@ -14,6 +14,8 @@ public protocol ByteStream: Sendable {
     func incoming() -> AsyncStream<Data>
     /// Queues `data` for the other end; false when the stream is closed.
     @discardableResult func write(_ data: Data) -> Bool
+    /// Waits for queued writes to leave the transport or fail, bounded by `timeout`.
+    func flushed(timeout: Duration) async
     func close()
 }
 
@@ -79,6 +81,13 @@ public final class ByteChannel: ByteStream {
     /// Returns once everything written so far has gone out (or failed to).
     public func flushed() async {
         await engine.flushed()
+    }
+
+    public func flushed(timeout: Duration) async {
+        let deadline = ContinuousClock.now + timeout
+        while !engine.isFlushed, !Task.isCancelled, ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(5))
+        }
     }
 
     public var isClosed: Bool {
@@ -175,6 +184,10 @@ private final class ByteChannelEngine: Sendable {
         let readingSettings = Settings.prepare(reading)
         settings = (readingSettings, Settings.prepare(writing))
         wake = Self.makeWakePipe()
+    }
+
+    var isFlushed: Bool {
+        state.withLock { $0.backlog == 0 || $0.isFinished }
     }
 
     var isClosed: Bool {

@@ -64,6 +64,10 @@ public final class SecureChannel: ByteStream {
         return written
     }
 
+    public func flushed(timeout: Duration) async {
+        await raw.flushed(timeout: timeout)
+    }
+
     public func close() {
         raw.close()
         let actions = closeActions.withLock { actions in
