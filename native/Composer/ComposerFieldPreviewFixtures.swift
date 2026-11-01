@@ -71,4 +71,14 @@ enum ComposerFieldPreviewFixtures {
         .frame(width: DS.ComposerField.completionWidth)
     }
 }
+
+#Preview("Composer field - Attachment failure") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.sm) {
+            NoticeBanner(tone: .warning, title: "Couldn't attach Layout.png. Try attaching it with Attach Files.")
+            ComposerFieldPreviewFixtures.field("Review the layout once I attach it.")
+        }
+        .frame(width: DS.ComposerField.previewWidth)
+    }
+}
 #endif

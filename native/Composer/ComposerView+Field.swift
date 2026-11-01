@@ -17,6 +17,7 @@ extension ComposerView {
                     onDrop: { session.moveQueued($0, before: $1) }, onEdit: edit, onRemove: remove)
             }
             if let change = session.modelChange { agentChangeReceipt(change) }
+            fieldFeedback
             ComposerField(
                 text: Binding(get: { draftText }, set: { draftText = $0 }),
                 isFocused: Binding(get: { isFocused }, set: { isFocused = $0 }),
@@ -63,6 +64,19 @@ extension ComposerView {
         }
         .task(id: fieldFileQuery != nil) {
             if fieldFileQuery != nil { await mentionSource?.loadIfNeeded() }
+        }
+    }
+
+    @ViewBuilder
+    private var fieldFeedback: some View {
+        if let feedback {
+            switch feedback.tone {
+            case .problem: NoticeBanner(tone: .warning, title: feedback.message)
+            case .notice: NoticeBanner(tone: .info, title: feedback.message)
+            case .done: EmptyView()
+            }
+        } else if let blocked = session.sendBlockedReason, hasContent {
+            NoticeBanner(tone: .warning, title: blocked)
         }
     }
 
