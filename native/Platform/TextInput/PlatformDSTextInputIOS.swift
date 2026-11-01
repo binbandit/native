@@ -274,8 +274,7 @@ final class PlatformDSTextInputIOSView: UITextView, UIDropInteractionDelegate, U
         }
     }
     private func isAttachment(_ provider: NSItemProvider) -> Bool {
-        provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier)
-            || provider.hasItemConformingToTypeIdentifier(UTType.image.identifier)
+        TextInputDropProvider.representation(of: provider) != nil
     }
     func textDroppableView(
         _ textDroppableView: UIView & UITextDroppable, proposalForDrop drop: UITextDropRequest
@@ -292,12 +291,25 @@ final class PlatformDSTextInputIOSView: UITextView, UIDropInteractionDelegate, U
     func dropInteraction(_ interaction: UIDropInteraction, performDrop session: UIDropSession) {
         for item in session.items {
             let provider = item.itemProvider
-            let file = provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier)
-            let type =
-                file
-                ? UTType.fileURL.identifier
-                : provider.registeredTypeIdentifiers.first { UTType($0)?.conforms(to: .image) == true }
-            guard let type else { continue }
+            guard let representation = TextInputDropProvider.representation(of: provider) else { continue }
+            if case .document(let type) = representation {
+                Task { @MainActor [weak self] in
+                    guard let url = try? await TextInputDropProvider.loadFile(provider, type: type) else { return }
+                    guard let self, let input = self.input else {
+                        try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+                        return
+                    }
+                    input.onAttachments([.file(url)])
+                }
+                continue
+            }
+            let file = representation == .fileURL
+            let type: String
+            switch representation {
+            case .fileURL: type = UTType.fileURL.identifier
+            case .image(let imageType): type = imageType
+            case .document: continue
+            }
             _ = provider.loadDataRepresentation(forTypeIdentifier: type) { [weak self] data, _ in
                 guard let data else { return }
                 Task { @MainActor [weak self] in

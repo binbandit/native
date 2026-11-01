@@ -111,13 +111,6 @@ struct PlatformDSTextInput: NSViewRepresentable {
             publish(editor)
         }
 
-        func textDidBeginEditing(_ notification: Notification) {
-            if input.isFocused?.wrappedValue == false { input.isFocused?.wrappedValue = true }
-        }
-        func textDidEndEditing(_ notification: Notification) {
-            if input.isFocused?.wrappedValue == true { input.isFocused?.wrappedValue = false }
-        }
-
         func publish(_ editor: PlatformDSTextInputMacView) {
             let selection = editor.selectedRange()
             let composing = editor.hasMarkedText()
@@ -209,6 +202,18 @@ final class PlatformDSTextInputMacView: NSTextView {
     var input: DSTextInput?
     var style: PlatformDSTextInputStyle?
     var changed: (() -> Void)?
+
+    override func becomeFirstResponder() -> Bool {
+        let accepted = super.becomeFirstResponder()
+        if accepted, input?.isFocused?.wrappedValue == false { input?.isFocused?.wrappedValue = true }
+        return accepted
+    }
+
+    override func resignFirstResponder() -> Bool {
+        let accepted = super.resignFirstResponder()
+        if accepted, input?.isFocused?.wrappedValue == true { input?.isFocused?.wrappedValue = false }
+        return accepted
+    }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()

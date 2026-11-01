@@ -54,7 +54,7 @@ with its owner: Brayden is often at it while you play, and a dozen agents build 
 For the standalone composer text input, launch an isolated instance with
 `-dsTextInputFixture YES -sounds.enabled NO`. The fixture replaces the root content with the real
 `DSTextInput`; it does not connect an agent. Press **Run input checks** using the scoped driver.
-The result covers native typing, line sizing, token deletion and undo/redo, Japanese marked-text
+The result covers focus before typing and on resignation, native typing, line sizing, token deletion and undo/redo, Japanese marked-text
 composition through `NSTextInputClient` (no input-source change), Return, Shift-Return, attachment
 routing through a private pasteboard, and the accessibility value. Type into **Message** and check
 **Submitted** to exercise the SwiftUI binding and Return through the scoped keyboard driver.

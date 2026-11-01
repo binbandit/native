@@ -34,6 +34,17 @@ enum PlatformDSTextInputChecks {
             editor.input = original
             editor.replaceDocument(.init())
         }
+        // Focus must be reported before any text change, including a caret-only interaction.
+        var focused = false
+        editor.input?.isFocused = Binding(get: { focused }, set: { focused = $0 })
+        editor.window?.makeFirstResponder(nil)
+        editor.window?.makeFirstResponder(editor)
+        check(focused, "focus before typing")
+        editor.setSelectedRange(NSRange(location: 0, length: 0))
+        check(focused && editor.window?.firstResponder === editor, "caret-only focus")
+        editor.window?.makeFirstResponder(nil)
+        check(!focused, "resign focus without typing")
+        editor.input?.isFocused = nil
         editor.replaceDocument(.init())
         let oneLine = scroll.measure(width: 320)
         editor.insertText("literal -- \"quotes\"", replacementRange: editor.selectedRange())
