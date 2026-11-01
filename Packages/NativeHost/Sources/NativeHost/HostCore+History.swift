@@ -188,7 +188,8 @@ extension HostCore {
 
     /// A change of agent committed: the target's agent session joins the source's task history, and
     /// the client's handoff is recorded as a `client` transfer of what the target hadn't seen, crediting
-    /// only the items the client says it conveyed.
+    /// only the items the client says it conveyed. A target already in that history is returning, and
+    /// gets a `delta` of what it missed instead, which the host renders with its next message.
     func joinHistory(_ params: JoinHistoryParams) throws -> TaskHistorySummary {
         let target = try session(params.sessionID)
         guard
@@ -196,10 +197,12 @@ extension HostCore {
             target.record.origin != .announced, let agentSessionID = target.record.agentSessionID
         else { throw HostError.noHistory }
         let participant: TaskHistoryParticipant = try store.transaction {
-            // A repeated join (a client retrying after a lost reply) records its handoff only once.
+            // A conversation the task already had is returning: it gets what it missed, once. That
+            // also makes a repeated join (a client retrying after a lost reply) record nothing more.
             if let (current, joined) = try store.historyParticipant(
                 agentID: target.record.agentID, agentSessionID: agentSessionID), current == source.id
             {
+                try prepareDelta(for: joined, of: target, in: current)
                 return joined
             }
             guard

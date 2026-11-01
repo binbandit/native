@@ -190,7 +190,7 @@ enum HostMethodAdmission: Equatable {
             Method.deleteAgentSession, Method.newSession, Method.openSession, Method.prompt,
             Method.respondPermission, Method.respondQuestion, Method.runHidden, Method.setConfigOption,
             Method.sendQueuedNow, Method.setMCPServers, Method.newCoordinator, Method.setCoordinator,
-            Method.appToolResult, Method.actOnNotification, Method.joinHistory:
+            Method.appToolResult, Method.actOnNotification, Method.joinHistory, Method.withdrawHistory:
             self = .needs(.agents)
         // Native's tools, called by the Mac app's scripts rather than an agent: the same tools.
         case Method.callTool:

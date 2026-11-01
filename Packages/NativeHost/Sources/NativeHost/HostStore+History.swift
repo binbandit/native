@@ -262,6 +262,24 @@ extension HostStore {
             """, .text(requestID.uuidString), .text(history.description), .integer(Int64(target)))
     }
 
+    /// A delta goes with the message `requestID`, carrying what the handoff chose: the items it covers
+    /// once delivered, up to `through`, and its receipt.
+    func sendDelta(_ delta: HistoryDeltaDelivery, with requestID: UUID) throws {
+        try database.run(
+            """
+            UPDATE history_transfers SET state = 'sent', request_id = ?, through_seq = ?, covered = ?, receipt = ?
+            WHERE id = ? AND state = 'prepared'
+            """, .text(requestID.uuidString), .integer(Int64(delta.through)), try JSONColumn.encode(delta.conveyed),
+            try JSONColumn.encode(delta.receipt), .text(delta.transfer.uuidString))
+    }
+
+    /// The change of agent that prepared the target's context was undone, so what hasn't gone won't.
+    func supersedePreparedTransfers(in history: TaskHistoryID, to target: Int) throws {
+        try database.run(
+            "UPDATE history_transfers SET state = 'superseded' WHERE history_id = ? AND target = ? AND state = 'prepared'",
+            .text(history.description), .integer(Int64(target)))
+    }
+
     /// The agent answered the message `requestID`, so what went with it arrived: its transfers are
     /// delivered and the target's watermark moves over what they conveyed.
     func deliverHistoryTransfers(in history: TaskHistoryID, to target: Int, with requestID: UUID) throws {

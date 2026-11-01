@@ -94,7 +94,9 @@ turn.
 A participant has seen an item if it produced it (including the prompts it received) or a delivered
 transfer conveyed it. Considering an item is not conveying it: an item a transfer left out (for its
 budget, or because an excerpt skipped it) stays missing and is offered again next time, newest
-first, so a budget never silently marks anything seen. Its watermark `seen` is the highest seq below which it has seen everything,
+first, so a budget never silently marks anything seen. The one exception is what a delta never
+replays by design (reasoning, tool state, turn endings): offering it again would never send it, so a
+delivered delta covers it, or a single tool call would hold a watermark back for good. Its watermark `seen` is the highest seq below which it has seen everything,
 advanced whenever an item is recorded or a transfer is delivered. Gaps are honest: an agent that kept
 working while another agent's turns happened in between has its own later items but a watermark
 stuck at the gap. What a participant is missing (`TaskHistoryCoverage.missing`) is every item above
@@ -111,7 +113,10 @@ Behind the Labs gate `task-history` (default off; off keeps today's behavior exa
 1. Choosing an agent in the composer asks the host for the task's participants. If one ran on the
    chosen agent on this same host and the agent can load sessions, the change reuses it: the app
    reopens that conversation (as Undo already does), applies the chosen model and permissions to it
-   through the existing `ComposerAgentChange` steps, and asks the host to prepare a `delta` transfer.
+   through the existing `ComposerAgentChange` steps, and asks the host to prepare a `delta` transfer
+   (`_native/history/join` again: a session already in the history is returning, so the host
+   prepares a delta of what it missed instead of recording a client handoff, and the client sends
+   none).
    Otherwise the change prepares a fresh session exactly as today, and the host records the client's
    handoff as a `client` transfer.
 2. The delta is rendered lazily, when the next message starts its turn on the host, so it covers
@@ -127,8 +132,8 @@ Behind the Labs gate `task-history` (default off; off keeps today's behavior exa
 
 If the earlier session can't be reopened (the agent dropped it, can't load, or policy forbids it),
 the change falls back to a fresh session with a full transfer and says so. A reused session never
-gets closed or deleted by Cancel or Undo; Undo supersedes its prepared transfer and restores the
-source. The app's earlier-conversation chain stays linear: a return removes the link that would
+gets closed or deleted by Cancel or Undo; Undo supersedes its prepared transfer
+(`_native/history/withdraw`) and restores the source. The app's earlier-conversation chain stays linear: a return removes the link that would
 close a cycle.
 
 ## The transcript

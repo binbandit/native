@@ -51,6 +51,10 @@ public struct TaskHistoryTransfer: Hashable, Sendable, Codable, Identifiable {
     public var requestID: UUID?
     public var createdAt: Date
 
+    /// The marker the context a host renders for this transfer goes with, so a transcript can show
+    /// what it covered where it went.
+    public var markerID: String { "task-history:\(id.uuidString)" }
+
     public init(
         id: UUID = UUID(), sourceHistory: TaskHistoryID, target: Int, from: Int, through: Int,
         conveyed: [ClosedRange<Int>], strategy: Strategy, state: State = .prepared, requestID: UUID? = nil,

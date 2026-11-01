@@ -57,11 +57,16 @@ public struct ReadHistoryParams: Codable, Hashable, Sendable {
 extension HostProtocol.Method {
     /// Client → host: a change of agent committed, so the new agent session joins the task's history
     /// (`JoinHistoryParams` → `TaskHistorySummary`). The client's handoff, which goes with the new
-    /// session's next message, is recorded as a `client` transfer of what it hadn't seen.
+    /// session's next message, is recorded as a `client` transfer of what it hadn't seen. A session
+    /// already in the history is returning: the host prepares a `delta` of what it missed and sends
+    /// it with the session's next message, so the client sends no handoff of its own.
     public static let joinHistory = "_native/history/join"
     /// Client → host: what a session's agent hasn't seen of its task (`SessionParams` →
     /// `TaskHistoryMissing`), for the context a return to it needs.
     public static let missingHistory = "_native/history/missing"
+    /// Client → host: a change of agent that returned to a session was undone, so the context it
+    /// prepared for the session's next message won't go (`SessionParams` → `TaskHistorySummary`).
+    public static let withdrawHistory = "_native/history/withdraw"
 }
 
 public struct JoinHistoryParams: Codable, Hashable, Sendable {
