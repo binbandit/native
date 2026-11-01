@@ -3,8 +3,8 @@
 /// can be promoted, kept as a choice or deleted without touching the default path.
 ///
 ///     extension Variant {
-///         static let bubbles = Variant(id: "bubbles", title: "Bubbles", summary: "…", stage: .labs,
-///             owner: "transcript", reviewBy: …, claims: [Claim(.transcriptStyle, BubbleTranscriptStyle())])
+///         static let compactRows = Variant(id: "compactRows", title: "Compact rows", summary: "…", stage: .labs,
+///             owner: "transcript", reviewBy: …, claims: [Claim(.transcriptStyle, CompactTranscriptStyle())])
 ///     }
 public struct Variant: ExperimentDeclaration {
     public let descriptor: ExperimentDescriptor

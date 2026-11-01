@@ -33,7 +33,7 @@ struct GitPathLabel: View {
         VStack(alignment: .leading, spacing: DS.Space.sm) {
             GitPathLabel(path: "native/Git/Model/GitStore.swift")
             GitPathLabel(path: "README.md")
-            GitPathLabel(path: "native/Views/Transcript/Styles/Bubbles/BubbleTypingIndicator.swift")
+            GitPathLabel(path: "native/Views/Transcript/Styles/Standard/StandardTranscriptStyle.swift")
         }
         .frame(width: 240, alignment: .leading)
     }
