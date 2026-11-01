@@ -169,12 +169,45 @@ private struct ComposerRowSettingsRegression {
         print("PASS: delayed full snapshots preserve effort, mode and model across adapter recreation")
     }
 
+    static func repeatedSelections() async throws {
+        let agent = await RowSettingsAgent()
+        defer { agent.close() }
+        let (app, session, initial) = try fixture(agent.connection)
+        actions(app, session).chooseEffort("high")
+        try await wait("held effort request") { agent.received.count == 1 }
+        actions(app, session).chooseEffort("low")
+        actions(app, session).chooseMode("ask-first")
+        actions(app, session).chooseEffort("high")
+        try await Task.sleep(for: .milliseconds(100))
+        try require(agent.received.count == 1, "Repeated choices overlap the held reply")
+        var snapshot = initial
+        for index in 0..<4 {
+            try await wait("repeated selection \(index)") { agent.received.count > index }
+            let request = agent.received[index]
+            try apply(request, to: &snapshot)
+            try agent.reply(request, options: snapshot)
+        }
+        try await wait("repeated selections confirmed") {
+            let settings = ComposerSettings(session.configOptions)
+            return settings.effort?.value == "high" && settings.autonomy?.value == "ask-first"
+        }
+        let order = agent.received.map { $0["params"]?["configId"] }
+        try require(
+            order == [.string("effort"), .string("effort"), .string("mode"), .string("effort")],
+            "Repeated settings lost user order")
+        let values = agent.received.map { $0["params"]?["value"] }
+        try require(
+            values == [.string("high"), .string("low"), .string("default"), .string("high")],
+            "Repeated selections lost user order: \(values)")
+        print("PASS: repeated effort selections survive in-flight and queued replies")
+    }
+
     static func main() async {
         let domain = ProcessInfo.processInfo.processName
         UserDefaults.standard.removePersistentDomain(forName: domain)
         defer { UserDefaults.standard.removePersistentDomain(forName: domain) }
         var failures = 0
-        for check in [freshModel, orderedSnapshots] {
+        for check in [freshModel, orderedSnapshots, repeatedSelections] {
             do { try await check() } catch {
                 failures += 1
                 print("FAIL: \(error)")

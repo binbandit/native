@@ -7,7 +7,7 @@ import NativeHostProtocol
 // sessions start on from then on (`AgentSessionDefaults.lastUsed`).
 extension SessionModel {
     func enqueueComposerPick(_ option: ConfigOption, value: String) {
-        composerConfigChanges.enqueue(option.id) { [self] in
+        composerConfigChanges.enqueue(option.id, preservingRepeatedSelections: true) { [self] in
             // An earlier model reply can replace the available settings and their choices.
             guard let current = configOptions.first(where: { $0.id == option.id }),
                 case .select(_, let choices) = current.kind,
