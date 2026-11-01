@@ -63,6 +63,7 @@ public enum ToolUseCases {
             .init(.init("start_task", containing: ["prompt": "Cache.swift"])),
             .init(.init("start_task", containing: ["prompt": "CacheTests.swift"])),
         ]
+        two.forbidden = [.init("wait_for_task"), .init("cancel_task")]
         cases.append(two)
 
         var counts = ToolUseCase(
@@ -73,6 +74,7 @@ public enum ToolUseCases {
             .init(.init("start_task", ["agent": "claude-code"]), 2, 2),
             .init(.init("start_task", ["agent": "review-agent"])),
         ]
+        counts.forbidden = [.init("wait_for_task"), .init("cancel_task")]
         cases.append(counts)
 
         var diversity = ToolUseCase(
@@ -84,7 +86,8 @@ public enum ToolUseCases {
             .init(.init("start_task", ["agent": "claude-code"], containing: ["prompt": "cache"])),
             .init(.init("start_task", ["agent": "review-agent"], containing: ["prompt": "cache"])),
         ]
-        diversity.order = [.init("list_agents"), .init("start_task")]
+        diversity.order = [.init("list_agents"), .init("start_task"), .init("start_task")]
+        diversity.forbidden = [.init("wait_for_task"), .init("cancel_task")]
         cases.append(diversity)
 
         var stop = ToolUseCase(

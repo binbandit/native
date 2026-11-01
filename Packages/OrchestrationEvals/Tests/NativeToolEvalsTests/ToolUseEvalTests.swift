@@ -56,6 +56,41 @@ struct ToolUseEvalTests {
         #expect(ToolUseGrader.grade(unobserved, against: test, declarations: declarations).outcome == .failed)
     }
 
+    @Test(arguments: ["two-workers", "worker-counts", "agent-diversity"])
+    func launchOnlyCasesRejectWaitingAndCancellation(caseID: String) async throws {
+        let test = try #require(ToolUseCases.all.first { $0.id == caseID })
+        let (trace, declarations) = await referenceTrace(test)
+        for tool in ["wait_for_task", "cancel_task"] {
+            var followed = trace
+            let starts = trace.calls.filter { $0.tool == "start_task" }
+            for start in tool == "cancel_task" ? starts : Array(starts.prefix(1)) {
+                var call = start
+                call.tool = tool
+                let taskID = try #require(start.result?["structuredContent"]?["task_id"])
+                call.arguments = ["task_id": taskID]
+                followed.calls.append(call)
+            }
+            let grade = ToolUseGrader.grade(followed, against: test, declarations: declarations)
+            #expect(grade.outcome == .failed)
+            #expect(grade.failures.contains("Forbidden call: \(tool)"))
+        }
+    }
+
+    @Test func discoveryPrecedesBothLaunchesInEitherAgentOrder() async throws {
+        let test = try #require(ToolUseCases.all.first { $0.id == "agent-diversity" })
+        let (trace, declarations) = await referenceTrace(test)
+        var reversedAgents = trace
+        reversedAgents.calls.swapAt(1, 2)
+        #expect(ToolUseGrader.grade(reversedAgents, against: test, declarations: declarations).outcome == .passed)
+        for valid in [trace, reversedAgents] {
+            var lateDiscovery = valid
+            lateDiscovery.calls.swapAt(0, 1)
+            let grade = ToolUseGrader.grade(lateDiscovery, against: test, declarations: declarations)
+            #expect(grade.outcome == .failed)
+            #expect(grade.failures.contains("Missing ordered call: start_task"))
+        }
+    }
+
     @Test func orderRequiresSeparateSuccessfulCalls() async throws {
         let test = try #require(ToolUseCases.all.first { $0.id == "replace-stale-review" })
         let (trace, declarations) = await referenceTrace(test)
