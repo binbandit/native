@@ -81,4 +81,18 @@ enum ComposerFieldPreviewFixtures {
         .frame(width: DS.ComposerField.previewWidth)
     }
 }
+
+#Preview("Composer field - Completion above the caret") {
+    DSPreviewPair {
+        VStack(spacing: 0) {
+            Spacer(minLength: ComposerMetrics.suggestionListMaxHeight)
+            ComposerField(
+                text: .constant("Review @./"), isFocused: .constant(true), openMenu: .constant(nil),
+                state: ComposerRowPreviewFixtures.state, actions: .init(),
+                files: ["native/", "docs/", "Packages/", "README.md"]
+            ) { EmptyView() }
+        }
+        .frame(width: DS.ComposerField.previewWidth)
+    }
+}
 #endif

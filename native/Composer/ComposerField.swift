@@ -44,8 +44,6 @@ struct ComposerField<Attachments: View>: View {
                 onSubmit: actions.send, onKey: handleKey, onAttachments: onAttachments,
                 onStateChange: { inputState = $0 }
             )
-            .padding(.horizontal, DS.Space.xs)
-            .padding(.top, DS.Space.xs)
             .overlay(alignment: .topLeading) {
                 GeometryReader { geometry in
                     if !completions.isEmpty, let caret = inputState?.caret {
@@ -60,6 +58,8 @@ struct ComposerField<Attachments: View>: View {
                     }
                 }
             }
+            .padding(.horizontal, DS.Space.xs)
+            .padding(.top, DS.Space.xs)
             .zIndex(1)
             ComposerBottomRow(state: state, actions: actions, openMenu: $openMenu)
         }
