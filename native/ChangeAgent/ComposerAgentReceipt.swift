@@ -3,6 +3,7 @@ import SwiftUI
 /// The model choice is a section of the existing composer, kept until explicitly dismissed.
 struct ComposerAgentReceipt: View {
     let text: String
+    var transferNotice: String?
     var permissionNotice: String?
     var onPermissions: (() -> Void)?
     var isWorking = false
@@ -39,6 +40,11 @@ struct ComposerAgentReceipt: View {
                         .buttonStyle(.plain)
                         .dsHitTarget(DS.ComposerSettings.controlHeight)
                 }
+            }
+            if let transferNotice {
+                Text(transferNotice)
+                    .foregroundStyle(.dsTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             if let permissionNotice {
                 Text(permissionNotice)
@@ -113,6 +119,34 @@ struct ComposerAgentReceipt: View {
                 permissionNotice:
                     "Target Agent can't require plan approval. It will ask before any change instead. Review permissions before sending.",
                 onPermissions: {}, actionTitle: "Undo", action: {}, onDismiss: {})
+        }.frame(width: DS.ComposerSettings.width).background(.dsSurface)
+    }
+}
+#Preview("Model choice - Context ready, accepted, uncertain and omitted") {
+    DSPreviewPair {
+        VStack(spacing: 0) {
+            ComposerAgentReceipt(
+                text: "Using Target Agent · Small",
+                transferNotice:
+                    "6 context items ready; 2 left out. Earlier Conversations keeps the full history. Context size is estimated.",
+                actionTitle: "Undo", action: {}, onDismiss: {})
+            ComposerAgentReceipt(
+                text: "Using Target Agent · Small",
+                transferNotice: "Host accepted 6 context items; 2 left out. Agent delivery is not confirmed.",
+                onDismiss: {})
+            ComposerAgentReceipt(
+                text: "Using Target Agent · Small",
+                transferNotice:
+                    "Context delivery is uncertain. It will not be sent again automatically. Open Earlier Conversations to recover it.",
+                onDismiss: {})
+            ComposerAgentReceipt(
+                text: "Using Target Agent · Small",
+                transferNotice: "No earlier context fit. Open Earlier Conversations to recover the history.",
+                onDismiss: {})
+            ComposerAgentReceipt(
+                text: "Using Target Agent · Small",
+                transferNotice: "Agent responded after receiving 6 context items; 2 left out.",
+                permissionNotice: "Target Agent will ask before any change instead.", onPermissions: {}, onDismiss: {})
         }.frame(width: DS.ComposerSettings.width).background(.dsSurface)
     }
 }

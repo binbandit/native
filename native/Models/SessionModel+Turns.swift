@@ -358,9 +358,11 @@ extension SessionModel {
     ) async {
         do {
             try checkReadOnlyDefault()
+            let transferID = services.modelContinuations.pendingTransferID(for: key)
             let prompt = (preamble.map { [$0.block] } ?? []) + promptBlocks(text, attachments: attachments)
             guard let connection else { throw SendError.disconnected }
             let response = try await connection.send(PromptRequest(sessionId: id, prompt: prompt))
+            services.modelContinuations.acknowledge(transferID, for: key, as: .agentResponded)
             guard generation == turnGeneration else { return }
             guard !isStopping else { return }
             state.endTurn(response.stopReason)
@@ -428,9 +430,15 @@ extension SessionModel {
     func promptBlocks(_ text: String, attachments: [PromptAttachment]) -> [ContentBlock] {
         let mentions = PromptAttachment.mentions(in: text, relativeTo: cwd)
         modelChange?.closeUndo()
-        let context = services.modelContinuations.take(for: key).map { [$0] } ?? []
-        return context
-            + ContentBlock.prompt(text, attachments: attachments + mentions, capabilities: promptCapabilities)
+        if services.modelContinuations.hasPending(key) { modelChange?.isReceiptDismissed = false }
+        let prompt = ContentBlock.prompt(text, attachments: attachments + mentions, capabilities: promptCapabilities)
+        let preamble = services.hooks.preamble(for: self, prompt: text).map { [$0.block] } ?? []
+        let context =
+            services.modelContinuations.take(
+                for: key,
+                budget: .init(windowTokens: usage?.size, usedTokens: usage?.used ?? 0, prompt: preamble + prompt)
+            ).map { [$0] } ?? []
+        return context + prompt
     }
 
     private func scheduleRetry(after delay: Duration) {

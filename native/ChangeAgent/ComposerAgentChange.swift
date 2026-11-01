@@ -95,6 +95,14 @@ final class ComposerAgentChange {
                     })), for: current.key)
     }
 
+    var transferNotice: String? {
+        guard let current, let transfer = current.services.modelContinuations.transfer(for: current.key) else {
+            return nil
+        }
+        let estimate = transfer.receipt.budget.isWindowEstimated ? " Context size is estimated." : ""
+        return transfer.receipt.summary + estimate
+    }
+
     var receipt: String {
         switch stage {
         case .waiting: "Next model: \(choice.choice.displayName) · \(choice.agentName)"
@@ -137,11 +145,7 @@ final class ComposerAgentChange {
                 candidate = prepared
                 try Task.checkCancellation()
                 try await configure(prepared, from: source)
-                let latestContext = await app.changeAgentHandoff(source)
-                let context =
-                    source.services.modelContinuations.context(for: source.key).map {
-                        String($0.prefix(24_000)) + "\n\n" + latestContext
-                    } ?? latestContext
+                let context = await app.contextTransfer(from: source, to: prepared)
                 try Task.checkCancellation()
                 guard revision == source.state.items, config == source.configOptions else {
                     throw Failure("The task changed while the model was starting. Try Again to use its latest context.")

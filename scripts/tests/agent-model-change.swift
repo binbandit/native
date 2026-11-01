@@ -354,6 +354,15 @@ private struct AgentModelChangeRegression {
             app.sessions.services.modelContinuations.context(for: current.key)?.contains(
                 "Final context at the idle boundary") == true,
             "Busy selection captured stale context")
+        guard let transfer = app.sessions.services.modelContinuations.transfer(for: current.key) else {
+            throw ChangeFailure("No typed context receipt")
+        }
+        try require(transfer.receipt.delivery == .prepared, "Context was sent while choosing a model")
+        try require(transfer.receipt.plan.outcome == .fallback, "A fresh conversation claimed an exact transition")
+        try require(
+            transfer.receipt.included.contains { $0.source.session == source.id }, "Receipt lost source identity")
+        let persisted = AgentModelContinuations(defaults: defaults).transfer(for: current.key)
+        try require(persisted == transfer, "Prepared transfer did not survive reload")
         let reverse = app.agentModels(for: current).first { $0.agent == source.agent.id }
         try require(
             reverse != nil && reverse?.unavailable == nil,
@@ -371,6 +380,13 @@ private struct AgentModelChangeRegression {
         try require(
             app.sessions.services.modelContinuations.take(for: current.key) == nil, "Context would repeat automatically"
         )
+        let delivered = app.sessions.services.modelContinuations.transfer(for: current.key)
+        try require(delivered?.receipt.delivery == .acceptedByHost, "Host acceptance was not recorded")
+        try require(
+            delivered?.receipt.summary.contains("not confirmed") == true, "Host acceptance claimed agent delivery")
+        try require(
+            AgentModelContinuations(defaults: defaults).transfer(for: current.key) == delivered,
+            "Delivery receipt did not survive reload")
         print("PASS: next explicit message carries context once with unchanged user echo")
 
         let store = AgentModelContinuations(defaults: defaults)

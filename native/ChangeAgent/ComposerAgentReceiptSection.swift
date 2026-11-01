@@ -9,6 +9,7 @@ struct ComposerAgentReceiptSection: View {
         if !change.isReceiptDismissed, change.stage != .cancelled {
             ComposerAgentReceipt(
                 text: change.receipt,
+                transferNotice: change.stage == .applied ? change.transferNotice : nil,
                 permissionNotice: change.stage == .applied ? change.permissionNotice : nil,
                 onPermissions: change.hasPermissionChoice ? onPermissions : nil,
                 isWorking: change.stage == .preparing && change.showsLoader,
