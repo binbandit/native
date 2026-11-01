@@ -3,7 +3,9 @@ import Foundation
 
 // One task history (docs/decisions/2026-11-01-one-task-history.md). Items are append-only and
 // numbered per history without gaps; a participant is found by its agent session, which is unique
-// across histories, so a session the host closed and reopened finds its history again.
+// across histories, so a session the host closed and reopened finds its history again. A transfer
+// names the history its items come from (`source_history`: this one, or a fork for merge-back), the
+// range it considered, and the items it conveyed (`covered`): only those count as seen.
 extension HostStore {
     static let historyTables = """
         CREATE TABLE IF NOT EXISTS histories (
@@ -40,9 +42,11 @@ extension HostStore {
         CREATE TABLE IF NOT EXISTS history_transfers (
             id TEXT PRIMARY KEY,
             history_id TEXT NOT NULL REFERENCES histories(id) ON DELETE CASCADE,
+            source_history TEXT NOT NULL,
             target INTEGER NOT NULL,
             from_seq INTEGER NOT NULL,
             through_seq INTEGER NOT NULL,
+            covered TEXT NOT NULL DEFAULT '[]',
             strategy TEXT NOT NULL,
             state TEXT NOT NULL,
             request_id TEXT,
