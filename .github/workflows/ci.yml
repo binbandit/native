@@ -62,7 +62,9 @@ jobs:
   # package's name.
   packages:
     name: Test packages (${{ matrix.shard }}/${{ strategy.job-total }})
-    runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
+    # The app's own Macs: the hosted queue for MACOS_RUNNER backed up for hours while these sat idle.
+    # PACKAGES_MACOS_RUNNER can point package tests elsewhere without a code change.
+    runs-on: ${{ vars.PACKAGES_MACOS_RUNNER || vars.CI_MACOS_RUNNER || vars.MACOS_RUNNER || 'macos-26' }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
