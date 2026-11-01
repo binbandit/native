@@ -6,6 +6,7 @@ import UniformTypeIdentifiers
 @testable import TextInput
 
 @Suite struct TextInputDropProviderTests {
+    @MainActor
     @Test(arguments: [UTType.pdf, .plainText])
     func typedFileWithoutURLIsPreserved(type: UTType) async throws {
         let source = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
@@ -24,6 +25,7 @@ import UniformTypeIdentifiers
         #expect(!provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier))
         #expect(TextInputDropProvider.representation(of: provider) == .document(type.identifier))
         let copy = try await TextInputDropProvider.loadFile(provider, type: type.identifier)
+        #expect(TextInputDropProvider.representation(of: provider) == .document(type.identifier))
         defer { try? FileManager.default.removeItem(at: copy.deletingLastPathComponent()) }
         try FileManager.default.removeItem(at: source)
         #expect(try Data(contentsOf: copy) == contents)

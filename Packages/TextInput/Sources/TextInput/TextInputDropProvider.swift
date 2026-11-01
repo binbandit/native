@@ -27,7 +27,10 @@ public enum TextInputDropProvider {
 
     /// Provider URLs expire when their completion returns. The receiver owns this temporary copy
     /// and removes its parent directory after consuming the attachment.
-    public static func loadFile(_ provider: NSItemProvider, type: String) async throws -> URL {
+    // NSItemProvider belongs to its caller; starting its asynchronous load must stay on that actor.
+    public static func loadFile(
+        _ provider: NSItemProvider, type: String, isolation: isolated (any Actor)? = #isolation
+    ) async throws -> URL {
         try await withCheckedThrowingContinuation { continuation in
             _ = provider.loadFileRepresentation(forTypeIdentifier: type) { url, error in
                 guard let url else {
