@@ -264,7 +264,7 @@ final class TranscriptSearchCenter {
     }
 
     var projectFolders: [String] {
-        model?.projects.all.map(\.path) ?? []
+        model?.taskGroups.map(\.path) ?? []
     }
 
     /// Sessions of agents without a history reader are indexed as the user opens them.

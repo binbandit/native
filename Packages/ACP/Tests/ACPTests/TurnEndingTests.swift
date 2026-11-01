@@ -50,6 +50,18 @@ private func reply(_ text: String) -> SessionUpdate {
 
 @Suite("Turn endings settle what the turn left open")
 struct TurnEndingTests {
+    @Test("A forced stop closes open tools and shows one agent-specific receipt")
+    func forcedStopReceipt() throws {
+        var state = SessionState()
+        state.appendUserMessage("Run it", at: start)
+        try applying(CodexCutOffWire.cutOffRun, to: &state, at: at(1))
+        state.endTurn(.cancelled, at: at(4), stoppedMessage: "Stopped. Example didn't respond, so Native stopped it.")
+        #expect(state.call(CodexCutOffWire.cutOffID)?.status == .cancelled)
+        #expect(state.call(CodexCutOffWire.cutOffID)?.finishedAt == at(4))
+        #expect(state.notices.map(\.text) == ["Stopped. Example didn't respond, so Native stopped it."])
+        #expect(state.turns.last?.stopReason == .cancelled)
+    }
+
     @Test("A call the agent never closed reads as unreported once the turn ends, its clock stopped there")
     func normalEndSettlesOpenCalls() throws {
         var state = SessionState()

@@ -10,6 +10,10 @@ on:
       - scripts/release/release.sh
       - scripts/release/release-notes.sh
       - scripts/release/tests/test_beta_schedule.py
+      - scripts/release/tests/test_build_tooling.py
+      - scripts/build-libghostty.sh
+      - scripts/build-script-runtime.sh
+      - Runtime/ScriptRuntime/rust-toolchain.toml
 
 permissions:
   contents: read
@@ -25,4 +29,4 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: python3 -m unittest discover -s scripts/release/tests -v
-      - run: bash -n scripts/release/release.sh scripts/release/release-notes.sh
+      - run: bash -n scripts/release/release.sh scripts/release/release-notes.sh scripts/build-libghostty.sh scripts/build-script-runtime.sh

@@ -71,6 +71,8 @@ final class SessionStore {
 
     /// Adds a session and delivers whatever arrived for it before it existed.
     func register(_ session: SessionModel) {
+        session.diffCommentEditors = services.drafts.commentEditors(for: session.key)
+        session.unresolvedCommentPacket = services.drafts.commentDelivery(for: session.key)
         if let draft = restartDrafts.removeValue(forKey: session.key) {
             session.draft = draft.text
             session.attachments = draft.attachments
@@ -78,6 +80,7 @@ final class SessionStore {
             // Left in its composer in an earlier run, or before the session was closed while idle.
             session.draft = draft
         }
+        session.enforceDiffCommentRetention()
         if let summary = session.hostSummary { recordActivity(summary) }
         sessions[session.key] = session
         for update in buffered.removeValue(forKey: session.key) ?? [] {
@@ -109,6 +112,7 @@ final class SessionStore {
         // The draft carries on under the new key.
         services.drafts.keep("", for: old.key)
         register(new)
+        new.adoptDiffCommentDrafts(from: old, moving: true)
     }
 
     /// Retains composers across a restart, including tasks reopened after a failed retry.

@@ -5,6 +5,8 @@ import SwiftUI
 /// `onStarted` gets the new run so the window can show it. Without a project there's nothing to run
 /// in, so it says so and offers to open one.
 struct WorkflowPickerSheet: View {
+    @Environment(\.projectDisplayName) private var projectDisplayName
+
     let cwd: URL?
     let onAddProject: () -> Void
     let onStarted: (WorkflowRun.ID) -> Void
@@ -17,7 +19,7 @@ struct WorkflowPickerSheet: View {
             WorkflowPickerView(
                 entries: center.library.entries,
                 agents: center.host?.workflowAgents ?? [],
-                projectName: cwd.lastPathComponent,
+                projectName: projectDisplayName(cwd),
                 plan: { center.workflows.plan(for: $0, overrides: $1) },
                 onRun: { definition, input, overrides in
                     let run = center.workflows.start(definition, input: input, cwd: cwd, overrides: overrides)

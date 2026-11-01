@@ -24,6 +24,7 @@ extension DS {
         /// A row: 26pt with the pointer, a full touch target on iPadOS.
         public static let rowHeight: CGFloat = isTouch ? 44 : 26
         /// The gutter that holds a row's check, lock or loader.
+        public static let focusLineWidth: CGFloat = 2
         public static let selectionWidth: CGFloat = 14
         /// Where every name, header, caption, filter and footer starts, in from a row's edge: the
         /// row's padding, the gutter and the gap after it.

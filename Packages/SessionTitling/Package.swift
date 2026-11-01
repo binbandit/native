@@ -17,6 +17,6 @@ let package = Package(
             name: "SessionTitling", dependencies: [.product(name: "AIInstructions", package: "AIInstructions")],
             // Optimize infrequent operations for size; the app and streaming path stay at -O.
             swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
-        .testTarget(name: "SessionTitlingTests", dependencies: ["SessionTitling"]),
+        .testTarget(name: "SessionTitlingTests", dependencies: ["SessionTitling"], resources: [.copy("Fixtures")]),
     ]
 )

@@ -3,6 +3,8 @@ import SwiftUI
 /// The model choice is a section of the existing composer, kept until explicitly dismissed.
 struct ComposerAgentReceipt: View {
     let text: String
+    var permissionNotice: String?
+    var onPermissions: (() -> Void)?
     var isWorking = false
     var isFailure = false
     var actionTitle: String?
@@ -11,30 +13,43 @@ struct ComposerAgentReceipt: View {
     var onDismiss: (() -> Void)?
 
     var body: some View {
-        HStack(spacing: DS.Space.lg) {
-            if isWorking {
-                DotGridLoader(pattern: .waiting)
-                    .frame(width: DS.ComposerSettings.selectionWidth, height: DS.ComposerSettings.selectionWidth)
+        VStack(alignment: .leading, spacing: DS.Space.sm) {
+            HStack(spacing: DS.Space.lg) {
+                if isWorking {
+                    DotGridLoader(pattern: .waiting)
+                        .frame(width: DS.ComposerSettings.selectionWidth, height: DS.ComposerSettings.selectionWidth)
+                }
+                Text(text)
+                    .contentTransition(.opacity)
+                    .foregroundStyle(isFailure ? .dsDanger : .dsTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+                if let actionTitle, let action {
+                    Button(actionTitle, action: action)
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.dsTextPrimary)
+                        .dsHitTarget(DS.ComposerSettings.controlHeight)
+                        .accessibilityLabel(actionLabel ?? actionTitle)
+                }
+                if let onDismiss {
+                    Button("Dismiss Model Change", systemImage: "xmark", action: onDismiss)
+                        .labelStyle(.iconOnly)
+                        .font(.dsCaption)
+                        .foregroundStyle(.dsTextTertiary)
+                        .buttonStyle(.plain)
+                        .dsHitTarget(DS.ComposerSettings.controlHeight)
+                }
             }
-            Text(text)
-                .contentTransition(.opacity)
-                .foregroundStyle(isFailure ? .dsDanger : .dsTextSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 0)
-            if let actionTitle, let action {
-                Button(actionTitle, action: action)
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.dsTextPrimary)
-                    .dsHitTarget(DS.ComposerSettings.controlHeight)
-                    .accessibilityLabel(actionLabel ?? actionTitle)
-            }
-            if let onDismiss {
-                Button("Dismiss Model Change", systemImage: "xmark", action: onDismiss)
-                    .labelStyle(.iconOnly)
-                    .font(.dsCaption)
-                    .foregroundStyle(.dsTextTertiary)
-                    .buttonStyle(.plain)
-                    .dsHitTarget(DS.ComposerSettings.controlHeight)
+            if let permissionNotice {
+                Text(permissionNotice)
+                    .foregroundStyle(.dsTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let onPermissions {
+                    Button("Review Permissions", action: onPermissions)
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.dsTextPrimary)
+                        .dsHitTarget(DS.ComposerSettings.controlHeight)
+                }
             }
         }
         .font(.dsBody)
@@ -58,6 +73,46 @@ struct ComposerAgentReceipt: View {
             ComposerAgentReceipt(
                 text: "Couldn't start Codex. Claude Code is still selected.", isFailure: true,
                 actionTitle: "Try Again", action: {}, onDismiss: {})
+        }.frame(width: DS.ComposerSettings.width).background(.dsSurface)
+    }
+}
+#Preview("Model choice - Permission fallbacks and managed failure") {
+    DSPreviewPair {
+        VStack(spacing: 0) {
+            ComposerAgentReceipt(
+                text: "Using Copilot · Haiku 5.5",
+                permissionNotice:
+                    "Copilot doesn't offer 'when something looks risky', so it will ask before any change.",
+                onPermissions: {}, actionTitle: "Undo", action: {}, onDismiss: {})
+            ComposerAgentReceipt(
+                text: "Using Custom Agent · Small",
+                permissionNotice:
+                    "Custom Agent has no level that asks as often. Its safest level is 'never'. Review permissions before sending.",
+                onPermissions: {}, actionTitle: "Undo", action: {}, onDismiss: {})
+            ComposerAgentReceipt(
+                text: "Using Custom Agent · Small",
+                permissionNotice:
+                    "These permission levels can't be compared. Custom Agent will use 'interactive'. Review permissions before sending.",
+                onPermissions: {}, actionTitle: "Undo", action: {}, onDismiss: {})
+            ComposerAgentReceipt(
+                text: "Using Custom Agent · Small",
+                permissionNotice:
+                    "Custom Agent doesn't offer a permission choice. Check its permissions before sending.",
+                actionTitle: "Undo", action: {}, onDismiss: {})
+            ComposerAgentReceipt(
+                text:
+                    "Example Organization doesn't allow any of Custom Agent's permission levels. Keep the current agent or contact your administrator.",
+                isFailure: true, actionTitle: "Try Again", action: {}, onDismiss: {})
+            ComposerAgentReceipt(
+                text: "Using Target Agent · Small",
+                permissionNotice:
+                    "Target Agent can't use 'when something looks risky' for this task, so it will ask before any change.",
+                onPermissions: {}, actionTitle: "Undo", action: {}, onDismiss: {})
+            ComposerAgentReceipt(
+                text: "Using Target Agent · Small",
+                permissionNotice:
+                    "Target Agent can't require plan approval. It will ask before any change instead. Review permissions before sending.",
+                onPermissions: {}, actionTitle: "Undo", action: {}, onDismiss: {})
         }.frame(width: DS.ComposerSettings.width).background(.dsSurface)
     }
 }

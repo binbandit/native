@@ -1,5 +1,23 @@
+import Modes
+import NativePolicy
+
 // The runner prepends the existing in-memory host fixture from droid-change-agent.swift.
 // Only fixture protocol responses are adapted to report a conservative permission mode.
+
+private struct AgentModelPermissionPolicy: PolicySource {
+    let forbidden: [String]
+    private var blocked: Bool { !forbidden.isEmpty }
+    func managedEntry(forKey key: String) -> ManagedEntry {
+        guard blocked else { return .absent }
+        switch key {
+        case "policy.permissions.forbiddenModes": return .value(forbidden)
+        case "policy.organization.name": return .value("Example Organization")
+        default: return .absent
+        }
+    }
+    func userValue(forKey key: String) -> Any? { nil }
+    var managedKeys: [String]? { blocked ? ["policy.permissions.forbiddenModes", "policy.organization.name"] : [] }
+}
 
 private actor AgentModelAttachmentGate {
     private var value: PromptAttachment?
@@ -40,6 +58,7 @@ private struct AgentModelChangeRegression {
             try duplicateModels()
             try await run()
             try await inAppRecovery()
+            try await permissionFallbacks()
         } catch { print("FAIL: \(error)"); exit(1) }
     }
 
@@ -48,7 +67,7 @@ private struct AgentModelChangeRegression {
         defer { try? FileManager.default.removeItem(at: scratch) }
         let defaults = PreviewUserDefaults()
         let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
-        experiments.set(true, for: .changeAgent)
+        try require(experiments.value(of: .changeAgent), "Composer agent switching requires opting into Labs")
         experiments.set(true, for: .composerNext)
         let manifest = PluginManifest(
             id: "fixture", name: "Fixture",
@@ -89,6 +108,10 @@ private struct AgentModelChangeRegression {
         app.selection = source.key
         app.ordering.pin(source.key)
         source.draft = "Keep my unsent draft"
+        let commentEditors = DiffCommentsPreviewFixtures.quotes(task: source.clientID)
+        source.diffCommentEditors = commentEditors
+        source.unresolvedCommentPacket = "Recover this comment packet"
+
         let attachment = PromptAttachment(
             url: URL(filePath: "/fixture/notes.txt"), content: .text("Fixture"), byteCount: 7)
         source.attachments = [attachment]
@@ -105,8 +128,8 @@ private struct AgentModelChangeRegression {
         let tripwire = WorkspaceTripwire()
         app.taskWorkspaces = tripwire
         var hooks = 0
-        app.sessionHooks.taskStarted = { _, earlier in
-            if earlier === source { hooks += 1 }
+        app.sessionHooks.taskStarted = { _, earlier, project in
+            if earlier === source, project == nil { hooks += 1 }
         }
         let choice = ComposerAgentModel(
             agent: .init(rawValue: "droid"), agentName: "Droid",
@@ -131,6 +154,11 @@ private struct AgentModelChangeRegression {
         try require(await process.accepted.isEmpty, "Choosing a model submitted a working prompt")
         try require(target.draft == "Keep my unsent draft" && target.attachments == [attachment], "Draft was lost")
         try require(
+            target.diffCommentEditors == commentEditors
+                && target.unresolvedCommentPacket == "Recover this comment packet"
+                && source.diffCommentEditors.isEmpty && source.unresolvedCommentPacket == nil,
+            "Comment editor or recovery ownership was lost during model selection")
+        try require(
             target.cwd == source.cwd && source.isEarlierConversation && app.ordering.isPinned(target.key),
             "Task moved or duplicated")
         try require(ComposerSettings(target.configOptions).model?.value == "large", "Exact model not confirmed")
@@ -148,6 +176,13 @@ private struct AgentModelChangeRegression {
             source.draft == "Draft edited after selection" && source.attachments == [attachment, firstFile],
             "Undo lost current edits")
         try require(await process.accepted.isEmpty, "Undo submitted a prompt")
+        try require(
+            source.diffCommentEditors == commentEditors
+                && source.unresolvedCommentPacket == "Recover this comment packet"
+                && target.diffCommentEditors.isEmpty && target.unresolvedCommentPacket == nil,
+            "Undo lost comment editor or recovery ownership")
+        source.diffCommentEditors = []
+        source.unresolvedCommentPacket = nil
         await secondRead.release(secondFile)
         try await readingSecond.value
         try require(
@@ -155,6 +190,41 @@ private struct AgentModelChangeRegression {
             "Pending reads didn't follow Undo back to the visible draft")
         print("PASS: exact model, permission preservation, no working prompt, one task, drafts and Undo")
         print("PASS: suspended attachment reads follow the draft through selection and Undo")
+
+        experiments.set(false, for: .composerNext)
+        let command = NativeCommand.changeAgent(model: app)
+        let context = CommandContext(session: source)
+        try require(command.isAvailable(context), "Switch Agent is missing with Fine print off")
+        command.perform(context)
+        try require(source.isAgentPickerRequested && source.isModelPickerRequested, "Command missed the Agent section")
+        try require(app.changingAgent == nil, "Legacy composer opened a confirmation sheet")
+        source.isAgentPickerRequested = false
+        source.isModelPickerRequested = false
+        app.switchAgent(to: choice.agent, for: source)
+        guard let legacy = source.modelChange else { throw ChangeFailure("No direct agent choice") }
+        try await wait("legacy agent prepared") { legacy.stage == .applied || legacy.stage == .failed }
+        try require(legacy.stage == .applied, legacy.error ?? "Direct agent choice failed")
+        guard let selected = app.selection, let legacyTarget = app.sessions.session(selected) else {
+            throw ChangeFailure("No legacy target")
+        }
+        try require(legacyTarget.agent.id == choice.agent, "Agent choice did not change harness")
+        try require(ComposerSettings(legacyTarget.configOptions).model?.value == "small", "Agent default was not used")
+        try require(
+            legacyTarget.draft == source.draft || legacyTarget.draft == "Draft edited after selection", "Draft lost")
+        try require(await process.accepted.isEmpty, "Direct agent choice submitted a working prompt")
+        legacy.undo()
+        try require(
+            app.selection == source.key && source.attachments.count == 3, "Legacy Undo lost the task or attachments")
+        experiments.set(true, for: .composerNext)
+        print("PASS: Switch Agent command, default model, invisible handoff and Undo with Fine print off")
+
+        experiments.set(false, for: .changeAgent)
+        try require(!command.isAvailable(context), "Switch Agent ignored the explicit Labs opt-out")
+        try require(app.composerAgentModels(for: source).isEmpty, "The disabled composer still offers other agents")
+        app.requestAgentChange(source)
+        try require(!source.isAgentPickerRequested, "The disabled command opened the agent picker")
+        experiments.set(true, for: .changeAgent)
+        print("PASS: an explicit Labs opt-out still hides agent switching")
 
         source.phase = .prompting
         source.lastStopReason = nil
@@ -237,6 +307,165 @@ private struct AgentModelChangeRegression {
         print(
             "PASS: locally prepared context survives relaunch, is consumed once and remains available to later choices")
         await client.stop()
+    }
+
+    static func permissionFallbacks() async throws {
+        guard let script = ProcessInfo.processInfo.environment["NATIVE_AGENT_MODEL_FIXTURE_SCRIPT"] else {
+            throw ChangeFailure("No permission fixture script")
+        }
+        let cases: [(name: String, source: String, levels: String, expected: String?, notice: Bool)] = [
+            ("equal", "auto", #"[["default","Manual"],["agent","Auto review"]]"#, "agent", false),
+            ("stricter", "auto", #"[["default","Manual"],["acceptEdits","Accept edits"]]"#, "default", true),
+            (
+                "no safe match", "default",
+                #"[["agent-full-access","Full access"],["workspace-write","Workspace write"]]"#, "workspace-write", true
+            ),
+            ("unknown", "auto", #"[["interactive","Interactive"],["autopilot","Autopilot"]]"#, "interactive", true),
+            ("no setting", "auto", "[]", nil, true),
+            ("plan supported", "plan", #"[["default","Manual"],["plan","Plan"]]"#, "plan", false),
+            (
+                "plan separate unknown", "plan", #"[["interactive","Interactive"],["autopilot","Autopilot"]]"#,
+                "interactive", true
+            ),
+            (
+                "read-only separate unknown", "read-only",
+                #"[["interactive","Interactive"],["autopilot","Autopilot"]]"#, "interactive", true
+            ),
+            ("plan separate", "plan", #"[["default","Manual"],["agent","Auto review"]]"#, "default", false),
+            ("plan no setting", "plan", "[]", nil, true),
+            ("plan unsupported", "plan", #"[["default","Manual"],["auto","Auto"]]"#, "default", true),
+            ("manual read-only", "read-only", #"[["default","Manual"],["plan","Plan"]]"#, "plan", true),
+            ("read-only via plan", "read-only", #"[["default","Manual"],["plan","Plan"]]"#, "plan", true),
+            ("policy closer", "bypassPermissions", #"[["default","Manual"],["agent","Auto review"]]"#, "default", true),
+            ("policy limited", "auto", #"[["default","Manual"],["agent","Auto review"]]"#, "default", true),
+            ("policy locked", "auto", #"[["default","Manual"],["auto","Auto"]]"#, nil, false),
+        ]
+        for test in cases {
+            let scratch = FileManager.default.temporaryDirectory.appending(path: "agent-permissions-\(UUID())")
+            try FileManager.default.createDirectory(at: scratch, withIntermediateDirectories: true)
+            defer { try? FileManager.default.removeItem(at: scratch) }
+            let defaults = PreviewUserDefaults()
+            let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
+            experiments.set(true, for: .changeAgent)
+            experiments.set(true, for: .composerNext)
+            let manifest = PluginManifest(
+                id: "permissions", name: "Permissions",
+                agents: [
+                    AgentManifest(
+                        id: "fixture", name: "Fixture", command: "/usr/bin/python3",
+                        args: [
+                            script, "--kind", "source", "--store", scratch.appending(path: "source").path,
+                            "--project", scratch.path,
+                        ]),
+                    AgentManifest(
+                        id: "target", name: "Target", command: "/usr/bin/python3",
+                        args: [
+                            script, "--kind", "target", "--store", scratch.appending(path: "agent").path,
+                            "--project", scratch.path, "--permission-options", test.levels,
+                        ]
+                            + (["plan separate", "plan separate unknown", "read-only separate unknown"].contains(
+                                test.name) ? ["--separate-plan"] : [])),
+                ])
+            let app = AppModel(
+                plugins: PluginRegistry(
+                    builtIns: [ManifestPlugin(manifest: manifest)], defaults: defaults,
+                    policyCenter: PolicyCenter(
+                        source: AgentModelPermissionPolicy(
+                            forbidden: test.name == "policy locked"
+                                ? ["default", "auto"]
+                                : ["policy limited", "policy closer"].contains(test.name) ? ["agent"] : []))),
+                defaults: defaults, catalogURL: nil, experiments: experiments)
+            defer { app.stopAgents() }
+            _ = await app.checkForAgents()
+            let project = app.projects.add(scratch)
+            try FileManager.default.createDirectory(
+                at: scratch.appending(path: "source"), withIntermediateDirectories: true)
+            try Data(test.source.utf8).write(to: scratch.appending(path: "source/default-mode"))
+            _ = await app.ensureRunning(.init(rawValue: "fixture"))
+            let modes = TaskModes(library: ModeLibrary(defaults: defaults), defaults: defaults)
+            app.sessionHooks.taskStarted = { session, earlier, _ in
+                await modes.taskStarted(session, continuing: earlier, projectRoot: nil)
+            }
+            let config =
+                test.source == "read-only"
+                ? ComposerSettingsPreviewFixtures.codex(mode: test.source)
+                : ComposerSettingsPreviewFixtures.claude(mode: test.source)
+            guard
+                let source = SessionModel.preview(
+                    in: app, agent: "fixture", id: "model-source", cwd: scratch.path,
+                    configOptions: [config.model?.option, config.autonomy?.option].compactMap { $0 })
+            else { throw ChangeFailure("No permission source") }
+            source.previewExchange("Keep the task", reply: "Progress saved")
+            if (test.source == "plan" || test.source == "read-only") && test.name != "manual read-only" {
+                await modes.select(.ask, in: source)
+            }
+            app.catalog.add(SessionInfo(sessionId: source.id, cwd: scratch.path), for: source.agent.id, in: project.id)
+            app.selection = source.key
+            let choice = ComposerAgentModel(
+                agent: .init(rawValue: "target"), agentName: "Target",
+                choice: .init(value: "gpt-6-sol", name: "6 Sol"), kind: .model("gpt-6-sol"))
+            app.chooseAgentModel(choice, for: source)
+            guard let change = source.modelChange else { throw ChangeFailure("No permission change") }
+            try await wait(test.name) { change.stage == .applied || change.stage == .failed }
+            if test.name == "policy locked" {
+                try require(
+                    change.stage == .failed && change.isPermissionPolicyBlocked && app.selection == source.key,
+                    "Policy did not keep the original agent")
+                let message = change.error ?? ""
+                try require(
+                    message.components(separatedBy: "Example Organization").count == 2
+                        && message.contains("doesn't allow any of Target's permission levels"),
+                    "Policy failure did not name the organization once")
+                print("PASS: policy denying every offered mode blocks with one organization name")
+                continue
+            }
+            try require(change.stage == .applied, test.name + ": " + (change.error ?? "Not applied"))
+            guard let key = app.selection, let target = app.session(key) else {
+                throw ChangeFailure("No permission target")
+            }
+            try require(
+                ComposerSettings(target.configOptions).autonomy?.value == test.expected,
+                test.name + " selected the wrong level")
+            try require(
+                (change.permissionNotice != nil) == test.notice, test.name + " explanation missing or unnecessary")
+            if test.source == "plan" || test.source == "read-only" {
+                let expectedMode: Mode.ID = test.name == "manual read-only" ? .plan : .ask
+                try require(modes.mode(of: target).id == expectedMode, "The task lost its local mode")
+                if test.name != "plan unsupported" && test.name != "plan no setting" {
+                    try require(
+                        ModeAgentSettings(target.configOptions).isPlanOn, "The target lost planning restrictions")
+                } else {
+                    try require(
+                        change.permissionNotice?.contains("can't require plan approval") == true,
+                        "Lost planning restriction was silent")
+                }
+            }
+            if test.name == "policy limited" || test.name == "policy closer" {
+                try require(
+                    change.permissionNotice?.contains("can't use") == true
+                        && change.permissionNotice?.contains("doesn't offer") == false
+                        && change.permissionNotice?.contains("when something looks risky") == true,
+                    "Policy-limited permission copy blamed the agent's offered choices")
+            }
+            if test.name == "plan separate unknown" || test.name == "read-only separate unknown" {
+                try require(
+                    change.permissionNotice?.contains("can't be compared") == true,
+                    "Planning confirmation hid an independent unknown permission level")
+            }
+            let stored = AgentModelContinuations(defaults: defaults).receipt(for: target.key)
+            try require(stored?.permissionNotice == change.permissionNotice, "Permission notice did not persist")
+            if let plan = ModeAgentSettings(target.configOptions).plan, ModeAgentSettings(target.configOptions).isPlanOn
+            {
+                try require(stored?.confirmedChoices?[plan.id] == "plan", "Planning restriction did not persist")
+            }
+            let calls = try String(contentsOf: scratch.appending(path: "agent/calls.jsonl"), encoding: .utf8)
+            try require(!calls.contains("session/prompt"), "Permission fallback sent a prompt")
+            change.undo()
+            try require(
+                app.selection == source.key && ComposerSettings(source.configOptions).autonomy?.value == test.source,
+                "Undo did not restore the original permission level")
+            print("PASS: permission fallback \(test.name), receipt persistence, no prompt and Undo")
+        }
     }
 
     static func duplicateModels() throws {

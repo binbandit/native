@@ -7,6 +7,8 @@
 # Without -jobs, the running builds share the cores (at least 4 each). NATIVE_BUILD_SLOTS changes the limit.
 set -euo pipefail
 
+started=$SECONDS
+admitted=$SECONDS
 slots=/tmp/native-build-slots
 limit=${NATIVE_BUILD_SLOTS:-4}
 mkdir -p "$slots"
@@ -24,9 +26,18 @@ slot=""
 # it could give waiters different inodes to lock. The kernel releases the lock when fd 9 closes,
 # including when a holder dies, so recovery never removes another build's live lock.
 lock="$slots/admit.flock"
-trap 'rm -f "$ticket"; [ -z "$slot" ] || rm -rf "$slot"' EXIT
+finish() {
+    local status=$?
+    rm -f "$ticket"
+    [ -z "$slot" ] || rm -rf "$slot"
+    if [ -n "${NATIVE_BUILD_TIMINGS:-}" ]; then
+        printf 'queue_seconds=%s\nbuild_seconds=%s\n' "$((admitted - started))" "$((SECONDS - admitted))" >"$NATIVE_BUILD_TIMINGS"
+    fi
+    exit "$status"
+}
+trap finish EXIT
 
-position=""
+announced=0
 while [ -z "$slot" ]; do
     exec 9>"$lock"
     lockf 9
@@ -55,9 +66,9 @@ while [ -z "$slot" ]; do
     fi
     exec 9>&-
     if [ -z "$slot" ]; then
-        if [ "$ahead" != "$position" ]; then
+        if [ "$announced" = 0 ]; then
             echo "waiting for a build slot: $limit builds running, $ahead ahead of this one" >&2
-            position=$ahead
+            announced=1
         fi
         sleep 5
     fi
@@ -76,6 +87,7 @@ while [ "$(df -g /tmp | awk 'NR==2 {print $4}')" -lt "$floor" ]; do
     sleep 30
 done
 
+admitted=$SECONDS
 arguments=("$@")
 if [[ " $* " != *" -jobs "* ]]; then
     cores=$(sysctl -n hw.ncpu)
@@ -84,4 +96,8 @@ if [[ " $* " != *" -jobs "* ]]; then
     [ "$jobs" -ge 4 ] || jobs=4
     arguments+=(-jobs "$jobs")
 fi
-nice -n 10 taskpolicy -c utility xcodebuild "${arguments[@]}"
+if [ -n "${NATIVE_BUILD_LOG:-}" ]; then
+    nice -n 10 taskpolicy -c utility xcodebuild "${arguments[@]}" >"$NATIVE_BUILD_LOG" 2>&1
+else
+    nice -n 10 taskpolicy -c utility xcodebuild "${arguments[@]}"
+fi

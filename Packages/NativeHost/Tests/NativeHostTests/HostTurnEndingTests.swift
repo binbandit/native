@@ -79,7 +79,7 @@ struct HostTurnEndingTests {
         try await recorder.wait("the stop to show") { await $0.summaries[session]?.isStopping == true }
         try await Task.sleep(for: .milliseconds(1_100))
         try await recorder.client.cancel(session)
-        try await recorder.wait("the turn to end") { await $0.turnsEnded(session) == ["error"] }
+        try await recorder.wait("the turn to end") { await $0.turnsEnded(session) == ["cancelled"] }
         let stoppedText = await recorder.agentText(session)
         try await Task.sleep(for: .seconds(3))
 

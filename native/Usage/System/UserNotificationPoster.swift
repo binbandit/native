@@ -19,7 +19,14 @@ final class UserNotificationPoster: NSObject, NativeNotificationPosting {
     }
 
     func post(_ notification: NativeNotification) async {
-        guard let payload = try? JSONEncoder().encode(notification) else { return }
+        guard let content = Self.content(for: notification) else { return }
+        guard (try? await center.requestAuthorization(options: [.alert, .badge])) == true else { return }
+        try? await center.add(UNNotificationRequest(identifier: notification.id, content: content, trigger: nil))
+    }
+
+    /// Notifications stay silent; only SoundPlayer may produce audio, behind NativeAudioPolicy.
+    static func content(for notification: NativeNotification) -> UNMutableNotificationContent? {
+        guard let payload = try? JSONEncoder().encode(notification) else { return nil }
         let content = UNMutableNotificationContent()
         content.title = notification.title
         content.subtitle = notification.subtitle ?? ""
@@ -27,8 +34,7 @@ final class UserNotificationPoster: NSObject, NativeNotificationPosting {
         content.categoryIdentifier = Self.categoryID(for: notification.actions)
         content.threadIdentifier = notification.session ?? notification.agent
         content.userInfo = [Self.payloadKey: String(decoding: payload, as: UTF8.self)]
-        guard (try? await center.requestAuthorization(options: [.alert, .badge])) == true else { return }
-        try? await center.add(UNNotificationRequest(identifier: notification.id, content: content, trigger: nil))
+        return content
     }
 
     func remove(_ ids: [String]) {

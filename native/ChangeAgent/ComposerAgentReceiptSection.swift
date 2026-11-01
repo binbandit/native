@@ -2,12 +2,16 @@ import SwiftUI
 
 struct ComposerAgentReceiptSection: View {
     let change: ComposerAgentChange
+    var onPermissions: (() -> Void)?
     @Environment(\.undoManager) private var undoManager
 
     var body: some View {
         if !change.isReceiptDismissed, change.stage != .cancelled {
             ComposerAgentReceipt(
-                text: change.receipt, isWorking: change.stage == .preparing && change.showsLoader,
+                text: change.receipt,
+                permissionNotice: change.stage == .applied ? change.permissionNotice : nil,
+                onPermissions: change.hasPermissionChoice ? onPermissions : nil,
+                isWorking: change.stage == .preparing && change.showsLoader,
                 isFailure: change.stage == .failed, actionTitle: actionTitle,
                 actionLabel: change.canUndo ? "Undo Change to \(change.choice.agentName)" : nil,
                 action: receiptAction,

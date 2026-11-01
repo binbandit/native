@@ -5,7 +5,7 @@ an extra MCP server, or add a multi-agent workflow, by writing a `plugin.json` i
 plugins folder, and how to check that Native loads it.
 
 This file is the canonical description of Native's plugin format. Native serves it to agents as
-the `build-a-native-plugin` skill (the `get_skill` tool of its `native` MCP server), so it's
+the `build-a-native-plugin` guide (`native get_skill` from the `native-app` skill, or MCP's `get_skill`), so it's
 written for an agent doing the work as much as for a person.
 
 ## What a plugin is
@@ -96,7 +96,9 @@ of that agent through it.
 | `args` | no | Arguments. |
 | `env` | no | Extra environment variables. |
 | `resolveExecutables` | no | Variables to set to the absolute path of a command on `PATH`, such as `{"CLAUDE_CODE_EXECUTABLE": "claude"}`, so an adapter runs the user's own CLI. |
+| `instructionLocations` | no | Instruction metadata for New Tasks: `scope` (`user` or `project`), relative `directory`, optional `environmentKey` replacing that directory, `names`, and `firstExisting`. Native checks file sizes only; it never edits or reads the contents. Missing declarations are shown as unknown, not as no instructions. |
 | `mcpConfig` | no | Where the agent keeps its own MCP configuration (`"claude-code"`, `"codex"` or `"cursor"`), so Native can show the servers it already loads. |
+| `nativeSkill` | no | Native's skill delivery mechanism: `"claude-code"` for adapters forwarding `_meta.claudeCode.options.plugins` and per-session `env`, or `"codex"` for Codex skill discovery and the shell's `CODEX_THREAD_ID`. Declare only a verified adapter mechanism. Missing keeps Native's MCP tools. This is independent of `mcpConfig`, which describes user-configured servers. |
 | `settingsFiles` | no | The settings files the agent reads as it starts (`~/…`, `$VARIABLE/…` from its environment, or a path in the task's folder). With Fine print on, a failed start that names one of them shows the line and may offer a fix-it; Native opens no other file an agent's error names. |
 | `icon` | no | The agent's icon: `{"path": "icon.svg"}` (or just `"icon.svg"`), an image in the plugin's folder; `"apps"`, bundle identifiers of apps whose icon to use when installed; `"registry"`, the agent's id in the [ACP registry](https://agentclientprotocol.com/get-started/registry), whose icon Native fetches. A monochrome SVG is drawn in the text color. Without one, Native shows a monogram. |
 | `requires` | no | Commands besides `command` that must be on `PATH` for the agent to count as installed, such as the CLI an adapter drives: `["claude"]`. Native doesn't start an agent that's missing one; it offers it in Add Agent. |
@@ -397,6 +399,8 @@ protocol NativePlugin: Sendable {
     func mcpServers(for session: SessionContext) -> [MCPServer]
     /// Session lifecycle hooks, delivered to every enabled plugin in order.
     func handle(_ event: SessionEvent) async
+    /// Tools for the task screen, listed in the well and on Settings ▸ Task Tools.
+    var sessionTools: [SessionToolContribution] { get }
 }
 ```
 
@@ -410,6 +414,13 @@ the agent, the agent's `sessionID` once it exists, `cwd`, `title`, and `parentID
 `SessionEvent` is one of `sessionStarted`, `promptSent`, `turnEnded`, `turnFailed`,
 `permissionRequested` and `usageUpdated`. Native's notifications, sounds, session titles and
 orchestration tools are built-in plugins written this way.
+
+A tool for the task screen is a `SessionToolContribution`: a `SessionToolSpec` whose id starts with
+the plugin's id (`acme.tickets`) and whose places are beside the conversation (`side`), over it
+(`fact`) or `off`, a title, a glyph, a one-sentence `summary` for Settings, its fact and its pane.
+Native lists it after its own tools in the well and on Settings ▸ Task Tools, says which plugin
+added it, gives it a command the user can bind a key to, and drops it while the plugin is off. A tool
+with another id or a workbench place is left out. See `docs/session-tools.md`, "Adding a tool".
 
 ### Titles with the app closed
 
@@ -441,7 +452,11 @@ The first enabled plugin with a titler decides, and the app tells each host it's
 - **No titler** (the plugin is off): tasks keep the titles their agents give them.
 
 Either way the user's own title wins over all of them and lives in the host, so a rename on one
-device shows on every other. A titler is asked once per task; one that fails isn't asked again.
+device shows on every other. A failed initial attempt may retry once on a new ordinary turn.
+A weak initial title may be refined once after the first turn; `TitleRequest.firstTurnOutcome`
+provides safe assistant context then. A manual rename prevents refinement. The host protocol
+carries a revision so an initial answer cannot overwrite the refinement. See
+[task-titles.md](task-titles.md) for the offline comparison and naming rules.
 
 ## Testing a plugin
 
@@ -467,3 +482,22 @@ Fine print approvals. The versioned [command knowledge schema](command-knowledge
 format as the bundled package resource and managed policy. Invalid entries appear in Command
 Diagnostics without breaking approvals. Contributions disappear when the plugin is disabled or
 blocked by policy, and cannot replace shipped tools. This extension is declarative and local only.
+
+The built-in Codex locations follow [AGENTS.md discovery](https://developers.openai.com/codex/guides/agents-md);
+Claude Code locations follow [instruction memory](https://code.claude.com/docs/en/memory). New Tasks
+currently inventories declared user and project-root files only. Ancestor files, imports, conditional
+rules, custom fallback filenames and auto-memory remain uncounted until an agent reports them.
+
+### Steering policy
+
+An agent manifest can set `"steeringPolicy": "nonInterrupting"` when its `_session/steering`
+extension preserves running tools. Native can then deliver Steer immediately. The default,
+`"afterTools"`, holds a steer until all reported tool calls complete or fail, and keeps it editable
+and removable in the composer. Without a steering extension, Native interrupts only at that boundary
+and submits the held message as the next prompt. Do not opt an interrupting adapter into
+`nonInterrupting`. Stop always cancels immediately regardless of this setting.
+
+The queue's Send Now action requires an advertised ACP steering extension or an explicit
+`"steeringPolicy": "afterTools"` declaration. Without either, queued messages wait for the turn to
+end and the action is hidden, including its menu item, accessibility action and queued-edit shortcut.
+An omitted or unknown policy does not opt an agent without ACP steering into this action.

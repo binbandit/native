@@ -126,6 +126,14 @@ extension NativeHostClient {
             HostProtocol.Method.closeSession, CloseSessionParams(sessionID: session, closeInAgent: closeInAgent))
     }
 
+    /// Confirms agent closure before forgetting the session. Failures preserve attachments and
+    /// the host record so callers can retain private files and retry safely.
+    public func closeSessionConfirmed(_ session: HostSessionID) async throws {
+        let _: EmptyMessage = try await call(
+            HostProtocol.Method.closeSessionConfirmed, SessionParams(sessionID: session))
+        attachments[session] = nil
+    }
+
     /// Runs a request that attaches `session` as it goes: events count from the first, and a
     /// failure leaves the session unfollowed.
     func following<Result: Sendable>(

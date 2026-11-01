@@ -11,10 +11,10 @@ struct ArchivedTaskGroup: Identifiable {
 
 extension AppModel {
     var archivedTaskGroups: [ArchivedTaskGroup] {
-        let ordered = projects.all + projects.archived
+        let ordered = taskGroups + projects.archived
         let lookup = Dictionary(uniqueKeysWithValues: ordered.map { ($0.id, $0) })
         return TaskListGrouping.archive(
-            projects: projects.all.map(\.id), archivedProjects: projects.archived.map(\.id),
+            projects: taskGroups.map(\.id), archivedProjects: projects.archived.map(\.id),
             tasks: ordered.flatMap { archivedSessions(in: $0.id) }, project: \.project
         ).compactMap { group in
             guard let project = lookup[group.project] else { return nil }

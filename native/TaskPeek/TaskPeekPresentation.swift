@@ -11,6 +11,8 @@ final class TaskPeekPresentation {
 
     var homeIsVisible = false
     var request: Request?
+    /// Pointer dismissal leaves focus with the clicked control; keyboard dismissal can return it.
+    var restoresSidebarFocus = true
     var showsAttentionList = false
     var answerFailure: String?
     var approvalAttempt = 0

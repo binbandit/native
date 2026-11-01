@@ -60,8 +60,8 @@ extension WorkflowStepStatus {
 
 extension Expedition {
     /// The line under the title: project, branch folder, age, cost against budget, working time.
-    func metaLine(now: Date) -> String {
-        var parts = [project.lastPathComponent]
+    func metaLine(now: Date, projectName: String? = nil) -> String {
+        var parts = [projectName ?? project.lastPathComponent]
         if let base, base != project {
             parts.append(base.lastPathComponent)
         }

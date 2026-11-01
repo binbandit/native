@@ -164,6 +164,28 @@ struct HostEndToEndTests {
         await recorder.stop()
     }
 
+    @Test("Command approvals keep the agent's reason through the host")
+    func commandApprovalReason() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let session = try await startSession(recorder, harness: harness)
+        let reason = "I want to reproduce the flaky test before changing it."
+        _ = try await recorder.client.prompt(
+            PromptParams(sessionID: session, text: "ask-run \(reason) :: swift test"))
+        try await recorder.wait("the command approval") { await !$0.mirror(session).state.pendingPermissions.isEmpty }
+        let state = await recorder.mirror(session).state
+        let toolCall = try #require(state.pendingPermissions.first?.toolCallID)
+        let option = try #require(state.pendingPermissions.first?.permission.options.first)
+        #expect(state.reason(forToolCall: toolCall) == reason)
+        try await recorder.client.respondPermission(
+            RespondPermissionParams(sessionID: session, toolCallID: toolCall, optionID: option.optionId))
+        try await recorder.wait("the turn to end") { await $0.turnsEnded(session) == ["end_turn"] }
+        #expect(await recorder.agentText(session).contains("ran: allow"))
+        await recorder.stop()
+    }
+
     @Test("Messages sent while a turn runs are queued, and steering joins the running turn")
     func queueAndSteer() async throws {
         let harness = try HostHarness()

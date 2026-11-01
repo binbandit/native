@@ -43,7 +43,9 @@ struct AIInstructionAdditionTests {
         let text = SessionTitlePrompt.instructions(adding: addition)
 
         #expect(text.hasPrefix(SessionTitlePrompt.builtIn))
-        #expect(text.contains("2 to 6 words, on one line"))
+        #expect(text.contains("2 to 6 words"))
+        #expect(text.contains("One line"))
+        #expect(text.contains("sentence case"))
         #expect(text.contains("Start with the ticket key, like ABC-123."))
         #expect(SessionTitlePrompt.instructions(adding: nil) == SessionTitlePrompt.builtIn)
     }

@@ -1,6 +1,7 @@
 import ACP
 import Foundation
 import NativeHostProtocol
+import TaskList
 
 /// A task action's destination, captured before suspension or removal from the catalog. Kept for
 /// undo and recovery; a reconnect resolves fresh services on this owner, never on a matching path.
@@ -209,6 +210,12 @@ extension AppModel {
     }
 
     func deleteWorkspace(using route: TaskActionRoute) async throws {
+        let scratchKey = NoProjectLocation.key(route.key)
+        if scratchTasks.folder(for: scratchKey) != nil {
+            try await closeForScratchCleanup(route.key)
+            try scratchTasks.delete(scratchKey)
+        }
+        if route.project.isNoProject { return }
         try await inWorkspaceOrder(using: route) {
             let provider = try self.workspaceProvider(for: route)
             if let folder = route.workspace {

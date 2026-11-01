@@ -24,9 +24,6 @@ struct ComposeTaskWell: View {
                 verb: "Held for \(model.composeDeviceOption?.name ?? model.deviceName(entry.device))",
                 object: "starts when it's back", objectIsCode: false)
         }
-        if entry.project == nil {
-            return .init(status: .idle, agent: agent, verb: "Needs a folder", verbIsState: true)
-        }
         if model.composeDeviceOption?.canStart == false {
             if model.composeDeviceOption?.availability == .connecting {
                 return .init(status: .starting, agent: "", verb: "Connecting to \(model.deviceName(entry.device))")

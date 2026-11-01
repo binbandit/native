@@ -2,9 +2,6 @@ import SwiftUI
 
 extension DS {
     public nonisolated enum SidebarFolders {
-        public static let recentsWidth: CGFloat = 300
-        public static let recentRowHeight: CGFloat = 42
-        public static let textLeading: CGFloat = 28
         public static let noticeLineHeight: CGFloat = 16
         public static let noticeTop: CGFloat = 10
         public static let emptyTop: CGFloat = 238

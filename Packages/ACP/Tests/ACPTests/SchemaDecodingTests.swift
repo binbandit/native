@@ -190,20 +190,25 @@ struct SchemaDecodingTests {
         }
         #expect(
             withCost
-                == Usage(used: 234_506, size: 1_000_000, cost: Usage.Cost(amount: 0.19107000000000002, currency: "USD"))
-        )
+                == Usage(
+                    used: 234_506, size: 1_000_000, cost: Usage.Cost(amount: 0.19107000000000002, currency: "USD"),
+                    _meta: UsageMeta(model: "claude-opus-5-5")))
         #expect(withCost.fractionUsed == 0.234506)
-        #expect(withoutCost == Usage(used: 234_117, size: 1_000_000, cost: nil))
+        #expect(
+            withoutCost
+                == Usage(used: 234_117, size: 1_000_000, cost: nil, _meta: UsageMeta(model: "claude-opus-5-5")))
+        #expect(withoutCost.model == "claude-opus-5-5")
+        #expect(withCost.model == "claude-opus-5-5")
     }
 
     @Test func unknownUpdateKindIsUnsupported() throws {
         let line =
-            #"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"59be18cd-5e67-47b1-8562-9996457a07e9","update":{"sessionUpdate":"compaction_update","compactionId":"cmp_1","status":"completed"}}}"#
+            #"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"59be18cd-5e67-47b1-8562-9996457a07e9","update":{"sessionUpdate":"future_update","compactionId":"cmp_1","status":"completed"}}}"#
         guard case .unsupported(let kind) = try Wire.update(line) else {
             Issue.record("Expected an unsupported update")
             return
         }
-        #expect(kind == "compaction_update")
+        #expect(kind == "future_update")
     }
 
     /// Cursor reports the agent switching modes this way instead of with `config_option_update`.
@@ -252,10 +257,10 @@ struct SchemaDecodingTests {
 
     /// Claude reads the subagents capability at the top level, Cursor under `_meta`. Form
     /// elicitation is what makes Claude Code offer its AskUserQuestion tool.
-    @Test func initializeRequestAdvertisesSubagentsAndFormElicitation() throws {
+    @Test func initializeRequestAdvertisesSubagentsElicitationAndCompaction() throws {
         let request = InitializeRequest(clientInfo: Implementation(name: "probe", version: "0"))
         let expected = try Wire.json(
-            #"{"protocolVersion":1,"clientCapabilities":{"subagents":{},"elicitation":{"form":{}},"_meta":{"subagents":{}}},"clientInfo":{"name":"probe","version":"0"}}"#
+            #"{"protocolVersion":1,"clientCapabilities":{"subagents":{},"elicitation":{"form":{}},"session":{"compaction":{}},"_meta":{"subagents":{}}},"clientInfo":{"name":"probe","version":"0"}}"#
         )
         #expect(try Wire.json(encoding: request) == expected)
     }

@@ -162,12 +162,12 @@ extension SessionTitles {
     /// the pairing was replaced while it was on its way) is written again when the host next asks,
     /// or right away through the task's new pairing.
     private func writeTitle(_ request: HostTitleRequest, for key: Key, on link: HostTitleLink) {
-        guard userTitle(for: key) == nil, generatedTitle(for: key) == nil,
+        guard userTitle(for: key) == nil, generatedTitle(for: key) == nil || request.revision == 1,
             let titler = hostTitler(), requestsForHosts[key] != request
         else { return }
         requestsForHosts[key] = request
         let titleRequest = TitleRequest(
-            projectName: request.projectName, prompt: request.prompt,
+            firstTurnOutcome: request.firstTurnOutcome, projectName: request.projectName, prompt: request.prompt,
             instructions: AIInstructionsStore.shared.addition(for: .title, in: link.folder))
         Task {
             let title: String?
@@ -177,10 +177,11 @@ extension SessionTitles {
                 Self.hostLogger.error("Couldn't write a title the host asked for: \(error.localizedDescription)")
                 return
             }
-            guard let title else { return }
+            guard let title, hostTitler() != nil else { return }
             do {
                 try await link.client.setSessionTitle(
-                    SetSessionTitleParams(sessionID: link.session, title: title, source: .generated))
+                    SetSessionTitleParams(
+                        sessionID: link.session, title: title, source: .generated, revision: request.revision))
             } catch {
                 Self.hostLogger.error("Couldn't send a title to the host: \(error.localizedDescription)")
                 // An answer from the host (an error) means it arrived; only a lost one goes again.

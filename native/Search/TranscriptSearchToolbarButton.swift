@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The same search as Go ▸ Search Tasks…, reachable even with the sidebar collapsed.
+/// The sidebar's search button. Go ▸ Search Tasks… remains available when the sidebar is collapsed.
 struct TranscriptSearchToolbarButton: View {
     var body: some View {
         WindowToolbarButton(

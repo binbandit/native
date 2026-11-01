@@ -4,11 +4,16 @@ import SwiftUI
 /// A tool a feature adds to the session screen, the lean-core plan's session panel: where it can
 /// live, what it says about the task under the title, and its pane. Features register theirs with
 /// `SessionToolRegistry`, and the session screen reads tools only from there, so a tool that isn't
-/// registered (or is off) leaves nothing behind.
+/// registered (or is off) leaves nothing behind. Enabled plugins add theirs the same way
+/// (`NativePlugin.sessionTools`).
 struct SessionToolContribution: Identifiable {
     let spec: SessionToolSpec
     let title: String
     let systemImage: String
+    /// What it is, in a sentence, for Settings ▸ Task Tools.
+    var summary: String?
+    /// The plugin that added it, by name; nil for Native's own. Set by the plugin registry.
+    var pluginName: String?
     /// What it says about the task now; nil while it has nothing to say, which hides its fact.
     var fact: @MainActor (SessionToolContext) -> SessionToolFact? = { _ in nil }
     /// Whether its pane has something in it now (changes made, a shell open), which keeps its tab.

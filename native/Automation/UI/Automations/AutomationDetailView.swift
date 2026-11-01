@@ -3,6 +3,8 @@ import SwiftUI
 
 /// One automation: what it does and when, the controls for it, and its run history.
 struct AutomationDetailView: View {
+    @Environment(\.projectDisplayName) private var projectDisplayName
+
     let automation: Automation
     let runs: [AutomationRun]
     let nextRun: Date?
@@ -87,7 +89,7 @@ struct AutomationDetailView: View {
     }
 
     private var facts: String {
-        [automation.project.lastPathComponent, agentName ?? "Default agent", automation.placement.label].joined(
+        [projectDisplayName(automation.project), agentName ?? "Default agent", automation.placement.label].joined(
             separator: " · ")
     }
 

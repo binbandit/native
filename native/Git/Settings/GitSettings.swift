@@ -111,6 +111,24 @@ final class GitSettings {
         projectOverrides = all
     }
 
+    func setStartingWorkspace(_ value: NewTaskWorkspace?, project: URL?, undoManager: UndoManager? = nil) {
+        let previous =
+            project == nil ? newTaskWorkspace : project.flatMap { overrides(forProjectAt: $0).newTaskWorkspace }
+        if let project {
+            var changes = overrides(forProjectAt: project)
+            changes.newTaskWorkspace = value
+            setOverrides(changes, forProjectAt: project)
+        } else {
+            newTaskWorkspace = value ?? .worktree
+        }
+        undoManager?.registerUndo(withTarget: self) { settings in
+            MainActor.assumeIsolated {
+                settings.setStartingWorkspace(previous, project: project, undoManager: undoManager)
+            }
+        }
+        undoManager?.setActionName("Change Workspace Default")
+    }
+
     func newTaskWorkspace(forProjectAt root: URL) -> NewTaskWorkspace {
         overrides(forProjectAt: root).newTaskWorkspace ?? newTaskWorkspace
     }

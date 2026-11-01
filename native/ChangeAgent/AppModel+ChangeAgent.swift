@@ -50,6 +50,7 @@ extension AppModel {
     func requestAgentChange(_ source: SessionModel) {
         guard offersAgentChange, changingAgent == nil else { return }
         if offersAgentModels {
+            source.isAgentPickerRequested = true
             source.isModelPickerRequested = true
         } else {
             changingAgent = ChangeAgentModel(source: source, app: self)
@@ -147,11 +148,13 @@ extension AppModel {
             }
             target = try currentAgentChangeTarget(target)
         }
+        retainPrivateFiles(of: source, for: target.key)
         earlierConversations.record(target.key, after: source.key)
         earlierConversations.keep(target.key)
         ordering.replace(source.key, with: target.key)
         taskPairs.replace(source.key, with: target.key)
         target.draft = source.draft
+        target.adoptDiffCommentDrafts(from: source, moving: true)
         target.attachments = source.attachments
         source.draft = ""
         source.attachments = []

@@ -81,6 +81,7 @@ struct ExpeditionsPage<Transcript: View>: View {
 
 /// One expedition in the list: status, title, and where it stands.
 private struct ExpeditionRow: View {
+    @Environment(\.projectDisplayName) private var projectDisplayName
     let expedition: Expedition
     let open: () -> Void
 
@@ -94,11 +95,13 @@ private struct ExpeditionRow: View {
                         .foregroundStyle(.dsTextPrimary)
                         .lineLimit(1)
                     TimelineView(.periodic(from: .now, by: 60)) { timeline in
-                        Text(expedition.metaLine(now: timeline.date))
-                            .font(.dsCaption)
-                            .monospacedDigit()
-                            .foregroundStyle(.dsTextTertiary)
-                            .lineLimit(1)
+                        Text(
+                            expedition.metaLine(now: timeline.date, projectName: projectDisplayName(expedition.project))
+                        )
+                        .font(.dsCaption)
+                        .monospacedDigit()
+                        .foregroundStyle(.dsTextTertiary)
+                        .lineLimit(1)
                     }
                 }
                 Spacer(minLength: DS.Space.lg)

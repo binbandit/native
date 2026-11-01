@@ -19,6 +19,12 @@ extension AppModel: HostNotificationsAppHost {
         openModels(of: ref).first != nil
     }
 
+    func taskProjectName(_ ref: UsageSessionRef) -> String? {
+        let key = SessionKey(agent: ref.agent, id: ref.parent ?? ref.session)
+        guard let project = catalog.lookup(key)?.project else { return nil }
+        return projectName(for: key, in: project)
+    }
+
     func taskTitle(_ ref: UsageSessionRef) -> String? {
         let key = SessionKey(agent: ref.agent, id: ref.parent ?? ref.session)
         return sessionList.first { $0.id == key }.map(title(for:))

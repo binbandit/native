@@ -5,6 +5,8 @@ import SwiftUI
 /// the task's mode, and at the tightest the model and autonomy too, plus keyboard shortcuts (Help ▸
 /// Keyboard Shortcuts). The model picker opens from it then, so ⇧⌘E still has somewhere to show it.
 struct ComposerMoreMenu: View {
+    var agentName: String?
+    var agentPicker: ComposerAgentPicker?
     let settings: ComposerSettings
     /// The model and autonomy are in the menu too (the row's `minimal` density).
     let includesModel: Bool
@@ -18,8 +20,11 @@ struct ComposerMoreMenu: View {
     var body: some View {
         Menu {
             if includesModel {
-                if settings.model != nil || settings.effort != nil {
-                    Button("Model: \(settings.model?.shortModelName ?? "Default")…", systemImage: "cpu") {
+                if settings.model != nil || settings.effort != nil || agentPicker != nil {
+                    Button(
+                        "Model: \(agentName.map { $0 + " · " } ?? "")\(settings.model?.shortModelName ?? "Default")…",
+                        systemImage: "cpu"
+                    ) {
                         isModelPickerOpen = true
                     }
                 }
@@ -53,8 +58,10 @@ struct ComposerMoreMenu: View {
         .fixedSize()
         .help("More controls")
         .popover(isPresented: includesModel ? $isModelPickerOpen : .constant(false), arrowEdge: .top) {
-            ModelPicker(model: settings.model, effort: settings.effort, switches: settings.modelSwitches, onSet: onSet)
-            {
+            ModelPicker(
+                agentPicker: agentPicker, model: settings.model, effort: settings.effort,
+                switches: settings.modelSwitches, onSet: onSet
+            ) {
                 isModelPickerOpen = false
             }
             .dsPopoverBackground()

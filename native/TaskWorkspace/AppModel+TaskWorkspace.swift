@@ -29,7 +29,9 @@ extension AppModel {
             return try await performWorkspaceChange(of: source, to: choice, provider: provider, project: project)
         }
         workspacePreparations[project.id] = Task { _ = try? await work.value }
-        return try await work.value
+        let target = try await work.value
+        rememberTaskWorkspace(choice, in: project.id)
+        return target
     }
 
     private func performWorkspaceChange(
@@ -45,8 +47,14 @@ extension AppModel {
             let folder = try await provider.workspace(for: choice, in: project)
             preparedFolder = folder
             try validateWorkspaceChange(source)
-            if SessionFolder.isSame(folder.folderPath, source.cwd.folderPath) { return source }
+            if SessionFolder.isSame(folder.folderPath, source.cwd.folderPath) {
+                if SessionFolder.isSame(folder.folderPath, project.path) { preserveProjectBranch(for: source.key) }
+                return source
+            }
             let target = try await launcher.start(on: runtime, cwd: folder, project: project.id, continuing: source)
+            if choice == .project || SessionFolder.isSame(folder.folderPath, project.path) {
+                preserveProjectBranch(for: target.key)
+            }
             replacement = target
             target.isChangingWorkspace = true
             // Keep even agents that list empty conversations from exposing a second task.
@@ -62,6 +70,7 @@ extension AppModel {
                 throw TaskWorkspaceSelectionError("The replacement task stopped while getting ready. Try again.")
             }
             target.draft = source.draft
+            target.adoptDiffCommentDrafts(from: source, moving: true)
             target.attachments = source.attachments
             if let title = titles.namedTitle(for: source.titleKey) { titles.rename(target.titleKey, to: title) }
             let info = SessionInfo(sessionId: target.id, cwd: folder.folderPath, title: source.title, updatedAt: .now)

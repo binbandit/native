@@ -15,6 +15,7 @@ extension ExperimentCatalog {
         Gate.sidebarNext,
         Gate.composerNext,
         Gate.composeTask,
+        Gate.projectFolderTasks,
         Gate.changeAgent,
         Gate.coordinatorTasks,
         Gate.homeNext,
@@ -63,6 +64,13 @@ extension Parameter where Value == TranscriptWidth {
 // MARK: - Gates
 
 extension Gate {
+    static let projectFolderTasks = Gate(
+        id: "NativeProjectFolderTasks", title: "Project Folder Tasks",
+        summary: "Choose a separate branch or work in the project folder on its current branch.",
+        site: "New task options", stage: .labs, owner: "tasks",
+        reviewBy: ReviewDate(year: 2026, month: 12, day: 15), default: false
+    )
+
     static let composeTask = Gate(
         id: "NativeComposeTask",
         title: "Compose Task",
@@ -84,9 +92,9 @@ extension Gate {
     static let changeAgent = Gate(
         id: "change-agent", title: "Change Agent",
         summary:
-            "Choose another agent in the model list with Fine print enabled. Keep the draft and undo the choice before sending.",
-        site: "Task > Change Agent", stage: .labs, owner: "tasks",
-        reviewBy: ReviewDate(year: 2026, month: 12, day: 15), default: false
+            "Choose another agent above the model list in either composer. Keep the draft and undo the choice before sending.",
+        site: "Composer > Agent and Model", stage: .beta, owner: "tasks",
+        reviewBy: ReviewDate(year: 2026, month: 12, day: 15), default: true
     )
 
     static let homeNext = Gate(

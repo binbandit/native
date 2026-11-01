@@ -219,7 +219,7 @@ struct HostTitleTests {
         }
         let waiting = try #require(try await client.sessions().first { $0.id == session })
         #expect(waiting.titles?.request?.prompt == "summarize the open pull requests for this repo please")
-        #expect(waiting.titles?.fallback == "Summarize the open pull requests for this repo…")
+        #expect(waiting.titles?.fallback == "Summarize the open pull requests")
 
         try await client.setSessionTitle(
             SetSessionTitleParams(sessionID: session, title: "Open pull request summary", source: .generated))
@@ -298,7 +298,7 @@ struct HostTitleTests {
         try await eventually("the host to wait for a client") {
             first.clients.isEmpty && first.sessions[session]?.titleState.progress == .waitingForClient
         }
-        let fallback = "Summarize the open pull requests for this repo…"
+        let fallback = "Summarize the open pull requests"
         #expect(try first.store.titles()[session]?.fallback == fallback)
         for link in first.agents.values {
             link.endNow()

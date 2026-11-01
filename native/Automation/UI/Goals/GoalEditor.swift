@@ -7,6 +7,8 @@ struct GoalEditor: View {
     /// The goal being edited, or nil to set a new one.
     let goal: Goal?
     let agentName: String
+    /// A page in Task Settings: its header already names the editor, and it fits the popover.
+    var isPage = false
     let onSave: (_ objective: String, _ budget: GoalBudget) -> Void
     let onCancel: () -> Void
 
@@ -14,11 +16,12 @@ struct GoalEditor: View {
     @State private var budget: GoalBudget
 
     init(
-        goal: Goal?, agentName: String, onSave: @escaping (_ objective: String, _ budget: GoalBudget) -> Void,
-        onCancel: @escaping () -> Void
+        goal: Goal?, agentName: String, isPage: Bool = false,
+        onSave: @escaping (_ objective: String, _ budget: GoalBudget) -> Void, onCancel: @escaping () -> Void
     ) {
         self.goal = goal
         self.agentName = agentName
+        self.isPage = isPage
         self.onSave = onSave
         self.onCancel = onCancel
         // Seeded here rather than on appear, so the budget fields read the goal's budget first.
@@ -33,9 +36,11 @@ struct GoalEditor: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             VStack(alignment: .leading, spacing: DS.Space.xs) {
-                Text(goal == nil ? "Set a Goal" : "Edit Goal")
-                    .font(.dsHeadline)
-                    .foregroundStyle(.dsTextPrimary)
+                if !isPage {
+                    Text(goal == nil ? "Set a Goal" : "Edit Goal")
+                        .font(.dsHeadline)
+                        .foregroundStyle(.dsTextPrimary)
+                }
                 Text(
                     "\(agentName) keeps working, turn after turn, until the goal is met, it needs you, or the budget runs out."
                 )
@@ -88,8 +93,8 @@ struct GoalEditor: View {
                 .disabled(!canSave)
             }
         }
-        .padding(DS.Space.xl)
-        .frame(width: AutomationMetrics.goalEditorWidth)
+        .padding(isPage ? DS.Space.lg : DS.Space.xl)
+        .frame(width: isPage ? DS.ComposerSettings.popoverWidth : AutomationMetrics.goalEditorWidth)
         .dsPopoverBackground()
     }
 

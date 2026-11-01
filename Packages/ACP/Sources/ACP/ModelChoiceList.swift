@@ -41,7 +41,8 @@ public struct ModelChoiceList: Equatable, Sendable {
     /// - Parameters:
     ///   - choices: The agent's models, in its order (first of each value, `uniqued`).
     ///   - current: The value the session runs on, kept in view when the filter is empty.
-    ///   - slots: Row slots for a filterable list; fewer when the popover runs out of height.
+    ///   - slots: Row slots for a filterable list. Below the normal six, short lists also reserve
+    ///     their last slot for overflow; the client opens the full Model page from that row.
     public init(
         choices: [Choice], current: String, query: String = "", slots: Int = Self.slots,
         searchTerms: [String: [String]] = [:], forceFilter: Bool = false
@@ -65,14 +66,16 @@ public struct ModelChoiceList: Equatable, Sendable {
             return Row(choice: choice, name: name, nameMatches: Self.ranges(of: words, in: name), detail: detail)
         }
 
-        guard isFilterable else {
+        let slots = max(slots, 1)
+        guard isFilterable || (slots < Self.slots && choices.count > slots) else {
             rows = choices.map { row($0) }
             overflow = 0
             return
         }
         guard !words.isEmpty else {
-            var shown = Array(choices.prefix(slots))
-            if !shown.contains(where: { $0.value == current }),
+            let shownCount = isFilterable ? slots : slots - 1
+            var shown = Array(choices.prefix(shownCount))
+            if !shown.isEmpty, !shown.contains(where: { $0.value == current }),
                 let currentChoice = choices.first(where: {
                     $0.value == current
                 })
@@ -80,7 +83,7 @@ public struct ModelChoiceList: Equatable, Sendable {
                 shown[shown.count - 1] = currentChoice
             }
             rows = shown.map { row($0) }
-            overflow = 0
+            overflow = isFilterable ? 0 : choices.count - shown.count
             return
         }
         let matches: [Row] = choices.compactMap { choice in

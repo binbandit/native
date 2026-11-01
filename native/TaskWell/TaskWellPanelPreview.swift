@@ -1,11 +1,13 @@
 #if DEBUG
+import SessionTools
 import SwiftUI
 
 struct TaskWellPanelPreview: View {
     var isManaged = false
     var isRemote = false
     var isEmpty = false
-    @State private var tools = SessionToolsScreenModel()
+    var hasManyTools = false
+    @State private var tools = SessionToolsScreenModel(registry: TaskWellPreviewFixtures.registryWithPluginTool())
 
     var body: some View {
         TaskWellToolsPanel(
@@ -22,8 +24,10 @@ struct TaskWellPanelPreview: View {
                 .font(.dsBody).foregroundStyle(.dsTextTertiary)
         }
         .onAppear {
+            if hasManyTools { tools.registry.setPluginTools(TaskWellFixturePlugin.manyTools) }
             tools.hasWell = true
             tools.wellToolAvailable = {
+                if tools.registry.place(for: $0.spec) == .off { return false }
                 if isRemote && $0 == .dev { return false }
                 return isEmpty ? $0 == .changes || $0 == .terminal || $0 == .dev : true
             }
@@ -47,11 +51,16 @@ struct TaskWellPanelPreview: View {
                 isManaged: isManaged)
         case .subagents: TaskWellToolDetail(text: "3 workers · 2 working")
         case .pullRequest: TaskWellToolDetail(text: "#128 Open · 3 checks passed")
+        default: TaskWellToolDetail(text: "ACME-142 · In review", isRunning: true)
         }
     }
 }
 
 #Preview("Well - Empty tools") {
     DSPreviewPair { TaskWellPanelPreview(isEmpty: true) }
+}
+
+#Preview("Well - 25 plugin tools") {
+    DSPreviewPair { TaskWellPanelPreview(hasManyTools: true) }
 }
 #endif

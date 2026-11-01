@@ -26,6 +26,7 @@ enum ComposerKeyMap {
         var hasQueuedPrompts: Bool
         /// A queued message is open in the editor.
         var isEditingQueued = false
+        var canSendQueuedNow = false
         /// There's a turn (or a retry) for Escape to stop.
         var canStop = false
         var hasLastPrompt: Bool
@@ -100,7 +101,7 @@ enum ComposerKeyMap {
         case .return where modifiers.isEmpty || modifiers == .command:
             guard !isRepeat else { return .swallow }
             if context.isEditingQueued, modifiers == .command {
-                return .sendQueuedNow
+                return context.canSendQueuedNow ? .sendQueuedNow : nil
             }
             let preferred = context.preferredFollowUp
             return .submit(modifiers == .command ? preferred.opposite : preferred)

@@ -36,6 +36,7 @@ final class HostTasks {
     private var cards: [HostSessionID: SubagentWorkState] = [:]
     /// The host's own tools, which the Mac app's `run_script` calls back into (`callTool`).
     var ownTools: [MCPTool<OrchestrationCaller>] = []
+    var skillInstallations: [String: URL] = [:]
     /// Tools only the Mac app answers (`HostTasks+AppTools.swift`), and the client that offered them.
     var appTools: [AppToolDefinition]
     var appToolProvider: ClientLink.ID?
@@ -132,20 +133,37 @@ final class HostTasks {
         return caller(of: client)
     }
 
-    /// The MCP servers to hand the agent for a session: `base` (what clients gave it), with Native's
-    /// own entry at this run's address when the host serves the tools and the policy allows them.
-    func agentServers(for session: HostSessionID, base: [JSONValue]) async -> [JSONValue] {
-        guard servesTools else { return base }
+    /// Native's entry is omitted when the skill covers it. MCP clients get this run's address when
+    /// the host serves the tools; app URLs stay in the stored configuration for either delivery.
+    func agentServers(for session: HostSessionID, agent: String, base: [JSONValue]) async -> [JSONValue] {
+        guard servesTools else {
+            return usesMCP(agent: agent) ? base : base.filter { $0["name"]?.stringValue != Self.serverName }
+        }
         #if canImport(Network) && canImport(CryptoKit)
         await starting?.value
         let others = base.filter { $0["name"]?.stringValue != Self.serverName }
-        guard core.allows(.agentTools), let url = tokens.token(for: session.rawValue).flatMap({ server?.url(for: $0) }),
+        guard core.allows(.agentTools), usesMCP(agent: agent),
+            let url = tokens.token(for: session.rawValue).flatMap({ server?.url(for: $0) }),
             let entry = try? JSONDecoder().decode(
                 JSONValue.self, from: JSONEncoder().encode(MCPServer.http(name: Self.serverName, url: url)))
         else { return others }
         return others + [entry]
         #else
         return base
+        #endif
+    }
+
+    func toolURL(for session: HostSessionID, base: [JSONValue] = []) async -> URL? {
+        guard core.allows(.agentTools) else { return nil }
+        if !servesTools {
+            return base.first { $0["name"]?.stringValue == Self.serverName }?["url"]?.stringValue
+                .flatMap { try? NativeActionCommand.endpoint($0) }
+        }
+        await starting?.value
+        #if canImport(Network) && canImport(CryptoKit)
+        return tokens.token(for: session.rawValue).flatMap { server?.url(for: $0) }
+        #else
+        return nil
         #endif
     }
 

@@ -14,3 +14,15 @@ public struct SessionToolSpec: Identifiable, Hashable, Sendable {
         self.defaultPlace = defaultPlace
     }
 }
+
+extension SessionToolSpec {
+    /// Whether a plugin may add this tool. Its id has to sit under the plugin's own (`acme.board`
+    /// for `acme`), so it can never take a built-in tool's place or its saved arrangement, and it
+    /// has to live where a tool's own pane opens, beside the conversation or over it: the
+    /// workbench under the composer holds only Native's terminals and runs.
+    public func isAllowed(fromPlugin pluginID: String) -> Bool {
+        let prefix = pluginID + "."
+        return !pluginID.isEmpty && id.rawValue.hasPrefix(prefix) && id.rawValue.count > prefix.count
+            && !places.contains(.workbench)
+    }
+}

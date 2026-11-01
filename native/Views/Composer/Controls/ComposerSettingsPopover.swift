@@ -28,10 +28,11 @@ struct ComposerSettingsPopover: View {
 
     enum Target: Hashable {
         case model(String)
+        case agent(AgentDefinition.ID)
         case effort
         case autonomy(String)
         case row(String)
-        case fastMode, retry, restart, back, agentsSettings
+        case fastMode, retry, restart, back, agentsSettings, moreModels
         case command(row: String, index: Int)
     }
 
@@ -53,6 +54,8 @@ struct ComposerSettingsPopover: View {
     var modelChange: ComposerAgentChange?
     var loadingModelID: String?
     var onChooseAgentModel: ((ComposerAgentModel) -> Void)?
+    var onChooseAgent: ((AgentDefinition.ID) -> Void)?
+    var highlightsAgent = false
     var onAgentsSettings: (() -> Void)?
     /// While Plan suspends the permission level, the level it returns to.
     var resumedAutonomy: String?
@@ -63,10 +66,12 @@ struct ComposerSettingsPopover: View {
     var onRestart: (() -> Void)?
     /// Opened from the keyboard: the current model starts highlighted.
     var highlightsCurrent = false
+    var highlightsPermissions = false
     var onClose: () -> Void = {}
     var onUndo: (() -> Void)?
     let onSet: (SelectSetting, String) -> Void
 
+    @State var modelSlots = ModelChoiceList.slots
     @State var query = ""
     @State var hovered: Target?
     @State var highlighted: Target?
@@ -84,7 +89,19 @@ struct ComposerSettingsPopover: View {
             case .model:
                 modelPage
             case nil:
-                mainContent
+                ComposerSettingsHeightLayout {
+                    ViewThatFits(in: .vertical) {
+                        mainContent(slots: ModelChoiceList.slots, showsCaptions: true)
+                        mainContent(slots: ModelChoiceList.slots - 1, showsCaptions: true)
+                        mainContent(slots: ModelChoiceList.slots - 1, showsCaptions: false)
+                        // Extra agent settings can exhaust the budget even with captions hidden.
+                        // Keep their actions and row heights; the Model page holds the overflow.
+                        mainContent(slots: 4, showsCaptions: false)
+                        mainContent(slots: 3, showsCaptions: false)
+                        mainContent(slots: 2, showsCaptions: false)
+                        mainContent(slots: 1, showsCaptions: false)
+                    }
+                }
             }
         }
         .padding(.vertical, DS.ComposerSettings.popoverInset)
@@ -95,35 +112,59 @@ struct ComposerSettingsPopover: View {
         .focused($isFocused)
         .onAppear {
             isFocused = true
-            if highlightsCurrent, let currentModelID { highlighted = .model(currentModelID) }
+            if highlightsPermissions, let value = settings.autonomy?.value {
+                highlighted = .autonomy(value)
+            } else if highlightsAgent, let currentAgentID {
+                highlighted = .agent(currentAgentID)
+            } else if highlightsCurrent, let currentModelID {
+                highlighted = .model(currentModelID)
+            }
+        }
+        .onChange(of: currentAgentID) {
+            query = ""
+            hovered = nil
+            highlighted = nil
+            page = nil
+        }
+        .onChange(of: highlightsPermissions) { _, requested in
+            if requested, let value = settings.autonomy?.value { highlighted = .autonomy(value) }
         }
         .onKeyPress(phases: [.down, .repeat]) { handleKey($0) }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Task Settings")
     }
 
-    @ViewBuilder private var mainContent: some View {
-        if isStopped {
-            stoppedNotice
-        }
-        if let leadingContent {
-            leadingContent
-        }
-        Group {
-            modelSection
-                .composerSettingsSection(ruled: isStopped || leadingContent != nil)
-            if settings.autonomy != nil {
-                autonomySection.composerSettingsSection(ruled: true).disabled(isStopped)
+    @ViewBuilder private func mainContent(slots: Int, showsCaptions: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if isStopped {
+                stoppedNotice
             }
-            if !rows.isEmpty {
-                taskRows.composerSettingsSection(ruled: true).disabled(isStopped)
+            if let leadingContent {
+                leadingContent
+            }
+            if agentModels != nil, onChooseAgent != nil {
+                agentSection.composerSettingsSection(ruled: isStopped || leadingContent != nil)
+            }
+            // Stopped values stay dimmed and disabled; overflow navigation stays available.
+            Group {
+                modelSection(slots: slots, showsCaption: showsCaptions)
+                    .composerSettingsSection(
+                        ruled: isStopped || leadingContent != nil || (agentModels != nil && onChooseAgent != nil))
+                if settings.autonomy != nil {
+                    autonomySection(showsCaption: showsCaptions).composerSettingsSection(ruled: true).disabled(
+                        isStopped)
+                }
+                if !rows.isEmpty {
+                    taskRows.composerSettingsSection(ruled: true).disabled(isStopped)
+                }
+            }
+            if let manager {
+                footer(manager)
             }
         }
-        // Readable but not editable: dimmed by each row, so the headers keep their color.
-        .allowsHitTesting(!isStopped || agentModels != nil)
-        if let manager {
-            footer(manager)
-        }
+        .fixedSize(horizontal: false, vertical: true)
+        .onAppear { modelSlots = slots }
+        .onChange(of: slots) { modelSlots = slots }
     }
 
     // MARK: - Notice and footer
@@ -183,19 +224,19 @@ struct ComposerSettingsPopover: View {
         forbiddenModes.contains(value)
     }
 
-    private var autonomySection: some View {
+    private func autonomySection(showsCaption: Bool) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             ComposerSettingsHeader(title: "When \(agentName) asks") {
                 if permissionsManaged {
                     Image(systemName: "lock").font(DS.ComposerSettings.lockFont)
-                        .accessibilityLabel("Managed by \(manager ?? "your organization")")
+                        .accessibilityLabel("Managed by \(manager ?? PolicyCenter.organizationName)")
                 }
             }
             if let autonomy = settings.autonomy {
                 ForEach(settings.autonomyLevels) { choice in
                     autonomyRow(choice, setting: autonomy)
                 }
-                if !isStopped, !omitsModelCaptions || failure?.optionID == autonomy.option.id {
+                if !isStopped && (showsCaption || failure?.optionID == autonomy.option.id) {
                     autonomyCaption(autonomy)
                 }
             }
@@ -222,7 +263,8 @@ struct ComposerSettingsPopover: View {
         .disabled(locked)
         .composerSettingsHover(target, hovered: $hovered)
         .accessibilityLabel(choice.askingTitle)
-        .accessibilityValue(locked ? "Managed by \(manager ?? "your organization")" : "")
+        .accessibilityValue(locked ? "Managed by \(manager ?? PolicyCenter.organizationName)" : "")
+        .help(caption(for: choice) ?? choice.askingTitle)
         .accessibilityHint(caption(for: choice) ?? "")
         .accessibilityAddTraits(choice.value == shownAutonomy ? .isSelected : [])
     }

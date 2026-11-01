@@ -156,7 +156,8 @@ enum HostMethodAdmission: Equatable {
         typealias Method = HostProtocol.Method
         switch method {
         case Method.initialize, Method.listAgents, Method.listSessions, Method.attach, Method.detach,
-            Method.cancel, Method.closeSession, Method.stopAgent, Method.cancelAgentSignIn, Method.execCancel,
+            Method.cancel, Method.closeSession, Method.closeSessionConfirmed, Method.stopAgent,
+            Method.cancelAgentSignIn, Method.execCancel,
             Method.fsUnwatch, Method.shutdown, Method.listActivity, Method.listNotifications,
             Method.acknowledgeNotifications, Method.listPlugins, Method.pluginAsset, Method.updateStatus,
             Method.updateReport, Method.hostStatus, Method.doctor, Method.setKeepAwake, Method.listCoordinators,

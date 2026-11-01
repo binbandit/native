@@ -182,6 +182,8 @@ extension NativePolicy {
         case .scriptRuntime: off(scriptsEnabled, .scriptsEnabled)
         case .userTaskScripts: off(taskScripts.userScriptsEnabled, .taskScriptsUser)
         case .repositoryTaskScripts: off(taskScripts.repositoryScriptsEnabled, .taskScriptsRepository)
+        case .sourceExcerptsSending: off(sourceExcerptsSendingEnabled, .sourceExcerptsSending)
+        case .sourceExcerptsRetention: off(sourceExcerptsRetentionEnabled, .sourceExcerptsRetention)
         case .worktreeFetch: off(worktreeFetchEnabled, .worktreeFetch)
         case .celebrations: off(celebrationsEnabled, .celebrationsEnabled)
         case .celebrationDownload:

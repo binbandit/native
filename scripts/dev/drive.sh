@@ -130,6 +130,8 @@ JSON
         projects+="${projects:+,}{\"id\":\"$(uuidgen)\",\"url\":\"file://$path/\"}"
     done
     defaults write "$id" projects -data "$(printf '[%s]' "$projects" | xxd -p | tr -d '\n')"
+    defaults write "$id" native.mute -bool YES
+    defaults write "$id" sounds.enabled -bool NO
     defaults write "$id" defaultAgent claude-code
     echo "seeded $name: projects $folder/native, $folder/sample${*:+, $*}; Claude Code is the default agent"
     if [ -f "$plugin/plugin.json" ]; then echo "Fake Agent installed from $plugin"; fi

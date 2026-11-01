@@ -14,7 +14,7 @@ You report issues; you don't fix product code. If the guide or the driver gets i
 These come from [AGENTS.md](../AGENTS.md) and apply to everyone on this Mac. A playtest shares the Mac
 with its owner: Brayden is often at it while you play, and a dozen agents build and run Native on it.
 
-- **Leave the Mac usable.** `run-isolated.sh` queues app builds (three at a time, at a low priority);
+- **Leave the Mac usable.** `run-isolated.sh` queues app builds (four at a time, at a low priority);
   run any other `xcodebuild` through `scripts/dev/build-slot.sh`. Quit your instance whenever you
   aren't using it, even between scenarios.
 - **Automate only your instance's process.** `scripts/dev/drive.sh` does this for you: it finds your
@@ -48,6 +48,21 @@ with its owner: Brayden is often at it while you play, and a dozen agents build 
   with a bare `kt` from the repo root; never `git add`, `commit`, `reset`, `checkout`, `restore`,
   `stash`, `switch` or `rebase` in the shared tree; never `kt land`, `undo`, `go`, `publish`, `pr` or
   `ship`; never delete `.git/index.lock`.
+
+## Choose the check
+
+For a change confined to one view's appearance, render and inspect its actual `#Preview` states
+first with `scripts/dev/render-previews.py`; see [CONTRIBUTING.md](../CONTRIBUTING.md#render-a-small-visual-change)
+for source dependencies and usage. Attach light and dark images for each changed state. This
+verifies the real view without starting Native. Use the full playtest below when behavior, flows
+or window-level layout change, when previews cannot faithfully show the changed state, or before
+merge if the reviewer asks.
+
+Run builds and tests in the foreground in one tool call with a timeout of at least 60 minutes,
+including queue time. Never background them and poll with sleeps, `ps` checks or repeated `tail`.
+The build slot script prints one queue message, then blocks quietly until it can run. If the tool
+limits wait duration, resume its continuation handle with the longest supported wait. Read the
+build log once after a failure; do not restart a still-running build.
 
 ## Run it
 
@@ -118,12 +133,42 @@ Launch arguments go after `--`: `scripts/dev/run-isolated.sh playtest --no-build
 | `-nativeHostRefused YES` | Acts as if background running were refused, to see the fallback (`docs/durability.md`) |
 | `-quickEntryFixture selection` | With `NativeComposeTask` on, Cmd-N renders a Quick Entry preview state. Also accepts `empty`, `firstLaunch`, `failure`, `offline`, `narrow`, `devices`, `agents`, `projects`. Debug only; the device fixtures never connect to a paired host. Omit this argument for behavior checks. |
 | `-composeTaskFixture ready` | With `NativeComposeTask` on, Shift-Command-N renders the Compose page with inert fixture content. Also accepts `empty`, `firstLaunch`, `failure`, `offline`, `held`, `narrow`, `agents`, `devices`, `twoAgents`, `folding`, `message`, `settled`. Omit for behavior checks. |
+| `-taskWellPluginFixture YES` | Registers the inert Review Kit plugin for well/Task Tools checks: a long working side tool, a default-Off Runbook and failed over-conversation Notes. Debug only; disable Review Kit in Settings > Extensions. |
+| `-taskWellManyTools YES` | With the Review Kit fixture, adds 25 enabled plugin tools to check overflow, scrolling and keyboard reveal. Debug only. |
 | `-framePacing YES` | Logs dropped frames once a second (`drive.sh <name> logs --stream`) |
 
 For a long transcript without spending anything, install the long-session fake agent
 (`python3 scripts/perf/long-session-agent.py --install /private/tmp/native-playtest/<name>/plugins`):
 it lists sessions of 20, 100 and 500 turns to reopen. `scripts/perf/fixture.sh` fills a sidebar with
 30 tasks across four projects (it rewrites the project list, so seed again afterwards).
+
+For the plugin fixture, write the well gate as a boolean before launch:
+`defaults write dev.binbandit.native.dev.<name> experiment.NativeTaskWell -bool YES`.
+To revoke a plugin while its pane stays onscreen, mark `policy.plugins.allowed` in
+`policy.debug.managedKeys` before launch, initially allowing `review-kit` and the scripted agent's
+plugin id (`playtest-fake-agent` for `seed`). Remove `review-kit` from that allowed list while a side
+or over-conversation pane is open. Review Kit follows that policy live, as an installed plugin does.
+Check that its pane and well rows disappear, its commands leave Keyboard Shortcuts, and reallowing
+it leaves the old pane closed. This avoids Settings navigation closing the pane before revocation.
+For overflow checks, also launch with `-taskWellManyTools YES` at a short window height. In light
+and dark, open the well, scroll from Changes to Check 25 and back with the pointer or touch, then
+use Up from no highlight to reveal Check 25 and Down/Up to traverse the full list. Keep the status,
+worker and checkout visible. After scrolling away from a highlighted endpoint, press its arrow
+again to confirm it is revealed even though the selection did not change. Return or Space must
+open the highlighted tool; Escape must close the well.
+In a background instance, edit an unsent draft after changing defaults to trigger a preferences
+notification, wait for the removal, then clear the draft without sending it.
+
+### Silent instances
+
+Dev builds, previews and test harnesses are silent by default. `run-isolated.sh` passes
+`-sounds.enabled NO -native.mute YES` at every launch; seeding and launch profiling also mute audio.
+The shared `NativeAudioPolicy` blocks player creation, including Settings sound previews, even if
+Sounds is enabled. System notifications carry no sound. Celebrations currently have no audio path.
+
+Keep test instances muted on the shared Mac. On a dedicated audio test machine only, pass both
+`-native.mute NO -sounds.enabled YES` and enable the Sounds plugin to test playback. These are
+per-instance overrides; never change system volume or play audio to verify silence.
 
 ## Drive it
 
@@ -141,6 +186,8 @@ first use (a few seconds) and needs the instance running. `drive.sh <name> help`
 | `type <text>` | Types into whatever has focus, a key at a time (for `/` and `@` lists); `\n` is Shift-Return |
 | `key <combo>…` | `cmd+n`, `return`, `escape`, `shift+cmd+a`, `opt+cmd+up`, `ctrl+tab` |
 | `key <combo> --hold <seconds>` | Holds each key combination before releasing it (0 to 3 seconds), for deliberate confirmation controls |
+| `drop <composer\|transcript> <file>… [--phase hover\|drop\|exit]` | Delivers a fixture drag to the isolated Debug window's registered AppKit destination. Launch with `-debugAttachmentDropChecks YES`. Uses a private pasteboard, including a file's text representation to catch path insertion. `--text <text>` checks an ordinary text drop instead |
+| `paste-files <file>…` | Delivers copied fixture files through the composer's paste handler using a private pasteboard |
 | `menu <Menu> [<Item>…]` | Lists a menu with its shortcuts and disabled items, or presses an item |
 | `action <text> <name> [--item <text>]` | Performs an accessibility action; `AXShowMenu` lists a context menu's items, or picks one |
 | `scroll <text> <up\|down\|top\|bottom\|reveal>` | Pages the scroll area at or around a match, or scrolls the match into view |
@@ -397,3 +444,14 @@ scripts/dev/run-isolated.sh playtest --quit      # after each check
 scripts/dev/drive.sh playtest seed --remove      # the scratch clone, sample repo and plugins
 scripts/dev/run-isolated.sh playtest --remove    # settings, data, host, worktrees and the 6 GB build
 ```
+
+### New Tasks sources (Plainly slice 2)
+
+Enable `experiment.NativeSettingsPlainly` in the isolated defaults. `-newTasksFixture populated`,
+`managed`, `empty`, or `unavailable` renders inert agent choices and load inventory on New Tasks.
+The managed fixture also needs simulated policy keys (`policy.debug.managedKeys`) for
+`policy.permissions.forbiddenModes`, `policy.organization.name`, and `policy.organization.contact`.
+Use `auto` as the forbidden fixture choice, Northwind Federal IT and #it-help as the identity.
+Fixtures do not start an agent or probe servers. Omit the argument for persistence and real-library
+checks. Check both scope menus, each source button, Why This Value, Reset, Undo and project/global
+isolation; an unavailable saved model must show the effective agent value and explain the fallback.

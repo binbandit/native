@@ -18,6 +18,9 @@ struct SessionView: View {
     /// Files dropped on the transcript, for the composer to attach.
     @State private var drops = ComposerDropInbox()
     @Environment(\.inspectorRoom) private var inspectorRoom
+    @Environment(\.inspectorSuspension) private var inspectorSuspension
+    /// The inspector to open once a suspension ends: the one it closed, or one asked for meanwhile.
+    @State private var afterSuspension: (width: CGFloat, open: @MainActor () -> Void)?
     @Experiment(.sessionTools) private var usesSessionTools
     @Experiment(.taskWell) private var usesTaskWell
     @Experiment(.composeTask) private var usesComposeTask
@@ -50,6 +53,7 @@ struct SessionView: View {
         .onChange(of: canQuote) { _, enabled in
             if !enabled, let source = session.quoteSelectionSource { session.clearQuoteSelection(source: source) }
         }
+        .environment(\.diffCommentsSession, session)
         .environment(
             \.composerQuoteContext,
             canQuote
@@ -75,7 +79,7 @@ struct SessionView: View {
         TranscriptView(session: session) { id in
             openInspector(Self.subagentInspectorWidth) { openSubagent = id }
         }
-        .environment(\.turnChangesActions, turnChangesActions)
+        .environment(\.turnChangesActions, session.isProjectless ? nil : turnChangesActions)
         .environment(\.isPrimaryTranscript, true)
         // Native's band under the toolbar, in place of the system's edge effect; inside the bars.
         .dsToolbarBand()
@@ -103,7 +107,15 @@ struct SessionView: View {
         .focusedSceneValue(\.activeSession, session)
         .navigationTitle(DSInlineCode.plain(session.displayTitle))
         .navigationSubtitle(
-            [session.cwd.abbreviatedPath, repository.summary].compactMap(\.self).joined(separator: " · ")
+            (session.isProjectless
+                ? ["No project"]
+                : [
+                    model.offersProjectFolderTasks && model.usesProjectFolder(session.key)
+                        ? "Project folder" : session.cwd.abbreviatedPath,
+                    repository.summary,
+                ]).compactMap(
+                    \.self
+                ).joined(separator: " · ")
         )
         // The inspector makes the task its own column, which the window's minimum-size question measures
         // on its own: never at no width (docs/performance.md).
@@ -114,7 +126,12 @@ struct SessionView: View {
                 SubagentInspector(subagent: subagent, child: session.child(id))
                     .sessionInspectorColumn(min: 340, ideal: Self.subagentInspectorWidth, max: 640)
             } else if showsChanges {
-                GitChangesInspector(model: repository, review: changesReview, session: session) {
+                GitChangesInspector(
+                    model: repository, review: changesReview, session: session,
+                    onBackToTask: {
+                        showsChanges = false; session.wantsComposerFocus = true
+                    }
+                ) {
                     Task { await GitHubGitWiring.createPullRequest(from: repository, gitHub: gitHub) }
                 }
                 .sessionInspectorColumn(
@@ -131,6 +148,20 @@ struct SessionView: View {
         .onChange(of: isInspectorPresented.wrappedValue) { _, isPresented in
             if !isPresented { inspectorRoom.release() }
         }
+        // Closed and opened the way the user would, so the window makes room the same way.
+        .onChange(of: inspectorSuspension != nil) { _, suspends in
+            if suspends {
+                if let id = openSubagent {
+                    afterSuspension = (Self.subagentInspectorWidth, { openSubagent = id })
+                } else if showsChanges {
+                    afterSuspension = (GitMetrics.inspectorIdealWidth, { showsChanges = true })
+                }
+                withTransaction(\.disablesAnimations, true) { isInspectorPresented.wrappedValue = false }
+            } else if let pending = afterSuspension {
+                afterSuspension = nil
+                openInspector(pending.width, pending.open)
+            }
+        }
         // Another task or page took the window; the inspector went with this view.
         .onDisappear { inspectorRoom.release() }
         .toolbar {
@@ -146,13 +177,15 @@ struct SessionView: View {
             }
             .sharedBackgroundVisibility(.hidden)
             ToolbarItem {
-                GitChangesToolbarButton(model: repository, isPresented: showsChangesBinding)
+                if !session.isProjectless {
+                    GitChangesToolbarButton(model: repository, isPresented: showsChangesBinding)
+                }
             }
             .sharedBackgroundVisibility(.hidden)
             .visibilityPriority(.high)
         }
         .mcpServersPresentation()
-        .focusedSceneValue(\.gitChangesInspector, showsChangesBinding)
+        .focusedSceneValue(\.gitChangesInspector, session.isProjectless ? nil : showsChangesBinding)
         .refreshesGitStatus(of: session, in: git)
         .detectsTurnChanges(of: session, into: changesReview, in: git)
         .environment(\.transcriptColumnMaxWidth, columnWidth.maxWidth)
@@ -213,6 +246,10 @@ struct SessionView: View {
     /// open has its room. The column appears without sliding in: sliding lays the whole window out
     /// again every frame.
     private func openInspector(_ width: CGFloat, _ open: @escaping @MainActor () -> Void) {
+        if let inspectorSuspension {
+            afterSuspension = (width, open)
+            return inspectorSuspension.end()
+        }
         let appear: @MainActor () -> Void = { withTransaction(\.disablesAnimations, true, open) }
         guard !isInspectorPresented.wrappedValue else { return appear() }
         inspectorRoom.open(width, appear)

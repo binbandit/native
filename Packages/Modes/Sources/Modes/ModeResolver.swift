@@ -51,7 +51,7 @@ public enum ModeLimit: Hashable, Sendable {
     case effortUnavailable(String)
 
     /// The limit in a sentence, for the picker and Settings.
-    public func text(agent: String, mode: String) -> String {
+    public func text(agent: String, mode: String, organization: String = "Your organization") -> String {
         switch self {
         case .noPlanMode:
             "\(agent) has no plan mode, so \(mode) keeps it read-only and asks for a plan first."
@@ -66,9 +66,9 @@ public enum ModeLimit: Hashable, Sendable {
         case .noAutonomy(let wanted):
             "\(agent) has no permission modes, so \(mode) can't set \(wanted.title)."
         case .forbidden(let wanted, let using?):
-            "Your organization doesn't allow \(wanted), so \(mode) uses \(using)."
+            "\(organization) doesn't allow \(wanted), so \(mode) uses \(using)."
         case .forbidden(let wanted, nil):
-            "Your organization doesn't allow \(wanted), so \(mode) keeps the task's level."
+            "\(organization) doesn't allow \(wanted), so \(mode) keeps the task's level."
         case .modelUnavailable(let model):
             "\(agent) doesn't offer \(model), so \(mode) keeps the task's model."
         case .effortUnavailable(let effort):

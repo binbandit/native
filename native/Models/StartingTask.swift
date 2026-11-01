@@ -43,7 +43,7 @@ final class StartingTask: Identifiable {
     let isAgentPicked: Bool
     let startedAt = Date.now
     /// What the provider makes for the task ("Creating a worktree"), for the first step's label.
-    let workspaceLabel: String
+    var workspaceLabel: String
     /// Where the task runs: this Mac, or a paired host (AppModel+HostsStarting.swift).
     var device = SessionDevice.thisMac
     /// The task's folder, once made; a retry reuses it.
@@ -66,6 +66,7 @@ final class StartingTask: Identifiable {
     var wantsComposerFocus = true
     /// The user discarded the task while it was starting.
     @ObservationIgnored var isDiscarded = false
+    @ObservationIgnored var isStartingPrivateTask = false
 
     init(project: Project.ID, agent: AgentDefinition, isAgentPicked: Bool, workspaceLabel: String) {
         id = SessionKey(agent: agent.id, id: SessionID("native-starting-\(UUID().uuidString)"))

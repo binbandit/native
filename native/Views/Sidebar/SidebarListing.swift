@@ -31,7 +31,7 @@ struct SidebarListing {
         allPinned = model.pinnedSessions
         let facts = { (summary: SessionSummary) in model.taskFacts(for: summary, insights: insights) }
         let filteredPinned = filter.isActive ? filter.apply(to: allPinned, facts: facts) : allPinned
-        let raw = model.projects.all.map { project in
+        let raw = model.taskGroups.map { project in
             let all = model.sessions(in: project.id)
             let candidates = filter.includesArchived ? all + model.archivedSessions(in: project.id) : all
             return Group(

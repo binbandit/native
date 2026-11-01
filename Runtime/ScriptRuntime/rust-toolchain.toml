@@ -2,5 +2,5 @@
 # the PATH when it's this version, otherwise this version through rustup. Keep it at the Rust CI's
 # macOS image comes with, so CI uses the preinstalled one instead of downloading it every run.
 [toolchain]
-channel = "1.99.0"
+channel = "1.99.1"
 profile = "minimal"

@@ -65,6 +65,26 @@ struct ModelChoiceListTests {
         #expect(list.rows.allSatisfy { $0.detail == nil })
     }
 
+    @Test func boundsEightModelsWithoutShowingAnEarlyFilter() {
+        let choices = (0..<8).map { ConfigOption.SelectOption(value: "model-\($0)", name: "Model \($0)") }
+        let list = ModelChoiceList(choices: choices, current: "model-7", slots: 5)
+        #expect(!list.isFilterable)
+        #expect(list.rows.map(\.id) == ["model-0", "model-1", "model-2", "model-7"])
+        #expect(list.overflow == 4)
+        let page = ModelChoiceList(choices: choices, current: "model-7", slots: choices.count)
+        #expect(page.rows.map(\.id) == choices.map(\.value))
+        #expect(page.overflow == 0)
+    }
+
+    @Test(arguments: 1...5) func everyCompactSlotCountReservesOverflow(slots: Int) {
+        let choices = (0..<8).map { ConfigOption.SelectOption(value: "model-\($0)", name: "Model \($0)") }
+        let list = ModelChoiceList(choices: choices, current: "model-7", slots: slots)
+        #expect(list.rows.count + 1 == slots)
+        #expect(list.rows.count + list.overflow == choices.count)
+        #expect(!list.isFilterable)
+        if slots > 1 { #expect(list.rows.last?.id == "model-7") }
+    }
+
     /// Default says what it runs now; "(recommended)" is the agent's aside, not part of the name.
     @Test func saysWhatDefaultRuns() throws {
         let (current, choices) = try Self.models(NewSessionChoicesTests.claude())

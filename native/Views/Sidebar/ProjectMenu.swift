@@ -51,6 +51,10 @@ struct ProjectMenu: View {
         Button("Project Settings…") {
             settings.open(.project(project.id))
         }
+        Button("Rename Project…", systemImage: "pencil") {
+            model.requestRenameProject(project.id)
+        }
+        .disabled(project.host != .local)
         Button("Change Icon…") {
             isPickingIcon = true
         }

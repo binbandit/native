@@ -1,3 +1,4 @@
+import ACP
 import SwiftUI
 import TaskList
 
@@ -29,7 +30,9 @@ struct ProjectList<TaskAccessory: View>: View {
                     sessions: listing.pinned, order: Self.positions(listing.allPinned), drag: drag,
                     taskAccessory: taskAccessory, select: select)
             }
-            if !isAllInView {
+            if isAllInView {
+                SidebarProjectsHeader()
+            } else {
                 SectionHeader("Projects") {
                     SidebarFilterButton(filter: $filter, isSelecting: $selection.isSelecting)
                     IconButton("Add Project", systemImage: "folder.badge.plus") {
@@ -43,9 +46,9 @@ struct ProjectList<TaskAccessory: View>: View {
             if filter.isActive {
                 SidebarFilterChips(filter: $filter)
             }
-            if model.projects.all.isEmpty {
+            if model.taskGroups.isEmpty {
                 if isAllInView {
-                    Text("Your folders and tasks will appear here.")
+                    Text("Your tasks will appear here. A folder is optional.")
                         .font(.dsBody).foregroundStyle(.dsTextSecondary)
                         .padding(.leading, DS.Sidebar.headerLeading)
                         .padding(.top, DS.Space.xxxl)
@@ -53,7 +56,7 @@ struct ProjectList<TaskAccessory: View>: View {
                     AddProjectPrompt()
                 }
             } else if isNarrowing, listing.isEmpty, model.startingTasks.isEmpty {
-                NothingMatches { filter.clearFilters() }
+                NothingMatches(isNeedsYouOnly: filter.chips == [.status(.needsYou)]) { filter.clearFilters() }
             }
             ForEach(Array(listing.groups.enumerated()), id: \.element.project.id) { index, group in
                 let project = group.project
@@ -62,25 +65,38 @@ struct ProjectList<TaskAccessory: View>: View {
                 let hasNoMatches =
                     isNarrowing && !revealsEmptyHome && group.visible.isEmpty
                     && model.startingTasks(in: project.id).isEmpty
-                ProjectSection(
-                    project: project,
-                    sessions: group.current,
-                    earlier: group.earlier,
-                    isEarlierExpanded: Binding(
-                        get: { group.isEarlierExpanded },
-                        set: { folding?.setExpanded(project.id, $0) }),
-                    order: Self.positions(group.all),
-                    position: (index, listing.groups.count),
-                    isFiltered: isNarrowing && !revealsEmptyHome,
-                    hasNoMatches: hasNoMatches,
-                    isExpanded: Binding(
-                        get: { isNarrowing ? !hasNoMatches : !collapsed.contains(project.id) },
-                        set: { collapsed.set(project.id, collapsed: !$0) }
-                    ),
-                    drag: drag,
-                    taskAccessory: taskAccessory,
-                    select: select
-                )
+                if project.isNoProject {
+                    NoProjectTaskGroup(
+                        group: group, isFiltered: isNarrowing, hasNoMatches: hasNoMatches,
+                        followsPinned: !listing.pinned.isEmpty,
+                        isExpanded: Binding(
+                            get: { isNarrowing ? !hasNoMatches : !collapsed.contains(project.id) },
+                            set: { collapsed.set(project.id, collapsed: !$0) }),
+                        isEarlierExpanded: Binding(
+                            get: { group.isEarlierExpanded }, set: { folding?.setExpanded(project.id, $0) }),
+                        drag: drag, taskAccessory: taskAccessory, select: select)
+                } else {
+                    ProjectSection(
+                        project: project,
+                        sessions: group.current,
+                        earlier: group.earlier,
+                        isEarlierExpanded: Binding(
+                            get: { group.isEarlierExpanded },
+                            set: { folding?.setExpanded(project.id, $0) }),
+                        order: Self.positions(group.all),
+                        position: (index, listing.groups.count),
+                        isFiltered: isNarrowing && !revealsEmptyHome,
+                        hasNoMatches: hasNoMatches,
+                        followsPinned: !listing.pinned.isEmpty,
+                        isExpanded: Binding(
+                            get: { isNarrowing ? !hasNoMatches : !collapsed.contains(project.id) },
+                            set: { collapsed.set(project.id, collapsed: !$0) }
+                        ),
+                        drag: drag,
+                        taskAccessory: taskAccessory,
+                        select: select
+                    )
+                }
             }
             if isAllInView {
                 ForEach(Array(model.sidebarFolders.opening.enumerated()), id: \.offset) { _, name in
@@ -95,12 +111,13 @@ struct ProjectList<TaskAccessory: View>: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Project tasks")
+        .accessibilityLabel("Tasks")
         .contextMenu {
             if isAllInView {
                 SidebarOptionsMenu(preferences: model.sidebarPreferences)
                 Divider()
                 Button("Open Folder…") { model.requestOpenFolder() }
+                    .disabled(!model.canOpenFolders || !model.sidebarFolders.opening.isEmpty)
                 Menu("Filter Tasks") {
                     ForEach(SidebarFilterOption.all(filter: $filter, agents: model.agents.map(\.agent))) { option in
                         Toggle(option.title, isOn: option.isOn)
@@ -163,21 +180,32 @@ private struct AddProjectPrompt: View {
     }
 }
 
-/// The filters match no task anywhere: say so, and offer the way back.
+/// The filters match no task anywhere: say so, and offer the way back. Needs You alone (⌥⌘J) is a
+/// question with a happy answer, so it gets one rather than talk of filters.
 private struct NothingMatches: View {
+    @Environment(\.sidebarAllInView) private var isAllInView
+    var isNeedsYouOnly = false
     let clear: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.sm) {
-            Text("No tasks match these filters. Tasks show up here as soon as they do.")
-                .font(.dsBody)
-                .foregroundStyle(.dsTextTertiary)
-                .fixedSize(horizontal: false, vertical: true)
+            Text(
+                isNeedsYouOnly
+                    ? "Nothing needs you right now."
+                    : "No tasks match these filters. Tasks show up here as soon as they do."
+            )
+            .font(.dsBody)
+            .foregroundStyle(.dsTextTertiary)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, isAllInView ? DS.Space.sm : 0)
             // Ghost, so nothing opaque sits on the translucent sidebar.
-            Button("Clear Filters", action: clear)
+            Button(isNeedsYouOnly ? "Show All Tasks" : "Clear Filters", action: clear)
                 .buttonStyle(.ds(.ghost))
         }
-        .padding(.horizontal, DS.Space.sm)
+        // All in view lines the sentence up with the task titles; the ghost button's label lands
+        // there too.
+        .padding(.leading, isAllInView ? DS.Sidebar.headerLeading - DS.Space.sm : DS.Space.sm)
+        .padding(.trailing, DS.Space.sm)
         .padding(.vertical, DS.Space.md)
     }
 }
@@ -203,6 +231,20 @@ private struct NothingMatches: View {
     let app = AppModel.preview()
     DSPreviewPair {
         ProjectListPreview(app: app, filter: TaskFilter(statuses: [.failed], agents: ["claude-code"]))
+    }
+    .sidebarPreviewEnvironment(app)
+}
+
+#Preview("Project list - Nothing needs you") {
+    let app = AppModel.preview()
+    for item in app.tasksNeedingAttention {
+        guard let session = app.session(item.id) else { continue }
+        for call in session.permissionRequests { session.state.resolvePermission(toolCallID: call.id) }
+        session.questions = []
+    }
+    return DSPreviewPair {
+        ProjectListPreview(app: app, filter: TaskFilter(statuses: [.needsYou]))
+            .environment(\.sidebarAllInView, true)
     }
     .sidebarPreviewEnvironment(app)
 }

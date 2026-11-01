@@ -45,6 +45,8 @@ struct NativeApp: App {
     @State private var gitCleanup: GitCleanupCenter
     /// Light, dark or the system's, for the whole app.
     @State private var appearance: AppearanceModeController
+    /// Try On Themes: code themes previewed on a task until one is kept.
+    @State private var tryOn: ThemeTryOnModel
 
     init() {
         LaunchMetrics.mark(.appInit)
@@ -58,7 +60,17 @@ struct NativeApp: App {
         let durableHost = DurableHost()
         _durableHost = State(initialValue: durableHost)
         let git = GitStore { await model.shellEnvironment() }
-        let gitHub = GitHubModel { await model.shellEnvironment(refresh: $0) }
+        let gitHub: GitHubModel
+        #if DEBUG
+        // The isolated sidebar scene must not start the app's background gh against a real account.
+        if UserDefaults.standard.string(forKey: "nativeSidebarFixture")?.hasPrefix("pull-requests") == true {
+            gitHub = SidebarPullRequestPreviewFixtures.gitHub()
+        } else {
+            gitHub = GitHubModel { await model.shellEnvironment(refresh: $0) }
+        }
+        #else
+        gitHub = GitHubModel { await model.shellEnvironment(refresh: $0) }
+        #endif
         _git = State(initialValue: git)
         _gitHub = State(initialValue: gitHub)
         SessionToolsWiring.registerBuiltIns(.shared, git: git, gitHub: gitHub)
@@ -87,6 +99,8 @@ struct NativeApp: App {
         ChangeAgentWiring.connect(model: model, git: git, automation: BuiltInPlugins.automation.center)
         let settings = SettingsPresentation()
         _settings = State(initialValue: settings)
+        let tryOn = ThemeTryOnModel(app: model, settings: settings, appearance: appearance)
+        _tryOn = State(initialValue: tryOn)
         let keepAwake = KeepAwakeController()
         _keepAwake = State(initialValue: keepAwake)
         let shortcutsHelp = KeyboardShortcutsHelp()
@@ -127,9 +141,10 @@ struct NativeApp: App {
             CommandRegistry.shared, palette: palette,
             features: .init(
                 model: model, settings: settings, terminals: terminals, keepAwake: keepAwake, statusBar: statusBar,
-                celebrations: celebrations, updates: updates, whatsNew: whatsNew, appearance: appearance,
+                celebrations: celebrations, updates: updates, whatsNew: whatsNew, appearance: appearance, tryOn: tryOn,
                 pullRequestTasks: pullRequestTasks, shortcutsHelp: shortcutsHelp, gitCleanup: gitCleanup,
                 projectActions: projectActions, durableHost: durableHost, git: git, gitHub: gitHub))
+        SessionToolsWiring.connectPlugins(.shared, plugins: model.plugins, commands: .shared)
     }
 
     var body: some Scene {
@@ -137,6 +152,7 @@ struct NativeApp: App {
             RootView()
                 .platformTitlebarDoubleClick()
                 .sidebarDesignFixture()
+                .diffCommentsDesignFixture()
                 .commandPalette(palette)
                 .onAppear {
                     LaunchMetrics.markOnScreen(.firstFrame)
@@ -164,6 +180,7 @@ struct NativeApp: App {
                 .environment(taskScripts.settings)
                 .environment(iconPreferences)
                 .environment(appearance)
+                .environment(tryOn)
                 .environment(celebrations)
                 .environment(keepAwake)
                 .environment(statusBar)
@@ -175,6 +192,7 @@ struct NativeApp: App {
                 .gitCleanupSheet(gitCleanup)
                 .environment(gitCleanup)
                 .terminalCodeTheme(terminals)
+                .themeTryOnPreview(tryOn)
                 .appearancePreferences(plugins: model.plugins)
                 .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
                 .task {

@@ -153,7 +153,7 @@ if [ "$kind" = question ]; then
         visible_control 'Storage choice 9'
         "${drive[@]}" press 'Storage choice 9' --role AXButton
         shot "$evidence/last-choice.png"
-        "${drive[@]}" press 'Answer, ↩' --role AXButton
+        "${drive[@]}" press 'Send, ↩' --role AXButton
     fi
 elif [ "$kind" = confirmation ]; then
     "${drive[@]}" press 'Continue, ↩' --role AXButton

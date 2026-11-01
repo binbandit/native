@@ -20,6 +20,7 @@ struct CodeThemeSettingsRow: View {
     @Environment(PolicyCenter.self) private var policyCenter: PolicyCenter?
     @Environment(AppModel.self) private var model: AppModel?
     @Environment(SettingsPresentation.self) private var settings: SettingsPresentation?
+    @Environment(ThemeTryOnModel.self) private var tryOn: ThemeTryOnModel?
     @Environment(\.undoManager) private var undoManager
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -53,6 +54,15 @@ struct CodeThemeSettingsRow: View {
             HStack {
                 Text("Code theme").font(DS.Settings.groupTitle).accessibilityAddTraits(.isHeader)
                 Spacer()
+                if let tryOn, policy.appearanceCodeTheme == nil {
+                    Button {
+                        tryOn.start()
+                    } label: {
+                        Label("Try On…", systemImage: "eye")
+                    }
+                    .buttonStyle(.settings)
+                    .disabled(!tryOn.isAvailable)
+                }
                 Menu {
                     Toggle(
                         "Use Sample Code",
@@ -89,13 +99,20 @@ struct CodeThemeSettingsRow: View {
                 RoundedRectangle(cornerRadius: DS.Radius.panel).strokeBorder(
                     .dsSeparator, lineWidth: DS.Settings.hairline)
             }
-            SettingsFooter(footer)
+            if let note = tryOn?.keptNote, policy.appearanceCodeTheme == nil {
+                ThemeTryOnKeptLine(message: note.message, names: note.names) {
+                    tryOn?.undoKeep(undoManager: undoManager)
+                }
+            } else {
+                SettingsFooter(footer)
+            }
             if policy.appearanceCodeTheme == nil {
                 unavailableChoice(dark)
                 if light != dark { unavailableChoice(light) }
             }
         }
         .settingsRevealTarget(Self.rowID)
+        .onDisappear { tryOn?.dismissKeptNote() }
         .task {
             guard fixedSpecimen == nil, let model else { return }
             let result = await AppearanceSpecimenSource.load(model: model)

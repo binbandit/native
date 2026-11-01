@@ -23,7 +23,7 @@ struct DistinctTitleTests {
                 == "Add a flag (--shout)")
         #expect(
             SessionTitleRules.details(in: "update src/app.ts and the README for parseConfig") == [
-                "src/app.ts", "parseConfig",
+                "parseConfig"
             ])
     }
 

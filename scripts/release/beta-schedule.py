@@ -3,8 +3,8 @@
 
     python3 scripts/release/beta-schedule.py --dry-run
 
-Read the fetched origin/main and version tags. CI also checks active release runs and
-writes the plan to GITHUB_OUTPUT; the workflow owns tagging and calls release.yml.
+Read the fetched origin/main and version tags. CI also checks published releases and
+active release runs, then writes the plan to GITHUB_OUTPUT; the workflow owns tagging and calls release.yml.
 """
 import argparse
 import json
@@ -41,7 +41,15 @@ def active_release(repository, current_run):
     return None
 
 
-def plan_beta():
+def published_release_tags(repository):
+    pages = json.loads(command(
+        "gh", "api", "--paginate", "--slurp",
+        f"repos/{repository}/releases?per_page=100",
+    ))
+    return {release["tag_name"] for page in pages for release in page if not release["draft"]}
+
+
+def plan_beta(published_tags=None):
     sha = command("git", "rev-parse", "--verify", "origin/main^{commit}")
     stable, beta = [], []
     for tag in command("git", "tag", "--list").splitlines():
@@ -54,8 +62,11 @@ def plan_beta():
                 stable.append((core, tag))
     latest_stable = max(stable, default=None)
     latest_beta = max(beta, default=None)
-    # The first beta starts after the last stable; later notes always start at the last beta.
-    previous = latest_beta or latest_stable
+    # Failed builds leave immutable tags behind. Reserve their numbers, but compare main and
+    # generate notes from the last published release so those commits still reach users.
+    published_beta = [entry for entry in beta if published_tags is None or entry[1] in published_tags]
+    published_stable = [entry for entry in stable if published_tags is None or entry[1] in published_tags]
+    previous = max(published_beta, default=None) or max(published_stable, default=None)
     notes_from = previous[1] if previous else ""
     if previous:
         if subprocess.run(
@@ -72,17 +83,20 @@ def plan_beta():
         version = f"{major}.{minor}.{patch}-beta.{number + 1}"
     else:
         version = "0.1.0-beta.1"
-    return {"skip": "false", "version": version, "sha": sha, "notes_from": notes_from}
+    return {"skip": "false", "version": version, "sha": sha, "notes_from": notes_from,
+            "notes_from_start": str(previous is None).lower()}
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--dry-run", action="store_true", help="print what would ship; write no workflow outputs")
     parser.add_argument("--check-runs", action="store_true", help="also check GitHub for active release runs")
+    parser.add_argument("--check-releases", action="store_true", help="use published GitHub releases as the checkpoint")
     parser.add_argument("--github-output", type=Path, help="write the plan for the calling workflow")
     args = parser.parse_args()
     try:
-        plan = plan_beta()
+        published_tags = published_release_tags(os.environ["GITHUB_REPOSITORY"]) if args.check_releases else None
+        plan = plan_beta(published_tags)
         if args.check_runs and plan["skip"] == "false":
             repository = os.environ["GITHUB_REPOSITORY"]
             busy = active_release(repository, os.environ.get("GITHUB_RUN_ID", ""))

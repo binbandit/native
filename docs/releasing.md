@@ -329,16 +329,17 @@ Sentry → publishes.
 ### Automatic Mac betas
 
 `beta.yml` checks `origin/main` at 00:17, 06:17, 12:17 and 18:17 UTC. It skips with a log message
-when there are no commits since the latest beta tag, or a Mac release run is active (including
-queued runs). Before the first beta it compares against the latest stable tag. Version tags are
+when there are no commits since the latest published beta, or a Mac release run is active (including
+queued runs). Draft releases do not count. Before the first published beta it compares against the
+latest published stable tag. All version tags reserve their numbers, including failed releases, and are
 ordered numerically: `v1.5.0-beta.9` becomes `v1.5.0-beta.10`; after `v1.5.0` ships the next series
 is `v1.6.0-beta.1`. A stable patch below an ongoing beta series keeps that beta series. With only
 `v0.1.0` released, the first automatic beta is `v0.2.0-beta.1`.
 
 The scheduler creates an immutable tag at the selected main commit, then calls `release.yml`
-with that version, tag-based checkout and the previous beta for release notes (the last stable
-for the first beta). A tag created with `GITHUB_TOKEN` does not start another workflow, so the
-explicit reusable call is required. It inherits the same secrets and uses `MACOS_RUNNER` and the
+with that version, tag-based checkout and the previous published beta for release notes (the last
+published stable for the first beta). A tag created with `GITHUB_TOKEN` does not start another
+workflow, so the explicit reusable call is required. It inherits the same secrets and uses `MACOS_RUNNER` and the
 same release concurrency group as a manually tagged release. Nightly, tagged stable/beta releases
 and Release's direct rehearsal dispatch keep their existing behavior. This scheduler is Mac-only;
 it does not call the TestFlight workflow.
@@ -347,15 +348,24 @@ Preview the decision without tagging, building, signing or publishing:
 
 ```sh
 git fetch origin main 'refs/tags/v*:refs/tags/v*'
-python3 scripts/release/beta-schedule.py --dry-run
+GITHUB_REPOSITORY=binbandit/native python3 scripts/release/beta-schedule.py --check-releases --dry-run
 gh workflow run beta.yml --ref main -f dry_run=true
 ```
 
 The workflow also checks active runs during its dry run. Its manual dispatch defaults to dry run;
 `dry_run=false` on `main` enables publication with the same skip checks as the schedule. A dry run
-on a branch uses that branch's planner but still evaluates `origin/main`. If publishing fails after
-tagging, rerun the failed release job in the original Beta run; do not move or recreate the tag.
-The next scheduled check still treats that tag as the baseline.
+on a branch uses that branch's planner but still evaluates `origin/main`. Without `--check-releases`,
+the local planner uses tags alone as an offline approximation. If publishing fails after tagging,
+leave the tag in place. The next scheduled run allocates a new version and includes all commits since
+the last published beta in its notes, even when main still points at the failed tag. It does not
+rebuild the old tag or move it. API failures stop planning instead of assuming publication succeeded.
+When no matching release has ever been published, the scheduler explicitly requests notes from the
+whole history; manual releases keep their existing tag-based default.
+
+A cold libghostty build retries a Zig segmentation fault once with a single build job. Other build
+errors fail immediately, and a failed retry still blocks publication. The script runtime pins Rust
+1.99.1 to match the hosted runner; rustup installation diagnostics remain visible if a different
+machine needs to fetch that version.
 
 ### Rehearsing a release
 

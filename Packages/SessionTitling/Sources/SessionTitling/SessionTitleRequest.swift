@@ -8,16 +8,19 @@ public struct SessionTitleRequest: Hashable, Sendable {
     public var projectName: String
     /// The user's first message in the session.
     public var prompt: String
+    public var firstTurnOutcome: String?
     public var instructions: AIInstructionAddition?
     /// The titles of the project's other live tasks, which this one should be told apart from.
     public var otherTitles: [String]
 
     public init(
-        projectName: String, prompt: String, instructions: AIInstructionAddition? = nil, otherTitles: [String] = []
+        projectName: String, prompt: String, instructions: AIInstructionAddition? = nil, otherTitles: [String] = [],
+        firstTurnOutcome: String? = nil
     ) {
         self.projectName = projectName
         self.prompt = prompt
         self.instructions = instructions
+        self.firstTurnOutcome = firstTurnOutcome
         self.otherTitles = otherTitles
     }
 
@@ -33,9 +36,15 @@ public struct SessionTitleRequest: Hashable, Sendable {
 
     /// What the model is asked: the built-in prompt, and the titles to tell this one apart from.
     var modelPrompt: String {
-        let base = SessionTitlePrompt.prompt(projectName: projectName, request: prompt)
+        var base = SessionTitlePrompt.prompt(
+            projectName: SessionTitleInput.prepared(projectName, limit: 80),
+            request: SessionTitleInput.prepared(prompt))
+        if let firstTurnOutcome {
+            base += "\nFirst turn outcome (context only):\n" + SessionTitleInput.prepared(firstTurnOutcome, limit: 800)
+        }
         guard !otherTitles.isEmpty else { return base }
-        let titles = otherTitles.map { "\"\($0)\"" }.joined(separator: ", ")
+        let titles = otherTitles.filter(SessionTitleInput.isSafeTitle).prefix(12).map { "\"\($0)\"" }.joined(
+            separator: ", ")
         return base
             + "\nOther tasks in this project are titled \(titles). Title this one so it can be told apart from them."
     }

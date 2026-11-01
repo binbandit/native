@@ -19,7 +19,11 @@ struct ComposerSettingsTypeAhead {
 extension ComposerSettingsPopover {
     /// The rows the keyboard reaches, by section, skipping headers and locked levels.
     var sections: [[Target]] {
-        if isStopped, agentModels == nil { return onRestart == nil ? [] : [[.restart]] }
+        if isStopped, agentModels == nil, page == nil {
+            return (modelList?.overflow ?? 0) > 0
+                ? [[.moreModels]] + (onRestart == nil ? [] : [[.restart]])
+                : (onRestart == nil ? [] : [[.restart]])
+        }
         switch page {
         case .choices(let id):
             return [[.back] + (rows.first { $0.id == id }.map(pageTargets) ?? [])]
@@ -32,7 +36,14 @@ extension ComposerSettingsPopover {
             ]
         case nil:
             var sections: [[Target]] = []
-            if settings.model != nil || agentModels != nil {
+            if onChooseAgent != nil {
+                sections.append(
+                    agentGroups.groups.compactMap { group in
+                        guard group.models.first?.unavailable == nil, modelChange?.isPending != true else { return nil }
+                        return .agent(group.id)
+                    })
+            }
+            if settings.model != nil {
                 sections.append(DS.isTouchPlatform ? [.model(currentModelID ?? "")] : modelTargets)
             }
             if offersAgentsSettings { sections.append([.agentsSettings]) }
@@ -108,6 +119,14 @@ extension ComposerSettingsPopover {
 
     /// ← and → change Effort's level, open a row's page or menu, and come back from a page.
     private func step(_ direction: Int) -> KeyPress.Result {
+        if direction < 0, page != nil {
+            leavePage()
+            return .handled
+        }
+        if direction > 0, highlighted == .moreModels {
+            choose(.moreModels, closing: false)
+            return .handled
+        }
         guard !isStopped else { return .ignored }
         if highlighted == .effort, let effort = settings.effort {
             let levels = effort.choices
@@ -116,10 +135,6 @@ extension ComposerSettingsPopover {
             {
                 onSet(effort, levels[index + direction].value)
             }
-            return .handled
-        }
-        if direction < 0, page != nil {
-            leavePage()
             return .handled
         }
         if direction > 0, case .row(let id) = highlighted, let row = rows.first(where: { $0.id == id }) {
@@ -156,11 +171,11 @@ extension ComposerSettingsPopover {
         if isFilterFocused { return .ignored }
         let inModels: Bool =
             switch highlighted {
-            case .model, nil: true
+            case .model, .moreModels, nil: true
             default: false
             }
         // Past eight models, letters typed in the Model section go into its filter.
-        if inModels, page == (DS.isTouchPlatform ? .model : nil), modelList?.isFilterable == true {
+        if inModels, modelList?.isFilterable == true {
             query += press.characters
             return .handled
         }
@@ -194,14 +209,25 @@ extension ComposerSettingsPopover {
 
     /// Chooses what `target` stands for; Return also closes the popover after a choice.
     func choose(_ target: Target, closing: Bool) {
-        guard !isStopped || target == .restart || agentModels != nil else { return }
+        guard !isStopped || target == .restart || target == .moreModels || target == .back || agentModels != nil else {
+            return
+        }
         switch target {
+        case .moreModels:
+            page = .model
+            highlighted = .back
+            return
+        case .agent(let id):
+            guard let agent = agentGroups.groups.first(where: { $0.id == id })?.models.first,
+                agent.unavailable == nil, modelChange?.isPending != true
+            else { return }
+            if id != currentAgentID { onChooseAgent?(id) }
         case .model(let value):
             if DS.isTouchPlatform, page == nil {
                 page = .model
                 return
             }
-            if let row = agentModels?.first(where: { $0.id == value }) {
+            if let row = currentAgentModels.first(where: { $0.choice.value == value }) {
                 guard row.unavailable == nil, !(isStopped && row.agent == currentAgentID) else { return }
                 if value != currentModelID { onChooseAgentModel?(row) }
             } else if let model = settings.model, value != model.value {
@@ -263,20 +289,24 @@ extension ComposerSettingsPopover {
         }
     }
 
-    private func leavePage() {
+    func leavePage() {
         let from = page
         page = nil
         hovered = nil
         if case .choices(let id) = from { highlighted = .row(id) }
+        if from == .model {
+            highlighted = DS.isTouchPlatform ? currentModelID.map(Target.model) : .moreModels
+        }
     }
 
     private func isCurrent(_ target: Target) -> Bool {
         switch target {
+        case .agent(let id): id == currentAgentID
         case .model(let value): value == currentModelID
         case .autonomy(let value): value == shownAutonomy
         case .effort: true
         case .fastMode: fastMode?.isOn == true
-        case .retry, .restart, .back, .command, .agentsSettings: false
+        case .retry, .restart, .back, .command, .agentsSettings, .moreModels: false
         case .row(let id):
             pageChoice(id)?.isCurrent ?? false
         }
@@ -284,11 +314,13 @@ extension ComposerSettingsPopover {
 
     private func name(of target: Target) -> String? {
         switch target {
+        case .agent(let id): agentGroups.groups.first { $0.id == id }?.models.first?.agentName
         case .model(let value): modelList?.rows.first { $0.id == value }?.name
         case .autonomy(let value): settings.autonomyLevels.first { $0.value == value }?.askingTitle
         case .effort: "Effort"
         case .fastMode: fastMode?.option.name
         case .agentsSettings: "Agents Settings"
+        case .moreModels: "More models"
         case .retry: "Try Again"
         case .restart: "Restart"
         case .back: "Task Settings"

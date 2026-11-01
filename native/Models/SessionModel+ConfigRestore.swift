@@ -86,7 +86,7 @@ extension SessionModel {
         await PolicyPermissionModes.enforce(on: self)
         for (id, choice) in forbidden {
             notes.append(
-                "Your organization doesn't allow \(choice.valueName), so this task uses \(currentValueName(of: id))."
+                "\(PolicyCenter.organizationSubject) doesn't allow \(choice.valueName), so this task uses \(currentValueName(of: id))."
             )
         }
         if !notes.isEmpty {

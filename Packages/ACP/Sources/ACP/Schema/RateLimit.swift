@@ -144,17 +144,23 @@ extension RateLimitInfo.Window: Codable {
 public struct UsageMeta: Decodable, Hashable, Sendable {
     /// Claude Code's rate-limit status, sent when it changes.
     public var rateLimit: RateLimitInfo?
+    /// The model the turn ran on, as Claude Code names it ("claude-opus-5-5").
+    public var model: String?
 
     private enum CodingKeys: String, CodingKey {
         case rateLimit = "_claude/rateLimit"
+        case model = "_claude/model"
     }
 
-    public init(rateLimit: RateLimitInfo? = nil) {
+    public init(rateLimit: RateLimitInfo? = nil, model: String? = nil) {
         self.rateLimit = rateLimit
+        self.model = model
     }
 
     public init(from decoder: any Decoder) throws {
-        rateLimit = try decoder.container(keyedBy: CodingKeys.self).lenient(RateLimitInfo.self, .rateLimit)
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        rateLimit = container.lenient(RateLimitInfo.self, .rateLimit)
+        model = container.lenient(String.self, .model)
     }
 }
 

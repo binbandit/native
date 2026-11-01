@@ -43,7 +43,7 @@ extension NativeCommand {
             ) { _ in
                 model.isChoosingAgent = true
             }
-            .available { _ in !model.projects.all.isEmpty && !model.agents.isEmpty },
+            .available { _ in !model.agents.isEmpty },
 
             NativeCommand(
                 .projectOpen, title: "Open Folder…", category: .tasks, systemImage: "folder.badge.plus",

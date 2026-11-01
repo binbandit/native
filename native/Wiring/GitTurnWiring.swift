@@ -5,7 +5,7 @@ enum GitTurnWiring {
     static func connect(_ git: GitStore, to model: AppModel) {
         model.sessionHooks.turnStarted = { session, startedAt in
             // A subagent works in its task's folder; the task's own turn covers what it changes.
-            guard !session.isSubagent else { return }
+            guard !session.isSubagent, !session.isProjectless else { return }
             git.recordTurnStart(of: session.key, at: startedAt, in: session.cwd)
         }
     }

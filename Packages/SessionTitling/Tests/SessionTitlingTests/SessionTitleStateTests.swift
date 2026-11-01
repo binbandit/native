@@ -37,13 +37,13 @@ struct SessionTitleStateTests {
     func fallback() {
         var state = SessionTitleState()
         state.begin(request)
-        #expect(state.displayTitle(agentTitle: nil) == "Fix the flaky login test in CI please")
+        #expect(state.displayTitle(agentTitle: nil) == "Fix the flaky login test")
         state.waitForClient()
-        #expect(state.displayTitle(agentTitle: nil) == "Fix the flaky login test in CI please")
+        #expect(state.displayTitle(agentTitle: nil) == "Fix the flaky login test")
         // The agent's own title comes first.
         #expect(state.displayTitle(agentTitle: "Login test") == "Login test")
         state.fail()
-        #expect(state.fallback == "Fix the flaky login test in CI please")
+        #expect(state.fallback == "Fix the flaky login test")
         let accepted = state.accept(generated: "Fix login test")
         #expect(accepted && state.fallback == nil)
     }
@@ -58,7 +58,7 @@ struct SessionTitleStateTests {
     func longFallback() {
         let title = SessionTitleRules.fallback(
             from: "\n  please refactor the session store so it keeps titles across launches and restarts\nmore")
-        #expect(title == "Please refactor the session store so it keeps…")
+        #expect(title == "Refactor the session store")
         #expect(SessionTitleRules.fallback(from: "  \n ") == nil)
     }
 

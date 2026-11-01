@@ -84,7 +84,8 @@ struct AutonomyLevelPicker: View {
                     isOn: Binding(get: { choice.value == setting.value }, set: { _ in onSet(setting, choice.value) })
                 ) {
                     Text(choice.name)
-                    if let detail = forbidden ? "Not allowed by your organization" : AutonomySummary.summary(of: choice)
+                    if let detail = forbidden
+                        ? "Not allowed by \(PolicyCenter.organizationName)" : AutonomySummary.summary(of: choice)
                     {
                         Text(detail)
                     }

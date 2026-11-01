@@ -203,8 +203,11 @@ final class HostNotificationFeed {
         if let ref = notification.ref, let title = app?.taskTitle(ref) {
             named.title = title
         }
-        guard isWanted(named), let content = NativeNotification(named, hostID: host.id, hostName: host.name) else {
+        guard isWanted(named), var content = NativeNotification(named, hostID: host.id, hostName: host.name) else {
             return
+        }
+        if let ref = notification.ref, let name = app?.taskProjectName(ref) {
+            content.subtitle = [content.subtitle, name].compactMap { $0 }.joined(separator: " · ")
         }
         if activity.isActive, let ref = notification.ref, app?.isShowing(ref) == true {
             // The user is looking at the task: seen, here and on their other devices.

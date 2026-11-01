@@ -123,6 +123,11 @@ extension Repository {
 
     /// The default branch's local name and what to compare with: the remote's copy when there is
     /// one (`origin/HEAD`, else its `main` or `master`), else the local `main` or `master`.
+    /// The locally known default branch. Reads remote HEAD and local refs without fetching.
+    public func defaultBranchName() async throws(GitError) -> String? {
+        try await defaultBranch()?.local
+    }
+
     private func defaultBranch() async throws(GitError) -> (local: String, compared: String)? {
         let remotes = try await remotes()
         if let remote = remotes.contains("origin") ? "origin" : remotes.first {

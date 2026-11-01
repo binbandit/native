@@ -62,7 +62,8 @@ struct PairedDevicesSettingsPage: View {
             }
             if !isAllowed {
                 NoticeBanner(
-                    tone: .info, systemImage: "building.2", title: "Your organization turned off paired devices",
+                    tone: .info, systemImage: "building.2",
+                    title: "\(PolicyCenter.organizationSubject) turned off paired devices",
                     detail:
                         "Devices can't pair with or connect to this Mac. Paired ones stay paired and reconnect if this changes."
                 )

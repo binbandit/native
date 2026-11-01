@@ -9,6 +9,7 @@ struct PreviewContextSource: ContextSource {
     var report: ContextReport?
     var reportStatus: ContextReportStatus = .ready(isStale: false)
     var canCompact = true
+    var isAwaitingContextUsage = false
 
     func refreshReport() async {}
     func compact() async {}
@@ -22,6 +23,10 @@ struct PreviewContextSource: ContextSource {
 
     static let codex = PreviewContextSource(
         agentName: "Codex", usage: usage(used: 61_200, size: 258_400), reportStatus: .unsupported, canCompact: false
+    )
+
+    static let compacted = PreviewContextSource(
+        agentName: "Codex", reportStatus: .unsupported, canCompact: true, isAwaitingContextUsage: true
     )
 
     /// Decoded as an agent would send it: `Usage` has no public initializer.

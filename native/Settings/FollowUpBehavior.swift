@@ -5,14 +5,12 @@ import Foundation
 enum FollowUpBehavior: String, CaseIterable, Identifiable, Sendable {
     /// Hold the message and send it when the turn ends.
     case queue
-    /// Add the message to the running turn, so the agent changes course between steps. Agents
-    /// without steering queue it instead.
+    /// Add input without cancelling running tools, waiting for their completion when needed.
     case steer
 
     /// The `@AppStorage` key for the user's preference.
     static let storageKey = "followUpBehavior"
     /// Steer: a message typed while the agent works is usually a correction it should see now.
-    /// Agents that can't steer queue it either way.
     static let defaultValue = FollowUpBehavior.steer
 
     var id: Self { self }
@@ -34,7 +32,7 @@ enum FollowUpBehavior: String, CaseIterable, Identifiable, Sendable {
     var explanation: String {
         switch self {
         case .queue: "Hold the message and send it when the agent finishes its current turn."
-        case .steer: "Add the message to the turn in progress, so the agent adjusts between steps."
+        case .steer: "Let running tools finish, then add the message so the agent adjusts between steps."
         }
     }
 }

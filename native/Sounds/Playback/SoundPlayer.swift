@@ -13,7 +13,11 @@ final class SoundPlayer {
     private var rendered: [NativeChime: Data] = [:]
     private let logger = Logger(subsystem: "Native", category: "Sounds")
 
-    func play(_ option: SoundOption, volume: Double) async {
+    func play(_ option: SoundOption, volume: Double) async -> Bool {
+        guard !NativeAudioPolicy.isMuted else {
+            logger.info("Suppressed audio: native.mute is enabled")
+            return false
+        }
         let player: AVAudioPlayer
         do {
             switch option.source {
@@ -27,11 +31,11 @@ final class SoundPlayer {
         } catch {
             logger.error(
                 "Couldn't play \(option.title, privacy: .public): \(error.localizedDescription, privacy: .public)")
-            return
+            return false
         }
         current?.stop()
         current = player
-        player.play()
+        return player.play()
     }
 
     /// Renders a Native sound ahead of time, so the first notification plays without a delay.

@@ -29,7 +29,7 @@ extension AppModel {
 
     /// Every session in the sidebar, in its order: pinned first, then each project's.
     var sessionList: [SessionSummary] {
-        groupTaskPairs(groupCoordinatorTasks([pinnedSessions] + projects.all.map { sessions(in: $0.id) })).flatMap {
+        groupTaskPairs(groupCoordinatorTasks([pinnedSessions] + taskGroups.map { sessions(in: $0.id) })).flatMap {
             $0
         }
     }

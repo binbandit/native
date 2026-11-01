@@ -21,12 +21,16 @@ extension NativeCommand {
             }
             .available { $0.sessionTools?.wellExportPatch != nil },
         ]
-        + TaskWellTool.allCases.filter { $0 != .changes }.map { tool in
-            NativeCommand(tool.command, title: "Show \(tool.title)", category: .view, systemImage: tool.symbol) {
-                $0.sessionTools?.performWellTool(tool)
-            }
-            .available {
-                $0.sessionTools?.wellToolAvailable(tool) == true && $0.sessionTools?.wellToolEnabled(tool) == true
-            }
+        + TaskWellTool.builtIns.filter { $0 != .changes }.map { taskWellTool($0) }
+
+    /// Shows a tool from the well's list, and does nothing while the tool is off or not there, as
+    /// its row isn't. Changes keeps its own show-or-hide command (`sessionTools`).
+    static func taskWellTool(_ tool: TaskWellTool) -> NativeCommand {
+        NativeCommand(tool.command, title: "Show \(tool.title)", category: .view, systemImage: tool.symbol) {
+            $0.sessionTools?.performWellTool(tool)
         }
+        .available {
+            $0.sessionTools?.wellToolAvailable(tool) == true && $0.sessionTools?.wellToolEnabled(tool) == true
+        }
+    }
 }

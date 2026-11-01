@@ -13,7 +13,9 @@ extension AppModel {
         if !catalog.contains(key) {
             let folder = URL(filePath: projectFolder, directoryHint: .isDirectory)
             let project: Project
-            if let existing = projects.all.first(where: { SessionFolder.isSame($0.path, projectFolder) })
+            if NoProjectLocation.contains(URL(filePath: cwd)) {
+                project = NoProjectLocation.group
+            } else if let existing = projects.all.first(where: { SessionFolder.isSame($0.path, projectFolder) })
                 ?? projects.all.first(where: { SessionFolder.contains($0.path, cwd) })
             {
                 project = existing

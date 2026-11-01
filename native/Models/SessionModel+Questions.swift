@@ -8,6 +8,11 @@ extension SessionModel {
         let id: RequestID
         let request: CreateElicitationRequest
         var requestedAt: Date = .now
+
+        /// The form's questions, or nil for one with nothing to fill in (a confirmation).
+        var questionnaire: AgentQuestionnaire? {
+            request.requestedSchema.flatMap { AgentQuestionnaire(message: request.message, schema: $0) }
+        }
     }
 
     /// The question to answer now; later ones wait behind it.

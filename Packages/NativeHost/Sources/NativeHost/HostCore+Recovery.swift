@@ -62,7 +62,7 @@ extension HostCore {
     /// An agent process went away. Sessions that were mid-turn are recovered on a new process;
     /// the others reload quietly the next time they're used.
     func agentExited(_ agentID: String, generation: Int) {
-        guard let link = agents[agentID] else { return }
+        guard let link = agents[agentID], !link.commandStopOwnsTree else { return }
         let wasStopped = link.isStopping
         let cause = link.exitCause ?? .agentStopped
         guard link.noteExit(generation: generation) else { return }
@@ -81,7 +81,8 @@ extension HostCore {
             session.needsLoad = true
             withdrawPermissions(of: session)
             withdrawQuestions(of: session)
-            guard session.turn != nil, !wasStopped, !session.isStopping else {
+            guard session.turn != nil, !wasStopped, !session.isStopping, !isStoppingAllAgents, !isRestartingImmediately
+            else {
                 publish(session)
                 continue
             }

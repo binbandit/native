@@ -6,6 +6,7 @@ extension AgentSessionDefaults.Setting {
         switch self {
         case .model: "Default model"
         case .effort: "Default effort"
+        case .permissions: "Permissions"
         }
     }
 
@@ -36,14 +37,14 @@ struct AgentDefaultsRow: View {
     }
 
     private var hasChoices: Bool {
-        AgentSessionDefaults.Setting.allCases.contains {
+        [AgentSessionDefaults.Setting.model, .effort].contains {
             !AgentSessionDefaults.offeredChoices(for: agentID, setting: $0).isEmpty
         }
     }
 
     var body: some View {
         if plainly {
-            ForEach(AgentSessionDefaults.Setting.allCases, id: \.self) { setting in
+            ForEach([AgentSessionDefaults.Setting.model, .effort], id: \.self) { setting in
                 SettingsRow(
                     id: Self.settingRowID(agentID: agentID, setting: setting), setting == .model ? "Model" : "Effort",
                     description: hasChoices || setting != .model
@@ -68,7 +69,7 @@ struct AgentDefaultsRow: View {
                 )
             ) {
                 HStack(spacing: DS.Space.md) {
-                    ForEach(AgentSessionDefaults.Setting.allCases, id: \.self) { setting in
+                    ForEach([AgentSessionDefaults.Setting.model, .effort], id: \.self) { setting in
                         AgentDefaultPicker(agentName: agentName, agentID: agentID, setting: setting)
                     }
                 }

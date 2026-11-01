@@ -82,11 +82,20 @@ extension ApprovalAuditTests {
     @Test @HostActor func firstAuditSchemaUpgradesWithoutLosingItsHistory() throws {
         let rig = try PolicyRig(.unrestricted)
         _ = try seed(rig.core)
-        try rig.core.store.database.execute("DROP TABLE approval_pending; PRAGMA user_version = 11")
+        try rig.core.store.database.execute(
+            """
+            DROP TABLE approval_pending;
+            ALTER TABLE titles DROP COLUMN first_outcome;
+            ALTER TABLE titles DROP COLUMN refinement_count;
+            ALTER TABLE titles DROP COLUMN first_finished;
+            ALTER TABLE titles DROP COLUMN was_renamed;
+            PRAGMA user_version = 11;
+            """)
         let restarted = try HostCore(configuration: rig.core.configuration)
         #expect(try records(restarted.store).map(\.state) == [.requested, .withdrawn])
         #expect(try restarted.store.approvals().isEmpty)
-        #expect(try restarted.store.database.query("PRAGMA user_version").first?.first?.integer == 12)
+        #expect(
+            try restarted.store.database.query("PRAGMA user_version").first?.first?.integer == HostStore.schemaVersion)
     }
 
     @HostActor private func stagePermission(_ rig: PolicyRig, session: HostSessionID, request: Int) throws {

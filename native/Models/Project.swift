@@ -1,4 +1,5 @@
 import Foundation
+import ProjectNames
 
 /// A repository the user works in. Its sessions are whatever the agents list for it. Each device
 /// has its own checkout: this Mac's is `url`, a paired host's is in `checkouts`, and the project is
@@ -13,6 +14,13 @@ struct Project: Identifiable, Hashable, Codable, Sendable {
     let host: HostID
     /// What the user renamed it to in Native; the folder keeps its own name.
     var displayName: String?
+    /// Resolved from the open project list; never persisted as part of the custom name.
+    var nameQualifier: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case id, url, host, displayName, repository, remoteURL, checkouts
+    }
+
     /// The repository the folder is a checkout of, as `ProjectRepository` reads its remote
     /// ("github.com/owner/name"); nil for a folder without a hosted remote, which is the same
     /// project on another device only where the user says so.
@@ -48,7 +56,11 @@ struct Project: Identifiable, Hashable, Codable, Sendable {
 
     /// The name Native shows: the user's, else the folder's.
     var name: String {
-        displayName ?? folderName
+        [baseName, nameQualifier].compactMap { $0 }.joined(separator: " · ")
+    }
+
+    var baseName: String {
+        ProjectName(url: url, customName: displayName).name
     }
 
     var folderName: String {

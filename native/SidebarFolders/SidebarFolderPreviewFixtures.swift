@@ -46,10 +46,9 @@ enum SidebarFolderPreviewFixtures {
             app.selection = SessionKey(
                 agent: AgentDefinition.ID(rawValue: "claude-code"), id: SessionID("folder-fixture-0"))
         }
-        if state == "F2" {
-            for path in ["/Research/native", "/Development/pier", "/Development/atlas"] {
-                app.sidebarFolders.remember(URL(filePath: path))
-            }
+        if state == "picker" {
+            app.quickEntry.project = app.projects.all.first?.id
+            app.quickEntry.picker = .project
         }
         if state == "F3" {
             app.sidebarFolders.hovered = ["atlas"]

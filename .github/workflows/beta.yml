@@ -30,6 +30,7 @@ jobs:
       skip: ${{ steps.plan.outputs.skip }}
       version: ${{ steps.plan.outputs.version }}
       notes_from: ${{ steps.plan.outputs.notes_from }}
+      notes_from_start: ${{ steps.plan.outputs.notes_from_start }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -43,7 +44,7 @@ jobs:
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
           git fetch origin main 'refs/tags/v*:refs/tags/v*'
-          args=(--check-runs --github-output "$GITHUB_OUTPUT")
+          args=(--check-releases --check-runs --github-output "$GITHUB_OUTPUT")
           if [ "$DRY_RUN" = true ]; then args+=(--dry-run); fi
           python3 scripts/release/beta-schedule.py "${args[@]}"
       - name: Tag the selected main commit
@@ -65,4 +66,5 @@ jobs:
     with:
       version: ${{ needs.plan.outputs.version }}
       notes_from: ${{ needs.plan.outputs.notes_from }}
+      notes_from_start: ${{ needs.plan.outputs.notes_from_start == 'true' }}
     secrets: inherit

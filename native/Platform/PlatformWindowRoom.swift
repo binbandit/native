@@ -50,6 +50,20 @@ extension PlatformWindowRoom {
             frames += 1
         }
     }
+
+    /// Waits, likewise, until the window's minimum width has held still for a few frames: a column
+    /// that just went keeps counting toward it for a frame or two.
+    func waitUntilSettled() async {
+        var last = minWidth
+        var still = 0
+        var frames = 0
+        while still < 3, frames < 60 {
+            try? await Task.sleep(for: .milliseconds(16))
+            still = minWidth == last ? still + 1 : 0
+            last = minWidth
+            frames += 1
+        }
+    }
 }
 
 extension View {

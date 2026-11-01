@@ -1,4 +1,5 @@
 import ACP
+import ApprovalAnalysis
 import Foundation
 
 /// The request and its owner travel together. A child request is displayed at the parent's row,
@@ -22,11 +23,23 @@ struct TaskPeekAsk: Identifiable {
     let id: ID
     let since: Date
 
-    var sentence: String {
+    var sentence: String { sentence(pushPlace: nil) }
+
+    func sentence(pushPlace: String?, pushBranch: String? = nil) -> String {
         switch content {
-        case .permission(let call): call.askSummary
+        case .permission(let call):
+            call.approvalQuestion(workingDirectory: session.cwd.path, pushPlace: pushPlace, pushBranch: pushBranch)
         case .question(let question): question.request.message
         }
+    }
+
+    var pushRequest: ApprovalPushReach.Request? {
+        guard case .permission(let call) = content, let command = call.shellCommand else { return nil }
+        let directory = call.rawInput?["cwd"]?.stringValue ?? session.cwd.path
+        guard let target = ApprovalCommand(command: command, workingDirectory: directory).pushTarget else { return nil }
+        return .init(
+            session: session.key, permission: call.permission?.requestID,
+            folder: URL(filePath: directory, directoryHint: .isDirectory), target: target)
     }
 
     var isCurrent: Bool {

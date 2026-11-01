@@ -14,8 +14,11 @@ import os
 /// views: starting sessions, selection and its history, and the app-level prompts.
 @Observable
 final class AppModel {
+    let scratchTasks: TaskScratchStore
+    var movingProjectlessTask: SessionKey?
     let experiments: ExperimentStore
     let plugins: PluginRegistry
+    var projectFolderDeletion: ProjectFolderDeletion?
     let titles: SessionTitles
     let workingSpinners: WorkingSpinnerPreferences
     let runtimes: AgentRuntimes
@@ -66,6 +69,8 @@ final class AppModel {
     }
     /// The sidebar row whose title is being edited.
     var renaming: SessionKey?
+    var renamingProject: Project.ID?
+    var projectNameDraft = ""
     /// Whether the folder picker for adding a project is showing.
     var isAddingProject = false
     /// Whether the agent picker for a new session is showing.
@@ -145,7 +150,7 @@ final class AppModel {
 
     private var lastUsedAgent: AgentDefinition.ID?
     /// Where the app's state is remembered: the user's defaults, or for previews an in-memory store.
-    @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored let defaults: UserDefaults
     /// Internal only for AppModel+Recovery.swift.
     @ObservationIgnored var restartPolicies: [AgentDefinition.ID: AgentRestartPolicy] = [:]
     @ObservationIgnored private let services: SessionServices
@@ -202,6 +207,7 @@ final class AppModel {
     init(
         plugins: PluginRegistry = PluginRegistry(), titles: SessionTitles = SessionTitles(),
         defaults: UserDefaults = .standard, catalogURL: URL? = SessionCatalog.defaultURL,
+        scratchRoot: URL = NoProjectLocation.root,
         experiments: ExperimentStore = .shared, hosts: RemoteHosts = RemoteHosts()
     ) {
         // Writing to an agent that just exited must surface as an error, not kill the app.
@@ -211,6 +217,9 @@ final class AppModel {
         self.plugins = plugins
         self.titles = titles
         self.defaults = defaults
+        let catalog = SessionCatalog(url: catalogURL)
+        self.catalog = catalog
+        scratchTasks = TaskScratchStore(root: scratchRoot, persists: catalogURL != nil)
         sidebarPreferences = TaskSidebarPreferences(defaults: defaults)
         let workingSpinners = WorkingSpinnerPreferences(defaults: defaults)
         self.workingSpinners = workingSpinners
@@ -229,7 +238,9 @@ final class AppModel {
         services = SessionServices(
             plugins: plugins, titles: titles, sendGate: sendGate, earlierConversations: earlierConversations,
             workingSpinners: workingSpinners, drafts: ComposerDrafts(defaults: defaults),
-            modelContinuations: AgentModelContinuations(defaults: defaults)
+            modelContinuations: AgentModelContinuations(defaults: defaults),
+            scratchRoot: scratchRoot,
+            isProjectlessTask: { catalog.lookup($0)?.project == NoProjectLocation.id }
         ) {
             continuation.yield($0)
         } titleLanded: { key, folder, title in
@@ -241,7 +252,6 @@ final class AppModel {
         projects = Projects(defaults: defaults)
         composeTask = ComposeTaskModel(defaults: defaults)
         taskPairs = TaskPairs(defaults: defaults)
-        catalog = SessionCatalog(url: catalogURL)
         ordering = SessionOrdering(defaults: defaults)
         sessions = SessionStore(services: services)
         unread = UnreadSessions(defaults: defaults)
@@ -256,6 +266,7 @@ final class AppModel {
         _ = runtimes.sync { [catalog, installations] in
             catalog.hasSessions(of: $0) || installations.wasInstalledLastLaunch($0)
         }
+        quickEntry.enabled = { [experiments] in experiments.value(of: .composeTask) }
         homeNext.countAway = { [weak self] in self?.homeNextAway(from: $0, to: $1) }
     }
 
@@ -502,7 +513,9 @@ final class AppModel {
         old.attachmentReads.move(to: session)
         session.draft = old.draft
         session.attachments = old.attachments
+        retainPrivateFiles(of: old, for: session.key)
         catalog.swap(old.key, for: SessionInfo(sessionId: session.id, cwd: old.cwd.folderPath, updatedAt: .now))
+        session.adoptDiffCommentDrafts(from: old, moving: true)
         if selection == old.key {
             selection = session.key
         }

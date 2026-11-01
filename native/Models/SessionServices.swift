@@ -13,6 +13,8 @@ struct SessionServices {
     /// Every composer's text, kept across launches.
     let drafts: ComposerDrafts
     let modelContinuations: AgentModelContinuations
+    var scratchRoot: URL = NoProjectLocation.root
+    var isProjectlessTask: (SessionKey) -> Bool = { _ in false }
     /// Hands an event to every plugin, in the order events are posted.
     let post: (SessionEvent) -> Void
     /// Tells the app a session has a title of Native's or the user's now, so the folder made for it

@@ -8,9 +8,6 @@ extension AppModel {
     }
 
     var quickEntryReadiness: String {
-        guard quickEntry.project.flatMap(projects.project) != nil else {
-            return "Choose a project to give the task a place to work."
-        }
         if quickEntryDeviceUnavailable {
             return
                 "\(deviceName(quickEntry.device)) is unavailable. Your draft stays here while you choose another device."

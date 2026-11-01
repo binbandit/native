@@ -73,7 +73,7 @@ struct GitChangesHeader: View {
                 .help(
                     branch.upstream == nil
                         ? "Push the branch and track it" : "Push commits to \(branch.upstream ?? "the upstream")")
-            } else if fileMenu == nil, let onCreatePullRequest, !branch.isDetached {
+            } else if fileMenu == nil, let onCreatePullRequest, model.canCreatePullRequest {
                 Button("Create PR", systemImage: "arrow.triangle.pull", action: onCreatePullRequest)
                     .buttonStyle(.ds(.secondary))
             }

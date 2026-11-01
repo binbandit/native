@@ -64,7 +64,7 @@ struct AttachedHostTests {
         let second = try await harness.connect()
         try await second.client.attach(summary.id)
         let reopened = try await second.client.sessions().first { $0.id == summary.id }
-        #expect(reopened?.lastStopReason == "error")
+        #expect(reopened?.lastStopReason == "cancelled")
         #expect(reopened?.phase != .prompting && reopened?.phase != .recovering)
         try await Task.sleep(for: .seconds(1))
         #expect(await second.recoveries(summary.id).isEmpty)

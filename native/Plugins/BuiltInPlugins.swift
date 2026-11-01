@@ -3,13 +3,23 @@ import Foundation
 import NativeHostProtocol
 import Search
 import SessionTitling
+import TaskDefaults
 
 enum BuiltInPlugins {
-    static let all: [any NativePlugin] = [
-        claudeCode, codex, cursor, openCode, pi, copilot, OnDeviceTitlesPlugin(), SoundsPlugin(),
-        OrchestrationPlugin(), MCPServersPlugin(), SkillsPlugin(), usage, automation, automations, expeditions, search,
-        CelebrationsPlugin(),
-    ]
+    static let all: [any NativePlugin] = {
+        let plugins: [any NativePlugin] = [
+            claudeCode, codex, cursor, openCode, pi, copilot, OnDeviceTitlesPlugin(), SoundsPlugin(),
+            OrchestrationPlugin(), MCPServersPlugin(), SkillsPlugin(), usage, automation, automations, expeditions,
+            search,
+            CelebrationsPlugin(),
+        ]
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: "taskWellPluginFixture") {
+            return plugins + [TaskWellFixturePlugin()]
+        }
+        #endif
+        return plugins
+    }()
 
     /// Claude Code through its ACP adapter, running the user's own `claude`. Adapter versions are
     /// pinned so upgrades are deliberate; the adapters move fast.
@@ -50,7 +60,13 @@ enum BuiltInPlugins {
                             description:
                                 "Run `claude setup-token` on a computer with a browser, then paste the token it prints.",
                             kind: .environment([AuthMethod.Variable(name: "CLAUDE_CODE_OAUTH_TOKEN", label: "Token")])),
-                    ]
+                    ],
+                    instructionLocations: [
+                        .init(
+                            scope: .user, directory: ".claude", environmentKey: "CLAUDE_CONFIG_DIR",
+                            names: ["CLAUDE.md"]),
+                        .init(scope: .project, names: ["CLAUDE.md", "CLAUDE.local.md", ".claude/CLAUDE.md"]),
+                    ], nativeSkill: .claudeCode
                 )
             ]
         ), policyTranslator: ClaudeCodePolicyTranslator(), historyReader: ClaudeCodeHistoryReader.standard())
@@ -82,6 +98,8 @@ enum BuiltInPlugins {
                     // thread of its own that keeps a second set of the user's MCP servers running for
                     // as long as the adapter does. Named first, it doesn't; `/rename` asks no model.
                     renameCommand: "/rename",
+                    // The adapter uses turn/steer, which leaves running tools intact.
+                    steeringPolicy: .nonInterrupting,
                     // The adapter offers its device code only to clients that open links, so the
                     // host starts it that way for this sign-in (`AuthMethod.Kind.link`).
                     authMethods: [
@@ -91,9 +109,15 @@ enum BuiltInPlugins {
                                 "Sign in to ChatGPT by opening a verification page and entering a one-time code",
                             kind: .link)
                     ],
+                    instructionLocations: [
+                        .init(
+                            scope: .user, directory: ".codex", environmentKey: "CODEX_HOME",
+                            names: ["AGENTS.override.md", "AGENTS.md"], firstExisting: true),
+                        .init(scope: .project, names: ["AGENTS.override.md", "AGENTS.md"], firstExisting: true),
+                    ],
                     // Its home, a CODEX_HOME override, and a trusted project's own settings.
                     settingsFiles: ["~/.codex/config.toml", "$CODEX_HOME/config.toml", ".codex/config.toml"],
-                    networkCapabilities: .codexCandidate
+                    networkCapabilities: .codexCandidate, nativeSkill: .codex
                 )
             ]
         ), policyTranslator: CodexPolicyTranslator(), historyReader: CodexHistoryReader.standard())
@@ -121,6 +145,7 @@ struct OnDeviceTitler: SessionTitler {
     func title(for request: TitleRequest) async throws -> String? {
         try await OnDeviceTitleGenerator().title(
             for: SessionTitleRequest(
-                projectName: request.projectName, prompt: request.prompt, instructions: request.instructions))
+                projectName: request.projectName, prompt: request.prompt, instructions: request.instructions,
+                firstTurnOutcome: request.firstTurnOutcome))
     }
 }

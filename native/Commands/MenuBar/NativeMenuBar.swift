@@ -75,6 +75,7 @@ private struct FileCommands: Commands {
             if model.offersSidebarFolders {
                 Menu("Open Recent") { SidebarFolderRecentMenu(model: model, undoManager: menu.context.undoManager) }
             }
+            CommandMenuItem(.projectRename, in: menu)
             CommandMenuItem(.projectSettings, in: menu)
             CommandMenuItem(.projectRefresh, in: menu)
             CommandMenuItem(.pullRequestOpenAsTask, in: menu)
@@ -98,15 +99,23 @@ private struct ViewCommands: Commands {
                 Menu("Sidebar") { SidebarOptionsMenu(preferences: model.sidebarPreferences) }
             }
             CommandMenuItem(.viewToggleSubagentInspector, in: menu)
-            CommandMenuItem(.viewToggleChanges, in: menu)
+            if menu.context.session?.isProjectless != true {
+                CommandMenuItem(.viewToggleChanges, in: menu)
+            }
             if menu.context.sessionTools != nil {
                 if menu.context.sessionTools?.hasWell == true {
                     CommandMenuItem(.taskWellToggle, in: menu)
                 }
                 Menu("Tools") {
-                    CommandMenuItem(.sessionToolChanges, in: menu)
+                    if menu.context.session?.isProjectless != true {
+                        CommandMenuItem(.sessionToolChanges, in: menu)
+                    }
                     if menu.context.sessionTools?.hasWell == true {
-                        ForEach(TaskWellTool.allCases.filter { $0 != .changes }) { tool in
+                        ForEach(
+                            SessionToolRegistry.shared.wellTools.filter {
+                                $0 != .changes && (menu.context.session?.isProjectless != true || $0 != .pullRequest)
+                            }
+                        ) { tool in
                             CommandMenuItem(tool.command, in: menu)
                         }
                     }
@@ -179,9 +188,11 @@ private struct SessionCommands: Commands {
                 Divider()
             }
             CommandMenuItem(.composerFocus, in: menu)
+            CommandMenuItem(.changesAddComment, in: menu)
+            CommandMenuItem(.changesReviewComments, in: menu)
             CommandMenuItem(.sessionStop, in: menu)
             CommandMenuItem(.sessionClearConversation, in: menu)
-            if model.offersAgentChange { CommandMenuItem(.sessionChangeAgent, in: menu) }
+            if model.offersAgentModels { SwitchAgentMenu(model: model, menu: menu) }
             CommandMenuItem(.sessionOpenEarlierConversation, in: menu)
             CommandMenuItem(.sessionOpenCurrentConversation, in: menu)
 
@@ -194,7 +205,10 @@ private struct SessionCommands: Commands {
                 CommandMenuItem(.sessionCancelModelChange, in: menu)
                 CommandMenuItem(.sessionUndoModelChange, in: menu)
             }
-            CommandMenuItem(.sessionChangeWorkspace, in: menu)
+            CommandMenuItem(.sessionMoveToProject, in: menu)
+            if menu.context.session?.isProjectless != true {
+                CommandMenuItem(.sessionChangeWorkspace, in: menu)
+            }
 
             Divider()
 

@@ -11,7 +11,9 @@ public enum SessionTitleRules {
     public static func display(
         user: String?, generated: String?, agent: String?, fallback: String? = nil
     ) -> String? {
-        user ?? generated ?? agent.flatMap(meaningful).map { sentenceCase($0) } ?? fallback
+        user ?? generated ?? agent.flatMap(meaningful).flatMap {
+            SessionTitleInput.isSafeTitle($0) ? sentenceCase($0) : nil
+        } ?? fallback
     }
 
     /// Some agents name a session they haven't titled with a timestamp ("New session -
@@ -43,18 +45,26 @@ public enum SessionTitleRules {
         return title.isEmpty ? nil : title
     }
 
-    /// The most words a title taken from the first message keeps.
-    static let fallbackWords = 8
-
-    /// A title made from the first message itself, for when no model can write one: its first line,
-    /// cut after a few words. Nil when the message has no words.
+    /// A quick local name while a provider is busy or unavailable. Prefer the actual request
+    /// following a pasted log, strip conversational preambles, and keep six words at most.
     public static func fallback(from prompt: String) -> String? {
-        guard
-            let line = prompt.split(whereSeparator: \.isNewline).lazy
-                .map({ $0.trimmingCharacters(in: .whitespaces) }).first(where: { !$0.isEmpty })
-        else { return nil }
-        let words = line.split(whereSeparator: \.isWhitespace)
-        guard let title = cleaned(words.prefix(fallbackWords).joined(separator: " ")) else { return nil }
-        return words.count > fallbackWords ? title + "…" : title
+        let safe = SessionTitleInput.prepared(prompt)
+        let lines = safe.split(whereSeparator: \.isNewline).map(String.init)
+        guard !lines.isEmpty else { return nil }
+        let actions =
+            #"(?i)^(?:(?:can|could|would) you |please |first |then )*(?:fix|add|make|update|remove|stop|handle|return|refactor|write|improve|compress|keep|explain|why|is |review|ignore|the script)\b"#
+        var line = lines.last(where: { $0.range(of: actions, options: .regularExpression) != nil }) ?? lines[0]
+        for pattern in [
+            #"(?i)^(?:can|could|would) you (?:please )?(?:help (?:me |with )?)?"#,
+            #"(?i)^(?:please |help (?:me |with )|first )+"#,
+            #"(?i)^(?:task to |request for |title: |help with )"#,
+        ] { line = line.replacingOccurrences(of: pattern, with: "", options: .regularExpression) }
+        line = line.replacingOccurrences(of: #"\[(?:path|link)\]"#, with: "", options: .regularExpression)
+        var words = Array(line.split(whereSeparator: \.isWhitespace).prefix(6))
+        let endings: Set<String> = [
+            "a", "an", "the", "in", "on", "for", "to", "with", "of", "after", "before", "when", "so", "it", "and",
+        ]
+        while words.last.map({ endings.contains($0.lowercased()) }) == true { words.removeLast() }
+        return cleaned(words.joined(separator: " ")).map { sentenceCase($0, keeping: safe) }
     }
 }

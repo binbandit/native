@@ -8,7 +8,10 @@ struct UserMessageText: View {
     let text: String
 
     var body: some View {
-        if FencedText.containsFence(text) {
+        let packet = PromptQuote.split(text)
+        if packet.quotes.contains(where: { $0.comment != nil }) {
+            DiffCommentsTranscriptPacket(quotes: packet.quotes, message: packet.message)
+        } else if FencedText.containsFence(text) {
             let segments = FencedText.segments(of: text)
             VStack(alignment: .leading, spacing: DS.Space.md) {
                 ForEach(segments.indices, id: \.self) { index in
@@ -65,3 +68,16 @@ private struct InlineCodeText: View {
         return code
     }
 }
+
+#if DEBUG
+#Preview("User message - Comment packet and code") {
+    DSPreviewPair {
+        DiffCommentsPreviewHost { session in
+            VStack(alignment: .leading, spacing: DS.Space.xl) {
+                UserMessageText(text: session.draft)
+                UserMessageText(text: "Keep `lineNumbers` fixed.\n\n```swift\nText(line.text)\n```")
+            }.padding(DS.Space.xl).frame(width: 500)
+        }
+    }
+}
+#endif

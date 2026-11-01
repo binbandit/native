@@ -2,8 +2,9 @@
 
 Find any task by what was said in it: plain text across every agent run, every agent and every
 project, archived tasks included as a filter. ⇧⌘F (Go ▸ Search Tasks…) or the magnifying glass in
-the window toolbar, between the sidebar toggle and the history arrows, opens it. The button stays
-available with the sidebar collapsed. Return opens the task scrolled to the exact message, highlighted.
+the sidebar toolbar, between the sidebar toggle and the history arrows, opens it. The button hides
+with the sidebar; the shortcut and Go menu remain available. Return opens the task scrolled to the
+exact message, highlighted.
 
 The code: `Packages/Search` (UI-free, macOS and iOS, tested), the history readers in
 `Packages/Search/Sources/Search/History` wired through each agent's plugin, and the app's part in

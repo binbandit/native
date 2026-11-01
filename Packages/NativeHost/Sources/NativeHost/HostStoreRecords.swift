@@ -79,6 +79,7 @@ struct OutgoingPrompt: Hashable {
     var preamble: PromptPreambleSpec?
     var isEchoed: Bool
     var origin: PromptEcho.Origin
+    var steersAfterTools = false
 
     init(
         id: UUID = UUID(), text: String, content: [ContentBlock]? = nil, attachments: [EchoAttachment] = [],
@@ -106,17 +107,20 @@ struct OutgoingPrompt: Hashable {
         var attachments: [EchoAttachment]?
         var preamble: PromptPreambleSpec?
         var origin: PromptEcho.Origin?
+        var steersAfterTools: Bool?
     }
 
     var extras: Extras {
         Extras(
-            content: content, attachments: attachments.isEmpty ? nil : attachments, preamble: preamble, origin: origin)
+            content: content, attachments: attachments.isEmpty ? nil : attachments, preamble: preamble, origin: origin,
+            steersAfterTools: steersAfterTools ? true : nil)
     }
 
     init(id: UUID, text: String, isEchoed: Bool, extras: Extras?) {
         self.init(
             id: id, text: text, content: extras?.content, attachments: extras?.attachments ?? [],
             preamble: extras?.preamble, isEchoed: isEchoed, origin: extras?.origin ?? .user)
+        steersAfterTools = extras?.steersAfterTools ?? false
     }
 }
 

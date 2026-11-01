@@ -40,6 +40,13 @@ struct SentenceCaseTests {
         #expect(SessionTitleRules.sentenceCase("Then Fix the Tests", keeping: source) == "Then fix the tests")
     }
 
+    @Test("A cached title adopted without a pending request still gets sentence case")
+    func adoptedTitle() {
+        var state = SessionTitleState()
+        state.accept(generated: "Fix Login Bug")
+        #expect(state.generated == "Fix login bug")
+    }
+
     @Test("Generated and agent titles are normalized; the user's never are")
     func whereItApplies() {
         var state = SessionTitleState()

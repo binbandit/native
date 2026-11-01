@@ -3,6 +3,7 @@ import SwiftUI
 /// A shell command to run, in a sunken mono well with a copy button.
 struct CommandSnippet: View {
     let command: String
+    var expands = false
     let onCopy: () -> Void
 
     @State private var didCopy = false
@@ -25,7 +26,8 @@ struct CommandSnippet: View {
         .padding(.leading, DS.Space.lg)
         .padding(.trailing, DS.Space.xs)
         .padding(.vertical, DS.Space.xs)
-        .frame(width: DS.Size.sidebarWidth + DS.Space.xxxl)
+        .frame(width: expands ? nil : DS.Size.sidebarWidth + DS.Space.xxxl)
+        .frame(maxWidth: expands ? .infinity : nil)
         .background(.dsSurfaceSunken, in: shape)
         .overlay { shape.strokeBorder(.dsSeparator, lineWidth: 1) }
         .task(id: didCopy) {
@@ -36,10 +38,12 @@ struct CommandSnippet: View {
     }
 }
 
-#if NATIVE_PREVIEWS_WIP
+#if DEBUG
 #Preview("Command snippet") {
     DSPreviewPair {
         VStack(spacing: DS.Space.md) {
+            CommandSnippet(command: "gh auth logout", expands: true, onCopy: {})
+                .frame(width: DS.Size.sidebarWidth)
             CommandSnippet(command: "brew install gh", onCopy: {})
             CommandSnippet(command: "gh auth login --hostname github.com --git-protocol https", onCopy: {})
         }

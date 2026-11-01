@@ -31,6 +31,17 @@ struct MacHostPolicyTests {
         #expect(Self.policy() == .unrestricted)
     }
 
+    @Test("MCP admission and loopback network policy cover Native's skill and MCP together")
+    func nativeToolsAdmission() {
+        for managed: [String: Any] in [
+            ["policy.mcp.blocked": ["native"]], ["policy.mcp.allowed": ["other"]],
+            ["policy.network": ["localIPC": false]],
+            ["policy.network": ["services": ["orchestration.loopback": ["enabled": false]]]],
+        ] {
+            #expect(!Self.policy(managed: managed).allows(.agentTools))
+        }
+    }
+
     @Test("Malformed, unreadable or unknown managed policy blocks the host")
     func lockdowns() {
         #expect(Self.policy(managed: ["policy.deployment.mode": 42]).mode == .blocked)

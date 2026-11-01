@@ -5,6 +5,8 @@ import SwiftUI
 /// runs next and how it last went, with Run Now always in reach (and everything else in the context
 /// menu, which is also the touch equivalent).
 struct AutomationRow: View {
+    @Environment(\.projectDisplayName) private var projectDisplayName
+
     let automation: Automation
     let latest: AutomationRun?
     let nextRun: Date?
@@ -26,7 +28,7 @@ struct AutomationRow: View {
                         Text(automation.name)
                             .font(.dsCalloutMedium)
                             .foregroundStyle(automation.isPaused ? .dsTextSecondary : .dsTextPrimary)
-                        Text("\(automation.triggerSummary) · \(automation.project.lastPathComponent)")
+                        Text("\(automation.triggerSummary) · \(projectDisplayName(automation.project))")
                             .font(.dsCaption)
                             .foregroundStyle(.dsTextTertiary)
                             .lineLimit(1)

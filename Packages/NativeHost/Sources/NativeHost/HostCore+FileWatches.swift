@@ -98,12 +98,23 @@ final class FileChangeCoalescer: Sendable {
         var hasPending: Bool { isOverflow || !pending.isEmpty }
     }
 
+    private let now: @Sendable () -> ContinuousClock.Instant
+    private let sleep: @Sendable (ContinuousClock.Instant) async throws -> Void
     private let latency: Duration
     private let limit: Int
     private let send: Send
     private let state = Mutex(State())
 
-    init(latency: Duration, limit: Int, send: @escaping Send) {
+    init(
+        latency: Duration, limit: Int,
+        now: @escaping @Sendable () -> ContinuousClock.Instant = { .now },
+        sleep: @escaping @Sendable (ContinuousClock.Instant) async throws -> Void = {
+            try await Task.sleep(until: $0)
+        },
+        send: @escaping Send
+    ) {
+        self.now = now
+        self.sleep = sleep
         self.latency = latency
         self.limit = limit
         self.send = send
@@ -125,11 +136,11 @@ final class FileChangeCoalescer: Sendable {
                 state.pending = []
             }
             guard state.hasPending, state.flush == nil else { return }
-            let now = ContinuousClock.now
-            if let lastSent = state.lastSent, now < lastSent + latency {
-                let deadline = lastSent + latency
-                state.flush = Task { [weak self] in
-                    try? await Task.sleep(until: deadline)
+            let now = self.now()
+            if let lastSent = state.lastSent, now < lastSent.advanced(by: latency) {
+                let deadline = lastSent.advanced(by: latency)
+                state.flush = Task { [weak self, sleep] in
+                    try? await sleep(deadline)
                     self?.flush()
                 }
             } else {
@@ -138,11 +149,15 @@ final class FileChangeCoalescer: Sendable {
         }
     }
 
-    func stop() {
+    /// Returns pending work so a caller that needs quiescence can wait for its cancellation.
+    @discardableResult
+    func stop() -> Task<Void, Never>? {
         state.withLock { state in
+            let flush = state.flush
             state.isStopped = true
-            state.flush?.cancel()
+            flush?.cancel()
             state.flush = nil
+            return flush
         }
     }
 
@@ -150,7 +165,7 @@ final class FileChangeCoalescer: Sendable {
         state.withLock { state in
             state.flush = nil
             guard !state.isStopped, state.hasPending else { return }
-            sendPending(&state, at: .now)
+            sendPending(&state, at: now())
         }
     }
 

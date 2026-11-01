@@ -16,10 +16,15 @@ struct PullRequestsNavItem: View {
 
     var body: some View {
         SidebarNavItem(
-            "Pull Requests", systemImage: "arrow.triangle.pull", isSelected: isSelected,
+            "Pull Requests", isSelected: isSelected,
             shortcut: CommandRegistry.shared.shortcut(for: .goPullRequests)?.displayString,
             action: showList
         ) {
+            // SF Symbols' pull glyph draws a stunted hook at this size. The pull request mark reads,
+            // drawn at the weight of the "+" above it (Lucide's 2-point stroke on a 24-point grid).
+            PullRequestGlyph(kind: .open)
+                .stroke(style: StrokeStyle(lineWidth: DS.Size.navIcon / 12, lineCap: .round, lineJoin: .round))
+        } accessory: {
             if model.reviewRequestCount > 0 {
                 Text("\(model.reviewRequestCount)")
                     .font(.dsMonoMicro)

@@ -35,6 +35,7 @@ final class GitTaskWorkspaceProvider: TaskWorkspaceProvider {
     }
 
     func archiveWorkspace(at folder: URL, in project: Project) async throws -> String? {
+        guard !SessionFolder.isSame(folder.folderPath, project.path) else { return nil }
         guard await git.isTaskWorktree(folder, of: project.url) else { return nil }
         let removed = try await git.removeTaskWorktree(at: folder, keepingRecord: true)
         var summary = removed.summary
@@ -154,6 +155,7 @@ final class GitTaskWorkspaceProvider: TaskWorkspaceProvider {
     }
 
     func deleteWorkspace(at folder: URL, in project: Project) async throws {
+        guard !SessionFolder.isSame(folder.folderPath, project.path) else { return }
         try await git.forgetArchivedTaskWorktree(at: folder, of: project.url)
         guard await git.isTaskWorktree(folder, of: project.url) else { return }
         _ = try await git.removeTaskWorktree(at: folder)

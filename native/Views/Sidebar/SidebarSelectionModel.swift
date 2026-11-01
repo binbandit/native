@@ -19,11 +19,6 @@ final class SidebarSelectionModel: ArchiveNavigationOrdering {
     /// The tasks on screen, top to bottom, kept up to date by the sidebar.
     @ObservationIgnored var order: [SessionKey] = []
     @ObservationIgnored private var archiveOrder: (() -> [SessionKey])?
-    /// Asks the sidebar to confirm deleting the picked tasks.
-    var isConfirmingDelete = false
-    /// Asks the sidebar to confirm deleting one task. One dialog for the whole list, rather than
-    /// one per row, keeps rows cheap to build.
-    var deletionRequest: SessionKey?
 
     /// Whether the selection bar shows: in select mode, or with more than one task picked.
     var isActive: Bool {

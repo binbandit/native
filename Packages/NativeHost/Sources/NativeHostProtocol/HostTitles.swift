@@ -75,12 +75,15 @@ public struct SetSessionTitleParams: Codable, Hashable, Sendable {
 
     public var sessionID: HostSessionID
     public var title: String?
+    /// Generation revision requested by the host; absent on older clients.
+    public var revision: Int?
     public var source: Source
 
-    public init(sessionID: HostSessionID, title: String?, source: Source) {
+    public init(sessionID: HostSessionID, title: String?, source: Source, revision: Int? = nil) {
         self.sessionID = sessionID
         self.title = title
         self.source = source
+        self.revision = revision
     }
 }
 
@@ -115,10 +118,16 @@ public struct HostTitleRequest: Codable, Hashable, Sendable {
     /// Distinguishes the next-turn retry from repeated summaries of the same request. Optional
     /// so clients can still decode requests from hosts predating retries.
     public var retry: Int?
+    public var firstTurnOutcome: String?
+    public var revision: Int?
 
-    public init(projectName: String, prompt: String, retry: Int? = nil) {
+    public init(
+        projectName: String, prompt: String, retry: Int? = nil, firstTurnOutcome: String? = nil, revision: Int? = nil
+    ) {
         self.projectName = projectName
         self.prompt = prompt
         self.retry = retry
+        self.firstTurnOutcome = firstTurnOutcome
+        self.revision = revision
     }
 }

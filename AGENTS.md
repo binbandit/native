@@ -85,6 +85,12 @@ you're given a build Mac (`NATIVE_REMOTE_BUILD_HOST=user@machine`), run package 
 (Command Line Tools lack Swift Testing's macros). Run tests here at low priority and filtered to yours:
 `nice -n 10 swift test -j 4 --filter <Suite>`.
 
+Run each build or test in the foreground in one tool call, with a timeout of at least 60 minutes
+(including time queued for a build slot). Never background it and poll with sleep loops, `ps`, or
+repeated `tail` calls. `build-slot.sh` blocks quietly after one queue message. If the tool has a
+short maximum wait, use its continuation handle with the longest supported wait; do not restart
+the command or inspect its process/log to see whether it finished. Read the log once after failure.
+
 Keep `main` green: CI builds every PR, and a break you merged comes before anything else.
 
 The app builds with zero warnings in Debug, Release and Nightly, and CI fails on any new one from our
@@ -97,8 +103,14 @@ Format only the files you change, so parallel work doesn't collide on whitespace
 `swift format lint --recursive --strict native Packages` becomes a required check once the one-time
 formatting pass has landed.
 
-Verify UI changes in the running app, not just the build. Several agents run Native at once, so
-use an isolated instance: `scripts/dev/run-isolated.sh <name> [-- app arguments…]` builds into
+Verify UI changes by rendering the real view, not just compiling it. For a change confined to one
+view's appearance (type, color, spacing or drawing), render its `#Preview` states first with
+`scripts/dev/render-previews.py` (CONTRIBUTING.md, "Previews"), inspect light and dark, and attach
+those images to the PR. This is sufficient for that visual change. Build and drive the full app
+when behavior, flows or window-level layout change, when a preview cannot faithfully show the
+changed state, or before merge if the reviewer asks. Never replace real view rendering with a mock.
+
+For full-app checks, several agents run Native at once, so use an isolated instance: `scripts/dev/run-isolated.sh <name> [-- app arguments…]` builds into
 `/tmp/native-dd/<name>` with its own bundle id, defaults, Application Support and host, launches it,
 and prints its pid and window id (`--quit` stops it, `--reset` also forgets its data). Automate only
 that process through AX actions on it (`AXPress`, setting `AXValue`) or `CGEvent.postToPid`. Never

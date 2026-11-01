@@ -92,34 +92,54 @@ struct ComposeTaskAddress: View {
                 }
             }
             .zIndex(entry.picker == .device ? 1 : 0)
-            line("From") {
-                if entry.project == nil {
-                    Text("A branch of its own, made from the folder's current branch")
-                        .foregroundStyle(.dsTextTertiary)
-                } else if let second = compose.second {
-                    // Each agent gets a worktree of its own; nothing to choose.
-                    VStack(alignment: .leading, spacing: 0) {
-                        ownWorktree(for: model.quickEntryRuntime?.agent.displayName ?? "The first agent")
-                        ownWorktree(for: model.plugins.agent(second.agent)?.displayName ?? second.agent.rawValue)
-                    }
-                    // The first line centers on the label's row, as a single line would.
-                    .padding(.vertical, (DS.ComposeTask.rowHeight - DS.ComposeTask.tokenHeight) / 2)
-                } else {
-                    Button {
-                        compose.beginWorkspaceSelection()
-                    } label: {
-                        HStack(spacing: DS.Space.sm) {
-                            Text(workspaceBranch).font(.dsMono).foregroundStyle(.dsTextSecondary)
-                            if compose.workspace == .newWorktree {
-                                Text("→").font(.dsMono).foregroundStyle(.dsTextTertiary)
-                                Text("a new branch").foregroundStyle(.dsTextSecondary)
-                            }
-                            Text(workspaceDetail).foregroundStyle(.dsTextTertiary)
+            if entry.project != nil {
+                line("From") {
+                    if let second = compose.second {
+                        // Each agent gets a worktree of its own; nothing to choose.
+                        VStack(alignment: .leading, spacing: 0) {
+                            ownWorktree(for: model.quickEntryRuntime?.agent.displayName ?? "The first agent")
+                            ownWorktree(for: model.plugins.agent(second.agent)?.displayName ?? second.agent.rawValue)
                         }
+                        // The first line centers on the label's row, as a single line would.
+                        .padding(.vertical, (DS.ComposeTask.rowHeight - DS.ComposeTask.tokenHeight) / 2)
+                    } else if model.offersProjectFolderTasks {
+                        VStack(alignment: .leading, spacing: DS.Space.xs) {
+                            HStack(spacing: DS.Space.sm) {
+                                TaskFolderChoice(
+                                    location: folderLocation,
+                                    sharedFolderNote: nil,
+                                    canCreateSeparateFolder: model.composeOffersSecondAgent,
+                                    choose: model.chooseComposeWorkspace,
+                                    more: compose.beginWorkspaceSelection
+                                )
+                                .disabled(compose.isHeld || compose.isReadingWorkspaces)
+                                Text(workspaceBranch).font(.dsMono).foregroundStyle(.dsTextTertiary)
+                                    .lineLimit(1).truncationMode(.middle)
+                            }
+                            if compose.workspace == .project, let project = entry.project,
+                                let note = model.projectFolderNote(in: project, on: entry.device)
+                            {
+                                Text(note).font(.dsCallout).foregroundStyle(.dsTextSecondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    } else {
+                        Button {
+                            compose.beginWorkspaceSelection()
+                        } label: {
+                            HStack(spacing: DS.Space.sm) {
+                                Text(workspaceBranch).font(.dsMono).foregroundStyle(.dsTextSecondary)
+                                if compose.workspace == .newWorktree {
+                                    Text("→").font(.dsMono).foregroundStyle(.dsTextTertiary)
+                                    Text("a new branch").foregroundStyle(.dsTextSecondary)
+                                }
+                                Text(workspaceDetail).foregroundStyle(.dsTextTertiary)
+                            }
+                        }
+                        .buttonStyle(ComposeAddressButtonStyle()).dsHitTarget(DS.ComposeTask.rowHeight)
+                        .disabled(entry.project == nil || compose.isHeld)
+                        .accessibilityLabel("Choose task workspace")
                     }
-                    .buttonStyle(ComposeAddressButtonStyle()).dsHitTarget(DS.ComposeTask.rowHeight)
-                    .disabled(entry.project == nil || compose.isHeld)
-                    .accessibilityLabel("Choose task workspace")
                 }
             }
         }
@@ -239,9 +259,15 @@ struct ComposeTaskAddress: View {
         default: branch ?? (entry.project == nil ? "Choose a folder first" : "Current branch")
         }
     }
+    private var folderLocation: TaskFolderChoice.Location {
+        switch compose.workspace {
+        case .project: .project
+        case .branch, .worktree: .separate
+        default: .newBranch
+        }
+    }
     private var workspaceDetail: String {
-        if entry.project == nil { return "" }
-        return switch compose.workspace {
+        switch compose.workspace {
         case .newWorktree, .newWorktreeFrom:
             entry.device.isRemote ? "its own worktree on \(deviceName)" : "its own worktree"
         case .project: "in the project folder"

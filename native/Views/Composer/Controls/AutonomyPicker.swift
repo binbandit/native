@@ -44,7 +44,8 @@ struct AutonomyPicker: View {
         let isSuspended = isSuspended && isCurrent
         return ComposerPickerRow(
             title: choice.name,
-            detail: isForbidden ? "Not allowed by your organization" : AutonomySummary.summary(of: choice),
+            detail: isForbidden
+                ? "Not allowed by \(PolicyCenter.organizationName)" : AutonomySummary.summary(of: choice),
             trailing: isForbidden ? .locked : isCurrent ? .checked(dimmed: isSuspended) : .none,
             isEnabled: !isForbidden
         ) {

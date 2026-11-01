@@ -37,6 +37,9 @@ public final class JSONRPCPeer: Sendable {
     }
 
     public typealias Handler = @Sendable (Event) async -> Void
+    /// Runs at the response boundary, before the next message is handled or the caller resumes.
+    /// It must not wait for more traffic from this peer.
+    public typealias ResponseHandler = @Sendable () async -> Void
 
     private let channel: any ByteStream
     private let handler: Handler
@@ -44,9 +47,14 @@ public final class JSONRPCPeer: Sendable {
     private let state = Mutex(State())
     private let logger = HostLogger(category: "JSONRPC")
 
+    private struct PendingRequest {
+        let continuation: CheckedContinuation<Data, any Error>
+        let onResponse: ResponseHandler?
+    }
+
     private struct State {
         var nextID = 0
-        var pending: [RequestID: CheckedContinuation<Data, any Error>] = [:]
+        var pending: [RequestID: PendingRequest] = [:]
         var isClosed = false
         var reading: Task<Void, Never>?
     }
@@ -84,9 +92,10 @@ public final class JSONRPCPeer: Sendable {
     // MARK: - Sending
 
     public func request<Result: Decodable & Sendable>(
-        _ method: String, _ params: some Encodable & Sendable, as result: Result.Type = Result.self
+        _ method: String, _ params: some Encodable & Sendable, as result: Result.Type = Result.self,
+        onResponse: ResponseHandler? = nil
     ) async throws -> Result {
-        let line = try await requestLine(method, params)
+        let line = try await requestLine(method, params, onResponse: onResponse)
         return try Self.makeDecoder().decode(IncomingResult<Result>.self, from: line).result
     }
 
@@ -118,13 +127,15 @@ public final class JSONRPCPeer: Sendable {
         try write(OutgoingError(id: id, error: error))
     }
 
-    private func requestLine(_ method: String, _ params: some Encodable & Sendable) async throws -> Data {
+    private func requestLine(
+        _ method: String, _ params: some Encodable & Sendable, onResponse: ResponseHandler?
+    ) async throws -> Data {
         try await withCheckedThrowingContinuation { continuation in
             let id: RequestID? = state.withLock { state in
                 guard !state.isClosed else { return nil }
                 let id = RequestID.int(state.nextID)
                 state.nextID += 1
-                state.pending[id] = continuation
+                state.pending[id] = PendingRequest(continuation: continuation, onResponse: onResponse)
                 return id
             }
             guard let id else {
@@ -134,8 +145,8 @@ public final class JSONRPCPeer: Sendable {
             do {
                 try write(OutgoingRequest(id: id, method: method, params: params))
             } catch {
-                if let continuation = state.withLock({ $0.pending.removeValue(forKey: id) }) {
-                    continuation.resume(throwing: error)
+                if let pending = state.withLock({ $0.pending.removeValue(forKey: id) }) {
+                    pending.continuation.resume(throwing: error)
                 }
             }
         }
@@ -173,8 +184,8 @@ public final class JSONRPCPeer: Sendable {
             defer { state.pending.removeAll() }
             return Array(state.pending.values)
         }
-        for continuation in waiting {
-            continuation.resume(throwing: PeerError.closed)
+        for pending in waiting {
+            pending.continuation.resume(throwing: PeerError.closed)
         }
         await handler(.closed)
     }
@@ -189,11 +200,12 @@ public final class JSONRPCPeer: Sendable {
         }
         switch (envelope.method, envelope.id) {
         case (nil, let id?):
-            guard let continuation = state.withLock({ $0.pending.removeValue(forKey: id) }) else { return }
+            guard let pending = state.withLock({ $0.pending.removeValue(forKey: id) }) else { return }
+            await pending.onResponse?()
             if let error = envelope.error {
-                continuation.resume(throwing: error)
+                pending.continuation.resume(throwing: error)
             } else {
-                continuation.resume(returning: line)
+                pending.continuation.resume(returning: line)
             }
         case (let method?, let id?):
             await handler(.request(Message(id: id, method: method, line: line)))

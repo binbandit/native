@@ -15,7 +15,7 @@ struct HomeNextStartAddress: View {
                 model: model.quickEntryModelName,
                 device: model.deviceName(entry.device),
                 deviceLook: HostLookStore.shared.look(for: entry.device, named: model.deviceName(entry.device)),
-                project: entry.project.flatMap(model.projects.project)?.name ?? "Choose project",
+                project: entry.project.flatMap(model.projects.project)?.name ?? "No project",
                 branch: branch, isCompact: true,
                 picker: entry.picker, choose: entry.toggle
             )

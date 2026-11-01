@@ -41,10 +41,13 @@ bundle=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$app/Contents/I
 "$run" "$name" --quit >/dev/null
 [ "$fixture" = 1 ] && "$root/scripts/perf/fixture.sh" "$bundle" "/private/tmp/native-perf/$name/fixture"
 rm -rf "$output"
-# The same arguments run-isolated.sh gives the instance.
-open -n "$app" --args -defaultAgent claude-code -agentDefaults.claude-code.model haiku \
+# The same silent defaults as run-isolated.sh, with explicit caller overrides respected.
+defaults_args=()
+[[ " ${app_args[*]-} " == *" -sounds.enabled "* ]] || defaults_args+=(-sounds.enabled NO)
+[[ " ${app_args[*]-} " == *" -native.mute "* ]] || defaults_args+=(-native.mute YES)
+open -g -n "$app" --args -defaultAgent claude-code -agentDefaults.claude-code.model haiku \
     -agentDefaults.claude-code.effort low -gitWorktreesFolder "$HOME/.native/worktrees-dev/$name" \
-    ${app_args[@]+"${app_args[@]}"}
+    ${defaults_args[@]+"${defaults_args[@]}"} ${app_args[@]+"${app_args[@]}"}
 pid=""
 for _ in $(seq 1 2000); do
     pid=$(pgrep -nf "$process" || true)

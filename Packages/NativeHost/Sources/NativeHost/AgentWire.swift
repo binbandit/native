@@ -77,10 +77,7 @@ struct RawSteerResponse: Decodable, Sendable {
 /// that do). No other optional client capabilities yet (fs, terminals), so agents do that work.
 struct HostInitializeRequest: Encodable, Sendable {
     var protocolVersion = ACP.protocolVersion
-    var clientCapabilities: JSONValue = .object([
-        "subagents": .object([:]), "elicitation": .object(["form": .object([:])]),
-        "_meta": .object(["subagents": .object([:])]),
-    ])
+    var clientCapabilities: JSONValue = .object(InitializeRequest.defaultClientCapabilities)
     var clientInfo: Implementation
 }
 

@@ -7,6 +7,7 @@ import SwiftUI
 struct TaskWellTitlePopover: View {
     let facts: TaskWellTitleFacts
     let rename: (String) -> Void
+    var moveToProject: (() -> Void)?
     let close: () -> Void
     @State private var draft = ""
     @State private var isCancelled = false
@@ -36,6 +37,14 @@ struct TaskWellTitlePopover: View {
             }
             .padding(.horizontal, DS.Space.xl)
             .padding(.vertical, DS.Space.lg)
+            if let moveToProject {
+                SeparatorLine()
+                Button("Move to Project…") {
+                    close(); moveToProject()
+                }
+                .buttonStyle(.ds(.ghost))
+                .padding(DS.Space.lg)
+            }
             if let management = facts.management {
                 SeparatorLine()
                 Label(management, systemImage: "lock")

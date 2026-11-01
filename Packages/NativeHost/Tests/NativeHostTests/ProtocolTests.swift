@@ -56,6 +56,15 @@ struct ProtocolTests {
         #expect(try JSONDecoder().decode(PromptDelivery.self, from: Data(#""queued""#.utf8)) == .queued)
     }
 
+    @Test("Held steer status survives the wire and older queues still decode")
+    func heldSteerStatus() throws {
+        let item = QueuedPrompt(text: "After the command", waitingForTool: "sleep 20")
+        #expect(try roundTrip(item) == item)
+        let old = Data(
+            "{\"id\":\"\(item.id.uuidString)\",\"text\":\"Earlier\",\"isEchoed\":true,\"attachments\":[]}".utf8)
+        #expect(try JSONDecoder().decode(QueuedPrompt.self, from: old).waitingForTool == nil)
+    }
+
     @Test("Forwarded integers stay integers, so the reducer can decode them")
     func integersSurviveForwarding() throws {
         let update = JSONValue.object([
@@ -96,6 +105,58 @@ struct ProtocolTests {
         await client.closed()
         #expect(client.isClosed)
     }
+    @Test("Response hooks finish before subsequent notifications", .timeLimit(.minutes(1)), arguments: [false, true])
+    func responseBoundaryOrdering(fails: Bool) async throws {
+        let (clientEnd, serverEnd) = try UnixSocket.pair()
+        let server = PeerBox()
+        let serverPeer = JSONRPCPeer(channel: ByteChannel.socket(serverEnd, label: "boundary-server"), label: "server")
+        {
+            event in
+            guard case .request(let message) = event, let id = message.id, let peer = await server.peer else { return }
+            try? peer.notify("before", [String: String]())
+            if fails {
+                try? peer.respond(to: id, error: RPCError(code: -32000, message: "fixture refusal"))
+            } else {
+                try? peer.respond(to: id, with: ["echo": "ok"])
+            }
+            try? peer.notify("after", [String: String]())
+        }
+        await server.set(serverPeer)
+        let received = Recorded<String>()
+        let client = JSONRPCPeer(channel: ByteChannel.socket(clientEnd, label: "boundary-client"), label: "client") {
+            event in
+            if case .notification(let message) = event { received.append(message.method) }
+        }
+        defer { client.close(); serverPeer.close() }
+        let (started, starting) = AsyncStream.makeStream(of: Void.self)
+        let (released, release) = AsyncStream.makeStream(of: Void.self)
+        defer { release.finish() }
+        serverPeer.start()
+        client.start()
+        let request = Task {
+            do {
+                let result = try await client.request(
+                    "echo", [String: String](), as: [String: String].self,
+                    onResponse: {
+                        starting.yield()
+                        for await _ in released { break }
+                        received.append("response")
+                    })
+                #expect(!fails && result == ["echo": "ok"])
+            } catch {
+                #expect(fails && (error as? RPCError)?.code == -32000)
+            }
+        }
+        for await _ in started { break }
+        #expect(received.values == ["before"])
+        release.yield()
+        await request.value
+        try await pollUntil("the notification after the response") { received.values.count == 3 }
+        #expect(received.values == ["before", "response", "after"])
+        client.close()
+        await client.closed()
+    }
+
 }
 
 private actor PeerBox {

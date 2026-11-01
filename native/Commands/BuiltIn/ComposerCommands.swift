@@ -4,11 +4,14 @@ import NativeCommands
 import SwiftUI
 
 extension CommandID {
+    static let changesAddComment: Self = "changes.addComment"
+    static let changesReviewComments: Self = "changes.reviewComments"
     static let composerFocus: Self = "composer.focus"
     static let composerAttachFiles: Self = "composer.attachFiles"
     static let sessionStop: Self = "session.stop"
     static let sessionNextPermissionMode: Self = "session.nextPermissionMode"
     static let sessionChooseModel: Self = "session.chooseModel"
+    static let sessionMoveToProject: Self = "session.moveToProject"
     static let sessionChangeWorkspace: Self = "session.changeWorkspace"
 }
 
@@ -16,6 +19,24 @@ extension NativeCommand {
     /// The visible task's composer and its agent's settings.
     static func composer(model: AppModel) -> [NativeCommand] {
         [
+            NativeCommand(.changesAddComment, title: "Add Diff Comment…", category: .tasks, systemImage: "text.bubble")
+            {
+                $0.session?.beginDiffComment()
+            }
+            .available { $0.session?.diffCommentSelection != nil && $0.session?.diffCommentRetentionAllowed == true },
+            NativeCommand(
+                .changesReviewComments, title: "Review Draft Comments", category: .tasks, systemImage: "text.quote"
+            ) {
+                $0.session?.reviewDiffComments()
+            }
+            .available { $0.session?.diffComments.isEmpty == false },
+            NativeCommand(
+                .sessionMoveToProject, title: "Move to Project…", category: .tasks,
+                systemImage: "folder", keywords: ["folder", "scratch"]
+            ) { context in
+                if let session = context.session { model.requestMoveToProject(session.key) }
+            }
+            .available { $0.session?.isProjectless == true && $0.session?.isEarlierConversation == false },
             NativeCommand(
                 .sessionChangeWorkspace, title: "Change Workspace…", category: .tasks,
                 systemImage: "arrow.triangle.branch",
@@ -85,7 +106,8 @@ extension NativeCommand {
                 }
                 if context.composeDraft != nil { return true }
                 return context.session.map {
-                    ExperimentStore.shared.value(of: .composerNext) || ComposerSettings($0.configOptions).model != nil
+                    model.offersAgentModels || ExperimentStore.shared.value(of: .composerNext)
+                        || ComposerSettings($0.configOptions).model != nil
                 } ?? false
             },
         ]

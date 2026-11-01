@@ -8,6 +8,7 @@ nonisolated struct DiffRow: Equatable {
     /// The new file's line number, or the old file's for removed lines.
     var number: Int?
     let text: String
+    var oldNumber: Int? = nil
 
     static let contextLines = 3
     static let maxRows = 400
@@ -30,13 +31,13 @@ nonisolated struct DiffRow: Equatable {
         var old = 0, new = 0
         while old < oldLines.count || new < newLines.count {
             if old < oldLines.count, removed.contains(old) {
-                all.append(DiffRow(kind: .removed, number: old + 1, text: oldLines[old]))
+                all.append(DiffRow(kind: .removed, number: old + 1, text: oldLines[old], oldNumber: old + 1))
                 old += 1
             } else if new < newLines.count, inserted.contains(new) {
                 all.append(DiffRow(kind: .added, number: new + 1, text: newLines[new]))
                 new += 1
             } else if old < oldLines.count, new < newLines.count {
-                all.append(DiffRow(kind: .context, number: new + 1, text: newLines[new]))
+                all.append(DiffRow(kind: .context, number: new + 1, text: newLines[new], oldNumber: old + 1))
                 old += 1
                 new += 1
             } else {

@@ -68,6 +68,9 @@ private struct Machine: Sendable {
         if arguments.first == "config", arguments.contains(where: { $0.contains("gh-resolved") }) {
             return .output(1, "", "")
         }
+        if arguments.first == "config", arguments.contains(where: { $0.contains("nativearchivedworktree") }) {
+            return .output(0, "nativearchivedworktree.\(Self.folder).branch\ntask/archived-\(pullRequest)\0", "")
+        }
         return .output(0, "", "")
     }
 
@@ -323,12 +326,11 @@ private struct DroidPullRequestLookupRegression {
         await git.model(for: folder, session: local.id).refreshNow()
         guard let localBranch = tasks.branch(of: local) else { throw LookupFailure("This Mac's task has no branch") }
         try require(await gitHub.loadPullRequest(for: localBranch) == nil, "This Mac's lookup failed")
-        // A droid's row has no badge: the sidebar reading its menu, as every row render does, is
-        // what looks it up, starting from nothing cached for any droid.
+        // Read-only row outcomes start from nothing cached for either host.
         let insights = AppSidebarTaskInsights.make(model: app, git: git, gitHub: gitHub)
         try require(gitHub.branchPullRequests.keys.allSatisfy { $0.host == nil }, "A droid's answer was cached early")
-        try await wait("droid A's row finds its pull request") { insights.pullRequestMenu(taskA) != nil }
-        try await wait("droid B's row finds its pull request") { insights.pullRequestMenu(taskB) != nil }
+        try await wait("droid A's row finds its pull request") { insights.pullRequestBadge(taskA) != nil }
+        try await wait("droid B's row finds its pull request") { insights.pullRequestBadge(taskB) != nil }
         try require(insights.hasPullRequest(taskA) && insights.hasPullRequest(taskB), "The pull request filter missed")
 
         // One path and branch on three machines: three references, each answered by its own gh.
@@ -378,6 +380,12 @@ private struct DroidPullRequestLookupRegression {
         try require(
             tasks.menu(of: local)?.items.map(\.title) == ["Open in Native", "Open on GitHub", "Copy Link", "Merge…"],
             "This Mac's task lost its pull request actions")
+        try require(insights.pullRequestBadge(taskA) != nil, "Paired-host task has no read-only outcome badge")
+        try require(insights.pullRequestBadge(taskB) != nil, "Second host lost its own outcome badge")
+        var opened: URL?
+        gitHub.openExternally = { opened = $0 }
+        insights.pullRequestMenu(taskA)?.items.first { $0.title == "Open on GitHub" }?.perform()
+        try require(opened == tasks.pullRequest(of: taskA)?.url, "Paired-host menu opened another PR")
         // The catalog's index, as the agents' listings fill it.
         app.catalog.remote = [local.id: (project.id, local.info), taskA.id: (project.id, taskA.info)]
         try require(tasks.branch(for: taskA.id) == branchA, "A droid's task by key lost its branch")
@@ -478,6 +486,28 @@ private struct DroidPullRequestLookupRegression {
         try require(tasks.branch(of: taskA) == branchA, "Pairing again changed the task's branch")
         try require(await linkA2.lookups.count == 1, "The new pairing was asked more than once")
         try require(await linkA.runs.count == runsOnOldA, "The replaced pairing still ran commands")
+        // Archive records are read on the task's host, and gh uses its surviving project checkout.
+        app.projects.update(project.id) { $0.checkouts.append(ProjectCheckout(host: a.id, path: "/same/repo")) }
+        app.archivedSessions.set(taskA.id, archived: true)
+        let commandsHere = await here.commands.count
+        await insights.prepare([taskA])
+        let archivedBranch = tasks.branch(of: taskA)
+        try require(
+            archivedBranch
+                == BranchReference(
+                    host: a.id, directory: URL(filePath: "/same/repo", directoryHint: .isDirectory),
+                    branch: "task/archived-20"),
+            "Archived droid task lost its host or saved branch")
+        try require(insights.pullRequestBadge(taskA) != nil, "Archived droid task lost its outcome")
+        try require(
+            tasks.menu(of: taskA)?.items.map(\.title) == ["Open on GitHub", "Copy Link"],
+            "Archived droid task exposed writes")
+        try require(await here.commands.count == commandsHere, "Archived droid lookup used this Mac's git or gh")
+        try require(
+            SessionFolder.isSame(await linkA2.lookups.last?.directory ?? "", "/same/repo"),
+            "Archived droid PR lookup used the removed worktree")
+        print(
+            "PASS: archived droid outcomes use that host's saved branch and surviving checkout, with read-only actions")
         print("PASS: pairing a droid again asks the new pairing")
     }
 

@@ -1,3 +1,4 @@
+import Experiments
 import Git
 import SwiftUI
 
@@ -13,9 +14,12 @@ struct GitChangesInspector: View {
     var session: SessionModel?
     /// Adaptive hosts move the pane between containers without ending the review.
     var resetsReviewOnDisappear = true
+    var onBackToTask: (@MainActor () -> Void)? = nil
     /// Opens the GitHub feature's pull request flow; the button is hidden without it.
     var onCreatePullRequest: (() -> Void)?
 
+    @Experiment(.composerNext) private var composerNext
+    @Environment(\.gitChangesClose) private var closeChanges
     @Environment(\.gitChangesCompact) private var compact
     @State private var isCommitting = false
     @State private var pendingDiscard: [FileChange] = []
@@ -60,6 +64,16 @@ struct GitChangesInspector: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.dsBackground)
+        .environment(\.diffCommentsSession, session)
+        .environment(\.diffCommentsScope, (review?.scope ?? .uncommitted).title)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            if composerNext, let session,
+                model.status?.isClean == false || (review?.scope ?? .uncommitted) != .uncommitted
+                    || !session.diffComments.isEmpty
+            {
+                DiffCommentsFooter(session: session)
+            }
+        }
         // This Turn follows the latest turn as the agent works.
         .onChange(of: session?.phase) { followLatestTurn() }
         .onChange(of: session?.completedWriteCount) { followLatestTurn() }
@@ -126,6 +140,14 @@ struct GitChangesInspector: View {
                         // Reads the selection and its diff itself, so a diff arriving redraws only the pane.
                         GitDiffPane(model: model)
                     }
+                }
+            }
+        } else if composerNext {
+            EmptyStateView(
+                "No changes yet", systemImage: "checkmark.circle", message: "Files appear here after they’re edited."
+            ) {
+                if let action = onBackToTask ?? closeChanges?.close {
+                    Button("Back to Task", action: action).buttonStyle(.ds(.secondary))
                 }
             }
         } else {

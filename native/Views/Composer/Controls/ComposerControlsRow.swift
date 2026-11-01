@@ -7,6 +7,7 @@ import SwiftUI
 struct ComposerControlsRow<Extras: View, Context: View>: View {
     let settings: ComposerSettings
     let agentName: String
+    var agentPicker: ComposerAgentPicker?
     /// The autonomy level shown while Plan Mode suspends it, and restored when Plan Mode ends.
     let resumedAutonomy: String?
     /// Keys for a code block or queued-message edit.
@@ -41,8 +42,9 @@ struct ComposerControlsRow<Extras: View, Context: View>: View {
     private func bar(_ density: ComposerControlDensity, showsHint: Bool = false) -> some View {
         ComposerControlsBar {
             AttachButton(isPickingFiles: $isPickingFiles, onPick: onAttach)
-            if density != .minimal, settings.model != nil || settings.effort != nil {
+            if density != .minimal, settings.model != nil || settings.effort != nil || agentPicker != nil {
                 ModelPill(
+                    agentName: agentName, agentPicker: agentPicker,
                     model: settings.model,
                     effort: settings.effort,
                     switches: settings.modelSwitches,
@@ -70,6 +72,7 @@ struct ComposerControlsRow<Extras: View, Context: View>: View {
             extras(density)
             if !settings.others.isEmpty || density == .overflow || density == .minimal {
                 ComposerMoreMenu(
+                    agentName: agentName, agentPicker: agentPicker,
                     settings: settings,
                     includesModel: density == .minimal,
                     isModelPickerOpen: $isModelPickerOpen,

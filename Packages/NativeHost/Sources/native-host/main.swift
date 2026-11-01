@@ -1,6 +1,7 @@
 import Foundation
 import NativeHost
 import NativeHostProtocol
+import NativeOrchestration
 
 #if os(macOS)
 import NativeHostMac
@@ -44,6 +45,14 @@ let location =
     ?? HostLocation.standard(channel: channel)
 
 switch command {
+case "action":
+    #if os(macOS)
+    let allowed = MacHost.policySource(location: location)?.current().allows(.agentTools) ?? true
+    #else
+    let allowed = LinuxHostPolicySource().current().allows(.agentTools)
+    #endif
+    NativeActionCLI.run(arguments, admitted: allowed)
+
 case "serve":
     // A release binary carries its version in an embedded Info.plist (scripts/release/host.sh).
     let bundleInfo = Bundle.main.infoDictionary ?? [:]

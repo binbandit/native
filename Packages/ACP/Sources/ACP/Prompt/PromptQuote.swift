@@ -2,14 +2,14 @@ import Foundation
 
 /// A snapshot of source lines. Its readable prompt representation also preserves draft and queue
 /// recovery without introducing a second payload that clients could forget to send.
-public struct PromptQuote: Equatable, Sendable {
-    public enum Side: String, Sendable, CaseIterable {
+public struct PromptQuote: Equatable, Sendable, Codable {
+    public enum Side: String, Sendable, CaseIterable, Codable {
         case transcript
         case new = "new file"
         case old = "old file"
     }
 
-    public struct Line: Equatable, Sendable {
+    public struct Line: Equatable, Sendable, Codable {
         public let number: Int
         public let text: String
 
@@ -22,11 +22,13 @@ public struct PromptQuote: Equatable, Sendable {
     public let source: String
     public let side: Side
     public let lines: [Line]
+    public var comment: PromptDiffComment?
 
-    public init(source: String, side: Side = .transcript, lines: [Line]) {
+    public init(source: String, side: Side = .transcript, lines: [Line], comment: PromptDiffComment? = nil) {
         self.source = source
         self.side = side
         self.lines = lines
+        self.comment = comment
     }
 
     /// Expands a nonempty UTF-16 selection to whole source lines, preserving blank lines and tabs.
@@ -61,12 +63,51 @@ public struct PromptQuote: Equatable, Sendable {
 
     public var prompt: String {
         let name = (try? JSONEncoder().encode(source)).flatMap { String(data: $0, encoding: .utf8) } ?? "\"Source\""
+        let annotation = comment.map { "> Comment: " + Self.encoded($0) + "\n" } ?? ""
         return "> Quoted from \(name) (\(side.rawValue))\n"
-            + lines.map { "> \($0.number) | \($0.text)" }.joined(separator: "\n") + "\n\n"
+            + lines.map { "> \($0.number) | \($0.text)" }.joined(separator: "\n") + "\n" + annotation + "\n"
+    }
+
+    private static func encoded(_ comment: PromptDiffComment) -> String {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        return (try? encoder.encode(comment)).flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
     }
 
     public static func draft(quotes: [Self], message: String) -> String {
         quotes.map(\.prompt).joined() + message
+    }
+
+    /// Queue labels describe the packet without exposing its persistence metadata as user copy.
+    public static func summary(_ prompt: String) -> String {
+        let packet = split(prompt)
+        let count = packet.quotes.filter { $0.comment != nil }.count
+        guard count > 0 else { return prompt }
+        let title = "\(count) \(count == 1 ? "comment" : "comments") on changes"
+        let message = packet.message.trimmingCharacters(in: .whitespacesAndNewlines)
+        return message.isEmpty ? title : "\(title) · \(message)"
+    }
+
+    /// Recovery merges with ongoing typing rather than replacing the user's newer draft.
+    public static func restoring(_ packet: String, into draft: String) -> String {
+        let saved = split(packet)
+        var current = split(draft)
+        for quote in saved.quotes {
+            let exists = current.quotes.contains {
+                if let id = quote.comment?.id { return $0.comment?.id == id }
+                return $0 == quote
+            }
+            if !exists { current.quotes.append(quote) }
+        }
+        if current.message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            current.message = saved.message
+        } else if !saved.message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+            current.message.trimmingCharacters(in: .whitespacesAndNewlines)
+                != saved.message.trimmingCharacters(in: .whitespacesAndNewlines)
+        {
+            current.message = saved.message + "\n\n" + current.message
+        }
+        return Self.draft(quotes: current.quotes, message: current.message)
     }
 
     /// Trims a prompt for sending like any other, except its leading quotes: their lines are source
@@ -91,7 +132,7 @@ public struct PromptQuote: Equatable, Sendable {
             guard let source = try? JSONDecoder().decode(String.self, from: Data(name.utf8)) else { break }
             var rest = remaining[remaining.index(after: end)...]
             var lines: [Line] = []
-            while rest.hasPrefix("> ") {
+            while rest.hasPrefix("> "), !rest.hasPrefix("> Comment: ") {
                 let lineEnd = rest.firstIndex(of: "\n") ?? rest.endIndex
                 // A trim elsewhere may have taken the space after an empty last line's bar.
                 var line = rest[..<lineEnd].dropFirst(2)
@@ -101,8 +142,18 @@ public struct PromptQuote: Equatable, Sendable {
                 lines.append(Line(number: number, text: String(line[separator.upperBound...])))
                 rest = lineEnd == rest.endIndex ? rest[rest.endIndex...] : rest[rest.index(after: lineEnd)...]
             }
+            var comment: PromptDiffComment?
+            if rest.hasPrefix("> Comment: ") {
+                let end = rest.firstIndex(of: "\n") ?? rest.endIndex
+                guard
+                    let decoded = try? JSONDecoder().decode(
+                        PromptDiffComment.self, from: Data(rest[..<end].dropFirst(11).utf8))
+                else { break }
+                comment = decoded
+                rest = end == rest.endIndex ? rest[rest.endIndex...] : rest[rest.index(after: end)...]
+            }
             guard !lines.isEmpty, rest.isEmpty || rest.first == "\n" else { break }
-            quotes.append(Self(source: source, side: side, lines: lines))
+            quotes.append(Self(source: source, side: side, lines: lines, comment: comment))
             remaining = rest.isEmpty ? rest : rest.dropFirst()
         }
         return (quotes, String(remaining))

@@ -32,8 +32,15 @@ symlink to the doc it is, so the skill and the doc can't drift:
 | `set-up-native` | `docs/setup.md` | Setting Native up for an engineer, on one Mac or several devices, and troubleshooting |
 | `build-a-native-plugin` | `docs/plugins.md` | Writing a `plugin.json` that adds agents, MCP servers, workflows or themes |
 
-The Orchestration plugin's `native` MCP server serves them with `list_skills` and `get_skill`, minus
-the ones switched off for the calling task. Beside them, `setup_status` (`SetupTools`) reports how
+The on-demand `native-app` skill calls `native list_skills` and `native get_skill` for these guides.
+Claude loads it as a Native-owned SDK plugin; Codex discovers its installed skill folder. Only its
+name, description and location enter context until it is needed. The skill's task, setup and script
+references are separate files. [Architecture](architecture.md#natives-tools-on-demand) describes
+installation ownership, session credentials, policy and MCP compatibility.
+
+The Orchestration plugin's local endpoint serves the guides with `list_skills` and `get_skill`, minus
+the ones switched off for the calling task, through either the CLI or MCP. Beside them,
+`setup_status` (`SetupTools`) reports how
 Native is set up on the caller's Mac, read-only: Native's version and channel, each agent (state,
 sign-in, reported version, launch and install commands), the durable host, paired devices, the
 `policy.*` keys the organization manages, and updates. `AppSetupReporter` builds the report from the

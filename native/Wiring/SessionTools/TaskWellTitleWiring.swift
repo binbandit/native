@@ -16,7 +16,8 @@ struct TaskWellTitleWiring: View {
 
     var body: some View {
         TaskWellTitle(
-            facts: facts, isPresented: $tools.showsTitle, reportsIdealWidth: reportsIdealWidth
+            facts: facts, isPresented: $tools.showsTitle, reportsIdealWidth: reportsIdealWidth,
+            moveToProject: session.isProjectless ? { app.requestMoveToProject(session.key) } : nil
         ) { title in
             app.rename(session.key, to: title, undoManager: undoManager)
         }
@@ -30,7 +31,8 @@ struct TaskWellTitleWiring: View {
         let isWorkerManaged = !policy.policy.managedKeys.isDisjoint(with: PolicyCenter.taskWorkerKeys)
         return TaskWellTitleFacts(
             title: session.displayTitle, project: app.projectName(of: session),
-            branch: git.model(for: session.cwd, session: session.key).branchName,
+            branch: session.isProjectless ? nil : git.model(for: session.cwd, session: session.key).branchName,
+            isProjectFolder: app.offersProjectFolderTasks && app.usesProjectFolder(session.key),
             machine: device.isRemote ? app.deviceName(device) : nil, agent: session.agentName,
             model: ComposerSettings(session.configOptions).model?.shortModelName,
             isWorkerManaged: isWorkerManaged,
@@ -43,7 +45,7 @@ extension AppModel {
     func projectName(of session: SessionModel) -> String {
         guard let id = catalog.lookup(session.key)?.project else { return session.cwd.lastPathComponent }
         // A task of an archived project can still be opened from the archive.
-        return (projects.project(id) ?? projects.archived.first { $0.id == id })?.name ?? session.cwd.lastPathComponent
+        return projectName(for: session.key, in: id) ?? session.cwd.lastPathComponent
     }
 }
 

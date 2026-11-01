@@ -56,6 +56,24 @@ public struct ModeSelection: Codable, Hashable, Sendable {
         return (changes.filter { isModel($0.optionID) } + changes.filter { !isModel($0.optionID) }, next)
     }
 
+    /// Carries the intent to another adapter without retaining that adapter's option IDs or
+    /// restore values. A confirmed planning restriction belongs to the copied mode there too.
+    public func continuing(
+        options: [ConfigOption], allows: (ConfigOption, String) -> Bool = { _, _ in true }
+    ) -> ModeSelection {
+        var next = ModeSelection(mode: mode)
+        let agent = ModeAgentSettings(options)
+        if mode != .build, agent.isPlanOn, let plan = agent.plan {
+            let offered = ModeAgentSettings.choices(of: plan)
+                .filter { $0.value != ModeAgentSettings.planValue && allows(plan, $0.value) }.map(\.value)
+            let original =
+                AgentModelPermissions.selection(for: nil, offered: offered)?.value
+                ?? ModeAgentSettings.planValue
+            next.restore[plan.id] = Restore(original: original, applied: ModeAgentSettings.planValue)
+        }
+        return next
+    }
+
     /// The mode in effect on a session with `options`. The agent's own plan mode can move under
     /// Native: when the agent leaves a plan mode this selection turned on (a plan was approved),
     /// the task is building again; when it turns plan mode on itself, the task is planning.

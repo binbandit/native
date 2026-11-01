@@ -85,7 +85,7 @@ private struct KeyboardShortcutsEditor: View {
             if registry.isLocked {
                 NoticeBanner(
                     tone: .info, systemImage: "lock", title: PolicyCenter.managedExplanation,
-                    detail: "Your organization sets these shortcuts, so they can't be changed here.")
+                    detail: "\(PolicyCenter.organizationSubject) sets these shortcuts, so they can't be changed here.")
             }
             if let notice {
                 NoticeBanner(

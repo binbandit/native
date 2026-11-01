@@ -2,6 +2,8 @@ import SwiftUI
 
 /// The model picker's chip, with the effort meter inside it; clicking the meter steps the effort up.
 struct ModelPill: View {
+    var agentName: String?
+    var agentPicker: ComposerAgentPicker?
     let model: SelectSetting?
     let effort: SelectSetting?
     let switches: [SelectSetting]
@@ -19,6 +21,10 @@ struct ModelPill: View {
         } label: {
             HStack(spacing: DS.Space.md) {
                 HStack(spacing: DS.Space.xs) {
+                    if let agentName {
+                        Text(agentName)
+                        Text("·").foregroundStyle(.dsTextQuaternary)
+                    }
                     Text(model?.shortModelName ?? "Model")
                     if switches.contains(where: \.isOn) {
                         Image(systemName: "bolt.fill")
@@ -29,13 +35,17 @@ struct ModelPill: View {
                 if let effort, !effort.levels.isEmpty {
                     effortMeter(effort)
                 }
+                Image(systemName: "chevron.down")
+                    .font(.dsMicro)
+                    .foregroundStyle(.dsTextTertiary)
+                    .accessibilityHidden(true)
             }
         }
         .buttonStyle(.pill(isOpen: isPickerOpen))
-        .help("Model: \(modelName) (⇧⌘E)")
-        .accessibilityLabel("Model: \(modelName)")
+        .help("Switch agent and model: \(agentName.map { $0 + " · " } ?? "")\(modelName) (⇧⌘E)")
+        .accessibilityLabel("Model: \(agentName.map { $0 + " · " } ?? "")\(modelName)")
         .popover(isPresented: $isPickerOpen, arrowEdge: .top) {
-            ModelPicker(model: model, effort: effort, switches: switches, onSet: onSet) {
+            ModelPicker(agentPicker: agentPicker, model: model, effort: effort, switches: switches, onSet: onSet) {
                 isPickerOpen = false
             }
             .dsPopoverBackground()
@@ -61,12 +71,15 @@ struct ModelPill: View {
     DSPreviewPair {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             ModelPill(
+                agentName: "Claude Code",
                 model: settings.model, effort: settings.effort, switches: settings.modelSwitches,
                 isPickerOpen: .constant(false), onSet: { _, _ in }, onCycleEffort: {})
             ModelPill(
+                agentName: "Claude Code",
                 model: settings.model, effort: nil, switches: [], isPickerOpen: .constant(true), onSet: { _, _ in },
                 onCycleEffort: {})
             ModelPill(
+                agentName: "Local Agent",
                 model: nil, effort: settings.effort, switches: [], isPickerOpen: .constant(false), onSet: { _, _ in },
                 onCycleEffort: {})
         }

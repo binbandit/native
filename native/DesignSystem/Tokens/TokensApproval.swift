@@ -30,6 +30,10 @@ extension DS {
         static let fixItFont = DSTypography.font(size: 11.5, design: .mono)
         static let smallButtonFont = DSTypography.font(size: 11.5, weight: .medium)
         static let monoAdvance: CGFloat = 7.8
+        /// A push's dropped commits: an abbreviated hash, then the subject.
+        static let commitHashWidth: CGFloat = 66
+        static let commitRowHeight: CGFloat = 22
+        static let reasonLineLimit = 3
         static let ringTrackOpacity: Double = 0.3
         static let sweepOpacity: Double = 0.14
         static let hintOpacity: Double = 0.55

@@ -8,6 +8,7 @@ import NativeAutomation
 import NativeHostProtocol
 import NativePolicy
 import Search
+import TaskDefaults
 
 /// Extends Native. Native's own agents and features are plugins too, so every extension point is
 /// exercised by built-in code before anything else depends on it.
@@ -53,6 +54,11 @@ protocol NativePlugin: Sendable {
     /// search covers sessions Native never loaded (docs/search.md). Nil means they're indexed as
     /// Native loads them.
     func historyReader(for agent: AgentDefinition.ID) -> (any SessionHistoryReader)?
+    /// Tools for the task screen (docs/session-tools.md, "Adding a tool"), listed in the well and
+    /// on Settings ▸ Task Tools after Native's own, with the same on and off switch and an
+    /// assignable key. Ids start with the plugin's id (`acme.board`), and a tool lives beside the
+    /// conversation or over it; others are left out. They're gone while the plugin is off.
+    var sessionTools: [SessionToolContribution] { get }
 }
 
 extension NativePlugin {
@@ -68,6 +74,7 @@ extension NativePlugin {
     var policyTranslator: (any SessionPolicyTranslator)? { nil }
     var experiments: [any ExperimentDeclaration] { [] }
     func historyReader(for agent: AgentDefinition.ID) -> (any SessionHistoryReader)? { nil }
+    var sessionTools: [SessionToolContribution] { [] }
 }
 
 // MARK: - Manifest
@@ -151,9 +158,13 @@ struct AgentManifest: Codable, Hashable, Sendable {
     /// Variables to set to the absolute path of a command on the user's PATH, such as
     /// `{"CLAUDE_CODE_EXECUTABLE": "claude"}`, so an adapter runs the user's own CLI.
     var resolveExecutables: [String: String] = [:]
+    /// Declared instruction paths let Settings estimate context without reading file contents.
+    var instructionLocations: [TaskInstructionLocation] = []
     /// Where the agent keeps its own MCP configuration ("claude-code", "codex" or "cursor"), so the
     /// MCP feature can show and import the servers it already loads. Nil when unknown.
     var mcpConfig: String?
+    /// Native skill delivery supported by this adapter. Nil keeps the MCP fallback.
+    var nativeSkill: NativeAgentSkillFormat?
     /// Where the agent's icon comes from. Nil, or nothing found, draws a monogram of its name.
     var icon: AgentIconSource?
     /// Commands besides `command` that must be on the user's PATH for the agent to count as
@@ -176,6 +187,9 @@ struct AgentManifest: Codable, Hashable, Sendable {
     /// that titles sessions with a model of its own doesn't then), and any once Native's title for it
     /// differs, so the agent's own session list shows Native's titles. Nil leaves names to the agent.
     var renameCommand: String?
+    /// `afterTools` explicitly offers queued steering at tool boundaries without an ACP extension.
+    /// `nonInterrupting` permits immediate delivery when the adapter advertises ACP steering.
+    var steeringPolicy: SteeringPolicy?
     /// Ways to sign the agent in that it accepts without advertising them, in ACP's shape
     /// (`AuthMethod`): a key in a variable it reads (`"type": "env_var"`), or a device code it
     /// offers only to clients that open links (`"type": "_native/link"`). For hosts nobody sits
@@ -193,8 +207,10 @@ struct AgentManifest: Codable, Hashable, Sendable {
         env: [String: String] = [:], resolveExecutables: [String: String] = [:], mcpConfig: String? = nil,
         icon: AgentIconSource? = nil, requires: [String] = [], setup: AgentSetupGuide? = nil,
         idleSessionTimeout: Int? = nil, idleUnloadTimeout: Int? = nil, renameCommand: String? = nil,
-        authMethods: [AuthMethod] = [], settingsFiles: [String] = [],
-        networkCapabilities: AgentNetworkCapabilities? = nil
+        steeringPolicy: SteeringPolicy? = nil,
+        authMethods: [AuthMethod] = [], instructionLocations: [TaskInstructionLocation] = [],
+        settingsFiles: [String] = [], networkCapabilities: AgentNetworkCapabilities? = nil,
+        nativeSkill: NativeAgentSkillFormat? = nil
     ) {
         self.id = id
         self.name = name
@@ -204,13 +220,16 @@ struct AgentManifest: Codable, Hashable, Sendable {
         self.env = env
         self.resolveExecutables = resolveExecutables
         self.mcpConfig = mcpConfig
+        self.nativeSkill = nativeSkill
         self.icon = icon
         self.requires = requires
         self.setup = setup
         self.idleSessionTimeout = idleSessionTimeout
         self.idleUnloadTimeout = idleUnloadTimeout
         self.renameCommand = renameCommand
+        self.steeringPolicy = steeringPolicy
         self.authMethods = authMethods
+        self.instructionLocations = instructionLocations
         self.settingsFiles = settingsFiles
         self.networkCapabilities = networkCapabilities
     }
@@ -224,13 +243,17 @@ struct AgentManifest: Codable, Hashable, Sendable {
         args = try container.decodeIfPresent([String].self, forKey: .args) ?? []
         env = try container.decodeIfPresent([String: String].self, forKey: .env) ?? [:]
         resolveExecutables = try container.decodeIfPresent([String: String].self, forKey: .resolveExecutables) ?? [:]
+        instructionLocations =
+            try container.decodeIfPresent([TaskInstructionLocation].self, forKey: .instructionLocations) ?? []
         mcpConfig = try container.decodeIfPresent(String.self, forKey: .mcpConfig)
+        nativeSkill = try container.decodeIfPresent(NativeAgentSkillFormat.self, forKey: .nativeSkill)
         icon = try container.decodeIfPresent(AgentIconSource.self, forKey: .icon)
         requires = try container.decodeIfPresent([String].self, forKey: .requires) ?? []
         setup = try container.decodeIfPresent(AgentSetupGuide.self, forKey: .setup)
         idleSessionTimeout = try container.decodeIfPresent(Int.self, forKey: .idleSessionTimeout)
         idleUnloadTimeout = try container.decodeIfPresent(Int.self, forKey: .idleUnloadTimeout)
         renameCommand = try container.decodeIfPresent(String.self, forKey: .renameCommand)
+        steeringPolicy = try container.decodeIfPresent(SteeringPolicy.self, forKey: .steeringPolicy)
         authMethods = try container.decodeIfPresent([AuthMethod].self, forKey: .authMethods) ?? []
         settingsFiles = try container.decodeIfPresent([String].self, forKey: .settingsFiles) ?? []
         networkCapabilities = try container.decodeIfPresent(AgentNetworkCapabilities.self, forKey: .networkCapabilities)
@@ -402,6 +425,7 @@ extension SessionTitler {
 }
 
 struct TitleRequest: Hashable, Sendable {
+    var firstTurnOutcome: String? = nil
     var projectName: String
     /// The user's first prompt in the session.
     var prompt: String

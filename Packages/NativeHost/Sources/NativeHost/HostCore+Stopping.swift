@@ -5,7 +5,7 @@ import NativeHostProtocol
 // Stopping a turn, and sending again a prompt that failed for a passing reason. ACP cancellation
 // can return while shell commands still run, so the host ends known processes and explains its limits.
 extension HostCore {
-    static let stopGracePeriod: TimeInterval = 2
+    static let stopGracePeriod: TimeInterval = 3
 
     /// Stops what the session is doing: a retry waiting to go out, the running turn, or the recovery
     /// of one. Cancellation gets a short grace period before Native ends the owned process tree.
@@ -36,16 +36,14 @@ extension HostCore {
         }
         guard let turn = session.turn else { return }
         session.isRecoveryCancelled = true
-        if let first = session.stopRequestedAt {
+        if session.stopRequestedAt != nil {
             // A second press skips the grace period, never the process-exit check.
-            if Date.now.timeIntervalSince(first) > 1 {
-                session.stopRequestedAt = .distantPast
-            }
+            session.stopRequestedAt = .distantPast
             return
         }
         guard let link, let processes = link.processesForStop() else {
             // No launched generation remains to cancel while the agent is being restarted.
-            finishUnverifiedStop(turn, in: session)
+            finishForcedStop(turn, in: session)
             return
         }
         session.stopRequestedAt = .now

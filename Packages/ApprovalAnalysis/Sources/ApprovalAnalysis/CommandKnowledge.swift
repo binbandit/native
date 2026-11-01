@@ -21,6 +21,10 @@ public struct CommandKnowledge: Equatable, Sendable {
         let allowsTerminator: Bool?
         let noSuggestionWithOptions: [String]?
         let noSuggestionWithOperandPrefixes: [String]?
+        /// Said instead of `consequence` when an option or operand makes a routine command irreversible.
+        let destructiveConsequence: String?
+        /// Operands starting with one of these make the command irreversible, like `+main` for a push.
+        let destructiveOperandPrefixes: [String]?
     }
 
     struct Option: Codable, Equatable, Sendable {
@@ -37,7 +41,8 @@ public struct CommandKnowledge: Equatable, Sendable {
     struct Operands: Codable, Equatable, Sendable {
         let minimum: Int
         let maximum: Int?
-        let summary: String
+        /// Nil leaves operands unannotated: the words are already in front of the person.
+        let summary: String?
         let paths: Bool
     }
 

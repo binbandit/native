@@ -553,6 +553,8 @@ private struct DroidChangeAgentRegression {
         app.titles.rename(source.titleKey, to: "Fix the login form")
         app.ordering.pin(source.key)
         source.draft = "Keep this draft"
+        let unfinishedComment = DiffCommentsPreviewFixtures.quotes(task: source.clientID)[0]
+        source.beginDiffComment(unfinishedComment)
         let attachment = PromptAttachment(
             url: scratch.appending(path: "notes.txt"), content: .text("Fixture"), byteCount: 7)
         source.attachments = [attachment]
@@ -562,11 +564,13 @@ private struct DroidChangeAgentRegression {
             try require(
                 app.sessions.session(source.key) === source && app.selection == source.key, "\(what): task gone")
             try require(source.draft == "Keep this draft" && source.attachments == [attachment], "\(what): lost draft")
+            try require(source.diffCommentEditors == [unfinishedComment], "\(what): lost unfinished comment")
             try require(!source.isEarlierConversation && app.ordering.isPinned(source.key), "\(what): set aside")
             try require(source.host?.client != nil && source.cwd.folderPath == folder, "\(what): moved the task")
         }
 
-        try require(!experiments.value(of: .changeAgent), "Change Agent is on by default")
+        experiments.set(false, for: .changeAgent)
+        try require(!experiments.value(of: .changeAgent), "Change Agent ignored its opt-out")
         try require(
             app.changeAgentBlock(for: source) == "Enable Change Agent in Settings > Labs first.",
             "Change Agent isn't behind its Labs switch")
@@ -738,6 +742,8 @@ private struct DroidChangeAgentRegression {
         print("PASS: another key strands nothing: the review can't send and the task stays")
 
         // The accepted handoff: reviewed, pairing again meanwhile, its first answer dropped.
+        let uncertainPacket = unfinishedComment.prompt
+        source.unresolvedCommentPacket = uncertainPacket
         change = try await review()
         await change.prepare()
         guard let target = change.candidate else { throw ChangeFailure("No candidate: \(change.error ?? "")") }
@@ -773,6 +779,10 @@ private struct DroidChangeAgentRegression {
         try require(
             target.draft == "Keep this draft" && target.attachments == [attachment] && source.draft.isEmpty
                 && source.attachments.isEmpty, "The draft didn't move to the new task")
+        try require(
+            target.diffCommentEditors == [unfinishedComment] && source.diffCommentEditors.isEmpty
+                && target.unresolvedCommentPacket == uncertainPacket && source.unresolvedCommentPacket == nil,
+            "Unfinished comments and uncertain delivery must move only after the handoff commits")
         try require(
             app.earlierConversations.conversation(before: target.key) == source.key && source.isEarlierConversation,
             "The earlier conversation isn't linked")

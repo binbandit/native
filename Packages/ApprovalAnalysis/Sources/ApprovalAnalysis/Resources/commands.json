@@ -60,74 +60,76 @@
         {
           "words": ["add"],
           "summary": "stage paths for a commit",
-          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
-          "destructive": true,
+          "consequence": "Stages files for the next commit. Unstage them any time.",
+          "destructive": false,
           "options": [
             {"names": ["-A", "--all"], "summary": "stage additions, changes and removals", "destructive": false, "value": "none"},
             {"names": ["-u", "--update"], "summary": "stage changes to tracked paths", "destructive": false, "value": "none"},
-            {"names": ["-f", "--force"], "summary": "force this operation", "destructive": true, "value": "none"}
+            {"names": ["-f", "--force"], "summary": "force this operation", "destructive": false, "value": "none"}
           ],
           "operands": {"minimum": 0, "maximum": null, "summary": "{location} \u00b7 {scope}", "paths": true}
         },
         {
           "words": ["commit"],
           "summary": "record staged changes",
-          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
-          "destructive": true,
+          "consequence": "Changes this repository. The changes stay local until you push.",
+          "destructive": false,
           "options": [
             {"names": ["-m", "--message"], "summary": "use this commit message", "destructive": false, "value": "attached"},
             {"names": ["-a", "--all"], "summary": "stage tracked changes before committing", "destructive": false, "value": "none"},
-            {"names": ["--amend"], "summary": "replace the tip commit", "destructive": true, "value": "none"},
+            {"names": ["--amend"], "summary": "replace the tip commit", "destructive": false, "value": "none"},
             {"names": ["--no-verify"], "summary": "skip commit hooks", "destructive": false, "value": "none"},
             {"names": ["--allow-empty"], "summary": "allow an empty commit", "destructive": false, "value": "none"}
           ],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+          "operands": {"minimum": 0, "maximum": null, "paths": false}
         },
         {
           "words": ["push"],
           "summary": "send commits or refs to a remote",
-          "consequence": "May publish, replace, or delete remote refs. Remote commits have not been inspected. Native cannot undo this push.",
-          "destructive": true,
+          "consequence": "Sends your commits to the remote. Updates its branches with your commits.",
+          "destructive": false,
           "options": [
-            {"names": ["-f", "--force"], "summary": "allow replacing remote history", "destructive": true, "value": "none", "replacement": "--force-with-lease", "alternative": "--force-with-lease refuses if the remote tip differs from the expected commit."},
-            {"names": ["--force-with-lease"], "summary": "replace history only if the remote tip matches the expected commit", "destructive": true, "value": "none"},
+            {"names": ["-f", "--force"], "summary": "replace the branch there, even where it has commits yours doesn't", "destructive": true, "value": "none", "replacement": "--force-with-lease", "alternative": "`--force-with-lease` refuses instead of dropping commits you haven't fetched."},
+            {"names": ["--force-with-lease"], "summary": "replace the branch there, if nobody else pushed since your last fetch", "destructive": true, "value": "none"},
             {"names": ["-u", "--set-upstream"], "summary": "record the upstream branch", "destructive": false, "value": "none"},
-            {"names": ["--delete"], "summary": "delete the named remote refs", "destructive": true, "value": "none"},
+            {"names": ["--delete"], "summary": "delete the branches named there", "destructive": true, "value": "none"},
             {"names": ["--tags"], "summary": "push all tags", "destructive": false, "value": "none"},
             {"names": ["--all"], "summary": "push all branches", "destructive": false, "value": "none"},
-            {"names": ["--mirror"], "summary": "mirror refs, including deletions", "destructive": true, "value": "none"},
+            {"names": ["--mirror"], "summary": "make the remote match this repository, deleting what isn't here", "destructive": true, "value": "none"},
             {"names": ["--dry-run"], "summary": "report what would be pushed", "destructive": false, "value": "none"},
             {"names": ["--atomic"], "summary": "request all-or-nothing ref updates", "destructive": false, "value": "none"}
           ],
-          "operands": {"minimum": 0, "maximum": null, "summary": "remote or ref argument: {value}; remote state not inspected", "paths": false},
+          "operands": {"minimum": 0, "maximum": null, "paths": false},
           "noSuggestionWithOptions": ["--mirror", "--delete"],
-          "noSuggestionWithOperandPrefixes": ["+", ":"]
+          "noSuggestionWithOperandPrefixes": ["+", ":"],
+          "destructiveConsequence": "Can't be undone from here. Commits it replaces may survive in other clones.",
+          "destructiveOperandPrefixes": ["+", ":"]
         },
         {
           "words": ["pull"],
           "summary": "fetch and integrate remote changes",
-          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
-          "destructive": true,
+          "consequence": "Brings in the remote's commits. Git can take it back.",
+          "destructive": false,
           "options": [
-            {"names": ["--rebase"], "summary": "reapply local commits after fetching", "destructive": true, "value": "none"},
+            {"names": ["--rebase"], "summary": "reapply local commits after fetching", "destructive": false, "value": "none"},
             {"names": ["--ff-only"], "summary": "stop if a fast-forward is not possible", "destructive": false, "value": "none"},
             {"names": ["--no-rebase"], "summary": "merge after fetching", "destructive": false, "value": "none"},
             {"names": ["--autostash"], "summary": "stash local changes temporarily", "destructive": false, "value": "none"}
           ],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+          "operands": {"minimum": 0, "maximum": null, "paths": false}
         },
         {
           "words": ["fetch"],
           "summary": "download Git objects and update remote refs",
-          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
-          "destructive": true,
+          "consequence": "Downloads from the remote. Your branches and files aren't changed.",
+          "destructive": false,
           "options": [
-            {"names": ["--prune"], "summary": "remove stale remote-tracking refs", "destructive": true, "value": "none"},
+            {"names": ["--prune"], "summary": "remove stale remote-tracking refs", "destructive": false, "value": "none"},
             {"names": ["--tags"], "summary": "fetch tags", "destructive": false, "value": "none"},
             {"names": ["--all"], "summary": "fetch all configured remotes", "destructive": false, "value": "none"},
             {"names": ["--depth"], "summary": "limit history depth", "destructive": false, "value": "attached"}
           ],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+          "operands": {"minimum": 0, "maximum": null, "paths": false}
         },
         {
           "words": ["clone"],
@@ -169,15 +171,16 @@
         {
           "words": ["switch"],
           "summary": "switch the current branch",
-          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
-          "destructive": true,
+          "consequence": "Changes this repository. The changes stay local until you push.",
+          "destructive": false,
           "options": [
             {"names": ["-c", "--create"], "summary": "create and switch to a branch", "destructive": false, "value": "next"},
             {"names": ["-C", "--force-create"], "summary": "create or reset and switch to a branch", "destructive": true, "value": "next"},
             {"names": ["--detach"], "summary": "detach HEAD", "destructive": false, "value": "none"},
             {"names": ["--discard-changes"], "summary": "discard local changes", "destructive": true, "value": "none"}
           ],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+          "operands": {"minimum": 0, "maximum": null, "paths": false},
+          "destructiveConsequence": "Discards uncommitted changes or resets a branch. Git can't bring those back."
         },
         {
           "words": ["restore"],
@@ -194,15 +197,16 @@
         {
           "words": ["reset"],
           "summary": "reset Git state",
-          "consequence": "May change files or external state. Native cannot undo this command; configuration and contents have not been inspected.",
-          "destructive": true,
+          "consequence": "Changes this repository. The changes stay local until you push.",
+          "destructive": false,
           "options": [
             {"names": ["--hard"], "summary": "replace index and working tree content", "destructive": true, "value": "none"},
             {"names": ["--soft"], "summary": "move HEAD without changing index or working tree", "destructive": false, "value": "none"},
             {"names": ["--mixed"], "summary": "reset the index", "destructive": false, "value": "none"},
             {"names": ["--keep"], "summary": "abort if local changes would be overwritten", "destructive": false, "value": "none"}
           ],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+          "operands": {"minimum": 0, "maximum": null, "paths": false},
+          "destructiveConsequence": "Discards uncommitted changes. Git can't bring them back."
         },
         {
           "words": ["clean"],
@@ -760,7 +764,7 @@
         {
           "words": [],
           "summary": "delete files or folders",
-          "consequence": "Files are deleted directly, without moving them to Trash. Contents and symbolic links have not been inspected; Native cannot undo this.",
+          "consequence": "Deletes without using the Trash. Native can't bring it back.",
           "destructive": true,
           "options": [
             {"names": ["-r", "-R", "--recursive"], "summary": "include folders and their contents", "destructive": false, "value": "none"},
@@ -1037,19 +1041,19 @@
         {
           "words": ["run"],
           "summary": "run a package script",
-          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
-          "destructive": true,
+          "consequence": "Runs a script from this project. It can do whatever the script says.",
+          "destructive": false,
           "options": [],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "operands": {"minimum": 0, "maximum": null, "paths": false},
           "optionsBeforeOperands": true
         },
         {
           "words": ["test"],
           "summary": "run package tests",
-          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
-          "destructive": true,
+          "consequence": "Runs from {folder}. Builds and executes project code.",
+          "destructive": false,
           "options": [],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "operands": {"minimum": 0, "maximum": null, "paths": false},
           "optionsBeforeOperands": false
         },
         {
@@ -1138,28 +1142,28 @@
         {
           "words": ["run"],
           "summary": "run a package script",
-          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
-          "destructive": true,
+          "consequence": "Runs a script from this project. It can do whatever the script says.",
+          "destructive": false,
           "options": [],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "operands": {"minimum": 0, "maximum": null, "paths": false},
           "optionsBeforeOperands": true
         },
         {
           "words": ["test"],
           "summary": "run package tests",
-          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
-          "destructive": true,
+          "consequence": "Runs from {folder}. Builds and executes project code.",
+          "destructive": false,
           "options": [],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "operands": {"minimum": 0, "maximum": null, "paths": false},
           "optionsBeforeOperands": false
         },
         {
           "words": ["build"],
           "summary": "run a package build",
-          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
-          "destructive": true,
+          "consequence": "Runs from {folder}. Builds and executes project code.",
+          "destructive": false,
           "options": [],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "operands": {"minimum": 0, "maximum": null, "paths": false},
           "optionsBeforeOperands": false
         },
         {
@@ -1236,28 +1240,28 @@
         {
           "words": ["run"],
           "summary": "run a package script",
-          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
-          "destructive": true,
+          "consequence": "Runs a script from this project. It can do whatever the script says.",
+          "destructive": false,
           "options": [],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "operands": {"minimum": 0, "maximum": null, "paths": false},
           "optionsBeforeOperands": true
         },
         {
           "words": ["test"],
           "summary": "run package tests",
-          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
-          "destructive": true,
+          "consequence": "Runs from {folder}. Builds and executes project code.",
+          "destructive": false,
           "options": [],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "operands": {"minimum": 0, "maximum": null, "paths": false},
           "optionsBeforeOperands": false
         },
         {
           "words": ["build"],
           "summary": "run a package build",
-          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
-          "destructive": true,
+          "consequence": "Runs from {folder}. Builds and executes project code.",
+          "destructive": false,
           "options": [],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "operands": {"minimum": 0, "maximum": null, "paths": false},
           "optionsBeforeOperands": false
         },
         {
@@ -1336,28 +1340,28 @@
         {
           "words": ["run"],
           "summary": "run a package script",
-          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
-          "destructive": true,
+          "consequence": "Runs a script from this project. It can do whatever the script says.",
+          "destructive": false,
           "options": [],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "operands": {"minimum": 0, "maximum": null, "paths": false},
           "optionsBeforeOperands": true
         },
         {
           "words": ["test"],
           "summary": "run package tests",
-          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
-          "destructive": true,
+          "consequence": "Runs from {folder}. Builds and executes project code.",
+          "destructive": false,
           "options": [],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "operands": {"minimum": 0, "maximum": null, "paths": false},
           "optionsBeforeOperands": false
         },
         {
           "words": ["build"],
           "summary": "run a package build",
-          "consequence": "Package scripts and dependencies can run code or change files. Registries, scripts and package contents have not been inspected.",
-          "destructive": true,
+          "consequence": "Runs from {folder}. Builds and executes project code.",
+          "destructive": false,
           "options": [],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "operands": {"minimum": 0, "maximum": null, "paths": false},
           "optionsBeforeOperands": false
         },
         {
@@ -1392,14 +1396,14 @@
         {
           "words": [],
           "summary": "run a package executable",
-          "consequence": "May download and execute package code. The package and its arguments have not been inspected.",
-          "destructive": true,
+          "consequence": "Downloads and runs a package. Native can't describe what it does.",
+          "destructive": false,
           "options": [
             {"names": ["-y", "--yes"], "summary": "skip the installation prompt", "destructive": false, "value": "none"},
             {"names": ["--no-install"], "summary": "refuse to install a missing package", "destructive": false, "value": "none"},
             {"names": ["-p", "--package"], "summary": "use this package", "destructive": false, "value": "attached"}
           ],
-          "operands": {"minimum": 1, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false},
+          "operands": {"minimum": 1, "maximum": null, "paths": false},
           "optionsBeforeOperands": true
         }
       ]
@@ -1545,8 +1549,8 @@
         {
           "words": ["build"],
           "summary": "build Rust targets",
-          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
-          "destructive": true,
+          "consequence": "Runs from {folder}. Builds and executes project code.",
+          "destructive": false,
           "options": [
             {"names": ["--release"], "summary": "use the release profile", "destructive": false, "value": "none"},
             {"names": ["--workspace"], "summary": "include workspace members", "destructive": false, "value": "none"},
@@ -1555,13 +1559,13 @@
             {"names": ["-p", "--package"], "summary": "choose this package", "destructive": false, "value": "attached"},
             {"names": ["--manifest-path"], "summary": "use this manifest", "destructive": false, "value": "attached"}
           ],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+          "operands": {"minimum": 0, "maximum": null, "paths": false}
         },
         {
           "words": ["test"],
           "summary": "run Rust tests",
-          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
-          "destructive": true,
+          "consequence": "Runs from {folder}. Builds and executes project code.",
+          "destructive": false,
           "options": [
             {"names": ["--release"], "summary": "use the release profile", "destructive": false, "value": "none"},
             {"names": ["--workspace"], "summary": "include workspace members", "destructive": false, "value": "none"},
@@ -1570,13 +1574,13 @@
             {"names": ["-p", "--package"], "summary": "choose this package", "destructive": false, "value": "attached"},
             {"names": ["--manifest-path"], "summary": "use this manifest", "destructive": false, "value": "attached"}
           ],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+          "operands": {"minimum": 0, "maximum": null, "paths": false}
         },
         {
           "words": ["check"],
           "summary": "check Rust targets",
-          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
-          "destructive": true,
+          "consequence": "Runs from {folder}. Builds and executes project code.",
+          "destructive": false,
           "options": [
             {"names": ["--release"], "summary": "use the release profile", "destructive": false, "value": "none"},
             {"names": ["--workspace"], "summary": "include workspace members", "destructive": false, "value": "none"},
@@ -1585,13 +1589,13 @@
             {"names": ["-p", "--package"], "summary": "choose this package", "destructive": false, "value": "attached"},
             {"names": ["--manifest-path"], "summary": "use this manifest", "destructive": false, "value": "attached"}
           ],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+          "operands": {"minimum": 0, "maximum": null, "paths": false}
         },
         {
           "words": ["run"],
           "summary": "run a Rust target",
-          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
-          "destructive": true,
+          "consequence": "Runs this package's program. It can do whatever the program does.",
+          "destructive": false,
           "options": [
             {"names": ["--release"], "summary": "use the release profile", "destructive": false, "value": "none"},
             {"names": ["--locked"], "summary": "require the lockfile", "destructive": false, "value": "none"},
@@ -1599,7 +1603,7 @@
             {"names": ["-p", "--package"], "summary": "choose this package", "destructive": false, "value": "attached"},
             {"names": ["--manifest-path"], "summary": "use this manifest", "destructive": false, "value": "attached"}
           ],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+          "operands": {"minimum": 0, "maximum": null, "paths": false}
         },
         {
           "words": ["clean"],
@@ -1665,8 +1669,8 @@
         {
           "words": ["clippy"],
           "summary": "check Rust code with Clippy",
-          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
-          "destructive": true,
+          "consequence": "Runs from {folder}. Builds and executes project code.",
+          "destructive": false,
           "options": [
             {"names": ["--release"], "summary": "use the release profile", "destructive": false, "value": "none"},
             {"names": ["--workspace"], "summary": "include workspace members", "destructive": false, "value": "none"},
@@ -1675,7 +1679,7 @@
             {"names": ["-p", "--package"], "summary": "choose this package", "destructive": false, "value": "attached"},
             {"names": ["--manifest-path"], "summary": "use this manifest", "destructive": false, "value": "attached"}
           ],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+          "operands": {"minimum": 0, "maximum": null, "paths": false}
         }
       ]
     },
@@ -1685,39 +1689,39 @@
         {
           "words": ["build"],
           "summary": "build Swift targets",
-          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
-          "destructive": true,
+          "consequence": "Runs from {folder}. Builds and executes project code.",
+          "destructive": false,
           "options": [
             {"names": ["-c", "--configuration"], "summary": "use this build configuration", "destructive": false, "value": "attached"},
             {"names": ["-j", "--jobs"], "summary": "limit build jobs", "destructive": false, "value": "attached"},
             {"names": ["--package-path"], "summary": "use this package directory", "destructive": false, "value": "attached"}
           ],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+          "operands": {"minimum": 0, "maximum": null, "paths": false}
         },
         {
           "words": ["test"],
           "summary": "run Swift tests",
-          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
-          "destructive": true,
+          "consequence": "Runs from {folder}. Builds and executes project code.",
+          "destructive": false,
           "options": [
             {"names": ["-c", "--configuration"], "summary": "use this build configuration", "destructive": false, "value": "attached"},
             {"names": ["--filter"], "summary": "run matching tests", "destructive": false, "value": "attached"},
             {"names": ["-j", "--jobs"], "summary": "limit build jobs", "destructive": false, "value": "attached"},
             {"names": ["--package-path"], "summary": "use this package directory", "destructive": false, "value": "attached"}
           ],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+          "operands": {"minimum": 0, "maximum": null, "paths": false}
         },
         {
           "words": ["run"],
           "summary": "run a Swift executable",
-          "consequence": "May execute build scripts or tools and change files. Source, dependencies and configuration have not been inspected.",
-          "destructive": true,
+          "consequence": "Runs this package's program. It can do whatever the program does.",
+          "destructive": false,
           "options": [
             {"names": ["-c", "--configuration"], "summary": "use this build configuration", "destructive": false, "value": "attached"},
             {"names": ["-j", "--jobs"], "summary": "limit build jobs", "destructive": false, "value": "attached"},
             {"names": ["--package-path"], "summary": "use this package directory", "destructive": false, "value": "attached"}
           ],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+          "operands": {"minimum": 0, "maximum": null, "paths": false}
         },
         {
           "words": ["package", "resolve"],
@@ -1767,8 +1771,8 @@
         {
           "words": [],
           "summary": "run an Xcode build action",
-          "consequence": "Build phases can run scripts, change files, and resolve dependencies. Project settings and scripts have not been inspected.",
-          "destructive": true,
+          "consequence": "Runs an Xcode build. Build phases can run the project's scripts.",
+          "destructive": false,
           "options": [
             {"names": ["-project"], "summary": "use this Xcode project", "destructive": false, "value": "next"},
             {"names": ["-workspace"], "summary": "use this Xcode workspace", "destructive": false, "value": "next"},
@@ -1779,7 +1783,7 @@
             {"names": ["-quiet"], "summary": "reduce output", "destructive": false, "value": "none"},
             {"names": ["-jobs"], "summary": "limit concurrent jobs", "destructive": false, "value": "next"}
           ],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+          "operands": {"minimum": 0, "maximum": null, "paths": false}
         }
       ]
     },
@@ -1789,8 +1793,8 @@
         {
           "words": [],
           "summary": "run make targets",
-          "consequence": "Recipes can run commands and change files. Makefiles and environment have not been inspected.",
-          "destructive": true,
+          "consequence": "Runs a make target. Its recipe can run any command.",
+          "destructive": false,
           "options": [
             {"names": ["-j", "--jobs"], "summary": "limit concurrent jobs", "destructive": false, "value": "attached"},
             {"names": ["-f", "--file"], "summary": "use this makefile", "destructive": false, "value": "attached"},
@@ -1798,7 +1802,7 @@
             {"names": ["-n", "--just-print"], "summary": "print most recipes; recursive make recipes can still run", "destructive": false, "value": "none"},
             {"names": ["-k", "--keep-going"], "summary": "continue independent targets after errors", "destructive": false, "value": "none"}
           ],
-          "operands": {"minimum": 0, "maximum": null, "summary": "argument: {value}; contents not inspected", "paths": false}
+          "operands": {"minimum": 0, "maximum": null, "paths": false}
         }
       ]
     },
@@ -2523,8 +2527,8 @@
     }
   ],
   "locations": [
-    {"kind": "homePrefix", "path": "Library/Developer/Xcode/DerivedData", "summary": "conventional Xcode build cache; contents not inspected"},
-    {"kind": "component", "path": "node_modules", "summary": "conventional installed dependencies; local edits not inspected"},
-    {"kind": "component", "path": ".build", "summary": "conventional Swift build cache; contents not inspected"}
+    {"kind": "homePrefix", "path": "Library/Developer/Xcode/DerivedData", "summary": "Xcode's build cache"},
+    {"kind": "component", "path": "node_modules", "summary": "installed dependencies"},
+    {"kind": "component", "path": ".build", "summary": "Swift's build folder"}
   ]
 }

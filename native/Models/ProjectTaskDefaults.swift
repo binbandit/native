@@ -7,6 +7,21 @@ import Foundation
 /// pull requests opened as tasks, workflow steps and expeditions. Without them, a task starts with
 /// the agent used last and that agent's own defaults (`AgentSessionDefaults`).
 enum ProjectTaskDefaults {
+    static func setAgent(
+        _ agent: AgentDefinition.ID?, for project: Project.ID, defaults: UserDefaults = .standard,
+        undoManager: UndoManager? = nil
+    ) {
+        let previous = self.agent(for: project, defaults: defaults)
+        guard previous != agent else { return }
+        defaults.set(agent?.rawValue, forKey: agentKey(for: project))
+        undoManager?.registerUndo(withTarget: defaults) { defaults in
+            MainActor.assumeIsolated {
+                setAgent(previous, for: project, defaults: defaults, undoManager: undoManager)
+            }
+        }
+        undoManager?.setActionName("Change Starting Agent")
+    }
+
     static func agentKey(for project: Project.ID) -> String {
         "projectDefaults.\(project.uuidString).agent"
     }
@@ -27,4 +42,16 @@ enum ProjectTaskDefaults {
     ) -> String? {
         defaults.string(forKey: modelKey(for: project, agent: agent))
     }
+    static func key(for project: Project.ID, agent: AgentDefinition.ID, setting: AgentSessionDefaults.Setting) -> String
+    {
+        "projectDefaults.\(project.uuidString).\(agent.rawValue).\(setting.rawValue)"
+    }
+
+    static func value(
+        for project: Project.ID, agent: AgentDefinition.ID, setting: AgentSessionDefaults.Setting,
+        defaults: UserDefaults = .standard
+    ) -> String? {
+        defaults.string(forKey: key(for: project, agent: agent, setting: setting)).flatMap { $0.isEmpty ? nil : $0 }
+    }
+
 }

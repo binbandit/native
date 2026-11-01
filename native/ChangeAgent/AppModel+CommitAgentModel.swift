@@ -29,6 +29,7 @@ extension AppModel {
                 if case .select(let value, _) = option.kind { saved.choose(option, value: value) }
             }
         }
+        retainPrivateFiles(of: source, for: target.key)
         earlierConversations.record(target.key, after: source.key)
         earlierConversations.keep(target.key)
         moveAgentModelDraft(from: source, to: target)
@@ -44,6 +45,7 @@ extension AppModel {
     func undoAgentModel(_ change: ComposerAgentChange, source: SessionModel, target: SessionModel) {
         source.isModelChangeSource = false
         sessions.services.modelContinuations.remove(target.key)
+        retainPrivateFiles(of: target, for: source.key)
         earlierConversations.undoSelection(target.key, restoring: source.key)
         moveAgentModelDraft(from: target, to: source)
         ordering.replace(target.key, with: source.key)
@@ -55,6 +57,7 @@ extension AppModel {
     }
 
     private func moveAgentModelDraft(from source: SessionModel, to target: SessionModel) {
+        target.adoptDiffCommentDrafts(from: source, moving: true)
         source.attachmentReads.move(to: target)
         target.draft = source.draft
         target.attachments = source.attachments

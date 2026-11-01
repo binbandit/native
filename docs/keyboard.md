@@ -37,8 +37,10 @@ terminal tab instead. ⌘, brings the main window back with Settings; ⌘Q quits
 | ⌘. | | Stop the turn; again, end the cancel grace period | `session.stop` |
 | ↑ in an empty composer | Edit the last queued message, if any; else recall the last prompt | Edit the last queued message | |
 
-**Steer** adds the message to the running turn (`_session/steering`); agents that don't support
-steering queue it instead. **Queue** holds the message above the composer
+**Steer** preserves running tool calls. Agents with non-interrupting steering receive it immediately.
+Otherwise it waits until every current tool finishes, then steers between steps. The composer says
+"Will steer after <tool> finishes"; the waiting message can still be edited or removed. Agents without
+a steering extension are interrupted between steps and receive the message as their next prompt. **Queue** holds the message above the composer
 and sends it when the turn ends; queued messages go out one per turn, in order. A stopped or failed
 turn holds the queue until you send again.
 
@@ -49,16 +51,14 @@ needed in the placeholder. Code-block and queued-message editing hints remain vi
 controls row has room.
 
 **Stop** asks the agent to end the turn and answers its open permission requests as rejected. The
-host gives the agent two seconds to cancel, then ends the processes it can attribute to that agent,
-including shell commands in separate process groups. The task stays Stopping until those known
-processes have exited. Pressing Stop again ends the grace period.
-An agent process can serve several tasks: Native waits for its other tasks to finish or be stopped
-before ending that shared process, and explains that commands may still be running meanwhile.
-ACP cancellation does not guarantee that every command has exited or that commands cannot detach
-between process snapshots. Native therefore reports an unverified Stop as a failed turn with a clear warning that
-background commands may still be running, rather than labelling it Stopped. Queued messages remain
-paused unless the user explicitly chose Send Now. In-app mode, which cannot track the host's processes,
-keeps the turn Stopping and explains its limit.
+button shows that it is stopping. After three seconds, or immediately on a second press, the host
+freezes and ends the agent's known process tree, including shell commands in separate process groups.
+The transcript marks unfinished tool calls Stopped. If the agent did not answer, the receipt says
+"Stopped. <agent> didn't respond, so Native stopped it."
+
+Native restarts the adapter and reattaches the conversation, retaining the transcript, draft and
+paused queue. Other running tasks that shared the adapter recover through the same path as an agent
+crash. Queued messages remain paused unless the user explicitly chose Send Now.
 
 ### Code
 
@@ -78,15 +78,19 @@ Tab edit the code and the hint says "↩ New line · ⌘↩ Send":
 
 ### Queued messages
 
-Each queued message has Send Now, Edit and Remove on hover; its menu (a right-click, or touch and
-hold on iPad) adds Move Up and Move Down. Send Now steers the message into the running turn when the
-agent can steer; otherwise it stops the turn and sends the message next. Drag a message to reorder
-the queue. Clicking a message, or ↑ in an empty composer, opens it in the editor:
+Each queued message has Edit and Remove on hover; its menu (a right-click, or touch and hold on
+iPad) adds Move Up and Move Down. While a turn runs, Send Now appears only when the current task's agent
+advertises ACP steering or explicitly declares `afterTools` delivery in its plugin manifest. It adds the message
+to the running turn, waiting for running tools when needed. For agents advertising neither, queued
+messages send when the turn ends; mid-turn Send Now, its menu item, accessibility action and shortcut are absent.
+When the task is idle, including after Stop, Send Now is available for every agent and sends the queued
+message as the next prompt, resuming the queue without needing a new draft.
+Drag a message to reorder the queue. Clicking a message, or ↑ in an empty composer, opens it in the editor:
 
 | Keys (queued message open in the editor) | Action |
 | --- | --- |
 | Return | Save the edit; the message keeps its place |
-| ⌘Return | Save the edit and Send Now |
+| ⌘Return | Save the edit and Send Now, when available for the current task state |
 | ⌥⌘↑ / ⌥⌘↓ | Move it up / down the queue (Task ▸ Move Queued Message Up / Down) |
 | Escape | Close it without saving |
 
@@ -110,9 +114,11 @@ only while the card has focus; ⌘1 – ⌘9 stay task navigation.
 
 With Fine print (`NativeComposerNext`) enabled, the question takes the composer's place, in the
 approval's frame: "Claude Code asks", a `1 of 2` pager, choices on digit keycaps (a choice the agent
-recommends is tagged), Skip and Next (Return). The composer's field below becomes "Or answer in your
+recommends is tagged and starts picked, so Return accepts it), Skip and Send for a single question,
+or Next / Send Answers for several (Return). The composer's field below becomes "Or answer in your
 own words"; Return there answers the shown question with what you typed. The draft waits
-underneath until the questions are answered, and ⌘L focuses the answer field.
+underneath until the questions are answered, and ⌘L focuses the answer field. Peek and Home show
+the same question with the same keys; on Home, Open Task (⌘↩) sits at the field's trailing edge.
 Long prompts and choices scroll inside the card. The pager, Skip / Next and answer field stay
 visible; digit and arrow keys reveal the choice they select or highlight.
 
@@ -186,6 +192,9 @@ The list has Native's own commands first, then the agent's. Native runs its own 
 sending them; an agent's command of the same name stays listed, and picking it from the list sends
 it to the agent.
 
+Skills advertised with a `$` prefix appear and insert as `$skill-name`, without an extra slash.
+They stay searchable from the `/` list by name, alongside ordinary `/command` entries.
+
 | Slash command | What Native does |
 | --- | --- |
 | `/clear` | Starts a fresh conversation in the same task, using the same agent, in the same folder, with the same settings and title. The earlier conversation stays with the agent, a click away: Earlier Conversation in the toolbar, or Task ▸ Open Earlier Conversation. It opens read-only, with Current Conversation (or Task ▸ Open Current Conversation) where the composer was. Task ▸ Clear Conversation and the palette do the same as `/clear` |
@@ -227,6 +236,10 @@ Files and images go out with the message as chips above the text: picked with th
 anything else goes as its path. A picture that will reach the agent as a path (the agent takes no
 images, or it's over 50 MB) says so on its chip before anything is sent. A message carries up to 20
 files; a file moved or deleted before sending is marked on its chip and holds the message.
+Dropping one or more files or folders on either composer or the transcript uses the same chips as
+Attach Files. The editor leaves the message and its caret untouched; it never inserts a file path.
+The dashed accent outline marks the composer while a file is over either drop area. This also
+applies to Fine print and iPad. Copied files paste as attachments too.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
@@ -255,9 +268,13 @@ Peek for review. The full request is always shown there. The current task and it
 | Return in Peek (except a question) | Open Task | | |
 | ⌘R in a failure Peek | Retry the failed task | | |
 
-A click on a row's signal, a force click, or Peek in its context menu opens the same 600pt popover.
-Questions keep their digit, arrow and Return controls. An answer closes Peek. Hidden or filtered
-rows use a window anchor. The experiment defaults to off; the shortcuts below keep today's
+A click on a row's signal, a force click, or Peek in its context menu opens the same 600pt Peek,
+drawn in the window beside its row and never over the toolbar. Escape returns focus to the list
+when it opened Peek; clicking outside closes Peek and keeps focus with the clicked control.
+While it is open, Peek owns the ask keys: ⌘Y allows (or holds, for an irreversible command) and
+⌘⇧⌫ declines the ask it shows, with the same hints as the composer, and Answer Oldest Ask waits
+until it closes. Questions keep their digit, arrow and Return controls. An answer closes Peek. Hidden or filtered
+rows open it at the top of the content. The experiment defaults to off; the shortcuts below keep today's
 behavior while it is off. Workflow and expedition approvals retain their local shortcut when no
 task ask owns ⌘Y and the user has not reassigned it to another command.
 
@@ -332,7 +349,9 @@ Other file types use the platform's Quick Look preview, with its native navigati
 | ⌥⌘O | With Quick Entry open, choose the device the task runs on | File | `task.chooseDevice` |
 | ⌥⌘N | New task with… (agent picker) | File | `session.newWithAgent` |
 | ⌥⌘E | New expedition (`docs/expeditions.md`) | File | `expedition.new` |
+| | Continue a task without a project in a chosen folder; optionally copy its private files | Task | `session.moveToProject` |
 | ⌘O | Open folder | File | `project.open` |
+| | Rename the current project in Native; clearing the name restores its folder name. Also in both sidebar project menus and Settings ▸ Projects. The folder on disk keeps its name | File | `project.rename` |
 | | The current project's settings (Settings ▸ Projects; also in the project's menu in the sidebar) | File | `project.settings` |
 | | Refresh git and pull-request state for every task in the current project (also Refresh in its sidebar menu) | File | `project.refresh` |
 | | Clean up the current project's merged task worktrees, branches and stale worktree records, after a review (also "Clean Up Merged…" in the project's menu in the sidebar) | File | `git.cleanUpMerged` |
@@ -352,7 +371,7 @@ Other file types use the platform's Quick Look preview, with its native navigati
 | ⌥⌘J | Turn the sidebar's Needs you filter on or off (its filter menu has the rest) | View | `view.needsYouFilter` |
 | ⌘⇧P | Pull requests | Go | `go.pullRequests` |
 | | GitHub Account: open Settings > General at Accounts (Mac only) | Go | `github.accounts` |
-| Tab, then Space on the sidebar account | Open Settings > General at Accounts; Tab and Space choose an account | | |
+| Tab, then Space on the sidebar footer | Open Settings > General; account controls live in Accounts | | |
 | ⌘⇧X | Expeditions | Go | `go.expeditions` |
 | ⇧⌘F | Search every task (`docs/search.md`) | Go | `search.show` |
 | ⌥⌘I | Show or hide the subagent inspector | View | `view.toggleSubagentInspector` |
@@ -372,7 +391,8 @@ On iPad, the corner Dismiss button is always visible and swiping down dismisses 
 With Next enabled in Settings > Labs, Home shows one ask at a time. The visible approval owns
 the usual permission keys: Cmd-Y allows once, Option-Cmd-Y always allows when offered, and
 Shift-Cmd-Delete rejects. Tab and Space reach Up next, Open Task, the ordering menu, and Show
-more. Up next opens Peek; its Open Task action enters the conversation. Cmd-Return opens the
+more. Tab / Shift-Tab leave the instruction and answer fields without inserting a tab.
+Up next opens Peek; its Open Task action enters the conversation. Cmd-Return opens the
 current ask's task; Shift-Cmd-Down shows the next five rows.
 Cmd-N focuses the start field at the bottom of Home; Cmd-O opens a folder, including before the
 first project exists. The start field writes Quick Entry's draft to Quick Entry's address: Return
@@ -383,12 +403,14 @@ The current question uses the composer's question keys: 1-9 pick an offered choi
 sends, and typing in the answer field keeps digits as text. Plans use Cmd-Y to approve,
 Shift-Cmd-Delete to request a revised plan.
 Option-Cmd-Down shows the full plan in Peek without leaving Home. Cmd-L focuses the current
-approval's instruction field. Escape dismisses Peek. A failed task uses Cmd-R to retry and
+approval's instruction field, or with Fine print the question's answer field. Escape dismisses Peek. A failed task uses Cmd-R to retry and
 Option-Cmd-O to show its error output. Cmd-Return opens the task for every ask kind.
 
 ## Task tools (Labs)
 
 With The well enabled (`NativeTaskWell`, off by default), Cmd-I opens the centered task well.
+Long tool lists scroll within the well, keeping its status, worker and checkout visible. Arrow
+navigation reveals the highlighted tool, including the first and last rows.
 Its tools appear in this fixed key order. Missing tools leave no row; their keys stay reserved.
 Clicking a waiting well focuses the composer, where the full request can be answered.
 Dev reveals the latest project action in the workbench, or its action chooser before the first run.
@@ -408,6 +430,7 @@ out of reach, Task ▸ Export Patch… (no default keys) stands in for the pull 
 | ⌥⌘3 | Dev (project actions) | View ▸ Tools | `taskWell.dev` |
 | ⌥⌘4 | Subagents | View ▸ Tools | `taskWell.subagents` |
 | ⌥⌘5 | Pull request | View ▸ Tools | `taskWell.pullRequest` |
+| | A plugin's tool, listed after Pull request (no default key; assign one in Settings ▸ Keyboard Shortcuts) | View ▸ Tools | `sessionTools.<tool id>` |
 | | Export the branch as a patch, where GitHub is out of reach | Task | `taskWell.exportPatch` |
 | Escape | Close the well and return focus to the task | | |
 
@@ -446,13 +469,14 @@ a paired host.
 ## Opening folders (All in view)
 
 File > Open Folder… (⌘O, `project.open`) opens the system folder-only chooser directly,
-including before the first project and with the sidebar hidden. The permanent Open Folder…
-action above the account does the same. Its separate Recent Folders disclosure and File >
-Open Recent list up to six successfully opened folders on this device. Arrow keys move through
-recents, Return opens one, and Escape returns to the disclosure. Tab reaches Open Folder,
-Recent Folders, then the account controls. Return or Space activates each control.
+including before the first project and with the sidebar hidden. The plus in the Projects
+header does the same, stays visible on touch, and is reachable with Tab. Return or Space
+opens the chooser. Compose, Home's start field and Quick Entry end their project pickers with
+Open Folder…. The no-project Home keeps one primary Open Folder… action. File > Open Recent
+lists up to six successfully opened folders on this device. Tab also reaches the single
+Settings button in the footer; Return or Space opens Settings.
 
-Drop one or several folders anywhere in the sidebar list to add them without starting a task.
+Drop one or several folders anywhere on the sidebar to add them without starting a task.
 The persistent addition receipt offers Undo; ⌘Z undoes that addition when it is the applicable
 window action. Text editing keeps its normal undo precedence. Choosing an already open folder
 focuses its home without adding another project or another undo action.
@@ -475,8 +499,9 @@ last ask removes the signal; unresolved failures also count until they recover.
 Several tasks can be picked at once and acted on together. While more than one is picked (or Select
 Tasks is on, which makes taps pick, for touch), a bar at the foot of the sidebar says how many, with
 Archive, Mark as Read, Delete and the rest under More; a picked task's context menu offers the same.
-Each action applies to the picked tasks it would change and offers one Undo for all of them; Delete
-asks first.
+Each action applies to the picked tasks it would change. Archiving, pinning and deleting offer one
+Undo for all affected tasks. Delete hides them immediately and waits 10 seconds before cleanup, so
+Undo keeps every task untouched.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
@@ -489,7 +514,7 @@ asks first.
 | | Let the picked tasks go | Task ▸ Selected Tasks | `selection.clear` |
 | | Archive the picked tasks | Task ▸ Selected Tasks | `selection.archive` |
 | | Unarchive the picked tasks | Task ▸ Selected Tasks | `selection.unarchive` |
-| | Delete the picked tasks (asks first; Undo for a few seconds) | Task ▸ Selected Tasks | `selection.delete` |
+| | Delete the picked tasks immediately; Undo for 10 seconds before cleanup starts | Task ▸ Selected Tasks | `selection.delete` |
 | | Mark the picked tasks as read | Task ▸ Selected Tasks | `selection.markRead` |
 | | Mark the picked tasks as unread | Task ▸ Selected Tasks | `selection.markUnread` |
 | | Pin the picked tasks | Task ▸ Selected Tasks | `selection.pin` |
@@ -504,7 +529,7 @@ keys and Return to choose from the menu. Model, effort, autonomy and mode keep t
 controls, moving into More only as the row runs out of room.
 
 With Fine print (`NativeComposerNext`) enabled, the field's trailing controls are, left to right:
-the context ring (only from 70% full), the Task Settings door (the model, led by the mode when it
+the context ring (only from 70% full), the Task Settings door (the agent and model, led by the mode when it
 isn't Build), the paperclip (Attach Files, ⌘U) and Send or Stop. The door opens one Task Settings
 popover: the model and its effort, when the agent asks, then the task's rows (Mode, Goal, MCP
 servers, Web search when the agent offers it, and the agent's own settings). Choose Model (⌘⇧E)
@@ -517,12 +542,16 @@ Settings, as Escape does.
 | --- | --- |
 | ↑ / ↓ | Every row, top to bottom, across sections; skips headers and locked rows. The caption under a list describes the highlighted row |
 | ← / → | On Effort, change its level (applies at once). On Mode, Goal, MCP servers or the agent's own settings, → opens its page or its choices in place; ← comes back |
-| Tab / ⇧Tab | Next / previous section: Model (including Fast mode), Effort, When it asks, the task's rows, and any retry action. A section lands on its current choice. In Compose, Tab follows native focus through agents, Add Agent and every settings control |
-| Letters | Up to 8 models: jump to the row whose name starts with what's typed (as in menus). 9 or more: type into the model filter, which matches names, values and agent names |
+| Tab / ⇧Tab | Next / previous section: Agent, Model (including Fast mode), Effort, When it asks, the task's rows, and any retry action. A section lands on its current choice. In Compose, Tab follows native focus through agents, Add Agent and every settings control |
+| Letters | Up to 8 models: jump to the row whose name starts with what's typed (as in menus). 9 or more: type into the model filter, which matches only the current agent's model names and values |
 | Return | Choose and close. On a menu row, list its choices in place |
 | Space | Choose and keep the popover open |
 | Escape | Clear the filter; else leave a page; else close |
 | ⌘Z | Undo the last change made in the popover |
+
+When extra agent settings exhaust the height budget, the short model list ends with **N more models**.
+Return or Space on that row opens the full Model page; Escape or the back row returns to Task Settings.
+Lists past eight models keep the filter, with the last slot showing **N more match. Keep typing.**
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
@@ -531,20 +560,29 @@ Settings, as Escape does.
 | | Put the task in a mode, one command per mode ("Debug Mode"); your own and the project's modes get theirs too | Task ▸ Mode | `mode.build` / `mode.plan` / `mode.ask` / `mode.debug` / `mode.review` |
 | | Edit Modes… (Settings ▸ Modes) | Task ▸ Mode | `modes.edit` |
 | ⌘⇧E | Model picker | Task | `session.chooseModel` |
-| | Change Workspace…: choose a branch, new worktree or project folder before the first message | Task | `session.changeWorkspace` |
+| ⌃⌥⌘A | Switch Agent: open the picker on the current agent | Task ▸ Switch Agent | `session.changeAgent` |
+| | Change Workspace…: choose a branch or folder before the first message (also in the inline Task folder menu) | Task | `session.changeWorkspace` |
 | ⌥⌘G | Set or edit the task's goal | Task | `goal.edit` |
 | ⌥⌘R | Run a workflow | Task | `workflow.run` |
 
 ## Choosing an agent
 
-With Change Agent and Fine print enabled in Settings > Labs, Task > Change Agent…
-(`session.changeAgent`) opens the composer's Model list, as Choose Model does. Other agents'
-reported models follow the current agent's models, with the agent named beside each model.
-Return chooses and closes; Space chooses and keeps the list open. Selecting another agent
-prepares it without sending a message. Context goes with the next message you explicitly send.
-The task keeps its folder, branch, draft, attachments and quoted sources. Earlier conversations
-stay accessible. While a normal turn runs, the choice waits for it to finish. Answer pending
-requests and send or remove queued messages first. Goals that cannot move safely must be cleared.
+The composer's model control names both the agent and model ("Claude Code · Haiku 5.5") and
+opens with a click or tap. Agent switching is on by default; Change Agent in Settings > Labs
+can turn it off. Its first section is Agent: installed agents in a
+compact row, with the current one checked. The models below belong only to the current agent.
+This works with Fine print on or off. Task ▸ Switch Agent lists the same agents; Choose Agent…
+(⌃⌥⌘A, `session.changeAgent`) opens the picker on its Agent section. The command palette finds
+"Switch Agent". Return chooses and closes; Space chooses and keeps the picker open.
+Selecting another agent prepares its default model immediately without sending a message.
+Context goes with the next message you explicitly send. The task keeps its folder, branch,
+draft, attachments and quoted sources. Earlier conversations stay accessible. While a normal
+turn runs, the choice waits for it to finish. Answer pending requests and send or remove queued
+messages first. Goals that cannot move safely must be cleared.
+
+If permission levels differ, the receipt explains the fallback. Review Permissions opens Task
+Settings with Fine print, or the autonomy choices in the classic composer. Undo restores the
+previous agent and permission level.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
@@ -555,7 +593,7 @@ requests and send or remove queued messages first. Goals that cannot move safely
 The persistent receipt above the field and the transcript divider offer Undo before the next
 message. After submission, Continue with the earlier agent makes a new choice; it cannot unsend
 a message. Escape dismisses the list without cancelling preparation. No title-bar agent button
-or review sheet is part of this path. Without Fine print, Change Agent retains its existing path.
+or review sheet is part of this path in either composer.
 
 New Task With… (⌥⌘N) opens the agent picker in a sheet: every agent Native runs, each with
 its state (ready, starting, needs sign-in, not installed, stopped) and, when it can't start a
@@ -648,11 +686,14 @@ in Git, for example). No shortcuts change.
 | ⌘[ | Return from a celebration detail page first; otherwise close Settings (Go menu) |
 | ↑ / ↓ in the page list | Move to the previous / next page |
 
+In Agents, Tab focuses each agent's Native tools switch and Space toggles MCP delivery for newly
+opened tasks. Claude Code and Codex use the on-demand skill while that switch is off.
+
 ## Search
 
-The search panel (⇧⌘F, Go ▸ Search Tasks…, or the magnifying glass in the window toolbar between
+The search panel (⇧⌘F, Go ▸ Search Tasks…, or the magnifying glass in the sidebar toolbar between
 the sidebar toggle and the history arrows) keeps focus in its field, so typing always refines the
-search. The toolbar button stays available with the sidebar collapsed.
+search. The toolbar button hides with the sidebar; the shortcut and Go menu remain available.
 
 | Keys (panel open) | Action |
 | --- | --- |
@@ -716,6 +757,21 @@ them one in Settings ▸ Keyboard Shortcuts.
 | | Follow the system's light or dark appearance | View | `appearance.system` |
 | | Light | View | `appearance.light` |
 | | Dark | View | `appearance.dark` |
+| | Try on code themes on the task in view (from Settings or Home, the latest task with code; the sample task when there is no code to show) | View | `appearance.tryOn` |
+
+Try On (Settings ▸ Appearance ▸ Try On…, or View ▸ Appearance ▸ Try On Themes…) turns the sidebar into
+the theme list and recolors the window as the highlight moves. Focus starts in the list, on the theme
+in use. Task controls are disabled while trying; agents keep running. It's unavailable while an
+organization sets the code theme.
+
+| Keys | Action |
+| --- | --- |
+| ↑ / ↓ | Highlight the previous or next theme, and show it |
+| Home / End | Highlight the first or last theme |
+| ← / → | List Dark mode's or Light mode's themes (the window shows that mode meanwhile) |
+| Typing a name | Highlight the first theme it starts ("to" for Tokyo Night) |
+| Return | Keep the highlighted themes and backgrounds, and go back |
+| Escape, ⌘. | Cancel: write nothing and go back, from anywhere in the window. The task's turn keeps running: Stop (⌘.) steps aside until Try On ends |
 
 ## Ownership
 
@@ -757,6 +813,11 @@ They appear only while Fine print is enabled.
 | | Count Unknown Programs Locally | `privacy.countUnknownPrograms` |
 | | Clear Unknown Program Counts | `privacy.clearUnknownPrograms` |
 
+New Tasks' Project and Agent scope menus, value menus and source buttons participate in normal
+Tab navigation. Space opens a focused menu or source stack; Escape dismisses it. Model, Effort and Permissions
+menus include Why This Value and Reset; the other defaults expose Reset in their context menus. Existing Settings
+page commands open New Tasks, and agent/project links select their scope without changing defaults.
+
 With Fine print enabled, select transcript text and choose Task > Focus Composer (⌘L) to quote
 its source lines. Quote in a transcript block's context menu quotes its selection, or the whole
 block if nothing is selected. In a diff, select a line number, then another to extend the range, and choose
@@ -765,3 +826,20 @@ selecting across old and new numbers includes both versions separately. Line but
 and touch. Remove Quote is beside each quoted source; ⌘Z restores a removed quote. Quotes are
 snapshots of the selected text, including old/new line identity. File references in the draft and
 @ list show the current known additions and removals; unknown counts stay absent.
+
+## Inline diff comments (Fine print)
+
+| Keys | Action | Menu | Command |
+| --- | --- | --- | --- |
+| ⇧⌘L | Add a comment to selected diff lines, or the current line | Task | `changes.addComment` |
+| | Review the task's collected comments in the composer | Task | `changes.reviewComments` |
+| Up / Down | Move the current diff line; Shift extends the range within one side and hunk | | |
+| Left / Right | Choose Before / After on a context line | | |
+| Return in a diff comment | New line | | |
+| ⌘Return in a diff comment | Add Comment to Draft and return to its anchor | | |
+| Escape in a diff comment | Collapse the editor, keeping its text | | |
+
+Comment and Quote are separate actions. Command-L keeps quoting selected lines without adding a
+comment. Touch users can extend a selection through the line menu. Review Draft Comments expands
+the shared quote section; the normal composer sends the collection as one message. Remove, clear,
+discard and re-anchor support Undo. Comments and unfinished text survive closing Changes.

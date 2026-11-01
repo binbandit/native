@@ -1,18 +1,19 @@
 #if DEBUG
 import ACP
+import Experiments
 import SwiftUI
 
 @MainActor
 enum TaskPeekPreviewFixtures {
     enum State: String, CaseIterable {
         case routine, destructive, question, failure, recovering, plan, finished, resolved, long, loading, missing
-        case answerFailure
+        case answerFailure, confirmation
 
         var taskID: String {
             switch self {
             case .routine, .resolved, .long, .answerFailure: "native-1"
             case .destructive: "native-4"
-            case .question: "kite-1"
+            case .question, .confirmation: "kite-1"
             case .failure, .recovering: "pier-1"
             case .plan: "plan"
             case .finished: "native-2"
@@ -31,6 +32,13 @@ enum TaskPeekPreviewFixtures {
                     "swift test --filter PermissionRequestTests.testPermissionResponsePreservesTheOriginalRequestWhenAnotherTaskAsksForApproval",
                 at: .now.addingTimeInterval(-720))
         }
+        if let session = app.session(key), state == .confirmation,
+            let question = SessionModel.previewDecode(
+                CreateElicitationRequest.self,
+                #"{"sessionId":"kite-1","message":"Use the template?","mode":"form"}"#)
+        {
+            session.questions = [.init(id: .int(2), request: question, requestedAt: .now)]
+        }
         if state == .loading { app.session(key)?.phase = .loading }
         if state == .recovering { app.taskPeek.isRecovering = true }
         if state == .answerFailure { app.taskPeek.answerFailure = "The connection closed before the answer was sent." }
@@ -41,10 +49,15 @@ enum TaskPeekPreviewFixtures {
         return request
     }
 
-    static func view(_ state: State, width: CGFloat = DS.Peek.width) -> some View {
+    /// `finePrint` turns on the composer's annotated asks (`NativeComposerNext`).
+    static func view(_ state: State, width: CGFloat = DS.Peek.width, finePrint: Bool = false) -> some View {
         let app = SidebarDesignFixture.makeApp("plan")
         let request = prepare(app, state: state)
-        return DSPreviewPair { TaskPeekView(request: request).frame(width: width) }.environment(app)
+        let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
+        experiments.set(finePrint, for: .composerNext)
+        return DSPreviewPair { TaskPeekView(request: request).frame(width: width) }
+            .environment(app).environment(\.experimentStore, experiments)
+            .environment(\.approvalPushReach, { _ in ApprovalPreviewFixtures.forceReach })
     }
 }
 #endif

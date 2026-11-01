@@ -23,7 +23,11 @@ struct ContextBreakdownHeader<Source: ContextSource>: View {
                 Spacer(minLength: 0)
                 refreshButton
             }
-            if let totals {
+            if source.isAwaitingContextUsage {
+                Text("Compacted")
+                    .font(.dsTitle2)
+                    .foregroundStyle(.dsTextPrimary)
+            } else if let totals {
                 HStack(alignment: .firstTextBaseline, spacing: DS.Space.sm) {
                     Text(DSFormat.percent(totals.fraction))
                         .font(.dsTitle2)
@@ -119,6 +123,16 @@ struct ContextBreakdownHeader<Source: ContextSource>: View {
             ContextBreakdownHeader(source: PreviewContextSource.codex)
         }
         .frame(width: 360)
+    }
+}
+#endif
+
+#if DEBUG
+#Preview("Context header after compaction") {
+    DSPreviewPair {
+        ContextBreakdownHeader(source: PreviewContextSource.compacted)
+            .padding(DS.Space.lg)
+            .frame(width: UsageMetrics.breakdownWidth)
     }
 }
 #endif

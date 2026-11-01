@@ -24,7 +24,7 @@ extension ComposerView {
             return .inCodeBlock(primary: "Save", explanation: "Save the edit, keeping its place in the queue.")
         }
         guard isWorking else { return .inCodeBlock(primary: "Send", explanation: "Send the message.") }
-        let behavior = session.supportsSteering ? followUp : .queue
+        let behavior = followUp
         return .inCodeBlock(primary: behavior.title, explanation: behavior.explanation)
     }
 

@@ -37,12 +37,21 @@ class BetaScheduleTests(unittest.TestCase):
         self.git("-c", "commit.gpgsign=false", "commit", "--allow-empty", "-qm", subject)
         self.git("update-ref", "refs/remotes/origin/main", "HEAD")
 
-    def run_plan(self, *args, check=True):
+    def run_plan(self, *args, check=True, releases=None):
         output = self.root / "outputs"
         output.unlink(missing_ok=True)
+        env = dict(os.environ)
+        if releases is not None:
+            bin_dir = self.root / "bin"
+            bin_dir.mkdir(exist_ok=True)
+            gh = bin_dir / "gh"
+            gh.write_text(f"#!{sys.executable}\nprint({json.dumps(json.dumps([releases]))})\n")
+            gh.chmod(0o755)
+            env["PATH"] = f"{bin_dir}{os.pathsep}{env['PATH']}"
+            env["GITHUB_REPOSITORY"] = "test/repo"
         result = subprocess.run(
             [sys.executable, str(SCRIPT), "--github-output", str(output), *args],
-            cwd=self.root, text=True, capture_output=True, check=check,
+            cwd=self.root, text=True, capture_output=True, check=check, env=env,
         )
         values = dict(line.split("=", 1) for line in output.read_text().splitlines()) if output.exists() else {}
         return values, result
@@ -134,6 +143,75 @@ class BetaScheduleTests(unittest.TestCase):
         self.assertEqual(self.git("show-ref"), refs)
         self.assertEqual(self.git("status", "--porcelain"), "")
 
+    def test_failed_tags_do_not_skip_unpublished_main_or_omit_release_notes(self):
+        self.git("tag", "v0.2.0-beta.18")
+        self.commit("fix: failed beta 19")
+        self.git("tag", "v0.2.0-beta.19")
+        self.commit("fix: failed beta 20")
+        self.git("tag", "v0.2.0-beta.20")
+        refs = self.git("show-ref")
+        plan, _ = self.run_plan("--check-releases", releases=[
+            {"tag_name": "v0.2.0-beta.18", "draft": False},
+            {"tag_name": "v0.2.0-beta.20", "draft": True},
+        ])
+        self.assertEqual(plan["skip"], "false")
+        self.assertEqual(plan["version"], "0.2.0-beta.21")
+        self.assertEqual(plan["notes_from"], "v0.2.0-beta.18")
+        self.assertEqual(plan["sha"], self.git("rev-parse", "origin/main"))
+        self.assertEqual(self.git("show-ref"), refs)
+
+    def test_published_main_still_skips(self):
+        self.git("tag", "v0.2.0-beta.20")
+        plan, _ = self.run_plan("--check-releases", releases=[
+            {"tag_name": "v0.2.0-beta.20", "draft": False},
+        ])
+        self.assertEqual(plan, {"skip": "true"})
+
+    def test_first_published_beta_uses_stable_notes_and_reserves_failed_numbers(self):
+        self.git("tag", "v0.1.0")
+        self.commit()
+        self.git("tag", "v0.2.0-beta.1")
+        plan, _ = self.run_plan("--check-releases", releases=[
+            {"tag_name": "v0.1.0", "draft": False},
+        ])
+        self.assertEqual(plan["version"], "0.2.0-beta.2")
+        self.assertEqual(plan["notes_from"], "v0.1.0")
+
+    def test_only_unpublished_tags_still_plan_a_release(self):
+        self.git("tag", "v0.2.0-beta.20")
+        plan, _ = self.run_plan("--check-releases", releases=[])
+        self.assertEqual(plan["version"], "0.2.0-beta.21")
+        self.assertEqual(plan["notes_from"], "")
+
+    def test_no_published_release_preserves_whole_history_in_notes_consumer(self):
+        self.git("tag", "v0.2.0-beta.19")
+        self.commit("fix: before failed beta 20")
+        self.git("tag", "v0.2.0-beta.20")
+        self.commit("fix: after failed beta 20")
+        plan, _ = self.run_plan("--check-releases", releases=[])
+        selection = (RELEASE / "release.sh").read_text().split('previous_tag=""\n', 1)[1].split('\nnotes=', 1)[0]
+        script = 'sha=$(git rev-parse HEAD)\nchannel=beta\n' + selection
+        script += '\nprintf "%s" "$previous_tag"'
+        for explicit, expected in ((plan["notes_from_start"], ""), ("false", "v0.2.0-beta.20")):
+            previous = subprocess.check_output(
+                ["bash", "-eu", "-c", script], cwd=self.root, text=True,
+                env={**os.environ, "NATIVE_RELEASE_NOTES_FROM": plan["notes_from"],
+                     "NATIVE_RELEASE_NOTES_FROM_START": explicit},
+            )
+            self.assertEqual(previous, expected)
+            notes = subprocess.check_output(
+                ["bash", str(RELEASE / "release-notes.sh"), previous, "HEAD"], cwd=self.root, text=True,
+            )
+            self.assertEqual("first feature" in notes, explicit == "true")
+            self.assertEqual("before failed beta 20" in notes, explicit == "true")
+            self.assertIn("after failed beta 20", notes)
+
+    def test_release_aware_dry_run_writes_no_outputs(self):
+        self.git("tag", "v0.2.0-beta.20")
+        plan, result = self.run_plan("--check-releases", "--dry-run", releases=[])
+        self.assertEqual(plan, {})
+        self.assertIn("Would release v0.2.0-beta.21", result.stdout)
+
     def test_beta_notes_override_includes_commits_before_intervening_stable(self):
         self.git("tag", "v1.5.0-beta.1")
         self.commit("feat: before stable")
@@ -154,6 +232,18 @@ class BetaScheduleTests(unittest.TestCase):
             )
             self.assertEqual("before stable" in notes, bool(override))
             self.assertIn("after stable", notes)
+
+    def test_published_releases_read_all_pages_and_ignore_drafts(self):
+        pages = [[{"tag_name": "v1.5.0-beta.20", "draft": True}], [
+            {"tag_name": "v1.5.0-beta.18", "draft": False},
+            {"tag_name": "v1.4.0", "draft": False},
+        ]]
+        with patch.object(schedule, "command", return_value=json.dumps(pages)) as api:
+            self.assertEqual(schedule.published_release_tags("test/repo"), {"v1.5.0-beta.18", "v1.4.0"})
+            self.assertIn("--paginate", api.call_args.args)
+        with patch.object(schedule, "command", side_effect=subprocess.CalledProcessError(1, "gh")):
+            with self.assertRaises(subprocess.CalledProcessError):
+                schedule.published_release_tags("test/repo")
 
     def test_busy_release_in_each_active_state_and_each_mac_workflow(self):
         for status in ("in_progress", "queued", "waiting", "pending", "requested"):

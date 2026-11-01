@@ -21,6 +21,8 @@ public enum PolicyCapability: String, CaseIterable, Hashable, Codable, Sendable 
     case userTaskScripts = "taskScripts.user"
     case repositoryTaskScripts = "taskScripts.repository"
     case gitLocal = "git.local"
+    case sourceExcerptsSending = "sourceExcerpts.sending"
+    case sourceExcerptsRetention = "sourceExcerpts.retention"
     case worktreeFetch = "git.worktreeFetch"
     case gitRemote = "git.remote"
     case github = "github"
@@ -159,6 +161,10 @@ extension PolicyCapability {
         case .repositoryTaskScripts:
             entry(.execution, [.taskScriptsRepository], [], owners: ["native/TaskScripts/", "Packages/TaskScripts/"])
         case .gitLocal: entry(.execution, owners: ["Packages/Git/", "native/Git/"])
+        case .sourceExcerptsSending:
+            entry(.local, [.sourceExcerptsSending], [], owners: ["native/DiffComments/"], .converted)
+        case .sourceExcerptsRetention:
+            entry(.storage, [.sourceExcerptsRetention], [], owners: ["native/DiffComments/"], .converted)
         case .worktreeFetch: entry(.network, [.worktreeFetch], [.git], owners: ["native/Git/Model/GitStore.swift"])
         case .gitRemote: entry(.network, [], [.git], owners: ["Packages/Git/"])
         case .github: entry(.network, [], [.github, .githubAvatar], owners: ["Packages/GitHub/", "native/GitHub/"])
@@ -245,7 +251,8 @@ extension PolicyKey {
     public var role: Role {
         switch self {
         case .deploymentMode, .network: .deployment
-        case .unknownCommandCounts, .agentsAllowed, .mcpAllowed, .mcpRequired, .pluginsAllowed,
+        case .sourceExcerptsSending, .sourceExcerptsRetention, .unknownCommandCounts, .agentsAllowed, .mcpAllowed,
+            .mcpRequired, .pluginsAllowed,
             .celebrationDownloadsEnabled, .catalogEnabled, .scriptsEnabled, .worktreeFetch, .taskScriptsUser,
             .taskScriptsRepository, .celebrationsEnabled, .labsEnabled, .companionEnabled, .remoteHostsEnabled,
             .updatesEnabled, .telemetryNative, .telemetryEndpoints:
@@ -282,6 +289,7 @@ extension PolicyKey {
             ["Packages/PluginCatalog/Sources/PluginCatalog/PluginCatalogSource.swift"]
         case .forbiddenPermissionModes: ["native/Policy/PolicyPermissionModes.swift"]
         case .scriptsEnabled: ["native/Orchestration/OrchestrationPlugin.swift"]
+        case .sourceExcerptsSending, .sourceExcerptsRetention: ["native/DiffComments/"]
         case .worktreeFetch: ["native/Git/Model/GitStore.swift"]
         case .taskScriptsUser, .taskScriptsRepository: ["Packages/TaskScripts/Sources/TaskScripts/TaskScriptPlan.swift"]
         case .celebrationsEnabled: ["native/Celebrations/CelebrationsPlugin.swift"]

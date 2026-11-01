@@ -1,4 +1,5 @@
 import ACP
+import Experiments
 import Foundation
 import os
 
@@ -12,13 +13,14 @@ enum AgentSessionDefaults {
     /// A setting Settings can give a default, in the order they're applied: the model first, since
     /// changing it can change the efforts on offer.
     enum Setting: String, CaseIterable, Sendable {
-        case model, effort
+        case model, effort, permissions
 
         /// The ACP config option category that holds it.
         var category: String {
             switch self {
             case .model: "model"
             case .effort: "thought_level"
+            case .permissions: "mode"
             }
         }
 
@@ -66,7 +68,13 @@ enum AgentSessionDefaults {
             guard let option = options.first(where: { $0.category == setting.category }),
                 case .select(let current, let choices) = option.kind,
                 let data = try? JSONEncoder().encode(choices.map(OfferedChoice.init))
-            else { continue }
+            else {
+                // An option removed by the agent must not remain an editable cached choice.
+                for suffix in [".offered", ".option", ".agentDefault"] {
+                    defaults.removeObject(forKey: setting.key(for: agent) + suffix)
+                }
+                continue
+            }
             defaults.set(data, forKey: setting.key(for: agent) + ".offered")
             defaults.set(option.id, forKey: setting.key(for: agent) + ".option")
             if isNew {
@@ -139,6 +147,21 @@ enum AgentSessionDefaults {
         }
     }
 
+    static func agentValue(
+        for agent: AgentDefinition.ID, setting: Setting, defaults: UserDefaults = .standard
+    ) -> String? {
+        defaults.string(forKey: setting.key(for: agent) + ".agentDefault")
+    }
+
+    static func lastValue(
+        for agent: AgentDefinition.ID, setting: Setting, defaults: UserDefaults = .standard
+    ) -> String? {
+        guard setting != .permissions,
+            let id = defaults.string(forKey: setting.key(for: agent) + ".option")
+        else { return nil }
+        return lastUsed(for: agent, defaults: defaults).choices[id]?.value
+    }
+
     /// What the user last picked for the agent's model and its variants.
     static func lastUsed(for agent: AgentDefinition.ID, defaults: UserDefaults = .standard) -> ConfigChoices {
         defaults.data(forKey: lastUsedKey(for: agent))
@@ -160,7 +183,7 @@ enum AgentSessionDefaults {
         for agent: AgentDefinition.ID, defaults: UserDefaults = .standard
     ) -> [String: String] {
         var categories: [String: String] = [:]
-        for setting in Setting.allCases {
+        for setting in [Setting.model, .effort] {
             categories[setting.category] = explicitValue(for: agent, setting: setting, defaults: defaults)
         }
         return categories
@@ -173,6 +196,14 @@ enum AgentSessionDefaults {
         var categories = configuredValues(for: agent, defaults: defaults)
         if let project, let model = ProjectTaskDefaults.model(for: project, agent: agent, defaults: defaults) {
             categories[Setting.model.category] = model
+        }
+        if ExperimentStore.shared.value(of: .settingsPlainly) {
+            for setting in Setting.allCases {
+                categories[setting.category] =
+                    project.flatMap {
+                        ProjectTaskDefaults.value(for: $0, agent: agent, setting: setting, defaults: defaults)
+                    } ?? explicitValue(for: agent, setting: setting, defaults: defaults)
+            }
         }
         let start = NewSessionChoices(defaults: categories, lastUsed: lastUsed(for: agent, defaults: defaults))
         let allows: (ConfigOption, String) -> Bool = { !PolicyPermissionModes.forbids($0, value: $1) }

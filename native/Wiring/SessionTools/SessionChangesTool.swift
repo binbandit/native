@@ -26,7 +26,11 @@ enum SessionChangesTool {
                 return AnyView(
                     GitChangesInspector(
                         model: repository, review: context.state(GitChangesReview.init), session: context.session,
-                        resetsReviewOnDisappear: false
+                        resetsReviewOnDisappear: false,
+                        onBackToTask: {
+                            context.screen.close(.changes)
+                            context.session.wantsComposerFocus = true
+                        }
                     ) {
                         Task { await GitHubGitWiring.createPullRequest(from: repository, gitHub: gitHub) }
                     }

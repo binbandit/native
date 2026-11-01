@@ -33,7 +33,7 @@ struct QuickEntryPicker: View {
         #if DEBUG
         if let options = entry.previewDeviceOptions { return options }
         #endif
-        return entry.project.map(model.deviceOptions(for:)) ?? []
+        return entry.project.map(model.deviceOptions(for:)) ?? [model.noProjectDeviceOption]
     }
 
     private var agents: some View {
@@ -91,6 +91,24 @@ struct QuickEntryPicker: View {
             Text("Project").font(.dsCaption).foregroundStyle(.dsTextTertiary)
                 .accessibilityAddTraits(.isHeader)
             VStack(spacing: 0) {
+                Button {
+                    model.chooseNoProject()
+                } label: {
+                    HStack(spacing: DS.Space.sm) {
+                        Image(systemName: "checkmark").font(DS.ComposerSettings.rowFont)
+                            .opacity(entry.project == nil ? 1 : 0)
+                            .frame(width: DS.ComposerSettings.selectionWidth)
+                        Text("No project").font(DS.ComposerSettings.rowFont)
+                        Spacer(minLength: DS.Space.sm)
+                    }
+                    .padding(.horizontal, DS.Space.xs)
+                    .frame(height: DS.ComposerSettings.rowHeight)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.dsTextPrimary)
+                .accessibilityAddTraits(entry.project == nil ? .isSelected : [])
+                SeparatorLine().padding(.vertical, DS.Space.xs)
                 ForEach(model.projects.all) { project in
                     Button {
                         model.chooseQuickEntryProject(project.id)
@@ -112,6 +130,8 @@ struct QuickEntryPicker: View {
                         entry.project == project.id ? Color.dsSelected : .clear,
                         in: .rect(cornerRadius: DS.Radius.control)
                     )
+                    .help(project.path)
+                    .accessibilityLabel("\(project.name), \(project.path)")
                     .accessibilityAddTraits(entry.project == project.id ? .isSelected : [])
                 }
                 SeparatorLine().padding(.vertical, DS.Space.xs)
@@ -121,7 +141,7 @@ struct QuickEntryPicker: View {
                     HStack(spacing: DS.Space.sm) {
                         Image(systemName: "folder").font(DS.ComposerSettings.rowFont).foregroundStyle(.dsTextSecondary)
                             .frame(width: DS.ComposerSettings.selectionWidth)
-                        Text("Choose a Folder…").font(DS.ComposerSettings.rowFont)
+                        Text("Open Folder…").font(DS.ComposerSettings.rowFont)
                         Spacer(minLength: 0)
                     }
                     .padding(.horizontal, DS.Space.xs)
@@ -130,6 +150,7 @@ struct QuickEntryPicker: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.dsTextPrimary)
+                .disabled(!model.canOpenFolders || !model.sidebarFolders.opening.isEmpty)
             }
         }
         .padding(DS.ComposerSettings.sectionInset)
@@ -155,5 +176,21 @@ struct QuickEntryPicker: View {
 }
 #Preview("Quick Entry - Project picker") {
     QuickEntryPreviewFixture(state: .projects)
+}
+#Preview("Project picker - No projects") {
+    DSPreviewPair {
+        let model = QuickEntryPreviewFixtures.model(.firstLaunch)
+        QuickEntryPicker(model: model, entry: model.quickEntry)
+            .onAppear { model.quickEntry.picker = .project }
+            .frame(width: DS.ComposeTask.popoverWidth)
+    }
+}
+#Preview("Project picker - Managed restriction") {
+    DSPreviewPair {
+        let model = SidebarFolderPreviewFixtures.model("blocked")
+        QuickEntryPicker(model: model, entry: model.quickEntry)
+            .onAppear { model.quickEntry.picker = .project }
+            .frame(width: DS.ComposeTask.popoverWidth)
+    }
 }
 #endif

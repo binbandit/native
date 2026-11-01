@@ -17,6 +17,8 @@ public enum SessionUpdate: Sendable {
     case configOptions([ConfigOption])
     case sessionInfo(title: String?)
     case usage(Usage)
+    case compaction(CompactionUpdate)
+    case compactionSummary(CompactionSummaryChunk)
     /// The agent switched its own mode (sent by agents that don't report it as a config option).
     case currentMode(String)
     case subagent(SubagentUpdate)
@@ -50,6 +52,8 @@ extension SessionUpdate: Decodable {
                 .configOptions(try container.decode([ConfigOption].self, forKey: .configOptions))
             case "session_info_update": .sessionInfo(title: try container.decodeIfPresent(String.self, forKey: .title))
             case "usage_update": .usage(try Usage(from: decoder))
+            case "compaction_update": .compaction(try CompactionUpdate(from: decoder))
+            case "compaction_summary_chunk": .compactionSummary(try CompactionSummaryChunk(from: decoder))
             case "current_mode_update": .currentMode(try container.decode(String.self, forKey: .currentModeId))
             case "subagent_update": .subagent(try SubagentUpdate(from: decoder))
             // The subagents RFD's earlier draft, which Cursor still sends.
@@ -88,6 +92,11 @@ public struct PlanEntry: Decodable, Hashable, Sendable {
 public struct AvailableCommand: Decodable, Hashable, Sendable {
     public var name: String
     public var description: String
+
+    /// Skills already carry their invocation prefix in the advertised name.
+    public var invocation: String {
+        name.hasPrefix("$") ? name : "/\(name)"
+    }
 }
 
 public struct Usage: Decodable, Hashable, Sendable {
@@ -102,6 +111,11 @@ public struct Usage: Decodable, Hashable, Sendable {
     /// The provider's rate-limit status, when this update carried one.
     public var rateLimit: RateLimitInfo? {
         _meta.rateLimit
+    }
+
+    /// The model the agent reports running, for agents that offer no model setting to read it from.
+    public var model: String? {
+        _meta.model
     }
 
     public struct Cost: Decodable, Hashable, Sendable {

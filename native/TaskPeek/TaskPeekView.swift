@@ -7,6 +7,8 @@ struct TaskPeekView: View {
     let request: TaskPeekPresentation.Request
     var maxBodyHeight = DS.Peek.maxBodyHeight
     @Environment(AppModel.self) private var model
+    @Environment(\.sidebarTaskInsights) private var insights
+    @Experiment(.composerNext) private var composerNext
     var openTask: ((SessionKey) -> Void)?
     @FocusState private var isFocused: Bool
     @State private var wantsInstructionFocus = false
@@ -16,6 +18,18 @@ struct TaskPeekView: View {
         request.ask ?? model.taskAsks(for: request.task).first
     }
 
+    private var summary: SessionSummary? {
+        guard let found = model.catalog.lookup(request.task) else { return nil }
+        return model.allSessions(in: found.project).first { $0.id == request.task }
+    }
+
+    private var questionnaire: AgentQuestionnaire? {
+        guard case .question(let question) = ask?.content, let schema = question.request.requestedSchema else {
+            return nil
+        }
+        return AgentQuestionnaire(message: question.request.message, schema: schema)
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -23,19 +37,31 @@ struct TaskPeekView: View {
             HeightCappedScrollView(maxHeight: maxBodyHeight) {
                 moment
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, showsAnnotatedApproval ? 0 : DS.Peek.bodyHorizontal)
-                    .padding(.vertical, showsAnnotatedApproval ? 0 : DS.Peek.bodyVertical)
+                    .padding(.horizontal, showsAnnotatedAsk ? 0 : DS.Peek.bodyHorizontal)
+                    .padding(.vertical, showsAnnotatedAsk ? 0 : DS.Peek.bodyVertical)
             }
         }
+        .task(id: summary.flatMap { insights.branch($0) }) {
+            if let summary { await insights.prepare([summary]) }
+        }
         .background(.dsOverlay)
-        .environment(\.permissionShortcutsEnabled, false)
+        .overlay {
+            RoundedRectangle(cornerRadius: DS.Radius.card)
+                .strokeBorder(.dsSeparator, lineWidth: DS.Approval.rule)
+                .allowsHitTesting(false)
+        }
+        // Shadow the card's surface once rather than casting shadows from its text and controls.
+        .compositingGroup()
+        .dsShadow(.modal)
         .accessibilityIdentifier("task-peek")
         .focusable()
         .focused($isFocused)
         .focusedSceneValue(\.taskPeekInstructionFocus, showsInstructionEditor ? $wantsInstructionFocus : nil)
         .focusEffectDisabled()
         .onAppear {
-            if case .question = ask?.content { return }
+            // Annotated questions own focus, including confirmations. Classic questionnaires focus
+            // their answer; only classic confirmation rows need Peek to own Escape.
+            if case .question = ask?.content, composerNext || questionnaire != nil { return }
             isFocused = true
         }
         .onKeyPress(.escape) {
@@ -54,18 +80,25 @@ struct TaskPeekView: View {
         if let openTask { openTask(request.task) } else { model.openPeekedTask(request.task) }
     }
 
-    /// The shared approval already owns its insets, including the instruction field's full-width rule.
-    private var showsAnnotatedApproval: Bool {
+    /// The shared approval and question (Fine print) already own their insets, including the field's
+    /// full-width rule.
+    private var showsAnnotatedAsk: Bool {
         guard model.taskIsAvailable(request.task), model.taskIsReachable(request.task),
-            let ask, ask.isCurrent, model.session(ask.session.key) === ask.session,
-            case .permission = ask.content
+            let ask, ask.isCurrent, model.session(ask.session.key) === ask.session
         else { return false }
-        return true
+        switch ask.content {
+        case .permission: return true
+        case .question: return composerNext
+        }
     }
 
     private var showsInstructionEditor: Bool {
-        guard showsAnnotatedApproval, case .permission(let call) = ask?.content else { return false }
-        return call.permission?.options.contains(where: \.isRejection) == true
+        guard showsAnnotatedAsk else { return false }
+        switch ask?.content {
+        case .permission(let call): return call.permission?.options.contains(where: \.isRejection) == true
+        case .question(let question): return question.questionnaire?.questions.isEmpty == false
+        case nil: return false
+        }
     }
 
     private var header: some View {
@@ -81,6 +114,7 @@ struct TaskPeekView: View {
                 .font(DS.Peek.titleFont).foregroundStyle(.dsTextPrimary)
                 .lineLimit(1).frame(maxWidth: .infinity, alignment: .leading)
                 .help(model.titleOfSession(request.task))
+            if let summary { insights.pullRequestBadge(summary).fixedSize() }
             if let ask {
                 TaskAttentionClock(since: ask.since)
             }
@@ -159,9 +193,10 @@ struct TaskPeekView: View {
         case .permission(let call):
             AnnotatedApprovalView(
                 call: call, agentName: ask.session.agentName, workingDirectory: ask.session.cwd.path,
+                reason: ask.session.state.reason(forToolCall: call.id), session: ask.session.key,
                 homeDirectory: model.device(of: ask.task) == .thisMac ? NSHomeDirectory() : nil,
                 knowledge: model.plugins.commandKnowledge,
-                responseAttempt: model.taskPeek.approvalAttempt,
+                responseAttempt: model.taskPeek.approvalAttempt, capsBodyHeight: false,
                 focusRequested: wantsInstructionFocus, didFocus: { wantsInstructionFocus = false },
                 planEntries: call.kind == .switchMode ? ask.session.state.currentTurnPlan : [],
                 planExpanded: true,
@@ -169,10 +204,16 @@ struct TaskPeekView: View {
                 onInstruct: { try await model.instructTaskAsk(ask, text: $0) }
             )
             .id(call)
+        case .question(let question) where composerNext:
+            AnnotatedQuestionView(
+                agentName: ask.session.agentName, questionnaire: question.questionnaire,
+                message: question.request.message, isAvailable: ask.session.phase != .disconnected,
+                focusRequested: wantsInstructionFocus, didFocus: { wantsInstructionFocus = false },
+                onSubmit: { await model.answerTaskQuestion(ask, content: $0) },
+                onDecline: { await model.answerTaskQuestion(ask, content: nil) }
+            )
         case .question(let question):
-            if let schema = question.request.requestedSchema,
-                let questionnaire = AgentQuestionnaire(message: question.request.message, schema: schema)
-            {
+            if let questionnaire = question.questionnaire {
                 AgentQuestionSection(
                     questionnaire: questionnaire, takesFocus: true, answersHighlightedOption: true,
                     onSubmit: { content in Task { await model.answerTaskQuestion(ask, content: content) } },
@@ -210,6 +251,11 @@ extension FocusedValues {
 #Preview("Peek - Routine approval") { TaskPeekPreviewFixtures.view(.routine) }
 #Preview("Peek - Destructive approval") { TaskPeekPreviewFixtures.view(.destructive) }
 #Preview("Peek - Question") { TaskPeekPreviewFixtures.view(.question) }
+#Preview("Peek - Question, Fine print") { TaskPeekPreviewFixtures.view(.question, finePrint: true) }
+#Preview("Peek - Question, Fine print, narrow") {
+    TaskPeekPreviewFixtures.view(.question, width: 360, finePrint: true)
+}
+#Preview("Peek - Confirmation question") { TaskPeekPreviewFixtures.view(.confirmation) }
 #Preview("Peek - Answer delivery failed") { TaskPeekPreviewFixtures.view(.answerFailure) }
 #Preview("Peek - Failure") { TaskPeekPreviewFixtures.view(.failure) }
 #Preview("Peek - Recovering") { TaskPeekPreviewFixtures.view(.recovering) }

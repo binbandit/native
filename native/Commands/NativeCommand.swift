@@ -57,6 +57,14 @@ struct NativeCommand: Identifiable {
         return command
     }
 
+    /// Unavailable while something else claims its shortcut, so the key goes there instead.
+    func stepsAside(when isClaimed: @escaping @MainActor (CommandContext) -> Bool) -> Self {
+        var command = self
+        let isAvailable = isAvailable
+        command.isAvailable = { isAvailable($0) && !isClaimed($0) }
+        return command
+    }
+
     func menuTitle(_ title: @escaping @MainActor (CommandContext) -> String) -> Self {
         var command = self
         command.menuTitle = title

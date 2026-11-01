@@ -16,6 +16,17 @@ final class SettingsPresentation {
     /// The project a page that can show one project's switches (MCP Servers, Skills) opens on, set
     /// when a project's settings link there. The page takes it once it appears.
     private(set) var projectScope: ProjectScope?
+    private(set) var agentScope: AgentDefinition.ID?
+
+    func openNewTasks(agent: AgentDefinition.ID) {
+        open(.newTasks)
+        agentScope = agent
+    }
+
+    func takeAgentScope() -> AgentDefinition.ID? {
+        defer { agentScope = nil }
+        return agentScope
+    }
 
     /// A specific row requested by a feature outside Settings, including repeated visits.
     private(set) var rowReveal: SettingsReveal?
@@ -23,7 +34,7 @@ final class SettingsPresentation {
     /// The page shown; nil while Settings is closed.
     var pane: SettingsPane.ID? {
         didSet {
-            if oldValue != pane { rowReveal = nil }
+            if oldValue != pane { rowReveal = nil; agentScope = nil }
             if let projectScope, projectScope.pane != pane { self.projectScope = nil }
             if pane != oldValue { dismissDetail() }
             if oldValue == nil, pane != nil {
@@ -74,6 +85,7 @@ final class SettingsPresentation {
 
     func open(_ pane: SettingsPane.ID = .general, revealing row: SettingsRowID? = nil) {
         projectScope = nil
+        agentScope = nil
         self.pane = pane
         rowReveal = row.map { SettingsReveal(rowID: $0) }
     }

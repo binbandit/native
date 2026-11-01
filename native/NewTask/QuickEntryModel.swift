@@ -15,7 +15,8 @@ final class QuickEntryModel {
         let text: String
     }
 
-    var isEnabled: Bool { ExperimentStore.shared.value(of: .composeTask) }
+    @ObservationIgnored var enabled: () -> Bool = { ExperimentStore.shared.value(of: .composeTask) }
+    var isEnabled: Bool { enabled() }
     var isPresented = false
     var isChoosingFolder = false
     /// Explicit navigation, so RootView can reveal a task even while Settings is showing.

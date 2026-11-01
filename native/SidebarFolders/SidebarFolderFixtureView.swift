@@ -12,7 +12,13 @@ struct SidebarFolderFixtureView: View {
                 HStack(spacing: 0) {
                     SidebarView().frame(width: DS.Size.sidebarWidth)
                     SeparatorLine(axis: .vertical)
-                    if state == "F4" || state == "F5" || state == "F10" {
+                    if state == "picker" {
+                        QuickEntryPicker(model: model, entry: model.quickEntry)
+                            .frame(width: DS.ComposeTask.popoverWidth)
+                            .background(.dsOverlay, in: .rect(cornerRadius: DS.Radius.card))
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(.dsBackground)
+                    } else if state == "F4" || state == "F5" || state == "F10" {
                         SidebarFolderHome(agents: SidebarFolderPreviewFixtures.agents)
                     } else {
                         VStack(alignment: .leading, spacing: DS.Space.xl) {
@@ -59,8 +65,14 @@ struct SidebarFolderFixtureView: View {
 #Preview("Folders - Every root forbidden") {
     DSPreviewPair { SidebarFolderFixtureView(state: "blocked").frame(width: 1000, height: 700) }
 }
-#Preview("Folders - Keyboard focus") {
-    DSPreviewPair { SidebarFolderFixtureView(state: "F8").frame(width: 1000, height: 700) }
+#Preview("Folders - Rest") {
+    DSPreviewPair { SidebarFolderFixtureView(state: "F1").frame(width: 1000, height: 700) }
+}
+#Preview("Folders - No projects") {
+    DSPreviewPair { SidebarFolderFixtureView(state: "F5").frame(width: 1000, height: 700) }
+}
+#Preview("Folders - Project picker") {
+    DSPreviewPair { SidebarFolderFixtureView(state: "picker").frame(width: 1000, height: 700) }
 }
 #Preview("Folders - Drop") { DSPreviewPair { SidebarFolderFixtureView(state: "F3").frame(width: 1000, height: 700) } }
 #endif

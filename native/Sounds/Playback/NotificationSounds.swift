@@ -69,7 +69,7 @@ final class NotificationSounds {
     /// whether it played.
     @discardableResult
     func play(_ trigger: SoundTrigger, for session: SessionContext? = nil) async -> Bool {
-        guard isEnabled(), preferences.isEnabled(trigger) else { return false }
+        guard !NativeAudioPolicy.isMuted, isEnabled(), preferences.isEnabled(trigger) else { return false }
         if preferences.staysQuietDuringFocus {
             // The first sound that would play is when Native asks to see Focus, never at launch.
             await focus.requestAccessIfNeeded()
@@ -93,14 +93,13 @@ final class NotificationSounds {
         guard let option = option(for: trigger) else { return false }
         lastPlayed = (.now, trigger)
         logger.info("Playing \(option.title, privacy: .public) for \(trigger.rawValue, privacy: .public)")
-        await player.play(option, volume: preferences.volume)
-        return true
+        return await player.play(option, volume: preferences.volume)
     }
 
     /// Plays a trigger's sound regardless of switches, Focus and timing, for trying it out.
     func preview(_ trigger: SoundTrigger) {
         guard let option = option(for: trigger) else { return }
-        Task { await player.play(option, volume: preferences.volume) }
+        Task { _ = await player.play(option, volume: preferences.volume) }
     }
 
     /// Gives `trigger` a sound, and plays it so the user hears what they picked.

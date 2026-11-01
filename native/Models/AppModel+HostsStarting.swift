@@ -16,8 +16,10 @@ extension AppModel {
         in project: Project.ID? = nil, with agent: AgentDefinition.ID? = nil, on device: SessionDevice,
         draft: String = ""
     ) async {
-        guard let project = project.flatMap(projects.project) ?? currentProject else {
-            isAddingProject = true
+        let project = project.flatMap(projects.project) ?? currentProject ?? NoProjectLocation.group
+        if project.isNoProject, device.isRemote {
+            actionFailure = ActionFailure(
+                "Choose a Project", "Tasks without a project run on this Mac. Choose a project to use another device.")
             return
         }
         guard case .remote(let hostID) = device else {
@@ -53,6 +55,8 @@ extension AppModel {
         let task = StartingTask(
             project: project.id, agent: runtime.agent, isAgentPicked: agent != nil, workspaceLabel: label)
         task.device = device
+        task.workspaceChoice = preferredTaskWorkspace(in: project.id)
+        if task.workspaceChoice == .project { task.workspaceLabel = "Using the project folder on \(host.name)" }
         task.draft = draft
         startingTasks.insert(task, at: 0)
         selection = task.id
@@ -127,6 +131,7 @@ extension AppModel {
         do {
             let session = try await launcher.start(
                 on: runtime, cwd: URL(filePath: folder, directoryHint: .isDirectory), project: project.id)
+            if task.workspaceChoice == .project { preserveProjectBranch(for: session.key) }
             guard !task.isDiscarded else {
                 sessions.remove(session)
                 return removeWorkspace(of: task)

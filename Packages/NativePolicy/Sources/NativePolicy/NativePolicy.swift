@@ -96,12 +96,20 @@ public struct NativePolicy: Equatable, Sendable {
     public var forbiddenPermissionModes: Set<String> = []
     public var scriptsEnabled = true
     /// Fetch the base branch before creating a task worktree. False keeps creation entirely local.
+    public var sourceExcerptsSendingEnabled = true
+    public var sourceExcerptsRetentionEnabled = true
     public var worktreeFetchEnabled = true
     public var taskScripts = TaskScripts()
     /// False removes celebrations and their entry points, while keeping personal choices for later.
     public var celebrationsEnabled = true
     /// A display name supplied by the administrator, never inferred from an account or hostname.
     public var organizationName: String?
+
+    public var organizationDisplayName: String { organizationName ?? "your organization" }
+    public var managedExplanation: String { "Managed by \(organizationDisplayName)" }
+    public var organizationHelp: String {
+        organizationContact.map { "Ask in \($0)." } ?? "Ask your administrator."
+    }
     public var labsEnabled = true
     public var companionEnabled = true
     public var remoteHostsEnabled = true

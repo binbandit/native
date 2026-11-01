@@ -18,14 +18,15 @@ struct LightToneSettingsRow: View {
                 isDefault: tone == .paper,
                 leading: AnyView(
                     Circle().fill(.dsBackground)
+                        .environment(\.colorScheme, .light)
+                        .dsLightTone(tone)
+                        // In the row's own scheme, so the edge shows on a background like the swatch's.
                         .overlay {
                             Circle().strokeBorder(
-                                .dsBorderInner.opacity(DS.Appearance.swatchStrokeOpacity),
+                                .dsBorderStrong.opacity(DS.Appearance.swatchStrokeOpacity),
                                 lineWidth: DS.Settings.hairline)
                         }
-                        .frame(width: DS.Appearance.swatch, height: DS.Appearance.swatch)
-                        .environment(\.colorScheme, .light)
-                        .dsLightTone(tone)))
+                        .frame(width: DS.Appearance.swatch, height: DS.Appearance.swatch)))
         }
     }
 }

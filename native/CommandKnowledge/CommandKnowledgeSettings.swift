@@ -16,7 +16,7 @@ struct CommandKnowledgeSettings: View {
                 detail: Text(
                     center.isAllowed
                         ? "Only while Fine print is on. Turning this off keeps existing counts."
-                        : "Your organization has turned counting off.")
+                        : "\(PolicyCenter.organizationSubject) has turned counting off.")
             ) {
                 SettingsSwitch(
                     "Count unknown programs locally",

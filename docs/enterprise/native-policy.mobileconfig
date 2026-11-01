@@ -155,6 +155,10 @@
             <!-- Task scripts (docs/scripts.md): the ones users write in Settings > Scripts and per
                  project, and the ones repositories commit as .native/<event>.sh. -->
             <!-- Automatic worktree base fetches. False always uses local commits. -->
+            <key>policy.sourceExcerpts.sendingEnabled</key>
+            <true/>
+            <key>policy.sourceExcerpts.retentionEnabled</key>
+            <true/>
             <key>policy.git.worktreeFetch</key>
             <false/>
             <key>policy.taskScripts.userScripts</key>

@@ -1,7 +1,12 @@
 #!/bin/bash
 # Runs focused settings regressions against an isolated Debug build, without launching a window.
 set -euo pipefail
-instance=${1:?usage: composer-settings.sh instance}
+instance=${1:?usage: composer-settings.sh instance [--geometry]}
+shift
+if [[ " ${*:-} " == *" --geometry "* ]] && [[ $(/tmp/native-tools/screenlocked) == locked ]]; then
+    echo "SKIP: screen locked; no geometry measurement or capture attempted"
+    exit 2
+fi
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 derived="/tmp/native-dd/$instance"
 products="$derived/Build/Products/Debug"
@@ -17,4 +22,4 @@ nice -n 10 xcrun swiftc "${flags[@]}" "$root/scripts/tests/composer-settings.swi
     "$app/Contents/MacOS/Native.debug.dylib" \
     -Xlinker -rpath -Xlinker "$app/Contents/Frameworks" \
     -Xlinker -rpath -Xlinker "$app/Contents/MacOS" -o "$work/composer-settings"
-nice -n 10 "$work/composer-settings"
+nice -n 10 "$work/composer-settings" "$@"

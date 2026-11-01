@@ -16,6 +16,15 @@ extension DS {
         public static let bodyVertical: CGFloat = 16
         public static let maxBodyHeight: CGFloat = 560
         public static let windowInset: CGFloat = 24
+        /// Clear of the toolbar: Peek never covers the window's title or its subtitle.
+        public static let toolbarGap = DS.Space.sm
+        /// The arrow sits this far down Peek's edge when there's room, so Peek hangs from its row.
+        public static let arrowInset: CGFloat = 40
+        public static let arrowDepth: CGFloat = 7
+        public static let arrowWidth: CGFloat = 16
+        /// Between the row's edge and the arrow's tip.
+        public static let arrowGap: CGFloat = 4
+        public static let radius = DS.Radius.panel
         public static let titleFont = Font.ds(13, weight: .book)
         public static let openFont = Font.ds(12, weight: .book)
     }

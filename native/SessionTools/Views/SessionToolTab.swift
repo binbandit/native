@@ -16,10 +16,12 @@ struct SessionToolTab: View {
             HStack(spacing: DS.Space.sm) {
                 Image(systemName: systemImage)
                     .font(.dsCaption)
+                    .fixedSize()
                     .foregroundStyle(isSelected ? .dsTextPrimary : .dsTextTertiary)
                 Text(title)
                     .lineLimit(1)
                 SessionToolFactAccessory(accessory: accessory)
+                    .fixedSize()
             }
             .font(.dsBodyMedium)
             .foregroundStyle(isSelected || isHovered ? .dsTextPrimary : .dsTextSecondary)
@@ -33,7 +35,8 @@ struct SessionToolTab: View {
             .dsHitTarget(DS.Size.controlXS)
         }
         .buttonStyle(.plain)
-        .fixedSize()
+        .fixedSize(horizontal: false, vertical: true)
+        .help(title)
         .trackHover($isHovered)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
@@ -47,6 +50,19 @@ struct SessionToolTab: View {
                 title: "Changes", systemImage: "plus.forwardslash.minus",
                 accessory: .diff(added: 12, removed: 3), isSelected: selected, action: {})
         }
+    }
+}
+#Preview("Tool tab - Long name beside Close") {
+    DSPreviewPair {
+        HStack {
+            SessionToolTab(
+                title: "Release verification and acceptance checks", systemImage: "checklist",
+                accessory: .working, isSelected: true, action: {})
+            Spacer(minLength: DS.Space.sm)
+            IconButton("Close Side Panel", systemImage: "xmark", action: {})
+        }
+        .frame(width: DS.SessionTools.sidePanelIdealWidth)
+        .padding(DS.Space.md)
     }
 }
 #endif

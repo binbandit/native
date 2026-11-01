@@ -36,6 +36,8 @@ extension SettingsPane {
 }
 
 struct TranscriptSearchSettingsPage: View {
+    @Environment(\.projectDisplayName) private var projectDisplayName
+
     static let historyRow = SettingsRowID("search.history")
     static let excludedRow = SettingsRowID("search.excluded")
     static let indexRow = SettingsRowID("search.index")
@@ -96,7 +98,7 @@ struct TranscriptSearchSettingsPage: View {
                 note: "Tasks in these folders are never indexed, and are removed from the index.")
             SettingsRowGroup {
                 ForEach(center.excludedFolders, id: \.self) { folder in
-                    SettingsRow(URL(filePath: folder).lastPathComponent, description: Text(folder)) {
+                    SettingsRow(projectDisplayName(URL(filePath: folder)), description: Text(folder)) {
                         Button("Include") {
                             Task { await center.include(folder) }
                         }

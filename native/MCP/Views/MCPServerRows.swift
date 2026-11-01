@@ -3,6 +3,7 @@ import SwiftUI
 
 /// A server Native hands agents itself: on/off, what it is, who gets it, how it's doing.
 struct MCPManagedServerRow: View {
+
     let library: MCPLibrary
     let server: ManagedServer
     @Binding var isExpanded: Bool
@@ -95,6 +96,7 @@ struct MCPManagedServerRow: View {
 
 /// A server agents load on their own, however many agents and scopes have it.
 struct MCPAgentServerRow: View {
+    @Environment(\.projectDisplayName) private var projectDisplayName
     let library: MCPLibrary
     let group: MCPAgentServerGroup
     /// The project the page shows, whose switch the row sets; nil for all projects.
@@ -149,7 +151,7 @@ struct MCPAgentServerRow: View {
         var parts = [
             group.entries.map { entry in
                 let location =
-                    entry.scope.project.map { "\(entry.scope.displayName) in \($0.lastPathComponent)" }
+                    entry.scope.project.map { "\(entry.scope.displayName) in \(projectDisplayName($0))" }
                     ?? entry.scope.displayName
                 let status = entry.status.inactiveReason.map { " (\($0.lowercased()))" } ?? ""
                 return "\(entry.format.displayName) · \(location)\(status)"

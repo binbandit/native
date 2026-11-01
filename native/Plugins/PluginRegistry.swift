@@ -2,9 +2,11 @@ import ACP
 import ApprovalAnalysis
 import Experiments
 import Foundation
+import NativeHostProtocol
 import NativePolicy
 import Observation
 import Search
+import SessionTools
 import os
 
 /// The plugins Native runs with: the built-in ones plus any manifests in `~/.native/plugins`, each on
@@ -58,6 +60,7 @@ final class PluginRegistry {
     private(set) var failures: [LoadFailure] = []
     /// The user's explicit on/off choices; a plugin without one follows `isEnabledByDefault`.
     private var choices: [String: Bool]
+    private var nativeMCPChoices: [String: Bool] = [:]
 
     private let defaults: UserDefaults
     private let builtIns: [any NativePlugin]
@@ -76,6 +79,7 @@ final class PluginRegistry {
         self.builtIns = builtIns
         self.defaults = defaults
         self.policyCenter = policyCenter
+        nativeMCPChoices = defaults.dictionary(forKey: "nativeMCPChoices") as? [String: Bool] ?? [:]
         if let stored = defaults.dictionary(forKey: Self.choicesKey) as? [String: Bool] {
             choices = stored
         } else {
@@ -156,6 +160,19 @@ final class PluginRegistry {
         syncExperiments()
     }
 
+    func nativeMCPChoice(for agent: AgentDefinition.ID) -> Bool? {
+        nativeMCPChoices[agent.rawValue]
+    }
+
+    func nativeMCPEnabled(for agent: AgentDefinition) -> Bool {
+        nativeMCPChoice(for: agent.id) ?? (agent.manifest.nativeSkill == nil || agent.manifest.nativeSkill == .unknown)
+    }
+
+    func setNativeMCPEnabled(_ enabled: Bool, for agent: AgentDefinition.ID) {
+        nativeMCPChoices[agent.rawValue] = enabled
+        defaults.set(nativeMCPChoices, forKey: "nativeMCPChoices")
+    }
+
     /// Hands enabled plugins' experiments to Labs, so a plugin's experiments and their claims come
     /// and go with it.
     private func syncExperiments() {
@@ -172,6 +189,18 @@ final class PluginRegistry {
     /// Enabled plugins, plus the system plugins policy admits (`SystemPlugins`).
     var enabledPlugins: [any NativePlugin] {
         contributions.enabledPlugins
+    }
+
+    /// Enabled plugins' task tools, each named for its plugin. One that would take another's id or
+    /// the workbench is left out (`SessionToolSpec.isAllowed(fromPlugin:)`).
+    var sessionTools: [SessionToolContribution] {
+        enabledPlugins.flatMap { plugin in
+            plugin.sessionTools.filter { $0.spec.isAllowed(fromPlugin: plugin.manifest.id) }.map { tool in
+                var tool = tool
+                tool.pluginName = plugin.manifest.name
+                return tool
+            }
+        }
     }
 
     /// Validated descriptions from shipped data, policy and enabled plugins.

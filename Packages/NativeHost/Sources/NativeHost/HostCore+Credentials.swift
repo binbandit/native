@@ -192,6 +192,9 @@ extension HostCore {
         } catch {
             logger.error("Couldn't read the keys saved for \(agentID): \(error.localizedDescription)")
         }
+        if let spec = agents[agentID]?.spec {
+            environment = tasks.prepareSkill(for: spec, environment: environment)
+        }
         return environment
     }
 

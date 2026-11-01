@@ -5,6 +5,8 @@ import TaskScripts
 /// Stop, a question before the repository's own script runs the first time, the result, or a
 /// failure with what failed, its exit code and last lines, and Retry or Skip.
 struct TaskScriptSetupStrip: View {
+    @Environment(\.projectDisplayName) private var projectDisplayName
+
     let run: TaskScriptRun
     let edit: (TaskScriptEditorSheet.Target) -> Void
 
@@ -114,7 +116,7 @@ struct TaskScriptSetupStrip: View {
         case .awaitingApproval:
             let path = run.plan.awaitingApproval?.event.repositoryPath ?? TaskScriptEvent.setup.repositoryPath
             parts.append(
-                "\(run.projectRoot.lastPathComponent) commits \(path) to run in each new worktree. Whoever commits to the repository can change it, so Native asks once before running its scripts on this Mac. Your messages wait until you choose."
+                "\(projectDisplayName(run.projectRoot)) commits \(path) to run in each new worktree. Whoever commits to the repository can change it, so Native asks once before running its scripts on this Mac. Your messages wait until you choose."
             )
         case .failed(let failure):
             parts.append(TaskScriptFailureText.detail(failure, ofRun: run))

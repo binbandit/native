@@ -30,6 +30,8 @@ let help = """
       type <text>                                     type characters into the focused element (\\n is Shift-Return)
       key <combo> [<combo> ...]                       e.g. cmd+n, return, escape, shift+cmd+a, opt+cmd+up
       key <combo> --hold <seconds>                   hold before release, from 0 to 3 seconds
+      drop <composer|transcript> <file>... [--phase hover|drop|exit]   fixture drag, isolated Debug only
+      paste-files <file>...                           fixture paste, private test pasteboard only
       menu <Menu> <Item> [<Item> ...]                 press a menu bar item (a submenu path goes deeper)
       action <text> <name> [--nth N] [--item <text>]  perform an action; AXShowMenu lists or picks from a context menu
       scroll <text> <up|down|top|bottom|reveal>       page the scroll area at or around a match, or reveal it
@@ -58,6 +60,7 @@ let specs: [String: (options: Set<String>, flags: Set<String>)] = [
     "actions": (["nth", "role"], []), "pid": ([], []), "press": (["nth", "role", "item"], []),
     "set": (["nth", "role"], []), "type": ([], []), "key": (["hold"], []), "action": (["nth", "role", "item"], []),
     "scroll": (["nth", "role"], []), "shot": (["window"], []), "frame": ([], []), "screen": ([], []),
+    "drop": (["phase", "text"], []), "paste-files": ([], []),
 ]
 
 @MainActor func run(_ raw: [String]) throws(DriveError) {
@@ -136,6 +139,14 @@ let specs: [String: (options: Set<String>, flags: Set<String>)] = [
         try driver.actions(query(positional[0]), nth: nth).forEach { print($0) }
     case "pid":
         print(instance.pid)
+    case "drop":
+        try arguments.expect(1...32, "drop <composer|transcript> <file>... [--phase hover|drop|exit]")
+        try AttachmentInput(instance: instance).drop(
+            target: positional[0], paths: Array(positional.dropFirst()), phase: arguments.string("phase") ?? "drop",
+            text: arguments.string("text"))
+    case "paste-files":
+        try arguments.expect(1...32, "paste-files <file>...")
+        try AttachmentInput(instance: instance).paste(paths: positional)
     case "press":
         try arguments.expect(1...1, "press <text> [--nth N] [--role R]")
         print(try driver.press(query(positional[0]), nth: nth, item: arguments.string("item")))

@@ -4,6 +4,8 @@ import TaskScripts
 /// Runs the script being edited once, in a scratch worktree of a project (removed afterwards) or in
 /// the current task's folder, and shows how it went as it runs.
 struct TaskScriptTestPanel: View {
+    @Environment(\.projectDisplayName) private var projectDisplayName
+
     let text: String
     let target: TaskScriptEditorSheet.Target
 
@@ -93,7 +95,7 @@ struct TaskScriptTestPanel: View {
         case .scratchWorktree:
             guard let project else { return "Add a project to test in a scratch worktree of it." }
             return
-                "Native makes a worktree of \(project.lastPathComponent) with its env files, runs the script there with the variables a task gets, then removes it."
+                "Native makes a worktree of \(projectDisplayName(project)) with its env files, runs the script there with the variables a task gets, then removes it."
         case .currentTask:
             guard let currentTask else { return "Open a task to test the script in its folder." }
             return "Runs for real in \(currentTask.abbreviatedPath), with the task's variables."

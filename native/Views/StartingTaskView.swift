@@ -63,7 +63,9 @@ struct StartingTaskView: View {
             .frame(maxWidth: .infinity)
         }
         .navigationTitle("New Task")
-        .navigationSubtitle(model.projects.project(task.project)?.url.abbreviatedPath ?? "")
+        .navigationSubtitle(
+            task.project == NoProjectLocation.id
+                ? "No project" : model.projects.project(task.project)?.url.abbreviatedPath ?? "")
     }
 }
 

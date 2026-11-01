@@ -8,7 +8,9 @@ let package = Package(
         .library(name: "Exec", targets: ["Exec"])
     ],
     targets: [
-        .target(name: "Exec"),
+        .target(
+            name: "Exec",
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         .testTarget(name: "ExecTests", dependencies: ["Exec"]),
     ]
 )

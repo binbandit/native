@@ -16,8 +16,11 @@ struct FileWatchingTests {
     )
     func coalescing() async throws {
         let sent = Recorded<[String]>()
-        let latency = Duration.milliseconds(300)
-        let coalescer = FileChangeCoalescer(latency: latency, limit: 3) { paths, isOverflow in
+        let latency = Duration.seconds(1)
+        let clock = FileWatchingTestClock()
+        let coalescer = FileChangeCoalescer(
+            latency: latency, limit: 3, now: { clock.now }, sleep: { try await clock.sleep(until: $0) }
+        ) { paths, isOverflow in
             sent.append(isOverflow ? ["overflow"] : paths)
         }
         coalescer.add(FileWatchBatch(paths: ["a"]))
@@ -26,22 +29,27 @@ struct FileWatchingTests {
         coalescer.add(FileWatchBatch(paths: ["c", "b"]))
         coalescer.add(FileWatchBatch(paths: ["b"]))
         #expect(sent.values.count == 1, "held for the rest of the window")
+        clock.advance(by: latency)
         try await pollUntil("the window to close") { sent.values.count == 2 }
         #expect(sent.values.last == ["b", "c"])
 
         coalescer.add(FileWatchBatch(paths: ["1", "2"]))
         coalescer.add(FileWatchBatch(paths: ["3", "4"]))
+        clock.advance(by: latency)
         try await pollUntil("the overflow") { sent.values.count == 3 }
         #expect(sent.values.last == ["overflow"])
 
-        try await Task.sleep(for: latency + .milliseconds(100))
+        clock.advance(by: latency + .milliseconds(100))
         coalescer.add(FileWatchBatch(paths: ["quiet"]))
         #expect(sent.values.last == ["quiet"])
 
         coalescer.add(FileWatchBatch(paths: ["late"]))
-        coalescer.stop()
-        try await Task.sleep(for: latency + .milliseconds(100))
-        #expect(sent.values.count == 4, "nothing goes out once stopped")
+        let stoppedFlush = try #require(coalescer.stop())
+        clock.advance(by: latency + .milliseconds(100))
+        await stoppedFlush.value
+        withExtendedLifetime(coalescer) {
+            #expect(sent.values.count == 4, "nothing goes out once stopped")
+        }
     }
 
     @Test(
@@ -108,5 +116,22 @@ struct FileWatchingTests {
         let url = FileManager.default.temporaryDirectory.appending(path: "watching-\(UUID().uuidString.prefix(8))")
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
         return try #require(ProjectPaths.resolvedPath(url.path(percentEncoded: false)))
+    }
+}
+
+/// Advances only when the test asks, so a busy executor cannot split a batch across windows.
+private final class FileWatchingTestClock: Sendable {
+    let time = Mutex(ContinuousClock.now)
+    var now: ContinuousClock.Instant { time.withLock { $0 } }
+
+    func advance(by duration: Duration) {
+        time.withLock { $0 += duration }
+    }
+
+    func sleep(until deadline: ContinuousClock.Instant) async throws {
+        while now < deadline {
+            try await Task.sleep(for: .milliseconds(1))
+        }
+        try Task.checkCancellation()
     }
 }

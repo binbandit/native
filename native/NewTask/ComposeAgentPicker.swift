@@ -18,10 +18,10 @@ struct ComposeAgentPicker: View {
 
     var body: some View {
         // The composer's popover caps itself for the composer; the page caps it to the room below To.
-        CappedHeightScrollView(maxHeight: maxHeight) { pickerContent }
+        CappedHeightScrollView(maxHeight: maxHeight) { popover }
     }
 
-    private var pickerContent: some View {
+    var popover: ComposerSettingsPopover {
         ComposerSettingsPopover(
             settings: settings,
             agentName: model.composeTask.editor?.agentName ?? "The agent",

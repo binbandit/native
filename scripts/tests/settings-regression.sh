@@ -14,8 +14,11 @@ for map in "$derived"/Build/Intermediates.noindex/GeneratedModuleMaps*/*.modulem
 done
 if [ "${2:-}" = --before ]; then flags+=(-D BEFORE); fi
 nice -n 10 xcrun swiftc "${flags[@]}" "$root/scripts/tests/settings-regression.swift" \
+    "$root/scripts/tests/settings-theme-try-on-regression.swift" \
     "$app/Contents/MacOS/Native.debug.dylib" \
     -Xlinker -rpath -Xlinker "$app/Contents/Frameworks" \
     -Xlinker -rpath -Xlinker "$app/Contents/MacOS" -o "$work/settings-regression"
 mkdir "$work/plugins"
-"$work/settings-regression" -pluginsDirectory "$work/plugins" -NativeRemoteHosts YES
+# Argument-domain defaults, so the gate is on for this run only.
+"$work/settings-regression" -pluginsDirectory "$work/plugins" -NativeRemoteHosts YES \
+    -experiment.NativeSettingsPlainly '<true/>'

@@ -42,6 +42,9 @@
   command-lifetime guarantee, the result is a failed turn warning that background commands may
   remain, never a promise of Stopped. Closing a task retains its pending cleanup. Immediate host
   restart finishes cleanup without waiting for siblings and leaves their turns for recovery.
+- **Steer preserves tools.** ACP's `SteeringGate` holds input until every reported live tool finishes,
+  unless the agent plugin declares non-interrupting steering. The host owns the editable held message
+  and its delivery across app disconnects. Stop keeps its immediate cancellation path.
 - **State is a reducer.** `SessionState` folds `session/update`s and the user's actions into a
   transcript (messages, tool calls, subagents, inter-session messages, plan, usage). It's pure and
   tested against captured traffic, and it's shared with the future companion app.
@@ -61,6 +64,58 @@
   host, live-session or agent-listing date for both ages and order; opening history doesn't change it.
 - **Subagents** are child sessions: announced by agents (the ACP subagents RFD) or started by
   Native's orchestration tools on any agent. Both look and behave the same in the UI.
+
+### Native's tools on demand
+
+Claude Code and Codex receive the bundled `native-app` skill instead of Native's full MCP tool
+list. Discovery adds only its name, description and location; instructions and references load
+when needed. Its `scripts/native` CLI calls the existing signed loopback endpoint and the same
+`OrchestrationTools`, `SkillTools`, `SetupTools` and `OrchestrationScriptTool` handlers. JSON is the
+default output; `--text` prints the readable result, `--stdin` accepts a JSON argument object.
+The host helper and standalone host implement `action <tool> [JSON | --stdin] [--text]` without
+starting another host. Argument parsing, endpoint validation and installation live in
+`Packages/Orchestration`; host delivery lives in `HostTasks+AgentSkill`.
+
+Claude's skill is a local SDK plugin in the host's own directory, loaded through session options.
+The same options supply its session URL to shell tools, outside model context. Codex discovers
+`$CODEX_HOME/skills/native-app` (default `~/.codex/skills/native-app`); its shell's `CODEX_THREAD_ID`
+selects a private signed credential in the host's directory. There is no cwd-based or last-task
+fallback. User-owned skills, edited installations and symlinks are left alone. Unmodified copies
+written by Native can be updated. Development hosts install Codex skills only when `CODEX_HOME`
+is explicitly inside that host's directory, so isolated checks cannot change personal skills.
+`NATIVE_ACTION_CLI` selects the current task's host executable even if another Native channel
+updates Codex's shared skill copy. `NATIVE_ACTION_SESSIONS` selects that host's credential directory.
+
+Binary-only standalone hosts without the skill resource bundle retain MCP. Resource lookup is
+non-trapping and uses only deployed bundles, so missing resources cannot terminate the host.
+The skill works whether the app or host serves Native's endpoint. The host keeps the app's URL
+as internal session configuration while leaving it out of the agent's MCP list. Unsupported
+agents and installations that cannot be delivered retain MCP by default. Settings > Agents has
+a per-agent Native tools switch to opt into loading all MCP tools; an explicit off stays off.
+Choices apply when a task next opens. Agents running directly in the app retain MCP compatibility.
+
+Both paths require Native's orchestration capability, managed MCP admission for `native`, and the
+`orchestration.loopback` network service with valid network policy and local IPC allowed. The
+CLI accepts only the signed literal-loopback endpoint; it has no remote destination. Restricted
+deployments remain denied. Existing task
+scope, coordinator limits and tool handlers are shared, and shell execution retains the agent's
+approval flow. Credentials never enter the skill description or command arguments. Setup and
+scripts keep their existing app-running requirement; task tools can work with the app closed
+when host tools are enabled. See [Native tool context measurement](native-tool-context.md).
+
+## Project display names
+
+`AppModel.renameProject` changes Native's display name, never the folder on disk, and registers
+undo. Clearing a name restores the folder name. File > Rename Project, both sidebar menus and the
+Name row in Settings > Projects use that method. Managed policy does not govern display names.
+
+`Packages/ProjectNames` normalizes names, resolves unnamed duplicates with the shortest distinct
+parent suffix, and keeps custom names in Native-owned defaults by canonical path and filesystem
+identity. Closing and re-adding a folder retains its name; moving that folder on the same volume
+retains it too. Existing project records migrate their names into this store. `Projects` resolves
+labels for all consumers, and sidebar headers render the suffix as secondary text. Their tooltips
+and accessibility labels contain the full path. Paired-host task labels resolve on their host's
+side of the project boundary; a local rename does not rename another machine's checkout.
 
 ## Clients and hosts
 
@@ -108,9 +163,15 @@ footprint with physical RAM. It has no per-core scaling.
 
 ### GitHub account selection
 
-Settings > General > Accounts lists and switches the GitHub accounts on this Mac. The Mac sidebar
-footer shows only the selected avatar and name beside Settings; clicking it or choosing Go > GitHub
-Account opens General at the Accounts group. A signed-out footer shows just Settings.
+Settings > General > Accounts lists and switches the GitHub accounts on this Mac, with add and
+sign-out guidance through GitHub CLI. Both sidebars have one full-width footer button that opens
+Settings > General: the selected account's cached avatar and display name (login when unnamed),
+with a gear at the trailing edge. Loading or unavailable pictures use a neutral initial. With no
+signed-in account it shows Settings and the gear. Its tooltip is "Settings" and its accessible
+name is "<name>, Settings". Go > GitHub Account still reveals the Accounts group directly.
+When an organization manages Native (`PolicyCenter`), General names the organization, says what
+its policy turns off (GitHub, other Macs, pairing), and where to ask. There is no account popover
+or separate managed control in the footer.
 `GitHubAccountsModel` lists all
 accounts from `gh auth status --json hosts`, loads names and cached avatars asynchronously, and
 remembers one chosen login per host in Native's defaults. Without a choice it follows gh's active
@@ -134,9 +195,10 @@ here and on two hosts are three lookups with three answers, cached and deduplica
 `RemoteHostsWiring` hands `GitHubModel` each pairing's command runner when it makes that host's
 task workspaces. gh runs there with an empty client environment, without this Mac's PATH, account
 choice or `GH_HOST`, so the host's login shell, signed-in account and GitHub hostname apply. Which
-pull request a branch was opened for is read with the host's git. A paired-host row has no pull
-request badge, so `AppTaskPullRequests` starts a branch's first lookup when its pull request is
-first asked for (the row's menu); `GitHubModel`'s refreshes follow. Switching accounts here leaves
+pull request a branch was opened for is read with the host's git. All in view shows a read-only
+pull-request outcome on paired-host rows and in Peek.
+`AppTaskPullRequests` also starts a remote branch's first lookup when its pull request is
+first asked for; `GitHubModel`'s refreshes follow. Switching accounts here leaves
 hosts' answers alone; pairing a host again forgets its answers and drops what the old pairing was
 still answering. An offline host, a missing `runCommands` grant or gh, or a signed-out gh there
 keeps the last answer with its failure. This Mac's gh is never asked instead. Lookups are refused,
@@ -194,7 +256,17 @@ Rules:
 `Packages/Undo` keeps undo toasts and the window's undo stack in agreement. `RootView` supplies the
 main window's undo manager to `AppModel.undoHistory`; the Edit menu uses it even when Home has no
 text responder. Archiving registers undo before workspace work starts, and the same action handles
-the toast, Cmd-Z and Redo. Expired deletions withdraw their actions from the stack.
+the toast, Cmd-Z and Redo. Task deletion, including archived tasks and bulk/menu actions, hides
+tasks immediately without confirmation and waits 10 seconds before cleanup. Undo during that window
+cancels cleanup, leaving the conversation, draft, task flags, workspace and host session untouched.
+Expired deletions withdraw their actions from the stack, remove the catalog entry and ask a running
+agent to delete its copy when supported (the host then cancels and forgets that session). Otherwise
+the agent and host can retain their copies. The separate transcript search index is not purged by
+task deletion. Native-owned worktrees are removed after checkpointing;
+branches stay or are saved under archive refs according to settings. Deleting an archived task
+forgets its workspace restore record but keeps its branch and checkpoint. The project folder is
+never removed. Archive keeps the conversation and records the workspace, branch and checkpoint so
+Undo or later Unarchive can rebuild it; restore failures retain recovery material and offer Retry.
 
 ### Migration
 
@@ -244,7 +316,8 @@ The sidebar owns the shared `TaskSignal`; Home uses it for the current ask and U
 oldest within each kind. The ask being read stays put when another arrives. Answering uses the
 exact `SessionModel` and tool-call request displayed, including subagent requests. Home records
 a receipt and advances when the model acknowledges an answer. Questions embed the composer's
-`AgentQuestionSection`, with the same digit keys, multiple-question paging and free text. Plan
+question, with the same digit keys, multiple-question paging and free text: `AnnotatedQuestionView`
+with Fine print, `AgentQuestionSection` without. Plan
 permissions embed `ComposerPlanSection` in its numbered review presentation (first five steps,
 then Show more in Peek), using only the current turn's checklist. The exact permission proposal always
 stays visible in the shared annotated approval, with the agent's Approve Plan and Revise choices.
@@ -375,11 +448,14 @@ when the scene becomes active, then holds still. Reduce Motion is always still. 
 the oldest reachable ask across projects and child tasks, using the same request identity as ⌘Y.
 
 Slice 2 adds `TaskPeek`: Space in the sidebar, the signal button, force click and the context menu
-all open one 600pt popover without changing selection. A visible row supplies its anchor; hidden
-rows and Settings use the window anchor. The model routes captured requests to their owning
-session and checks identity again before answering. Questions, plans and commands with unknown
+all open one in-window card, up to 600pt wide, without changing selection. A visible row supplies
+its anchor; the shared `TaskPeekFrame` places the card beside it when space permits and keeps the
+whole card below the toolbar and inside the window. Narrow windows, hidden rows and Settings use
+a bounded fallback, with tall content scrolling inside the card. The model routes captured requests
+to their owning session and checks identity again before answering. Questions, plans and commands with unknown
 or irreversible effects open Peek from ⌘Y; a small ACP vocabulary permits routine approvals.
-Peek reuses `AnnotatedApprovalView` and `AgentQuestionSection`, including command explanations,
+Peek reuses `AnnotatedApprovalView` and the composer's question (`AnnotatedQuestionView` with Fine
+print, `AgentQuestionSection` without), including command explanations,
 instruction recovery and the hold for irreversible approvals. Recovered failures use their live signal;
 unrecovered failures expose the real notice and the model's recovery action.
 
@@ -399,7 +475,14 @@ excludes folded earlier tasks. Pinned tasks stay in their existing user-chosen s
 View > Sidebar and the list context menu share persisted choices: ask text and machine glyphs
 (default on), ages, changes on finished tasks, agent names and branches (default off), plus folding
 after a day, a week or never. Changes use the latest completed turn; branch facts use the existing
-git adapter without loading pull requests. No extra data is fetched with additions off.
+git adapter without loading pull requests. Pull-request outcomes are independent of those additions:
+every task with its own checkout shows its PR number, lifecycle glyph and failing-checks mark on
+the row and in Peek, even with all facts off. The row starts the cached lookup without requiring
+a branch fact or an active filter; project Refresh still bypasses that cache. Row menus retain
+the existing open and copy actions, with host-safe read-only actions for paired tasks.
+Archived managed worktrees resolve their saved branch from the surviving project checkout on the
+task's machine, keeping PR outcomes and menu actions after removal and relaunch without restoring
+the worktree. Project Refresh also bypasses the PR cache for these archived branches.
 Home Next owns the asks it shows; matching sidebar sentences, clocks and keycaps fold. Requests not
 yet shown by Home, including different requests on the same task, keep their sidebar sentence.
 The Debug fixtures `fold`, `facts` and `home-fold` cover these states.
@@ -434,11 +517,27 @@ forbids it. Usage stays in Settings by product decision. Modes are editable from
 there is no separate Modes feature switch. Sounds joins Notifications, GitHub and Scripts join Git,
 Sleep and paired devices join While You're Away, and enabled Celebrations join Appearance.
 
-New Tasks owns the existing agent model and effort defaults, starting mode and workspace choice.
-A project's agent, model and workspace controls move there with project scope; branch prefix stays
-on its project page. Search follows the moved rows. `SettingsPlainlyCopy` supplies row text,
-accessible control names and search titles together. The inheritance popovers, context accounting,
-feature presets, agent detail pages and the shared overnight receipt belong to later slices.
+New Tasks owns the agent model, effort and permissions defaults, starting mode and workspace choice.
+Both scope menus remain available for every project. Project overrides, user defaults, remembered
+choices and agent-reported defaults form a source stack; organization restrictions and the starting
+mode show when they supersede a choice. Unavailable choices remain explainable and can be Reset.
+Permissions and the new project effort/mode overrides apply only to new tasks while Plainly is on;
+reopened tasks and the original page map retain their behavior. Agent and project pages link here.
+Branch prefixes stay on project pages.
+
+`Packages/TaskDefaults` holds the tested default resolution, instruction metadata inventory and
+context estimate. The page reads existing MCP and Skills libraries and plugin-declared instruction
+locations without probing servers, starting tasks or reading agent secrets. It lists file metadata,
+not instruction contents. Counts stay approximate: instruction bytes and skill summaries use a
+four-byte heuristic, MCP tools use existing probe definitions, and matching agent/project/model
+context reports can supply counts and capacity. Missing counts are explicit, never zero-cost claims.
+Conditional files, inherited instructions, plugin tools and agent-managed context may remain unknown.
+Agent-owned instructions have no pretend switch; unsupported skill/server switches link to their
+existing management pages. Failed probes never imply an agent's sign-in expired.
+
+`SettingsPlainlyCopy` supplies row text, accessible control names and search titles together.
+Feature presets, agent detail pages, composer provenance persistence and the shared overnight
+receipt belong to later slices.
 
 ### Fine print approvals
 
@@ -521,14 +620,24 @@ The behavior, tool order and remaining slices are described in `docs/session-too
 
 ### Changing a task's agent (Labs)
 
-`change-agent` is off by default. With Fine print enabled, the composer's Model list includes
-other plugin agents' reported choices on the task's existing host. Opening the list reads live
-options or Native-owned cached options; only Load Models explicitly initializes an unknown catalog.
+`change-agent` is on by default as a beta. Both composers name the current agent and model and
+open a picker with installed agents above the current agent's models, on the task's existing host.
+Opening the list reads live options or Native-owned cached options; selecting another agent
+prepares its default model and then shows that agent's reported models.
 Model names never imply agent identity. The reporting adapter owns each choice, including gateway
-models. The list retains its opening order until closed, and filters names, IDs and agent names.
+models. The list retains its opening order until closed, and filters the current agent's model names and IDs.
 
 `ComposerAgentChange` prepares an unused conversation in the same folder, validates the exact model
-and a supported permission level no broader than the source, then publishes the selection. It does
+and a supported permission level, then publishes the selection. Permission translation prefers an
+equivalent level, then the closest stricter level, otherwise the safest advertised level allowed by
+policy. Unknown semantics are never treated as equivalent by matching IDs; a wholly unfamiliar list
+uses its first advertised level with an explicit review notice. A missing permission setting does
+not block the switch. Only a policy denying every advertised level blocks permission translation.
+Planning and read-only restrictions remain distinct from ordinary approvals. A supported agent plan
+setting is confirmed before committing, including separate collaboration settings; Native rebinds
+its mode ownership to the target's option IDs. A missing planning restriction is disclosed.
+The receipt explains changed or incomparable levels and opens the permission choices in one click;
+Undo retains the original session and level. The chosen settings and notice survive relaunch. It does
 not allocate a worktree, run task-start defaults or send a working prompt. The source remains checked
 until commit. Normal running turns finish first; approvals, questions, queued messages, coordinator
 work and goals that cannot migrate safely block the choice with a specific recovery instruction.
@@ -554,8 +663,8 @@ Pending choices have Cancel in the composer and Task menu. The title has no agen
 
 Paired-host choices stay on that host, using its runtimes, reported catalogs and connection. Policy
 is rechecked before preparation, commit and normal submission. Forbidden agents' known models stay
-legible with locks. Unknown permission semantics fail closed. With Fine print off, the existing
-review-sheet path remains available behind Change Agent. Disabling the gate hides the entry points;
+legible with locks. Unknown permission semantics fail closed. Both composers use the same direct
+selection and Undo path. Disabling Change Agent in Labs hides the agent-switching entry points;
 earlier conversation links stay readable. Combined transcripts, cross-device moves and transactional
 goal migration remain separate work.
 
@@ -575,6 +684,22 @@ start closed; pending approvals override the visible state without changing the 
 Scroll positions remain per window in `SessionTranscriptMemory`.
 
 ### Task worktree preparation
+
+The default-off Project Folder Tasks Labs switch (`NativeProjectFolderTasks`) keeps the new
+controls and remembered choice off until visual and real-session verification finishes. With it
+enabled, new tasks offer a quiet Task folder menu: a new branch in a separate folder (the default),
+or the project's folder on its current branch. The last explicit choice is stored per project
+in `projectDefaults.<project id>.folder`, shared by classic task creation, Quick Entry and the
+Labs Compose page. An unset choice retains the existing Git settings. Project-folder starts
+pass `.project` to the workspace provider, which returns the existing folder without Git writes,
+fetches, branch creation or setup scripts for a new worktree. Changing an already prepared classic
+task uses the existing replacement path below and cleans up its unused checkout when safe.
+
+Project-folder tasks show their live branch and "Project folder" in the header and sidebar.
+Choosing that folder shows a one-line advisory if another running task on the same device uses it.
+Their Changes and Commit surfaces read that folder's working tree, including pre-existing edits.
+Pull-request creation is hidden on the locally known default branch (or when the base is unknown).
+Deleting one first explains that its files and branch stay; cleanup never owns the project folder.
 
 Before the first message, Change Workspace replaces the empty agent conversation in the chosen
 folder, retaining its draft, attachments, title, order and settings. The model blocks sends while
@@ -647,7 +772,24 @@ so later edits from another task cannot be attributed to the completed one. Sear
 are skipped. `SpecimenSource` selects completed task snapshots; `SpecimenLine`
 in `Packages/CodeThemes` scores highlighted added lines, filters every displayed line and metadata for
 secret patterns, and falls back to a language sample. The excerpt stays in memory and is not logged or
-persisted. The terminal line is always a sample. Try On's task preview is a later change.
+persisted. The terminal line is always a sample.
+
+Try On (`native/Appearance/TryOn`) previews themes on a task without writing them. `ThemeTrial` in
+`Packages/CodeThemes` holds what each mode shows, which mode is listed and what Keep writes; the
+window root's `themeTryOnPreview` overrides the code themes and backgrounds from it, just inside
+`appearancePreferences(plugins:)`, and `AppearanceModeController.preview(_:)` shows the other mode
+without saving it. `ThemeTryOnModel` opens the latest task with code from Settings, or the task in
+view from View ▸ Appearance when it has code, otherwise a read-only sample. Settings searches
+`sessionList` newest first, loading unopened history through `AppModel.loadSession` as needed and
+waiting for host replay to finish before inspecting its code. Restored host records report loading
+before scheduling that replay, so an idle placeholder cannot be mistaken for a replayed transcript. This
+can start an agent to replay history, but sends no prompts. A cancellable loading state covers that
+search. The panel takes the sidebar's column and returns there on Keep or Cancel. The task view is
+disabled and Stop is unavailable while trying; narrow windows suspend inspectors and restore them
+afterwards. The Task Well worker control also steps aside during that suspension, so its centered
+toolbar width cannot hide the theme panel's sidebar. The task title keeps the remaining toolbar room.
+A newly managed code theme immediately suppresses the preview and ends Try On without
+saving. Try On never sends to or changes a task.
 
 ### Credential ownership
 
@@ -675,11 +817,60 @@ reported turn edits as a fallback for committed files; unavailable or binary cou
 
 ### Opening folders in All in view
 
-`SidebarFolders` owns the fixed Open Folder action, device-local successful recents, batch results
-and addition Undo. `project.open` remains the Command-O entry point. `AppModel+SidebarFolders`
-resolves a whole batch before committing, revalidates live folder policy, delegates identity to
+`SidebarFolders` owns folder admission, device-local successful recents, batch results
+and addition Undo. The Projects header's plus opens the chooser; the footer holds only account
+controls and folder feedback. Compose, Home and Quick Entry share a project picker ending in
+Open Folder…. File retains Open Recent, and `project.open` remains the Command-O entry point.
+`AppModel+SidebarFolders` resolves a whole batch before committing, revalidates live folder policy, delegates identity to
 `Projects` and opens the first new folder's home without creating a task. Existing sessions retain
 their drafts. `PlatformFolderPicker`, `PlatformFolderAccess` and `PlatformFolderDrop` adapt system
 selection, security-scoped access and external file URLs; private sidebar drags still reorder.
 Recents use non-mounting bookmark resolution and never contain paired-host paths. The new surface
 is gated by `NativeSidebarNext`; the default remains unchanged.
+
+### Tasks without a project
+
+`NoProjectLocation` is a private catalog grouping, not an opened project. Native creates one
+private directory per task in its own Application Support `Task Files` directory through
+`TaskScratchStore` in TaskList. No-project starts use ordinary agent defaults and policy, skip
+worktree preparation, and hide Git tools even if the agent creates a repository there. The
+folder is a working location, not a security sandbox.
+
+Archive retains files. Delete uses the ordinary ten-second Undo window before closing the task
+and removing only its owned scratch directory. Cleanup uses the host's confirmed-close request:
+only an agent acknowledgement permits forgetting the host record. Process snapshots cannot prove
+that detached commands exited. Unsupported or rejected closes retain the task, record and private
+files for retry; older hosts reject
+the separate method safely. Move to Project reopens the same agent
+conversation at an admitted project folder. A unique Task Files child receives files only when
+the user opts in; originals remain owned until task deletion. Failure preserves the original
+location and draft. Paired-host scratch allocation is not supported.
+
+## Inline comments on Changes
+
+With Fine print enabled, `native/DiffComments` anchors task comments in the Changes diff. The
+shared ACP `PromptQuote` format carries an optional `PromptDiffComment`: stable identity, task,
+side, scope, content fingerprint, exact numbered source and body. It remains one text packet in
+the existing composer draft, queue and user transcript. Bare quotes keep their existing format.
+`PromptDiffCommentSelection` refuses cross-hunk or cross-side anchors. Fingerprints are stable
+version identifiers rather than cryptographic security claims; no fuzzy line remapping occurs.
+
+`SessionModel` owns collection, unfinished editors, review and undo. `ComposerDrafts` retains
+unfinished editors separately from added quotes and keeps a pending packet before submission.
+Acceptance removes only matching accepted snapshots, preserving later edits. Existing host request
+identifiers provide reconnect deduplication within a submission. A lost acknowledgement remains
+unresolved across relaunch until matching transcript/queue evidence or explicit user-controlled
+resend; no timer implies failure. Comments use the public task submission API and retain its queue
+and steer behavior. No GitHub review is created. Source excerpt policy grants apply at collection
+and submission; they introduce no new endpoint. Inert Debug fixtures cover C1 through C13.
+
+### Context after compaction
+
+Both the app and host advertise ACP's `session.compaction` client capability. The shared
+`SessionState` reducer renders `compaction_update` and `compaction_summary_chunk` as a transcript
+operation. A successful completion invalidates earlier context usage and cached breakdowns;
+failed or cancelled compactions keep them. Duplicate completion events do not invalidate newer
+usage. Until the agent reports a positive post-compaction count, the context display says
+"Compacted" and omits the old percentage and pressure warnings. Older Claude adapters can report
+zero as a placeholder when the compact boundary has no token count; Native waits for the next
+usage report rather than presenting that placeholder as an empty context.

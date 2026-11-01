@@ -10,9 +10,9 @@ import Testing
     }
 
     @Test(arguments: CommandCoverageExamples.commands)
-    func realCommandLines(command: String, destructive: Bool) {
+    func realCommandLines(command: String, irreversible: Bool) {
         let result = ApprovalCommand(command: command, workingDirectory: "/repo")
-        #expect(result.risk == (destructive ? .irreversible : .routine), "\(command)")
+        #expect(result.risk == (irreversible ? .irreversible : .routine), "\(command)")
         #expect(!result.parts.isEmpty)
         #expect(result.command == command)
         let characters = Array(command)
@@ -114,23 +114,27 @@ import Testing
         #expect(result.action != "show ref update history")
     }
 
-    @Test func cacheNamesNeverProveContentsOrUndo() {
-        for path in ["node_modules", ".build", "~/Library/Developer/Xcode/DerivedData/App"] {
-            let result = ApprovalCommand(
-                command: "rm -rf \(path)", workingDirectory: "/repo", homeDirectory: "/home/test")
-            #expect(result.risk == .irreversible)
-            #expect(result.parts.last?.explanation.contains("conventional") == true)
-            #expect(result.consequence.contains("not been inspected"))
-        }
+    @Test(arguments: [
+        ("node_modules", "installed dependencies"), (".build", "Swift's build folder"),
+        ("~/Library/Developer/Xcode/DerivedData/App", "Xcode's build cache"),
+    ])
+    func cacheNamesNeverProveContentsOrUndo(path: String, name: String) {
+        let result = ApprovalCommand(command: "rm -rf \(path)", workingDirectory: "/repo", homeDirectory: "/home/test")
+        #expect(result.risk == .irreversible)
+        #expect(result.parts.last?.explanation.hasPrefix(name) == true)
+        #expect(result.consequence.contains("Trash"))
+    }
+
+    @Test func pathsOutsideKnownLocationsAreNamedAsTyped() {
         let escaped = ApprovalCommand(command: "rm -rf .build/../source", workingDirectory: "/repo")
-        #expect(escaped.parts.last?.explanation.contains("conventional") == false)
+        #expect(escaped.parts.last?.explanation == ".build/../source · inside the worktree")
         let prefix = ApprovalCommand(command: "rm -rf ../repo-copy", workingDirectory: "/repo")
         #expect(prefix.parts.last?.explanation.contains("outside") == true)
     }
 
     @Test func optionValuesAndTerminatorAreNotFlags() {
         let result = ApprovalCommand(command: "rm -- -rf", workingDirectory: "/repo")
-        #expect(result.parts.last?.explanation.contains("path") == true)
+        #expect(result.parts.last?.explanation == "-rf · inside the worktree")
         #expect(result.parts.count == 3)
         let quoted = ApprovalCommand(command: "git commit -m 'hello --force'", workingDirectory: "/repo")
         #expect(quoted.parts.count == 2)

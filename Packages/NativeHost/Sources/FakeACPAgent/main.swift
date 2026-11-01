@@ -19,6 +19,9 @@ import FoundationNetworking
 //   lose-once …         never records the prompt and hangs, the first time (a prompt that didn't arrive)
 //   flaky-once …        fails with a network error the first time, answers normally after that
 //   permission …        asks to approve a tool call and reports the answer
+//   ask-run <why> :: <command>
+//                       says why, then asks to run the shell command as Claude Code does, and reports
+//                       the answer (`ask-run :: <command>` says nothing first)
 //   question …          asks a form question (elicitation/create) and reports the answer
 //   mode?               answers with the session's current mode
 //   config?             answers with its mode, model and effort, as "config: mode=… model=… effort=…"
@@ -84,6 +87,7 @@ actor FakeAgent {
         guard let id = message.id, let peer else {
             if message.method == "session/cancel", let params = try? message.params(as: SessionParams.self) {
                 cancelled.insert(params.sessionId)
+                note("cancels.log", params.sessionId.rawValue)
                 if ProcessInfo.processInfo.environment["FAKE_AGENT_EXIT_ON_CANCEL"] == "1" { exit(0) }
             }
             return
@@ -106,11 +110,13 @@ actor FakeAgent {
                 with: JSONValue.object([
                     "protocolVersion": .number(1),
                     "agentCapabilities": .object([
-                        "loadSession": .bool(true),
-                        "sessionCapabilities": .object([
-                            "list": .object([:]), "close": .object([:]), "delete": .object([:]),
-                            "resume": .object([:]),
-                        ]),
+                        "loadSession": .bool(ProcessInfo.processInfo.environment["FAKE_AGENT_NO_LOAD"] != "1"),
+                        "sessionCapabilities": .object(
+                            [
+                                "list": .object([:]), "delete": .object([:]),
+                                "resume": ProcessInfo.processInfo.environment["FAKE_AGENT_NO_RESUME"] == "1"
+                                    ? .null : .object([:]),
+                            ].merging(Self.closeCapability) { $1 }),
                     ]),
                     "agentInfo": .object(["name": .string("fake-agent"), "version": .string("1")]),
                     "authMethods": .array([.object(["id": .string("token"), "name": .string("Token")])]),
@@ -132,6 +138,11 @@ actor FakeAgent {
                 to: id,
                 with: JSONValue.object(["sessionId": .string(session.rawValue), "configOptions": options(session)]))
         case "session/load":
+            try emitChildText("Child history")
+            if ProcessInfo.processInfo.environment["FAKE_AGENT_LOAD_HANG_ONCE"] == "1", firstTime("load-hang") {
+                note("loads.log", "waiting")
+                try await Task.sleep(for: .seconds(3_600))
+            }
             let session = try message.params(as: SessionParams.self).sessionId
             let servers =
                 (try? message.params(as: LoadParams.self))?.mcpServers.map { "\($0.name) \($0.command ?? "")" } ?? []
@@ -156,7 +167,12 @@ actor FakeAgent {
             }
             try reportReloadConfig(session)
             try peer.respond(to: id, with: JSONValue.object(["configOptions": options(session)]))
+            if ProcessInfo.processInfo.environment["FAKE_AGENT_CHILD_AFTER_LOAD"] == "1" {
+                try emitChildText("Fresh at boundary")
+                try emitChildConfig()
+            }
         case "session/resume":
+            try emitChildText("Fresh child update")
             // Like a load without the replay.
             let session = try message.params(as: SessionParams.self).sessionId
             guard FileManager.default.fileExists(atPath: file(session).path(percentEncoded: false)) else {
@@ -176,6 +192,11 @@ actor FakeAgent {
             received("delete", session.rawValue)
             try peer.respond(to: id, with: JSONValue.object([:]))
         case "session/close":
+            if ProcessInfo.processInfo.environment["FAKE_AGENT_REJECT_CLOSE"] == "1",
+                !FileManager.default.fileExists(atPath: store.appendingPathComponent("allow-close").path)
+            {
+                throw RPCError(code: -32603, message: "Fixture refused to close the session")
+            }
             let session = try message.params(as: SessionParams.self).sessionId
             received("close", session.rawValue)
             // Freed, as a real agent does: a resume reports the defaults again.
@@ -198,10 +219,25 @@ actor FakeAgent {
                 return
             }
             received("steer", text)
+            if let gate = ProcessInfo.processInfo.environment["FAKE_AGENT_STEER_GATE"] {
+                while !FileManager.default.fileExists(atPath: gate) {
+                    try await Task.sleep(for: .milliseconds(10))
+                }
+                received("steer-accepted", text)
+            } else if ProcessInfo.processInfo.environment["FAKE_AGENT_DELAY_STEER"] == "1" {
+                try await Task.sleep(for: .seconds(3))
+                received("steer-accepted", text)
+            }
             try append(Message(role: "user", text: text), to: params.sessionId)
             try peer.respond(to: id, with: JSONValue.object(["outcome": .string("injected")]))
         case "session/set_config_option":
             let params = try message.params(as: ConfigParams.self)
+            if loaded.contains(params.sessionId), params.configId == "model",
+                ProcessInfo.processInfo.environment["FAKE_AGENT_CHILD_ON_RESTORE"] == "1"
+            {
+                try emitChildText("Fresh during restore")
+                try emitChildConfig()
+            }
             if loaded.contains(params.sessionId),
                 ProcessInfo.processInfo.environment["FAKE_AGENT_CRASH_ON_RESTORE"] == "1",
                 firstTime("restore-\(params.sessionId.rawValue)")
@@ -262,12 +298,14 @@ actor FakeAgent {
     }
 
     private func prompt(_ session: SessionID, text framed: String) async throws -> String {
-        received("prompt", framed)
         // A task's prompt or a message from another session opens with Native's header; the script is
         // what follows it.
         let isFramed = framed.hasPrefix("[A task from your parent session (") || framed.hasPrefix("[Message from ")
         let text = isFramed ? framed.components(separatedBy: "]\n\n").dropFirst().joined(separator: "]\n\n") : framed
-        if text.hasPrefix("lose-once"), firstTime(text) {
+        // Publish receipt only after the restart marker is durable; the crash harness kills on receipt.
+        let losesPrompt = text.hasPrefix("lose-once") && firstTime(text)
+        received("prompt", framed)
+        if losesPrompt {
             // Never recorded, never answered: as if the prompt was lost on the way in.
             try await Task.sleep(for: .seconds(3_600))
         }
@@ -284,6 +322,33 @@ actor FakeAgent {
             try update(session, ["sessionUpdate": .string("agent_message_chunk"), "content": Self.text("working…")])
             try await Task.sleep(for: .milliseconds(200))
             exit(3)
+        } else if text == "stuck-tool" {
+            try update(
+                session,
+                [
+                    "sessionUpdate": .string("tool_call"), "toolCallId": .string("sleep"),
+                    "title": .string("sleep 600"), "kind": .string("execute"), "status": .string("in_progress"),
+                ])
+            return try await cancelLeavingCommand(session, ignoringCancel: true)
+        } else if text == "tool-sleep" {
+            try update(
+                session,
+                [
+                    "sessionUpdate": .string("tool_call"), "toolCallId": .string("sleep"),
+                    "title": .string("sleep 20"), "kind": .string("execute"), "status": .string("in_progress"),
+                ])
+            for _ in 0..<20 {
+                try await Task.sleep(for: .milliseconds(100))
+                if cancelled.contains(session) { return "cancelled" }
+            }
+            received("tool-finished", "sleep")
+            try update(
+                session,
+                [
+                    "sessionUpdate": .string("tool_call_update"), "toolCallId": .string("sleep"),
+                    "status": .string("completed"),
+                ])
+            return try await tick(session, count: 4, stoppable: true)
         } else if text == "cancel-leaves-command" {
             return try await cancelLeavingCommand(session)
         } else if text.hasPrefix("slow") || text.hasPrefix("stubborn") {
@@ -303,6 +368,14 @@ actor FakeAgent {
             reply = "streamed \(count)"
         } else if text.hasPrefix("permission") {
             reply = "permission: \(try await askPermission(session))"
+        } else if text.hasPrefix("ask-run "), let separator = text.range(of: " :: ") {
+            let reason = text[text.index(text.startIndex, offsetBy: 8)..<separator.lowerBound]
+            let command = String(text[separator.upperBound...])
+            if !reason.trimmingCharacters(in: .whitespaces).isEmpty {
+                try update(
+                    session, ["sessionUpdate": .string("agent_message_chunk"), "content": Self.text(String(reason))])
+            }
+            reply = "ran: \(try await askToRun(session, command: command))"
         } else if text.hasPrefix("question") {
             reply = "question: \(try await askQuestion(session))"
         } else if text == "leave-plan" {
@@ -442,6 +515,30 @@ actor FakeAgent {
         return answer?["outcome"]?["optionId"]?.stringValue ?? answer?["outcome"]?["outcome"]?.stringValue ?? "none"
     }
 
+    /// The shape claude-agent-acp sends for its Bash tool: the call first, then the request.
+    private func askToRun(_ session: SessionID, command: String) async throws -> String {
+        let call: [String: JSONValue] = [
+            "toolCallId": .string("call-\(UUID().uuidString.prefix(8))"), "title": .string(command),
+            "kind": .string("execute"), "status": .string("pending"),
+            "rawInput": .object(["command": .string(command), "description": .string("Run the command")]),
+        ]
+        try update(session, call.merging(["sessionUpdate": .string("tool_call")]) { $1 })
+        let answer = try await peer?.request(
+            "session/request_permission",
+            JSONValue.object([
+                "sessionId": .string(session.rawValue), "toolCall": .object(call),
+                "options": .array([
+                    .object(["optionId": .string("allow"), "name": .string("Yes"), "kind": .string("allow_once")]),
+                    .object([
+                        "optionId": .string("always"), "name": .string("Yes, and don't ask again"),
+                        "kind": .string("allow_always"),
+                    ]),
+                    .object(["optionId": .string("reject"), "name": .string("No"), "kind": .string("reject_once")]),
+                ]),
+            ]), as: JSONValue.self)
+        return answer?["outcome"]?["optionId"]?.stringValue ?? answer?["outcome"]?["outcome"]?.stringValue ?? "none"
+    }
+
     private func askQuestion(_ session: SessionID) async throws -> String {
         let answer = try await peer?.request(
             "elicitation/create",
@@ -456,6 +553,25 @@ actor FakeAgent {
     }
 
     // MARK: - Store
+
+    private func emitChildConfig() throws {
+        let ids = ProcessInfo.processInfo.environment["FAKE_AGENT_CHILD_IDS"] ?? ""
+        for id in ids.split(separator: ",") {
+            let child = SessionID(String(id))
+            try update(child, ["sessionUpdate": .string("config_option_update"), "configOptions": options(child)])
+        }
+    }
+
+    private func emitChildText(_ text: String) throws {
+        let ids = ProcessInfo.processInfo.environment["FAKE_AGENT_CHILD_IDS"] ?? ""
+        for id in ids.split(separator: ",") {
+            try update(
+                SessionID(String(id)),
+                [
+                    "sessionUpdate": .string("agent_message_chunk"), "content": Self.text(text),
+                ])
+        }
+    }
 
     private func update(_ session: SessionID, _ update: [String: JSONValue]) throws {
         try peer?.notify(
@@ -551,6 +667,10 @@ actor FakeAgent {
             "options": .array(values.map { .object(["value": .string($0), "name": .string($0.capitalized)]) }),
         ])
     }
+
+    /// Exercises agents that cannot confirm a session close.
+    private static let closeCapability: [String: JSONValue] =
+        ProcessInfo.processInfo.environment["FAKE_AGENT_NO_CLOSE"] == "1" ? [:] : ["close": .object([:])]
 
     /// `FAKE_AGENT_NO_STEERING=1` makes it an agent that can't take messages mid-turn.
     private static let cantSteer = ProcessInfo.processInfo.environment["FAKE_AGENT_NO_STEERING"] == "1"

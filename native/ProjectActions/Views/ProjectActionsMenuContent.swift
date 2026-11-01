@@ -40,7 +40,8 @@ struct ProjectActionsMenuContent: View {
         if (!showsRunLast || !showsManagedExplanation), list.isRepositoryOff, store.hasRepositoryFile(in: project) {
             Section("From the repo") {
                 Button(
-                    showsManagedExplanation ? "Off by your organization" : "Repository actions unavailable",
+                    showsManagedExplanation
+                        ? "Off by \(PolicyCenter.organizationName)" : "Repository actions unavailable",
                     systemImage: "lock"
                 ) {}
                 .disabled(true)

@@ -35,11 +35,13 @@ extension AppModel {
         let session = try await launcher.start(
             on: runtime, cwd: old.cwd, project: catalog.lookup(old.key)?.project, continuing: old)
         await session.adoptSettings(of: old)
+        session.adoptDiffCommentDrafts(from: old, moving: true)
         if let project = catalog.lookup(old.key)?.project {
             catalog.add(
                 SessionInfo(sessionId: session.id, cwd: old.cwd.folderPath, updatedAt: .now), for: old.agent.id,
                 in: project)
         }
+        retainPrivateFiles(of: old, for: session.key)
         earlierConversations.record(session.key, after: old.key)
         ordering.replace(old.key, with: session.key)
         taskPairs.replace(old.key, with: session.key)

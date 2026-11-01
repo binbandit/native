@@ -8,7 +8,7 @@ extension SessionState {
     /// Wraps up a prompt turn. ACP v1 has no status for a call that didn't run to its end, so every
     /// call still open is settled here, its clock stopped; any stop other than a normal one is noted in
     /// the transcript.
-    public mutating func endTurn(_ stopReason: StopReason, at date: Date = .now) {
+    public mutating func endTurn(_ stopReason: StopReason, at date: Date = .now, stoppedMessage: String? = nil) {
         let start = openTurn ?? suspendedTurn ?? turnStarts.last
         if stopReason == .cancelled {
             settleOpenCalls(as: .cancelled, at: date)
@@ -32,7 +32,7 @@ extension SessionState {
         isAfterStop = stopReason == .cancelled
         switch stopReason {
         case .endTurn: break
-        case .cancelled: appendNotice(Self.stoppedNotice, isError: false)
+        case .cancelled: appendNotice(stoppedMessage ?? Self.stoppedNotice, isError: false)
         case .maxTokens: appendNotice("Stopped: the response hit the token limit.", isError: true)
         case .maxTurnRequests: appendNotice("Stopped: the turn hit its request limit.", isError: true)
         case .refusal: appendNotice("The agent declined to continue.", isError: true)

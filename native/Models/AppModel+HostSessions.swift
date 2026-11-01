@@ -66,6 +66,7 @@ extension AppModel {
         session.isWorkspaceReplaced = old.isWorkspaceReplaced
         session.mirrorState()
         sessions.replace(old, with: session)
+        retainPrivateFiles(of: old, for: session.key)
         catalog.swap(old.key, for: SessionInfo(sessionId: agentSessionID, cwd: old.cwd.folderPath, updatedAt: .now))
         ordering.replace(old.key, with: session.key)
         taskPairs.replace(old.key, with: session.key)
@@ -129,6 +130,7 @@ extension AppModel {
     var hostAgentSpecs: [AgentSpec] {
         plugins.agents.map { agent in
             var spec = AgentSpec(agent)
+            spec.nativeMCPEnabled = plugins.nativeMCPChoice(for: agent.id)
             spec.env.merge(plugins.launchEnvironment(for: agent.id)) { $1 }
             return spec
         }

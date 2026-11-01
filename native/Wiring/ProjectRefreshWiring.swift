@@ -10,6 +10,7 @@ enum ProjectRefreshWiring {
     static func connect(model: AppModel, git: GitStore, gitHub: GitHubModel) {
         model.refreshProjectState = { [weak model] _, summaries in
             guard let model else { return [] }
+            let tasks = AppTaskPullRequests(model: model, git: git, gitHub: gitHub)
             var visited: Set<ObjectIdentifier> = []
             var failures: [String] = []
             for summary in summaries {
@@ -17,7 +18,14 @@ enum ProjectRefreshWiring {
                 let repository = git.model(for: folder, session: summary.id)
                 let isMissing = repository.isLocal && !FileManager.default.fileExists(atPath: folder.path)
                 // Archive intentionally removes managed worktrees. Never recreate one to refresh it.
-                if isMissing, model.isArchived(summary.id) { continue }
+                if isMissing, model.isArchived(summary.id) {
+                    if let failure = await tasks.prepare(summary, maxAge: 0) {
+                        failures.append(
+                            [failure.localizedDescription, failure.recoverySuggestion]
+                                .compactMap { $0 }.joined(separator: " ").withoutTerminalEscapes)
+                    }
+                    continue
+                }
                 guard visited.insert(ObjectIdentifier(repository)).inserted else { continue }
                 if isMissing {
                     failures.append("\(model.title(for: summary)): its folder is missing. Restore it, then Retry.")

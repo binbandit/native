@@ -12,7 +12,10 @@ final class PolicyCenter {
     static let shared = PolicyCenter()
 
     /// What Settings says next to anything an organization controls.
-    static let managedExplanation = "Managed by your organization"
+    static var managedExplanation: String { shared.policy.managedExplanation }
+    static var organizationName: String { shared.policy.organizationDisplayName }
+    static var organizationSubject: String { shared.policy.organizationName ?? "Your organization" }
+    static var organizationHelp: String { shared.policy.organizationHelp }
 
     private(set) var policy: NativePolicy
 

@@ -4,6 +4,8 @@ import SwiftUI
 /// 4pt below the header.
 public struct ProjectGroup<MenuContent: View, Content: View>: View {
     let name: String
+    let qualifier: String?
+    let path: String?
     let icon: ProjectIcon
     @Binding var isExpanded: Bool
     let taskCount: Int?
@@ -16,6 +18,8 @@ public struct ProjectGroup<MenuContent: View, Content: View>: View {
 
     public init(
         name: String,
+        qualifier: String? = nil,
+        path: String? = nil,
         icon: ProjectIcon = .initial,
         isExpanded: Binding<Bool>,
         taskCount: Int? = nil,
@@ -27,6 +31,8 @@ public struct ProjectGroup<MenuContent: View, Content: View>: View {
         @ViewBuilder content: () -> Content
     ) {
         self.name = name
+        self.qualifier = qualifier
+        self.path = path
         self.icon = icon
         self._isExpanded = isExpanded
         self.taskCount = taskCount
@@ -41,7 +47,7 @@ public struct ProjectGroup<MenuContent: View, Content: View>: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             ProjectRow(
-                name: name,
+                name: name, qualifier: qualifier, path: path,
                 icon: icon,
                 isExpanded: isExpanded,
                 taskCount: taskCount,

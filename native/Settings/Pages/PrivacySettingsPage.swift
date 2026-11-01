@@ -132,7 +132,7 @@ struct PrivacySettingsPage: View {
 
     private var collectorRow: some View {
         SettingsRow(
-            id: Self.collectorRow, "Your organization's collector",
+            id: Self.collectorRow, "\(PolicyCenter.organizationSubject)'s collector",
             description: Text(
                 telemetry.isNativeDestinationAvailable
                     ? "It receives the same anonymous events, whichever way the switch above is set."
@@ -147,8 +147,8 @@ struct PrivacySettingsPage: View {
     /// Why the switch is where it is: the organization decided, or what off means.
     private var shareDetail: String {
         switch telemetry.nativeMode {
-        case .on: "Your organization has turned this on."
-        case .off: "Your organization has turned this off."
+        case .on: "\(PolicyCenter.organizationSubject) has turned this on."
+        case .off: "\(PolicyCenter.organizationSubject) has turned this off."
         case .user: "When off, nothing is sent to Native, and nothing is kept to send later."
         }
     }
@@ -158,11 +158,11 @@ struct PrivacySettingsPage: View {
         let organization = !telemetry.organizationEndpoints.isEmpty
         guard telemetry.isNativeDestinationAvailable else {
             return organization
-                ? "Nothing is sent to Native. Your organization's collector gets only this:"
+                ? "Nothing is sent to Native. \(PolicyCenter.organizationSubject)'s collector gets only this:"
                 : "This build sends nothing. If a later one collects data, only this:"
         }
         return organization
-            ? "Only while sharing is on, or to your organization's collector, and only this:"
+            ? "Only while sharing is on, or to \(PolicyCenter.organizationName)'s collector, and only this:"
             : "Only while sharing is on, and only this:"
     }
 

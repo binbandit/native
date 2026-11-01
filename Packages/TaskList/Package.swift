@@ -8,7 +8,9 @@ let package = Package(
         .library(name: "TaskList", targets: ["TaskList"])
     ],
     targets: [
-        .target(name: "TaskList"),
+        .target(
+            name: "TaskList",
+            swiftSettings: [.unsafeFlags(["-Osize"], .when(configuration: .release))]),
         .testTarget(name: "TaskListTests", dependencies: ["TaskList"]),
     ]
 )

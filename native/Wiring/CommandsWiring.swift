@@ -15,6 +15,7 @@ enum CommandsWiring {
         let updates: UpdateController
         let whatsNew: WhatsNewCenter
         let appearance: AppearanceModeController
+        let tryOn: ThemeTryOnModel
         let pullRequestTasks: PullRequestTaskOpener
         let shortcutsHelp: KeyboardShortcutsHelp
         let gitCleanup: GitCleanupCenter
@@ -36,7 +37,10 @@ enum CommandsWiring {
         registry.register(NativeCommand.coordinatorTasks(model: model))
         registry.register(NativeCommand.quickEntry(model: model))
         registry.register(NativeCommand.taskPairs(model: model))
-        registry.register([.projectSettings(model: model, settings: settings), .projectRefresh(model: model)])
+        registry.register([
+            .projectSettings(model: model, settings: settings), .projectRefresh(model: model),
+            .projectRename(model: model),
+        ])
         registry.register([.pullRequestTasks(features.pullRequestTasks)])
         registry.register([.gitCleanUpMerged(features.gitCleanup, model: model)])
         registry.register(NativeCommand.expeditions(model: model))
@@ -60,12 +64,17 @@ enum CommandsWiring {
         registry.register([.gitHubAccounts(settings: settings)])
         #endif
         registry.register([.restartBackgroundHost(features.durableHost, settings: settings)])
-        registry.register(NativeCommand.composer(model: model))
+        // Try On takes ⌘. while it runs (docs/keyboard.md), so Stop steps aside rather than ending the turn.
+        registry.register(
+            NativeCommand.composer(model: model).map { command in
+                command.id == .sessionStop ? command.stepsAside { _ in features.tryOn.isActive } : command
+            })
         registry.register(NativeCommand.clearConversation(model: model))
         registry.register([.changeAgent(model: model)] + NativeCommand.modelChanges(model: model))
         registry.register(NativeCommand.automation(BuiltInPlugins.automation.center))
         registry.register(NativeCommand.windowView)
         registry.register(NativeCommand.appearance(features.appearance))
+        registry.register([.themeTryOn(features.tryOn)])
         registry.register([.gitChanges])
         if KeepAwakeController.isSupported {
             registry.register([.keepAwake(features.keepAwake)])

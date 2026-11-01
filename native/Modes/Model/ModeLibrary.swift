@@ -20,6 +20,9 @@ final class ModeLibrary {
             changed()
         }
     }
+    /// Projects whose new tasks start in a mode of their own, by `key(for:)`, to that mode's id.
+    private(set) var startingProjects: [String: String]
+
     /// The mode new tasks start in; Build unless the user picks another.
     var defaultMode: Mode.ID {
         didSet { defaults.set(defaultMode.rawValue, forKey: Self.defaultKey) }
@@ -39,6 +42,7 @@ final class ModeLibrary {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        startingProjects = defaults.dictionary(forKey: "modes.startingProjects") as? [String: String] ?? [:]
         custom =
             defaults.data(forKey: Self.customKey).flatMap { try? JSONDecoder().decode([Mode].self, from: $0) } ?? []
         defaultMode = defaults.string(forKey: Self.defaultKey).map(Mode.ID.init(rawValue:)) ?? .build
@@ -52,6 +56,36 @@ final class ModeLibrary {
     /// The mode new tasks start in, while it still exists.
     var startingMode: Mode {
         catalog(forProjectAt: nil).mode(defaultMode) ?? .build
+    }
+
+    func startingMode(forProjectAt root: URL?) -> Mode {
+        guard let root, let raw = startingProjects[Self.key(for: root)],
+            let mode = catalog(forProjectAt: root).mode(Mode.ID(rawValue: raw))
+        else { return startingMode }
+        return mode
+    }
+
+    func startingOverride(forProjectAt root: URL) -> Mode.ID? {
+        startingProjects[Self.key(for: root)].map(Mode.ID.init(rawValue:))
+    }
+
+    func setStartingMode(_ value: Mode.ID?, forProjectAt root: URL?, undoManager: UndoManager? = nil) {
+        let previous = root == nil ? defaultMode : root.flatMap { startingOverride(forProjectAt: $0) }
+        if let root {
+            startingProjects[Self.key(for: root)] = value?.rawValue
+            defaults.set(startingProjects, forKey: "modes.startingProjects")
+        } else {
+            defaultMode = value ?? .build
+        }
+        undoManager?.registerUndo(withTarget: self) { library in
+            MainActor.assumeIsolated { library.setStartingMode(previous, forProjectAt: root, undoManager: undoManager) }
+        }
+        undoManager?.setActionName("Change Starting Mode")
+    }
+
+    func finishReading(projectAt root: URL) async {
+        if !hasRead(projectAt: root) { refresh(projectAt: root) }
+        await reading[Self.key(for: root)]?.value
     }
 
     // MARK: - Projects

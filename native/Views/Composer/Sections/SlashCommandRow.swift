@@ -11,7 +11,7 @@ struct SlashCommandRow: View {
                 .font(.dsCaption)
                 .foregroundStyle(.dsTextTertiary)
                 .frame(width: DS.Size.rowLeading)
-            Text(verbatim: "/\(command.name)")
+            Text(verbatim: command.invocation)
                 .font(.dsMono)
                 .foregroundStyle(isHighlighted ? .dsTextPrimary : .dsTextSecondary)
                 .layoutPriority(1)
@@ -24,7 +24,7 @@ struct SlashCommandRow: View {
         }
         .help(command.description)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("/\(command.name): \(command.description)")
+        .accessibilityLabel("\(command.invocation): \(command.description)")
     }
 }
 

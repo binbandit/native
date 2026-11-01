@@ -12,7 +12,7 @@ extension AppModel: StatusBarSource {
                 id: summary.id,
                 title: session.displayTitle,
                 agentName: session.agentName,
-                projectName: projects.project(summary.project)?.name,
+                projectName: projectName(for: summary.id, in: summary.project),
                 status: status,
                 since: session.lastActivity,
                 workingAnimation: session.workingAnimation

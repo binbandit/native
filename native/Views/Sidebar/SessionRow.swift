@@ -17,6 +17,8 @@ struct SessionRow<Accessory: View>: View {
     @Environment(\.sidebarAllInView) private var isAllInView
     @Environment(\.homePresentedTaskNeeds) private var homeNeeds
     @Environment(\.answerShortcutAskID) private var answerShortcutAskID
+    @Environment(\.approvalPushReach) private var loadPushReach
+    @State private var approvalReach: ApprovalPushReach?
     let summary: SessionSummary
     /// Grouped under a project header, or flush in the Pinned section.
     var indent: TaskRowIndent = .grouped
@@ -35,11 +37,28 @@ struct SessionRow<Accessory: View>: View {
         model.session(summary.id)
     }
 
+    private var attention: SidebarSessionAttention? {
+        session.flatMap {
+            SidebarSessionAttention(
+                session: $0, task: summary.id, oldest: answerShortcutAskID, pushPlace: approvalReach?.place,
+                pushBranch: approvalReach?.branch)
+        }
+    }
+
+    private var askSentence: String? {
+        isAllInView ? attention?.sentence : session?.sidebarAsk
+    }
+
     private var title: String {
         isPairMember ? summary.agent.displayName : model.title(for: summary)
     }
 
     /// A pair's tasks always say their branch: it's what tells the two versions apart.
+    private var folderLocation: String? {
+        guard model.offersProjectFolderTasks, model.usesProjectFolder(summary.id) else { return nil }
+        return "\(insights.branch(summary) ?? "Current branch") · Project folder"
+    }
+
     private var showsBranch: Bool {
         isPairMember || model.sidebarPreferences.shows(.branches)
     }
@@ -88,13 +107,16 @@ struct SessionRow<Accessory: View>: View {
                     leading: [readAction, pinAction],
                     trailing: [
                         SidebarSwipeAction("Archive", systemImage: "archivebox", tint: .dsInfo, action: archive),
-                        SidebarSwipeAction("Delete", systemImage: "trash", tint: .dsDanger, action: requestDeletion),
+                        SidebarSwipeAction("Delete", systemImage: "trash", tint: .dsDanger, action: delete),
                     ]
                 )
                 .accessibilityLabel(accessibilityLabel)
                 .accessibilityHint("\(summary.agent.displayName) task. Return renames it.")
                 .accessibilityActions {
                     if isAllInView { Button("Peek") { model.peekTask(summary.id) } }
+                    if summary.project == NoProjectLocation.id {
+                        Button("Move to Project…") { model.requestMoveToProject(summary.id) }
+                    }
                     Button("Rename", action: rename)
                     Button(isUnread ? "Mark as Read" : "Mark as Unread", action: toggleUnread)
                     Button(isPinned ? "Unpin" : "Pin", action: togglePinned)
@@ -112,9 +134,6 @@ struct SessionRow<Accessory: View>: View {
 
     @ViewBuilder private var taskRow: some View {
         if isAllInView {
-            let attention = session.flatMap {
-                SidebarSessionAttention(session: $0, task: summary.id, oldest: answerShortcutAskID)
-            }
             let preferences = model.sidebarPreferences
             let isOnHome =
                 attention.map { homeNeeds.contains(.request($0.id)) }
@@ -132,19 +151,36 @@ struct SessionRow<Accessory: View>: View {
                 date: preferences.shows(.ages) ? model.lastActivity(for: summary) : nil,
                 changes: preferences.shows(.changes) ? finishedChanges : nil,
                 agentName: !isPairMember && preferences.shows(.agents) ? summary.agent.displayName : nil,
-                branchName: showsBranch ? insights.branch(summary) : nil,
+                branchName: folderLocation ?? (showsBranch ? insights.branch(summary) : nil),
+                outcome: insights.pullRequestBadge(summary),
                 peek: { model.peekTask(summary.id) },
                 action: { if model.taskPeek.request?.task != summary.id { select() } }
             )
+            .task(id: [summary.info.cwd, insights.branch(summary) ?? ""]) {
+                await insights.prepare([summary])
+            }
             .task(id: showsBranch) {
-                if showsBranch { await insights.prepareBranch(summary) }
+                if showsBranch || folderLocation != nil { await insights.prepareBranch(summary) }
+            }
+            .task(id: attention?.pushRequest) {
+                approvalReach = nil
+                guard let request = attention?.pushRequest, let loadPushReach else { return }
+                let reach = await loadPushReach(request)
+                guard !Task.isCancelled else { return }
+                approvalReach = reach
             }
         } else {
             TaskRow(
                 title: title, status: TaskStatus(session), isSelected: isSelected, isUnread: isUnread,
-                date: model.lastActivity(for: summary), badge: badge, indent: indent,
+                subtitle: folderLocation, date: model.lastActivity(for: summary), badge: badge, indent: indent,
                 leading: AgentIcon(agent: summary.agent).opacity(showAgentIcons ? 1 : 0), accessory: accessory,
-                action: select, onArchive: archiveAction)
+                action: select, onArchive: archiveAction
+            )
+            .task(id: summary.info.cwd) {
+                if model.offersProjectFolderTasks, model.usesProjectFolder(summary.id) {
+                    await insights.prepareBranch(summary)
+                }
+            }
         }
     }
 
@@ -170,8 +206,24 @@ struct SessionRow<Accessory: View>: View {
 
     private var recoverySentence: String? {
         if let removed = model.removedWorkspaces[summary.id] { return "Its worktree was removed. \(removed.detail)" }
-        if TaskStatus(session) == .failed { return "The task stopped unexpectedly. Open it to retry or switch models." }
+        if let session, TaskStatus(session) == .failed {
+            // Say what Native knows ("The provider was overloaded."), then the way forward.
+            guard let details = TurnFailureContext(state: session.state).details,
+                let what = Self.firstSentence(of: details)
+            else { return "The task stopped unexpectedly. Open it to retry or switch models." }
+            return "\(what) Try again or switch models."
+        }
         return nil
+    }
+
+    private static func firstSentence(of text: String) -> String? {
+        var first: String?
+        text.enumerateSubstrings(in: text.startIndex..., options: .bySentences) { sentence, _, _, stop in
+            first = sentence?.trimmingCharacters(in: .whitespacesAndNewlines)
+            stop = true
+        }
+        guard let first, !first.isEmpty else { return nil }
+        return first.last.map { ".!?".contains($0) } == true ? first : first + "."
     }
 
     /// A row picked with others acts on all of them; otherwise on itself.
@@ -190,6 +242,9 @@ struct SessionRow<Accessory: View>: View {
         }
         if model.offersAgentChange, let session {
             Button("Change Agent…") { model.requestAgentChange(session) }
+        }
+        if summary.project == NoProjectLocation.id {
+            Button("Move to Project…") { model.requestMoveToProject(summary.id) }
         }
         Button("Rename…", action: rename)
         Button(isUnread ? "Mark as Read" : "Mark as Unread", action: toggleUnread)
@@ -217,7 +272,7 @@ struct SessionRow<Accessory: View>: View {
         } else {
             Button("Archive", action: archive)
         }
-        Button("Delete…", role: .destructive, action: requestDeletion)
+        Button("Delete", role: .destructive, action: delete)
     }
 
     private var readAction: SidebarSwipeAction {
@@ -253,16 +308,17 @@ struct SessionRow<Accessory: View>: View {
     /// The agent and title (and project, when pinned away from it), then what the session is
     /// waiting on, so triage needs no click.
     private var tooltip: String {
-        let project = indent == .flat ? model.projects.project(summary.project).map { " · \($0.name)" } : nil
+        let project = indent == .flat ? model.projectName(for: summary.id, in: summary.project).map { " · \($0)" } : nil
         let line = "\(summary.agent.displayName) · \(title)\(project ?? "")\(isArchived ? " · Archived" : "")"
         let removed = model.removedWorkspaces[summary.id].map { "Its worktree was removed. \($0.detail)" }
-        return [line, removed, session?.sidebarAsk].compactMap(\.self).joined(separator: "\n")
+        return [line, folderLocation, removed, askSentence].compactMap(\.self).joined(separator: "\n")
     }
 
     private var accessibilityLabel: String {
         let removed = model.removedWorkspaces[summary.id] != nil ? "worktree removed" : nil
         let pullRequest = insights.pullRequestMenu(summary)?.spokenSummary
-        return [title, removed, pullRequest, session?.sidebarAsk].compactMap(\.self).joined(separator: ", ")
+        return [title, folderLocation, removed, pullRequest, askSentence?.replacingOccurrences(of: "`", with: "")]
+            .compactMap(\.self).joined(separator: ", ")
     }
 
     private func rename() {
@@ -277,9 +333,8 @@ struct SessionRow<Accessory: View>: View {
         model.setPinned(summary.id, !isPinned, undoManager: undoManager)
     }
 
-    /// The sidebar asks first, in its one deletion dialog.
-    private func requestDeletion() {
-        picking?.deletionRequest = summary.id
+    private func delete() {
+        model.deleteSession(summary.id, undoManager: undoManager)
     }
 
     private func archive() {

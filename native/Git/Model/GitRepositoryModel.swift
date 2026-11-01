@@ -30,6 +30,7 @@ final class GitRepositoryModel {
     private(set) var canCommit = false
     /// Whether there's anywhere to push; publishing is only offered when there is.
     private(set) var hasRemote = false
+    private(set) var defaultBranchName: String?
     /// The change whose diff is showing.
     var selection: FileChange.ID? {
         didSet {
@@ -140,6 +141,14 @@ final class GitRepositoryModel {
         return branch.ahead > 0 || branch.upstream == nil
     }
 
+    /// Unknown bases and the default branch cannot form a pull request.
+    var canCreatePullRequest: Bool {
+        guard hasRemote, let name = branch?.name, let defaultBranchName,
+            branch?.isDetached == false, branch?.isUnborn == false
+        else { return false }
+        return name != defaultBranchName
+    }
+
     var selectedChange: FileChange? {
         guard let selection else { return nil }
         return changes.first { $0.id == selection }
@@ -231,6 +240,7 @@ final class GitRepositoryModel {
                 return
             }
             async let remotes = repository.remotes()
+            defaultBranchName = try await repository.defaultBranchName()
             let files = try await repository.changedFiles()
             hasRemote = !(try await remotes).isEmpty
             guard !Task.isCancelled else { return }

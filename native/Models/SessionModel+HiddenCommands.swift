@@ -10,7 +10,7 @@ extension SessionModel {
         case .loading: throw SendError.loading
         case .disconnected: throw SendError.disconnected
         case .prompting: throw SendError.busy
-        case .idle where isRunningHiddenCommand: throw SendError.busy
+        case .idle where isRunningHiddenCommand || isDeliveringSteer: throw SendError.busy
         case .idle: break
         }
         if host != nil {

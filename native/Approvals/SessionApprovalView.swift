@@ -9,8 +9,9 @@ struct SessionApprovalView: View {
     var body: some View {
         AnnotatedApprovalView(
             call: call, agentName: session.agentName,
-            workingDirectory: session.cwd.path,
-            homeDirectory: approvalHome, knowledge: app.plugins.commandKnowledge, isAvailable: isAvailable,
+            workingDirectory: session.cwd.path, reason: session.state.reason(forToolCall: call.id),
+            session: session.key, homeDirectory: approvalHome, knowledge: app.plugins.commandKnowledge,
+            isAvailable: isAvailable,
             forceReducedMotion: forceReducedMotion,
             focusRequested: session.wantsComposerFocus, didFocus: { session.wantsComposerFocus = false },
             planEntries: call.kind == .switchMode ? session.state.currentTurnPlan : [],

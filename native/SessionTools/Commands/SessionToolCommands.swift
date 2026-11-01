@@ -25,6 +25,9 @@ extension NativeCommand {
             $0.sessionTools?.toggle(tool)
         }
         .menuTitle { $0.sessionTools?.isOpen(tool) == true ? "Hide \(title)" : "Show \(title)" }
-        .available { $0.sessionTools.map { $0.registry.place(of: tool) != .off } ?? false }
+        .available { context in
+            context.session?.isProjectless != true
+                && (context.sessionTools.map { $0.registry.place(of: tool) != .off } ?? false)
+        }
     }
 }

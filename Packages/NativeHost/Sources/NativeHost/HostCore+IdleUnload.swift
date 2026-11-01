@@ -164,13 +164,16 @@ extension HostCore {
             if session.record.lastStopReason == nil && !session.record.isAdopted {
                 response = try await replaceUnsaved(session, on: link, peer: peer)
             } else {
-                let servers = await tasks.agentServers(for: session.id, base: session.mcpServers)
+                let servers = await tasks.agentServers(
+                    for: session.id, agent: session.record.agentID, base: session.mcpServers)
                 route(session, on: link)
                 response = try await peer.request(
                     "session/resume",
                     RawLoadSessionRequest(
                         sessionId: agentSessionID, cwd: session.record.cwd, mcpServers: servers,
-                        _meta: session.record.meta),
+                        _meta: await tasks.agentMeta(
+                            for: session.id, agent: session.record.agentID, base: session.record.meta,
+                            servers: session.mcpServers)),
                     as: RawConfigOptionsResponse.self)
             }
         } catch {
@@ -179,6 +182,7 @@ extension HostCore {
         }
         guard generation == link.generation else { throw PeerError.closed }
         try await restoreConfigChoices(of: session, on: link, reported: response.configOptions)
+        await tasks.writeSkillCredential(for: session)
         tasks.sessionLoaded(session)
         session.needsLoad = false
         session.reloadsQuietly = false

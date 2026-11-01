@@ -1,6 +1,7 @@
 import ACP
 import Modes
 import NativeAutomation
+import NativePolicy
 import SwiftUI
 
 /// The prompt composer: one surface pinned under the transcript that stacks queued
@@ -18,6 +19,8 @@ struct ComposerView: View {
     @Environment(\.undoManager) var undoManager
     @Environment(\.composerNextSteps) var nextSteps
     @Environment(\.composerOverlayDismissal) var overlayDismissal
+    /// A mode such as Try On owns Escape for now, so the editor's Escape doesn't stop the turn.
+    @Environment(\.windowClaimsCancelKeys) var windowClaimsCancelKeys
     @Environment(\.transcriptColumnMaxWidth) var columnWidth
     @Environment(AutomationCenter.self) var automation
     @Environment(AppModel.self) var app
@@ -38,6 +41,8 @@ struct ComposerView: View {
     @State var isModelPickerOpen = false
     /// Fine print's Task Settings was opened by Choose Model (⇧⌘E), so it highlights the current model.
     @State var settingsOpenedByCommand = false
+    @State var settingsOpenedForPermissions = false
+    @State var isPermissionPickerOpen = false
     /// Fine print's context breakdown, which View ▸ Show Context Use opens below 70% too.
     @State var isContextUseOpen = false
     @State var isDropTargeted = false
@@ -223,6 +228,9 @@ struct ComposerView: View {
             }
             session.isModelPickerRequested = false
         }
+        .onChange(of: isModelPickerOpen) { _, open in
+            if !open { session.isAgentPickerRequested = false }
+        }
         .onChange(of: drops?.items.isEmpty == false) { _, hasDrops in
             guard hasDrops, let drops else { return }
             attach(drops.items)
@@ -285,29 +293,59 @@ struct ComposerView: View {
                 )
             }
             VStack(spacing: 0) {
-                if composerNext, let change = session.modelChange {
-                    ComposerAgentReceiptSection(change: change)
+                if let change = session.modelChange {
+                    agentChangeReceipt(change)
                 }
+                if composerNext,
+                    session.diffCommentStatus != nil || session.unresolvedCommentPacket != nil
+                        || session.sourceExcerptBlock(for: session.draft) != nil
+                {
+                    DiffCommentsDeliveryStatus(session: session, retry: { submit(followUp) })
+                    SeparatorLine()
+                }
+
                 if composerNext, !session.composerQuotes.isEmpty {
-                    ComposerQuotesSection(quotes: session.composerQuotes) {
-                        session.removeQuote(at: $0, undoManager: undoManager)
+                    if !session.diffComments.isEmpty {
+                        DiffCommentsComposerSection(session: session)
+                    } else {
+                        ComposerQuotesSection(quotes: session.composerQuotes) {
+                            session.removeQuote(at: $0, undoManager: undoManager)
+                        }
                     }
                     SeparatorLine()
                 }
                 // Keep the editor mounted when a turn changes the footer, preserving focus and selection.
                 inputSection(suggestions: suggestions)
+                if composerNext, !session.diffComments.isEmpty || session.diffCommentStatus != nil {
+                    if session.diffCommentEditsInComposer,
+                        let editor = session.diffCommentEditors.first(where: {
+                            $0.comment?.id == session.activeDiffComment
+                        })
+                    {
+                        DiffCommentsEditor(session: session, quote: editor, isInline: false)
+                            .padding(.horizontal, DS.ComposerQuote.inset)
+                    }
+                }
+                if composerNext, session.sourceExcerptBlock(for: session.draft) != nil {
+                    DiffCommentsDeliveryStatus(session: session, retry: { submit(followUp) }, showsAttribution: true)
+                }
                 if !composerNext {
                     Rectangle().fill(.dsBorder).frame(height: DS.Composer.separatorWidth)
                     currentControls(settings)
                 }
             }
         }
-        .dropDestination(for: ComposerDropItem.self) { items, _ in
-            attach(items)
-            return !items.isEmpty
-        } isTargeted: {
-            isDropTargeted = $0
+        .composerAttachmentDrop(isTargeted: { isDropTargeted = $0 }, perform: attach)
+        .onChange(of: session.diffCommentAnnouncementGeneration) {
+            AccessibilityNotification.Announcement(session.diffCommentAnnouncement).post()
         }
+        .onChange(of: session.diffCommentStatus) { _, status in
+            if let status { AccessibilityNotification.Announcement(status).post() }
+        }
+        .onChange(of: PolicyCenter.shared.policy.sourceExcerptsRetentionEnabled) {
+            session.enforceDiffCommentRetention()
+        }
+
         .animation(.dsStandard, value: plan.isActive)
         .animation(.dsStandard, value: session.attachments.isEmpty && pendingAttachments.isEmpty)
         .animation(.dsStandard, value: showsNextSteps)
