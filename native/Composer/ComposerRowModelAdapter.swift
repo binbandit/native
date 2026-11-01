@@ -16,7 +16,7 @@ struct ComposerRowModelAdapter {
         let agent = session?.agentName ?? app.composeTask.editor?.agentName ?? "Choose agent"
         let modes = modeChoices
         let selected = modes.first(where: \.isSelected)
-        let full = modes.first { $0.title == "Full access" && $0.unavailable == nil }
+        let full = modes.first { $0.id == TaskPermissionMode.fullAccess.rawValue && $0.unavailable == nil }
         let isNew = session.map(\.canChangeWorkspace) ?? (app.quickEntry.project != nil)
         let locations = isNew ? locationChoices : []
         return ComposerRowState(
@@ -25,7 +25,7 @@ struct ComposerRowModelAdapter {
                 .init(id: $0.value, title: $0.name, isSelected: $0.value == settings.effort?.value)
             } ?? [],
             modes: modes, modeLabel: selected?.title ?? settings.autonomy?.currentName ?? "Mode unavailable",
-            isDefaultMode: selected?.title == "Full access", defaultModeID: full?.id,
+            isDefaultMode: selected?.id == TaskPermissionMode.fullAccess.rawValue, defaultModeID: full?.id,
             locations: locations, locationLabel: locations.first(where: \.isSelected)?.title ?? "Where",
             contextFraction: session?.usage?.fractionUsed, isWorking: session?.canCancel == true,
             isStopping: session?.isStopping == true,
@@ -165,33 +165,21 @@ struct ComposerRowModelAdapter {
         "\(agent.rawValue.count):\(agent.rawValue)\(value)"
     }
 
-    /// PR #240's canonical titles also work against the still-supported provider catalogs.
-    /// Unsupported choices stay visible and disabled; this never invents a provider capability.
     private var modeChoices: [ComposerRowState.Choice] {
-        let labels: [(String, String, String, [String])] = [
-            (
-                "ask-first", "Ask first", "Asks before edits and commands, subject to your permission rules.",
-                ["ask-first", "default", "read-only"]
-            ),
-            (
-                "accept-edits", "Accept edits", "Allows file edits. Asks before other actions.",
-                ["accept-edits", "acceptEdits", "workspace-write"]
-            ),
-            ("auto", "Auto", "Reviews actions automatically and asks when an action needs you.", ["auto", "agent"]),
-            (
-                "full-access", "Full access", "The agent can run any command and change any file without asking.",
-                ["full-access", "bypassPermissions", "agent-full-access"]
-            ),
-        ]
-        return labels.map { id, title, detail, aliases in
-            let offered = settings.autonomy?.choices.first { aliases.contains($0.value) }
-            let value = offered?.value ?? id
-            let forbidden = settings.autonomy.map { PolicyPermissionModes.forbids($0.option, value: value) } ?? false
+        TaskPermissionMode.allCases.map { mode in
+            let offered = settings.autonomy?.choices.first { $0.value == mode.rawValue }
+            let unsupported =
+                offered == nil
+                || (settings.autonomy?.option.permissionMappings.map { $0[mode.rawValue] == nil } ?? false)
+            let forbidden =
+                settings.autonomy.map {
+                    PolicyPermissionModes.forbids($0.option, value: mode.rawValue)
+                } ?? false
             return .init(
-                id: value, title: title, detail: detail,
-                isSelected: aliases.contains(settings.autonomy?.value ?? ""),
-                unavailable: forbidden
-                    ? "Managed by your organization" : offered == nil ? "Not offered by this agent" : nil)
+                id: mode.rawValue, title: mode.title, detail: offered?.description ?? mode.summary,
+                isSelected: settings.autonomy?.value == mode.rawValue,
+                unavailable: unsupported
+                    ? "Not offered by this agent" : forbidden ? "Managed by your organization" : nil)
         }
     }
 }
