@@ -20,4 +20,19 @@ extension NativeHostClient {
     public func missingHistory(of session: HostSessionID) async throws -> TaskHistoryMissing {
         try await call(HostProtocol.Method.missingHistory, SessionParams(sessionID: session))
     }
+
+    /// What a session's transcript shows of the agents before it: the newest `limit` messages and tool
+    /// calls its handoff considered that other agents produced, and whether older ones were left out.
+    /// Nil when the session has no handoff, which is final: a handoff's range never changes.
+    public func handoffRuns(
+        of session: HostSessionID, limit: Int
+    ) async throws -> (runs: [TaskHistoryRun], omitsEarlier: Bool)? {
+        let summary = try await historySummary(of: session)
+        guard let handoff = summary.handoff else { return nil }
+        // Enough of the newest items to fill the limit once reasoning and endings are left out.
+        let after = max(handoff.from, handoff.through - limit * 4)
+        let items = try await readHistory(ReadHistoryParams(sessionID: session, after: after, through: handoff.through))
+        let latest = TaskHistoryRun.latest(summary.runs(of: items, at: handoff), limit: limit)
+        return (latest.runs, latest.omitsEarlier || after > handoff.from)
+    }
 }

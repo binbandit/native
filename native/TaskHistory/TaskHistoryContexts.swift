@@ -37,35 +37,25 @@ final class TaskHistoryContexts {
         session.host.flatMap { contexts[$0.id] }
     }
 
-    /// Loads what the agents before `session` did, once: the items its handoff considered don't change.
+    /// Loads what the agents before `session` did, once it's known: the items its handoff considered
+    /// don't change. A failure isn't remembered, so the transcript tries again when it's next opened.
     func load(_ session: SessionModel) async {
         guard isEnabled(), let host = session.host, contexts[host.id] == nil else { return }
         contexts[host.id] = .loading
         do {
-            let summary = try await host.client.historySummary(of: host.id)
-            guard let handoff = summary.handoff else {
-                contexts[host.id] = .unavailable
-                return
-            }
-            // Enough of the newest items to fill the limit once reasoning and endings are left out.
-            let after = max(handoff.from, handoff.through - Self.shownLimit * 4)
-            let items = try await host.client.readHistory(
-                ReadHistoryParams(sessionID: host.id, after: after, through: handoff.through))
-            let latest = TaskHistoryRun.latest(summary.runs(of: items, at: handoff), limit: Self.shownLimit)
+            // Waits out a host that's restarting or reconnecting, once.
+            let found = try await host.request { try await $0.handoffRuns(of: host.id, limit: Self.shownLimit) }
             contexts[host.id] =
-                latest.runs.isEmpty
-                ? .unavailable
-                : .shown(
-                    TaskHistoryContext(
-                        runs: latest.runs, omitsEarlier: latest.omitsEarlier || after > handoff.from, agent: agent))
+                if let found, !found.runs.isEmpty {
+                    .shown(TaskHistoryContext(runs: found.runs, omitsEarlier: found.omitsEarlier, agent: agent))
+                } else {
+                    .unavailable
+                }
         } catch {
-            guard !Task.isCancelled else {
-                // The transcript went away before it loaded; it loads again when it's back.
-                contexts[host.id] = nil
-                return
+            if !Task.isCancelled {
+                Self.logger.error("Couldn't read a task's history: \(error.localizedDescription, privacy: .public)")
             }
-            Self.logger.error("Couldn't read a task's history: \(error.localizedDescription, privacy: .public)")
-            contexts[host.id] = .unavailable
+            contexts[host.id] = nil
         }
     }
 

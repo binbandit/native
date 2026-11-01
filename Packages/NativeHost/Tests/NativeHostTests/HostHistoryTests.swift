@@ -306,6 +306,25 @@ struct HostHistoryTests {
         await restarted.stop()
     }
 
+    @Test("A joined session's transcript reads the earlier agent's messages; the first session has none")
+    func handoffRuns() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let (first, second) = try await twoSessions(recorder)
+        #expect(try await recorder.client.handoffRuns(of: second, limit: 40) == nil)
+        _ = try await join(recorder, second, after: first)
+        let shown = try #require(try await recorder.client.handoffRuns(of: second, limit: 40))
+        #expect(shown.runs.map(\.participant.ordinal) == [1])
+        #expect(
+            shown.runs.first?.items.map(\.body) == [.user(.init(text: "one", origin: "user")), .agent("echo: one")])
+        #expect(!shown.omitsEarlier)
+        #expect(try await recorder.client.handoffRuns(of: second, limit: 1)?.omitsEarlier == true)
+        #expect(try await recorder.client.handoffRuns(of: first.id, limit: 40) == nil)
+        await recorder.stop()
+    }
+
     @Test("A change of agent undone before its first message leaves the task's history as it was")
     func undoneJoin() async throws {
         let harness = try HostHarness()
