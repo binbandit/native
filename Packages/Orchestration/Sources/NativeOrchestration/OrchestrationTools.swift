@@ -29,7 +29,13 @@ public enum OrchestrationTools {
                 title: "List agents",
                 description:
                     "List the coding agents you can hand tasks to with start_task, such as Claude Code and Codex. Each task runs with that agent, and the user can watch it in Native.",
-                inputSchema: ["type": "object", "properties": [:], "additionalProperties": false],
+                inputSchema: [
+                    "type": "object",
+                    "properties": [
+                        "search": ["type": "string", "description": "Filter agent id or name."],
+                        "limit": ["type": "integer", "minimum": 1, "maximum": 40],
+                    ], "additionalProperties": false,
+                ],
                 outputSchema: [
                     "type": "object",
                     "properties": [
@@ -47,9 +53,9 @@ public enum OrchestrationTools {
                     "required": ["agents"],
                 ],
                 annotations: MCPToolAnnotations(readOnly: true, openWorld: false),
-                arguments: NoArguments.self
-            ) { caller, _ in
-                try await orchestrator.listAgents(for: caller)
+                arguments: AgentDiscoveryArguments.self
+            ) { caller, arguments in
+                try await orchestrator.listAgents(for: caller, search: arguments.search, limit: arguments.limit ?? 20)
             },
             MCPTool(
                 name: "start_task",
@@ -58,8 +64,8 @@ public enum OrchestrationTools {
                     Start a new task with a coding agent and return right away with a task_id; \
                     the task runs in the background while you continue.
 
-                    The new task works in the same project directory as you, with the tools it would \
-                    have if the user had started it, but it hasn't seen your conversation: make the prompt \
+                    The new task uses your directory unless checkout selects an existing directory, with the tools it would \
+                    have if the user had started it and permissions bounded by yours. Model and effort are exact selections, validated before any prompt. It hasn't seen your conversation: make the prompt \
                     self-contained, with the goal, the relevant files and context, constraints, and what to \
                     report back. Get agent ids from list_agents. You can pick a different agent (for \
                     example Codex, for an independent review) or another task of your own agent.
@@ -83,6 +89,20 @@ public enum OrchestrationTools {
                             "description":
                                 "The task, written for a capable colleague who hasn't seen this conversation.",
                         ],
+                        "model": ["type": "string", "description": "Exact advertised model id. No substitution."],
+                        "effort": [
+                            "type": "string", "description": "Exact advertised thought_level value for that model.",
+                        ],
+                        "permissions": [
+                            "type": "string",
+                            "description":
+                                "Known permission value. Omit to inherit a safe equivalent. Escalation is refused.",
+                        ],
+                        "checkout": [
+                            "type": "string",
+                            "description":
+                                "Existing absolute checkout directory on this host. Omit for the parent's directory. Does not create a worktree.",
+                        ],
                         "title": [
                             "type": "string",
                             "description":
@@ -97,7 +117,10 @@ public enum OrchestrationTools {
                 arguments: StartTaskArguments.self
             ) { caller, arguments in
                 try await orchestrator.startTask(
-                    agent: arguments.agent, prompt: arguments.prompt, title: arguments.title, for: caller)
+                    agent: arguments.agent, prompt: arguments.prompt, title: arguments.title,
+                    options: TaskLaunchOptions(
+                        model: arguments.model, effort: arguments.effort, permissions: arguments.permissions,
+                        checkout: arguments.checkout), for: caller)
             },
             MCPTool(
                 name: "list_tasks",
@@ -279,6 +302,10 @@ private struct StartTaskArguments: Decodable, Sendable {
     var agent: String
     var prompt: String
     var title: String?
+    var model: String?
+    var effort: String?
+    var permissions: String?
+    var checkout: String?
 }
 
 private struct TaskArguments: Decodable, Sendable {
@@ -302,4 +329,9 @@ private struct WaitArguments: Decodable, Sendable {
 private struct MessageArguments: Decodable, Sendable {
     var to: String
     var message: String
+}
+
+private struct AgentDiscoveryArguments: Decodable, Sendable {
+    var search: String?
+    var limit: Int?
 }

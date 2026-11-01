@@ -625,6 +625,25 @@ this change; removing the ZIP can follow a separate first-install check. Delta s
 `.tar.xz` and fall back to earlier releases' ZIPs. Signing, notarization and the local disk image
 keep their existing behavior. Evidence and the remaining signing gate are in `docs/releasing.md`.
 
+
+## 2026-11-01: Whole historical items and explicit handoff delivery
+
+An agent change creates a fresh ACP conversation, not a native fork or a promise of equivalent
+context. Keep a typed transition plan and transfer receipt alongside the existing continuation
+storage without changing host task-history records. Select complete items inside the target's
+remaining context estimate, reserve working room, disclose exclusions, and retain source references.
+A missing window report is an estimate, never an inferred capability from a model name. Rebudget
+against the user's actual prompt before sending. Mark the attempt uncertain durably before the
+request; a host acknowledgement is only acceptance, and an interrupted request cannot replay context
+automatically. Earlier Conversations remains the recovery path.
+
+The whole-item selection priority and context-reserve calculation in
+`Packages/ACP/Sources/ACP/ContextTransferSelector.swift` adapt MIT-licensed source at upstream revision
+`ce9e01640636c0884c4a7574a722bf1d773cfa07`, `packages/provider-core/src/server/handoffBudget.ts`.
+That file retains its copyright and full MIT license notice. Native adds ACP encoding costs, prompt
+and image allowances, omission references, persistence and delivery states; it adds no runtime
+or dependency from that source.
+
 ## 2026-11-01: One task history
 
 The host keeps one provider-neutral history per task: what was said and done, which agent session
@@ -632,3 +651,19 @@ produced each item, and what each agent session has seen. Switching back to an a
 reopens its own conversation and sends only what happened while it was away; the transcript of a
 mixed-agent task reads from the history. Agents still keep and replay their own conversations. See
 [the decision](decisions/2026-11-01-one-task-history.md) for the model, migration and slices.
+
+## 2026-11-01: Delegation validates the new session before prompting
+
+`start_task` accepts exact model and effort identifiers, a known semantic permission value, and an
+existing absolute checkout directory on the executing host. Omitted permissions inherit only an
+equivalent or stricter mode recognized by the existing ACP permission translator. Unknown semantics,
+unsupported explicit values, escalation, and unacknowledged settings fail before the first prompt.
+Users can authorize broader work by changing the parent's permissions in Native; a tool argument
+cannot grant that authority. Plan and read-only restrictions remain distinct and must be preserved.
+
+`list_agents` reports bounded, last-observed ACP config options. An unobserved catalog or unknown
+sign-in status is unknown, not evidence that a model is available or authenticated. Launch validates
+the new session, checks model-dependent effort after selecting the model, and rechecks the live
+parent, managed policy, permissions and acknowledged settings at the prompt boundary. Selecting an
+existing directory does not create or claim worktree isolation. No second capability catalog or
+agent-specific permission rules are introduced. No external implementation was copied for this step.

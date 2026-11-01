@@ -358,9 +358,13 @@ extension SessionModel {
     ) async {
         do {
             try checkReadOnlyDefault()
-            let prompt = (preamble.map { [$0.block] } ?? []) + promptBlocks(text, attachments: attachments)
+            let transferID = services.modelContinuations.pendingTransferID(for: key)
+            let prompt =
+                (preamble.map { [$0.block] } ?? [])
+                + promptBlocks(text, attachments: attachments, preamble: preamble)
             guard let connection else { throw SendError.disconnected }
             let response = try await connection.send(PromptRequest(sessionId: id, prompt: prompt))
+            services.modelContinuations.acknowledge(transferID, for: key, as: .agentResponded)
             guard generation == turnGeneration else { return }
             guard !isStopping else { return }
             state.endTurn(response.stopReason)
@@ -424,13 +428,23 @@ extension SessionModel {
     }
 
     /// The prompt as the agent takes it: the text, the attachments, and a link to each file the text
-    /// mentions with `@`.
-    func promptBlocks(_ text: String, attachments: [PromptAttachment]) -> [ContentBlock] {
+    /// mentions with `@`. Supply the captured preamble when the request sends one alongside it.
+    func promptBlocks(
+        _ text: String, attachments: [PromptAttachment], preamble: PromptPreamble? = nil
+    ) -> [ContentBlock] {
         let mentions = PromptAttachment.mentions(in: text, relativeTo: cwd)
         modelChange?.closeUndo()
-        let context = services.modelContinuations.take(for: key).map { [$0] } ?? []
-        return context
-            + ContentBlock.prompt(text, attachments: attachments + mentions, capabilities: promptCapabilities)
+        if services.modelContinuations.hasPending(key) { modelChange?.isReceiptDismissed = false }
+        let prompt = ContentBlock.prompt(text, attachments: attachments + mentions, capabilities: promptCapabilities)
+        // The direct path has already echoed the marker, so rerunning its hook can suppress
+        // instructions that are still captured for this outgoing request.
+        let instructions = preamble.map { [$0.block] } ?? []
+        let context =
+            services.modelContinuations.take(
+                for: key,
+                budget: .init(windowTokens: usage?.size, usedTokens: usage?.used ?? 0, prompt: instructions + prompt)
+            ).map { [$0] } ?? []
+        return context + prompt
     }
 
     private func scheduleRetry(after delay: Duration) {

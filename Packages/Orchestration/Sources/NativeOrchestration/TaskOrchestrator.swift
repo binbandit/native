@@ -84,25 +84,9 @@ public struct TaskOrchestrator: Sendable {
 
     // MARK: - Tools
 
-    public func listAgents(for caller: OrchestrationCaller) async throws -> MCPToolResult {
-        try await requireReady()
-        let agents = await runtime.taskAgents()
-        let lines = agents.map { agent in
-            "- \(agent.id): \(agent.name)" + (agent.id == caller.agent ? " (the agent you are)" : "")
-        }
-        let structured: JSON = [
-            "agents": .array(
-                agents.map {
-                    ["id": .string($0.id), "name": .string($0.name), "is_you": .bool($0.id == caller.agent)]
-                })
-        ]
-        return MCPToolResult(
-            text: "Agents you can start tasks on (pass the id as `agent`):\n" + lines.joined(separator: "\n"),
-            structuredContent: structured)
-    }
-
     public func startTask(
-        agent id: String, prompt: String, title: String?, for caller: OrchestrationCaller
+        agent id: String, prompt: String, title: String?, options: TaskLaunchOptions = .init(),
+        for caller: OrchestrationCaller
     ) async throws -> MCPToolResult {
         try await requireReady()
         guard await runtime.coordinatorScope(of: caller.clientID) == nil else {
@@ -114,6 +98,7 @@ public struct TaskOrchestrator: Sendable {
             throw MCPToolError(
                 "There's no agent \"\(id)\". Available agents: \(agents.map(\.id).joined(separator: ", ")).")
         }
+        if let reason = agent.unavailableReason { throw MCPToolError(reason) }
         let prompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prompt.isEmpty else { throw MCPToolError("The prompt is empty; say what the task should do.") }
         let parent = try await requireSession(of: caller)
@@ -123,7 +108,7 @@ public struct TaskOrchestrator: Sendable {
         let request = TaskRequest(
             id: OrchestrationTask.newID(avoiding: Set(await runtime.tasks().map(\.id))), agent: agent, parent: parent,
             parentAgentName: parentAgentName, title: title, text: prompt,
-            prompt: TaskPromptFrame.task(prompt, fromParent: parentAgentName))
+            prompt: TaskPromptFrame.task(prompt, fromParent: parentAgentName), options: options)
         let task: OrchestrationTask
         do {
             task = try await runtime.startTask(request)

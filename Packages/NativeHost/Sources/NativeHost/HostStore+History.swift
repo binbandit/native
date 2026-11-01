@@ -155,6 +155,23 @@ extension HostStore {
         }
     }
 
+    /// Whether the turn has an item of `kind` already, or any item at all without one: a retry or a
+    /// recovery records a turn again, and must not add it twice.
+    func hasHistoryItem(turn: UUID, kind: String? = nil, in history: TaskHistoryID) throws -> Bool {
+        try !database.query(
+            "SELECT 1 FROM history_items WHERE history_id = ? AND turn = ? AND (? IS NULL OR kind = ?) LIMIT 1",
+            .text(history.description), .text(turn.uuidString), .text(kind), .text(kind)
+        ).isEmpty
+    }
+
+    /// The newest item of `kind`, to tell whether something changed since it was recorded.
+    func lastHistoryBody(kind: String, in history: TaskHistoryID) throws -> TaskHistoryItem.Body? {
+        try database.query(
+            "SELECT body FROM history_items WHERE history_id = ? AND kind = ? ORDER BY seq DESC LIMIT 1",
+            .text(history.description), .text(kind)
+        ).first.flatMap { JSONColumn.decode(TaskHistoryItem.Body.self, $0[0]) }
+    }
+
     /// An unsaved agent session was replaced by a fresh one under the same host session.
     func replaceHistoryAgentSession(agentID: String, old: SessionID, new: SessionID) throws {
         try database.run(

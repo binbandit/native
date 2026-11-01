@@ -13,7 +13,7 @@ enum ChangeAgentWiring {
             automation.goal(for: source)?.goal != nil
                 ? "Clear this task's goal before choosing another agent. Its goal cannot move safely yet." : nil
         }
-        model.changeAgentHandoff = { source in
+        let collect: @MainActor (SessionModel) async -> (paths: [String], note: String?) = { source in
             let repository = git.model(for: source.cwd, session: source.key)
             await repository.refreshNow()
             var paths = repository.changes.map(\.path)
@@ -31,7 +31,19 @@ enum ChangeAgentWiring {
                 paths += changes.flatMap(\.paths)
                 note = "Includes branch changes since \(base.name); a shared branch may include other work."
             }
+            return (paths, note)
+        }
+        model.changeAgentHandoff = { source in
+            let (paths, note) = await collect(source)
             return TaskHandoff.draft(
+                title: source.displayTitle, state: source.state,
+                objective: automation.goal(for: source)?.goal?.objective,
+                changedPaths: paths, fileStatus: note)
+        }
+        model.changeAgentContext = { source in
+            let (paths, note) = await collect(source)
+            return TaskHandoff.context(
+                source: .init(agent: source.agent.id.rawValue, session: source.id),
                 title: source.displayTitle, state: source.state,
                 objective: automation.goal(for: source)?.goal?.objective,
                 changedPaths: paths, fileStatus: note)

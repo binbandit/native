@@ -160,6 +160,8 @@ final class SessionModel {
     /// bar, menus) doesn't update with every streamed chunk, which changes `state`.
     private(set) var title: String?
     private(set) var configOptions: [ConfigOption] = []
+    /// Menu dismissal and adapter recomputation must not reset the order of complete settings replies.
+    @ObservationIgnored let composerConfigChanges = ConfigOptionChangeQueue()
     private(set) var plan: [PlanEntry] = []
     /// Mirrored independently of text chunks, so the toolbar doesn't render for each token.
     private(set) var taskActivity = TaskActivityNarration(verb: "Working")
@@ -213,7 +215,13 @@ final class SessionModel {
         queuedEdit.reconcile(with: queuedPrompts)
     }
     /// Stop was pressed and the agent hasn't ended the turn yet (SessionModel+Stop.swift).
-    var isStopping = false
+    var isStopping = false {
+        didSet {
+            if isStopping && !oldValue { delegationStopGeneration += 1 }
+        }
+    }
+    /// A stop remains a delegation boundary even after the parent resumes during preparation.
+    @ObservationIgnored var delegationStopGeneration = 0
     @ObservationIgnored var stopRequestedAt: Date?
     @ObservationIgnored var stopTimeout: Task<Void, Never>?
     /// Counts turns, so the answer to a turn Native stopped waiting for doesn't end a later one.
@@ -539,6 +547,13 @@ final class SessionModel {
         let child = SessionModel(announced: id, by: self, host: host)
         children[id] = child
         return child
+    }
+
+    /// Admission failures must release the strong child reference before the session is forgotten.
+    func removeSubagent(_ child: SessionModel) {
+        guard children[child.id] === child else { return }
+        children[child.id] = nil
+        child.parent = nil
     }
 
     func requestPermission(_ request: RequestPermissionRequest, id: RequestID) {

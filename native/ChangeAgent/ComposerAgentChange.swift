@@ -95,6 +95,43 @@ final class ComposerAgentChange {
                     })), for: current.key)
     }
 
+    var transferNotice: String? {
+        guard let current, let transfer = current.services.modelContinuations.transfer(for: current.key) else {
+            return nil
+        }
+        let receipt = transfer.receipt
+        let omitted = receipt.omitted.filter { $0.reason == .budget }.count
+        let messages = omitted == 1 ? "message" : "messages"
+        switch receipt.delivery {
+        case .uncertain:
+            return "Couldn't confirm \(choice.agentName) got your earlier messages; they won't be sent again."
+        case .notSent:
+            return "None of the earlier messages fit."
+        case .prepared:
+            guard omitted > 0 else { return nil }
+            return "Left out \(omitted) older \(messages) that didn't fit. Earlier Conversations has them all."
+        case .agentResponded:
+            guard omitted > 0 else { return nil }
+            return "Left out \(omitted) older \(messages) that didn't fit."
+        case .acceptedByHost:
+            guard omitted > 0 else { return nil }
+            return
+                "Sent \(receipt.included.count) earlier messages, left out \(omitted). We can't confirm \(choice.agentName) got them."
+        }
+    }
+
+    var needsTransferRecovery: Bool {
+        guard let current, let transfer = current.services.modelContinuations.transfer(for: current.key) else {
+            return false
+        }
+        return transfer.receipt.delivery == .uncertain || transfer.receipt.delivery == .notSent
+    }
+
+    func openEarlierConversations() {
+        guard let current, let app else { return }
+        app.openConversation(.earlier, from: current.key)
+    }
+
     var receipt: String {
         switch stage {
         case .waiting: "Next model: \(choice.choice.displayName) · \(choice.agentName)"
@@ -137,11 +174,7 @@ final class ComposerAgentChange {
                 candidate = prepared
                 try Task.checkCancellation()
                 try await configure(prepared, from: source)
-                let latestContext = await app.changeAgentHandoff(source)
-                let context =
-                    source.services.modelContinuations.context(for: source.key).map {
-                        String($0.prefix(24_000)) + "\n\n" + latestContext
-                    } ?? latestContext
+                let context = await app.contextTransfer(from: source, to: prepared)
                 try Task.checkCancellation()
                 guard revision == source.state.items, config == source.configOptions else {
                     throw Failure("The task changed while the model was starting. Try Again to use its latest context.")

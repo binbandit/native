@@ -284,6 +284,7 @@ extension HostCore {
                 child.reloadsQuietly = false
                 publish(child)
             }
+            if !preserving { importHistory(of: session) }
             if !wasRecovering && !preserving {
                 showPendingMessage(of: session)
             }

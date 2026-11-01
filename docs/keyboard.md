@@ -527,6 +527,26 @@ Undo keeps every task untouched.
 
 ## Task settings
 
+The standalone composer rebuild row (not connected to the app yet) keeps Agent and Model,
+Mode, Where, Attach, Context and Send or Stop in one fixed row. Where appears only before
+the first message. Its controls use the following keys; the existing menu commands will
+target the row when the rebuild is connected.
+
+| Keys in the rebuild row | Action |
+| --- | --- |
+| ⌘⇧E | Open Agent and Model; search appears past eight models and matches agent and model names |
+| ⌃⌥⌘M | Open Mode: Ask first, Accept edits, Auto, Full access |
+| ⌃⌥⌘W | Open Where for a new task: In my folder or On a new branch |
+| Tab / Shift-Tab, then Space | Reach every choice, effort beside the selected model, and the mode chip's Remove button |
+| Escape | Clear model search first, then dismiss the open menu |
+| ⌘U | Attach files (the existing Attach Files action) |
+| ⌘Return | Send the draft while idle |
+| ⌘. | Stop the running turn |
+
+Full access is the quiet default. Remove on any other mode restores Full access when
+allowed by the agent and managed policy. Context appears only past half full; its slot
+stays reserved so Attach and Send never move. Agent names truncate before other controls.
+
 Extra agent settings, such as Claude Code's Agent selector, always live in the composer's More
 Controls ("…") menu. Each setting lists its choices with the current value checked; use the arrow
 keys and Return to choose from the menu. Model, effort, autonomy and mode keep their dedicated

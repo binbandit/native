@@ -14,10 +14,11 @@ public struct TaskRequest: Sendable {
     public var text: String
     /// What the task's agent is given: `text`, introduced with who it's for and how to reach them.
     public var prompt: String
+    public var options: TaskLaunchOptions
 
     public init(
         id: String, agent: TaskAgent, parent: TaskSessionRef, parentAgentName: String, title: String, text: String,
-        prompt: String
+        prompt: String, options: TaskLaunchOptions = .init()
     ) {
         self.id = id
         self.agent = agent
@@ -26,6 +27,7 @@ public struct TaskRequest: Sendable {
         self.title = title
         self.text = text
         self.prompt = prompt
+        self.options = options
     }
 }
 

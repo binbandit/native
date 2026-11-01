@@ -144,6 +144,7 @@ extension HostCore {
                 // The reload replaced the transcript, which no longer shows the message; echo it again.
                 turn.prompt
             }
+        if decision == .resume { recordInterrupted(turn, in: session) }
         // Steered messages the agent recorded arrived; the rest wait their turn in the queue.
         let replayed = session.mirror.userMessages
         session.queue.removeAll {

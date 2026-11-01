@@ -19,6 +19,9 @@ final class HostSession {
     var turnEcho: (echo: PromptEcho, sentAt: Date)?
     /// Where the running turn's own items start in `mirror`, to tell whether it got anywhere.
     var turnItemsStart = 0
+    /// The same, for recording the turn in its task's history: nil once a load starts the log over
+    /// and until the turn's message shows again, so a replay is never taken for the turn's work.
+    var historyTurnStart: Int?
     var queue: [StoredQueueItem] = []
     /// Messages removed from the queue, newest last, so `_native/queue/restore` can put one back.
     var removedFromQueue: [OutgoingPrompt] = []
@@ -120,6 +123,7 @@ final class HostSession {
             log = []
             folded = SessionMirror()
             foldedThrough = 0
+            historyTurnStart = nil
         }
         let event = HostEvent(seq: nextSeq, at: date, payload: payload)
         // Native's own events always encode; nothing in them is beyond JSON.

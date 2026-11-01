@@ -4,7 +4,7 @@ import Foundation
 extension AppModel {
     /// Publish only a confirmed selection. No working message is submitted here.
     func commitAgentModel(
-        _ change: ComposerAgentChange, source: SessionModel, target: SessionModel, context: String
+        _ change: ComposerAgentChange, source: SessionModel, target: SessionModel, context: ContextTransfer
     ) {
         guard let project = catalog.lookup(source.key)?.project else { return }
         source.isModelChangeSource = true
