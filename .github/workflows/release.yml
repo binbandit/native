@@ -17,6 +17,10 @@ on:
         description: The version to rehearse, e.g. 1.4.0 or 1.5.0-beta.1 (nothing is published)
         type: string
         required: true
+      archive_signing_only:
+        description: Verify production signing of a repacked public app without building or publishing
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       version:
@@ -45,7 +49,24 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  archive-signing:
+    if: github.event_name == 'workflow_dispatch' && inputs.archive_signing_only
+    runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR || '/Applications/Xcode_27.1.app/Contents/Developer' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Verify production signature with the unchanged public app key
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: scripts/release/rehearse-archive-signing.sh
+
   release:
+    if: ${{ !inputs.archive_signing_only }}
     runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
     timeout-minutes: 120
     env:
@@ -137,7 +158,7 @@ jobs:
   # download these artifacts into a folder there and set NATIVE_LINUX_HOST_DIR to it, so release.sh
   # signs them into the same host feed.
   linux-host:
-    if: vars.LINUX_HOST_BUILDS == 'true'
+    if: vars.LINUX_HOST_BUILDS == 'true' && !inputs.archive_signing_only
     strategy:
       matrix:
         include:

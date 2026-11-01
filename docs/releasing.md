@@ -436,7 +436,19 @@ codesign -dvv "$app/Contents/Helpers/native-script-runtime"   # the script runti
 plutil -extract SUPublicEDKey raw "$app/Contents/Info.plist"   # matches NATIVE_SPARKLE_PUBLIC_KEY
 ```
 
-### Delta updates
+#To check archive signing without a new build, notarization or publication, run:
+
+```sh
+gh workflow run release.yml --ref <branch> -f version=0.2.0-beta.14 -f archive_signing_only=true
+```
+
+This CI-only rehearsal repacks the unchanged public `v0.2.0-beta.14` app using the release packer,
+signs its `.tar.xz` with the existing production secret through stdin, and verifies Ed25519 with
+that app's embedded `SUPublicEDKey`. It also rejects a tampered archive and checks the extracted
+app's code signature and stapled ticket. The normal release and Linux host jobs are skipped.
+The job summary records success; no credentials or private-key files become artifacts.
+
+## Delta updates
 
 Sparkle can update with a delta, the difference between two builds, instead of the whole app: a
 few MB where the update archive is over 30. `generate_appcast` makes a delta from every earlier

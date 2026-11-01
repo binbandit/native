@@ -247,5 +247,36 @@ class ArchiveRoundTripTests(unittest.TestCase):
                     self.assertEqual(source.read_bytes(), target.read_bytes())
 
 
+
+
+@unittest.skipUnless(sys.platform == "darwin", "CryptoKit verifier requires macOS")
+class ArchiveSignatureTests(unittest.TestCase):
+    def test_embedded_public_key_accepts_signature_and_rejects_changed_payload(self):
+        with tempfile.TemporaryDirectory(prefix="release-signature-test-") as directory:
+            root = Path(directory)
+            fixture = root / "fixture.swift"
+            fixture.write_text('''import CryptoKit
+import Foundation
+let root = URL(fileURLWithPath: CommandLine.arguments[1])
+let key = Curve25519.Signing.PrivateKey()
+let payload = Data("archive fixture".utf8)
+try payload.write(to: root.appendingPathComponent("archive.tar.xz"))
+let signature = try key.signature(for: payload)
+try signature.base64EncodedString().write(to: root.appendingPathComponent("signature"), atomically: true, encoding: .utf8)
+let plist = try PropertyListSerialization.data(fromPropertyList: ["SUPublicEDKey": key.publicKey.rawRepresentation.base64EncodedString()], format: .xml, options: 0)
+try plist.write(to: root.appendingPathComponent("Info.plist"))
+''')
+            subprocess.run(["swift", str(fixture), directory], check=True, capture_output=True)
+            command = ["swift", str(ROOT / "scripts/release/verify-update-signature.swift"),
+                       str(root / "archive.tar.xz"), (root / "signature").read_text(),
+                       str(root / "Info.plist")]
+            result = subprocess.run(command, check=True, text=True, capture_output=True)
+            self.assertIn("accepted the production signature", result.stdout)
+            (root / "archive.tar.xz").write_bytes(b"tampered fixture")
+            rejected = subprocess.run(command, text=True, capture_output=True)
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn("Embedded public key rejected", rejected.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
