@@ -62,10 +62,14 @@ extension HostCore {
         else { throw PeerError.closed }
         if let options = response.configOptions {
             append(.update(SessionMirror.configOptionsUpdate(options)), to: session)
+            // As the agent took it (setting the model can move the effort too), so a reload that
+            // comes back on other values gets these set back.
             pinConfig(Self.configOptions(options), of: session)
         } else {
+            // The agent didn't say what it's on: as asked. The agent already applied it, so a failed
+            // save doesn't turn the change into an error for the client.
             session.record.configChoices[params.configID] = params.value
-            try store.updateSession(session.record)
+            try? store.updateSession(session.record)
         }
         // Both the policy and the provider's permission controls can change during the RPC.
         endDeniedAgentWork()
