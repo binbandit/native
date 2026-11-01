@@ -100,7 +100,7 @@ final class ComposerAgentChange {
             return nil
         }
         let receipt = transfer.receipt
-        let omitted = receipt.omitted.count
+        let omitted = receipt.omitted.filter { $0.reason == .budget }.count
         let messages = omitted == 1 ? "message" : "messages"
         switch receipt.delivery {
         case .uncertain:

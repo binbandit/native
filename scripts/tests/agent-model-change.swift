@@ -55,6 +55,7 @@ private struct AgentModelChangeRegression {
         UserDefaults.standard.removePersistentDomain(forName: domain)
         defer { UserDefaults.standard.removePersistentDomain(forName: domain) }
         do {
+            try transferOmissionNotices()
             try duplicateModels()
             try await readOnlyDefaultMigration()
             try await directModePreambleBudget()
@@ -62,6 +63,57 @@ private struct AgentModelChangeRegression {
             try await inAppRecovery()
             try await permissionFallbacks()
         } catch { print("FAIL: \(error)"); exit(1) }
+    }
+
+    static func transferOmissionNotices() throws {
+        let defaults = PreviewUserDefaults()
+        let app = AppModel(
+            plugins: PluginRegistry(previewing: [BuiltInPlugins.codex]), defaults: defaults, catalogURL: nil)
+        guard let agent = app.plugins.agent(.init(rawValue: "codex")) else {
+            throw ChangeFailure("No receipt fixture")
+        }
+        let session = SessionModel(
+            agent: agent, id: SessionID("omission-receipt"), cwd: URL(filePath: "/fixture"),
+            connection: nil, services: app.sessions.services, supportsSteering: true,
+            promptCapabilities: .init(), phase: .idle)
+        let reference = ContextTransfer.SessionReference(agent: agent.id.rawValue, session: session.id)
+        var state = SessionState()
+        state.appendUserMessage("Keep the branch")
+        state.apply(.agentThoughtChunk(ContentChunk(content: .text("Private reasoning"))))
+        state.apply(.agentMessageChunk(ContentChunk(content: .text("Ready"))))
+        let draft = TaskHandoff.context(source: reference, title: "Receipt", state: state)
+        let fitting = ContextTransfer(
+            draft: draft, destination: reference, model: "small",
+            plan: .resolve(.freshConversation, target: .init(negotiated: nil)), budget: .init())
+        try require(fitting.receipt.included.count == 2, "Visible messages did not fit")
+        try require(fitting.receipt.omitted.map(\.reason) == [.reasoning], "Lost the typed reasoning exclusion")
+        let change = ComposerAgentChange(
+            restoring: .init(
+                source: session.key, sourceName: "Fixture", sourceModel: "Small", agent: agent.id,
+                agentName: "Fixture", modelValue: "small", modelName: "Small"), current: session, app: app)
+        for delivery in [ContextTransfer.Delivery.prepared, .acceptedByHost, .agentResponded] {
+            for budgetLoss in [false, true] {
+                var transfer =
+                    budgetLoss
+                    ? ContextTransfer(
+                        draft: draft, destination: reference, model: "small", plan: fitting.receipt.plan,
+                        budget: .init(windowTokens: 100)) : fitting
+                transfer.receipt.delivery = delivery
+                app.sessions.services.modelContinuations.prepare(transfer, for: session.key)
+                if budgetLoss {
+                    try require(
+                        change.transferNotice?.contains("left out 2") == true
+                            || change.transferNotice?.contains("Left out 2") == true,
+                        "Budget notice counted private reasoning as a third message")
+                } else {
+                    try require(change.transferNotice == nil, "Intentional exclusions produced a budget-loss warning")
+                }
+                try require(
+                    AgentModelContinuations(defaults: defaults).transfer(for: session.key) == transfer,
+                    "Displaying the notice changed the stored receipt")
+            }
+        }
+        print("PASS: real handoff reasoning exclusions stay quiet; budget notices count only budget loss")
     }
 
     static func readOnlyDefaultMigration() async throws {
