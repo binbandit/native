@@ -90,4 +90,67 @@ struct HostHistoryDeltaTests {
         #expect(try await recorder.client.missingHistory(of: first.id).items.map(\.seq) == [4, 5, 6])
         await recorder.stop()
     }
+
+    @Test("A delta stopped before the agent answered goes with the next message instead")
+    func stoppedDelta() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let (first, second) = try await returning(recorder)
+        _ = try await join(recorder, first, after: second)
+        _ = try await recorder.client.prompt(PromptParams(sessionID: first.id, text: "silent-until-stopped"))
+        try await recorder.wait("the agent to get the message") { _ in
+            harness.received.contains { $0.hasSuffix("silent-until-stopped") }
+        }
+        try await recorder.client.cancel(first.id)
+        try await recorder.wait("the stop") { await $0.turnsEnded(first.id).count == 2 }
+        let stopped = try await recorder.client.historySummary(of: first.id)
+        #expect(stopped.transfers.filter { $0.strategy == .delta }.map(\.state) == [.prepared])
+
+        _ = try await recorder.client.prompt(PromptParams(sessionID: first.id, text: "three"))
+        try await recorder.wait("the next turn") { await $0.turnsEnded(first.id).count == 3 }
+        let sent = try #require(prompts(harness).last)
+        #expect(sent.contains("item=history/5") && sent.hasSuffix("three"))
+        let delivered = try await recorder.client.historySummary(of: first.id)
+        #expect(delivered.transfers.filter { $0.strategy == .delta }.map(\.state) == [.delivered])
+        await recorder.stop()
+    }
+
+    @Test("Recovery credits a delta only when the replay shows its frame, not an older message's text")
+    func recoveryNeedsTheFrame() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let first = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
+        // An older message whose text contains the one that will be lost.
+        _ = try await recorder.client.prompt(PromptParams(sessionID: first.id, text: "about lose-once go"))
+        try await recorder.wait("the first turn") { await $0.turnsEnded(first.id).count == 1 }
+        let second = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
+        _ = try await join(recorder, second, after: first, conveyed: [1...3])
+        _ = try await recorder.client.prompt(PromptParams(sessionID: second.id, text: "two"))
+        try await recorder.wait("the second turn") { await $0.turnsEnded(second.id).count == 1 }
+        _ = try await join(recorder, first, after: second)
+        // The agent never records this one: the host stops before it answers.
+        _ = try await recorder.client.prompt(PromptParams(sessionID: first.id, text: "lose-once go"))
+        try await recorder.wait("the lost message") { _ in harness.received.contains { $0.hasSuffix("lose-once go") } }
+        await recorder.stop()
+        harness.kill()
+
+        try harness.start()
+        let restarted = try await harness.connect()
+        // Recovery takes the older message for this one and resumes; the delta goes with that.
+        try await restarted.wait("the recovered turn") { _ in
+            harness.received.filter { $0.hasPrefix("prompt\t") }.count == 4
+        }
+        let resumed = try #require(harness.received.filter { $0.hasPrefix("prompt\t") }.last)
+        #expect(resumed.contains("task-history:") && resumed.contains("item=history/5"))
+        try await restarted.wait("the delta delivered with it") {
+            (try? await $0.client.historySummary(of: first.id))?.transfers.contains {
+                $0.strategy == .delta && $0.state == .delivered
+            } == true
+        }
+        await restarted.stop()
+    }
 }

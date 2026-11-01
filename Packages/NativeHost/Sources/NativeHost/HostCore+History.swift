@@ -105,8 +105,13 @@ extension HostCore {
     /// Before recovery tells the agent its turn was interrupted: what the agent's replay shows it did
     /// after the interrupted message, which the turn that follows wouldn't otherwise include.
     func recordInterrupted(_ turn: UnfinishedTurn, in session: HostSession) {
-        guard let work = Self.interruptedWork(of: turn.text, in: session.mirror.state.items) else { return }
-        record(Array(work), of: turn.requestID, ending: "interrupted", in: session)
+        let items = session.mirror.state.items
+        guard let work = Self.interruptedWork(of: turn.text, in: items) else { return }
+        // The message's text can match an older one; its frame says which context went with it.
+        let shown = items[..<work.startIndex].suffix(2).compactMap { item -> String? in
+            if case .message(let message) = item, message.role == .user { message.preamble?.id } else { nil }
+        }
+        record(Array(work), of: turn.requestID, ending: "interrupted", in: session, shownMarkers: Set(shown))
     }
 
     /// What follows the interrupted message in a replay. The message is found as it was sent, so a
@@ -132,7 +137,12 @@ extension HostCore {
         return items[(index + 1)...]
     }
 
-    private func record(_ items: [TranscriptItem], of turn: UUID, ending stopReason: String, in session: HostSession) {
+    /// `shownMarkers` are the context markers a replay shows the message went with; nil when the agent
+    /// answered the message itself, which is evidence enough.
+    private func record(
+        _ items: [TranscriptItem], of turn: UUID, ending stopReason: String, in session: HostSession,
+        shownMarkers: Set<String>? = nil
+    ) {
         var bodies = TaskHistoryRecording.bodies(items)
         // Failing before the agent did anything leaves only the message: a retry or the user's next
         // message carries on from it.
@@ -154,8 +164,21 @@ extension HostCore {
                     try store.appendHistoryItems(
                         bodies, to: history.id, source: history.participant, turn: turn, at: .now)
                 }
+                let deltas = try store.historyTransfers(of: history.id).filter {
+                    $0.target == history.participant && $0.strategy == .delta && $0.state == .sent
+                        && $0.requestID == turn
+                }
                 if answered {
+                    // A delta its replay doesn't show goes again with the next message.
+                    let unshown = deltas.filter { delta in
+                        shownMarkers.map { !$0.contains(delta.markerID) } ?? false
+                    }
+                    try store.reprepareTransfers(unshown.map(\.id))
                     try store.deliverHistoryTransfers(in: history.id, to: history.participant, with: turn)
+                } else {
+                    // Stopped before the agent answered: a delta goes again with the next message. A
+                    // client's handoff, which the host can't send again, stays sent.
+                    try store.reprepareTransfers(deltas.map(\.id))
                 }
             }
         } catch {

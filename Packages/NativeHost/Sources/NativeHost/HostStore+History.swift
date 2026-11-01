@@ -273,6 +273,17 @@ extension HostStore {
             try JSONColumn.encode(delta.receipt), .text(delta.transfer.uuidString))
     }
 
+    /// Sent transfers that didn't arrive are prepared again, to be chosen afresh for the next message.
+    func reprepareTransfers(_ ids: [UUID]) throws {
+        for id in ids {
+            try database.run(
+                """
+                UPDATE history_transfers SET state = 'prepared', request_id = NULL, covered = '[]', receipt = NULL
+                WHERE id = ? AND state = 'sent'
+                """, .text(id.uuidString))
+        }
+    }
+
     /// The change of agent that prepared the target's context was undone, so what hasn't gone won't.
     func supersedePreparedTransfers(in history: TaskHistoryID, to target: Int) throws {
         try database.run(
