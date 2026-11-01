@@ -114,6 +114,7 @@ install Rust: they use the `cargo` already on the runner. `check.yml` builds lib
 runtime for real and fails without them; the Debug build in `ci.yml` uses the copies Check cached.
 How the jobs are split and what they cache is in `docs/releasing.md` ("How CI stays quick").
 When set to a self-hosted runner label, `CI_MACOS_RUNNER` sends the app build and the Release checks
-to those runners; the package tests, the iOS build, Nightly and Release keep using `MACOS_RUNNER`
+to those runners; package tests use `PACKAGES_MACOS_RUNNER`, then the same app runners. The iOS
+build, Nightly and Release keep using `MACOS_RUNNER`
 (`docs/releasing.md`, "Where CI runs"). Self-hosted jobs resolve Swift packages in their own
 temporary directory and skip hosted build caches, whose package artifacts contain absolute paths.

@@ -54,7 +54,19 @@ for package in $(assign "$shards" | awk -v s="$shard" '$1 == s { print $3 }'); d
     started=$SECONDS
     # The script runtime's Swift tests drive the real helper.
     if [ "$package" = ScriptRuntime ]; then "$root/scripts/build-script-runtime.sh"; fi
-    if (cd "$root/Packages/$package" && swift test); then
+    # Only Swift tests get private scratch space. The runtime build keeps the shared TMPDIR
+    # so its rustup installation lock still coordinates all runners under the same account.
+    test_args=(test)
+    if [ -n "${NATIVE_PACKAGE_BUILD_ROOT:-}" ]; then
+        test_args+=(--scratch-path "$NATIVE_PACKAGE_BUILD_ROOT/$package")
+    fi
+    if (
+        cd "$root/Packages/$package"
+        if [ "$package" = NativeHost ] && [ -n "${NATIVE_PACKAGE_BUILD_ROOT:-}" ]; then
+            export NATIVE_HOST_TEST_PRODUCTS="$NATIVE_PACKAGE_BUILD_ROOT/$package/debug"
+        fi
+        TMPDIR="${NATIVE_PACKAGE_TEMP:-${TMPDIR:-/tmp}}" swift "${test_args[@]}"
+    ); then
         echo "::endgroup::"
         echo "$package passed in $((SECONDS - started))s"
     else

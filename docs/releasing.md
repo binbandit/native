@@ -571,8 +571,8 @@ and persistent self-hosted runners (`CI_MACOS_RUNNER`, three runners on one 12-c
 | --- | --- | --- |
 | `ci.yml` "Build app" | persistent | `CI_MACOS_RUNNER`, then `MACOS_RUNNER`, then `macos-26` |
 | `check.yml` "Check Release", "Check Nightly" | persistent | the same |
-| `ci.yml` "Test packages (n/2)" | GitHub-hosted | `MACOS_RUNNER`, then `macos-26` |
-| `ios.yml` "Build for iOS" | GitHub-hosted | the same |
+| `ci.yml` "Test packages (n/2)" | persistent by default | `PACKAGES_MACOS_RUNNER`, then `CI_MACOS_RUNNER`, then `MACOS_RUNNER`, then `macos-26` |
+| `ios.yml` "Build for iOS" | GitHub-hosted | `MACOS_RUNNER`, then `macos-26` |
 | Nightly, Release, TestFlight | GitHub-hosted | `MACOS_RUNNER`, then `macos-26` |
 | Lint, path checks, release assets | Ubuntu | `ubuntu-latest` |
 
@@ -583,15 +583,25 @@ biggest share and need nothing only that Mac has, so they run hosted, leaving it
 The app build stays there, where it takes about 3 minutes (4.5 to 9 hosted). Check stays too: about
 5 minutes there (3 to 14 hosted), and the hosted pool already takes up to three jobs from each pull
 request. If the persistent runners back up again, Check is the next to move, to the same `runs-on`
-as the package tests.
+as the package tests. On 1 November, the hosted queue backed up while the persistent Macs sat idle,
+so package tests returned to the app build pool. `PACKAGES_MACOS_RUNNER` can move them separately.
 
 Every Mac runner has Xcode 27.1 at the path in `XCODE_DEVELOPER_DIR`, which each job sets as
-`DEVELOPER_DIR`; the hosted package and iOS jobs print `xcodebuild -version` first. Swift package
+`DEVELOPER_DIR`; package and iOS jobs print `xcodebuild -version` first. Swift package
 and compilation caches use keys containing the runner environment and architecture, and package
 resolution and compilation caches live in `RUNNER_TEMP`, so multiple runners under the same account
-never mutate the same Swift package checkout. Persistent jobs skip build-cache downloads and start
-with fresh package build state and a job-local script runtime cache; the shared libghostty build
-already takes a lock on the machine. Hosted jobs restore their caches, and install nothing beyond
+never mutate the same Swift package checkout. Persistent app jobs skip build-cache downloads and start
+with fresh app build state and a job-local script runtime cache; the shared libghostty build
+already takes a lock on the machine. Package tests do not build libghostty or touch its
+`~/Library/Caches/native-build` cache. Hosted package builds use cache keys separated by architecture and shard. Persistent package jobs
+skip package build caches, whose build plans contain absolute paths, and use per-package scratch
+directories under `RUNNER_TEMP/package-builds`. They also skip the hosted runtime restore and set both `NATIVE_SCRIPT_RUNTIME_CACHE` and `NATIVE_SCRIPT_RUNTIME`
+under `RUNNER_TEMP`, so tests run their own checkout's helper. Cargo's shared registry cache and Rust
+installation use their existing locks. Package jobs also get a unique short `TMPDIR`, removed even
+on failure, for Swift tests to isolate fixed-name scratch files without exceeding Unix socket path
+limits. The runtime build keeps the original `TMPDIR` so its rustup lock still coordinates runners.
+Tests' remaining home-directory probes and preference domains use UUIDs. Hosted jobs restore their
+caches, and install nothing beyond
 the image (Git LFS, Rust and Python are on it).
 
 ### iOS checks
