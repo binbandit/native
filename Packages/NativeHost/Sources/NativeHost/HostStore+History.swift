@@ -289,6 +289,13 @@ extension HostStore {
             .text(history.description), .integer(Int64(participant)))
     }
 
+    /// The model a participant's agent session runs with now, when it changed since it was recorded.
+    func setHistoryModel(_ model: String, of participant: Int, in history: TaskHistoryID) throws {
+        try database.run(
+            "UPDATE history_participants SET model = ? WHERE history_id = ? AND ordinal = ? AND model IS NOT ?",
+            .text(model), .text(history.description), .integer(Int64(participant)), .text(model))
+    }
+
     /// An unsaved agent session was replaced by a fresh one under the same host session.
     func replaceHistoryAgentSession(agentID: String, old: SessionID, new: SessionID) throws {
         try database.run(

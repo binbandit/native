@@ -45,10 +45,13 @@ extension HostCore {
     }
 
     /// Records the message a turn starts with, inside the transaction that commits the turn, and
-    /// sends the context prepared for the session with it. A retry of the same request finds it
-    /// recorded already.
-    func recordPrompt(_ prompt: OutgoingPrompt, in history: HostSessionHistory) {
+    /// sends the context prepared for the session with it. The participant's model follows the one the
+    /// message goes to. A retry of the same request finds it recorded already.
+    func recordPrompt(_ prompt: OutgoingPrompt, of session: HostSession, in history: HostSessionHistory) {
         do {
+            if let model = session.mirror.state.configOptions.modelValue {
+                try store.setHistoryModel(model, of: history.participant, in: history.id)
+            }
             try store.sendHistoryTransfers(in: history.id, to: history.participant, with: prompt.id)
             guard try !store.hasHistoryItem(turn: prompt.id, in: history.id) else { return }
             let body = TaskHistoryRecording.user(
@@ -70,7 +73,7 @@ extension HostCore {
     func recordPromptAfterLoad(_ prompt: OutgoingPrompt, in session: HostSession) {
         guard let history = recordableHistory(of: session) else { return }
         do {
-            try store.transaction { recordPrompt(prompt, in: history) }
+            try store.transaction { recordPrompt(prompt, of: session, in: history) }
         } catch {
             logger.error("Couldn't record a message in its task's history: \(error.localizedDescription)")
         }

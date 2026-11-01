@@ -157,6 +157,24 @@ struct HostHistoryTests {
         await second.stop()
     }
 
+    @Test("A participant's model follows the model its messages go to")
+    func modelFollows() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let session = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "one"))
+        try await recorder.wait("the first turn") { await $0.turnsEnded(session.id).count == 1 }
+        #expect(try await recorder.client.historySummary(of: session.id).participants.map(\.model) == ["alpha"])
+        try await recorder.client.setConfigOption(
+            SetConfigOptionParams(sessionID: session.id, configID: "model", value: "beta"))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "two"))
+        try await recorder.wait("the second turn") { await $0.turnsEnded(session.id).count == 2 }
+        #expect(try await recorder.client.historySummary(of: session.id).participants.map(\.model) == ["beta"])
+        await recorder.stop()
+    }
+
     /// Two sessions on the fake agent standing in for two agents of one task.
     private func twoSessions(_ recorder: Recorder) async throws -> (HostSessionSummary, HostSessionID) {
         let first = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
