@@ -55,11 +55,9 @@ jobs:
           fi
 
   # Every package with a Tests folder, found by scripts/ci/test-packages.sh, which deals them into
-  # these shards by measured time (scripts/ci/package-test-times.txt). GitHub-hosted, like the iOS
-  # build: the persistent PR runners keep only the app and Release builds (docs/releasing.md, "Where
-  # CI runs"). GitHub runs at most five hosted macOS jobs at once, so a third shard would mostly wait
-  # for a free runner. Each package's output is its own group, and a failure is annotated with the
-  # package's name.
+  # these shards by measured time (scripts/ci/package-test-times.txt). Two shards share the app build
+  # Macs; PACKAGES_MACOS_RUNNER can move them independently (docs/releasing.md, "Where CI runs").
+  # Each package's output is its own group, and a failure is annotated with the package's name.
   packages:
     name: Test packages (${{ matrix.shard }}/${{ strategy.job-total }})
     # The app's own Macs: the hosted queue for MACOS_RUNNER backed up for hours while these sat idle.
@@ -72,6 +70,15 @@ jobs:
         shard: [1, 2]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Package job paths
+        run: |
+          # Keep fixed-name test scratch files private, with short paths for Unix sockets.
+          package_temp=$(mktemp -d /tmp/native-pkg.XXXXXX)
+          echo "NATIVE_PACKAGE_TEMP=$package_temp" >> "$GITHUB_ENV"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            echo "NATIVE_SCRIPT_RUNTIME_CACHE=$RUNNER_TEMP/ScriptRuntime" >> "$GITHUB_ENV"
+            echo "NATIVE_SCRIPT_RUNTIME=$RUNNER_TEMP/ScriptRuntime/native-script-runtime" >> "$GITHUB_ENV"
+          fi
       - name: Xcode
         run: xcodebuild -version
       - name: Cache package builds
@@ -82,6 +89,7 @@ jobs:
           restore-keys: spm-v2-${{ runner.environment }}-${{ runner.os }}-${{ runner.arch }}-shard${{ matrix.shard }}of${{ strategy.job-total }}-
       # The Cargo cache Nightly and Release save, for the ScriptRuntime package's helper.
       - name: Restore the script runtime
+        if: runner.environment == 'github-hosted'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/Library/Caches/Native/ScriptRuntime
@@ -89,6 +97,9 @@ jobs:
           restore-keys: script-runtime-${{ runner.os }}-${{ runner.arch }}-
       - name: swift test
         run: scripts/ci/test-packages.sh ${{ matrix.shard }} ${{ strategy.job-total }}
+      - name: Remove package scratch files
+        if: always() && env.NATIVE_PACKAGE_TEMP != ''
+        run: rm -rf -- "$NATIVE_PACKAGE_TEMP"
 
   lint:
     name: Lint changed Swift files
