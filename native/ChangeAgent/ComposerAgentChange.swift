@@ -100,7 +100,8 @@ final class ComposerAgentChange {
             return nil
         }
         let estimate = transfer.receipt.budget.isWindowEstimated ? " Context size is estimated." : ""
-        return transfer.receipt.summary + estimate
+        let plan = transfer.receipt.delivery == .prepared ? transfer.receipt.plan.explanation + " " : ""
+        return plan + transfer.receipt.summary + estimate
     }
 
     var receipt: String {

@@ -398,6 +398,18 @@ private struct AgentModelChangeRegression {
         try require(reopened.context(for: source.key) == "Context fixture", "A later selection lost earlier context")
         print(
             "PASS: locally prepared context survives relaunch, is consumed once and remains available to later choices")
+        store.prepare(transfer, for: source.key)
+        try require(store.take(for: source.key) != nil, "Prepared transfer did not begin delivery")
+        let uncertain = AgentModelContinuations(defaults: defaults)
+        try require(
+            uncertain.transfer(for: source.key)?.receipt.delivery == .uncertain,
+            "Unacknowledged attempt was not persisted as uncertain")
+        try require(uncertain.take(for: source.key) == nil, "Recovered uncertain transfer would replay")
+        uncertain.acknowledge(UUID(), for: source.key, as: .acceptedByHost)
+        try require(
+            uncertain.transfer(for: source.key)?.receipt.delivery == .uncertain,
+            "An unrelated acknowledgement confirmed an uncertain attempt")
+        print("PASS: uncertain delivery survives reload, cannot replay and rejects unrelated acknowledgements")
         await client.stop()
     }
 

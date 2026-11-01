@@ -128,7 +128,7 @@ struct ComposerAgentReceipt: View {
             ComposerAgentReceipt(
                 text: "Using Target Agent · Small",
                 transferNotice:
-                    "6 context items ready; 2 left out. Earlier Conversations keeps the full history. Context size is estimated.",
+                    "This switch prepares a new conversation and carries local context. 6 context items ready; 2 left out. Earlier Conversations keeps the full history. Context size is estimated.",
                 actionTitle: "Undo", action: {}, onDismiss: {})
             ComposerAgentReceipt(
                 text: "Using Target Agent · Small",
