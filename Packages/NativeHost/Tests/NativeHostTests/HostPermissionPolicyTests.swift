@@ -38,6 +38,35 @@ struct HostPermissionPolicyTests {
         try rig.core.requirePermission(in: session, value: "default")
     }
 
+    @Test func sameControlDowngradeReplacesForbiddenIntent() async throws {
+        let rig = try PolicyRig(.unrestricted)
+        defer { rig.stop() }
+        let client = try await rig.connect(.owner)
+        try await client.syncAgents([rig.agentSpec()])
+        let summary = try await client.newSession(NewSessionParams(agentID: "fake", cwd: rig.root.path()))
+        try await rig.core.setConfigOption(
+            SetConfigOptionParams(
+                sessionID: summary.id, configID: "mode", value: "default", permissionMode: "accept-edits"))
+        let session = try #require(rig.core.sessions[summary.id])
+        rig.core.apply(
+            HostPolicy(
+                mode: .ordinary, capabilities: Set(HostCapability.allCases), forbiddenPermissionModes: ["accept-edits"])
+        )
+        #expect(throws: HostPolicyDenial.self) { try rig.core.requirePermission(in: session) }
+        try await rig.core.setConfigOption(
+            SetConfigOptionParams(
+                sessionID: summary.id, configID: "mode", value: "default", permissionMode: "ask-first"))
+        #expect(session.record.configChoices[SetConfigOptionParams.permissionChoiceKey] == "ask-first")
+        try rig.core.requirePermission(in: session)
+        // Older clients must also be able to replace a forbidden intent using the same control.
+        session.record.configChoices[SetConfigOptionParams.permissionChoiceKey] = "accept-edits"
+        try await rig.core.setConfigOption(
+            SetConfigOptionParams(sessionID: summary.id, configID: "mode", value: "default"))
+        #expect(session.record.configChoices[SetConfigOptionParams.permissionChoiceKey] == nil)
+        try rig.core.requirePermission(in: session)
+        await client.stop()
+    }
+
     @Test func tighteningHostCapPausesRecoveryAndQueues() throws {
         let previous = try PolicyRig(.unrestricted)
         let id = try previous.seedInterruptedTurn()

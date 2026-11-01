@@ -403,6 +403,12 @@ private struct AgentModelChangeRegression {
             ("no safe match", "default", #"[["agent-full-access","Full access"]]"#, nil, nil, false),
             ("unknown", "auto", #"[["interactive","Interactive"],["autopilot","Autopilot"]]"#, nil, nil, false),
             ("no setting", "auto", "[]", nil, nil, true),
+            ("migrated widened", "workspace-write", #"[["default","Manual"]]"#, "ask-first", "default", true),
+            ("migrated no control", "workspace-write", "[]", nil, nil, true),
+            (
+                "migrated equivalent", "workspace-write",
+                #"[["read-only","Read only"],["workspace-write","Workspace"]]"#, "read-only", "read-only", false
+            ),
             ("plan supported", "plan", #"[["default","Manual"],["plan","Plan"]]"#, "plan", "plan", false),
             (
                 "plan separate", "plan", #"[["default","Manual"],["auto","Auto review"]]"#, "ask-first", "default",
@@ -475,6 +481,13 @@ private struct AgentModelChangeRegression {
                     in: app, agent: "fixture", id: "model-source", cwd: scratch.path,
                     configOptions: [config.model?.option, config.autonomy?.option].compactMap { $0 })
             else { throw ChangeFailure("No permission source") }
+            let migrated = test.name.hasPrefix("migrated ")
+            source.services.titles.updateConfigChoices(for: source.titleKey) {
+                $0.requiresReadOnly = migrated ? true : nil
+            }
+            if migrated {
+                try require(source.inactiveReadOnlyDefault != nil, "Widened source was not blocked")
+            }
             let sourcePermission = ComposerSettings(source.configOptions).autonomy?.value
             source.previewExchange("Keep the task", reply: "Progress saved")
             if (test.source == "plan" || test.source == "read-only") && test.name != "manual read-only" {
@@ -528,6 +541,28 @@ private struct AgentModelChangeRegression {
                     try require(
                         change.permissionNotice?.contains("can't require plan approval") == true,
                         "Lost planning restriction was silent")
+                }
+            }
+            if migrated {
+                try require(
+                    target.services.titles.configChoices(for: target.titleKey).requiresReadOnly == true,
+                    "Model replacement lost the migrated read-only requirement")
+                try require(
+                    (target.inactiveReadOnlyDefault == nil) == (test.name == "migrated equivalent"),
+                    "Replacement did not enforce its migrated requirement")
+                if test.name == "migrated equivalent" {
+                    guard let index = target.state.configOptions.firstIndex(where: { $0.category == "mode" }),
+                        case .select(_, let choices) = target.state.configOptions[index].kind
+                    else { throw ChangeFailure("Missing read-only control") }
+                    target.state.configOptions[index].kind = .select(currentValue: "workspace-write", options: choices)
+                    try require(target.inactiveReadOnlyDefault != nil, "Later provider widening allowed sending")
+                }
+                if let option = target.configOptions.first(where: { $0.category == "mode" }) {
+                    await target.pick(option, value: "ask-first")
+                    try require(target.inactiveReadOnlyDefault == nil, "Explicit replacement remained blocked")
+                    try require(
+                        target.services.titles.configChoices(for: target.titleKey).requiresReadOnly == nil,
+                        "Explicit replacement retained the migrated requirement")
                 }
             }
             let stored = AgentModelContinuations(defaults: defaults).receipt(for: target.key)

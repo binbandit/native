@@ -25,6 +25,8 @@ extension AppModel {
             publishRemoteAgentChange(target, in: project)
         }
         sessions.services.titles.updateConfigChoices(for: target.titleKey) { saved in
+            // A conversation replacement continues the task's restriction until an explicit pick.
+            saved.requiresReadOnly = sessions.services.titles.configChoices(for: source.titleKey).requiresReadOnly
             for option in target.configOptions {
                 if case .select(let value, _) = option.kind { saved.choose(option, value: value) }
             }

@@ -328,9 +328,12 @@ extension HostCore {
         if changesPermissions {
             try requirePermission(in: session, value: params.value, intent: params.permissionMode)
         }
-        try requirePermission(in: session)
-        if let mode = params.permissionMode, TaskPermissionMode(rawValue: mode) != nil {
-            session.record.configChoices[SetConfigOptionParams.permissionChoiceKey] = mode
+        // Check the actual provider response against the replacement intent, even when two
+        // shared modes use the same provider control and pinConfig retained the previous intent.
+        try requirePermission(in: session, intent: params.permissionMode, replacingIntent: changesPermissions)
+        if changesPermissions {
+            session.record.configChoices[SetConfigOptionParams.permissionChoiceKey] =
+                params.permissionMode.flatMap { TaskPermissionMode(rawValue: $0)?.rawValue }
             try store.updateSession(session.record)
             publish(session)
         }

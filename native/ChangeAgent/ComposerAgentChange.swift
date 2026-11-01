@@ -199,8 +199,9 @@ final class ComposerAgentChange {
         let sourceMode = ComposerSettings(source.configOptions).autonomy
         let planning = ModeAgentSettings(source.configOptions).isPlanOn
         let targetSettings = ModeAgentSettings(target.configOptions)
-        permissionSourceValue = planning ? "plan" : sourceMode?.value
-        let needsRestriction = planning || sourceMode?.value == "read-only"
+        let requiresReadOnly = source.services.titles.configChoices(for: source.titleKey).requiresReadOnly == true
+        permissionSourceValue = requiresReadOnly ? "read-only" : planning ? "plan" : sourceMode?.value
+        let needsRestriction = requiresReadOnly || planning || sourceMode?.value == "read-only"
         includesPlanLevel = needsRestriction && targetSettings.isPlanInAutonomy
         let offersReadOnly = targetSettings.levels.contains {
             $0.value == "read-only"
@@ -214,7 +215,8 @@ final class ComposerAgentChange {
                 throw Failure("Couldn't keep Plan Mode. \(source.agentName) is still selected. Try Again.")
             }
             expectedPlanOption = plan.id
-            permissionSourceValue = sourceMode?.value == "plan" ? nil : sourceMode?.value
+            permissionSourceValue =
+                requiresReadOnly ? "read-only" : sourceMode?.value == "plan" ? nil : sourceMode?.value
         }
         guard let targetMode = ComposerSettings(target.configOptions).autonomy, !targetMode.choices.isEmpty else {
             permissionValue = nil
