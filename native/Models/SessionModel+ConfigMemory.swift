@@ -6,6 +6,17 @@ import NativeHostProtocol
 // defaults, policy): a pick of the model or one of its variants is also what the agent's new
 // sessions start on from then on (`AgentSessionDefaults.lastUsed`).
 extension SessionModel {
+    func enqueueComposerPick(_ option: ConfigOption, value: String) {
+        composerConfigChanges.enqueue(option.id, preservingRepeatedSelections: true) { [self] in
+            // An earlier model reply can replace the available settings and their choices.
+            guard let current = configOptions.first(where: { $0.id == option.id }),
+                case .select(_, let choices) = current.kind,
+                choices.contains(where: { $0.value == value })
+            else { return }
+            await pick(current, value: value)
+        }
+    }
+
     /// Attribution uses the task's remembered choice, not a coincidentally matching default.
     func hasChosenConfig(_ option: ConfigOption) -> Bool {
         guard case .select(let value, _) = option.kind,

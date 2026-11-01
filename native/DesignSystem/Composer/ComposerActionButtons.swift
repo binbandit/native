@@ -43,14 +43,19 @@ public struct ComposerSendButton: View {
 public struct ComposerStopButton: View {
     let isStopping: Bool
     let isEscapeEnabled: Bool
+    let shortcutHint: String
     let action: () -> Void
 
     @Environment(\.isEnabled) private var isEnabled
     @State private var isHovered = false
 
-    public init(isStopping: Bool = false, isEscapeEnabled: Bool = true, action: @escaping () -> Void) {
+    public init(
+        isStopping: Bool = false, isEscapeEnabled: Bool = true, shortcutHint: String = "Esc",
+        action: @escaping () -> Void
+    ) {
         self.isStopping = isStopping
         self.isEscapeEnabled = isEscapeEnabled
+        self.shortcutHint = shortcutHint
         self.action = action
     }
 
@@ -73,7 +78,7 @@ public struct ComposerStopButton: View {
         .buttonStyle(ComposerActionStyle(kind: .stop, isHovered: isHovered && isEnabled))
         .keyboardShortcut(isEscapeEnabled ? .cancelAction : nil)
         .opacity(isEnabled ? 1 : 0.5)
-        .help(isStopping ? "Stopping... Press again to stop now (Esc)" : "Stop (Esc)")
+        .help(isStopping ? "Stopping... Press again to stop now (\(shortcutHint))" : "Stop (\(shortcutHint))")
         .accessibilityLabel(isStopping ? "Stopping Agent" : "Stop Agent")
         .accessibilityHint(isStopping ? "Press again to stop now." : "")
         .trackHover($isHovered)
@@ -107,6 +112,7 @@ private struct ComposerActionStyle: ButtonStyle {
 #Preview("Send and stop") {
     DSPreviewPair {
         HStack(spacing: DS.Space.md) {
+            ComposerStopButton(isEscapeEnabled: false, shortcutHint: "⌘.") {}
             ComposerSendButton {}
             ComposerSendButton(disabledReason: "Answer the permission request first") {}
             ComposerStopButton(isEscapeEnabled: false) {}

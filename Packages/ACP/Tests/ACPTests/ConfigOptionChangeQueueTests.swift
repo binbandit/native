@@ -5,6 +5,26 @@ import Testing
 
 @MainActor
 struct ConfigOptionChangeQueueTests {
+    @Test func preservesRepeatedSelectionsWhenEnabled() async throws {
+        let changes = ConfigOptionChangeQueue()
+        var first: CheckedContinuation<Void, Never>?
+        var events: [String] = []
+        changes.enqueue("effort", preservingRepeatedSelections: true) {
+            await withCheckedContinuation { first = $0 }
+            events.append("high")
+        }
+        try await wait { first != nil }
+        changes.enqueue("effort", preservingRepeatedSelections: true) { events.append("low") }
+        changes.enqueue("model", preservingRepeatedSelections: true) {
+            #expect(changes.contains("effort"), "A waiting repeated selection must stay pending")
+            events.append("model")
+        }
+        changes.enqueue("effort", preservingRepeatedSelections: true) { events.append("medium") }
+        first?.resume()
+        try await wait { changes.isEmpty }
+        #expect(events == ["high", "low", "model", "medium"])
+    }
+
     private struct SettingsFailure: Error { let message: String }
     private func wait(_ condition: () -> Bool) async throws {
         let deadline = ContinuousClock.now + .seconds(5)
