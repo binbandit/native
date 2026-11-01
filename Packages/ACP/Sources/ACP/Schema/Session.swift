@@ -254,6 +254,8 @@ public struct ConfigOption: Decodable, Hashable, Sendable, Identifiable {
     public var kind: Kind
     /// Native presentation metadata; never sent to the provider.
     public var permissionMappings: [String: String]? = nil
+    /// Plugin-declared effective controls, including stricter stand-ins for presented levels.
+    public var permissionEffectiveModes: [String: TaskPermissionMode]? = nil
 
     public enum Kind: Hashable, Sendable {
         case select(currentValue: String, options: [SelectOption])

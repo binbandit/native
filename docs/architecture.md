@@ -657,7 +657,8 @@ authorization or proof of agent compliance.
 with a plain reason. Exact model and config values must be advertised. Resume requires host-supplied
 session/runtime/account compatibility; matching names never establish it. Load with replay and a
 fresh conversation with context are distinct fallbacks. Permission plans retain the existing
-`AgentModelPermissions` translator and plugin presentation mappings. Admission and settings
+`AgentModelPermissions` translator and plugin presentation mappings, including the effective control
+behind a stricter presented stand-in. Admission and settings
 confirmation remain the responsibility of the host/model calling the planner.
 
 `ComposerAgentChange` prepares an unused conversation in the same folder, validates the exact model
