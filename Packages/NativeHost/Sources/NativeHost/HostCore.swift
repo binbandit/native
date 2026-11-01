@@ -224,6 +224,7 @@ public final class HostCore {
         } catch {
             logger.error("Couldn't read what to recover: \(error.localizedDescription)")
         }
+        tasks.scheduleCompletions()
         startUpdates()
         startHostStatus()
         unloadIdleSessionsPeriodically()
@@ -251,6 +252,7 @@ public final class HostCore {
     }
 
     private func beat() {
+        tasks.scheduleCompletions()
         try? store.setMeta(MetaKey.heartbeat, String(Date.now.timeIntervalSince1970))
         restartIfReplacedOnDisk()
         exitIfIdleForRestart()

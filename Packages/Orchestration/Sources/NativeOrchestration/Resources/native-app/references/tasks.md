@@ -34,3 +34,12 @@ inherit a known equivalent or stricter mode by default. Explicit unsupported mod
 are refused; ask the user to change the parent's permissions in Native if broader access is needed.
 `checkout` selects an existing absolute directory on the executing host. It does not create a
 worktree or copy uncommitted changes. No model or effort is silently substituted.
+
+Host task tools also advertise `durable_creation_and_completion` in `list_agents`. On that runtime:
+
+- Supply a `creation_key` (1 to 128 bytes, without control characters), keep it stable across retries, and send the same request. It is scoped to your parent task. Concurrent calls and retries after restart return the same creation receipt. A changed request is refused. If creation was interrupted before admission, Native refuses an ambiguous retry instead of creating another child.
+- Completion delivery defaults to on. After you finish your turn, the host sends the original result, including after disconnects or host restarts. `notify_on_completion: false` opts out. A terminal `wait_for_task` or `get_task` consumes a pending wake when you have already read the result.
+- `original_result` is immutable and bounded (32,768 reply characters plus a truncation notice). The ordinary `reply` is the latest turn, including follow-ups. Full text remains in the child transcript.
+- A task stays running while its descendants or their completion delivery are outstanding. Stop and `cancel_task` cancel the owned subtree and durably suppress its completion wakes. An explicit later user message can resume work without reviving old wakes.
+
+App-owned fallback tools refuse explicit durable creation or completion options. Use the host tools for these guarantees.

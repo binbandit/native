@@ -7,11 +7,13 @@ extension HostTasks {
     func checkParent(_ parent: HostSession, request: TaskRequest) throws {
         guard core.sessions[parent.id] === parent, ref(of: parent) == request.parent,
             parent.stopRequestedAt == nil, parent.configChange == nil,
+            stopEpochs[parent.id, default: 0] == request.delegationEpoch,
             coordinatorScope(of: parent.id.rawValue) == nil
         else {
             throw TaskLaunchValidation.Refusal(
                 "The parent stopped, closed, or can no longer delegate. Start again from a live task.")
         }
+        if let reason = request.agent.unavailableReason { throw TaskLaunchValidation.Refusal(reason) }
         try core.require(.agentTools)
         try core.require(agent: request.agent.id)
         try core.requirePermission(in: parent)

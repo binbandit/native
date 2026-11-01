@@ -45,6 +45,12 @@ extension HostCore {
                 continue
             }
             session.turn = turn
+            if tasks.wasStoppedDelegation(turn) {
+                endTurn(in: session, stopReason: "cancelled", pauseQueue: true)
+                append(.turnEnded(stopReason: "cancelled"), to: session)
+                publish(session)
+                continue
+            }
             session.phase = .recovering
             // The host's last heartbeat dates the interruption to within one interval.
             let interruptedAt = max(lastSeenAlive ?? turn.startedAt, turn.startedAt)

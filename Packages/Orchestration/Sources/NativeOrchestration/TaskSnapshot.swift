@@ -2,8 +2,8 @@ import ACP
 import Foundation
 
 /// A session at one moment, as another session sees it.
-public struct TaskSnapshot: Hashable, Sendable {
-    public enum Status: String, Hashable, Sendable {
+public struct TaskSnapshot: Codable, Hashable, Sendable {
+    public enum Status: String, Codable, Hashable, Sendable {
         case running
         /// A turn is in progress but blocked on the user answering a permission request.
         case needsApproval = "needs_approval"

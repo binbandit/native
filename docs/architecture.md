@@ -76,6 +76,10 @@
   The runtime translates inherited permissions semantically, refuses escalation or unknown modes,
   and confirms all requested settings before the first prompt. `list_agents` reports bounded last
   observations; the fresh session is authoritative, and discovery does not probe authentication.
+  Host tools reserve parent-scoped creation keys and commit creation/completion receipts with the
+  ordinary prompt transaction. Original results are immutable, captured before queued follow-ups.
+  Parents receive pending completion after reconnects and host restarts, unless they already read
+  it or pressed Stop. Completion waits for descendants; Stop claims and cancels the owned subtree.
 
 ### Native's tools on demand
 

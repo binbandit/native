@@ -9,7 +9,11 @@ extension HostCore {
 
     /// Stops what the session is doing: a retry waiting to go out, the running turn, or the recovery
     /// of one. Cancellation gets a short grace period before Native ends the owned process tree.
-    func cancel(_ session: HostSession) async {
+    func cancel(_ session: HostSession, includingDescendants: Bool = true) async {
+        if includingDescendants {
+            let descendants = tasks.stopDelegations(of: session)
+            for child in descendants { await cancel(child, includingDescendants: false) }
+        }
         if session.retryAt != nil {
             cancelRetry(of: session)
             append(

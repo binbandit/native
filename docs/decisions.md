@@ -667,3 +667,14 @@ the new session, checks model-dependent effort after selecting the model, and re
 parent, managed policy, permissions and acknowledged settings at the prompt boundary. Selecting an
 existing directory does not create or claim worktree isolation. No second capability catalog or
 agent-specific permission rules are introduced. No external implementation was copied for this step.
+
+
+## 2026-11-01: Host-owned child creation receipts and completion delivery
+
+Delegation uses the existing host session, task and prompt APIs. A parent-scoped creation key reserves one host session id and one first-prompt request id before suspension. Concurrent calls share admission, accepted retries return the original response, and changed requests are refused. A crash before durable admission is ambiguous at the provider: Native refuses to repeat session creation. After admission, acceptance and the ordinary host prompt commit in the same transaction.
+
+Receipts live in the host's existing metadata store, without changing session or turn history schemas. They retain a bounded immutable original result, captured synchronously before queued follow-ups drain. Completion delivery owns a stable prompt request id and commits delivery ownership with the existing host turn transaction, so retention of general prompt receipts cannot cause an old wake to repeat. A parent already reading the terminal result consumes its pending wake. Offline agents and paused parents retain pending delivery for a later host update or heartbeat.
+
+A task remains running until its descendants and their completion delivery settle. Stop claims the owned subtree before suspension, pauses its queues, suppresses wakes and records the stopped request ids. Startup concludes those exact interrupted turns as cancelled; later user requests still recover normally. Coordinator assignments do not become owned descendants.
+
+Receipt and completion race ownership rules and restart/Stop scenarios were adapted from MIT-licensed source at revision `ce9e01640636c0884c4a7574a722bf1d773cfa07`, specifically `apps/server/src/orchestration-v2/CommandReceiptStore.ts` and `apps/server/src/orchestration-v2/DelegatedCompletionDelivery.test.ts`. Ported files retain the complete MIT copyright and permission notice. Provider adapters, prompts, catalogs and history schemas were not imported.

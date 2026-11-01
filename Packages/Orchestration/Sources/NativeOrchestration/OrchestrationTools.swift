@@ -89,6 +89,16 @@ public enum OrchestrationTools {
                             "description":
                                 "The task, written for a capable colleague who hasn't seen this conversation.",
                         ],
+                        "creation_key": [
+                            "type": "string", "maxLength": 128,
+                            "description":
+                                "Stable key scoped to your parent task. Reuse exactly on retries; changed requests are refused.",
+                        ],
+                        "notify_on_completion": [
+                            "type": "boolean",
+                            "description":
+                                "Host tools default to true: deliver the original result after you finish your turn, including after reconnects. Stop suppresses delivery. False keeps polling only.",
+                        ],
                         "model": ["type": "string", "description": "Exact advertised model id. No substitution."],
                         "effort": [
                             "type": "string", "description": "Exact advertised thought_level value for that model.",
@@ -120,7 +130,8 @@ public enum OrchestrationTools {
                     agent: arguments.agent, prompt: arguments.prompt, title: arguments.title,
                     options: TaskLaunchOptions(
                         model: arguments.model, effort: arguments.effort, permissions: arguments.permissions,
-                        checkout: arguments.checkout), for: caller)
+                        checkout: arguments.checkout), creationKey: arguments.creationKey,
+                    notifyOnCompletion: arguments.notifyOnCompletion, for: caller)
             },
             MCPTool(
                 name: "list_tasks",
@@ -283,6 +294,12 @@ public enum OrchestrationTools {
             "title": ["type": "string"],
             "relation": ["type": "string", "enum": ["parent", "child", "sibling"]],
             "status": ["type": "string", "enum": ["running", "needs_approval", "idle", "failed", "cancelled"]],
+            "original_result": [
+                "type": "object", "description": "Immutable original completion, separate from the current turn.",
+                "properties": [
+                    "status": ["type": "string"], "reply": ["type": "string"], "detail": ["type": "string"],
+                ],
+            ],
             "reply": [
                 "type": "string",
                 "description": "What the agent said at the end of its latest turn; partial while it's running.",
@@ -306,6 +323,14 @@ private struct StartTaskArguments: Decodable, Sendable {
     var effort: String?
     var permissions: String?
     var checkout: String?
+    var creationKey: String?
+    var notifyOnCompletion: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case agent, prompt, title, model, effort, permissions, checkout
+        case creationKey = "creation_key"
+        case notifyOnCompletion = "notify_on_completion"
+    }
 }
 
 private struct TaskArguments: Decodable, Sendable {
