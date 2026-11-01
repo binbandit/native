@@ -27,7 +27,8 @@ have no key for), the value is derived from that theme's own colors and marked i
 Highlighting links the tree-sitter runtime, its Swift API and the grammars below as Swift packages
 (versions in `Package.swift`), and `Sources/CodeThemes/Queries` holds copies of each grammar's
 highlight and injection queries from the same release. Each copied file names its source in its
-first line and says what changed, if anything.
+first line and says what changed, if anything. The Markdown 0.5.4 update keeps the 0.5.3
+queries: the upstream query files are unchanged between these releases.
 
 | Component | Upstream | License | Copyright |
 | --- | --- | --- | --- |

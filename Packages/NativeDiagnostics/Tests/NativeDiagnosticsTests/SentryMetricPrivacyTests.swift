@@ -33,9 +33,10 @@ struct SentryMetricPrivacyTests {
         }
         SentrySDK.start(options: options)
         SentrySDK.metrics.distribution(
-            key: "native.launch.duration_ms", value: 812, unit: .millisecond,
-            attributes: ["prompt": "private prompt", "path": "/Users/person/project"])
-        SentrySDK.metrics.distribution(key: "private command", value: 1, unit: .millisecond)
+            "native.launch.duration_ms", value: 812,
+            options: SentryMetricOptions(
+                unit: .millisecond, attributes: ["prompt": "private prompt", "path": "/Users/person/project"]))
+        SentrySDK.metrics.distribution("private command", value: 1, options: SentryMetricOptions(unit: .millisecond))
         #expect(callbacks == 2)
     }
 }

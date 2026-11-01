@@ -30,10 +30,11 @@ nonisolated struct SentryTelemetryDestination: TelemetryDestination {
             let attributes = metric.tags.mapValues { $0 as any SentryAttributeValue }
             switch metric.value {
             case .count(let count):
-                SentrySDK.metrics.count(key: metric.name, value: count, attributes: attributes)
+                SentrySDK.metrics.count(metric.name, value: count, options: SentryMetricOptions(attributes: attributes))
             case .milliseconds(let milliseconds):
                 SentrySDK.metrics.distribution(
-                    key: metric.name, value: Double(milliseconds), unit: .millisecond, attributes: attributes)
+                    metric.name, value: Double(milliseconds),
+                    options: SentryMetricOptions(unit: .millisecond, attributes: attributes))
             }
         }
     }

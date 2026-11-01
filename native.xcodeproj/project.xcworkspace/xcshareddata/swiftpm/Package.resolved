@@ -1,13 +1,13 @@
 {
-  "originHash" : "4726b234cf1a7a3ea8185d9f5c234e7da07fdc93dd840f6fe381dbb782b1c405",
+  "originHash" : "c03ae6ee39f11599c3d087542e4735890cbc043cfa3fb913cf1a460dd70d7445",
   "pins" : [
     {
       "identity" : "sentry-cocoa",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/getsentry/sentry-cocoa",
       "state" : {
-        "revision" : "4bb2282661ee6ca2212aa01d19a1214394cd3c45",
-        "version" : "9.30.2"
+        "revision" : "4e1e4ba9ce329f91ad6bfb63bab6da576a3f348c",
+        "version" : "9.32.0"
       }
     },
     {
@@ -24,8 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tree-sitter/swift-tree-sitter",
       "state" : {
-        "revision" : "f97df585296977d8fcaf644cbde567151d1367b8",
-        "version" : "0.10.0"
+        "revision" : "08ef81eb8620617b55b08868126707ad72bf754f",
+        "version" : "0.25.0"
       }
     },
     {
@@ -114,8 +114,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tree-sitter-grammars/tree-sitter-markdown",
       "state" : {
-        "revision" : "f969cd3ae3f9fbd4e43205431d0ae286014c05b5",
-        "version" : "0.5.3"
+        "revision" : "41ff24a6c775492c543b09228aeb98d1cd2b3a0f",
+        "version" : "0.5.4"
       }
     },
     {
