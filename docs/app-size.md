@@ -18,7 +18,7 @@ noticed while there is still room to choose what to cut.
 | Download, update archive | 35 MB | 31.94 MB, public v0.2.0-beta.14 repacked as `.tar.xz` (2026-10-26) |
 | Download, first-install ZIP | 50 MB | 47.25 MB, public v0.2.0-beta.14 |
 | Download, disk image | 51 MB | unchanged in this change |
-| Installed app | 120 MB | 116.8 MB, public v0.2.0-beta.14 |
+| Installed app | 122 MB | 116.8 MB, public v0.2.0-beta.14 |
 | App binary (`Contents/MacOS/Native`) | 70 MB | 59.3 MB, public v0.2.0-beta.14 |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
@@ -35,6 +35,10 @@ build them, and such an app looks 12 to 40 MB smaller than what ships.
   dry runs included, and stops before publishing when they're over.
 
 Raise a budget only with the reason written here, in the same change.
+
+2026-11-02: under Brayden's standing approval ("bump the allowed size for now, we will go back and decrease
+it another day"), the installed-app budget rises from 120 MB to 122 MB. Nightly on main measured 120.0 MB
+installed after the task history and composer work landed. A size cut back toward 118 MB stays on the list.
 
 2026-11-01: switch Sparkle's full update archive to xz level 9. Repacking the public
 v0.2.0-beta.14 ZIP reduces 47,249,137 bytes to 31,936,384 bytes without changing the app.
