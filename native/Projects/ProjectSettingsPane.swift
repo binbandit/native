@@ -33,8 +33,8 @@ extension SettingsPane {
                         plainly: .workspace),
                     SettingsSearchEntry(id: rows.prefix, title: "Branch prefix", keywords: ["github", "username"]),
                     SettingsSearchEntry(
-                        id: rows.warmWorktree, title: "Warm worktrees",
-                        keywords: ["dependencies", "cache", "setup", "env"]),
+                        id: rows.warmWorktree, title: "Dependencies and caches",
+                        keywords: ["dependencies", "cache", "folders", "copy", "env"]),
                     ProjectActionsSettingsSection.searchEntry(project.id),
                     SettingsSearchEntry(id: rows.mcp, title: "MCP servers", keywords: ["mcp", "tools"]),
                     SettingsSearchEntry(id: rows.skills, title: "Skills", keywords: ["skill"]),

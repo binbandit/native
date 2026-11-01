@@ -23,7 +23,8 @@ import Testing
         let repository = try await fixture.repository
         let location = fixture.folder.deletingLastPathComponent().appending(path: "tasks")
         let cold = try await repository.createWorktree(forTask: "Without env", in: location)
-        let report = try await repository.warmWorktree(at: cold.path, settings: WorktreeWarmSettings())
+        let report = try await repository.warmWorktree(
+            at: cold.path, settings: WorktreeWarmSettings(folders: WorktreeWarmSettings.commonFolders))
         #expect(Set(report.cloned) == [".build", "apps/web/node_modules"])
         #expect(!FileManager.default.fileExists(atPath: cold.path.appending(path: ".env").path()))
         #expect(!FileManager.default.fileExists(atPath: cold.path.appending(path: "dist/local.txt").path()))
@@ -41,10 +42,27 @@ import Testing
         defer { fixture.remove(); other.remove() }
         let repository = try await fixture.repository
         await #expect(throws: GitError.self) {
-            try await repository.warmWorktree(at: other.folder, settings: WorktreeWarmSettings())
+            try await repository.warmWorktree(
+                at: other.folder, settings: WorktreeWarmSettings(folders: WorktreeWarmSettings.commonFolders))
         }
-        let report = try await repository.warmWorktree(at: other.folder, settings: WorktreeWarmSettings(enabled: false))
+        let report = try await repository.warmWorktree(
+            at: other.folder,
+            settings: WorktreeWarmSettings(enabled: false, folders: WorktreeWarmSettings.commonFolders))
         #expect(report.cloned.isEmpty)
+    }
+
+    @Test func emptyFolderListDisablesAllCopies() async throws {
+        let fixture = try await TestRepository.make()
+        defer { fixture.remove() }
+        try fixture.write(".env", "FIXTURE=1")
+        let repository = try await fixture.repository
+        let location = fixture.folder.deletingLastPathComponent().appending(path: "tasks")
+        let worktree = try await repository.createWorktree(forTask: "Copies off", in: location)
+        let report = try await repository.warmWorktree(
+            at: worktree.path, settings: WorktreeWarmSettings(folders: [], includesEnvironmentFiles: true))
+        #expect(report.cloned.isEmpty)
+        #expect(!FileManager.default.fileExists(atPath: worktree.path.appending(path: ".env").path()))
+        #expect(WorktreeWarmSettings().folders.isEmpty)
     }
 
     @Test func rejectsNonProjectFolderChoices() {

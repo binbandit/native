@@ -12,7 +12,6 @@ struct ProjectScriptsSection: View {
     @Environment(SettingsPresentation.self) private var presentation
     /// The project's main checkout.
     let projectRoot: URL
-    var showsSetup = true
 
     @Environment(TaskScriptSettings.self) private var settings
     @State private var repository: [TaskScriptEvent: String] = [:]
@@ -45,7 +44,7 @@ struct ProjectScriptsSection: View {
                             set: { settings.setAllowsRepositoryScripts($0, forProjectAt: projectRoot) }))
                 }
                 .settingsManaged(by: .taskScriptsRepository)
-                ForEach(TaskScriptEvent.allCases.filter { showsSetup || $0 != .setup }) { event in
+                ForEach(TaskScriptEvent.allCases) { event in
                     row(event)
                 }
             }
@@ -140,4 +139,15 @@ struct ProjectScriptsSection: View {
     }
     .environment(TaskScriptWorktreePreviewFixtures.settings())
 }
+
+#Preview("Project scripts - Setup configured") {
+    let settings = TaskScriptWorktreePreviewFixtures.settings()
+    let _ = settings.setProjectScript("bun install", for: .setup, at: TaskScriptWorktreePreviewFixtures.project)
+    DSPreviewPair {
+        ProjectScriptsSection(projectRoot: TaskScriptWorktreePreviewFixtures.project)
+            .settingsPreviewPage()
+    }
+    .environment(settings)
+}
+
 #endif

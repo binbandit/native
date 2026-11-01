@@ -5,7 +5,7 @@ extension Repository {
     /// Only git-ignored caches and explicitly allowed untracked env files are eligible. Commands
     /// run on the repository's host; the client never tries to read a paired host's local paths.
     public func warmWorktree(at destination: URL, settings: WorktreeWarmSettings) async throws -> WorktreeClone.Report {
-        guard settings.enabled else { return WorktreeClone.Report() }
+        guard settings.enabled, !settings.folders.isEmpty else { return WorktreeClone.Report() }
         guard let target = try await git.repository(at: destination), target.commonDirectory == commonDirectory,
             target.root != root, target.isLinkedWorktree
         else { throw GitError.unexpectedOutput("Warm setup needs a new worktree of this project.") }

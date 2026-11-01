@@ -7,11 +7,12 @@ public struct WorktreeWarmSettings: Codable, Hashable, Sendable {
         "node_modules", ".venv", ".build", "target", "Pods", "DerivedData", ".next", "dist",
     ]
 
+    /// Retains opt-outs saved by the earlier project switch. New choices use an empty folder list.
     public var enabled: Bool
     public var folders: [String]
     public var includesEnvironmentFiles: Bool
 
-    public init(enabled: Bool = true, folders: [String] = Self.commonFolders, includesEnvironmentFiles: Bool = false) {
+    public init(enabled: Bool = true, folders: [String] = [], includesEnvironmentFiles: Bool = false) {
         self.enabled = enabled
         self.folders = folders
         self.includesEnvironmentFiles = includesEnvironmentFiles

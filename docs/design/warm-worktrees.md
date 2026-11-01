@@ -5,18 +5,21 @@ belong to the project, beside its existing scripts. Native uses the current Sett
 field, editor and task setup banner patterns, in light and dark. No new navigation or motion.
 
 The default-off Warm Worktrees Labs switch keeps the existing behavior until design review passes.
-With Labs enabled, each project starts with common cache names selected and local env files off.
-The user can disable copies, edit names or project-relative paths, and explicitly allow .env and
-.env.local. The setup command opens the existing script editor, including its timeout and Run Test.
+With Labs enabled, Dependencies and caches has two rows: Folders to copy and Include local env files.
+Folders starts empty (copying off), with common names suggested as placeholder text in a single-line
+field. Enter comma-separated names or project-relative paths to enable copying; clear them to turn
+it off. Local env files require consent. Setup stays in Scripts, using the existing editor, timeout
+and Run Test. It runs once per worktree and holds messages; After creating a worktree runs in the
+background without holding messages.
 The existing repository-script trust and managed script policies still apply.
 
 | State | Expected appearance and behavior |
 | --- | --- |
-| Default | Warm worktrees heading, a short APFS explanation, copies on, editable folders, env off, Add setup command |
-| Copies off | Folder and env controls dimmed; setup command remains available |
+| Default | Dependencies and caches heading, empty full-width field with suggestions, env off |
+| Configured | A short comma-separated list in the same single-line field; neither row dims |
 | Invalid path | Keep the user's input; explain that absolute, parent, .git and .env paths are skipped |
-| Existing setup | Edit or Show for a repository script, with the existing script editor |
-| Task ready | Existing setup notice lists the cloned paths; output stays in its expandable task banner |
+| Existing setup | One Setup row in Scripts, with Edit or Show for a repository script |
+| Task ready | Existing setup notice says Copied followed by the folder names; output stays in its expandable task banner |
 | Unsupported volume | Say that copies need both checkouts on the same APFS volume; setup still runs |
 | Unsafe or existing paths | List skipped paths; never overwrite, traverse external links or use a full copy |
 | Setup failure | Existing setup banner keeps Retry, Edit Script and Skip Setup; agent messages wait |

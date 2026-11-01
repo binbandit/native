@@ -44,7 +44,7 @@ struct ProjectSettingsPage: View {
                     ProjectNewTasksSection(project: project)
                 }
                 if warmWorktrees { WorktreeWarmProjectSection(project: project) }
-                ProjectScriptsSection(projectRoot: project.url, showsSetup: !warmWorktrees)
+                ProjectScriptsSection(projectRoot: project.url)
                 AIInstructionsProjectSection(projectRoot: project.url)
                 ModesProjectSection(project: project)
                 ProjectActionsSettingsSection(project: project)

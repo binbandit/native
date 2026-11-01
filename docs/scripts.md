@@ -165,9 +165,9 @@ the task needs didn't happen, so the task waits and you see why.
 
 ## Warm worktrees (Labs)
 
-Enable **Warm Worktrees** in Settings > Labs, then open a project's settings. **Warm worktrees**
-selects ignored dependency and build folders to bring into each new task: `node_modules`, `.venv`,
-`.build`, `target`, `Pods`, `DerivedData`, `.next`, and `dist`. Names match at any depth, including
+Enable **Warm Worktrees** in Settings > Labs, then open a project's **Dependencies and caches**.
+**Folders to copy** starts empty (copying off), with common folder suggestions as placeholder text:
+`node_modules`, `.venv`, `.build`, `target`, `Pods`, `DerivedData`, `.next`, and `dist`. Names match at any depth, including
 monorepos; a project-relative path selects one folder. Only wholly ignored directories are copied,
 so tracked files and existing task files are never replaced. Local `.env` and `.env.local` files,
 including unignored ones, require the project's **Include local env files** switch. The old global
@@ -182,7 +182,7 @@ inside both checkouts. Standalone dependency checkouts inside a cache are cloned
 clone is removed rather than leaving a partial installation. Env files inside dependency caches are
 omitted; the env switch selects project env files separately.
 
-**Setup command** edits the existing Setup script. It runs once after cloning, holds messages until
+**Setup** lives in the project's **Scripts** section. It runs once after copying, holds messages until
 it finishes or is skipped, and keeps output in the task's expandable setup banner rather than
 sending it to the agent. Existing script trust, managed policy, timeouts, Stop and Retry apply.
 Clones are independent snapshots. Tool caches containing absolute paths may rebuild after moving;

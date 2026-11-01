@@ -166,9 +166,9 @@ extension String {
         VStack(spacing: DS.Space.lg) {
             ForEach(
                 [
-                    "Cloned from the project: node_modules, dist. Storage is shared until files change.",
+                    "Copied node_modules, dist.",
                     "Caches weren't copied. Warm worktrees need both folders on the same APFS volume. Setup commands still run.",
-                    "No matching caches were found to bring along. Left unchanged or skipped unsafe paths: .venv. Run the setup command to rebuild them.",
+                    "No matching folders to copy. Left unchanged or skipped unsafe paths: .venv. Run the setup command to rebuild them.",
                 ], id: \.self
             ) { notice in
                 let run = TaskScriptWorktreePreviewFixtures.localBase
