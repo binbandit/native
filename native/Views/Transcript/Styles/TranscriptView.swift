@@ -73,6 +73,7 @@ struct TranscriptView: View {
                 }
             }
             .modifier(ArtifactPresentation(session: session, filesAreLocal: !model.device(of: session.key).isRemote))
+            .environment(\.toolWorkspaceRoot, session.cwd.path(percentEncoded: false))
             .transaction(value: session.isRestoringHistory) { $0.animation = nil }
             .onChange(of: session.isRestoringHistory) { _, isRestoring in
                 guard isRestoring else { return }

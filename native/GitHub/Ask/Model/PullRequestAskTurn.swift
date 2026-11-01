@@ -89,7 +89,7 @@ struct PullRequestAskTurn: Identifiable {
     private static func current(in items: [TranscriptItem]) -> String? {
         switch items.last {
         case .toolCall(let call) where call.permission != nil: "Waiting for your permission"
-        case .toolCall(let call): call.title
+        case .toolCall(let call): call.sentence
         case .message(let message) where message.role == .thought: "Thinking"
         case .message(let message) where message.role == .agent: nil
         case .message(let message) where message.role == .user: "Reading the pull request"

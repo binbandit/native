@@ -73,9 +73,8 @@ struct StandardTranscriptLineView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
         case .artifacts(let attachments, _):
             MessageAttachmentsView(attachments: attachments, alignment: .leading)
-        case .activityRun(let run):
-            ToolRunView(run: run, session: transcript.session)
-                .equatable()
+        case .toolGroup(let group, _, let isLive, let thinking):
+            transcript.toolGroup(group, isLive: isLive, thinking: thinking)
         case .fold(let turn, let summary, let isUnfolded):
             TurnActivityFold(summary: summary, isUnfolded: isUnfolded) {
                 withAnimation(.reveal) {
@@ -99,8 +98,8 @@ struct StandardTranscriptLineView: View {
 
     @ViewBuilder private func row(_ row: TranscriptRow, thinking: ThinkingClock?) -> some View {
         switch row {
-        case .exploration(let calls):
-            transcript.exploration(calls)
+        case .toolGroup(let group):
+            transcript.toolGroup(group, isLive: false)
         case .item(.message(let message)):
             MessageView(message: message, thinking: thinking)
                 .equatable()

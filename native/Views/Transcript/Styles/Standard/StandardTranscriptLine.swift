@@ -1,9 +1,8 @@
 import ACP
 import SwiftUI
 
-/// One line of the standard transcript: a row, a long run of tool work condensed into one list,
-/// an earlier turn's folded tool work, a finished turn's footer, or the files-changed card after
-/// the latest turn.
+/// One line of the standard transcript: a row, a run of tool work as one line, an earlier turn's
+/// folded tool work, a finished turn's footer, or the files-changed card after the latest turn.
 struct StandardTranscriptLine: Identifiable {
     enum Kind {
         /// A transcript row and the index of its first item; for reasoning, when it started and
@@ -14,9 +13,10 @@ struct StandardTranscriptLine: Identifiable {
         /// the sections on screen, and while it streams only the last one changes.
         case replySection(String, isFirst: Bool, itemIndex: Int)
         case artifacts([MessageAttachment], itemIndex: Int)
-        /// More tool calls in a row than fit on screen, as one condensed list (`ToolRunView`).
-        case activityRun(TranscriptActivityRun)
-        /// An earlier turn's tool work as one line ("Explored 6 files, edited 3 files").
+        /// Two or more tool calls in a row as one line (`ToolGroupView`), with the group's first item
+        /// index, whether the turn is still on it, and when each of its thoughts started and ended.
+        case toolGroup(ToolWorkGroup, itemIndex: Int, isLive: Bool, thinking: [Int: ThinkingClock])
+        /// An earlier turn's tool work as one line ("Read 6 files, edited 3 files and ran 4 commands").
         case fold(TranscriptTurn, TurnSummary, isUnfolded: Bool)
         /// How a finished turn went: how it ended, how long it took, what it changed, its agents.
         case footer(
@@ -30,12 +30,14 @@ struct StandardTranscriptLine: Identifiable {
     let id: String
     let kind: Kind
     var spacing: CGFloat = 0
+    /// Original items represented by this line, including polls folded into a command.
+    var sourceIndices: Set<Int> = []
 
     /// Tool work reads as one dense block; everything else gets room to breathe.
     private var isDense: Bool {
         switch kind {
         case .row(let row, _, _): row.isToolActivity
-        case .fold, .activityRun: true
+        case .fold, .toolGroup: true
         case .replySection, .artifacts, .footer, .changes, .usageLimit: false
         }
     }
@@ -87,13 +89,7 @@ struct StandardTranscriptLine: Identifiable {
     private static func lines(for key: TurnLinesKey, in state: SessionState) -> [StandardTranscriptLine] {
         let turn = key.turn
         let turnItems = Array(state.items[turn.items])
-        let rows = key.unfoldsExploration ? turnItems.map(TranscriptRow.item) : TranscriptRow.rows(from: turnItems)
-        var turnRows: [(row: TranscriptRow, itemIndex: Int)] = []
-        var itemIndex = turn.items.lowerBound
-        for row in rows {
-            turnRows.append((row, itemIndex))
-            itemIndex += row.itemCount
-        }
+        var turnRows = TranscriptRow.rowsWithSources(from: turnItems, grouping: !key.unfoldsExploration)
 
         var lines: [StandardTranscriptLine] = []
         var summary = state.summary(of: turn)
@@ -118,7 +114,8 @@ struct StandardTranscriptLine: Identifiable {
         var placedFold = false
         var position = turnRows.startIndex
         while position < turnRows.endIndex {
-            let (row, index) = turnRows[position]
+            let entry = turnRows[position]
+            let row = entry.row
             if folds, row.isFoldableActivity {
                 if !placedFold {
                     lines.append(Self(id: "fold-\(turn.id)", kind: .fold(turn, summary, isUnfolded: key.isUnfolded)))
@@ -129,12 +126,18 @@ struct StandardTranscriptLine: Identifiable {
                     continue
                 }
             }
-            if let run = TranscriptActivityRun(rows: turnRows[position...], in: state) {
-                lines.append(Self(id: run.id, kind: .activityRun(run)))
-                position += run.rowCount
+            // Polling only waits on the call before it; that call's row stands for both.
+            if row.isPolling {
+                position += 1
                 continue
             }
-            lines += Self.lines(for: row, itemIndex: index, in: state)
+            let isLive = key.isRunning && position == turnRows.index(before: turnRows.endIndex)
+            var rowLines = Self.lines(
+                for: row, itemIndices: entry.itemIndices.map { turn.items.lowerBound + $0 }, isLive: isLive, in: state)
+            for index in rowLines.indices {
+                rowLines[index].sourceIndices = Set(entry.sourceIndices.map { turn.items.lowerBound + $0 })
+            }
+            lines += rowLines
             position += 1
         }
         if let limitStop {
@@ -162,7 +165,24 @@ struct StandardTranscriptLine: Identifiable {
     }
 
     /// A row's lines: a line per section of an agent's reply, otherwise the row itself.
-    private static func lines(for row: TranscriptRow, itemIndex: Int, in state: SessionState) -> [Self] {
+    private static func lines(
+        for row: TranscriptRow, itemIndices: [Int], isLive: Bool, in state: SessionState
+    ) -> [Self] {
+        guard let itemIndex = itemIndices.first else { return [] }
+        if case .toolGroup(let group) = row {
+            var thinking: [Int: ThinkingClock] = [:]
+            for (offset, sourceIndex) in itemIndices.enumerated() {
+                if let interval = state.thinkingInterval(at: sourceIndex) {
+                    thinking[offset] = ThinkingClock(start: interval.start, end: interval.end)
+                }
+            }
+            return [
+                Self(
+                    id: row.id,
+                    kind: .toolGroup(group, itemIndex: itemIndex, isLive: isLive || group.isRunning, thinking: thinking)
+                )
+            ]
+        }
         guard case .item(.message(let message)) = row, message.role == .agent else {
             let thinking = state.thinkingInterval(at: itemIndex).map { ThinkingClock(start: $0.start, end: $0.end) }
             return [Self(id: row.id, kind: .row(row, itemIndex: itemIndex, thinking: thinking))]
@@ -187,7 +207,7 @@ struct StandardTranscriptLine: Identifiable {
         // A reply's later sections space themselves, as in the reply as a whole.
         case .replySection(_, isFirst: false, _): 0
         case .footer, .changes, .artifacts: DS.Space.md
-        case .row, .replySection, .fold, .activityRun, .usageLimit:
+        case .row, .replySection, .fold, .toolGroup, .usageLimit:
             previous.isDense && next.isDense ? DS.Space.xxs : DS.Space.xl
         }
     }

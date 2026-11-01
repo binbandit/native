@@ -83,7 +83,7 @@ struct AnnotatedApprovalView: View {
                 Text(verbatim: proposal).font(.dsBody).foregroundStyle(.dsTextSecondary)
                     .fixedSize(horizontal: false, vertical: true).textSelection(.enabled)
             } else {
-                ToolCallBody(call: call, presentation: ToolPresentation(call), phase: ToolPhase(call))
+                ToolCallBody(call: call, presentation: ToolPresentation(call))
             }
             if !isAvailable {
                 Text("Waiting for the task to reconnect before you can answer.")

@@ -91,6 +91,7 @@ struct TaskWellToolbar<Destination: View>: View {
             let activity = session.taskActivity
             content.verb = activity.verb
             content.object = activity.object
+            content.objectIsCode = activity.objectIsCode
             content.progress = activity.progress
         } else if content.status == .starting {
             content.verb = "Starting"

@@ -82,17 +82,10 @@ private struct StandardTranscript: View {
             transcript, folding: foldsEarlierTurns, unfolded: unfoldedTurns.wrappedValue, cache: lineCache,
             detected: changesActions?.latestTurnChanges
         ).lines
-        let line = lines.first { line in
-            switch line.kind {
-            case .row(let row, let start, _): (start..<start + row.itemCount).contains(index)
-            case .replySection(_, _, let start), .artifacts(_, let start): start == index
-            case .activityRun(let run): run.transcriptIndices.contains(index)
-            default: false
-            }
-        }
+        let line = lines.first { $0.sourceIndices.contains(index) }
         guard let line else { return }
-        if case .activityRun(let run) = line.kind {
-            disclosures?.openRun(run.id)
+        if case .toolGroup(let group, _, _, _) = line.kind {
+            disclosures?.open(group.id)
         }
         withAnimation(.dsStandard) {
             proxy.scrollTo(line.id, anchor: .center)
@@ -101,16 +94,6 @@ private struct StandardTranscript: View {
         try? await Task.sleep(for: .seconds(2.5))
         withAnimation(.dsStandard) {
             revealedLine = nil
-        }
-    }
-}
-
-extension TranscriptRow {
-    /// Tool calls and folded runs of them.
-    var isToolActivity: Bool {
-        switch self {
-        case .exploration, .item(.toolCall): true
-        default: false
         }
     }
 }
