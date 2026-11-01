@@ -5,7 +5,7 @@ let package = Package(
     name: "NativeDiagnostics",
     platforms: [.macOS(.v15), .iOS(.v18)],
     products: [.library(name: "NativeDiagnostics", targets: ["NativeDiagnostics"])],
-    dependencies: [.package(url: "https://github.com/getsentry/sentry-cocoa", exact: "9.30.2")],
+    dependencies: [.package(url: "https://github.com/getsentry/sentry-cocoa", exact: "9.32.0")],
     targets: [
         .target(
             name: "NativeDiagnostics", dependencies: [.product(name: "Sentry", package: "sentry-cocoa")],
