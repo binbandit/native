@@ -116,15 +116,17 @@ public struct AgentTransitionPlan: Equatable, Codable, Sendable {
             guard let selection = AgentModelPermissions.selection(for: source, offered: offered, forbidden: forbidden)
             else { return refused(.noSafePermissions) }
             let values = [option.id: selection.value]
+            let reason: AgentModelPermissions.Reason
             if option.permissionMappings?[selection.value] != nil {
-                guard let effective = option.permissionEffectiveModes?[selection.value],
-                    let requested = source.flatMap(TaskPermissionMode.init(rawValue:))
+                guard let effective = option.permissionEffectiveModes?[selection.value]
                 else { return fallback(.setOptions, .incomparablePermissions, values: values) }
-                return effective == requested
-                    ? exact(.setOptions, values, reason: .permissionEquivalent)
-                    : fallback(.setOptions, .stricterPermission, values: values)
+                // Use the translator's equivalence rules, not saved-setting migration: a provider
+                // alias can be exact, while Plan and workspace restrictions remain distinct.
+                reason = AgentModelPermissions.selection(for: source, offered: [effective.rawValue])?.reason ?? .unknown
+            } else {
+                reason = selection.reason
             }
-            switch selection.reason {
+            switch reason {
             case .equivalent: return exact(.setOptions, values, reason: .permissionEquivalent)
             case .stricter: return fallback(.setOptions, .stricterPermission, values: values)
             case .safestAvailable, .unknown: return fallback(.setOptions, .incomparablePermissions, values: values)
