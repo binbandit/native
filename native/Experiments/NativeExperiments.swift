@@ -13,6 +13,7 @@ extension ExperimentCatalog {
         Gate.taskWell,
         Gate.sidebarNext,
         Gate.composerNext,
+        Gate.composerV3,
         Gate.composeTask,
         Gate.projectFolderTasks,
         Gate.changeAgent,
@@ -48,6 +49,13 @@ extension Parameter where Value == TranscriptWidth {
 // MARK: - Gates
 
 extension Gate {
+    static let composerV3 = Gate(
+        id: "NativeComposerV3", title: "Composer field",
+        summary: "Try the growing message field with agent, model, mode and folder controls in one row.",
+        site: "Composer", stage: .labs, owner: "composer",
+        reviewBy: ReviewDate(year: 2026, month: 12, day: 15), default: false
+    )
+
     static let projectFolderTasks = Gate(
         id: "NativeProjectFolderTasks", title: "Project Folder Tasks",
         summary: "Choose a separate branch or work in the project folder on its current branch.",

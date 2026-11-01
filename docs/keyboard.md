@@ -28,6 +28,11 @@ terminal tab instead. ⌘, brings the main window back with Settings; ⌘Q quits
 
 ## Sending
 
+With Composer field (`NativeComposerV3`) enabled, Return sends and Shift-Return adds a line.
+While a turn runs, Return queues the draft using the existing queue. Up/Down select a file or
+command above the caret; Return or Tab accepts it, and Escape closes the list before stopping
+the turn. Attach Files (⌘U), Choose Model (⇧⌘E) and Stop (⌘.) keep their existing commands.
+
 The standalone `DSTextInput` component (composer rebuild part A, gallery only) uses Return to
 submit, Shift-Return or Option-Return for a newline, and offers Up, Down, Escape and Tab to its
 completion handler first. Unhandled keys keep native text editing and focus traversal. Marked

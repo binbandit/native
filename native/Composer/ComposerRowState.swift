@@ -23,7 +23,7 @@ struct ComposerRowState {
     var modeLabel = "Full access"
     var isDefaultMode = true
     var defaultModeID: String?
-    /// Empty for an existing task. A reserved slot keeps the other controls in place.
+    /// Empty for an existing task.
     var locations: [Choice] = []
     var locationLabel = "In my folder"
     var contextFraction: Double?
