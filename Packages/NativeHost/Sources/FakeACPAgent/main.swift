@@ -370,6 +370,9 @@ actor FakeAgent {
             return try await tick(session, count: 4, stoppable: true)
         } else if text == "cancel-leaves-command" {
             return try await cancelLeavingCommand(session)
+        } else if text == "silent-until-stopped" {
+            while !cancelled.contains(session) { try await Task.sleep(for: .milliseconds(20)) }
+            return "cancelled"
         } else if text.hasPrefix("slow") || text.hasPrefix("stubborn") {
             return try await tick(session, count: Self.count(in: text, default: 5), stoppable: text.hasPrefix("slow"))
         } else if text.hasPrefix("flood") || text.hasPrefix("trickle") {

@@ -12,4 +12,12 @@ extension NativeHostClient {
     public func readHistory(_ params: ReadHistoryParams) async throws -> [TaskHistoryItem] {
         try await call(HostProtocol.Method.readHistory, params)
     }
+
+    public func joinHistory(_ params: JoinHistoryParams) async throws -> TaskHistorySummary {
+        try await call(HostProtocol.Method.joinHistory, params)
+    }
+
+    public func missingHistory(of session: HostSessionID) async throws -> TaskHistoryMissing {
+        try await call(HostProtocol.Method.missingHistory, SessionParams(sessionID: session))
+    }
 }
