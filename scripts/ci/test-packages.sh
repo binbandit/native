@@ -56,7 +56,11 @@ for package in $(assign "$shards" | awk -v s="$shard" '$1 == s { print $3 }'); d
     if [ "$package" = ScriptRuntime ]; then "$root/scripts/build-script-runtime.sh"; fi
     # Only Swift tests get private scratch space. The runtime build keeps the shared TMPDIR
     # so its rustup installation lock still coordinates all runners under the same account.
-    if (cd "$root/Packages/$package" && TMPDIR="${NATIVE_PACKAGE_TEMP:-${TMPDIR:-/tmp}}" swift test); then
+    build_args=()
+    if [ -n "${NATIVE_PACKAGE_BUILD_ROOT:-}" ]; then
+        build_args=(--scratch-path "$NATIVE_PACKAGE_BUILD_ROOT/$package")
+    fi
+    if (cd "$root/Packages/$package" && TMPDIR="${NATIVE_PACKAGE_TEMP:-${TMPDIR:-/tmp}}" swift test "${build_args[@]}"); then
         echo "::endgroup::"
         echo "$package passed in $((SECONDS - started))s"
     else

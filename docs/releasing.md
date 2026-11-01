@@ -593,9 +593,9 @@ resolution and compilation caches live in `RUNNER_TEMP`, so multiple runners und
 never mutate the same Swift package checkout. Persistent app jobs skip build-cache downloads and start
 with fresh app build state and a job-local script runtime cache; the shared libghostty build
 already takes a lock on the machine. Package tests do not build libghostty or touch its
-`~/Library/Caches/native-build` cache. Their `.build` folders belong to each runner's checkout and
-use cache keys separated by environment, architecture and shard. On persistent runners, package jobs
-skip the hosted runtime restore and set both `NATIVE_SCRIPT_RUNTIME_CACHE` and `NATIVE_SCRIPT_RUNTIME`
+`~/Library/Caches/native-build` cache. Hosted package builds use cache keys separated by architecture and shard. Persistent package jobs
+skip package build caches, whose build plans contain absolute paths, and use per-package scratch
+directories under `RUNNER_TEMP/package-builds`. They also skip the hosted runtime restore and set both `NATIVE_SCRIPT_RUNTIME_CACHE` and `NATIVE_SCRIPT_RUNTIME`
 under `RUNNER_TEMP`, so tests run their own checkout's helper. Cargo's shared registry cache and Rust
 installation use their existing locks. Package jobs also get a unique short `TMPDIR`, removed even
 on failure, for Swift tests to isolate fixed-name scratch files without exceeding Unix socket path
