@@ -59,6 +59,11 @@ composition through `NSTextInputClient` (no input-source change), Return, Shift-
 routing through a private pasteboard, and the accessibility value. Type into **Message** and check
 **Submitted** to exercise the SwiftUI binding and Return through the scoped keyboard driver.
 
+After building an isolated Debug instance, `scripts/tests/composer-field-input.sh <instance>` checks
+the assembled composer's focus after native edits, private file paste, file/folder and command
+completion acceptance, and model-requested focus. It hosts the real `ComposerView` offscreen without
+launching Native, posting key events, connecting an agent or touching the general clipboard.
+
 ## Choose the check
 
 For a change confined to one view's appearance, render and inspect its actual `#Preview` states
