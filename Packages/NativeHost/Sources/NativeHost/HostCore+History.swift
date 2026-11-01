@@ -142,15 +142,18 @@ extension HostCore {
         let answered = !bodies.isEmpty || stopReason != "cancelled"
         do {
             try store.transaction {
-                guard try !store.hasHistoryItem(turn: turn, kind: "turn_ended", in: history.id) else { return }
-                if let plan = TaskHistoryRecording.plan(session.mirror.state.plan),
-                    try store.lastHistoryBody(kind: "plan", in: history.id) != plan
-                {
-                    bodies.append(plan)
+                // A turn recorded already (a recovery finding a stopped turn in the replay) keeps its
+                // items, but the replay is still evidence its context arrived.
+                if try !store.hasHistoryItem(turn: turn, kind: "turn_ended", in: history.id) {
+                    if let plan = TaskHistoryRecording.plan(session.mirror.state.plan),
+                        try store.lastHistoryBody(kind: "plan", in: history.id) != plan
+                    {
+                        bodies.append(plan)
+                    }
+                    bodies.append(.turnEnded(stopReason: stopReason))
+                    try store.appendHistoryItems(
+                        bodies, to: history.id, source: history.participant, turn: turn, at: .now)
                 }
-                bodies.append(.turnEnded(stopReason: stopReason))
-                try store.appendHistoryItems(
-                    bodies, to: history.id, source: history.participant, turn: turn, at: .now)
                 if answered {
                     try store.deliverHistoryTransfers(in: history.id, to: history.participant, with: turn)
                 }

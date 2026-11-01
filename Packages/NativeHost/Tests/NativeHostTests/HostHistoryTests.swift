@@ -270,6 +270,42 @@ struct HostHistoryTests {
         await recorder.stop()
     }
 
+    @Test("A stopped message the agent's replay shows it received counts as delivered after a crash")
+    func recoveredDelivery() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let (first, second) = try await twoSessions(recorder)
+        _ = try await join(recorder, second, after: first, conveyed: [1...3])
+        _ = try await recorder.client.prompt(PromptParams(sessionID: second, text: "silent-until-stopped"))
+        try await recorder.wait("the agent to get the message") { _ in
+            harness.received.contains("prompt\tsilent-until-stopped")
+        }
+        try await recorder.client.cancel(second)
+        try await recorder.wait("the stop") { await $0.turnsEnded(second) == ["cancelled"] }
+        let sent = try #require(try await recorder.client.historySummary(of: second).transfers.first)
+        #expect(sent.state == .sent)
+        await recorder.stop()
+        harness.kill()
+        // As if the host crashed after recording the stop but before forgetting the turn.
+        try HostStore(url: harness.location.databaseURL).beginTurn(
+            UnfinishedTurn(
+                sessionID: second,
+                prompt: OutgoingPrompt(id: try #require(sent.requestID), text: "silent-until-stopped"),
+                kind: .prompt))
+
+        try harness.start()
+        let restarted = try await harness.connect()
+        try await restarted.wait("the recovered delivery") {
+            (try? await $0.client.historySummary(of: second))?.transfers.first?.state == .delivered
+        }
+        // The stopped turn's items weren't recorded again.
+        let items = try await restarted.client.readHistory(ReadHistoryParams(sessionID: second))
+        #expect(items.filter { $0.turn == sent.requestID && $0.body.kind == "turn_ended" }.count == 1)
+        await restarted.stop()
+    }
+
     @Test("A change of agent undone before its first message leaves the task's history as it was")
     func undoneJoin() async throws {
         let harness = try HostHarness()
