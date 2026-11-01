@@ -59,6 +59,20 @@ struct OrchestratorTests {
         #expect(TaskPromptFrame(parsing: message.prompt)?.sender == .task(id: tasks[0].id, label: tasks[0].label))
     }
 
+    @Test("A runtime without durable receipts refuses retry guarantees before creating a child")
+    func unsupportedDurabilityNeverStartsAChild() async throws {
+        let runtime = FakeRuntime()
+        let orchestrator = TaskOrchestrator(runtime: runtime)
+        let caller = await runtime.openSession(agent: "claude")
+        for args: [String: JSON] in [["creation_key": "once"], ["notify_on_completion": true]] {
+            var arguments: [String: JSON] = ["agent": "codex", "prompt": "hello"]
+            arguments.merge(args) { _, new in new }
+            let result = try await tool("start_task", orchestrator)(caller, arguments: .object(arguments))
+            #expect(result.isError)
+            #expect(await runtime.started.isEmpty)
+        }
+    }
+
     @Test("Waiting on a task that isn't open reopens it first")
     func reopensClosedTasks() async throws {
         let runtime = FakeRuntime()

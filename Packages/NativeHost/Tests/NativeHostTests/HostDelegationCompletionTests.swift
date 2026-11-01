@@ -19,6 +19,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// These tools require the host's Network and CryptoKit MCP transport.
+#if canImport(Network) && canImport(CryptoKit)
 import ACP
 import Foundation
 import NativeHostClient
@@ -99,6 +101,44 @@ struct HostDelegationCompletionTests {
         await recorder.stop()
     }
 
+    @Test func descendantAdmissionKeepsTheOriginalResultOpen() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        let gate = harness.root.appending(path: "release-config")
+        harness.agentEnvironment["FAKE_AGENT_CONFIG_GATE"] = gate.path
+        try harness.start()
+        let recorder = try await harness.connect()
+        let parent = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: harness.root.path))
+        let childTask = try await start(recorder, parent: parent.id, prompt: "slow 8", key: "preparing")
+        let child = try #require(childTask.sessionID)
+        try await recorder.client.attach(child)
+        let flight = Task {
+            try await recorder.client.callTool(
+                CallToolParams(
+                    sessionID: child, tool: "start_task",
+                    arguments: .object([
+                        "agent": .string("fake"), "prompt": .string("hello"), "creation_key": .string("grandchild"),
+                        "model": .string("beta"),
+                    ])))
+        }
+        try await recorder.wait("grandchild preparation") { _ in
+            harness.received.contains("config-pending\tmodel=beta")
+        }
+        try await recorder.wait("child turn ends") { await $0.turnsEnded(child).last == "end_turn" }
+        let pending = try await recorder.client.callTool(
+            CallToolParams(
+                sessionID: parent.id, tool: "get_task", arguments: .object(["task_id": .string(childTask.id)])))
+        #expect(pending.structuredContent?["status"]?.stringValue == "running")
+        #expect(pending.structuredContent?["original_result"] == nil)
+        try Data().write(to: gate)
+        #expect(try await !flight.value.isError)
+        let finished = try await recorder.client.callTool(
+            CallToolParams(
+                sessionID: parent.id, tool: "wait_for_task", arguments: .object(["task_id": .string(childTask.id)])))
+        #expect(finished.structuredContent?["original_result"]?["reply"]?.stringValue?.contains("echo: hello") == true)
+        await recorder.stop()
+    }
+
     @Test func hostCrashDuringStopDoesNotResumeTheStoppedSubtree() async throws {
         let harness = try HostHarness()
         defer { harness.cleanup() }
@@ -164,3 +204,4 @@ struct HostDelegationCompletionTests {
         await second.stop()
     }
 }
+#endif

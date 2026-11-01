@@ -6,7 +6,7 @@ import NativeOrchestration
 extension HostTasks {
     func checkParent(_ parent: HostSession, request: TaskRequest) throws {
         guard core.sessions[parent.id] === parent, ref(of: parent) == request.parent,
-            parent.stopRequestedAt == nil, parent.configChange == nil,
+            parent.stopRequestedAt == nil, !parent.record.isQueuePaused, parent.configChange == nil,
             stopEpochs[parent.id, default: 0] == request.delegationEpoch,
             coordinatorScope(of: parent.id.rawValue) == nil
         else {

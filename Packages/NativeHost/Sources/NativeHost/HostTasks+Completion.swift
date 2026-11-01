@@ -45,9 +45,10 @@ extension HostTasks {
     /// A child's original result includes its descendants. Pending wakes belong to the child until
     /// its parent has read them or the host has committed the follow-up turn.
     func hasUnfinishedDescendants(_ parent: HostSessionID) -> Bool {
-        receipts.values.contains {
-            $0.parentID == parent && $0.task != nil && $0.failure == nil && $0.delivery != .suppressed
-                && ($0.result == nil || ($0.intent.notify && $0.delivery == .pending))
+        receipts.contains { key, receipt in
+            receipt.parentID == parent && (receipt.task != nil || creationFlights[key] != nil)
+                && receipt.failure == nil && receipt.delivery != .suppressed
+                && (receipt.result == nil || (receipt.intent.notify && receipt.delivery == .pending))
         }
     }
 
@@ -60,8 +61,8 @@ extension HostTasks {
         }
     }
 
-    /// Uses the ordinary load/recovery and prompt delivery receipts. Nothing depends on a client
-    /// staying attached, and a crash between prompt commit and receipt update cannot send twice.
+    /// Uses ordinary load/recovery and commits delivery ownership with the host turn. Nothing
+    /// depends on a client staying attached, and a crash cannot commit the same wake twice.
     private func reconcileCompletions() async {
         var progressed = true
         while progressed && receiptsReadable {

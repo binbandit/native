@@ -19,6 +19,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// These tools require the host's Network and CryptoKit MCP transport.
+#if canImport(Network) && canImport(CryptoKit)
 import ACP
 import Foundation
 import NativeHostClient
@@ -158,6 +160,13 @@ struct HostDelegationReceiptTests {
         let replay = try await start(recorder.client, parent: parent.id, key: "stopped", model: "beta")
         #expect(replay.isError)
         #expect(try await recorder.client.tasks().isEmpty)
+        let late = try await start(recorder.client, parent: parent.id, key: "late")
+        #expect(late.isError, "A late request must not lift Stop's queue pause")
+        #expect(try await recorder.client.tasks().isEmpty)
+        _ = try await recorder.client.prompt(PromptParams(sessionID: parent.id, text: "resume"))
+        let resumed = try await start(recorder.client, parent: parent.id, key: "late")
+        #expect(!resumed.isError, "An explicit user prompt can resume delegation: \(resumed.text)")
         await recorder.stop()
     }
 }
+#endif
