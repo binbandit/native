@@ -128,6 +128,28 @@ import Testing
                 == .exact)
     }
 
+    @Test func pluginMappingsPreserveRecognizedSourceAliasesWithoutBroadMigration() throws {
+        let captured = try captured()
+        var mode = try #require(captured.options.first { $0.category == "mode" })
+        if case .select(let current, let choices) = mode.kind {
+            mode.kind = .select(
+                currentValue: current, options: choices.filter { $0.value != "plan" && $0.value != "read-only" })
+        }
+        let target = EffectiveAgentCapabilities(
+            negotiated: captured.negotiated, options: [TaskPermissionMapping.standard.presenting(mode)])
+        for source in ["default", "acceptEdits", "agent", "bypassPermissions", "agent-full-access"] {
+            let plan = AgentTransitionPlan.resolve(
+                .permissions(source: source, forbidden: []), target: target, allowsFallback: false)
+            #expect(plan.outcome == .exact, "Recognized alias: \(source)")
+            #expect(plan.reason == .permissionEquivalent)
+        }
+        for source in ["plan", "read-only", "workspace-write", "dontAsk", "unknown"] {
+            let plan = AgentTransitionPlan.resolve(
+                .permissions(source: source, forbidden: []), target: target, allowsFallback: false)
+            #expect(plan.outcome == .refused, "Distinct control: \(source)")
+        }
+    }
+
     @Test func admissionAndReceiptRoundTrip() throws {
         let target = try captured()
         #expect(AgentTransitionPlan.resolve(.model("opus"), target: target, available: false).reason == .unavailable)
