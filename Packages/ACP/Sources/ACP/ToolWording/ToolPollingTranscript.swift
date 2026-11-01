@@ -4,27 +4,32 @@ import Foundation
 /// presentation copy so replay and grouping preferences never change the captured transcript.
 enum ToolPollingTranscript {
     static func folding(_ items: [TranscriptItem]) -> [TranscriptItem] {
-        var result: [TranscriptItem] = []
+        foldingWithSources(items).map(\.item)
+    }
+
+    static func foldingWithSources(_ items: [TranscriptItem]) -> [(item: TranscriptItem, indices: Set<Int>)] {
+        var result: [(item: TranscriptItem, indices: Set<Int>)] = []
         var commands: [String: Int] = [:]
-        for item in items {
+        for (sourceIndex, item) in items.enumerated() {
             guard case .toolCall(let call) = item else {
-                result.append(item)
+                result.append((item, [sourceIndex]))
                 // Process IDs can be reused between turns. Never attach across a prose boundary.
                 if case .message(let message) = item, message.role != .thought { commands.removeAll() }
                 continue
             }
             if call.isPolling, call.permission == nil, let session = polledSession(call),
-                let index = commands[session], case .toolCall(var command) = result[index]
+                let index = commands[session], case .toolCall(var command) = result[index].item
             {
                 append(call, to: &command)
-                result[index] = .toolCall(command)
+                result[index].item = .toolCall(command)
+                result[index].indices.insert(sourceIndex)
                 if call.status.isFinished && runningSession(call) == nil { commands[session] = nil }
                 continue
             }
             if !call.isPolling, call.mcpTool == nil, let session = runningSession(call) {
                 commands[session] = result.count
             }
-            result.append(item)
+            result.append((item, [sourceIndex]))
         }
         return result
     }

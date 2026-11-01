@@ -684,6 +684,9 @@ closed. What a row or group says comes from `ToolCallWording` and `ToolWorkSumma
 package, which `TranscriptRow.rows` groups (two or more calls in a row, with the reasoning between
 them; approvals and questions stay on their own). Polling output and completion fold into the
 command with the matching process session ID before grouping, without changing captured items.
+Row source membership preserves original item positions and maps matched polls to their command
+for search reveal and reasoning clocks. Only fully literal, empty-input code-mode polls of one
+known session can fold; computed or mixed targets retain their rows.
 Matched polls and output-free successful polls disappear from individual and grouped rows;
 unmatched results and failures keep their own accessible row. The transcript, the well, the pull request
 ask and the companion all say the same thing.

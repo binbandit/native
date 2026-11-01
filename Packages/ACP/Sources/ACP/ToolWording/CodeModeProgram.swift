@@ -77,11 +77,13 @@ struct CodeModeProgram: Equatable {
                     steps.append(.other(tool: name))
                 }
             case "write_stdin":
-                steps.append(.input(Self.string(named: "chars", in: arguments) ?? ""))
-                if let session = Self.string(named: "session_id", in: arguments)
-                    ?? ToolPollingTranscript.capture(#"\bsession_id["']?\s*:\s*(\d+)\b"#, in: String(arguments))
-                {
+                if let session = CodeModePollingInput.session(in: arguments) {
+                    steps.append(.input(""))
                     polledSessions.insert(session)
+                } else if let chars = Self.string(named: "chars", in: arguments), !chars.isEmpty {
+                    steps.append(.input(chars))
+                } else {
+                    steps.append(.other(tool: name))
                 }
             default:
                 steps.append(.other(tool: name))
@@ -93,7 +95,7 @@ struct CodeModeProgram: Equatable {
 
     /// Every step only polls a running command.
     var isPolling: Bool {
-        !steps.isEmpty && steps.allSatisfy(\.isPolling)
+        !steps.isEmpty && steps.allSatisfy(\.isPolling) && polledSessions.count == 1
     }
 
     /// The source, from `arguments` (a string, or an object holding one) or the input itself.

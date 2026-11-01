@@ -30,6 +30,8 @@ struct StandardTranscriptLine: Identifiable {
     let id: String
     let kind: Kind
     var spacing: CGFloat = 0
+    /// Original items represented by this line, including polls folded into a command.
+    var sourceIndices: Set<Int> = []
 
     /// Tool work reads as one dense block; everything else gets room to breathe.
     private var isDense: Bool {
@@ -87,13 +89,7 @@ struct StandardTranscriptLine: Identifiable {
     private static func lines(for key: TurnLinesKey, in state: SessionState) -> [StandardTranscriptLine] {
         let turn = key.turn
         let turnItems = Array(state.items[turn.items])
-        let rows = TranscriptRow.rows(from: turnItems, grouping: !key.unfoldsExploration)
-        var turnRows: [(row: TranscriptRow, itemIndex: Int)] = []
-        var itemIndex = turn.items.lowerBound
-        for row in rows {
-            turnRows.append((row, itemIndex))
-            itemIndex += row.itemCount
-        }
+        var turnRows = TranscriptRow.rowsWithSources(from: turnItems, grouping: !key.unfoldsExploration)
 
         var lines: [StandardTranscriptLine] = []
         var summary = state.summary(of: turn)
@@ -118,7 +114,8 @@ struct StandardTranscriptLine: Identifiable {
         var placedFold = false
         var position = turnRows.startIndex
         while position < turnRows.endIndex {
-            let (row, index) = turnRows[position]
+            let entry = turnRows[position]
+            let row = entry.row
             if folds, row.isFoldableActivity {
                 if !placedFold {
                     lines.append(Self(id: "fold-\(turn.id)", kind: .fold(turn, summary, isUnfolded: key.isUnfolded)))
@@ -135,7 +132,12 @@ struct StandardTranscriptLine: Identifiable {
                 continue
             }
             let isLive = key.isRunning && position == turnRows.index(before: turnRows.endIndex)
-            lines += Self.lines(for: row, itemIndex: index, isLive: isLive, in: state)
+            var rowLines = Self.lines(
+                for: row, itemIndices: entry.itemIndices.map { turn.items.lowerBound + $0 }, isLive: isLive, in: state)
+            for index in rowLines.indices {
+                rowLines[index].sourceIndices = Set(entry.sourceIndices.map { turn.items.lowerBound + $0 })
+            }
+            lines += rowLines
             position += 1
         }
         if let limitStop {
@@ -163,11 +165,14 @@ struct StandardTranscriptLine: Identifiable {
     }
 
     /// A row's lines: a line per section of an agent's reply, otherwise the row itself.
-    private static func lines(for row: TranscriptRow, itemIndex: Int, isLive: Bool, in state: SessionState) -> [Self] {
+    private static func lines(
+        for row: TranscriptRow, itemIndices: [Int], isLive: Bool, in state: SessionState
+    ) -> [Self] {
+        guard let itemIndex = itemIndices.first else { return [] }
         if case .toolGroup(let group) = row {
             var thinking: [Int: ThinkingClock] = [:]
-            for offset in group.items.indices {
-                if let interval = state.thinkingInterval(at: itemIndex + offset) {
+            for (offset, sourceIndex) in itemIndices.enumerated() {
+                if let interval = state.thinkingInterval(at: sourceIndex) {
                     thinking[offset] = ThinkingClock(start: interval.start, end: interval.end)
                 }
             }

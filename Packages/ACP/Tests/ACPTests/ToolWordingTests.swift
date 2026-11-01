@@ -301,6 +301,100 @@ struct ToolWordingTests {
         #expect(group.calls.map(\.id) == ["first", "second", "orphan"])
     }
 
+    @Test(arguments: [
+        #"await tools.write_stdin({session_id:11732,chars:""}); await tools.write_stdin({session_id:otherSession,chars:""});"#,
+        #"await tools.write_stdin({session_id:11732 + 1,chars:""});"#,
+        #"await tools.write_stdin({session_id:11732,chars:answer});"#,
+        #"await tools.write_stdin({session_id:"11732" + suffix,chars:""});"#,
+        #"await tools.write_stdin({session_id:11732,chars:"" + answer});"#,
+        #"await tools.write_stdin({session_id:11732,chars:"",...options});"#,
+        #"await tools.write_stdin({session_id:11732,chars:""}); await tools.write_stdin({session_id:221,chars:""});"#,
+    ])
+    func unresolvedPollingInputKeepsItsOwnResults(source: String) {
+        var command = CodexExecWire.call("run", #"await tools.exec_command({cmd:"swift test"})"#)
+        command.rawOutput = .object(["session_id": .number(11732)])
+        var other = CodexExecWire.call("other", #"await tools.exec_command({cmd:"swift build"})"#)
+        other.rawOutput = .object(["session_id": .number(221)])
+        var poll = CodexExecWire.call("poll", source)
+        poll.content = [.content(.text("Process exited with code 0\nProcess exited with code 1\nfinal diagnostics"))]
+        #expect(!poll.isPolling)
+        for grouping in [true, false] {
+            let rows = TranscriptRow.rows(
+                from: [command, other, poll].map(TranscriptItem.toolCall), grouping: grouping)
+            let calls = rows.flatMap { row -> [ToolCallState] in
+                switch row {
+                case .item(.toolCall(let call)): [call]
+                case .toolGroup(let group): group.calls
+                default: []
+                }
+            }
+            #expect(calls == [command, other, poll])
+        }
+    }
+
+    @Test(arguments: [
+        #"await tools.write_stdin({session_id:11732,chars:""});"#,
+        #"await tools.write_stdin({'session_id':'11732', 'chars':'', yield_time_ms:30000});"#,
+        #"await tools.write_stdin({"session_id":11732});"#,
+        #"await tools.write_stdin({chars:``,session_id:11732,}); await tools.write_stdin({session_id:11732,chars:""});"#,
+    ])
+    func fullyLiteralPollsStillFold(source: String) {
+        var command = CodexExecWire.call("run", #"await tools.exec_command({cmd:"swift test"})"#)
+        command.rawOutput = .object(["session_id": .number(11732)])
+        var poll = CodexExecWire.call("poll", source)
+        poll.content = [.content(.text("Process exited with code 0"))]
+        #expect(poll.isPolling)
+        let rows = TranscriptRow.rowsWithSources(from: [command, poll].map(TranscriptItem.toolCall))
+        #expect(rows.count == 1)
+        #expect(rows.first?.sourceIndices == [0, 1])
+    }
+
+    @Test func pollingFoldsKeepOriginalPositionsForRevealAndReasoning() throws {
+        var command = CodexExecWire.call("run", #"await tools.exec_command({cmd:"swift test"})"#)
+        command.rawOutput = .object(["session_id": .number(11732)])
+        var poll = CodexExecWire.call("poll", #"await tools.write_stdin({session_id:11732,chars:""})"#)
+        poll.content = [.content(.text("Process exited with code 0"))]
+        let sleep = ToolCallState(id: "sleep", title: "sleep", name: "sleep", status: .completed)
+        let thought = TranscriptMessage(role: .thought, text: "Check the build next.", startedAt: Date())
+        let other = CodexExecWire.call("other", #"await tools.exec_command({cmd:"swift build"})"#)
+        let reply = TranscriptMessage(role: .agent, text: "All done.")
+        let items: [TranscriptItem] = [
+            .toolCall(command), .toolCall(poll), .toolCall(sleep), .message(thought), .toolCall(other), .message(reply),
+        ]
+        for grouping in [true, false] {
+            let single = TranscriptRow.rowsWithSources(
+                from: [.toolCall(command), .toolCall(poll), .message(reply)], grouping: grouping)
+            #expect(single.count == 2)
+            #expect(single.first?.sourceIndices == [0, 1])
+            #expect(single.last?.itemIndices == [2])
+            let rows = TranscriptRow.rowsWithSources(from: items, grouping: grouping)
+            #expect(Set(rows.flatMap(\.sourceIndices)) == Set(items.indices))
+            let commandRow = try #require(rows.first { $0.sourceIndices.contains(0) })
+            #expect(commandRow.sourceIndices.contains(1))
+            let replyRow = try #require(rows.first { $0.sourceIndices.contains(5) })
+            #expect(replyRow.row.id == items[5].id)
+            #expect(replyRow.itemIndices == [5])
+            let thoughtRow = try #require(rows.first { $0.sourceIndices.contains(3) })
+            let visible: [TranscriptItem]
+            switch thoughtRow.row {
+            case .item(let item): visible = [item]
+            case .toolGroup(let group): visible = group.items
+            }
+            #expect(visible.count == thoughtRow.itemIndices.count)
+            for (item, sourceIndex) in zip(visible, thoughtRow.itemIndices) {
+                #expect(item.id == items[sourceIndex].id)
+                if item.id == items[3].id { #expect(sourceIndex == 3) }
+            }
+            if grouping {
+                #expect(commandRow.itemIndices == [0, 3, 4])
+                #expect(commandRow.sourceIndices == [0, 1, 2, 3, 4])
+            } else {
+                #expect(commandRow.itemIndices == [0])
+                #expect(commandRow.sourceIndices == [0, 1])
+            }
+        }
+    }
+
     @Test func pollingPreservesOutputBehindATerminalReference() throws {
         var command = CodexExecWire.call("run", #"await tools.exec_command({cmd:"swift test"})"#)
         command.content = [.terminal(id: "terminal-run")]

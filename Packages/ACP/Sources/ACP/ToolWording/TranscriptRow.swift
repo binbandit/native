@@ -46,30 +46,49 @@ public enum TranscriptRow: Identifiable, Hashable, Sendable {
     /// anything else: prose, a notice, a subagent, a request waiting for the user, a question. With
     /// `grouping` off every item is its own row.
     public static func rows(from items: some Sequence<TranscriptItem>, grouping: Bool = true) -> [TranscriptRow] {
-        let items = ToolPollingTranscript.folding(Array(items))
-        guard grouping else { return items.map(TranscriptRow.item) }
-        var rows: [TranscriptRow] = []
-        var run: [TranscriptItem] = []
+        rowsWithSources(from: items, grouping: grouping).map(\.row)
+    }
+
+    /// Builds rows with their original positions, including the IDs/positions of folded polls.
+    /// Clients use this membership for search reveal and per-item reasoning clocks.
+    public static func rowsWithSources(
+        from items: some Sequence<TranscriptItem>, grouping: Bool = true
+    ) -> [TranscriptRowSource] {
+        let entries = ToolPollingTranscript.foldingWithSources(Array(items))
+        func itemRow(_ entry: (item: TranscriptItem, indices: Set<Int>)) -> TranscriptRowSource {
+            TranscriptRowSource(
+                row: .item(entry.item), itemIndices: [entry.indices.min() ?? 0], sourceIndices: entry.indices)
+        }
+        guard grouping else { return entries.map(itemRow) }
+        var rows: [TranscriptRowSource] = []
+        var run: [(item: TranscriptItem, indices: Set<Int>)] = []
         var calls = 0
 
         func flush() {
             if calls > 1 {
-                rows.append(.toolGroup(ToolWorkGroup(foldedItems: run)))
+                let group = ToolWorkGroup(foldedItems: run.map(\.item))
+                let visible = run.filter { entry in
+                    if case .toolCall(let call) = entry.item { !call.isSuppressiblePolling } else { true }
+                }
+                rows.append(
+                    TranscriptRowSource(
+                        row: .toolGroup(group), itemIndices: visible.map { $0.indices.min() ?? 0 },
+                        sourceIndices: Set(run.flatMap(\.indices))))
             } else {
-                rows += run.map(TranscriptRow.item)
+                rows += run.map(itemRow)
             }
             run.removeAll()
             calls = 0
         }
 
-        for item in items {
-            if item.isGroupableWork {
-                run.append(item)
+        for entry in entries {
+            if entry.item.isGroupableWork {
+                run.append(entry)
                 // Polling only waits on the call before it, so it doesn't make a run worth a group.
-                if case .toolCall(let call) = item, !call.isPolling { calls += 1 }
+                if case .toolCall(let call) = entry.item, !call.isPolling { calls += 1 }
             } else {
                 flush()
-                rows.append(.item(item))
+                rows.append(itemRow(entry))
             }
         }
         flush()

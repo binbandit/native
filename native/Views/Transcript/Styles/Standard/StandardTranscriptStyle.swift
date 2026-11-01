@@ -82,14 +82,7 @@ private struct StandardTranscript: View {
             transcript, folding: foldsEarlierTurns, unfolded: unfoldedTurns.wrappedValue, cache: lineCache,
             detected: changesActions?.latestTurnChanges
         ).lines
-        let line = lines.first { line in
-            switch line.kind {
-            case .row(let row, let start, _): (start..<start + row.itemCount).contains(index)
-            case .replySection(_, _, let start), .artifacts(_, let start): start == index
-            case .toolGroup(let group, let start, _, _): (start..<start + group.items.count).contains(index)
-            default: false
-            }
-        }
+        let line = lines.first { $0.sourceIndices.contains(index) }
         guard let line else { return }
         if case .toolGroup(let group, _, _, _) = line.kind {
             disclosures?.open(group.id)
