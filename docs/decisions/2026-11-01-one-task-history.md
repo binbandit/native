@@ -134,20 +134,31 @@ close a cycle.
 ## The transcript
 
 Also behind `task-history`. A participant's own transcript stays what its agent replays and streams
-(`SessionState`, unchanged). Where a `task-history:` or change-agent context marker appears, the
-transcript asks the host for the items that transfer covered (`_native/history/read`) and shows them
-in place, read-only, under the name of the agent that produced them. So the user reads one
-conversation in order, whichever agent is current, and nothing is shown twice: each item appears once,
-either in its own agent's replay or at the marker that delivered it.
+(`SessionState`, unchanged). A conversation that a change of agent started shows, above the "Continued
+with" divider at its top, the items its handoff transfer considered that other participants produced
+(`_native/history/summary`, then `_native/history/read`), read-only, under the name of the agent that
+produced them: the newest 40 messages and tool calls, saying when older ones are left out. Reasoning,
+plans and turn endings stay out. Where a host transfer's `task-history:` marker appears later in a
+transcript (a switch back, slice 4), it shows the items that transfer covered in place the same way.
+So the user reads one conversation in order, whichever agent is current, and nothing is shown twice:
+each item appears once, either in its own agent's replay or where the context it belongs to was
+handed over.
+
+The handoff's place is the top of the new conversation rather than its marker: the change-agent flow
+sends its context as a content block, which the host doesn't echo as a marker until the agent replays
+it, and a mode's instructions can take the message's one marker.
 
 ## Storage, migration and retention
 
 - Schema version 14 adds `histories`, `history_participants`, `history_items` and
   `history_transfers`. An older host ignores tables it doesn't know, so downgrading is safe.
-- Existing open host sessions get a history when they next start a turn or load. Existing app chains
-  are linked once by the client when it next opens a chained task (`_native/history/link`), oldest
-  conversation first; links the host can't verify (the earlier session is on another host) are
-  skipped.
+- Existing open host sessions get a history when they next start a turn or load. A change of agent
+  joins the new conversation to the task's history when it prepares it, before its first message
+  (the app's task-start hook calls `_native/history/join` with the earlier conversation's agent
+  session), so the new conversation's items continue the task's numbering. `/clear` and other
+  restarts of the same agent don't join: they leave the earlier context behind on purpose. Chains
+  from before the gate was on keep a history per conversation and today's transcript: joining a
+  conversation that already has items would renumber them, and items are never renumbered.
 - Retention follows the task. Deleting a task deletes its participants (`deleteAgentSession`, and
   `_native/history/forget` from the app's expired deletion for agents that can't delete), and a
   history with no participants is deleted with its items and transfers. Archiving keeps it. The data
@@ -217,8 +228,9 @@ Each is one pull request, small enough to review in one sitting.
 4. **Switch back with a delta.** After the budgeted handoff work is on main, building on its
    selection and receipt: the `task-history` gate, reuse of the earlier session in the change flow,
    the host's lazy delta in the turn, Undo, fallback, a linear chain.
-5. **Transcript from the history.** Context markers expand into the items they covered; chain links
-   from before the history are linked once.
+5. **Transcript from the history.** A change of agent joins the task's history as it prepares the new
+   conversation, and the new conversation's transcript shows the agents before it, above the divider.
+   Host transfers' markers expand in place once slice 4 renders them.
 
 ## Not doing
 

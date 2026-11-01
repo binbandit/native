@@ -41,6 +41,33 @@ struct TaskHistoryRecordingTests {
         #expect(reply == Wire.agentMessage)
     }
 
+    @Test("A recorded Claude Code turn reads back the way its transcript showed it")
+    func readsBack() throws {
+        let state = try capturedTurn()
+        var bodies = TaskHistoryRecording.bodies(state.items)
+        bodies += [.thought("weighing it"), .turnEnded(stopReason: "end_turn")]
+        let shown = bodies.enumerated().compactMap {
+            TaskHistoryItem(seq: $0.offset + 1, source: 1, body: $0.element).transcriptItem
+        }
+        let calls = state.items.compactMap { item -> ToolCallState? in
+            if case .toolCall(let call) = item { call } else { nil }
+        }
+        let shownCalls = shown.compactMap { item -> ToolCallState? in
+            if case .toolCall(let call) = item { call } else { nil }
+        }
+        #expect(shownCalls.map(\.id) == calls.map(\.id))
+        #expect(shownCalls.map(\.title) == calls.map(\.title))
+        #expect(shownCalls.map(\.kind) == calls.map(\.kind))
+        #expect(shownCalls.map(\.status) == calls.map(\.status))
+        #expect(shownCalls.last?.shellCommand == "ls")
+        let messages = shown.compactMap { item -> TranscriptMessage? in
+            if case .message(let message) = item { message } else { nil }
+        }
+        // Reasoning and the turn's ending stay out.
+        #expect(messages.map(\.role) == [.user, .agent])
+        #expect(messages.map(\.text) == [Wire.promptText, Wire.agentMessage])
+    }
+
     @Test("Recorded items survive the store's JSON round trip")
     func roundTrip() throws {
         let bodies = TaskHistoryRecording.bodies(try capturedTurn().items)
