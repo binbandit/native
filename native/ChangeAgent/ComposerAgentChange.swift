@@ -99,9 +99,37 @@ final class ComposerAgentChange {
         guard let current, let transfer = current.services.modelContinuations.transfer(for: current.key) else {
             return nil
         }
-        let estimate = transfer.receipt.budget.isWindowEstimated ? " Context size is estimated." : ""
-        let plan = transfer.receipt.delivery == .prepared ? transfer.receipt.plan.explanation + " " : ""
-        return plan + transfer.receipt.summary + estimate
+        let receipt = transfer.receipt
+        let omitted = receipt.omitted.count
+        let messages = omitted == 1 ? "message" : "messages"
+        switch receipt.delivery {
+        case .uncertain:
+            return "Couldn't confirm \(choice.agentName) got your earlier messages; they won't be sent again."
+        case .notSent:
+            return "None of the earlier messages fit."
+        case .prepared:
+            guard omitted > 0 else { return nil }
+            return "Left out \(omitted) older \(messages) that didn't fit. Earlier Conversations has them all."
+        case .agentResponded:
+            guard omitted > 0 else { return nil }
+            return "Left out \(omitted) older \(messages) that didn't fit."
+        case .acceptedByHost:
+            guard omitted > 0 else { return nil }
+            return
+                "Sent \(receipt.included.count) earlier messages, left out \(omitted). We can't confirm \(choice.agentName) got them."
+        }
+    }
+
+    var needsTransferRecovery: Bool {
+        guard let current, let transfer = current.services.modelContinuations.transfer(for: current.key) else {
+            return false
+        }
+        return transfer.receipt.delivery == .uncertain || transfer.receipt.delivery == .notSent
+    }
+
+    func openEarlierConversations() {
+        guard let current, let app else { return }
+        app.openConversation(.earlier, from: current.key)
     }
 
     var receipt: String {
