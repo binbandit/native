@@ -122,6 +122,41 @@ struct HostHistoryTests {
         await second.stop()
     }
 
+    @Test("A message stopped while its first load after an upgrade hangs is still recorded, once")
+    func stoppedFirstLoad() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        harness.agentEnvironment["FAKE_AGENT_NO_RESUME"] = "1"
+        harness.agentEnvironment["FAKE_AGENT_LOAD_HANG_ONCE"] = "1"
+        try harness.start()
+        let recorder = try await harness.connect()
+        let session = try await recorder.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "hello"))
+        try await recorder.wait("the turn") { await $0.turnsEnded(session.id) == ["end_turn"] }
+        await recorder.stop()
+        harness.kill()
+        try HostStore(url: harness.location.databaseURL).database.execute("DELETE FROM histories")
+
+        try harness.start()
+        let second = try await harness.connect()
+        _ = try await second.client.prompt(PromptParams(sessionID: session.id, text: "stopped"))
+        try await second.wait("the hung load") { _ in
+            ((try? String(contentsOf: harness.agentStore.appending(path: "loads.log"), encoding: .utf8)) ?? "")
+                .contains("waiting")
+        }
+        try await second.client.cancel(session.id)
+        try await second.wait("the stop") {
+            (try? await $0.client.readHistory(ReadHistoryParams(sessionID: session.id)))?.count == 2
+        }
+        // The load never finished, so the history starts with the message rather than losing it.
+        #expect(
+            try await second.client.readHistory(ReadHistoryParams(sessionID: session.id)).map(\.body) == [
+                .user(.init(text: "stopped", origin: "user")), .turnEnded(stopReason: "cancelled"),
+            ])
+        await second.stop()
+    }
+
     @Test("Deleting a task's agent session deletes its history")
     func deleted() async throws {
         let harness = try HostHarness()

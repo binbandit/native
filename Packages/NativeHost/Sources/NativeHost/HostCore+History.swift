@@ -78,6 +78,9 @@ extension HostCore {
     /// ending event will settle them, the plan if it changed, and how it ended.
     func recordTurnEnd(of session: HostSession, stopReason: String) {
         guard let turn = session.turn else { return }
+        // A message whose recording waited for a load that never finished (stopped, or failed) is
+        // still recorded, before how its turn ended.
+        recordPromptAfterLoad(turn.prompt, in: session)
         let items = session.historyTurnStart.map {
             Self.settledItems(session.mirror.state, from: $0, ending: stopReason)
         }
@@ -149,7 +152,9 @@ extension HostCore {
     /// A conversation from before its task had a history (opened from the agent's list, or open when
     /// the host was updated) brings its replay in once, without times or turns. A message sent before
     /// the replay waits to be recorded until after it (`recordPromptAfterLoad`), so the old
-    /// conversation comes first.
+    /// conversation comes first. If that first load never completes (the turn is stopped, or the host
+    /// stops and recovers it), the message is recorded anyway and the history starts with it: items
+    /// are never renumbered, and the agent still has the earlier conversation for its own replay.
     func importHistory(of session: HostSession) {
         let items = session.mirror.state.items
         guard session.phase != .recovering, !items.isEmpty, let history = recordableHistory(of: session) else {
