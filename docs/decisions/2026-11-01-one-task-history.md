@@ -39,7 +39,8 @@ task history (TaskHistoryID)          one per task
   items                               what happened, in order
     seq, source participant, turn (prompt request id), at, body
   transfers                           context delivered to a participant
-    id, target participant, range (from, through], strategy, state, request id, text
+    id, source history, target participant, range considered (from, through],
+    items covered, strategy, state, request id, receipt
 ```
 
 - **History.** `TaskHistoryID` is a host-allocated UUID. It records the folder and, for later
@@ -56,7 +57,10 @@ task history (TaskHistoryID)          one per task
   output excerpts at 2 KB) so the store grows with the conversation, not with tool output.
 - **Transfer.** Context Native gave a participant about items it had not seen: `full` (a new agent
   session's first message), `delta` (switching back), or `client` (a handoff a client assembled, as
-  the change-agent flow does today). The rendered text is kept, so every handoff can be audited.
+  the change-agent flow does today). It names the history its items come from (this one, or a fork
+  for merge-back), the range it considered, and the items it actually conveyed, which a budget or
+  an excerpt can make fewer than the range. Its receipt (what was selected and left out, and the
+  text) is kept, so every handoff can be audited.
 
 ## Ids and correlation
 
@@ -88,7 +92,9 @@ turn.
 ## Watermarks and coverage
 
 A participant has seen an item if it produced it (including the prompts it received) or a delivered
-transfer covered it. Its watermark `seen` is the highest seq below which it has seen everything,
+transfer conveyed it. Considering an item is not conveying it: an item a transfer left out (for its
+budget, or because an excerpt skipped it) stays missing and is offered again next time, newest
+first, so a budget never silently marks anything seen. Its watermark `seen` is the highest seq below which it has seen everything,
 advanced whenever an item is recorded or a transfer is delivered. Gaps are honest: an agent that kept
 working while another agent's turns happened in between has its own later items but a watermark
 stuck at the gap. What a participant is missing (`TaskHistoryCoverage.missing`) is every item above
@@ -113,10 +119,11 @@ Behind the Labs gate `task-history` (default off; off keeps today's behavior exa
    (`<native_instructions id="task-history:<transfer id>" label="Earlier context">`), stored with the
    turn, so a retry or a recovery resends the same context and never renders a second one. The
    agent's replay reads the frame back as a quiet marker, as with modes today.
-3. The rendering (`TaskHistoryDelta`) keeps whole items, chronological, newest first when the budget
-   runs out, and says what it left out. Reasoning and raw tool output stay out; tool calls appear as
-   what they did and the paths they touched. Context from another agent is framed as context, not
-   instructions. The budgeted handoff work can replace the renderer behind the same call.
+3. Selection and rendering are the budgeted handoff's (whole items, a budget, omissions, a typed
+   receipt), not a second implementation: the history supplies the missing items, the handoff
+   selects and renders them, and the history records the items its receipt says were conveyed.
+   Reasoning and raw tool output stay out; context from another agent is framed as context, not
+   instructions. This slice starts once that handoff work is on main.
 
 If the earlier session can't be reopened (the agent dropped it, can't load, or policy forbids it),
 the change falls back to a fresh session with a full transfer and says so. A reused session never
@@ -173,12 +180,15 @@ host, as today. Without a host (agents running in the app) there is no history a
 
 The model is built so these need no migration:
 
-- A fork is a new history with lineage `{parent, kind: fork, source seq}`. Its first participant gets
-  a `full` transfer of the parent's items up to the source seq, or a native fork where the agent
-  negotiates one (never assumed).
+- A fork is a new history with lineage `{parent history, kind: fork, parent seq}`. Its own items
+  number from 1 like any history's; the parent's items up to the parent seq are never copied but
+  reach the fork's first participant as a `full` transfer whose source is the parent history, or a
+  native fork where the agent negotiates one (never assumed).
 - A side chat is a fork shown only inside its parent.
-- Merge-back is a `delta` transfer from the fork's items after its source seq into the parent's
-  current participant: the same coverage and rendering as switching back, with a different source.
+- Merge-back is a `delta` transfer whose source is the fork's history, covering the fork's own items
+  after its last merge-back, into the parent's current participant: the same coverage and rendering
+  as switching back. Because every transfer names its source history, a parent's seq 5 and a fork's
+  seq 5 never mix.
 
 ## What other work can rely on
 
@@ -186,8 +196,8 @@ The model is built so these need no migration:
   `Codable`, with unknown cases for newer values.
 - `TaskHistoryCoverage.missing(for:)` and the watermark: what a participant hasn't seen.
 - `_native/history/read` and `_native/history/participants` on the host.
-- The handoff renderer is replaceable: budgeted handoffs can render a transfer's items differently
-  without changing coverage or delivery.
+- Switching back uses the budgeted handoff's selection and receipt; the history only says what is
+  missing and records what the receipt conveyed.
 - Capability work can take "same session" evidence from the participant list rather than agent names.
 
 ## Slices
@@ -201,8 +211,9 @@ Each is one pull request, small enough to review in one sitting.
    history. Tests on captured Claude Code and Codex traffic. No behavior change.
 3. **Watermarks.** Coverage, `seen`, transfers and their states, `client` transfers from today's
    change-agent commits (`_native/history/continue`). No behavior change.
-4. **Switch back with a delta.** The `task-history` gate, reuse of the earlier session in the change
-   flow, the host's lazy delta in the turn, Undo, fallback, a linear chain.
+4. **Switch back with a delta.** After the budgeted handoff work is on main, building on its
+   selection and receipt: the `task-history` gate, reuse of the earlier session in the change flow,
+   the host's lazy delta in the turn, Undo, fallback, a linear chain.
 5. **Transcript from the history.** Context markers expand into the items they covered; chain links
    from before the history are linked once.
 
