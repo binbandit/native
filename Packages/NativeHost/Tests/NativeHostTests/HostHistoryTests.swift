@@ -91,6 +91,37 @@ struct HostHistoryTests {
         await second.stop()
     }
 
+    @Test("A message sent to a conversation from before the history waits for its replay to be imported")
+    func importsBeforeFirstMessage() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let session = try await recorder.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "hello"))
+        try await recorder.wait("the turn") { await $0.turnsEnded(session.id) == ["end_turn"] }
+        await recorder.stop()
+        harness.kill()
+        try HostStore(url: harness.location.databaseURL).database.execute("DELETE FROM histories")
+
+        try harness.start()
+        let second = try await harness.connect()
+        // Sent before anything attached: the session loads for it, and its old turn comes first.
+        _ = try await second.client.prompt(PromptParams(sessionID: session.id, text: "again"))
+        try await second.wait("both turns in the history") {
+            (try? await $0.client.readHistory(ReadHistoryParams(sessionID: session.id)))?.count == 5
+        }
+        let items = try await second.client.readHistory(ReadHistoryParams(sessionID: session.id))
+        #expect(
+            items.map(\.body) == [
+                .user(.init(text: "hello", origin: "user")), .agent("echo: hello"),
+                .user(.init(text: "again", origin: "user")), .agent("echo: again"), .turnEnded(stopReason: "end_turn"),
+            ])
+        #expect(items.map { $0.turn == nil } == [true, true, false, false, false])
+        await second.stop()
+    }
+
     @Test("Deleting a task's agent session deletes its history")
     func deleted() async throws {
         let harness = try HostHarness()

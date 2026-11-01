@@ -97,7 +97,7 @@ extension HostCore {
         let turn = UnfinishedTurn(sessionID: session.id, prompt: prompt, kind: kind, attempts: attempts)
         session.record.lastActivity = .now
         session.record.isQueuePaused = false
-        let history = recordableHistory(of: session)
+        let history = recordableHistory(of: session).flatMap { defersPromptRecording(session, in: $0) ? nil : $0 }
         try store.transaction {
             try store.beginTurn(turn)
             try store.recordDelivery(.prompted, for: prompt.id, in: session.id)
@@ -144,6 +144,8 @@ extension HostCore {
             // The turn stays committed; it runs once the agent can (see `prompt`, `load`).
             return
         }
+        // After any history the load imported (`defersPromptRecording`); a repeat records nothing.
+        recordPromptAfterLoad(turn.prompt, in: session)
         guard session.turn?.requestID == turn.requestID, let link = agents[session.record.agentID],
             let peer = link.peer,
             let agentSessionID = session.record.agentSessionID

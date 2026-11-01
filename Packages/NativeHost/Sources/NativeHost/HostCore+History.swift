@@ -58,25 +58,70 @@ extension HostCore {
         }
     }
 
-    /// Records what the running turn did once it ends: its items after the message, the plan if it
-    /// changed, and how it ended.
+    /// Whether the turn's message waits for the session's load before it's recorded: a conversation
+    /// whose history is still empty may have a replay to import first.
+    func defersPromptRecording(_ session: HostSession, in history: HostSessionHistory) -> Bool {
+        session.needsLoad && session.phase != .recovering && (try? store.historyHead(history.id)) == 0
+    }
+
+    /// Records a message `startTurn` deferred until its session loaded.
+    func recordPromptAfterLoad(_ prompt: OutgoingPrompt, in session: HostSession) {
+        guard let history = recordableHistory(of: session) else { return }
+        do {
+            try store.transaction { recordPrompt(prompt, in: history) }
+        } catch {
+            logger.error("Couldn't record a message in its task's history: \(error.localizedDescription)")
+        }
+    }
+
+    /// Records what the running turn did once it ends: its items after the message, settled as the
+    /// ending event will settle them, the plan if it changed, and how it ended.
     func recordTurnEnd(of session: HostSession, stopReason: String) {
         guard let turn = session.turn else { return }
-        let items = session.historyTurnStart.map { Array(session.mirror.state.items.dropFirst($0)) } ?? []
-        record(items, of: turn.requestID, ending: stopReason, in: session)
+        let items = session.historyTurnStart.map {
+            Self.settledItems(session.mirror.state, from: $0, ending: stopReason)
+        }
+        record(items ?? [], of: turn.requestID, ending: stopReason, in: session)
+    }
+
+    /// A turn's items as its ending leaves them: a call still open when the user stopped it is
+    /// `cancelled`, not `in_progress`, as the transcript shows it once the ending event lands.
+    nonisolated static func settledItems(
+        _ state: SessionState, from start: Int, ending stopReason: String
+    ) -> [TranscriptItem] {
+        var state = state
+        state.endTurn(SessionMirror.stopReason(stopReason))
+        return Array(state.items.dropFirst(start))
     }
 
     /// Before recovery tells the agent its turn was interrupted: what the agent's replay shows it did
     /// after the interrupted message, which the turn that follows wouldn't otherwise include.
     func recordInterrupted(_ turn: UnfinishedTurn, in session: HostSession) {
-        let items = session.mirror.state.items
+        guard let work = Self.interruptedWork(of: turn.text, in: session.mirror.state.items) else { return }
+        record(Array(work), of: turn.requestID, ending: "interrupted", in: session)
+    }
+
+    /// What follows the interrupted message in a replay. The message is found as it was sent, so a
+    /// later steer that quotes it can't move the boundary past earlier work; a recovery prompt
+    /// replays as Native's notice rather than a user message.
+    nonisolated static func interruptedWork(
+        of prompt: String, in items: [TranscriptItem]
+    ) -> ArraySlice<TranscriptItem>? {
+        func sent(_ item: TranscriptItem) -> String? {
+            switch item {
+            case .message(let message) where message.role == .user: message.text
+            case .notice(let notice): notice.sentToAgent
+            default: nil
+            }
+        }
+        let text = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard
-            let prompt = items.lastIndex(where: { item in
-                guard case .message(let message) = item, message.role == .user else { return false }
-                return RecoveryPlanner.agentReceived(turn.text, replayedUserMessages: [message.text])
-            })
-        else { return }
-        record(Array(items[(prompt + 1)...]), of: turn.requestID, ending: "interrupted", in: session)
+            let index = items.lastIndex(where: { sent($0)?.trimmingCharacters(in: .whitespacesAndNewlines) == text })
+                ?? items.firstIndex(where: { item in
+                    sent(item).map { RecoveryPlanner.agentReceived(prompt, replayedUserMessages: [$0]) } ?? false
+                })
+        else { return nil }
+        return items[(index + 1)...]
     }
 
     private func record(_ items: [TranscriptItem], of turn: UUID, ending stopReason: String, in session: HostSession) {
@@ -102,10 +147,14 @@ extension HostCore {
     }
 
     /// A conversation from before its task had a history (opened from the agent's list, or open when
-    /// the host was updated) brings its replay in once, without times or turns.
+    /// the host was updated) brings its replay in once, without times or turns. A message sent before
+    /// the replay waits to be recorded until after it (`recordPromptAfterLoad`), so the old
+    /// conversation comes first.
     func importHistory(of session: HostSession) {
         let items = session.mirror.state.items
-        guard session.turn == nil, !items.isEmpty, let history = recordableHistory(of: session) else { return }
+        guard session.phase != .recovering, !items.isEmpty, let history = recordableHistory(of: session) else {
+            return
+        }
         do {
             try store.transaction {
                 guard try store.historyHead(history.id) == 0 else { return }
