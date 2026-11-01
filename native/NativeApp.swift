@@ -144,6 +144,8 @@ struct NativeApp: App {
                 celebrations: celebrations, updates: updates, whatsNew: whatsNew, appearance: appearance, tryOn: tryOn,
                 pullRequestTasks: pullRequestTasks, shortcutsHelp: shortcutsHelp, gitCleanup: gitCleanup,
                 projectActions: projectActions, durableHost: durableHost, git: git, gitHub: gitHub))
+        // After Modes, whose task-start hook it runs first.
+        TaskHistoryWiring.connect(model: model)
         SessionToolsWiring.connectPlugins(.shared, plugins: model.plugins, commands: .shared)
     }
 

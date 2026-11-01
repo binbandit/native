@@ -16,6 +16,7 @@ struct TranscriptView: View {
     @Environment(\.isPrimaryTranscript) private var isPrimary
     @Environment(\.dsDrawsToolbarBand) private var drawsToolbarBand
     @Environment(\.transcriptTrailer) private var trailer
+    @Environment(\.transcriptPrelude) private var prelude
     @State private var position = ScrollPosition(edge: .bottom)
     /// Whether the newest output is out of view.
     @State private var isAwayFromLatest = false
@@ -153,6 +154,9 @@ struct TranscriptView: View {
     /// The rows in a centered column, as wide as the width setting allows with a margin each side.
     private func column(_ transcript: TranscriptStyleConfiguration, in containerWidth: CGFloat) -> some View {
         VStack(spacing: 0) {
+            if isPrimary, let prelude {
+                prelude.content
+            }
             if let change = session.modelChange, change.stage == .applied || change.stage == .reversed {
                 ChangeAgentDivider(
                     agentName: session.agentName,

@@ -24,6 +24,7 @@ struct SessionView: View {
     @Experiment(.sessionTools) private var usesSessionTools
     @Experiment(.taskWell) private var usesTaskWell
     @Experiment(.composeTask) private var usesComposeTask
+    @Experiment(.taskHistory) private var usesTaskHistory
     private static let subagentInspectorWidth: CGFloat = 420
 
     private var canQuote: Bool {
@@ -64,6 +65,7 @@ struct SessionView: View {
                     clear: { session.clearQuoteSelection(source: $0) }) : nil
         )
         .environment(\.transcriptTrailer, pairTrailer)
+        .environment(\.transcriptPrelude, usesTaskHistory ? TaskHistoryWiring.prelude(for: session) : nil)
     }
 
     /// The two versions of a brief sent to two agents, at the end of either task's transcript.

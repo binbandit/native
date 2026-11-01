@@ -16,6 +16,7 @@ extension ExperimentCatalog {
         Gate.composeTask,
         Gate.projectFolderTasks,
         Gate.changeAgent,
+        Gate.taskHistory,
         Gate.coordinatorTasks,
         Gate.homeNext,
         Gate.settingsPlainly,
@@ -79,6 +80,13 @@ extension Gate {
             "Choose another agent above the model list in either composer. Keep the draft and undo the choice before sending.",
         site: "Composer > Agent and Model", stage: .beta, owner: "tasks",
         reviewBy: ReviewDate(year: 2026, month: 12, day: 15), default: true
+    )
+
+    static let taskHistory = Gate(
+        id: "task-history", title: "One task history",
+        summary: "After you change agents, read what the earlier agents did in place, where the new one took over.",
+        site: "Task ▸ transcript", stage: .labs, owner: "tasks",
+        reviewBy: ReviewDate(year: 2027, month: 1, day: 31), default: false
     )
 
     static let homeNext = Gate(

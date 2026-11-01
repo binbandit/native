@@ -55,7 +55,9 @@
 - **History lives with the agent.** Sessions are listed with `session/list` and reopened with
   `session/load`, which replays them. Native stores its own additions (titles, order, goals) and,
   on the host, one provider-neutral history per task across its agent sessions
-  (`docs/decisions/2026-11-01-one-task-history.md`).
+  (`docs/decisions/2026-11-01-one-task-history.md`). Behind the Labs gate `task-history`, a change of
+  agent joins its new conversation to that history, and the transcript shows the earlier agents'
+  messages and tool calls above where the new one took over (`native/TaskHistory`).
 - **Transcript artifacts retain their bytes.** User attachments, agent images and tool results,
   including raw MCP content and embedded binary resources, open through the task's artifact viewer
   model. Images zoom and pan in place; other files use native previews. Host files use the existing
