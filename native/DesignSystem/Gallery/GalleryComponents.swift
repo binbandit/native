@@ -57,6 +57,7 @@ struct GalleryComposer: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.xl) {
+            DSTextInputGallery()
             ComposerSurface {
                 HStack(spacing: DS.Space.xs) {
                     ComposerChip("ComposerView.swift", systemImage: "doc.text") {}
