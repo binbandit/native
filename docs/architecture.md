@@ -121,6 +121,21 @@ labels for all consumers, and sidebar headers render the suffix as secondary tex
 and accessibility labels contain the full path. Paired-host task labels resolve on their host's
 side of the project boundary; a local rename does not rename another machine's checkout.
 
+## Native text input
+
+`DSTextInput` in `native/DesignSystem/TextInput/` is the shared editable text surface for the
+composer rebuild. Part A exposes it in the composer gallery only. The live composer still uses
+`ComposerEditor` until the next parts land. AppKit and UIKit adapters live in
+`native/Platform/TextInput/`. The UI-free `Packages/TextInput` owns document runs, UTF-16 editor
+ranges, plain-text serialization and `@`/`/` queries. A file suggestion becomes a single native
+text attachment; `document.plainText` expands it to an `@path` reference for the agent.
+
+The native layout manager measures the proposed width, caps the visible height at ten lines and
+scrolls the remainder. Height and caret notifications are deferred and deduplicated; callers must
+not feed reported height back into the editor. Marked text stays in native storage until the input
+method commits, and owns keyboard events while composing. Attachment paste/drop callbacks carry
+URLs or image data to the caller; they never insert paths in the draft.
+
 ## Clients and hosts
 
 Native is split into a **host**, which runs agents, commands and file access, and **clients**, which

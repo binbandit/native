@@ -27,7 +27,7 @@ Every view file has a `#Preview` showing its states, so anyone can open it in Xc
 what they're changing: empty, loading, populated and error, long text and narrow widths. Name them
 for the view and the state, like `#Preview("Composer - Queued follow-up")`.
 
-- Wrap the content in `DSPreviewPair { … }` (`native/DesignSystem/Gallery/GalleryFixtures.swift`)
+- Wrap the content in `DSPreviewPair { … }` (`native/DesignSystem/Gallery/DSPreviewPair.swift`)
   to show it in light and dark side by side. Give flexible views a width with `.frame(width:)`.
 - Sample data goes in fixtures: `<Feature>PreviewFixtures.swift` in the feature's folder, with type
   names unique in the app. Views that take models use `AppModel.preview()` and

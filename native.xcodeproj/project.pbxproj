@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D57E87000000000000000020 /* TextInput in Frameworks */ = {isa = PBXBuildFile; productRef = D57E87000000000000000010 /* TextInput */; };
 		A15000000000000000000020 /* ProjectNames in Frameworks */ = {isa = PBXBuildFile; productRef = A15000000000000000000010 /* ProjectNames */; };
 		A6A700000000000000000020 /* NativeNetwork in Frameworks */ = {isa = PBXBuildFile; productRef = A6A700000000000000000010 /* NativeNetwork */; };
 		C0A990010000000000000001 /* ApprovalAnalysis in Frameworks */ = {isa = PBXBuildFile; productRef = C0A990010000000000000002 /* ApprovalAnalysis */; };
@@ -121,6 +122,7 @@
 		000000000000000130000000 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
+				D57E87000000000000000020 /* TextInput in Frameworks */,
 				00000000000000005E171003 /* Sentry in Frameworks */,
 				00000000000000005E171013 /* NativeDiagnostics in Frameworks */,
 				54227E023083ADA900D7771F /* MCPClient in Frameworks */,
@@ -243,6 +245,7 @@
 			);
 			name = native;
 			packageProductDependencies = (
+				D57E87000000000000000010 /* TextInput */,
 				00000000000000005E171002 /* Sentry */,
 				00000000000000005E171012 /* NativeDiagnostics */,
 				000000000000000000000310 /* ACP */,
@@ -310,6 +313,7 @@
 			mainGroup = 000000000000000000000001;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				D57E87000000000000000000 /* TextInput */,
 				C0A990010000000000000003 /* XCLocalSwiftPackageReference "Packages/ApprovalAnalysis" */,
 				00000000000000005E171001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 				00000000000000005E171011 /* XCLocalSwiftPackageReference "Packages/NativeDiagnostics" */,
@@ -838,6 +842,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		D57E87000000000000000000 /* TextInput */ = {isa = XCLocalSwiftPackageReference; relativePath = Packages/TextInput; };
 		A15000000000000000000000 /* XCLocalSwiftPackageReference "Packages/ProjectNames" */ = {isa = XCLocalSwiftPackageReference; relativePath = Packages/ProjectNames; };
 		0000000000000000D3FA0000 /* XCLocalSwiftPackageReference "Packages/TaskDefaults" */ = {
 			isa = XCLocalSwiftPackageReference;
@@ -991,6 +996,7 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		D57E87000000000000000010 /* TextInput */ = {isa = XCSwiftPackageProductDependency; package = D57E87000000000000000000 /* TextInput */; productName = TextInput; };
 		A15000000000000000000010 /* ProjectNames */ = {isa = XCSwiftPackageProductDependency; productName = ProjectNames; };
 		0000000000000000D3FA0010 /* TaskDefaults */ = {
 			isa = XCSwiftPackageProductDependency;

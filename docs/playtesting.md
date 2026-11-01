@@ -49,6 +49,16 @@ with its owner: Brayden is often at it while you play, and a dozen agents build 
   `stash`, `switch` or `rebase` in the shared tree; never `kt land`, `undo`, `go`, `publish`, `pr` or
   `ship`; never delete `.git/index.lock`.
 
+## Text input fixture
+
+For the standalone composer text input, launch an isolated instance with
+`-dsTextInputFixture YES -sounds.enabled NO`. The fixture replaces the root content with the real
+`DSTextInput`; it does not connect an agent. Press **Run input checks** using the scoped driver.
+The result covers native typing, line sizing, token deletion and undo/redo, Japanese marked-text
+composition through `NSTextInputClient` (no input-source change), Return, Shift-Return, attachment
+routing through a private pasteboard, and the accessibility value. Type into **Message** and check
+**Submitted** to exercise the SwiftUI binding and Return through the scoped keyboard driver.
+
 ## Choose the check
 
 For a change confined to one view's appearance, render and inspect its actual `#Preview` states
