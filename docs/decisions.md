@@ -624,3 +624,11 @@ folder so Sparkle sees one archive per version. Finder's `.tar.xz` path has not 
 this change; removing the ZIP can follow a separate first-install check. Delta seeds prefer
 `.tar.xz` and fall back to earlier releases' ZIPs. Signing, notarization and the local disk image
 keep their existing behavior. Evidence and the remaining signing gate are in `docs/releasing.md`.
+
+## 2026-11-01: One task history
+
+The host keeps one provider-neutral history per task: what was said and done, which agent session
+produced each item, and what each agent session has seen. Switching back to an agent the task used
+reopens its own conversation and sends only what happened while it was away; the transcript of a
+mixed-agent task reads from the history. Agents still keep and replay their own conversations. See
+[the decision](decisions/2026-11-01-one-task-history.md) for the model, migration and slices.
