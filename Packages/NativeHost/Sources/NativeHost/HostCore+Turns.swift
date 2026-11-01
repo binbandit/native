@@ -103,7 +103,7 @@ extension HostCore {
             try store.recordDelivery(.prompted, for: prompt.id, in: session.id)
             try store.setQueue(session.queue, for: session.id)
             try store.updateSession(session.record)
-            if let history { recordPrompt(prompt, in: history) }
+            if let history { recordPrompt(prompt, of: session, in: history) }
         }
         session.steeringGate.reset()
         session.turn = turn

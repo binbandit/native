@@ -534,6 +534,15 @@ extension HostCore {
         await cancel(session)
         try store.keepClosedSessionConfig(session.record)
         forget(session)
+        if let agentSessionID = session.record.agentSessionID {
+            // A change of agent undone before its first message leaves no trace in the task's history.
+            do {
+                try store.leaveHistoryIfUnused(agentID: session.record.agentID, agentSessionID: agentSessionID)
+            } catch {
+                logger.error(
+                    "Couldn't take an unused conversation out of its task's history: \(error.localizedDescription)")
+            }
+        }
         let link = agents[session.record.agentID]
         if closeInAgent, let agentSessionID = session.record.agentSessionID, !session.needsLoad,
             link?.capabilities?.closeSessions == true, let peer = link?.peer

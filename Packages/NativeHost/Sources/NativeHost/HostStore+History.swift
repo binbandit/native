@@ -129,6 +129,11 @@ extension HostStore {
         try database.run(
             "UPDATE histories SET head = ? WHERE id = ?", .integer(Int64(head + items.count)),
             .text(history.description))
+        // The source has its own items; a watermark that was at the head moves with them.
+        try database.run(
+            "UPDATE history_participants SET seen = ? WHERE history_id = ? AND ordinal = ? AND seen = ?",
+            .integer(Int64(head + items.count)), .text(history.description), .integer(Int64(source)),
+            .integer(Int64(head)))
         return items
     }
 
@@ -170,6 +175,125 @@ extension HostStore {
             "SELECT body FROM history_items WHERE history_id = ? AND kind = ? ORDER BY seq DESC LIMIT 1",
             .text(history.description), .text(kind)
         ).first.flatMap { JSONColumn.decode(TaskHistoryItem.Body.self, $0[0]) }
+    }
+
+    /// Adds an agent session to a history as its next participant. An agent session that had
+    /// started a history of its own with nothing in it (a change of agent's new conversation) leaves
+    /// it; one whose history has items can't join another. Inside the caller's transaction.
+    func joinHistory(
+        _ history: TaskHistoryID, agentID: String, agentSessionID: SessionID, model: String?, at date: Date = .now
+    ) throws -> TaskHistoryParticipant? {
+        if let (current, participant) = try historyParticipant(agentID: agentID, agentSessionID: agentSessionID) {
+            if current == history { return participant }
+            guard try historyHead(current) == 0, try historyParticipants(of: current).count == 1 else { return nil }
+            try database.run("DELETE FROM histories WHERE id = ?", .text(current.description))
+        }
+        let next =
+            try database.query(
+                "SELECT COALESCE(MAX(ordinal), 0) + 1 FROM history_participants WHERE history_id = ?",
+                .text(history.description)
+            ).first?.first?.integer ?? 1
+        let participant = TaskHistoryParticipant(
+            ordinal: Int(next), agentID: agentID, agentSessionID: agentSessionID, model: model, joinedAt: date)
+        try insert(participant, into: history)
+        return participant
+    }
+
+    /// A joined agent session that never took a message (its change of agent was undone) leaves the
+    /// history, with the transfers prepared for it.
+    func leaveHistoryIfUnused(agentID: String, agentSessionID: SessionID) throws {
+        try transaction {
+            guard let (history, participant) = try historyParticipant(agentID: agentID, agentSessionID: agentSessionID),
+                participant.ordinal > 1,
+                try database.query(
+                    "SELECT 1 FROM history_items WHERE history_id = ? AND source = ? LIMIT 1",
+                    .text(history.description), .integer(Int64(participant.ordinal))
+                ).isEmpty
+            else { return }
+            try database.run(
+                "DELETE FROM history_transfers WHERE history_id = ? AND target = ?", .text(history.description),
+                .integer(Int64(participant.ordinal)))
+            try database.run(
+                "DELETE FROM history_participants WHERE history_id = ? AND ordinal = ?", .text(history.description),
+                .integer(Int64(participant.ordinal)))
+        }
+    }
+
+    func insertTransfer(_ transfer: TaskHistoryTransfer, into history: TaskHistoryID, receipt: JSONValue? = nil) throws
+    {
+        try database.run(
+            """
+            INSERT INTO history_transfers (id, history_id, source_history, target, from_seq, through_seq, covered, strategy, state, request_id, receipt, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            .text(transfer.id.uuidString), .text(history.description), .text(transfer.sourceHistory.description),
+            .integer(Int64(transfer.target)), .integer(Int64(transfer.from)), .integer(Int64(transfer.through)),
+            try JSONColumn.encode(transfer.conveyed), .text(transfer.strategy.rawValue), .text(transfer.state.rawValue),
+            .text(transfer.requestID?.uuidString), try receipt.map(JSONColumn.encode) ?? .null,
+            .date(transfer.createdAt))
+    }
+
+    func historyTransfers(of history: TaskHistoryID) throws -> [TaskHistoryTransfer] {
+        try database.query(
+            """
+            SELECT id, source_history, target, from_seq, through_seq, covered, strategy, state, request_id, created_at
+            FROM history_transfers WHERE history_id = ? ORDER BY created_at, rowid
+            """, .text(history.description)
+        ).compactMap { row in
+            guard let id = row[0].text.flatMap(UUID.init(uuidString:)),
+                let source = row[1].text.flatMap(UUID.init(uuidString:)), let target = row[2].integer,
+                let from = row[3].integer, let through = row[4].integer, let createdAt = row[9].date
+            else { return nil }
+            return TaskHistoryTransfer(
+                id: id, sourceHistory: TaskHistoryID(source), target: Int(target), from: Int(from),
+                through: Int(through), conveyed: JSONColumn.decode([ClosedRange<Int>].self, row[5]) ?? [],
+                strategy: row[6].text.flatMap(TaskHistoryTransfer.Strategy.init(rawValue:)) ?? .unknown,
+                state: row[7].text.flatMap(TaskHistoryTransfer.State.init(rawValue:)) ?? .unknown,
+                requestID: row[8].text.flatMap(UUID.init(uuidString:)), createdAt: createdAt)
+        }
+    }
+
+    /// The target's prepared transfers go with the message `requestID`.
+    func sendHistoryTransfers(in history: TaskHistoryID, to target: Int, with requestID: UUID) throws {
+        try database.run(
+            """
+            UPDATE history_transfers SET state = 'sent', request_id = ?
+            WHERE history_id = ? AND target = ? AND state = 'prepared'
+            """, .text(requestID.uuidString), .text(history.description), .integer(Int64(target)))
+    }
+
+    /// The agent answered the message `requestID`, so what went with it arrived: its transfers are
+    /// delivered and the target's watermark moves over what they conveyed.
+    func deliverHistoryTransfers(in history: TaskHistoryID, to target: Int, with requestID: UUID) throws {
+        try database.run(
+            """
+            UPDATE history_transfers SET state = 'delivered'
+            WHERE history_id = ? AND target = ? AND request_id = ? AND state = 'sent'
+            """, .text(history.description), .integer(Int64(target)), .text(requestID.uuidString))
+        try updateWatermark(of: target, in: history)
+    }
+
+    /// Moves a participant's watermark over everything now in its context.
+    func updateWatermark(of participant: Int, in history: TaskHistoryID) throws {
+        guard let current = try historyParticipants(of: history).first(where: { $0.ordinal == participant }) else {
+            return
+        }
+        let conveyed = TaskHistoryCoverage.conveyed(
+            to: participant, by: try historyTransfers(of: history), in: history)
+        let seen = TaskHistoryCoverage.watermark(
+            from: current.seen, over: try historyItems(of: history, after: current.seen, limit: .max),
+            participant: participant, conveyed: conveyed)
+        guard seen != current.seen else { return }
+        try database.run(
+            "UPDATE history_participants SET seen = ? WHERE history_id = ? AND ordinal = ?", .integer(Int64(seen)),
+            .text(history.description), .integer(Int64(participant)))
+    }
+
+    /// The model a participant's agent session runs with now, when it changed since it was recorded.
+    func setHistoryModel(_ model: String, of participant: Int, in history: TaskHistoryID) throws {
+        try database.run(
+            "UPDATE history_participants SET model = ? WHERE history_id = ? AND ordinal = ? AND model IS NOT ?",
+            .text(model), .text(history.description), .integer(Int64(participant)), .text(model))
     }
 
     /// An unsaved agent session was replaced by a fresh one under the same host session.
