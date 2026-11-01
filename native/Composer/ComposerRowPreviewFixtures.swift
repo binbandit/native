@@ -142,8 +142,17 @@ enum ComposerRowPreviewFixtures {
 
 #Preview("Composer menus - Empty catalog, long name, sign-in and managed mode") {
     DSPreviewPair {
-        VStack(spacing: DS.Space.lg) {
-            ComposerAgentModelMenu(agents: [], effort: [], chooseModel: { _ in }, chooseEffort: { _ in }, close: {})
+        HStack(alignment: .top, spacing: DS.Space.lg) {
+            VStack(spacing: DS.Space.lg) {
+                ComposerAgentModelMenu(agents: [], effort: [], chooseModel: { _ in }, chooseEffort: { _ in }, close: {})
+                ComposerModeMenu(
+                    choices: ComposerRowPreviewFixtures.state.modes.map {
+                        var choice = $0
+                        if choice.id == "full-access" { choice.unavailable = "Managed by your organization" }
+                        return choice
+                    }
+                ) { _ in }
+            }
             ComposerAgentModelMenu(
                 agents: [
                     .init(
@@ -155,13 +164,6 @@ enum ComposerRowPreviewFixtures {
                             .init(id: "load", title: "Load models…", unavailable: "Sign in required"),
                         ])
                 ], effort: [], chooseModel: { _ in }, chooseEffort: { _ in }, close: {})
-            ComposerModeMenu(
-                choices: ComposerRowPreviewFixtures.state.modes.map {
-                    var choice = $0
-                    if choice.id == "full-access" { choice.unavailable = "Managed by your organization" }
-                    return choice
-                }
-            ) { _ in }
         }
     }
 }
