@@ -60,7 +60,13 @@ for package in $(assign "$shards" | awk -v s="$shard" '$1 == s { print $3 }'); d
     if [ -n "${NATIVE_PACKAGE_BUILD_ROOT:-}" ]; then
         test_args+=(--scratch-path "$NATIVE_PACKAGE_BUILD_ROOT/$package")
     fi
-    if (cd "$root/Packages/$package" && TMPDIR="${NATIVE_PACKAGE_TEMP:-${TMPDIR:-/tmp}}" swift "${test_args[@]}"); then
+    if (
+        cd "$root/Packages/$package"
+        if [ "$package" = NativeHost ] && [ -n "${NATIVE_PACKAGE_BUILD_ROOT:-}" ]; then
+            export NATIVE_HOST_TEST_PRODUCTS="$NATIVE_PACKAGE_BUILD_ROOT/$package/debug"
+        fi
+        TMPDIR="${NATIVE_PACKAGE_TEMP:-${TMPDIR:-/tmp}}" swift "${test_args[@]}"
+    ); then
         echo "::endgroup::"
         echo "$package passed in $((SECONDS - started))s"
     else
