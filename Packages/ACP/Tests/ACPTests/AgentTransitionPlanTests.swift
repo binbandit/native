@@ -104,6 +104,30 @@ import Testing
         #expect(plan.values["mode"] != "full-access")
     }
 
+    @Test func pluginStandInsRemainFallbacksAndCanBeRefused() throws {
+        let raw = try Wire.decode(
+            ConfigOption.self,
+            from:
+                #"{"id":"mode","name":"Mode","category":"mode","type":"select","currentValue":"manual-wire","options":[{"value":"manual-wire","name":"Manual"},{"value":"edit-wire","name":"Edits"}]}"#
+        )
+        let mapping = TaskPermissionMapping(values: [.askFirst: ["manual-wire"], .acceptEdits: ["edit-wire"]])
+        let target = EffectiveAgentCapabilities(negotiated: nil, options: [mapping.presenting(raw)])
+        let plan = AgentTransitionPlan.resolve(.permissions(source: "auto", forbidden: []), target: target)
+        #expect(plan.outcome == .fallback)
+        #expect(plan.reason == .stricterPermission)
+        #expect(plan.values == ["mode": "auto"])
+        let restricted = AgentTransitionPlan.resolve(
+            .permissions(source: "auto", forbidden: ["accept-edits"]), target: target)
+        #expect(restricted.values == ["mode": "ask-first"])
+        let refused = AgentTransitionPlan.resolve(
+            .permissions(source: "auto", forbidden: []), target: target, allowsFallback: false)
+        #expect(refused.outcome == .refused)
+        #expect(refused.reason == .fallbackDisabled)
+        #expect(
+            AgentTransitionPlan.resolve(.permissions(source: "accept-edits", forbidden: []), target: target).outcome
+                == .exact)
+    }
+
     @Test func admissionAndReceiptRoundTrip() throws {
         let target = try captured()
         #expect(AgentTransitionPlan.resolve(.model("opus"), target: target, available: false).reason == .unavailable)

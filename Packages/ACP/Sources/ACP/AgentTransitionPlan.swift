@@ -103,6 +103,11 @@ public struct AgentTransitionPlan: Equatable, Codable, Sendable {
                     || value == "plan" || value == "read-only"
                 let blocked = forbidden.contains { denied in
                     if denied == value || denied == mapped { return true }
+                    if let effective = option.permissionEffectiveModes?[value],
+                        TaskPermissionMode.migrating(denied) == effective
+                    {
+                        return true
+                    }
                     guard let mode = TaskPermissionMode.migrating(mapped) else { return false }
                     return TaskPermissionMode.migrating(denied) == mode
                 }
@@ -111,6 +116,14 @@ public struct AgentTransitionPlan: Equatable, Codable, Sendable {
             guard let selection = AgentModelPermissions.selection(for: source, offered: offered, forbidden: forbidden)
             else { return refused(.noSafePermissions) }
             let values = [option.id: selection.value]
+            if option.permissionMappings?[selection.value] != nil {
+                guard let effective = option.permissionEffectiveModes?[selection.value],
+                    let requested = source.flatMap(TaskPermissionMode.init(rawValue:))
+                else { return fallback(.setOptions, .incomparablePermissions, values: values) }
+                return effective == requested
+                    ? exact(.setOptions, values, reason: .permissionEquivalent)
+                    : fallback(.setOptions, .stricterPermission, values: values)
+            }
             switch selection.reason {
             case .equivalent: return exact(.setOptions, values, reason: .permissionEquivalent)
             case .stricter: return fallback(.setOptions, .stricterPermission, values: values)
