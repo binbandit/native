@@ -72,7 +72,7 @@ enum ComposerRowPreviewFixtures {
     }
 }
 
-#Preview("Composer row - Quiet default, below half, above half, Stop and Stopping") {
+#Preview("Composer row - Quiet default, at half, above half, Stop and Stopping") {
     DSPreviewPair {
         VStack(spacing: DS.Space.lg) {
             ComposerRowPreviewFixtures.row()
@@ -97,7 +97,7 @@ enum ComposerRowPreviewFixtures {
             ComposerRowPreviewFixtures.row(
                 {
                     var state = ComposerRowPreviewFixtures.state
-                    state.isWorking = true; state.isStopping = true
+                    state.locations = []; state.isWorking = true; state.isStopping = true
                     return state
                 }())
         }
@@ -140,10 +140,21 @@ enum ComposerRowPreviewFixtures {
     }
 }
 
-#Preview("Composer menus - Empty catalog and managed mode") {
+#Preview("Composer menus - Empty catalog, long name, sign-in and managed mode") {
     DSPreviewPair {
         VStack(spacing: DS.Space.lg) {
             ComposerAgentModelMenu(agents: [], effort: [], chooseModel: { _ in }, chooseEffort: { _ in }, close: {})
+            ComposerAgentModelMenu(
+                agents: [
+                    .init(
+                        id: "plugin", name: "Project agent",
+                        models: [
+                            .init(
+                                id: "deployment", title: "Custom model with a long deployment name and regional suffix",
+                                isSelected: true),
+                            .init(id: "load", title: "Load models…", unavailable: "Sign in required"),
+                        ])
+                ], effort: [], chooseModel: { _ in }, chooseEffort: { _ in }, close: {})
             ComposerModeMenu(
                 choices: ComposerRowPreviewFixtures.state.modes.map {
                     var choice = $0
