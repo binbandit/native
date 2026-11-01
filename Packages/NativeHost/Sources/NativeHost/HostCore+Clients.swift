@@ -285,6 +285,10 @@ extension HostCore {
                 try store.activity(
                     after: params.after, limit: min(params.limit, 1_000),
                     includeCommands: params.includeCommands == true))
+        case Method.historySummary:
+            try reply(try historySummary(try message.params(as: SessionParams.self)))
+        case Method.readHistory:
+            try reply(try readHistory(try message.params(as: ReadHistoryParams.self)))
         case Method.listNotifications:
             try reply(try listNotifications(try message.params(as: ListNotificationsParams.self)))
         case Method.acknowledgeNotifications:

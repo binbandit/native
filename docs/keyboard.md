@@ -28,6 +28,11 @@ terminal tab instead. ⌘, brings the main window back with Settings; ⌘Q quits
 
 ## Sending
 
+The standalone `DSTextInput` component (composer rebuild part A, gallery only) uses Return to
+submit, Shift-Return or Option-Return for a newline, and offers Up, Down, Escape and Tab to its
+completion handler first. Unhandled keys keep native text editing and focus traversal. Marked
+text owns all keys until the input method finishes composition. The live composer is unchanged.
+
 | Keys | While the agent is idle | While the agent is working | Command |
 | --- | --- | --- | --- |
 | Return | Send | The preferred follow-up behavior (Settings: Steer, the default, or Queue) | |

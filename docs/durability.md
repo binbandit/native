@@ -791,6 +791,7 @@ needs multi-row transactions; a log would need compaction and replay code for ev
 | `notifications` | the notification backlog: the newest 200, each as JSON with its id and state (`active`, `acknowledged`, `resolved`) in columns |
 | `tasks` | the tasks sessions handed each other through Native's tools: the engine's record as JSON, by task id |
 | `titles` | per session: the user's title, the generated one, and while one is still wanted, the project name, first message and progress (`generating`, `waitingForClient`, `failed`); goes with its session |
+| `histories`, `history_participants`, `history_items`, `history_transfers` | one history per task across its agent sessions: the agent sessions that took part (found by agent and agent session id, so a closed session finds its history again), the items in order, and the context each was given; started the first time a session needs it, deleted with the task's last agent session (`docs/decisions/2026-11-01-one-task-history.md`) |
 
 Phase 3 adds `goals`, `workflow_runs`, `resumes` (scheduled limit resumes) and `unread`, all owned by
 their engines inside the host.

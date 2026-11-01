@@ -53,7 +53,9 @@
   A rejected change releases the next one; replacing the agent or closing the task invalidates
   pending changes. Other sessions keep changing independently, and idle unloading waits for settings.
 - **History lives with the agent.** Sessions are listed with `session/list` and reopened with
-  `session/load`, which replays them. Native stores only its own additions (titles, order, goals).
+  `session/load`, which replays them. Native stores its own additions (titles, order, goals) and,
+  on the host, one provider-neutral history per task across its agent sessions
+  (`docs/decisions/2026-11-01-one-task-history.md`).
 - **Transcript artifacts retain their bytes.** User attachments, agent images and tool results,
   including raw MCP content and embedded binary resources, open through the task's artifact viewer
   model. Images zoom and pan in place; other files use native previews. Host files use the existing
@@ -120,6 +122,21 @@ retains it too. Existing project records migrate their names into this store. `P
 labels for all consumers, and sidebar headers render the suffix as secondary text. Their tooltips
 and accessibility labels contain the full path. Paired-host task labels resolve on their host's
 side of the project boundary; a local rename does not rename another machine's checkout.
+
+## Native text input
+
+`DSTextInput` in `native/DesignSystem/TextInput/` is the shared editable text surface for the
+composer rebuild. Part A exposes it in the composer gallery only. The live composer still uses
+`ComposerEditor` until the next parts land. AppKit and UIKit adapters live in
+`native/Platform/TextInput/`. The UI-free `Packages/TextInput` owns document runs, UTF-16 editor
+ranges, plain-text serialization and `@`/`/` queries. A file suggestion becomes a single native
+text attachment; `document.plainText` expands it to an `@path` reference for the agent.
+
+The native layout manager measures the proposed width, caps the visible height at ten lines and
+scrolls the remainder. Height and caret notifications are deferred and deduplicated; callers must
+not feed reported height back into the editor. Marked text stays in native storage until the input
+method commits, and owns keyboard events while composing. Attachment paste/drop callbacks carry
+URLs or image data to the caller; they never insert paths in the draft.
 
 ## Clients and hosts
 

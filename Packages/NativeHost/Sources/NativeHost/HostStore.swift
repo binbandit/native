@@ -2,10 +2,11 @@ import ACP
 import Foundation
 import NativeHostProtocol
 
-/// Native's own durable state, in one SQLite database owned by the host. Conversations aren't here:
-/// they live in each agent's store and come back with `session/load`. What is here is everything
-/// only Native knows: which sessions are open, the turn in flight, queued messages, prompt request
-/// ids, approvals waiting on the user, and the activity journal.
+/// Native's own durable state, in one SQLite database owned by the host. Conversations live in each
+/// agent's store and come back with `session/load`; what is here is everything only Native knows:
+/// which sessions are open, the turn in flight, queued messages, prompt request ids, approvals
+/// waiting on the user, the activity journal, and each task's provider-neutral history across its
+/// agent sessions (HostStore+History.swift).
 ///
 /// Every change is committed with `synchronous=FULL` and `fullfsync`, so once a method returns, the
 /// change survives the host being killed and the Mac losing power. Writes happen per user action
@@ -14,7 +15,7 @@ final class HostStore {
     /// Extensions that keep an engine's tables use it directly (HostStore+Notifications.swift).
     let database: SQLiteDatabase
 
-    static let schemaVersion: Int64 = 13
+    static let schemaVersion: Int64 = 14
 
     init(url: URL) throws {
         database = try SQLiteDatabase(url: url)
@@ -102,6 +103,10 @@ final class HostStore {
                     ALTER TABLE titles ADD COLUMN first_finished INTEGER NOT NULL DEFAULT 0;
                     ALTER TABLE titles ADD COLUMN was_renamed INTEGER NOT NULL DEFAULT 0;
                     """)
+            }
+            if version < 14 {
+                // Version 14: one history per task (HostStore+History.swift).
+                try database.execute(Self.historyTables)
             }
             try database.execute("PRAGMA user_version = \(Self.schemaVersion)")
         }

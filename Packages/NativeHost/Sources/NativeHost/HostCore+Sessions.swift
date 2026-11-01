@@ -339,11 +339,20 @@ extension HostCore {
                     servers: session.mcpServers)),
             as: RawNewSessionResponse.self)
         let old = session.record.agentSessionID
+        var record = session.record
+        record.agentSessionID = response.sessionId
+        // Together, so a restart never finds the new agent session without its task's history; and
+        // only once they're stored does the session take the new id, so a failure leaves it as it was.
+        try store.transaction {
+            try store.updateSession(record)
+            if let old {
+                try store.replaceHistoryAgentSession(agentID: record.agentID, old: old, new: response.sessionId)
+            }
+        }
         if let old {
             link.routes[old] = nil
         }
         session.record.agentSessionID = response.sessionId
-        try store.updateSession(session.record)
         if let old {
             tasks.agentSessionReplaced(agent: session.record.agentID, old: old, new: response.sessionId)
         }

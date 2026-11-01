@@ -178,7 +178,7 @@ enum HostMethodAdmission: Equatable {
             Method.acknowledgeNotifications, Method.listPlugins, Method.pluginAsset, Method.updateStatus,
             Method.updateReport, Method.hostStatus, Method.doctor, Method.setKeepAwake, Method.listCoordinators,
             Method.listTasks, Method.setSessionTitle, Method.configureTitles, Method.updateQueued,
-            Method.removeQueued, Method.restoreQueued, Method.moveQueued:
+            Method.removeQueued, Method.restoreQueued, Method.moveQueued, Method.historySummary, Method.readHistory:
             self = .always
         // Records only: storing a spec never approves launching it (`readyAgent` decides that), and
         // choosing who serves Native's tools never starts their listener (`agentTools` does).

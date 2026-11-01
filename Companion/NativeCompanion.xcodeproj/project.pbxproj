@@ -25,6 +25,7 @@
 		C0C0000000000000000000C1 /* PlatformQuoteSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C0000000000000000000C3 /* PlatformQuoteSelection.swift */; };
 		C0C0000000000000000000AA /* AppAppearance in Frameworks */ = {isa = PBXBuildFile; productRef = C0C0000000000000000000A9 /* AppAppearance */; };
 		C0C0000000000000000000B8 /* Undo in Frameworks */ = {isa = PBXBuildFile; productRef = C0C0000000000000000000B7 /* Undo */; };
+		C0C0000000000000000000C6 /* TextInput in Frameworks */ = {isa = PBXBuildFile; productRef = C0C0000000000000000000C5 /* TextInput */; };
 		C0C0000000000000000000AC /* CelebrationDates.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C0000000000000000000AB /* CelebrationDates.swift */; };
 		C0C0000000000000000000B0 /* AppIcon-arcade.icon in Resources */ = {isa = PBXBuildFile; fileRef = C0C0000000000000000000A0 /* AppIcon-arcade.icon */; };
 		C0C0000000000000000000B1 /* AppIcon-cobalt.icon in Resources */ = {isa = PBXBuildFile; fileRef = C0C0000000000000000000A1 /* AppIcon-cobalt.icon */; };
@@ -86,6 +87,12 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		C0C0000000000000000000C7 /* TextInput */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			name = TextInput;
+			path = ../native/Platform/TextInput;
+			sourceTree = SOURCE_ROOT;
+		};
 		C0C000000000000000000010 /* NativeCompanion */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -122,6 +129,7 @@
 				C0C00000000000000000005D /* NativePolicy in Frameworks */,
 				C0C0000000000000000000AA /* AppAppearance in Frameworks */,
 				C0C0000000000000000000B8 /* Undo in Frameworks */,
+				C0C0000000000000000000C6 /* TextInput in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -159,6 +167,7 @@
 			isa = PBXGroup;
 			children = (
 				C0C000000000000000000011 /* DesignSystem */,
+				C0C0000000000000000000C7 /* TextInput */,
 				C0C000000000000000000070 /* MarkdownView.swift */,
 				C0C000000000000000000071 /* TranscriptMetrics.swift */,
 				C0C000000000000000000072 /* TranscriptFixtures.swift */,
@@ -207,6 +216,7 @@
 			fileSystemSynchronizedGroups = (
 				C0C000000000000000000010 /* NativeCompanion */,
 				C0C000000000000000000011 /* DesignSystem */,
+				C0C0000000000000000000C7 /* TextInput */,
 			);
 			name = NativeCompanion;
 			packageProductDependencies = (
@@ -217,6 +227,7 @@
 				C0C00000000000000000005F /* NativePolicy */,
 				C0C0000000000000000000A9 /* AppAppearance */,
 				C0C0000000000000000000B7 /* Undo */,
+				C0C0000000000000000000C5 /* TextInput */,
 			);
 			productName = NativeCompanion;
 			productReference = C0C000000000000000000004 /* NativeCompanion.app */;
@@ -279,6 +290,7 @@
 				C0C00000000000000000005E /* XCLocalSwiftPackageReference "../Packages/NativePolicy" */,
 				C0C0000000000000000000A8 /* XCLocalSwiftPackageReference "../Packages/AppAppearance" */,
 				C0C0000000000000000000B6 /* XCLocalSwiftPackageReference "../Packages/Undo" */,
+				C0C0000000000000000000C4 /* XCLocalSwiftPackageReference "../Packages/TextInput" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C0C000000000000000000003 /* Products */;
@@ -553,6 +565,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		C0C0000000000000000000C4 /* XCLocalSwiftPackageReference "../Packages/TextInput" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../Packages/TextInput;
+		};
 		C0C000000000000000000050 /* XCLocalSwiftPackageReference "../Packages/ACP" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Packages/ACP;
@@ -584,6 +600,11 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		C0C0000000000000000000C5 /* TextInput */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C0C0000000000000000000C4 /* XCLocalSwiftPackageReference "../Packages/TextInput" */;
+			productName = TextInput;
+		};
 		C0C000000000000000000053 /* ACP */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = C0C000000000000000000050 /* XCLocalSwiftPackageReference "../Packages/ACP" */;

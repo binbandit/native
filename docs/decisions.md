@@ -643,3 +643,11 @@ The whole-item selection priority and context-reserve calculation in
 That file retains its copyright and full MIT license notice. Native adds ACP encoding costs, prompt
 and image allowances, omission references, persistence and delivery states; it adds no runtime
 or dependency from that source.
+
+## 2026-11-01: One task history
+
+The host keeps one provider-neutral history per task: what was said and done, which agent session
+produced each item, and what each agent session has seen. Switching back to an agent the task used
+reopens its own conversation and sends only what happened while it was away; the transcript of a
+mixed-agent task reads from the history. Agents still keep and replay their own conversations. See
+[the decision](decisions/2026-11-01-one-task-history.md) for the model, migration and slices.

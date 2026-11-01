@@ -150,6 +150,7 @@ struct NativeApp: App {
     var body: some Scene {
         Window("Native", id: "main") {
             RootView()
+                .dsTextInputCheckFixture()
                 .platformTitlebarDoubleClick()
                 .sidebarDesignFixture()
                 .diffCommentsDesignFixture()
