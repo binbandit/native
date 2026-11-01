@@ -100,7 +100,8 @@ delivery durability or recovery. The suite supplies seven MCP tools only; it doe
 Native's skill-discovery route or whether a shell-enabled agent would bypass the tool boundary.
 
 The initial cases intentionally omit exact model/effort delegation, permission overrides,
-isolated checkouts, cross-host history and async completion wakeups. Those are not fields in
-today's seven-tool contract. Fresh reviews are requested explicitly; continuing a reviewer uses
+isolated checkouts, cross-host history and async completion wakeups. The production tool accepts
+launch options, but the synthetic runtime does not validate agent-advertised values or checkouts.
+Fresh reviews are requested explicitly; continuing a reviewer uses
 Native's supported `send_message`, rather than imposing another system's review convention.
 Provenance and MIT notices are recorded in [the decision](../../docs/decisions/2026-11-01-tool-use-evals.md).
