@@ -158,12 +158,23 @@ struct HostHistoryTests {
     }
 
     /// Two sessions on the fake agent standing in for two agents of one task.
-    private func twoSessions(_ recorder: Recorder) async throws -> (HostSessionID, HostSessionID) {
+    private func twoSessions(_ recorder: Recorder) async throws -> (HostSessionSummary, HostSessionID) {
         let first = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
         _ = try await recorder.client.prompt(PromptParams(sessionID: first.id, text: "one"))
         try await recorder.wait("the first turn") { await $0.turnsEnded(first.id) == ["end_turn"] }
         let second = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
-        return (first.id, second.id)
+        return (first, second.id)
+    }
+
+    /// The second session continues the first, as a committed change of agent does.
+    private func join(
+        _ recorder: Recorder, _ second: HostSessionID, after first: HostSessionSummary,
+        conveyed: [ClosedRange<Int>] = []
+    ) async throws -> TaskHistorySummary {
+        try await recorder.client.joinHistory(
+            JoinHistoryParams(
+                sessionID: second, sourceAgentID: first.agentID,
+                sourceAgentSessionID: try #require(first.agentSessionID), conveyed: conveyed))
     }
 
     @Test("A joined session sees what its handoff conveyed once its message is answered, and nothing more")
@@ -174,15 +185,13 @@ struct HostHistoryTests {
         let recorder = try await harness.connect()
         let (first, second) = try await twoSessions(recorder)
         // The handoff quoted the reply (item 2) but not the message before it.
-        let joined = try await recorder.client.joinHistory(
-            JoinHistoryParams(sessionID: second, source: first, conveyed: [2...2, 7...9]))
+        let joined = try await join(recorder, second, after: first, conveyed: [2...2, 7...9])
         #expect(joined.current == 2)
         #expect(joined.participants.map(\.seen) == [3, 0])
         #expect(joined.transfers.map(\.state) == [.prepared])
         #expect(joined.transfers.map(\.conveyed) == [[2...2]])
         // A client retrying the join after a lost reply records its handoff once.
-        let again = try await recorder.client.joinHistory(
-            JoinHistoryParams(sessionID: second, source: first, conveyed: [2...2]))
+        let again = try await join(recorder, second, after: first, conveyed: [2...2])
         #expect(again.transfers.count == 1)
 
         _ = try await recorder.client.prompt(PromptParams(sessionID: second, text: "two"))
@@ -194,7 +203,7 @@ struct HostHistoryTests {
         #expect(after.participants.map(\.seen) == [3, 0])
         #expect(try await recorder.client.missingHistory(of: second).items.map(\.seq) == [1, 3])
         // The first session missed everything the second did.
-        let missed = try await recorder.client.missingHistory(of: first)
+        let missed = try await recorder.client.missingHistory(of: first.id)
         #expect(missed.seen == 3)
         #expect(
             missed.items.map(\.body) == [
@@ -203,15 +212,16 @@ struct HostHistoryTests {
         await recorder.stop()
     }
 
-    @Test("A handoff that conveyed everything carries the watermark to the head")
+    @Test("A handoff that conveyed everything carries the watermark to the head, after its source closed")
     func fullHandoff() async throws {
         let harness = try HostHarness()
         defer { harness.cleanup() }
         try harness.start()
         let recorder = try await harness.connect()
         let (first, second) = try await twoSessions(recorder)
-        _ = try await recorder.client.joinHistory(
-            JoinHistoryParams(sessionID: second, source: first, conveyed: [1...3]))
+        // The conversation it continues from is found through its agent session once its own closed.
+        try await recorder.client.closeSession(first.id)
+        _ = try await join(recorder, second, after: first, conveyed: [1...3])
         // Before its message is answered, nothing it was given counts.
         #expect(try await recorder.client.missingHistory(of: second).items.count == 3)
         _ = try await recorder.client.prompt(PromptParams(sessionID: second, text: "two"))
@@ -228,8 +238,7 @@ struct HostHistoryTests {
         try harness.start()
         let recorder = try await harness.connect()
         let (first, second) = try await twoSessions(recorder)
-        _ = try await recorder.client.joinHistory(
-            JoinHistoryParams(sessionID: second, source: first, conveyed: [1...3]))
+        _ = try await join(recorder, second, after: first, conveyed: [1...3])
         _ = try await recorder.client.prompt(PromptParams(sessionID: second, text: "silent-until-stopped"))
         try await recorder.wait("the agent to get the message") { _ in
             harness.received.contains("prompt\tsilent-until-stopped")
@@ -250,10 +259,11 @@ struct HostHistoryTests {
         try harness.start()
         let recorder = try await harness.connect()
         let (first, second) = try await twoSessions(recorder)
-        _ = try await recorder.client.joinHistory(
-            JoinHistoryParams(sessionID: second, source: first, conveyed: [1...3]))
+        // A handoff the client can't itemize is still recorded, crediting nothing.
+        let joined = try await join(recorder, second, after: first)
+        #expect(joined.transfers.map(\.conveyed) == [[]])
         try await recorder.client.closeSession(second, closeInAgent: true)
-        let summary = try await recorder.client.historySummary(of: first)
+        let summary = try await recorder.client.historySummary(of: first.id)
         #expect(summary.participants.count == 1)
         #expect(summary.transfers.isEmpty)
         await recorder.stop()

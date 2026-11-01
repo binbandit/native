@@ -56,8 +56,8 @@ public struct ReadHistoryParams: Codable, Hashable, Sendable {
 
 extension HostProtocol.Method {
     /// Client → host: a change of agent committed, so the new agent session joins the task's history
-    /// (`JoinHistoryParams` → `TaskHistorySummary`). With `conveyed`, the client's own handoff went
-    /// with its next message and is recorded as a `client` transfer.
+    /// (`JoinHistoryParams` → `TaskHistorySummary`). The client's handoff, which goes with the new
+    /// session's next message, is recorded as a `client` transfer of what it hadn't seen.
     public static let joinHistory = "_native/history/join"
     /// Client → host: what a session's agent hasn't seen of its task (`SessionParams` →
     /// `TaskHistoryMissing`), for the context a return to it needs.
@@ -67,19 +67,22 @@ extension HostProtocol.Method {
 public struct JoinHistoryParams: Codable, Hashable, Sendable {
     /// The session joining: the agent session the task continues with.
     public var sessionID: HostSessionID
-    /// A session of the task it joins.
-    public var source: HostSessionID
-    /// The items of the task's history the client's handoff conveyed, from its receipt; nil when the
-    /// client sends none.
-    public var conveyed: [ClosedRange<Int>]?
+    /// The conversation it continues from, by its agent session, which may have closed since.
+    public var sourceAgentID: String
+    public var sourceAgentSessionID: SessionID
+    /// The items of the task's history the client's handoff conveyed, from its receipt. Only these
+    /// count as seen; empty when the client can't say.
+    public var conveyed: [ClosedRange<Int>]
     /// The handoff's receipt, kept with the transfer for audit.
     public var receipt: JSONValue?
 
     public init(
-        sessionID: HostSessionID, source: HostSessionID, conveyed: [ClosedRange<Int>]? = nil, receipt: JSONValue? = nil
+        sessionID: HostSessionID, sourceAgentID: String, sourceAgentSessionID: SessionID,
+        conveyed: [ClosedRange<Int>] = [], receipt: JSONValue? = nil
     ) {
         self.sessionID = sessionID
-        self.source = source
+        self.sourceAgentID = sourceAgentID
+        self.sourceAgentSessionID = sourceAgentSessionID
         self.conveyed = conveyed
         self.receipt = receipt
     }

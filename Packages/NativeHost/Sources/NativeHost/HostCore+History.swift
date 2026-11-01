@@ -180,12 +180,14 @@ extension HostCore {
         }
     }
 
-    /// A change of agent committed: the target's agent session joins the source's task history, with
-    /// the client's handoff recorded as a transfer when it says what it conveyed.
+    /// A change of agent committed: the target's agent session joins the source's task history, and
+    /// the client's handoff is recorded as a `client` transfer of what the target hadn't seen, crediting
+    /// only the items the client says it conveyed.
     func joinHistory(_ params: JoinHistoryParams) throws -> TaskHistorySummary {
         let target = try session(params.sessionID)
-        guard let source = try history(of: try session(params.source)), target.record.origin != .announced,
-            let agentSessionID = target.record.agentSessionID
+        guard
+            let source = try sourceHistory(agentID: params.sourceAgentID, agentSessionID: params.sourceAgentSessionID),
+            target.record.origin != .announced, let agentSessionID = target.record.agentSessionID
         else { throw HostError.noHistory }
         let participant: TaskHistoryParticipant = try store.transaction {
             // A repeated join (a client retrying after a lost reply) records its handoff only once.
@@ -199,20 +201,31 @@ extension HostCore {
                     source.id, agentID: target.record.agentID, agentSessionID: agentSessionID,
                     model: target.mirror.state.configOptions.modelValue)
             else { throw HostError.busy("This conversation already has a history of its own.") }
-            if let conveyed = params.conveyed, let head = try store.historyHead(source.id) {
-                let considered = joined.seen < head ? (joined.seen + 1)...head : nil
+            if let head = try store.historyHead(source.id), joined.seen < head {
+                let considered = (joined.seen + 1)...head
                 try store.insertTransfer(
                     TaskHistoryTransfer(
                         sourceHistory: source.id, target: joined.ordinal, from: joined.seen, through: head,
-                        conveyed: considered.map { range in
-                            conveyed.filter { $0.overlaps(range) }.map { $0.clamped(to: range) }
-                        } ?? [],
+                        conveyed: params.conveyed.filter { $0.overlaps(considered) }.map { $0.clamped(to: considered) },
                         strategy: .client), into: source.id, receipt: params.receipt)
             }
             return joined
         }
         target.history = HostSessionHistory(id: source.id, participant: participant.ordinal)
         return try historySummary(SessionParams(sessionID: target.id))
+    }
+
+    /// The history of the conversation a change of agent continues from: through its open session,
+    /// which starts the history if it has none yet, or through its participant once it has closed.
+    private func sourceHistory(agentID: String, agentSessionID: SessionID) throws -> HostSessionHistory? {
+        if let open = sessions.values.first(where: {
+            $0.record.agentID == agentID && $0.record.agentSessionID == agentSessionID
+        }) {
+            return try history(of: open)
+        }
+        return try store.historyParticipant(agentID: agentID, agentSessionID: agentSessionID).map {
+            HostSessionHistory(id: $0.0, participant: $0.1.ordinal)
+        }
     }
 
     func missingHistory(_ params: SessionParams) throws -> TaskHistoryMissing {
