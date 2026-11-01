@@ -97,6 +97,8 @@ final class HostSession {
     var subscribers: Set<ClientLink.ID> = []
     /// Native's titles for it (`HostCore+Titles.swift`), as the store keeps them.
     var titleState = SessionTitleState()
+    /// Its task's history, once something needed it (`HostCore+History.swift`).
+    var history: HostSessionHistory?
 
     init(
         record: StoredSession, agentName: String, phase: HostSessionPhase, needsLoad: Bool, mcpServers: [JSONValue] = []

@@ -53,7 +53,9 @@
   A rejected change releases the next one; replacing the agent or closing the task invalidates
   pending changes. Other sessions keep changing independently, and idle unloading waits for settings.
 - **History lives with the agent.** Sessions are listed with `session/list` and reopened with
-  `session/load`, which replays them. Native stores only its own additions (titles, order, goals).
+  `session/load`, which replays them. Native stores its own additions (titles, order, goals) and,
+  on the host, one provider-neutral history per task across its agent sessions
+  (`docs/decisions/2026-11-01-one-task-history.md`).
 - **Transcript artifacts retain their bytes.** User attachments, agent images and tool results,
   including raw MCP content and embedded binary resources, open through the task's artifact viewer
   model. Images zoom and pan in place; other files use native previews. Host files use the existing

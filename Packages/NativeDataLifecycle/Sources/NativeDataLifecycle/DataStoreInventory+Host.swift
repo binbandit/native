@@ -4,8 +4,8 @@ extension DataStoreInventory {
         DataStoreEntry(
             .hostDatabase,
             "The host's durable state: agents, sessions with their MCP configuration and settings, unfinished"
-                + " prompts and attachments, queued messages, approvals, activity, notifications, titles, tasks and"
-                + " closed-session choices.",
+                + " prompts and attachments, queued messages, approvals, activity, notifications, titles, tasks,"
+                + " closed-session choices, and each task's history: messages, replies, tool calls and handoffs.",
             owners: [
                 "Packages/NativeHost/Sources/NativeHost/HostStore.swift",
                 "Packages/NativeHost/Sources/NativeHostProtocol/HostLocation.swift",
@@ -17,14 +17,15 @@ extension DataStoreInventory {
                     .primary, .file(.hostData, ["host.sqlite"]),
                     .sqlite(tables: [
                         "meta", "agents", "sessions", "turns", "queue", "requests", "approvals", "activity", "projects",
-                        "plugin_choices", "notifications", "titles", "tasks", "closed_session_config",
+                        "plugin_choices", "notifications", "titles", "tasks", "closed_session_config", "histories",
+                        "history_participants", "history_items", "history_transfers",
                     ])),
                 DataCopySpec(.writeAheadLog, .file(.hostData, ["host.sqlite-wal"]), .sqlite(tables: [])),
                 DataCopySpec(.sharedMemory, .file(.hostData, ["host.sqlite-shm"]), .sqlite(tables: [])),
             ],
             retention: .ownerRule(
                 "at host start, requests after 7 days and command activity after 30; the newest 200 notifications;"
-                    + " tasks and other activity kept"),
+                    + " tasks and other activity kept; a task's history until its last agent session is deleted"),
             today: "Forgetting a task deletes its session with its turns, queue, approvals and titles. Nothing vacuums"
                 + " or turns on secure delete, so freed pages and the log keep deleted rows for a while.",
             support: .pendingPruned, followUp: .hostDatabase),
