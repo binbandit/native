@@ -49,11 +49,10 @@ extension HostTasks {
         for key in keys {
             guard var receipt = receipts[key] else { continue }
             receipt.delivery = .suppressed
-            let stopped = [receipt.parentID, receipt.childID].compactMap { core.sessions[$0]?.turn?.requestID }
-            receipt.stoppedTurnIDs = Array(Set(receipt.stoppedTurnIDs + stopped))
             receipts[key] = receipt
         }
         let sessions = ids.compactMap { core.sessions[$0] }
+        stoppedTurnIDs.formUnion(sessions.compactMap { $0.turn?.requestID })
         // The pause is durable for a stopped delegation tree, including an idle root. A later user
         // message can resume work, but suppressed completion receipts stay suppressed.
         if !keys.isEmpty || ids.count > 1 {
@@ -64,6 +63,8 @@ extension HostTasks {
         }
         do {
             try core.store.transaction {
+                try core.store.setMeta(
+                    "task_stopped_turns_v1", String(decoding: try JSONEncoder().encode(stoppedTurnIDs), as: UTF8.self))
                 for key in keys {
                     if let receipt = receipts[key] { try persistReceipt(key, receipt) }
                 }
@@ -82,6 +83,7 @@ extension HostTasks {
     /// A host crash during cancellation must finish that same turn as cancelled, while a later
     /// explicit user prompt (with a new request id) can still recover normally.
     func wasStoppedDelegation(_ turn: UnfinishedTurn) -> Bool {
-        receipts.values.contains { $0.stoppedTurnIDs.contains(turn.requestID) }
+        stoppedTurnIDs.contains(turn.requestID)
+            || receipts.values.contains { $0.stoppedTurnIDs.contains(turn.requestID) }
     }
 }

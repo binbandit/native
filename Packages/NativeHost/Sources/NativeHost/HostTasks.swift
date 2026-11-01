@@ -47,6 +47,7 @@ final class HostTasks: TaskRuntime {
     var receiptsReadable = true
     var creationFlights: [String: Task<TaskStartReceipt, Error>] = [:]
     var completionWorker: Task<Void, Never>?
+    var stoppedTurnIDs: Set<UUID> = []
     var stopEpochs: [HostSessionID: Int] = [:]
 
     struct Waiter {
@@ -60,6 +61,9 @@ final class HostTasks: TaskRuntime {
         do {
             if let json = try core.store.meta("task_creation_receipts_v1") {
                 receipts = try JSONDecoder().decode([String: HostDelegationReceipt].self, from: Data(json.utf8))
+            }
+            if let json = try core.store.meta("task_stopped_turns_v1") {
+                stoppedTurnIDs = try JSONDecoder().decode(Set<UUID>.self, from: Data(json.utf8))
             }
         } catch {
             receiptsReadable = false

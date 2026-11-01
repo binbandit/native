@@ -72,6 +72,40 @@ struct HostDelegationReceiptTests {
         await second.stop()
     }
 
+    @Test(arguments: [false, true])
+    func closeAndReopenPreservesReceiptOwnership(closeInAgent: Bool) async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let parent = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: harness.root.path))
+        let receipt = try await start(recorder.client, parent: parent.id, key: "reopen")
+        #expect(!receipt.isError)
+        let task = try #require(try await recorder.client.tasks().first)
+        let childID = try #require(task.sessionID)
+        let original = try await recorder.client.callTool(
+            CallToolParams(
+                sessionID: parent.id, tool: "wait_for_task",
+                arguments: .object(["task_id": .string(task.id)])))
+        let child = try #require(try await recorder.client.sessions().first { $0.id == childID })
+        for summary in [parent, child] {
+            let agentSessionID = try #require(summary.agentSessionID)
+            try await recorder.client.closeSession(summary.id, closeInAgent: closeInAgent)
+            let reopened = try await recorder.client.openSession(
+                OpenSessionParams(agentID: "fake", agentSessionID: agentSessionID, cwd: harness.root.path))
+            #expect(reopened.id == summary.id)
+        }
+        #expect(try await start(recorder.client, parent: parent.id, key: "reopen") == receipt)
+        let current = try await recorder.client.callTool(
+            CallToolParams(
+                sessionID: parent.id, tool: "get_task",
+                arguments: .object(["task_id": .string(task.id)])))
+        #expect(current.structuredContent?["original_result"] == original.structuredContent?["original_result"])
+        #expect(try await recorder.client.tasks().count == 1)
+        #expect(harness.received.filter { $0.hasPrefix("prompt\t") }.count == 1)
+        await recorder.stop()
+    }
+
     @Test func interruptedUnadmittedCreationRefusesToCreateAnotherChild() async throws {
         let harness = try HostHarness()
         defer { harness.cleanup() }
