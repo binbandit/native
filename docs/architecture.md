@@ -661,6 +661,20 @@ prepares its default model and then shows that agent's reported models.
 Model names never imply agent identity. The reporting adapter owns each choice, including gateway
 models. The list retains its opening order until closed, and filters the current agent's model names and IDs.
 
+`EffectiveAgentCapabilities` in ACP combines initialize negotiation, live session config options,
+and plugin steering policy. Each feature names support, the enforcing boundary (agent, Native, both,
+or none), and a typed reason. A turn end is not task completion; fork remains unavailable until Native
+implements a negotiated mechanism. `HostAgent.effectiveCapabilities(options:)` exposes the same
+calculation to local and paired clients without another RPC. These are mechanism descriptions, not
+authorization or proof of agent compliance.
+
+`AgentTransitionPlan` classifies each requested operation as exact, a named fallback, or refused,
+with a plain reason. Exact model and config values must be advertised. Resume requires host-supplied
+session/runtime/account compatibility; matching names never establish it. Load with replay and a
+fresh conversation with context are distinct fallbacks. Permission plans retain the existing
+`AgentModelPermissions` translator and plugin presentation mappings. Admission and settings
+confirmation remain the responsibility of the host/model calling the planner.
+
 `ComposerAgentChange` prepares an unused conversation in the same folder, validates the exact model
 and a supported permission mode, then publishes the selection. Shared permission intent stays the
 same across agents; each plugin enforces its closest stricter control. A destination that cannot
