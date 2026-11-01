@@ -343,14 +343,15 @@ extension HostCore {
             link.routes[old] = nil
         }
         session.record.agentSessionID = response.sessionId
-        try store.updateSession(session.record)
+        // Together, so a restart never finds the new agent session without its task's history.
+        try store.transaction {
+            try store.updateSession(session.record)
+            if let old {
+                try store.replaceHistoryAgentSession(agentID: session.record.agentID, old: old, new: response.sessionId)
+            }
+        }
         if let old {
             tasks.agentSessionReplaced(agent: session.record.agentID, old: old, new: response.sessionId)
-            do {
-                try store.replaceHistoryAgentSession(agentID: session.record.agentID, old: old, new: response.sessionId)
-            } catch {
-                logger.error("Couldn't move a task's history to its new agent session: \(error.localizedDescription)")
-            }
         }
         route(session, on: link)
         await tasks.writeSkillCredential(for: session)
