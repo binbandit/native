@@ -19,6 +19,7 @@ enum HostError: Error, LocalizedError {
     case agentUnavailable(String)
     case cannotLoad(String)
     case notAcceptingPrompts
+    case noHistory
     case emptyMessage
     case permissionNotPending
     case questionNotPending
@@ -41,6 +42,7 @@ enum HostError: Error, LocalizedError {
         case .agentUnavailable(let name): "\(name) isn't running, so it can't take this task."
         case .cannotLoad(let name): "\(name) can't reopen tasks, so this one can't continue after a restart."
         case .notAcceptingPrompts: "This subagent only takes work from the task that started it."
+        case .noHistory: "This subagent's work is kept in the history of the task that started it."
         case .emptyMessage: "There's nothing to send."
         case .permissionNotPending: "That request was already answered."
         case .questionNotPending: "That question was already answered."
@@ -64,6 +66,7 @@ enum HostError: Error, LocalizedError {
         case .agentUnavailable: .agentUnavailable
         case .cannotLoad: .cannotLoad
         case .notAcceptingPrompts: .notAcceptingPrompts
+        case .noHistory: .noHistory
         case .emptyMessage: .emptyMessage
         case .permissionNotPending: .permissionNotPending
         case .questionNotPending: .questionNotPending

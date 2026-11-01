@@ -19,7 +19,8 @@ public enum LinkMethodPolicy {
             Method.updateCheck, Method.listPlugins, Method.pluginAsset, Method.listAgents, Method.startAgent,
             Method.authenticateAgent, Method.listAgentSessions, Method.hostStatus, Method.doctor,
             Method.listNotifications, Method.acknowledgeNotifications, Method.actOnNotification,
-            Method.checkAgentSignIn, Method.cancelAgentSignIn, Method.setSessionTitle,
+            Method.checkAgentSignIn, Method.cancelAgentSignIn, Method.setSessionTitle, Method.historySummary,
+            Method.readHistory,
         ]
     }()
 

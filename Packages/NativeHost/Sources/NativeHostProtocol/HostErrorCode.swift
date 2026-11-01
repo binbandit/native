@@ -41,6 +41,8 @@ public enum HostErrorCode: String, WireEnum {
     case notAFile
     /// `fs/list` or `fs/watch` on something that isn't a folder.
     case notADirectory
+    /// A subagent's work is part of its parent task's history, not one of its own.
+    case noHistory
     case unknown
 
     /// The JSON-RPC error code.
@@ -49,7 +51,7 @@ public enum HostErrorCode: String, WireEnum {
             .unknownAgent, .unknownSession, .agentUnavailable, .agentNotInstalled, .cannotLoad, .notAcceptingPrompts,
             .emptyMessage, .permissionNotPending, .questionNotPending, .busy, .notInQueue, .notAuthorized,
             .updateUnavailable, .outsideProjects, .commandNotFound, .timedOut, .cancelled, .fileNotFound, .fileTooLarge,
-            .notAFile, .notADirectory,
+            .notAFile, .notADirectory, .noHistory,
         ]
         return -33001 - (order.firstIndex(of: self) ?? 98)
     }
