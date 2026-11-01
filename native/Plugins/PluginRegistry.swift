@@ -246,6 +246,10 @@ final class PluginRegistry {
         plugins.first { $0.plugin.manifest.agents.contains { $0.id == agent.rawValue } }?.plugin.policyTranslator
     }
 
+    func permissionMapping(for agent: AgentDefinition.ID) -> TaskPermissionMapping {
+        policyTranslator(for: agent)?.permissionMapping ?? .standard
+    }
+
     /// The `_meta` for `session/new` and `session/load` that carries the session's policy.
     func sessionMeta(for session: SessionContext) -> [String: JSONValue] {
         policyTranslator(for: session.agent)?.sessionMeta(for: sessionPolicy(for: session)) ?? [:]

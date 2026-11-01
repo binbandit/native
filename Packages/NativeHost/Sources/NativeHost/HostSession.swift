@@ -24,6 +24,8 @@ final class HostSession {
     var removedFromQueue: [OutgoingPrompt] = []
     /// Permission requests waiting on the user, by tool call: the agent's request id to answer.
     var pendingPermissions: [String: RequestID] = [:]
+    /// Revocation must include permission RPCs whose provider response has not arrived yet.
+    var pendingPermissionChanges: [UUID: (value: String, intent: String?)] = [:]
     /// Questions waiting on the user, oldest first: the host's id for each and the agent's request.
     var pendingQuestions: [(id: String, request: RequestID)] = []
     var supportsSteering = false
@@ -206,7 +208,8 @@ final class HostSession {
             }, isQueuePaused: record.isQueuePaused, supportsSteering: supportsSteering,
             lastActivity: record.lastActivity, lastStopReason: record.lastStopReason, problem: problem,
             isStopping: isStopping, isRunningHiddenCommand: hiddenCommand != nil, retryAt: retryAt,
-            titles: titleState.hostTitles, isHoldingRestart: holdsRestart
+            titles: titleState.hostTitles, isHoldingRestart: holdsRestart,
+            permissionMode: record.configChoices[SetConfigOptionParams.permissionChoiceKey]
         )
     }
 

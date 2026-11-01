@@ -19,7 +19,7 @@ struct AutonomyPicker: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("What \(agentName) may do without asking")
+            Text("Permissions")
                 .font(.dsCaption)
                 .foregroundStyle(.dsTextTertiary)
                 .padding(.horizontal, DS.Space.lg)
@@ -31,6 +31,9 @@ struct AutonomyPicker: View {
                 }
             }
             .padding(.horizontal, DS.Space.xs)
+            Text("Your ask rules and the agent’s own checks can still ask for approval.")
+                .font(.dsCaption).foregroundStyle(.dsTextTertiary)
+                .padding(.horizontal, DS.Space.lg).padding(.vertical, DS.Space.sm)
             SeparatorLine()
                 .padding(.top, DS.Space.xs)
             footer
@@ -40,19 +43,26 @@ struct AutonomyPicker: View {
     }
 
     private func levelRow(_ choice: SelectSetting.Choice, isCurrent: Bool) -> some View {
+        let unavailable = setting.option.permissionMappings.map { $0[choice.value] == nil } ?? false
         let isForbidden = PolicyPermissionModes.forbids(setting.option, value: choice.value)
+        let unknownCurrent = isCurrent && unavailable && TaskPermissionMode(rawValue: choice.value) == nil
         let isSuspended = isSuspended && isCurrent
         return ComposerPickerRow(
             title: choice.name,
-            detail: isForbidden
-                ? "Not allowed by \(PolicyCenter.organizationName)" : AutonomySummary.summary(of: choice),
-            trailing: isForbidden ? .locked : isCurrent ? .checked(dimmed: isSuspended) : .none,
+            detail: unknownCurrent
+                ? AutonomySummary.summary(of: choice)
+                : isForbidden
+                    ? (unavailable
+                        ? "No safe equivalent with this agent" : "Not allowed by \(PolicyCenter.organizationName)")
+                    : AutonomySummary.summary(of: choice),
+            trailing: unknownCurrent
+                ? .checked(dimmed: false) : isForbidden ? .locked : isCurrent ? .checked(dimmed: isSuspended) : .none,
             isEnabled: !isForbidden
         ) {
             onSet(setting, choice.value)
             dismiss()
         }
-        .help(isSuspended ? "Resumes when Plan Mode ends" : choice.descriptionWithoutName ?? choice.name)
+        .help(isSuspended ? "Resumes when the task mode ends" : choice.descriptionWithoutName ?? choice.name)
     }
 
     private var footer: some View {
@@ -90,10 +100,37 @@ struct AutonomyPicker: View {
         if let autonomy = settings.autonomy {
             AutonomyPicker(
                 setting: autonomy, levels: settings.autonomyLevels,
-                level: settings.shownAutonomyLevel(resumed: "acceptEdits"), isSuspended: true,
+                level: settings.shownAutonomyLevel(resumed: "accept-edits"), isSuspended: true,
                 agentName: "Claude Code", onSet: { _, _ in }, dismiss: {}
             )
             .dsPopoverBackground()
+        }
+    }
+}
+#Preview("Autonomy picker - Codex workspace access") {
+    let settings = ComposerSettingsPreviewFixtures.codex()
+    DSPreviewPair {
+        if let autonomy = settings.autonomy {
+            AutonomyPicker(
+                setting: autonomy, levels: settings.autonomyLevels, level: settings.shownAutonomyLevel(resumed: nil),
+                isSuspended: false, agentName: "Codex", onSet: { _, _ in }, dismiss: {}
+            ).dsPopoverBackground()
+        }
+    }
+}
+
+#Preview("Autonomy picker - Unknown active permission") {
+    let options: [ConfigOption] =
+        ComposerPreviewFixtures.decode(
+            #"[{"id":"mode","name":"Mode","category":"mode","type":"select","currentValue":"custom-autopilot","options":[{"value":"default","name":"Default"},{"value":"custom-autopilot","name":"Custom autopilot"}]}]"#
+        ) ?? []
+    let settings = ComposerSettings(options.map { TaskPermissionMapping.standard.presenting($0) })
+    DSPreviewPair {
+        if let autonomy = settings.autonomy {
+            AutonomyPicker(
+                setting: autonomy, levels: settings.autonomyLevels, level: settings.shownAutonomyLevel(resumed: nil),
+                isSuspended: false, agentName: "Example Agent", onSet: { _, _ in }, dismiss: {}
+            ).dsPopoverBackground()
         }
     }
 }

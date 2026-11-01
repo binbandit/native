@@ -1,0 +1,92 @@
+import Foundation
+
+/// A plugin declares exact provider equivalents. Missing levels fall back only to a stricter one.
+public struct TaskPermissionMapping: Hashable, Sendable {
+    public var values: [TaskPermissionMode: [String]]
+    public var notes: [String: String]
+
+    public init(values: [TaskPermissionMode: [String]], notes: [String: String] = [:]) {
+        self.values = values
+        self.notes = notes
+    }
+
+    /// ACP vocabulary understood without assuming the meaning of an unfamiliar mode or its order.
+    public static let standard = Self(values: [
+        .askFirst: ["ask-first", "default", "ask", "manual", "read-only"],
+        .acceptEdits: ["accept-edits", "acceptEdits"],
+        .auto: ["auto"],
+        .fullAccess: ["bypassPermissions", "agent-full-access", "full-access"],
+    ])
+
+    public struct Selection: Equatable, Sendable {
+        public var value: String
+        public var effective: TaskPermissionMode
+        public var isExact: Bool
+    }
+
+    public func selection(_ mode: TaskPermissionMode, offered: [String], forbidden: Set<String> = []) -> Selection? {
+        guard !forbidden.contains(mode.rawValue) else { return nil }
+        for candidate in TaskPermissionMode.allCases.reversed() where candidate.rank <= mode.rank {
+            guard !forbidden.contains(candidate.rawValue),
+                let value = values[candidate]?.first(where: { value in
+                    offered.contains(value) && !forbidden.contains(value)
+                        && !forbidden.contains { blocked in
+                            guard let wireMode = TaskPermissionMode.migrating(value) else { return false }
+                            return TaskPermissionMode.migrating(blocked) == wireMode
+                        }
+                })
+            else { continue }
+            return Selection(value: value, effective: candidate, isExact: candidate == mode)
+        }
+        return nil
+    }
+
+    public func mode(for value: String) -> TaskPermissionMode? {
+        TaskPermissionMode.allCases.first { values[$0]?.contains(value) == true }
+    }
+
+    /// The requested mode is retained when two Native modes use the same provider control.
+    public func presenting(
+        _ option: ConfigOption, remembered: String? = nil, forbidden: Set<String> = []
+    ) -> ConfigOption {
+        guard option.category == "mode", case .select(let current, let offered) = option.kind else { return option }
+        if Set(TaskPermissionMode.allCases.map(\.rawValue)).isSubset(of: Set(offered.map(\.value))) { return option }
+        let wire = offered.map(\.value)
+        let retained = remembered.flatMap(TaskPermissionMode.init(rawValue:)).flatMap { mode in
+            selection(mode, offered: wire, forbidden: forbidden)?.value == current ? mode : nil
+        }
+        var shown = option
+        let mode = retained ?? mode(for: current) ?? TaskPermissionMode.migrating(current)
+        let choices = TaskPermissionMode.allCases.map { mode in
+            let selected = selection(mode, offered: wire, forbidden: forbidden)
+            // A stand-in mode only says which mode it behaves as, so its caption never repeats that mode's.
+            let description =
+                selected.map {
+                    $0.isExact
+                        ? notes[$0.value] ?? $0.effective.summary : "Same as \($0.effective.title) with this agent."
+                } ?? "\(mode.summary) This agent does not offer a safe equivalent."
+            return ConfigOption.SelectOption(value: mode.rawValue, name: mode.title, description: description)
+        }
+        // Task modes can apply a plan or read-only restriction independently of permissions.
+        var restrictions = offered.filter { $0.value == "plan" || $0.value == "read-only" }
+        if mode == nil, current != "plan", current != "read-only" {
+            restrictions.append(
+                .init(
+                    value: current, name: offered.first { $0.value == current }?.name ?? current,
+                    description:
+                        "Native cannot describe this agent's active permissions. Choose a known mode to set them."))
+        }
+        shown.permissionMappings = Dictionary(
+            uniqueKeysWithValues: TaskPermissionMode.allCases.compactMap { mode in
+                // Retain provider availability so a policy lock is attributed to the organization.
+                (selection(mode, offered: wire, forbidden: forbidden) ?? selection(mode, offered: wire))
+                    .map { (mode.rawValue, $0.value) }
+            })
+        shown.name = "Permissions"
+        shown.kind = .select(
+            currentValue: current == "plan" || (current == "read-only" && retained == nil)
+                ? current : mode?.rawValue ?? current,
+            options: choices + restrictions)
+        return shown
+    }
+}

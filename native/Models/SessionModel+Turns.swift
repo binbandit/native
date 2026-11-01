@@ -27,6 +27,7 @@ extension SessionModel {
         case disconnected
         case busy
         case sourceExcerptsProhibited
+        case permissionRestriction(String)
 
         var errorDescription: String? {
             switch self {
@@ -37,6 +38,7 @@ extension SessionModel {
             case .disconnected: "The task's agent stopped running."
             case .sourceExcerptsProhibited: "Comments can’t be sent from this project."
             case .busy: "The task is busy."
+            case .permissionRestriction(let message): message
             }
         }
     }
@@ -62,6 +64,10 @@ extension SessionModel {
 
     /// Sends the user's draft as a prompt, if the agent is idle, and waits for the turn to end.
     func send() async {
+        if let message = inactiveReadOnlyDefault {
+            addNotice(message, isError: true)
+            return
+        }
         guard prepareDiffCommentsSubmission() else { return }
         if !diffComments.isEmpty {
             guard origin == .user, canSend else { return }
@@ -98,6 +104,10 @@ extension SessionModel {
     /// Sends the user's draft whatever the agent is doing: right away when it's idle, otherwise
     /// queued for when the turn ends or steered into the running turn, as `behavior` says.
     func submit(_ behavior: FollowUpBehavior) async {
+        if let message = inactiveReadOnlyDefault {
+            addNotice(message, isError: true)
+            return
+        }
         guard prepareDiffCommentsSubmission() else { return }
         if !diffComments.isEmpty {
             guard origin == .user, acceptsPrompts, phase == .idle || phase == .prompting else { return }
@@ -139,6 +149,7 @@ extension SessionModel {
     func submit(
         _ text: String, attaching attachments: [PromptAttachment] = [], _ behavior: FollowUpBehavior, echo: Bool = true
     ) async throws -> FollowUpDelivery {
+        try checkReadOnlyDefault()
         let text = PromptQuote.trimmed(text)
         guard sourceExcerptBlock(for: text) == nil else { throw SendError.sourceExcerptsProhibited }
         guard !text.isEmpty || !attachments.isEmpty else { throw SendError.emptyMessage }
@@ -346,6 +357,7 @@ extension SessionModel {
         generation: Int
     ) async {
         do {
+            try checkReadOnlyDefault()
             let prompt = (preamble.map { [$0.block] } ?? []) + promptBlocks(text, attachments: attachments)
             guard let connection else { throw SendError.disconnected }
             let response = try await connection.send(PromptRequest(sessionId: id, prompt: prompt))

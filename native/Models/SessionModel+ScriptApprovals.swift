@@ -8,7 +8,7 @@ import Foundation
 extension SessionModel {
     /// The current value of the agent's `mode` setting, such as "default" or "bypassPermissions".
     var permissionMode: String? {
-        configOptions.lazy.compactMap { option -> String? in
+        state.configOptions.lazy.compactMap { option -> String? in
             guard option.category == "mode" || option.id == "mode", case .select(let current, _) = option.kind else {
                 return nil
             }

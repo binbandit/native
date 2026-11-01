@@ -152,6 +152,7 @@ extension HostCore {
                 && agents[session.record.agentID] === link && link.generation == generation && link.peer === peer
         }
         do {
+            try requirePermission(in: session)
             if session.stopRequestedAt != nil {
                 finish(turn, in: session, stopReason: "cancelled")
                 return
@@ -295,6 +296,15 @@ extension HostCore {
     func setConfigOption(_ params: SetConfigOptionParams) async throws {
         let session = try session(params.sessionID)
         try await load(session)
+        let changesPermissions =
+            params.permissionMode != nil
+            || session.mirror.state.configOptions.contains(where: { $0.id == params.configID && $0.category == "mode" })
+        let changeID = UUID()
+        if changesPermissions {
+            try requirePermission(in: session, value: params.value, intent: params.permissionMode)
+            session.pendingPermissionChanges[changeID] = (params.value, params.permissionMode)
+        }
+        defer { session.pendingPermissionChanges[changeID] = nil }
         guard let peer = agents[session.record.agentID]?.peer, let agentSessionID = session.record.agentSessionID else {
             throw HostError.agentUnavailable(session.agentName)
         }
@@ -313,6 +323,20 @@ extension HostCore {
             session.record.configChoices[params.configID] = params.value
             try? store.updateSession(session.record)
         }
+        // Both the policy and the provider's permission controls can change during the RPC.
+        endDeniedAgentWork()
+        if changesPermissions {
+            try requirePermission(in: session, value: params.value, intent: params.permissionMode)
+        }
+        // Check the actual provider response against the replacement intent, even when two
+        // shared modes use the same provider control and pinConfig retained the previous intent.
+        try requirePermission(in: session, intent: params.permissionMode, replacingIntent: changesPermissions)
+        if changesPermissions {
+            session.record.configChoices[SetConfigOptionParams.permissionChoiceKey] =
+                params.permissionMode.flatMap { TaskPermissionMode(rawValue: $0)?.rawValue }
+            try store.updateSession(session.record)
+            publish(session)
+        }
     }
 
     /// Runs a command such as `/context` as a turn the transcript doesn't show, and returns the
@@ -322,6 +346,7 @@ extension HostCore {
         let session = try session(params.sessionID)
         guard session.record.origin != .announced else { throw HostError.notAcceptingPrompts }
         try await load(session)
+        try requirePermission(in: session)
         guard session.phase == .idle, session.turn == nil, session.hiddenCommand == nil,
             session.steeringInFlight == nil
         else {

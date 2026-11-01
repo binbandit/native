@@ -5,6 +5,7 @@ extension SessionModel {
     /// agent's reply. Meanwhile the session stays idle to the eye, but new messages queue and
     /// queued ones wait. Throws unless the session is idle, or if the turn fails.
     func runHiddenCommand(_ command: String) async throws -> String {
+        try checkReadOnlyDefault()
         guard acceptsPrompts else { throw SendError.notAcceptingPrompts }
         switch phase {
         case .loading: throw SendError.loading

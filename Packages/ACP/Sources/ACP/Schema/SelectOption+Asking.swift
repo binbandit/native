@@ -2,7 +2,8 @@ extension ConfigOption.SelectOption {
     /// The moment a known permission mode asks, rather than the adapter's technical mode name.
     /// Unknown modes keep their own words; a new adapter must never inherit guessed permissions.
     public var askingTitle: String {
-        switch value {
+        if let mode = TaskPermissionMode(rawValue: value) { return mode.title }
+        return switch value {
         case "read-only", "default": "Before any change"
         case "workspace-write": "Before leaving the worktree"
         case "acceptEdits": "Beyond allowed edits and commands"
@@ -19,6 +20,7 @@ extension ConfigOption.SelectOption {
     /// line under the levels. `workspace` names where it works freely (the task's branch); unknown
     /// modes keep the agent's own description.
     public func askingCaption(agentName: String, workspace: String?) -> String? {
+        if let mode = TaskPermissionMode(rawValue: value) { return description ?? mode.summary }
         let place = workspace ?? "the project"
         return switch value {
         case "read-only": "Reads freely. Asks before editing a file or running a command."

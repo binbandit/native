@@ -34,7 +34,7 @@ struct PermissionCaptionTests {
                 "Reads freely. Asks before every edit and command.",
                 "Edits files in fix/queued-row and runs common file commands freely. Asks before anything else.",
                 "Create a plan before making changes",
-                "Claude Code judges each action and asks only when one looks risky.",
+                "Claude handles permission decisions",
                 "Full access. Runs anything on this Mac without asking.",
             ])
     }

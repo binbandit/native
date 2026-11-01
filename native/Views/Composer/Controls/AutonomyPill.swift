@@ -22,11 +22,6 @@ struct AutonomyPill: View {
         levels[min(level, levels.count - 1)]
     }
 
-    /// The top level (Claude Code's Bypass permissions, Codex's Full access) skips every check.
-    private var isUnchecked: Bool {
-        levels.count > 2 && level == levels.count - 1
-    }
-
     var body: some View {
         Button {
             isPickerOpen.toggle()
@@ -40,7 +35,7 @@ struct AutonomyPill: View {
                 }
                 EffortBars(
                     total: max(levels.count - 1, 1), level: level, isMuted: isSuspended,
-                    tint: isUnchecked ? .dsDanger : .dsAccent)
+                    tint: .dsAccent)
             }
         }
         .buttonStyle(.pill(isOpen: isPickerOpen))
@@ -64,7 +59,7 @@ struct AutonomyPill: View {
             " Press \($0.displayString) for the next level."
         }
         return isSuspended
-            ? "Autonomy resumes at \(detail) when Plan Mode ends"
+            ? "Autonomy resumes at \(detail) when the task mode ends"
             : "Autonomy: \(detail).\(next ?? "")"
     }
 }
@@ -103,7 +98,7 @@ struct AutonomyLevelPicker: View {
     DSPreviewPair {
         if let autonomy = settings.autonomy, let suspended = plan.autonomy {
             VStack(alignment: .leading, spacing: DS.Space.lg) {
-                // Every level, least to most autonomous; the last skips every check.
+                // Every shared mode, least to most autonomous.
                 ForEach(settings.autonomyLevels.indices, id: \.self) { level in
                     AutonomyPill(
                         setting: autonomy, levels: settings.autonomyLevels, level: level, isSuspended: false,

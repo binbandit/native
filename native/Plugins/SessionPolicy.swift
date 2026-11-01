@@ -68,6 +68,7 @@ protocol SessionPolicyTranslator: Sendable {
     /// Whether a session in `mode` (the value of its `mode` setting) runs tool calls without asking
     /// the user, so the calls Native makes on its behalf (a script's, say) don't ask either.
     func approvesToolCallsUnasked(inMode mode: String) -> Bool
+    var permissionMapping: TaskPermissionMapping { get }
 }
 
 /// How an agent can apply a kind of intent.
@@ -86,6 +87,7 @@ enum SessionPolicySupport: Hashable, Sendable {
 }
 
 extension SessionPolicyTranslator {
+    var permissionMapping: TaskPermissionMapping { .standard }
     func sessionMeta(for policy: SessionPolicy) -> [String: JSONValue] { [:] }
     func launchEnvironment(for policy: SessionPolicy) -> [String: String] { [:] }
     func approvesToolCallsUnasked(inMode mode: String) -> Bool { false }

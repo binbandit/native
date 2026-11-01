@@ -56,13 +56,84 @@ private struct AgentModelChangeRegression {
         defer { UserDefaults.standard.removePersistentDomain(forName: domain) }
         do {
             try duplicateModels()
+            try await readOnlyDefaultMigration()
             try await run()
             try await inAppRecovery()
             try await permissionFallbacks()
         } catch { print("FAIL: \(error)"); exit(1) }
     }
 
+    static func readOnlyDefaultMigration() async throws {
+        for project in [nil, "sample"] as [String?] {
+            let defaults = PreviewUserDefaults()
+            let old = project.map { "projectDefaults.\($0).codex.permissions" } ?? "agentDefaults.codex.permissions"
+            defaults.set("read-only", forKey: old)
+            let app = AppModel(
+                plugins: PluginRegistry(previewing: [BuiltInPlugins.codex]), defaults: defaults, catalogURL: nil)
+            guard let agent = app.plugins.agent(.init(rawValue: "codex")) else {
+                throw ChangeFailure("No Codex fixture")
+            }
+            // No transport: a preview's /dev/null connection cannot answer permission RPCs.
+            let session = SessionModel(
+                agent: agent, id: SessionID("read-only-default"), cwd: URL(filePath: "/fixture"),
+                connection: nil, services: app.sessions.services, supportsSteering: true,
+                promptCapabilities: .init(), phase: .idle)
+            // Use the recorded provider controls, before Native's presentation mapping.
+            session.state.configOptions =
+                ComposerPreviewFixtures.decode(
+                    #"[{"id":"mode","name":"Mode","category":"mode","type":"select","currentValue":"workspace-write","options":[{"value":"read-only","name":"Read only"},{"value":"workspace-write","name":"Workspace"}]}]"#
+                ) ?? []
+            await session.applyPermissionDefault(project: project, defaults: defaults)
+            guard case .select(let current, _) = session.state.configOptions.first?.kind else {
+                throw ChangeFailure("No mode")
+            }
+            try require(current == "read-only", "Migrated read-only default granted workspace writes")
+            try require(
+                session.services.titles.configChoices(for: session.titleKey).requiresReadOnly == true,
+                "Read-only requirement was not retained")
+            session.state.configOptions =
+                ComposerPreviewFixtures.decode(
+                    #"[{"id":"mode","name":"Mode","category":"mode","type":"select","currentValue":"workspace-write","options":[{"value":"workspace-write","name":"Workspace"}]}]"#
+                ) ?? []
+            try require(
+                session.sendBlockedReason?.contains("read-only") == true, "Lost read-only restriction allowed sending")
+            do {
+                _ = try await session.submit("Keep the restriction", .queue)
+                throw ChangeFailure("Direct submission bypassed the read-only requirement")
+            } catch let error as SessionModel.SendError {
+                try require(error.localizedDescription.contains("read-only"), "Wrong direct-submission refusal")
+            }
+            session.draft = "Keep this draft"
+            await session.submit(.queue)
+            await session.send()
+            try require(session.draft == "Keep this draft", "Blocked send discarded the draft")
+            try require(!session.hasSubmittedPrompt, "Blocked send submitted work")
+            guard let raw = session.state.configOptions.first else { throw ChangeFailure("Missing mode fixture") }
+            let shown = CodexConfigOverrides.permissionMapping.presenting(raw)
+            await session.pick(shown, value: "ask-first")
+            try require(
+                session.services.titles.configChoices(for: session.titleKey).requiresReadOnly == nil,
+                "Explicit replacement did not release the migrated restriction")
+        }
+        print(
+            "PASS: user and project read-only migration, provider selection, blocked widening and explicit replacement")
+    }
+
     static func run() async throws {
+        let permission: ConfigOption = try JSONDecoder().decode(
+            ConfigOption.self,
+            from: Data(
+                #"{"id":"mode","name":"Mode","category":"mode","type":"select","currentValue":"workspace-write","options":[{"value":"workspace-write","name":"Workspace"},{"value":"read-only","name":"Read only"}]}"#
+                    .utf8))
+        let cap: Set<String> = ["accept-edits", "auto", "full-access"]
+        try require(
+            PolicyPermissionModes.forbids(permission, value: "workspace-write", forbidden: cap),
+            "Managed edit cap allowed workspace writes")
+        let capped = CodexConfigOverrides.permissionMapping.presenting(
+            permission, remembered: "ask-first", forbidden: cap)
+        try require(
+            !PolicyPermissionModes.forbids(capped, value: "ask-first", forbidden: cap),
+            "Managed edit cap blocked the read-only equivalent")
         let scratch = FileManager.default.temporaryDirectory.appending(path: "agent-model-\(UUID())")
         defer { try? FileManager.default.removeItem(at: scratch) }
         let defaults = PreviewUserDefaults()
@@ -104,6 +175,11 @@ private struct AgentModelChangeRegression {
                  {"id":"model","name":"Model","category":"model","type":"select","currentValue":"small",
                   "options":[{"value":"small","name":"Small"}]}]
                 """) ?? []
+        source.phase = .loading
+        source.phase = .idle
+        try require(
+            ComposerSettings(source.configOptions).autonomy?.value == "ask-first",
+            "Finishing history replay exposed raw provider permission levels")
         app.catalog.add(SessionInfo(sessionId: source.id, cwd: "/fixture"), for: source.agent.id, in: project.id)
         app.selection = source.key
         app.ordering.pin(source.key)
@@ -162,7 +238,7 @@ private struct AgentModelChangeRegression {
             target.cwd == source.cwd && source.isEarlierConversation && app.ordering.isPinned(target.key),
             "Task moved or duplicated")
         try require(ComposerSettings(target.configOptions).model?.value == "large", "Exact model not confirmed")
-        try require(ComposerSettings(target.configOptions).autonomy?.value == "read-only", "Permissions broadened")
+        try require(ComposerSettings(target.configOptions).autonomy?.value == "ask-first", "Permissions broadened")
         try require(tripwire.calls.isEmpty && hooks == 1, "Preparation allocated a worktree or duplicated task hooks")
         await firstRead.release(firstFile)
         try await readingFirst.value
@@ -313,32 +389,42 @@ private struct AgentModelChangeRegression {
         guard let script = ProcessInfo.processInfo.environment["NATIVE_AGENT_MODEL_FIXTURE_SCRIPT"] else {
             throw ChangeFailure("No permission fixture script")
         }
-        let cases: [(name: String, source: String, levels: String, expected: String?, notice: Bool)] = [
-            ("equal", "auto", #"[["default","Manual"],["agent","Auto review"]]"#, "agent", false),
-            ("stricter", "auto", #"[["default","Manual"],["acceptEdits","Accept edits"]]"#, "default", true),
+        let cases: [(name: String, source: String, levels: String, expected: String?, wire: String?, notice: Bool)] = [
+            ("equal", "auto", #"[["default","Manual"],["auto","Auto review"]]"#, "auto", "auto", false),
             (
-                "no safe match", "default",
-                #"[["agent-full-access","Full access"],["workspace-write","Workspace write"]]"#, "workspace-write", true
+                "stricter", "auto", #"[["default","Manual"],["acceptEdits","Accept edits"]]"#, "auto", "acceptEdits",
+                false
             ),
-            ("unknown", "auto", #"[["interactive","Interactive"],["autopilot","Autopilot"]]"#, "interactive", true),
-            ("no setting", "auto", "[]", nil, true),
-            ("plan supported", "plan", #"[["default","Manual"],["plan","Plan"]]"#, "plan", false),
+            ("edits fallback", "acceptEdits", #"[["default","Manual"]]"#, "accept-edits", "default", false),
             (
-                "plan separate unknown", "plan", #"[["interactive","Interactive"],["autopilot","Autopilot"]]"#,
-                "interactive", true
+                "full", "bypassPermissions", #"[["default","Manual"],["agent-full-access","Full access"]]"#,
+                "full-access", "agent-full-access", false
+            ),
+            ("no safe match", "default", #"[["agent-full-access","Full access"]]"#, nil, nil, false),
+            ("unknown", "auto", #"[["interactive","Interactive"],["autopilot","Autopilot"]]"#, nil, nil, false),
+            ("no setting", "auto", "[]", nil, nil, true),
+            ("migrated widened", "workspace-write", #"[["default","Manual"]]"#, "ask-first", "default", true),
+            ("migrated no control", "workspace-write", "[]", nil, nil, true),
+            (
+                "migrated equivalent", "workspace-write",
+                #"[["read-only","Read only"],["workspace-write","Workspace"]]"#, "read-only", "read-only", false
+            ),
+            ("plan supported", "plan", #"[["default","Manual"],["plan","Plan"]]"#, "plan", "plan", false),
+            (
+                "plan separate", "plan", #"[["default","Manual"],["auto","Auto review"]]"#, "ask-first", "default",
+                false
+            ),
+            ("plan no setting", "plan", "[]", nil, nil, true),
+            ("plan unsupported", "plan", #"[["default","Manual"],["auto","Auto"]]"#, "ask-first", "default", true),
+            (
+                "policy closer", "bypassPermissions", #"[["default","Manual"],["auto","Auto review"]]"#,
+                "full-access", "default", false
             ),
             (
-                "read-only separate unknown", "read-only",
-                #"[["interactive","Interactive"],["autopilot","Autopilot"]]"#, "interactive", true
+                "policy limited", "auto", #"[["default","Manual"],["auto","Auto review"]]"#, "accept-edits", "default",
+                true
             ),
-            ("plan separate", "plan", #"[["default","Manual"],["agent","Auto review"]]"#, "default", false),
-            ("plan no setting", "plan", "[]", nil, true),
-            ("plan unsupported", "plan", #"[["default","Manual"],["auto","Auto"]]"#, "default", true),
-            ("manual read-only", "read-only", #"[["default","Manual"],["plan","Plan"]]"#, "plan", true),
-            ("read-only via plan", "read-only", #"[["default","Manual"],["plan","Plan"]]"#, "plan", true),
-            ("policy closer", "bypassPermissions", #"[["default","Manual"],["agent","Auto review"]]"#, "default", true),
-            ("policy limited", "auto", #"[["default","Manual"],["agent","Auto review"]]"#, "default", true),
-            ("policy locked", "auto", #"[["default","Manual"],["auto","Auto"]]"#, nil, false),
+            ("policy locked", "auto", #"[["default","Manual"],["auto","Auto"]]"#, nil, nil, false),
         ]
         for test in cases {
             let scratch = FileManager.default.temporaryDirectory.appending(path: "agent-permissions-\(UUID())")
@@ -373,7 +459,7 @@ private struct AgentModelChangeRegression {
                         source: AgentModelPermissionPolicy(
                             forbidden: test.name == "policy locked"
                                 ? ["default", "auto"]
-                                : ["policy limited", "policy closer"].contains(test.name) ? ["agent"] : []))),
+                                : ["policy limited", "policy closer"].contains(test.name) ? ["auto"] : []))),
                 defaults: defaults, catalogURL: nil, experiments: experiments)
             defer { app.stopAgents() }
             _ = await app.checkForAgents()
@@ -395,6 +481,14 @@ private struct AgentModelChangeRegression {
                     in: app, agent: "fixture", id: "model-source", cwd: scratch.path,
                     configOptions: [config.model?.option, config.autonomy?.option].compactMap { $0 })
             else { throw ChangeFailure("No permission source") }
+            let migrated = test.name.hasPrefix("migrated ")
+            source.services.titles.updateConfigChoices(for: source.titleKey) {
+                $0.requiresReadOnly = migrated ? true : nil
+            }
+            if migrated {
+                try require(source.inactiveReadOnlyDefault != nil, "Widened source was not blocked")
+            }
+            let sourcePermission = ComposerSettings(source.configOptions).autonomy?.value
             source.previewExchange("Keep the task", reply: "Progress saved")
             if (test.source == "plan" || test.source == "read-only") && test.name != "manual read-only" {
                 await modes.select(.ask, in: source)
@@ -407,16 +501,14 @@ private struct AgentModelChangeRegression {
             app.chooseAgentModel(choice, for: source)
             guard let change = source.modelChange else { throw ChangeFailure("No permission change") }
             try await wait(test.name) { change.stage == .applied || change.stage == .failed }
-            if test.name == "policy locked" {
+            if ["policy locked", "unknown", "no safe match"].contains(test.name) {
                 try require(
-                    change.stage == .failed && change.isPermissionPolicyBlocked && app.selection == source.key,
-                    "Policy did not keep the original agent")
-                let message = change.error ?? ""
+                    change.stage == .failed && app.selection == source.key,
+                    "An unsafe permission fallback replaced the original agent")
                 try require(
-                    message.components(separatedBy: "Example Organization").count == 2
-                        && message.contains("doesn't allow any of Target's permission levels"),
-                    "Policy failure did not name the organization once")
-                print("PASS: policy denying every offered mode blocks with one organization name")
+                    change.isPermissionPolicyBlocked == (test.name == "policy locked"),
+                    "An unavailable provider control was blamed on policy")
+                print("PASS: \(test.name) keeps the source agent")
                 continue
             }
             try require(change.stage == .applied, test.name + ": " + (change.error ?? "Not applied"))
@@ -425,7 +517,18 @@ private struct AgentModelChangeRegression {
             }
             try require(
                 ComposerSettings(target.configOptions).autonomy?.value == test.expected,
-                test.name + " selected the wrong level")
+                test.name
+                    + " selected \(ComposerSettings(target.configOptions).autonomy?.value ?? "none"), expected \(test.expected ?? "none")"
+            )
+            if let wire = test.wire {
+                guard
+                    case .select(let actual, _) = target.state.configOptions.first(where: { $0.category == "mode" })?
+                        .kind
+                else {
+                    throw ChangeFailure("Missing provider permission control")
+                }
+                try require(actual == wire, test.name + " sent the wrong provider control")
+            }
             try require(
                 (change.permissionNotice != nil) == test.notice, test.name + " explanation missing or unnecessary")
             if test.source == "plan" || test.source == "read-only" {
@@ -440,17 +543,27 @@ private struct AgentModelChangeRegression {
                         "Lost planning restriction was silent")
                 }
             }
-            if test.name == "policy limited" || test.name == "policy closer" {
+            if migrated {
                 try require(
-                    change.permissionNotice?.contains("can't use") == true
-                        && change.permissionNotice?.contains("doesn't offer") == false
-                        && change.permissionNotice?.contains("when something looks risky") == true,
-                    "Policy-limited permission copy blamed the agent's offered choices")
-            }
-            if test.name == "plan separate unknown" || test.name == "read-only separate unknown" {
+                    target.services.titles.configChoices(for: target.titleKey).requiresReadOnly == true,
+                    "Model replacement lost the migrated read-only requirement")
                 try require(
-                    change.permissionNotice?.contains("can't be compared") == true,
-                    "Planning confirmation hid an independent unknown permission level")
+                    (target.inactiveReadOnlyDefault == nil) == (test.name == "migrated equivalent"),
+                    "Replacement did not enforce its migrated requirement")
+                if test.name == "migrated equivalent" {
+                    guard let index = target.state.configOptions.firstIndex(where: { $0.category == "mode" }),
+                        case .select(_, let choices) = target.state.configOptions[index].kind
+                    else { throw ChangeFailure("Missing read-only control") }
+                    target.state.configOptions[index].kind = .select(currentValue: "workspace-write", options: choices)
+                    try require(target.inactiveReadOnlyDefault != nil, "Later provider widening allowed sending")
+                }
+                if let option = target.configOptions.first(where: { $0.category == "mode" }) {
+                    await target.pick(option, value: "ask-first")
+                    try require(target.inactiveReadOnlyDefault == nil, "Explicit replacement remained blocked")
+                    try require(
+                        target.services.titles.configChoices(for: target.titleKey).requiresReadOnly == nil,
+                        "Explicit replacement retained the migrated requirement")
+                }
             }
             let stored = AgentModelContinuations(defaults: defaults).receipt(for: target.key)
             try require(stored?.permissionNotice == change.permissionNotice, "Permission notice did not persist")
@@ -462,7 +575,8 @@ private struct AgentModelChangeRegression {
             try require(!calls.contains("session/prompt"), "Permission fallback sent a prompt")
             change.undo()
             try require(
-                app.selection == source.key && ComposerSettings(source.configOptions).autonomy?.value == test.source,
+                app.selection == source.key
+                    && ComposerSettings(source.configOptions).autonomy?.value == sourcePermission,
                 "Undo did not restore the original permission level")
             print("PASS: permission fallback \(test.name), receipt persistence, no prompt and Undo")
         }
@@ -609,7 +723,7 @@ private struct AgentModelChangeRegression {
             }
             try require(
                 ComposerSettings(reopened.configOptions).model?.value == "gpt-6-sol"
-                    && ComposerSettings(reopened.configOptions).autonomy?.value == "read-only",
+                    && ComposerSettings(reopened.configOptions).autonomy?.value == "ask-first",
                 "Recovery lost confirmed settings")
             try require(
                 again.earlierConversations.conversation(before: key) == source.key,

@@ -31,10 +31,14 @@ public struct ConfigChoices: Codable, Hashable, Sendable {
     /// By option id, the id `session/set_config_option` takes.
     public private(set) var choices: [String: Choice] = [:]
 
+    /// A migrated sandbox restriction stays in force until the user explicitly replaces it.
+    /// Optional for compatibility with choices saved before this restriction was recorded.
+    public var requiresReadOnly: Bool?
+
     public init() {}
 
     public var isEmpty: Bool {
-        choices.isEmpty
+        choices.isEmpty && requiresReadOnly != true
     }
 
     /// Records that the client set `option` to `value`.
@@ -84,6 +88,7 @@ public struct ConfigChoices: Codable, Hashable, Sendable {
     /// Takes on `other`'s choices, which win over these where both chose an option.
     public mutating func adopt(_ other: ConfigChoices) {
         choices.merge(other.choices) { _, theirs in theirs }
+        if let restriction = other.requiresReadOnly { requiresReadOnly = restriction }
     }
 
     /// The order to restore the choices in: the model first, since changing it can change what the

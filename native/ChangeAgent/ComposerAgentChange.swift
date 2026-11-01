@@ -199,8 +199,9 @@ final class ComposerAgentChange {
         let sourceMode = ComposerSettings(source.configOptions).autonomy
         let planning = ModeAgentSettings(source.configOptions).isPlanOn
         let targetSettings = ModeAgentSettings(target.configOptions)
-        permissionSourceValue = planning ? "plan" : sourceMode?.value
-        let needsRestriction = planning || sourceMode?.value == "read-only"
+        let requiresReadOnly = source.services.titles.configChoices(for: source.titleKey).requiresReadOnly == true
+        permissionSourceValue = requiresReadOnly ? "read-only" : planning ? "plan" : sourceMode?.value
+        let needsRestriction = requiresReadOnly || planning || sourceMode?.value == "read-only"
         includesPlanLevel = needsRestriction && targetSettings.isPlanInAutonomy
         let offersReadOnly = targetSettings.levels.contains {
             $0.value == "read-only"
@@ -214,7 +215,8 @@ final class ComposerAgentChange {
                 throw Failure("Couldn't keep Plan Mode. \(source.agentName) is still selected. Try Again.")
             }
             expectedPlanOption = plan.id
-            permissionSourceValue = sourceMode?.value == "plan" ? nil : sourceMode?.value
+            permissionSourceValue =
+                requiresReadOnly ? "read-only" : sourceMode?.value == "plan" ? nil : sourceMode?.value
         }
         guard let targetMode = ComposerSettings(target.configOptions).autonomy, !targetMode.choices.isEmpty else {
             permissionValue = nil
@@ -229,11 +231,23 @@ final class ComposerAgentChange {
             return
         }
         let offered = permissionLevels(targetMode)
+        if offered.isEmpty, targetMode.option.permissionMappings?.isEmpty == true {
+            throw Failure(
+                "\(choice.agentName) does not offer a safe permission equivalent. Keep the current agent or choose another."
+            )
+        }
         guard
             let selection = AgentModelPermissions.selection(
                 for: permissionSourceValue, offered: offered,
                 forbidden: source.services.plugins.policyCenter.policy.forbiddenPermissionModes)
-        else { throw permissionPolicyFailure(source.services.plugins.policyCenter.policy) }
+        else {
+            if source.services.plugins.policyCenter.policy.forbiddenPermissionModes.isEmpty {
+                throw Failure(
+                    "\(choice.agentName) has no sufficiently restrictive permission mode. Keep the current agent or choose another."
+                )
+            }
+            throw permissionPolicyFailure(source.services.plugins.policyCenter.policy)
+        }
         permissionValue = selection.value
         permissionNotice = ComposerAgentPermissionNotice.text(
             selection, source: sourceMode, target: targetMode,
@@ -264,9 +278,10 @@ final class ComposerAgentChange {
                 targetMode.choices.first { $0.value == selection.value }?.askingTitle.lowercased() ?? selection.value
             let using: String
             switch selection.value {
-            case "default", "workspace-write", "acceptEdits", "auto", "agent": using = "ask \(title)"
+            case "ask-first", "accept-edits", "default", "workspace-write", "acceptEdits", "auto", "agent":
+                using = "ask \(title)"
             case "read-only": using = "use read-only permissions"
-            case "bypassPermissions", "agent-full-access": using = "never ask"
+            case "full-access", "bypassPermissions", "agent-full-access": using = "never ask"
             case "dontAsk": using = "refuse anything not already allowed"
             default: using = "use '\(title)'"
             }
@@ -276,9 +291,19 @@ final class ComposerAgentChange {
     }
 
     private func permissionLevels(_ setting: SelectSetting) -> [String] {
-        if includesPlanLevel { return setting.choices.map(\.value) }
-        let levels = setting.choices.map(\.value).filter { $0 != ComposerSettings.planValue }
-        return levels.isEmpty ? setting.choices.map(\.value) : levels
+        let forbidden = app?.plugins.policyCenter.policy.forbiddenPermissionModes ?? []
+        let offered = setting.choices.filter { choice in
+            // An unknown active control is displayed for disclosure, not a safe switching equivalent.
+            let available =
+                setting.option.permissionMappings.map { mappings in
+                    mappings[choice.value] != nil || choice.value == "plan" || choice.value == "read-only"
+                } ?? true
+            return available
+                && !PolicyPermissionModes.forbids(setting.option, value: choice.value, forbidden: forbidden)
+        }
+        if includesPlanLevel { return offered.map(\.value) }
+        let levels = offered.map(\.value).filter { $0 != ComposerSettings.planValue }
+        return levels.isEmpty ? offered.map(\.value) : levels
     }
 
     private func permissionPolicyFailure(_ policy: NativePolicy) -> Failure {
