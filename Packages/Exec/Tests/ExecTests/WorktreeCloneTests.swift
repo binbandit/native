@@ -236,6 +236,45 @@ import Testing
         #expect(try String(contentsOf: outside.appending(path: "file"), encoding: .utf8) == "external sentinel")
     }
 
+    @Test func rejectsCombiningMarkAfterPathSeparator() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        let mark = "\u{301}"
+        try fixture.write("node_modules/cache", "dependency cache")
+        try fixture.write("safe/" + mark + "/cache", "source directory")
+        try fixture.write("safe/file", "source target")
+        try fixture.write("file", "source root file")
+        try Data("task root file".utf8).write(to: fixture.destination.appending(path: "file"))
+        let outside = fixture.base.appending(path: "outside")
+        try FileManager.default.createDirectory(at: outside.appending(path: mark), withIntermediateDirectories: true)
+        try Data("external sentinel".utf8).write(to: outside.appending(path: "file"))
+        try FileManager.default.createSymbolicLink(
+            atPath: fixture.source.appending(path: "alias").path(), withDestinationPath: "safe")
+        try FileManager.default.createSymbolicLink(
+            atPath: fixture.destination.appending(path: "alias").path(), withDestinationPath: outside.path())
+        try FileManager.default.createSymbolicLink(
+            atPath: fixture.source.appending(path: "node_modules/link").path(),
+            withDestinationPath: "../alias/" + mark + "/../file")
+        let report = try await fixture.clone(["node_modules"])
+        #expect(report.cloned.isEmpty && report.skipped == ["node_modules"])
+        #expect(!FileManager.default.fileExists(atPath: fixture.destination.appending(path: "node_modules").path()))
+        #expect(try String(contentsOf: outside.appending(path: "file"), encoding: .utf8) == "external sentinel")
+    }
+
+    @Test func preservesCombiningMarkCachePaths() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        let target = "pkg/\u{301}/tool"
+        try fixture.write("node_modules/" + target, "unicode executable")
+        try FileManager.default.createSymbolicLink(
+            atPath: fixture.source.appending(path: "node_modules/link").path(), withDestinationPath: target)
+        let report = try await fixture.clone(["node_modules"])
+        #expect(report.cloned == ["node_modules"])
+        #expect(
+            try String(contentsOf: fixture.destination.appending(path: "node_modules/link"), encoding: .utf8)
+                == "unicode executable")
+    }
+
     @Test func preservesStandaloneCachedCheckoutsButRejectsGitdirRedirects() async throws {
         let fixture = try Fixture()
         defer { fixture.remove() }

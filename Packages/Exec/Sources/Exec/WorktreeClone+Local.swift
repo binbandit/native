@@ -28,7 +28,7 @@ extension WorktreeClone {
                 report.skipped.append(path)
                 continue
             }
-            let components = path.split(separator: "/").map(String.init)
+            let components = Self.pathComponents(path)
             guard let name = components.last else { continue }
             do {
                 let from = try Self.parentDirectory(sourceFD, components: components.dropLast(), create: false)
@@ -69,9 +69,15 @@ extension WorktreeClone {
         return report
     }
 
+    private static func pathComponents(_ path: String, omittingEmpty: Bool = true) -> [String] {
+        // A slash followed by a combining mark is one Swift Character, but two POSIX components.
+        path.utf8.split(separator: UInt8(ascii: "/"), omittingEmptySubsequences: omittingEmpty)
+            .map { String(decoding: $0, as: UTF8.self) }
+    }
+
     private static func validRelativePath(_ path: String) -> Bool {
-        !path.isEmpty && !path.hasPrefix("/") && !path.contains("\0")
-            && !path.split(separator: "/", omittingEmptySubsequences: false).contains {
+        !path.isEmpty && path.utf8.first != UInt8(ascii: "/") && !path.utf8.contains(0)
+            && !pathComponents(path, omittingEmpty: false).contains {
                 $0.isEmpty || $0 == "." || $0 == ".." || $0.lowercased() == ".git"
             }
     }
@@ -183,8 +189,8 @@ extension WorktreeClone {
     private static func isInternalCacheLink(
         _ link: String, relative: String, projectPath: String, project: Int32
     ) -> Bool {
-        let relativeParts = relative.split(separator: "/").map(String.init)
-        let projectParts = projectPath.split(separator: "/").map(String.init)
+        let relativeParts = pathComponents(relative)
+        let projectParts = pathComponents(projectPath)
         let cacheParts = Array(projectParts.dropLast(relativeParts.count - 1))
         guard let cache = try? parentDirectory(project, components: cacheParts[...], create: false) else {
             return false
@@ -195,9 +201,9 @@ extension WorktreeClone {
     }
 
     private static func resolveLink(_ link: String, base: [String], root: Int32, followLinks: Bool) -> [String]? {
-        guard !link.hasPrefix("/") else { return nil }
+        guard link.utf8.first != UInt8(ascii: "/") else { return nil }
         var resolved = base
-        var pending = link.split(separator: "/").map(String.init)
+        var pending = pathComponents(link)
         var followed = 0
         while !pending.isEmpty {
             let part = pending.removeFirst()
@@ -220,9 +226,9 @@ extension WorktreeClone {
                 let count = readlinkat(parent, part, &buffer, buffer.count)
                 guard count > 0, count < buffer.count else { return nil }
                 let target = String(decoding: buffer.prefix(count), as: UTF8.self)
-                guard !target.hasPrefix("/") else { return nil }
+                guard target.utf8.first != UInt8(ascii: "/") else { return nil }
                 // Expand links before processing subsequent '..' components, as the filesystem does.
-                pending = target.split(separator: "/").map(String.init) + pending
+                pending = pathComponents(target) + pending
                 continue
             }
             guard
@@ -235,7 +241,7 @@ extension WorktreeClone {
     }
 
     private static func isExistingProjectLink(_ link: String, at path: String, project: Int32, task: Int32) -> Bool {
-        let base = Array(path.split(separator: "/").map(String.init).dropLast())
+        let base = Array(pathComponents(path).dropLast())
         // Expand package links in the source before checking the tracked task target. The cache is
         // still being cloned, so its package links may not exist in the task yet. Each copied
         // link is checked separately, and the final task target must have no link indirection.
@@ -260,7 +266,7 @@ extension WorktreeClone {
             let count = readlinkat(parent, name, &buffer, buffer.count)
             guard count > 0, count < buffer.count else { throw posixError() }
             let link = String(decoding: buffer.prefix(count), as: UTF8.self)
-            let base = Array(path.split(separator: "/").map(String.init).dropLast())
+            let base = Array(pathComponents(path).dropLast())
             guard resolveLink(link, base: base, root: task, followLinks: true) != nil else {
                 throw CommandError.refused("A cache contains a link outside the copied folder.")
             }
