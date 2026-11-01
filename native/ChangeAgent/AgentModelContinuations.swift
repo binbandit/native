@@ -64,7 +64,9 @@ final class AgentModelContinuations {
     }
 
     func pendingTransferID(for session: SessionKey) -> UUID? {
-        guard let transfer = transfer(for: session), transfer.receipt.delivery == .prepared else { return nil }
+        guard let transfer = transfer(for: session) ?? migrateLegacy(for: session),
+            transfer.receipt.delivery == .prepared
+        else { return nil }
         return transfer.receipt.id
     }
 
@@ -129,17 +131,30 @@ final class AgentModelContinuations {
     func take(
         for session: SessionKey, budget: ContextTransferSelector.Budget = .init()
     ) -> ContentBlock? {
-        if var transfer = transfer(for: session) {
-            let block = transfer.beginDelivery(budget: budget)
-            keepTransfer(transfer, for: session)
-            return block
-        }
-        guard let context = pending.removeValue(forKey: key(session)) else { return nil }
+        guard var transfer = transfer(for: session) ?? migrateLegacy(for: session) else { return nil }
+        let block = transfer.beginDelivery(budget: budget)
+        keepTransfer(transfer, for: session)
+        return block
+    }
+
+    private func migrateLegacy(for session: SessionKey) -> ContextTransfer? {
+        guard let context = pending[key(session)] else { return nil }
+        let prior = receipt(for: session)
+        let source = prior?.source ?? session
+        let transfer = ContextTransfer(
+            draft: .init(items: [
+                .init(
+                    reference: .init(
+                        source: .init(agent: source.agent.rawValue, session: source.id),
+                        id: "legacy-context", kind: .legacy, position: 0), text: context)
+            ]),
+            destination: .init(agent: session.agent.rawValue, session: session.id), model: prior?.modelValue,
+            plan: .resolve(.freshConversation, target: .init(negotiated: nil)), budget: .init())
+        keepTransfer(transfer, for: session)
+        pending.removeValue(forKey: key(session))
         earlierContext[key(session)] = context
         defaults.set(pending, forKey: Self.storageKey)
         defaults.set(earlierContext, forKey: Self.storageKey + ".earlier")
-        return PromptPreamble(
-            marker: .init(id: "task-continuation", label: "Earlier context"), instructions: context
-        ).block
+        return transfer
     }
 }

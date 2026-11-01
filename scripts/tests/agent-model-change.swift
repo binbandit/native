@@ -395,7 +395,9 @@ private struct AgentModelChangeRegression {
         try require(
             reopened.take(for: source.key) != nil && reopened.take(for: source.key) == nil,
             "Pending context didn't survive reload or was reused")
-        try require(reopened.context(for: source.key) == "Context fixture", "A later selection lost earlier context")
+        try require(
+            reopened.context(for: source.key)?.contains("Context fixture") == true,
+            "A later selection lost earlier context")
         print(
             "PASS: locally prepared context survives relaunch, is consumed once and remains available to later choices")
         store.prepare(transfer, for: source.key)
@@ -410,6 +412,13 @@ private struct AgentModelChangeRegression {
             uncertain.transfer(for: source.key)?.receipt.delivery == .uncertain,
             "An unrelated acknowledgement confirmed an uncertain attempt")
         print("PASS: uncertain delivery survives reload, cannot replay and rejects unrelated acknowledgements")
+        store.prepare(String(repeating: "oversized legacy item", count: 2_000), for: source.key)
+        try require(store.take(for: source.key) == nil, "Legacy pending context bypassed the budget")
+        let migrated = AgentModelContinuations(defaults: defaults).transfer(for: source.key)
+        try require(
+            migrated?.receipt.delivery == .notSent && migrated?.receipt.omitted.first?.reason == .budget,
+            "Oversized legacy context was cut or omitted without a receipt")
+        print("PASS: legacy pending handoffs migrate as a whole budgeted item")
         await client.stop()
     }
 
