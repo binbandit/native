@@ -97,11 +97,13 @@ extension HostCore {
         let turn = UnfinishedTurn(sessionID: session.id, prompt: prompt, kind: kind, attempts: attempts)
         session.record.lastActivity = .now
         session.record.isQueuePaused = false
+        let history = recordableHistory(of: session).flatMap { defersPromptRecording(session, in: $0) ? nil : $0 }
         try store.transaction {
             try store.beginTurn(turn)
             try store.recordDelivery(.prompted, for: prompt.id, in: session.id)
             try store.setQueue(session.queue, for: session.id)
             try store.updateSession(session.record)
+            if let history { recordPrompt(prompt, in: history) }
         }
         session.steeringGate.reset()
         session.turn = turn
@@ -118,6 +120,7 @@ extension HostCore {
         session.turnEcho = (echo, .now)
         append(.prompt(echo), to: session)
         session.turnItemsStart = session.mirror.state.items.count
+        session.historyTurnStart = session.turnItemsStart
         titleAfterPrompt(session, prompt: prompt, kind: kind)
         publish(session)
         let blocks = (preamble.map { [$0.preamble.block] } ?? []) + (prompt.content ?? [.text(prompt.text)])
@@ -131,6 +134,7 @@ extension HostCore {
         guard session.turn != nil, let (echo, sentAt) = session.turnEcho else { return }
         append(.prompt(echo), to: session, at: sentAt)
         session.turnItemsStart = session.mirror.state.items.count
+        session.historyTurnStart = session.turnItemsStart
     }
 
     private func run(_ turn: UnfinishedTurn, blocks: [ContentBlock], in session: HostSession) async {
@@ -140,6 +144,8 @@ extension HostCore {
             // The turn stays committed; it runs once the agent can (see `prompt`, `load`).
             return
         }
+        // After any history the load imported (`defersPromptRecording`); a repeat records nothing.
+        recordPromptAfterLoad(turn.prompt, in: session)
         guard session.turn?.requestID == turn.requestID, let link = agents[session.record.agentID],
             let peer = link.peer,
             let agentSessionID = session.record.agentSessionID
@@ -233,6 +239,7 @@ extension HostCore {
         if let turn = session.turn, turn.kind == .prompt {
             titleAfterFirstTurn(session, promptID: turn.prompt.id, succeeded: stopReason == "end_turn")
         }
+        recordTurnEnd(of: session, stopReason: stopReason)
         session.steeringGate.reset()
         session.steeringInterruptTurn = nil
         for index in session.queue.indices { session.queue[index].prompt.steersAfterTools = false }
