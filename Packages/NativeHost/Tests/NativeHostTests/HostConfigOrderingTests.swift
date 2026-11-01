@@ -96,6 +96,36 @@ struct HostConfigOrderingTests {
         await recorder.stop()
     }
 
+    @Test("An idle update acknowledges settings before restarting", arguments: [false, true])
+    func settingsReplyBeforeRestart(reject: Bool) async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        let gate = harness.root.appending(path: "config-gate")
+        harness.agentEnvironment["FAKE_AGENT_CONFIG_GATE"] = gate.path
+        if reject { harness.agentEnvironment["FAKE_AGENT_REJECT_MODEL"] = "1" }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let session = try await recorder.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: harness.root.path))
+        let model = Task {
+            try await recorder.client.setConfigOption(
+                SetConfigOptionParams(sessionID: session.id, configID: "model", value: "beta"))
+        }
+        try await recorder.wait("the model change to start") { _ in
+            harness.received.contains("config-pending\tmodel=beta")
+        }
+        try await recorder.client.shutdownHost(stopAgents: false)
+        #expect(try await harness.waitForExit(timeout: .milliseconds(100)) == nil)
+        try Data().write(to: gate)
+        if reject {
+            await #expect(throws: RPCError.self) { try await model.value }
+        } else {
+            try await model.value
+        }
+        #expect(try await harness.waitForExit() == 75)
+        await recorder.stop()
+    }
+
     @Test("Pending settings cannot outlive a restart or closed task", arguments: ["restart", "close"])
     @HostActor func replacedSessionRejectsPendingChanges(_ action: String) async throws {
         let rig = try HostStopCommandRig()

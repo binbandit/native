@@ -138,6 +138,8 @@ extension HostCore {
         } catch {
             try? client.peer.respond(to: requestID, error: RPCError(code: -32000, message: error.localizedDescription))
         }
+        // Applied and rejected settings both release their hold. Send their reply before an update exits.
+        if message.method == HostProtocol.Method.setConfigOption { exitIfIdleForRestart() }
     }
 
     /// Handles one request. `reply` must be called, once, in the same actor turn as the state the

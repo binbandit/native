@@ -30,7 +30,6 @@ extension HostCore {
             if session.configChange?.id == id {
                 session.configChange = nil
                 if sessions[session.id] === session { publish(session) }
-                exitIfIdleForRestart()
             }
         }
         try await task.value
