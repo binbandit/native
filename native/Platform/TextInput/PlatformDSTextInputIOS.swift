@@ -92,6 +92,7 @@ struct PlatformDSTextInput: UIViewRepresentable {
         func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
             guard let editor = textView as? PlatformDSTextInputIOSView else { return true }
             if text == "\n", editor.markedTextRange == nil, !editor.literalNewline {
+                if input.onEvent(.init(key: .return)) { return false }
                 if input.onKey(.submit) != true { input.onSubmit() }
                 return false
             }
@@ -208,6 +209,7 @@ final class PlatformDSTextInputIOSView: UITextView, UIDropInteractionDelegate, U
     }
     override func insertText(_ text: String) {
         if text == "\n", markedTextRange == nil, !literalNewline {
+            if input?.onEvent(.init(key: .return)) == true { return }
             if input?.onKey(.submit) != true { input?.onSubmit() }
             return
         }

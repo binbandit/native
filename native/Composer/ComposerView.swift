@@ -133,3 +133,7 @@ struct ComposerView: View {
     DSPreviewPair { ComposerPendingPreviewFixtures.composer(.question) }
 }
 #endif
+
+extension FocusedValues {
+    @Entry var contextUsePopover: Binding<Bool>?
+}
