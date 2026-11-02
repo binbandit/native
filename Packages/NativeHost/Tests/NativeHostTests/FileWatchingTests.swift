@@ -106,9 +106,12 @@ struct FileWatchingTests {
                 heard.append(batch)
             }
         }
-        try Data("new".utf8).write(to: URL(filePath: folder + "/new.txt"))
-        try await pollUntil("the new file") { heard.values.flatMap(\.paths).contains(folder + "/new.txt") }
-        following.cancel()
+        defer { following.cancel() }
+        // A first write can race FSEvents registering this newly created temporary folder.
+        try await pollUntil("the new file") {
+            try Data(UUID().uuidString.utf8).write(to: URL(filePath: folder + "/new.txt"))
+            return heard.values.flatMap(\.paths).contains(folder + "/new.txt")
+        }
     }
 
     /// An empty folder, with symbolic links resolved as the host's paths are.
