@@ -16,6 +16,7 @@ extension ExperimentCatalog {
         Gate.composerV3,
         Gate.composeTask,
         Gate.projectFolderTasks,
+        Gate.warmWorktrees,
         Gate.changeAgent,
         Gate.taskHistory,
         Gate.coordinatorTasks,
@@ -54,6 +55,13 @@ extension Gate {
         id: "NativeComposerV3", title: "Composer field",
         summary: "Try the growing message field with agent, model, mode and folder controls in one row.",
         site: "Composer", stage: .labs, owner: "composer",
+        reviewBy: ReviewDate(year: 2026, month: 12, day: 15), default: false
+    )
+
+    static let warmWorktrees = Gate(
+        id: "NativeWarmWorktrees", title: "Warm Worktrees",
+        summary: "Start tasks with copies of the project's installed dependencies and build caches.",
+        site: "Project Settings", stage: .labs, owner: "worktrees",
         reviewBy: ReviewDate(year: 2026, month: 12, day: 15), default: false
     )
 

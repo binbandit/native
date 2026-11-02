@@ -95,7 +95,7 @@ struct TaskScriptTestPanel: View {
         case .scratchWorktree:
             guard let project else { return "Add a project to test in a scratch worktree of it." }
             return
-                "Native makes a worktree of \(projectDisplayName(project)) with its env files, runs the script there with the variables a task gets, then removes it."
+                "Native makes a worktree of \(projectDisplayName(project)) with its project files, runs the script there with the variables a task gets, then removes it."
         case .currentTask:
             guard let currentTask else { return "Open a task to test the script in its folder." }
             return "Runs for real in \(currentTask.abbreviatedPath), with the task's variables."

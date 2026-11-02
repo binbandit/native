@@ -32,6 +32,18 @@ public struct LocalCommandRunner: CommandRunner {
         _ command: Command, streaming onOutput: (@Sendable (CommandOutput) -> Void)?, input: CommandInput? = nil
     ) async throws -> CommandResult {
         try Task.checkCancellation()
+        if command.executable == WorktreeClone.executable {
+            let request = try JSONDecoder().decode(WorktreeClone.self, from: command.standardInput ?? Data())
+            let work = Task.detached(priority: .utility) { try request.perform() }
+            let report = try await withTaskCancellationHandler {
+                try await work.value
+            } onCancel: {
+                work.cancel()
+            }
+            let output = try JSONEncoder().encode(report)
+            onOutput?(CommandOutput(stream: .standardOutput, data: output))
+            return CommandResult(exitCode: 0, standardOutput: output, standardError: Data())
+        }
         guard let executable = Self.resolve(command.executable, path: command.environment["PATH"]) else {
             throw CommandError.notFound(command.executable)
         }

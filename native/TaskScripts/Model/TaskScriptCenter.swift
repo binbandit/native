@@ -97,6 +97,7 @@ final class TaskScriptCenter {
         run.copiedFiles = copiedFiles
         run.copyFailure = copyFailure
         run.baseNotice = baseNotice
+        if let baseNotice { run.output.appendLine(baseNotice) }
         record(run)
         guard !plan.isEmpty else {
             // No script to wait for; keep the workspace notice visible.
