@@ -60,6 +60,7 @@ private struct AgentModelChangeRegression {
             try await readOnlyDefaultMigration()
             try await directModePreambleBudget()
             try await run()
+            try await agentDefaultModel()
             try await inAppRecovery()
             try await permissionFallbacks()
         } catch { print("FAIL: \(error)"); exit(1) }
@@ -326,6 +327,11 @@ private struct AgentModelChangeRegression {
             target.cwd == source.cwd && source.isEarlierConversation && app.ordering.isPinned(target.key),
             "Task moved or duplicated")
         try require(ComposerSettings(target.configOptions).model?.value == "large", "Exact model not confirmed")
+        if let model = ComposerSettings(target.configOptions).model {
+            await target.setConfigOption(model.option, to: "small")
+            try require(first.receipt == "Using Droid · small", "The receipt kept the chosen model: \(first.receipt)")
+            await target.setConfigOption(model.option, to: "large")
+        }
         try require(ComposerSettings(target.configOptions).autonomy?.value == "ask-first", "Permissions broadened")
         try require(tripwire.calls.isEmpty && hooks == 1, "Preparation allocated a worktree or duplicated task hooks")
         await firstRead.release(firstFile)
@@ -508,6 +514,57 @@ private struct AgentModelChangeRegression {
             "Oversized legacy context was cut or omitted without a receipt")
         print("PASS: legacy pending handoffs migrate as a whole budgeted item")
         await client.stop()
+    }
+
+    /// Choosing an agent without naming a model starts it on the model a new task of that agent
+    /// would use (Settings, a launch argument, or what the user last picked), not the adapter's own.
+    static func agentDefaultModel() async throws {
+        UserDefaults.standard.set("large", forKey: "agentDefaults.droid.model")
+        defer { UserDefaults.standard.removeObject(forKey: "agentDefaults.droid.model") }
+        let defaults = PreviewUserDefaults()
+        let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
+        let manifest = PluginManifest(
+            id: "fixture", name: "Fixture",
+            agents: [
+                AgentManifest(id: "fixture", name: "Fixture", command: "/usr/bin/true"),
+                AgentManifest(id: "droid", name: "Droid", command: "/usr/bin/true"),
+            ])
+        let app = AppModel(
+            plugins: PluginRegistry(builtIns: [ManifestPlugin(manifest: manifest)], defaults: defaults),
+            defaults: defaults, catalogURL: nil, experiments: experiments)
+        _ = app.runtimes.sync()
+        let process = ChangeHost(folder: "/fixture", source: SessionID("source"))
+        let client = NativeHostClient(
+            transport: ChangeLink(process), clientInfo: .init(name: "Fixture", version: "1", build: "1"))
+        await client.start()
+        _ = try await client.connected()
+        app.connectHost(client: client)
+        await app.followHost()
+        _ = await app.checkForAgents()
+        for agent in await process.agents { app.runtime(.init(rawValue: agent.id))?.apply(agent) }
+        let project = app.projects.add(URL(filePath: "/fixture"))
+        guard let definition = app.plugins.agent(.init(rawValue: "fixture")) else { throw ChangeFailure("No agent") }
+        let source = SessionModel(
+            agent: definition, id: SessionID("source"), summary: await process.summaries[0], client: client,
+            services: app.sessions.services, promptCapabilities: .init(), origin: .user, parent: nil)
+        app.sessions.register(source)
+        source.previewExchange("Fix the login form", reply: "The form now keeps its draft.")
+        source.phase = .loading
+        source.phase = .idle
+        app.catalog.add(SessionInfo(sessionId: source.id, cwd: "/fixture"), for: source.agent.id, in: project.id)
+        app.selection = source.key
+        let choice = ComposerAgentModel(
+            agent: .init(rawValue: "droid"), agentName: "Droid", choice: .init(value: "", name: "Default"),
+            kind: .model(nil))
+        app.chooseAgentModel(choice, for: source)
+        guard let change = source.modelChange else { throw ChangeFailure("No pending agent choice") }
+        try await wait("agent prepared") { change.stage == .applied || change.stage == .failed }
+        try require(change.stage == .applied, change.error ?? "Not applied")
+        guard let key = app.selection, let target = app.sessions.session(key) else { throw ChangeFailure("No target") }
+        try require(
+            ComposerSettings(target.configOptions).model?.value == "large",
+            "The agent's own default replaced the model a new session of it starts on")
+        try require(change.receipt == "Using Droid · large", "The receipt named the choice: \(change.receipt)")
     }
 
     static func permissionFallbacks() async throws {
