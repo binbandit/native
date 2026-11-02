@@ -226,7 +226,8 @@ struct AnnotatedQuestionView: View {
             Group {
                 DSMessageInput(
                     text: typedText, placeholder: "Or answer in your own words",
-                    isFocused: $wordsFocused, inputLabel: "Answer \(agentName) in your own words", maximumLines: 3
+                    isFocused: $wordsFocused, inputLabel: "Answer \(agentName) in your own words", maximumLines: 3,
+                    insets: DS.Approval.editorInsets
                 ) { press in
                     guard !PlatformTextInput.isComposing else { return false }
                     if press.key == .tab, press.modifiers.isSubset(of: [.shift]) {

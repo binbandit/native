@@ -39,7 +39,7 @@ struct HomeNextStartField: View {
             HStack(alignment: .bottom, spacing: 0) {
                 DSMessageInput(
                     text: $entry.draft, placeholder: placeholder, isFocused: $isFocused,
-                    inputLabel: "New task", onKey: handleKey)
+                    inputLabel: "New task", insets: DS.ComposerSettings.textInsets, onKey: handleKey)
                 HStack(spacing: DS.Space.sm) {
                     door
                     attachButton

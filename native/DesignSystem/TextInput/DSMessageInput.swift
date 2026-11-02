@@ -8,15 +8,25 @@ struct DSMessageInput: View {
     var isFocused: FocusState<Bool>.Binding
     var inputLabel = "Message"
     var maximumLines = 10
+    var insets = DS.Composer.textInsets
+    var fontSize = DS.TextInput.fontSize
+    var lineSpacing = DS.TextInput.lineSpacing
     var onKey: (DSTextInputEvent) -> Bool
     @State private var document = TextInputDocument()
 
     var body: some View {
         DSTextInput(
             document: $document, placeholder: placeholder, maximumLines: maximumLines,
+            fontSize: fontSize, lineSpacing: lineSpacing,
             accessibilityLabel: inputLabel,
             isFocused: Binding(get: { isFocused.wrappedValue }, set: { isFocused.wrappedValue = $0 }),
             onSubmit: { _ = onKey(.init(key: .return)) }, onEvent: onKey
+        )
+        // Hosts already reserve their own text margins; the native field includes a default inset.
+        .padding(
+            EdgeInsets(
+                top: insets.top - DS.TextInput.inset, leading: insets.leading - DS.TextInput.inset,
+                bottom: insets.bottom - DS.TextInput.inset, trailing: insets.trailing - DS.TextInput.inset)
         )
         .focused(isFocused)
         .onAppear(perform: synchronize)

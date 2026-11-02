@@ -37,7 +37,8 @@ struct PlatformDSTextInput: UIViewRepresentable {
         guard let editor = container.editor else { return }
         context.coordinator.input = input
         editor.input = input
-        editor.style = PlatformDSTextInputStyle(environment: context.environment)
+        editor.style = PlatformDSTextInputStyle(
+            environment: context.environment, fontSize: input.fontSize, lineSpacing: input.lineSpacing)
         editor.isEditable = context.environment.isEnabled
         editor.tintColor = editor.style?.accent
         editor.accessibilityLabel = input.accessibilityLabel

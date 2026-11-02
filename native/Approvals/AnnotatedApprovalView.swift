@@ -165,7 +165,8 @@ struct AnnotatedApprovalView: View {
                     DSMessageInput(
                         text: $instruction,
                         placeholder: "Or tell \(agentName) what to do instead", isFocused: $instructionFocused,
-                        inputLabel: "Tell \(agentName) what to do instead", maximumLines: 3
+                        inputLabel: "Tell \(agentName) what to do instead", maximumLines: 3,
+                        insets: DS.Approval.editorInsets
                     ) { press in
                         guard !PlatformTextInput.isComposing else { return false }
                         if press.key == .tab, press.modifiers.isSubset(of: [.shift]) {

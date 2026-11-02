@@ -59,7 +59,7 @@ struct StartingTaskFailureComposer: View {
             DSMessageInput(
                 text: $task.draft,
                 placeholder: "What would you like \(task.agent.displayName) to work on?", isFocused: $isFocused,
-                maximumLines: 3
+                maximumLines: 3, insets: DS.Approval.editorInsets
             ) { press in
                 guard press.key == .return, press.modifiers.isDisjoint(with: [.shift, .option]),
                     !PlatformTextInput.isComposing

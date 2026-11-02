@@ -61,7 +61,8 @@ struct QuickEntryPanel: View {
     private var editor: some View {
         DSMessageInput(
             text: $entry.draft, placeholder: "What would you like to do?",
-            isFocused: $isFocused
+            isFocused: $isFocused, insets: DS.QuickEntry.textInsets,
+            fontSize: DS.QuickEntry.editorFontSize, lineSpacing: DS.QuickEntry.editorLineSpacing
         ) { press in
             guard !PlatformTextInput.isComposing else { return false }
             if press.key == .tab, press.modifiers.isSubset(of: [.shift]) {

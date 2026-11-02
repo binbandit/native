@@ -10,6 +10,8 @@ struct DSTextInput: View {
     @Binding var document: TextInputDocument
     var placeholder = "What would you like to work on?"
     var maximumLines = 10
+    var fontSize = DS.TextInput.fontSize
+    var lineSpacing = DS.TextInput.lineSpacing
     var accessibilityLabel = "Message"
     /// Optional control of focus and selection, including completion insertion in the middle.
     var isFocused: Binding<Bool>?

@@ -11,13 +11,19 @@ import UIKit
 
 /// Resolves SwiftUI tokens for both native editors, including appearance changes after creation.
 struct PlatformDSTextInputStyle: Equatable {
-    let font = DSTypography.platformFont(size: DS.TextInput.fontSize)
+    let font: DSPlatformFont
+    let lineSpacing: CGFloat
     let foreground: DSPlatformColor
     let secondary: DSPlatformColor
     let fill: DSPlatformColor
     let accent: DSPlatformColor
 
-    init(environment: EnvironmentValues) {
+    init(
+        environment: EnvironmentValues, fontSize: CGFloat = DS.TextInput.fontSize,
+        lineSpacing: CGFloat = DS.TextInput.lineSpacing
+    ) {
+        font = DSTypography.platformFont(size: fontSize)
+        self.lineSpacing = lineSpacing
         foreground = Self.color(.dsTextPrimary, environment)
         secondary = Self.color(.dsTextTertiary, environment)
         fill = Self.color(.dsFill, environment)
@@ -34,9 +40,9 @@ struct PlatformDSTextInputStyle: Equatable {
 
     var lineHeight: CGFloat {
         #if canImport(AppKit)
-        NSLayoutManager().defaultLineHeight(for: font) + DS.TextInput.lineSpacing
+        NSLayoutManager().defaultLineHeight(for: font) + lineSpacing
         #else
-        font.lineHeight + DS.TextInput.lineSpacing
+        font.lineHeight + lineSpacing
         #endif
     }
 

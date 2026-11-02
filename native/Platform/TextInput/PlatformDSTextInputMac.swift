@@ -48,7 +48,8 @@ struct PlatformDSTextInput: NSViewRepresentable {
         guard let editor = scroll.documentView as? PlatformDSTextInputMacView else { return }
         context.coordinator.input = input
         editor.input = input
-        editor.style = PlatformDSTextInputStyle(environment: context.environment)
+        editor.style = PlatformDSTextInputStyle(
+            environment: context.environment, fontSize: input.fontSize, lineSpacing: input.lineSpacing)
         scroll.maximumLines = max(1, input.maximumLines)
         editor.isEditable = context.environment.isEnabled
         editor.insertionPointColor = editor.style?.accent ?? .textColor
