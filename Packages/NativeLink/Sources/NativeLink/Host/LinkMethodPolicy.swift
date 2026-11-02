@@ -20,7 +20,7 @@ public enum LinkMethodPolicy {
             Method.authenticateAgent, Method.listAgentSessions, Method.hostStatus, Method.doctor,
             Method.listNotifications, Method.acknowledgeNotifications, Method.actOnNotification,
             Method.checkAgentSignIn, Method.cancelAgentSignIn, Method.setSessionTitle, Method.historySummary,
-            Method.readHistory, Method.joinHistory, Method.missingHistory,
+            Method.readHistory, Method.joinHistory, Method.missingHistory, Method.withdrawHistory,
         ]
     }()
 

@@ -94,15 +94,21 @@ extension HostCore {
         in session: HostSession, prompt: OutgoingPrompt, kind: UnfinishedTurn.Kind = .prompt, attempts: Int = 0
     ) throws {
         guard session.steeringInFlight == nil else { throw HostError.busy("The task is busy.") }
+        let recordable = recordableHistory(of: session)
+        // What a returning conversation missed goes ahead of its message, stored with the turn so a
+        // retry or a recovery sends the same context. A delta that can't be rendered holds the message.
+        let delta = try recordable.flatMap { try renderDelta(for: prompt, in: session, history: $0) }
+        let prompt = delta?.0 ?? prompt
         let turn = UnfinishedTurn(sessionID: session.id, prompt: prompt, kind: kind, attempts: attempts)
         session.record.lastActivity = .now
         session.record.isQueuePaused = false
-        let history = recordableHistory(of: session).flatMap { defersPromptRecording(session, in: $0) ? nil : $0 }
+        let history = recordable.flatMap { defersPromptRecording(session, in: $0) ? nil : $0 }
         try store.transaction {
             try store.beginTurn(turn)
             try store.recordDelivery(.prompted, for: prompt.id, in: session.id)
             try store.setQueue(session.queue, for: session.id)
             try store.updateSession(session.record)
+            if let delivery = delta?.1 { try store.sendDelta(delivery, with: prompt.id) }
             if let history { recordPrompt(prompt, of: session, in: history) }
         }
         session.steeringGate.reset()
@@ -114,9 +120,12 @@ extension HostCore {
         let preamble = prompt.preamble.flatMap {
             session.mirror.state.deliveredPreamble?.id == $0.marker.id ? nil : $0
         }
+        // A delta's marker shows where it went, unless a mode's instructions take the message's marker.
+        let deltaMarker = delta.flatMap { $0.0.content?.first?.text.flatMap(PromptPreamble.init(framed:))?.marker }
         let echo = PromptEcho(
             text: prompt.text, origin: prompt.origin, requestID: prompt.origin == .recovery ? nil : prompt.id,
-            shown: prompt.isEchoed, attachments: prompt.attachments, preamble: preamble?.marker)
+            shown: prompt.isEchoed, attachments: prompt.attachments,
+            preamble: preamble?.marker ?? deltaMarker.map(PreambleMarker.init))
         session.turnEcho = (echo, .now)
         append(.prompt(echo), to: session)
         session.turnItemsStart = session.mirror.state.items.count

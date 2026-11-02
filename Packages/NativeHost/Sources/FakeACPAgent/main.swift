@@ -320,7 +320,9 @@ actor FakeAgent {
         // A task's prompt or a message from another session opens with Native's header; the script is
         // what follows it.
         let isFramed = framed.hasPrefix("[A task from your parent session (") || framed.hasPrefix("[Message from ")
-        let text = isFramed ? framed.components(separatedBy: "]\n\n").dropFirst().joined(separator: "]\n\n") : framed
+        var text = isFramed ? framed.components(separatedBy: "]\n\n").dropFirst().joined(separator: "]\n\n") : framed
+        // Context Native sends ahead of the message isn't part of the script.
+        while let (_, rest) = PromptPreamble.leading(text) { text = String(rest) }
         // Publish receipt only after the restart marker is durable; the crash harness kills on receipt.
         let losesPrompt = text.hasPrefix("lose-once") && firstTime(text)
         received("prompt", framed)
@@ -370,7 +372,7 @@ actor FakeAgent {
             return try await tick(session, count: 4, stoppable: true)
         } else if text == "cancel-leaves-command" {
             return try await cancelLeavingCommand(session)
-        } else if text == "silent-until-stopped" {
+        } else if text.hasPrefix("silent-until-stopped") {
             while !cancelled.contains(session) { try await Task.sleep(for: .milliseconds(20)) }
             return "cancelled"
         } else if text.hasPrefix("slow") || text.hasPrefix("stubborn") {

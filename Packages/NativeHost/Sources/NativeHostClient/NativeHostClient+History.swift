@@ -35,4 +35,8 @@ extension NativeHostClient {
         let latest = TaskHistoryRun.latest(summary.runs(of: items, at: handoff), limit: limit)
         return (latest.runs, latest.omitsEarlier || after > handoff.from)
     }
+
+    public func withdrawHistory(of session: HostSessionID) async throws -> TaskHistorySummary {
+        try await call(HostProtocol.Method.withdrawHistory, SessionParams(sessionID: session))
+    }
 }
