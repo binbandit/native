@@ -202,7 +202,11 @@ extension WorktreeClone {
         } else if info.st_mode & S_IFMT == S_IFLNK {
             // Only this metadata-only lookup follows links. The kernel resolves the actual finished
             // task chain, including parent traversal, case and Unicode. No file contents are read.
-            let target = openat(parent, name, O_EVTONLY | O_CLOEXEC)
+            guard fstatat(parent, name, &info, 0) == 0,
+                info.st_mode & S_IFMT == S_IFDIR || info.st_mode & S_IFMT == S_IFREG
+            else { throw CommandError.refused("A cache contains a link to a special file.") }
+            // Nonblocking also covers a target replaced with a FIFO after the metadata check.
+            let target = openat(parent, name, O_EVTONLY | O_NONBLOCK | O_CLOEXEC)
             guard target >= 0 else { throw posixError() }
             defer { close(target) }
             let resolved = try canonicalPath(target)

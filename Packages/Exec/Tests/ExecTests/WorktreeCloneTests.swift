@@ -3,6 +3,10 @@ import Testing
 
 @testable import Exec
 
+#if os(macOS)
+import Darwin
+#endif
+
 @Suite struct WorktreeCloneTests {
     @Test func unsupportedVolumesNeverCopy() throws {
         let fixture = try Fixture()
@@ -72,6 +76,31 @@ import Testing
         let report = try await fixture.clone([".build"])
         #expect(report.skipped == [".build"])
         #expect(!FileManager.default.fileExists(atPath: fixture.destination.appending(path: ".build").path()))
+    }
+
+    @Test func rejectsFIFOlinkWithoutWaitingForAWriter() async throws {
+        let fixture = try Fixture()
+        defer { fixture.remove() }
+        try fixture.write("node_modules/cache", "dependency cache")
+        let fifo = fixture.base.appending(path: "fifo").path()
+        #expect(mkfifo(fifo, 0o600) == 0)
+        try FileManager.default.createSymbolicLink(
+            atPath: fixture.source.appending(path: "node_modules/link").path(), withDestinationPath: fifo)
+        // Release a regressed blocking open after the deadline so the test can report its failure.
+        let finished = DispatchSemaphore(value: 0)
+        DispatchQueue.global().async {
+            if finished.wait(timeout: .now() + 5) == .timedOut {
+                let writer = open(fifo, O_RDWR | O_NONBLOCK | O_CLOEXEC)
+                if writer >= 0 { close(writer) }
+            }
+        }
+        defer { finished.signal() }
+        let clock = ContinuousClock()
+        let started = clock.now
+        let report = try await fixture.clone(["node_modules"])
+        #expect(started.duration(to: clock.now) < .seconds(5))
+        #expect(report.cloned.isEmpty && report.skipped == ["node_modules"])
+        #expect(!FileManager.default.fileExists(atPath: fixture.destination.appending(path: "node_modules").path()))
     }
 
     @Test func decodesRequestsThroughTheCommandRunner() async throws {
