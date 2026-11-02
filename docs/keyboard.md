@@ -32,6 +32,12 @@ With Composer field (`NativeComposerV3`) enabled, Return sends and Shift-Return 
 While a turn runs, Return queues the draft using the existing queue. Up/Down select a file or
 command above the caret; Return or Tab accepts it, and Escape closes the list before stopping
 the turn. Attach Files (⌘U), Choose Model (⇧⌘E) and Stop (⌘.) keep their existing commands.
+Queued messages sit directly above the field with Remove and, when the current task can deliver
+one now, Send now. Tab reaches these buttons and Space activates them. Stop keeps the draft and
+pauses the queue; Send now or the next submitted message resumes it. Questions and approvals use
+their existing card shortcuts above the field, leaving the draft visible and editable.
+`/goal` opens the existing goal commands, `/plan` selects Plan mode, and `/compact` uses the agent's
+advertised command. The command list also includes the agent's other commands.
 
 The standalone `DSTextInput` component (composer rebuild part A, gallery only) uses Return to
 submit, Shift-Return or Option-Return for a newline, and offers Up, Down, Escape and Tab to its

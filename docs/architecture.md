@@ -588,8 +588,13 @@ It mounts `DSTextInput`, attachment and diff-comment chips, and `ComposerBottomR
 new-task page and session composers. The editor grows to ten lines while the bottom row stays
 anchored. File and command completions use the native caret rectangle; paste and drop go through
 the existing attachment reads. Submission, queued messages, questions, approvals, model handoffs
-and Stop use the existing model methods. Queue and ask presentation remain the current versions
-until the next composer slice. With the gate off, the existing composer remains unchanged.
+and Stop use the existing model methods. Compact queue rows sit directly above the field and
+offer Remove and capability-gated Send now. The session owns ordered delivery and pausing after
+Stop. Shared `SessionApprovalView` and `SessionQuestionView` cards sit above the queue without
+replacing the editor. `/plan` selects the existing task mode; `/goal` and the agent's advertised
+`/compact` use the existing slash-command paths. With the gate off, the existing composer remains
+unchanged. The older Fine print gate must be off for pending asks to reach this field; part D
+owns removing that older routing and the duplicate transcript approval controls.
 
 ### Fine print approvals
 
