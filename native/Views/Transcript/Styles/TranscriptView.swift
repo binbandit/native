@@ -157,7 +157,11 @@ struct TranscriptView: View {
             if isPrimary, let prelude {
                 prelude.content
             }
-            if let change = session.modelChange, change.stage == .applied || change.stage == .reversed {
+            if session.modelChange?.isReturn == true {
+                // A conversation returned to starts with its own history; its context marker shows
+                // where the task came back to it.
+                EmptyView()
+            } else if let change = session.modelChange, change.stage == .applied || change.stage == .reversed {
                 ChangeAgentDivider(
                     agentName: session.agentName,
                     modelName: ComposerSettings(session.configOptions).model?.shortModelName,

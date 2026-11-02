@@ -37,6 +37,15 @@ final class ComposerAgentChange {
     private var priorChoice: ComposerAgentChange?
     private weak var app: AppModel?
     private var candidate: SessionModel?
+    /// The change returned to a conversation the task already had, rather than starting one, and
+    /// where that conversation sat in the chain before.
+    private(set) var isReturn = false
+    var chainReturn: EarlierConversations.Return?
+    /// Closes a return's Undo as soon as the returned-to conversation leaves the state it was
+    /// returned in: a turn starting, which the host stamps on its summary (`lastActivity`) even when
+    /// another client sent it while this one was away, a disconnect, or a reload. None of these is
+    /// undone by a replay, unlike a count of what the transcript shows.
+    @ObservationIgnored private var returnWatch: Task<Void, Never>?
     @ObservationIgnored private var work: Task<Void, Never>?
 
     init(source: SessionModel, choice: ComposerAgentModel, app: AppModel) {
@@ -52,7 +61,13 @@ final class ComposerAgentChange {
 
     var isPending: Bool { stage == .waiting || stage == .preparing }
     var undoSelection: ComposerAgentChange? { canUndo ? self : priorChoice?.undoSelection }
-    var canUndo: Bool { stage == .applied && !undoIsClosed && current?.hasSubmittedPrompt == false }
+    /// Until the next message: a returned-to conversation has messages of its own already.
+    /// Until the next message, from this client or another. A returned-to conversation has turns of
+    /// its own already, so it counts the ones since the return.
+    var canUndo: Bool {
+        guard stage == .applied, !undoIsClosed, let current else { return false }
+        return isReturn || !current.hasSubmittedPrompt
+    }
     var hasPermissionChoice: Bool {
         current.map { !ComposerSettings($0.configOptions).autonomyLevels.isEmpty } ?? false
     }
@@ -73,7 +88,10 @@ final class ComposerAgentChange {
         stage = .applied
         permissionNotice = record.permissionNotice
         isReceiptDismissed = record.isDismissed
-        undoIsClosed = !app.sessions.services.modelContinuations.hasPending(current.key)
+        isReturn = record.isReturn == true
+        // A return's Undo doesn't outlast a relaunch: only the host could say whether the
+        // conversation continued meanwhile, from this client or another.
+        undoIsClosed = isReturn || !app.sessions.services.modelContinuations.hasPending(current.key)
     }
 
     private func persistReceipt() {
@@ -92,7 +110,8 @@ final class ComposerAgentChange {
                             case .select(let value, _) = option.kind
                         else { return nil }
                         return (option.id, value)
-                    })), for: current.key)
+                    }), isReturn: isReturn ? true : nil),
+            for: current.key)
     }
 
     var transferNotice: String? {
@@ -175,11 +194,21 @@ final class ComposerAgentChange {
                 defer { loader.cancel() }
                 let revision = source.state.items
                 let config = source.configOptions
-                let prepared = try await app.prepareModelRuntime(choice, for: source)
-                candidate = prepared
+                // A conversation the task already had on this agent is reopened; its host sends it
+                // what it missed with its next message, so no handoff is prepared for it.
+                let returning = await app.returningConversation(for: choice, from: source)
+                isReturn = returning != nil
+                let prepared: SessionModel
+                if let returning {
+                    prepared = returning
+                } else {
+                    prepared = try await app.prepareModelRuntime(choice, for: source)
+                    candidate = prepared
+                }
                 try Task.checkCancellation()
                 try await configure(prepared, from: source)
-                let context = await app.contextTransfer(from: source, to: prepared)
+                var context: ContextTransfer?
+                if !isReturn { context = await app.contextTransfer(from: source, to: prepared) }
                 try Task.checkCancellation()
                 guard revision == source.state.items, config == source.configOptions else {
                     throw Failure("The task changed while the model was starting. Try Again to use its latest context.")
@@ -197,6 +226,19 @@ final class ComposerAgentChange {
                 try validate(prepared, source: source, app: app)
                 priorChoice?.closeUndo()
                 priorChoice = nil
+                if isReturn {
+                    let activity = prepared.lastActivity
+                    returnWatch = Task { [weak self, weak prepared] in
+                        for await isSettled in Observations({
+                            prepared.map {
+                                $0.lastActivity == activity && $0.phase == .idle && !$0.isRestoringHistory
+                            } ?? false
+                        }) where !isSettled {
+                            self?.closeUndo()
+                            return
+                        }
+                    }
+                }
                 app.commitAgentModel(self, source: source, target: prepared, context: context)
                 previous = source
                 current = prepared
@@ -223,8 +265,11 @@ final class ComposerAgentChange {
         switch choice.kind {
         case .load: throw Failure("Load the agent's models before choosing one.")
         case .model(nil):
-            // No model named: the one a new session of this agent starts on, as a new task's would.
-            await AgentSessionDefaults.apply(to: target, project: app?.catalog.lookup(source.key)?.project)
+            // No model named: a returned-to conversation keeps its own, and a new one starts on the
+            // model a new session of this agent starts on, as a new task's would.
+            if !isReturn {
+                await AgentSessionDefaults.apply(to: target, project: app?.catalog.lookup(source.key)?.project)
+            }
         case .model(let value?):
             guard let model = ComposerSettings(target.configOptions).model,
                 model.choices.contains(where: { $0.value == value })
@@ -353,11 +398,19 @@ final class ComposerAgentChange {
     }
 
     private func validate(_ target: SessionModel, source: SessionModel, app: AppModel) throws {
+        // A returned-to conversation is set aside behind the source until the change commits.
+        let isBlocked =
+            switch target.sendBlock {
+            case nil: false
+            case .earlierConversation?: !isReturn
+            default: true
+            }
         guard app.plugins.policyCenter.policy.agents.allows(choice.agent.rawValue),
             target.agent.id == choice.agent, target.cwd == source.cwd,
             app.agentChangePlace(of: target) == app.agentChangePlace(of: source),
-            app.sessions.session(target.key) === target, !target.hasStarted,
-            target.phase == .idle, !target.isRestoringHistory, target.sendBlockedReason == nil
+            // A returned-to conversation has messages of its own; a new one must still be unsent.
+            app.sessions.session(target.key) === target, isReturn || !target.hasStarted,
+            target.phase == .idle, !target.isRestoringHistory, !isBlocked
         else { throw Failure("The chosen agent is no longer ready on this task's host. Try Again.") }
         if case .model(let value) = choice.kind, let value,
             ComposerSettings(target.configOptions).model?.value != value
@@ -409,6 +462,7 @@ final class ComposerAgentChange {
     }
 
     func closeUndo() {
+        returnWatch?.cancel()
         undoIsClosed = true
         previous?.isModelChangeSource = false
         previous = nil

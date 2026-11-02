@@ -130,11 +130,15 @@ Behind the Labs gate `task-history` (default off; off keeps today's behavior exa
    Reasoning and raw tool output stay out; context from another agent is framed as context, not
    instructions. This slice starts once that handoff work is on main.
 
-If the earlier session can't be reopened (the agent dropped it, can't load, or policy forbids it),
-the change falls back to a fresh session with a full transfer and says so. A reused session never
-gets closed or deleted by Cancel or Undo; Undo supersedes its prepared transfer
-(`_native/history/withdraw`) and restores the source. The app's earlier-conversation chain stays linear: a return removes the link that would
-close a cycle.
+A conversation is returned to only when it has taken a message, isn't waiting for a handoff of
+its own, and is in the same task history as the current one on the same host. Otherwise (the agent
+dropped it, can't load, policy forbids it, or it's from before the gate or set aside by `/clear`)
+the change starts a new conversation with a handoff, as before. A reused session is never closed or
+deleted by Cancel or Undo; Undo supersedes its prepared transfer (`_native/history/withdraw`) and
+restores the source. A return's Undo lasts until the conversation starts a turn, from any client,
+or the app quits: only the host knows whether it continued while Native was closed, so after a
+relaunch it starts closed. The app's earlier-conversation chain stays one line: the returned
+conversation moves to the front and the one that followed it takes its place.
 
 ## The transcript
 
