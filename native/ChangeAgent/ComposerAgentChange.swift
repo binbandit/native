@@ -1,8 +1,6 @@
 import ACP
 import Foundation
 import Modes
-import NativeHostClient
-import NativeHostProtocol
 import NativePolicy
 import Observation
 
@@ -43,10 +41,9 @@ final class ComposerAgentChange {
     /// where that conversation sat in the chain before.
     private(set) var isReturn = false
     var chainReturn: EarlierConversations.Return?
-    /// The returned-to conversation's turns when the task came back to it, while this app runs.
+    /// The returned-to conversation's turns when the task came back to it, so a message from
+    /// another client also closes Undo.
     private var returnTurns: Int?
-    /// The task history's head then, which outlasts a relaunch: a replay can regroup turns.
-    private var returnHead: Int?
     @ObservationIgnored private var work: Task<Void, Never>?
 
     init(source: SessionModel, choice: ComposerAgentModel, app: AppModel) {
@@ -89,21 +86,10 @@ final class ComposerAgentChange {
         stage = .applied
         permissionNotice = record.permissionNotice
         isReceiptDismissed = record.isDismissed
-        chainReturn = record.returnedFrom
-        returnHead = record.returnHead
-        isReturn = record.returnedFrom != nil
+        isReturn = record.isReturn == true
+        // A return's Undo doesn't outlast a relaunch: only the host could say whether the
+        // conversation continued meanwhile, from this client or another.
         undoIsClosed = isReturn || !app.sessions.services.modelContinuations.hasPending(current.key)
-        // A return's Undo reopens only once the host confirms the conversation hasn't continued.
-        if isReturn, record.isUndoClosed != true, let head = record.returnHead, let link = current.host {
-            Task { [weak self] in
-                guard let summary = try? await link.client.historySummary(of: link.id),
-                    let later = try? await link.client.readHistory(ReadHistoryParams(sessionID: link.id, after: head)),
-                    !later.contains(where: { $0.source == summary.current })
-                else { return }
-                self?.returnTurns = current.state.turns.count
-                self?.undoIsClosed = false
-            }
-        }
     }
 
     private func persistReceipt() {
@@ -122,8 +108,7 @@ final class ComposerAgentChange {
                             case .select(let value, _) = option.kind
                         else { return nil }
                         return (option.id, value)
-                    }), returnedFrom: isReturn ? chainReturn : nil, isUndoClosed: undoIsClosed ? true : nil,
-                returnHead: returnHead),
+                    }), isReturn: isReturn ? true : nil),
             for: current.key)
     }
 
@@ -239,12 +224,7 @@ final class ComposerAgentChange {
                 try validate(prepared, source: source, app: app)
                 priorChoice?.closeUndo()
                 priorChoice = nil
-                if isReturn {
-                    returnTurns = prepared.state.turns.count
-                    if let link = prepared.host {
-                        returnHead = try? await link.client.historySummary(of: link.id).head
-                    }
-                }
+                if isReturn { returnTurns = prepared.state.turns.count }
                 app.commitAgentModel(self, source: source, target: prepared, context: context)
                 previous = source
                 current = prepared
@@ -468,11 +448,9 @@ final class ComposerAgentChange {
     }
 
     func closeUndo() {
-        guard !undoIsClosed else { return }
         undoIsClosed = true
         previous?.isModelChangeSource = false
         previous = nil
-        persistReceipt()
     }
 
     func retry(undoManager: UndoManager?) {
