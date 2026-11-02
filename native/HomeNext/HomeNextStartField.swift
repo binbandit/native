@@ -11,7 +11,6 @@ struct HomeNextStartField: View {
     let started: (StartingTask) -> Void
 
     @Environment(AppModel.self) private var model
-    @State private var selection: TextSelection?
     @FocusState private var isFocused: Bool
     @State private var isAddressOpen = false
     @State private var isPickingFiles = false
@@ -38,9 +37,9 @@ struct HomeNextStartField: View {
                     .accessibilityIdentifier("home-next-start-failure")
             }
             HStack(alignment: .bottom, spacing: 0) {
-                ComposerEditor(
-                    text: $entry.draft, selection: $selection, placeholder: placeholder, isFocused: $isFocused,
-                    inputLabel: "New task", insets: DS.ComposerSettings.textInsets, onKey: handleKey)
+                DSMessageInput(
+                    text: $entry.draft, placeholder: placeholder, isFocused: $isFocused,
+                    inputLabel: "New task", onKey: handleKey)
                 HStack(spacing: DS.Space.sm) {
                     door
                     attachButton
@@ -158,26 +157,25 @@ struct HomeNextStartField: View {
         .help("Attach files…")
     }
 
-    private func handleKey(_ press: KeyPress) -> KeyPress.Result {
-        guard !PlatformTextInput.isComposing else { return .ignored }
+    private func handleKey(_ press: DSTextInputEvent) -> Bool {
+        guard !PlatformTextInput.isComposing else { return false }
         if press.key == .tab, press.modifiers.isSubset(of: [.shift]) {
-            return ComposerPlatform.moveKeyFocus(forward: !press.modifiers.contains(.shift)) ? .handled : .ignored
+            return ComposerPlatform.moveKeyFocus(forward: !press.modifiers.contains(.shift)) ? true : false
         }
         if press.key == .escape {
             isFocused = false
-            return .handled
+            return true
         }
         guard press.key == .return, press.modifiers.isDisjoint(with: [.shift, .option, .control]) else {
-            return .ignored
+            return false
         }
-        guard press.phase != .repeat else { return .handled }
+        guard !press.isRepeat else { return true }
         start(open: press.modifiers.contains(.command))
-        return .handled
+        return true
     }
 
     private func start(open: Bool) {
         guard startBlockedReason == nil, let task = model.startHomeNextTask(open: open) else { return }
-        selection = nil
         if !open { started(task) }
     }
 

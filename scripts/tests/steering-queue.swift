@@ -69,20 +69,6 @@ private struct SteeringQueueRegression {
             print("FAIL: native or explicit afterTools steering lost Send Now")
             exit(1)
         }
-        var keys = ComposerKeyMap.Context(
-            isSuggestionListOpen: false, isDraftEmpty: false, isWorking: true, hasQueuedPrompts: true,
-            isEditingQueued: true, canSendQueuedNow: false, hasLastPrompt: true, isComposing: false,
-            preferredFollowUp: .queue)
-        guard ComposerKeyMap.action(for: .return, modifiers: .command, isRepeat: false, in: keys) == nil else {
-            print("FAIL: an unsupported queued edit claims the Send Now shortcut")
-            exit(1)
-        }
-        keys.canSendQueuedNow = true
-        guard ComposerKeyMap.action(for: .return, modifiers: .command, isRepeat: false, in: keys) == .sendQueuedNow
-        else {
-            print("FAIL: a supported queued edit lost the Send Now shortcut")
-            exit(1)
-        }
         session.state.appendUserMessage("original turn")
         session.apply(.toolCall(ToolCallUpdate(toolCallId: "sleep", title: "sleep 20", status: .inProgress)))
         let delivery = try await session.submit("local original", .steer)

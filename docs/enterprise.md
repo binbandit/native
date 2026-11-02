@@ -207,7 +207,7 @@ back to the local commit when offline.
 `policy.approvals.knowledge` accepts a string containing a version 1 command knowledge JSON document.
 The policy package validates each entry, reports bad values, and contributes only additive internal
 tools. `policy.approvals.countUnknownPrograms` = `false` disables local unknown-program counts even
-when the user enabled them. True permits the user choice; neither policy enables Fine print itself.
+when the user enabled them. True permits the user choice.
 Counts never enter telemetry or exports and can be purged from Settings > Privacy. See
 [command knowledge](command-knowledge.md) for the format, limits, and privacy contract.
 

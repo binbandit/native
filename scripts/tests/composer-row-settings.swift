@@ -90,7 +90,6 @@ private struct ComposerRowSettingsRegression {
         let defaults = PreviewUserDefaults()
         let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
         experiments.set(changeAgent, for: .changeAgent)
-        experiments.set(true, for: .composerV3)
         let app = AppModel(
             plugins: PluginRegistry(previewing: [BuiltInPlugins.claudeCode]), defaults: defaults,
             catalogURL: nil, experiments: experiments)

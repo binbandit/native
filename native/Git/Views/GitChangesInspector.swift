@@ -18,7 +18,6 @@ struct GitChangesInspector: View {
     /// Opens the GitHub feature's pull request flow; the button is hidden without it.
     var onCreatePullRequest: (() -> Void)?
 
-    @Experiment(.composerNext) private var composerNext
     @Environment(\.gitChangesClose) private var closeChanges
     @Environment(\.gitChangesCompact) private var compact
     @State private var isCommitting = false
@@ -67,7 +66,7 @@ struct GitChangesInspector: View {
         .environment(\.diffCommentsSession, session)
         .environment(\.diffCommentsScope, (review?.scope ?? .uncommitted).title)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if composerNext, let session,
+            if let session,
                 model.status?.isClean == false || (review?.scope ?? .uncommitted) != .uncommitted
                     || !session.diffComments.isEmpty
             {
@@ -142,26 +141,12 @@ struct GitChangesInspector: View {
                     }
                 }
             }
-        } else if composerNext {
+        } else {
             EmptyStateView(
                 "No changes yet", systemImage: "checkmark.circle", message: "Files appear here after they’re edited."
             ) {
                 if let action = onBackToTask ?? closeChanges?.close {
                     Button("Back to Task", action: action).buttonStyle(.ds(.secondary))
-                }
-            }
-        } else {
-            EmptyStateView("No changes", systemImage: "checkmark.circle", message: cleanMessage) {
-                if let branch = model.branch, model.canPush {
-                    Button(branch.upstream == nil ? "Publish Branch" : "Push", systemImage: "arrow.up") {
-                        Task { await model.push() }
-                    }
-                    .buttonStyle(.ds(.secondary))
-                }
-                // Committed work isn't gone: the turn's and the branch's changes still show it.
-                if let review, let session {
-                    Button("Show This Turn") { review.showTurn(of: session) }
-                        .buttonStyle(.ds(.secondary))
                 }
             }
         }

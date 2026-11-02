@@ -28,16 +28,6 @@ struct SessionGoalEditor: View {
 }
 
 #if DEBUG
-#Preview("Task goal editor - In Task Settings") {
-    DSPreviewPair {
-        ComposerSettingsPageFrame(title: "Set a Goal", onBack: {}) {
-            SessionGoalEditor(
-                controller: GoalController(store: nil, storageKey: nil), agentName: "Claude Code", isPage: true,
-                onDismiss: {})
-        }
-    }
-}
-
 #Preview("Task goal editor - New and existing") {
     let fresh = GoalController(store: nil, storageKey: nil)
     let existing = GoalController(store: nil, storageKey: nil)

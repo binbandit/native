@@ -83,6 +83,35 @@ private struct ComposerFieldInputRegression {
         fixture.pump()
         check(fixture.session.composerMessage == "/clear ", "Tab accepts the command without submitting it")
 
+        fixture.reset(editor)
+        editor.insertText("```swift\n    let value = 1", replacementRange: editor.selectedRange())
+        fixture.pump()
+        check(editor.input?.onEvent(.init(key: .return)) == true, "Return inside fenced code edits instead of sending")
+        fixture.pump()
+        check(fixture.session.composerMessage.hasSuffix("\n    "), "code newline keeps indentation")
+        check(editor.input?.onEvent(.init(key: .tab)) == true, "Tab inside fenced code indents")
+        fixture.pump()
+        check(fixture.session.composerMessage.hasSuffix("\n        "), "code indentation reaches the model")
+
+        fixture.reset(editor)
+        fixture.session.queue.append("First queued message")
+        fixture.session.queue.append("Last queued message")
+        fixture.pump()
+        check(editor.input?.onEvent(.init(key: .upArrow)) == true, "Up in the empty field recalls a queued message")
+        fixture.pump()
+        check(fixture.session.composerMessage == "Last queued message", "queue recall loads the last message")
+        check(
+            editor.input?.onEvent(.init(key: .upArrow, modifiers: [.command, .option])) == true,
+            "modified Up reorders the edited queue message")
+        fixture.pump()
+        check(
+            fixture.session.queuedPrompts.first?.text == "Last queued message", "queue reorder uses the session model")
+        check(editor.input?.onKey(.escape) == true, "Escape cancels the queued edit")
+        fixture.pump()
+        check(
+            fixture.session.editingQueuedPrompt == nil && fixture.session.draft.isEmpty,
+            "cancelling the queue edit restores an empty draft")
+
         fixture.window.makeFirstResponder(nil)
         fixture.pump()
         check(editor.input?.isFocused?.wrappedValue == false, "resigning the editor clears composer focus")
@@ -106,7 +135,6 @@ private final class ComposerFieldInputFixture {
     init(root: URL) throws {
         let defaults = PreviewUserDefaults()
         let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
-        experiments.set(true, for: .composerV3)
         app = AppModel(
             plugins: PluginRegistry(previewing: [BuiltInPlugins.claudeCode]), defaults: defaults,
             catalogURL: nil, experiments: experiments)

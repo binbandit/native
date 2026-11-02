@@ -310,10 +310,8 @@ enum HomeNextPreviewFixtures {
         }
     }
 
-    /// `finePrint` turns on the composer's annotated asks (`NativeComposerNext`).
-    static func page(_ state: State, narrow: Bool = false, finePrint: Bool = false) -> some View {
+    static func page(_ state: State, narrow: Bool = false) -> some View {
         let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
-        experiments.set(finePrint, for: .composerNext)
         return DSPreviewPair {
             HomeNextFixtureView(state: state)
                 .environment(SettingsPresentation())

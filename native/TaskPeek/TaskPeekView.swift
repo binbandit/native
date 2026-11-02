@@ -8,7 +8,7 @@ struct TaskPeekView: View {
     var maxBodyHeight = DS.Peek.maxBodyHeight
     @Environment(AppModel.self) private var model
     @Environment(\.sidebarTaskInsights) private var insights
-    @Experiment(.composerNext) private var composerNext
+
     var openTask: ((SessionKey) -> Void)?
     @FocusState private var isFocused: Bool
     @State private var wantsInstructionFocus = false
@@ -61,7 +61,7 @@ struct TaskPeekView: View {
         .onAppear {
             // Annotated questions own focus, including confirmations. Classic questionnaires focus
             // their answer; only classic confirmation rows need Peek to own Escape.
-            if case .question = ask?.content, composerNext || questionnaire != nil { return }
+            if case .question = ask?.content { return }
             isFocused = true
         }
         .onKeyPress(.escape) {
@@ -88,7 +88,7 @@ struct TaskPeekView: View {
         else { return false }
         switch ask.content {
         case .permission: return true
-        case .question: return composerNext
+        case .question: return true
         }
     }
 
@@ -204,26 +204,13 @@ struct TaskPeekView: View {
                 onInstruct: { try await model.instructTaskAsk(ask, text: $0) }
             )
             .id(call)
-        case .question(let question) where composerNext:
+        case .question(let question):
             AnnotatedQuestionView(
                 agentName: ask.session.agentName, questionnaire: question.questionnaire,
                 message: question.request.message, isAvailable: ask.session.phase != .disconnected,
                 focusRequested: wantsInstructionFocus, didFocus: { wantsInstructionFocus = false },
                 onSubmit: { await model.answerTaskQuestion(ask, content: $0) },
-                onDecline: { await model.answerTaskQuestion(ask, content: nil) }
-            )
-        case .question(let question):
-            if let questionnaire = question.questionnaire {
-                AgentQuestionSection(
-                    questionnaire: questionnaire, takesFocus: true, answersHighlightedOption: true,
-                    onSubmit: { content in Task { await model.answerTaskQuestion(ask, content: content) } },
-                    onSkipAll: { Task { await model.answerTaskQuestion(ask, content: nil) } })
-            } else {
-                AgentConfirmationRow(
-                    message: question.request.message,
-                    onContinue: { Task { await model.answerTaskQuestion(ask, content: [:]) } },
-                    onSkip: { Task { await model.answerTaskQuestion(ask, content: nil) } })
-            }
+                onDecline: { await model.answerTaskQuestion(ask, content: nil) })
         }
     }
 
@@ -251,9 +238,9 @@ extension FocusedValues {
 #Preview("Peek - Routine approval") { TaskPeekPreviewFixtures.view(.routine) }
 #Preview("Peek - Destructive approval") { TaskPeekPreviewFixtures.view(.destructive) }
 #Preview("Peek - Question") { TaskPeekPreviewFixtures.view(.question) }
-#Preview("Peek - Question, Fine print") { TaskPeekPreviewFixtures.view(.question, finePrint: true) }
+#Preview("Peek - Question, Fine print") { TaskPeekPreviewFixtures.view(.question) }
 #Preview("Peek - Question, Fine print, narrow") {
-    TaskPeekPreviewFixtures.view(.question, width: 360, finePrint: true)
+    TaskPeekPreviewFixtures.view(.question, width: 360)
 }
 #Preview("Peek - Confirmation question") { TaskPeekPreviewFixtures.view(.confirmation) }
 #Preview("Peek - Answer delivery failed") { TaskPeekPreviewFixtures.view(.answerFailure) }

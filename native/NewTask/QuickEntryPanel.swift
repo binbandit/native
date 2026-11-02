@@ -7,7 +7,6 @@ struct QuickEntryPanel: View {
     let model: AppModel
     @Bindable var entry: QuickEntryModel
     var branch: String?
-    @State private var selection: TextSelection?
     @FocusState private var isFocused: Bool
 
     var body: some View {
@@ -60,22 +59,20 @@ struct QuickEntryPanel: View {
     }
 
     private var editor: some View {
-        ComposerEditor(
-            text: $entry.draft, selection: $selection, placeholder: "What would you like to do?",
-            isFocused: $isFocused, font: DS.QuickEntry.editorFont,
-            lineSpacing: DS.QuickEntry.editorLineSpacing, richLineLeading: DS.QuickEntry.editorRichLineLeading,
-            insets: DS.QuickEntry.textInsets
+        DSMessageInput(
+            text: $entry.draft, placeholder: "What would you like to do?",
+            isFocused: $isFocused
         ) { press in
-            guard !PlatformTextInput.isComposing else { return .ignored }
+            guard !PlatformTextInput.isComposing else { return false }
             if press.key == .tab, press.modifiers.isSubset(of: [.shift]) {
-                return ComposerPlatform.moveKeyFocus(forward: !press.modifiers.contains(.shift)) ? .handled : .ignored
+                return ComposerPlatform.moveKeyFocus(forward: !press.modifiers.contains(.shift)) ? true : false
             }
             guard press.key == .return, press.modifiers.isDisjoint(with: [.shift, .option, .control]) else {
-                return .ignored
+                return false
             }
-            guard press.phase != .repeat else { return .handled }
+            guard !press.isRepeat else { return true }
             model.startQuickEntry(open: press.modifiers.contains(.command))
-            return .handled
+            return true
         }
         .overlay(alignment: .topTrailing) {
             HStack(spacing: DS.Space.xs) {

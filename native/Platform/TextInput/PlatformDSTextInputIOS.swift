@@ -38,6 +38,7 @@ struct PlatformDSTextInput: UIViewRepresentable {
         context.coordinator.input = input
         editor.input = input
         editor.style = PlatformDSTextInputStyle(environment: context.environment)
+        editor.isEditable = context.environment.isEnabled
         editor.tintColor = editor.style?.accent
         editor.accessibilityLabel = input.accessibilityLabel
         if editor.markedTextRange == nil, let style = editor.style {
@@ -215,6 +216,27 @@ final class PlatformDSTextInputIOSView: UITextView, UIDropInteractionDelegate, U
     override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
         guard markedTextRange == nil, let key = presses.first?.key else {
             super.pressesBegan(presses, with: event); return
+        }
+        let equivalent: KeyEquivalent? =
+            switch key.keyCode {
+            case .keyboardReturnOrEnter, .keypadEnter: .return
+            case .keyboardUpArrow: .upArrow
+            case .keyboardDownArrow: .downArrow
+            case .keyboardLeftArrow: .leftArrow
+            case .keyboardRightArrow: .rightArrow
+            case .keyboardDeleteOrBackspace: .delete
+            case .keyboardDeleteForward: .deleteForward
+            case .keyboardEscape: .escape
+            case .keyboardTab: .tab
+            default: nil
+            }
+        if let equivalent {
+            var modifiers: EventModifiers = []
+            if key.modifierFlags.contains(.command) { modifiers.insert(.command) }
+            if key.modifierFlags.contains(.control) { modifiers.insert(.control) }
+            if key.modifierFlags.contains(.alternate) { modifiers.insert(.option) }
+            if key.modifierFlags.contains(.shift) { modifiers.insert(.shift) }
+            if input?.onEvent(.init(key: equivalent, modifiers: modifiers)) == true { return }
         }
         let action: DSTextInputKey? =
             switch key.keyCode {

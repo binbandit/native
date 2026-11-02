@@ -24,8 +24,8 @@ the changed state, or before merge if the reviewer asks.
 ## Previews
 
 Every view file has a `#Preview` showing its states, so anyone can open it in Xcode's canvas and see
-what they're changing: empty, loading, populated and error, long text and narrow widths. Name them
-for the view and the state, like `#Preview("Composer - Queued follow-up")`.
+what they're changing: empty, loading, populated and error, long text and narrow widths. Task composer states live in `native/Composer/ComposerFieldPreviewFixtures.swift` and
+`ComposerPendingPreviewFixtures.swift`. Name previews for the view and the state, like `#Preview("Composer - Queued follow-up")`.
 
 - Wrap the content in `DSPreviewPair { … }` (`native/DesignSystem/Gallery/DSPreviewPair.swift`)
   to show it in light and dark side by side. Give flexible views a width with `.frame(width:)`.

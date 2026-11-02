@@ -49,12 +49,10 @@ enum TaskPeekPreviewFixtures {
         return request
     }
 
-    /// `finePrint` turns on the composer's annotated asks (`NativeComposerNext`).
-    static func view(_ state: State, width: CGFloat = DS.Peek.width, finePrint: Bool = false) -> some View {
+    static func view(_ state: State, width: CGFloat = DS.Peek.width) -> some View {
         let app = SidebarDesignFixture.makeApp("plan")
         let request = prepare(app, state: state)
         let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
-        experiments.set(finePrint, for: .composerNext)
         return DSPreviewPair { TaskPeekView(request: request).frame(width: width) }
             .environment(app).environment(\.experimentStore, experiments)
             .environment(\.approvalPushReach, { _ in ApprovalPreviewFixtures.forceReach })

@@ -1,7 +1,7 @@
 import ACP
 import Foundation
 
-/// Part D can mount the row with this adapter. No agent, folder or permission transition lives here.
+/// Presents choices from the models and routes selections through their public actions.
 struct ComposerRowModelAdapter {
     let app: AppModel
     /// Nil addresses the unsent Compose task, whose editor has no agent connection.

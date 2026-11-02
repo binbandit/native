@@ -27,7 +27,7 @@ struct SubagentInspector: View {
         .safeAreaBar(edge: .bottom, spacing: 0) {
             if showsQuestions, let session = child?.pendingQuestionSession, let question = session.pendingQuestion {
                 ComposerSurface {
-                    AgentQuestionDock(session: session, question: question)
+                    SessionQuestionView(session: session, question: question)
                         .id(question.id)
                 }
                 .padding(DS.Space.md)

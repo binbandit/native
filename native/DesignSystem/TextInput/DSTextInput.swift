@@ -17,6 +17,8 @@ struct DSTextInput: View {
     var onSubmit: () -> Void = {}
     /// Return true to consume the key. Return is offered here before submission.
     var onKey: (DSTextInputKey) -> Bool = { _ in false }
+    /// Modified keys are offered before native editing, for host actions such as steering.
+    var onEvent: (DSTextInputEvent) -> Bool = { _ in false }
     var onAttachments: ([DSTextInputAttachment]) -> Void = { _ in }
     /// Caret rectangle in this component's coordinate space, after scrolling. Anchor above minY.
     var onStateChange: (DSTextInputState) -> Void = { _ in }
@@ -38,6 +40,12 @@ struct DSTextInputState: Equatable {
 
 enum DSTextInputKey: Equatable {
     case submit, up, down, escape, tab
+}
+
+struct DSTextInputEvent {
+    let key: KeyEquivalent
+    var modifiers: EventModifiers = []
+    var isRepeat = false
 }
 
 enum DSTextInputAttachment {

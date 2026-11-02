@@ -1,6 +1,6 @@
 #!/bin/bash
 # Run against an isolated task with docs/guide.md and My Docs/guide.md in its fixture project.
-# Use both Fine print settings and both appearances. Never submits a prompt.
+# Use both appearances. Never submits a prompt.
 set -euo pipefail
 instance=${1:?usage: composer-folder-continuation.sh instance [capture-prefix]}
 prefix=${2-}
@@ -37,7 +37,7 @@ for folder in 'docs/' 'My Docs/'; do
     capture completed
     "${drive[@]}" type x
     value=$("${drive[@]}" text Message)
-    # Fine print displays the completed file as a token; standard keeps its canonical @path.
+    # Completed mentions serialize to their canonical @path.
     if [[ $value != *'guide.md'*' x' ]]; then
         echo "FAIL: typing after completed file: [$value]" >&2
         exit 1
@@ -45,7 +45,7 @@ for folder in 'docs/' 'My Docs/'; do
     echo "PASS: $folder continuation, completion and subsequent typing"
 done
 
-# A same-length completion must retain a caret before existing suffix text, in both editors.
+# A same-length completion must retain a caret before existing suffix text, in the native editor.
 "${drive[@]}" set Message ' next'
 "${drive[@]}" key cmd+left
 "${drive[@]}" type '@./doc'

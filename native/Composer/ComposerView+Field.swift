@@ -28,10 +28,12 @@ extension ComposerView {
                     guard session.canCancel else { return false }
                     stop()
                     return true
-                }
+                },
+                onEvent: handleFieldEvent
             ) {
                 fieldAttachments
             }
+            .disabled(!canEdit || page?.isSealed == true)
             .textViewDefersDrops(true)
             .onAttachmentPaste(isEnabled: isFocused && canEdit, perform: attach)
             .composerAttachmentDrop(isTargeted: { isDropTargeted = $0 }, perform: attach)
@@ -73,6 +75,55 @@ extension ComposerView {
         }
     }
 
+    private func handleFieldEvent(_ event: DSTextInputEvent, selection: NSRange) -> Bool {
+        if event.modifiers.isEmpty {
+            let key: DraftAttachmentKeys.Key =
+                switch event.key {
+                case .leftArrow: .left
+                case .rightArrow: .right
+                case .delete: .backspace
+                case .deleteForward: .forwardDelete
+                case .escape: .escape
+                default: .other
+                }
+            let attachments = session.attachments
+            let outcome = DraftAttachmentKeys.outcome(
+                for: key, selection: selectedAttachmentIndex, count: attachments.count,
+                draft: .init(isEmpty: draftText.isEmpty, isCaretAtStart: selection == NSRange(location: 0, length: 0)),
+                isRepeat: event.isRepeat)
+            if let index = outcome.removing, attachments.indices.contains(index) {
+                removeAttachment(attachments[index].id)
+            }
+            selectAttachment(at: outcome.selection)
+            if !outcome.passesKey { return true }
+        }
+        if event.key == .upArrow, event.modifiers.isEmpty, draftText.isEmpty {
+            if let last = session.queuedPrompts.last {
+                session.editingQueuedPrompt = last.id
+                session.draft = last.text
+                return true
+            }
+            if !isWorking, let last = session.state.lastPrompt {
+                draftText = last
+                return true
+            }
+        }
+        if event.modifiers == [.command, .option], let id = session.editingQueuedPrompt {
+            if event.key == .upArrow { session.moveQueued(id, .up); return true }
+            if event.key == .downArrow { session.moveQueued(id, .down); return true }
+        }
+        if event.key == .return, event.modifiers == .command {
+            guard !event.isRepeat else { return true }
+            if let id = session.editingQueuedPrompt {
+                if session.sendNowRoute != nil { sendNow(id, savingDraft: true) }
+            } else {
+                submit(.steer)
+            }
+            return true
+        }
+        return event.key == .return && event.modifiers.isEmpty && event.isRepeat
+    }
+
     func cancelFieldQueuedEdit() -> Bool {
         guard session.editingQueuedPrompt != nil else { return false }
         stopEditingQueued()
@@ -85,7 +136,6 @@ extension ComposerView {
             switch feedback.tone {
             case .problem: NoticeBanner(tone: .warning, title: feedback.message)
             case .notice: NoticeBanner(tone: .info, title: feedback.message)
-            case .done: EmptyView()
             }
         } else if let blocked = session.sendBlockedReason, hasContent {
             NoticeBanner(tone: .warning, title: blocked)

@@ -1,3 +1,4 @@
+import ACP
 import SwiftUI
 
 #if !NATIVE_PREVIEWS_WIP
@@ -20,6 +21,7 @@ struct ComposerField<Attachments: View>: View {
     var onCommand: (ComposerSlashCommand) -> Void = { _ in }
     var onAttachments: ([DSTextInputAttachment]) -> Void = { _ in }
     var onEscape: () -> Bool = { false }
+    var onEvent: (DSTextInputEvent, NSRange) -> Bool = { _, _ in false }
     @ViewBuilder var attachments: () -> Attachments
 
     @State private var document = TextInputDocument()
@@ -83,7 +85,7 @@ struct ComposerField<Attachments: View>: View {
     private var editor: some View {
         let input = DSTextInput(
             document: $document, placeholder: placeholder, isFocused: $isFocused, selection: $selection,
-            onSubmit: actions.send, onKey: handleKey, onAttachments: onAttachments,
+            onSubmit: actions.send, onKey: handleKey, onEvent: handleEvent, onAttachments: onAttachments,
             onStateChange: { inputState = $0 })
         // SwiftUI clears an unregistered FocusState on draft updates. Only the editor owns it, not the row.
         if let editorFocus { input.focused(editorFocus) } else { input }
@@ -108,6 +110,43 @@ struct ComposerField<Attachments: View>: View {
         }
         if key == .escape { return onEscape() }
         return false
+    }
+
+    private func handleEvent(_ event: DSTextInputEvent) -> Bool {
+        if event.modifiers.isEmpty, !completions.isEmpty { return false }
+        let display = document.displayText
+        if let range = Range(selection, in: display), PromptCode.isInBlock(range.upperBound, in: display) {
+            let edit: PromptCode.Edit?
+            switch event.key {
+            case .return where event.modifiers.isEmpty:
+                edit = PromptCode.newline(in: display, replacing: range)
+            case .tab where event.modifiers.isEmpty:
+                edit = PromptCode.indent(in: display, selection: range)
+            case .tab where event.modifiers == .shift:
+                edit = PromptCode.outdent(in: display, selection: range)
+            default: edit = nil
+            }
+            if let edit {
+                // Replace only the changed span so mentions elsewhere keep their atomic identity.
+                let prefix = zip(display, edit.text).prefix(while: { $0 == $1 }).count
+                let oldTail = display.dropFirst(prefix)
+                let newTail = edit.text.dropFirst(prefix)
+                let suffix = zip(oldTail.reversed(), newTail.reversed()).prefix(while: { $0 == $1 }).count
+                let oldStart = display.index(display.startIndex, offsetBy: prefix)
+                let oldEnd = display.index(display.endIndex, offsetBy: -suffix)
+                let newStart = edit.text.index(edit.text.startIndex, offsetBy: prefix)
+                let newEnd = edit.text.index(edit.text.endIndex, offsetBy: -suffix)
+                if let updated = document.replacing(
+                    NSRange(oldStart..<oldEnd, in: display), with: .init(String(edit.text[newStart..<newEnd])))
+                {
+                    document = updated
+                    text = updated.plainText
+                    selection = NSRange(edit.selection, in: edit.text)
+                }
+                return true
+            }
+        }
+        return onEvent(event, selection)
     }
 
     private func accept(_ completion: ComposerFieldCompletion) {

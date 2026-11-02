@@ -131,9 +131,7 @@ struct ComposeTaskPage: View {
                     session: editor,
                     page: .init(
                         allowsFileMentions: entry.project != nil && entry.device == .thisMac,
-                        needsFolder: false,
                         isSealed: compose.isHeld,
-                        openSettings: { entry.toggle(.agent) },
                         start: submitOrClosePicker,
                         attachmentsPending: { compose.pendingAttachments = $0 })
                 )

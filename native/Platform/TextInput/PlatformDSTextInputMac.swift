@@ -50,6 +50,7 @@ struct PlatformDSTextInput: NSViewRepresentable {
         editor.input = input
         editor.style = PlatformDSTextInputStyle(environment: context.environment)
         scroll.maximumLines = max(1, input.maximumLines)
+        editor.isEditable = context.environment.isEnabled
         editor.insertionPointColor = editor.style?.accent ?? .textColor
         editor.setAccessibilityLabel(input.accessibilityLabel)
         if !editor.hasMarkedText(), let storage = editor.textStorage, let style = editor.style {
@@ -239,6 +240,29 @@ final class PlatformDSTextInputMacView: NSTextView {
 
     override func keyDown(with event: NSEvent) {
         if !hasMarkedText() {
+            let equivalent: KeyEquivalent? =
+                switch event.keyCode {
+                case 36, 76: .return
+                case 126: .upArrow
+                case 125: .downArrow
+                case 123: .leftArrow
+                case 124: .rightArrow
+                case 51: .delete
+                case 117: .deleteForward
+                case 53: .escape
+                case 48: .tab
+                default: nil
+                }
+            if let equivalent {
+                var modifiers: EventModifiers = []
+                if event.modifierFlags.contains(.command) { modifiers.insert(.command) }
+                if event.modifierFlags.contains(.control) { modifiers.insert(.control) }
+                if event.modifierFlags.contains(.option) { modifiers.insert(.option) }
+                if event.modifierFlags.contains(.shift) { modifiers.insert(.shift) }
+                if input?.onEvent(.init(key: equivalent, modifiers: modifiers, isRepeat: event.isARepeat)) == true {
+                    return
+                }
+            }
             let key: DSTextInputKey? =
                 switch event.keyCode {
                 case 36, 76: .submit

@@ -15,7 +15,7 @@ struct CommandKnowledgeSettings: View {
                     "Keeps program names and counts on this device. No arguments or paths. Never sent anywhere."),
                 detail: Text(
                     center.isAllowed
-                        ? "Only while Fine print is on. Turning this off keeps existing counts."
+                        ? "Turning this off keeps existing counts."
                         : "\(PolicyCenter.organizationSubject) has turned counting off.")
             ) {
                 SettingsSwitch(

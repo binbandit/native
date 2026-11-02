@@ -12,7 +12,6 @@ struct StartingTaskFailureComposer: View {
     @State private var detail = AppModel.StartFailureDetail()
     @State private var fixFailure: String?
     @State private var isFixing = false
-    @State private var selection: TextSelection?
     @FocusState private var isFocused: Bool
 
     var body: some View {
@@ -57,16 +56,16 @@ struct StartingTaskFailureComposer: View {
 
     private var editor: some View {
         HStack(alignment: .bottom, spacing: DS.Space.md) {
-            ComposerEditor(
-                text: $task.draft, selection: $selection,
+            DSMessageInput(
+                text: $task.draft,
                 placeholder: "What would you like \(task.agent.displayName) to work on?", isFocused: $isFocused,
-                insets: DS.Approval.editorInsets, maximumHeight: DS.Approval.instructionMaximumHeight
+                maximumLines: 3
             ) { press in
                 guard press.key == .return, press.modifiers.isDisjoint(with: [.shift, .option]),
                     !PlatformTextInput.isComposing
-                else { return .ignored }
+                else { return false }
                 send()
-                return .handled
+                return true
             }
             if task.isSendRequested {
                 Button("Don't Send") { task.isSendRequested = false }

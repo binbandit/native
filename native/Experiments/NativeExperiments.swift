@@ -12,8 +12,6 @@ extension ExperimentCatalog {
         Gate.sessionTools,
         Gate.taskWell,
         Gate.sidebarNext,
-        Gate.composerNext,
-        Gate.composerV3,
         Gate.composeTask,
         Gate.projectFolderTasks,
         Gate.warmWorktrees,
@@ -51,13 +49,6 @@ extension Parameter where Value == TranscriptWidth {
 // MARK: - Gates
 
 extension Gate {
-    static let composerV3 = Gate(
-        id: "NativeComposerV3", title: "Composer field",
-        summary: "Try the growing message field with agent, model, mode and folder controls in one row.",
-        site: "Composer", stage: .labs, owner: "composer",
-        reviewBy: ReviewDate(year: 2026, month: 12, day: 15), default: false
-    )
-
     static let warmWorktrees = Gate(
         id: "NativeWarmWorktrees", title: "Warm Worktrees",
         summary: "Start tasks with copies of the project's installed dependencies and build caches.",
@@ -145,17 +136,6 @@ extension Gate {
         site: "Sidebar ▸ projects and tasks",
         stage: .labs,
         owner: "sidebar",
-        reviewBy: ReviewDate(year: 2026, month: 12, day: 15),
-        default: false
-    )
-
-    static let composerNext = Gate(
-        id: "NativeComposerNext",
-        title: "Fine print",
-        summary: "One field and settings popover, with explained approvals and deliberate confirmation.",
-        site: "Composer ▸ field, settings and approvals",
-        stage: .labs,
-        owner: "composer",
         reviewBy: ReviewDate(year: 2026, month: 12, day: 15),
         default: false
     )

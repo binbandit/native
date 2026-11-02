@@ -224,21 +224,20 @@ struct AnnotatedQuestionView: View {
     private var ownWords: some View {
         HStack(alignment: .bottom, spacing: DS.Space.md) {
             Group {
-                ComposerEditor(
-                    text: typedText, selection: $wordsSelection, placeholder: "Or answer in your own words",
-                    isFocused: $wordsFocused, inputLabel: "Answer \(agentName) in your own words",
-                    insets: DS.Approval.editorInsets, maximumHeight: DS.Approval.instructionMaximumHeight
+                DSMessageInput(
+                    text: typedText, placeholder: "Or answer in your own words",
+                    isFocused: $wordsFocused, inputLabel: "Answer \(agentName) in your own words", maximumLines: 3
                 ) { press in
-                    guard !PlatformTextInput.isComposing else { return .ignored }
+                    guard !PlatformTextInput.isComposing else { return false }
                     if press.key == .tab, press.modifiers.isSubset(of: [.shift]) {
                         return ComposerPlatform.moveKeyFocus(forward: !press.modifiers.contains(.shift))
-                            ? .handled : .ignored
+                            ? true : false
                     }
                     guard press.key == .return, press.modifiers.isEmpty else {
-                        return .ignored
+                        return false
                     }
                     submit()
-                    return .handled
+                    return true
                 }
                 if openTask == nil || !typedAnswer.isEmpty {
                     ComposerSendButton(disabledReason: typedAnswer.isEmpty ? "Type an answer first" : nil) {

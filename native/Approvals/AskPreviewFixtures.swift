@@ -71,7 +71,6 @@ enum AskPreviewFixtures {
         let defaults = PreviewUserDefaults()
         let modes = TaskModes(library: ModeLibrary(defaults: defaults), defaults: defaults)
         let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
-        let _ = experiments.set(true, for: .composerNext)
         let automation = AutomationCenter(
             goalStore: GoalStore(url: URL(filePath: "/native-preview-unused/goals.json")),
             workflows: WorkflowRunner(store: nil), automations: AutomationEngine(store: nil))

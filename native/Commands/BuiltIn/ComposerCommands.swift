@@ -48,7 +48,7 @@ extension NativeCommand {
                 if let instruction = $0.taskPeekInstructionFocus {
                     instruction.wrappedValue = true
                 } else {
-                    if let session = $0.session, ExperimentStore.shared.value(of: .composerNext),
+                    if let session = $0.session,
                         session.permissionRequests.isEmpty, session.pendingQuestion == nil
                     {
                         let quotes = PlatformQuoteSelection.capture(task: session.clientID) ?? session.quoteSelection
@@ -95,7 +95,7 @@ extension NativeCommand {
 
             NativeCommand(.sessionChooseModel, title: "Choose Model…", category: .composer, systemImage: "cpu") {
                 if model.quickEntry.isEnabled, model.composeTask.isPresented {
-                    model.quickEntry.toggle(.agent)
+                    model.composeTask.commandDraft?.isModelPickerRequested = true
                 } else {
                     ($0.session ?? $0.composeDraft)?.isModelPickerRequested = true
                 }
@@ -106,8 +106,7 @@ extension NativeCommand {
                 }
                 if context.composeDraft != nil { return true }
                 return context.session.map {
-                    model.offersAgentModels || ExperimentStore.shared.value(of: .composerNext)
-                        || ComposerSettings($0.configOptions).model != nil
+                    !$0.isSubagent
                 } ?? false
             },
         ]

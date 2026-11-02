@@ -1,0 +1,139 @@
+import ACP
+import NativeAutomation
+import SwiftUI
+
+// What the composer's controls and keys do, through the session's model methods.
+extension ComposerView {
+    /// Sends the draft; while the agent works, queues or steers it, or saves the queued message
+    /// being edited. Says what happened, or why nothing could.
+    func submit(_ behavior: FollowUpBehavior) {
+        let text = PromptQuote.trimmed(session.draft)
+        let attachments = session.attachments
+        guard !text.isEmpty || !attachments.isEmpty else { return }
+        if let page {
+            guard attachmentsBlockedReason == nil, !flagMissingAttachments() else { return }
+            page.start()
+            return
+        }
+        // `/clear` and `/goal …` are Native's own and never reach the agent, unless the user picked
+        // the agent's command of that name from the list. They read the message the way the list
+        // offered them, without its quotes, and leave the quotes for the next message.
+        let message = draftText
+        let isAgentCommand = agentCommandDraft.map(message.hasPrefix) ?? false
+        if !isAgentCommand, ClearConversationCommand.matches(message) {
+            clearConversation()
+            return
+        }
+        if !isAgentCommand, let command = GoalCommand(parsing: message), let goal = automation.goal(for: session) {
+            draftText = ""
+            Task { await goal.perform(command) }
+            return
+        }
+        if !session.prepareDiffCommentsSubmission() { return }
+        if let blocked = session.sendBlockedReason ?? attachmentsBlockedReason {
+            feedback = .blocked(blocked)
+            return
+        }
+        if flagMissingAttachments() {
+            return
+        }
+        if let id = session.editingQueuedPrompt, !text.isEmpty, session.queuedPrompts.contains(where: { $0.id == id }) {
+            if session.isEditingDiffCommentPacket(id) {
+                Task {
+                    _ = await session.saveQueuedDiffComments(id)
+                }
+                return
+            }
+            session.updateQueued(id, text: text)
+            session.editingQueuedPrompt = nil
+            session.draft = ""
+            return
+        }
+        // The queued message may have gone out while it was being edited; then it's a new message.
+        session.editingQueuedPrompt = nil
+        if !session.diffComments.isEmpty {
+            Task { await session.submitDiffComments(behavior) }
+            return
+        }
+        if session.canSend, !session.queuedPrompts.isEmpty {
+            // After a cancelled turn paused the queue: the draft API sends the waiting messages
+            // first, then this one; each turn shows in the transcript.
+            Task { await session.submit(behavior) }
+            return
+        }
+        session.draft = ""
+        session.attachments = []
+        Task {
+            do {
+                _ = try await session.submit(text, attaching: attachments, behavior)
+            } catch {
+                // Nothing went out, so the message and its files come back to be sent again.
+                if session.draft.isEmpty {
+                    session.draft = text
+                }
+                session.attachments = attachments + session.attachments
+                feedback = .failed(error)
+            }
+        }
+    }
+
+    /// `/clear`: a fresh conversation in this task (AppModel+ClearConversation.swift). Quotes move
+    /// with it, for the next message; the message comes back if it can't start, with why.
+    func clearConversation() {
+        let message = draftText
+        draftText = ""
+        Task {
+            do {
+                let fresh = try await app.clearConversation(of: session)
+                if fresh.draft.isEmpty {
+                    fresh.draft = session.draft
+                }
+                session.draft = ""
+            } catch {
+                if draftText.isEmpty {
+                    draftText = message
+                }
+                feedback = .blocked(error.localizedDescription)
+            }
+        }
+    }
+
+    /// Closes the queued message open in the editor without saving the edits.
+    func stopEditingQueued() {
+        session.editingQueuedPrompt = nil
+        session.draft = ""
+    }
+
+    func remove(_ id: SessionModel.QueuedPrompt.ID) {
+        if session.editingQueuedPrompt == id {
+            stopEditingQueued()
+        }
+        session.removeQueued(id, undoManager: undoManager)
+    }
+
+    /// Sends a queued message ahead of the rest ("Send Now"); `savingDraft` keeps the edits made to
+    /// it in the editor first.
+    func sendNow(_ id: SessionModel.QueuedPrompt.ID, savingDraft: Bool = false) {
+        guard session.sendNowRoute != nil else { return }
+        if session.editingQueuedPrompt == id {
+            if savingDraft {
+                if session.isEditingDiffCommentPacket(id) {
+                    Task {
+                        if await session.saveQueuedDiffComments(id) { sendNow(id) }
+                    }
+                    return
+                }
+                session.updateQueued(id, text: session.draft)
+            }
+            stopEditingQueued()
+        }
+        Task { await session.sendQueuedNow(id) }
+    }
+
+    /// Stops the running turn; the placeholder says it's stopping until the agent confirms. Pressed
+    /// again while the agent hasn't, it stops waiting.
+    func stop() {
+        Task { await session.cancel() }
+    }
+
+}

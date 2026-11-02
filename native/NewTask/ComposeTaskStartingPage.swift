@@ -6,7 +6,7 @@ struct ComposeTaskStartingPage: View {
     let model: AppModel
     let compose: ComposeTaskModel
     @Experiment(.transcriptWidth) private var columnWidth: TranscriptWidth
-    @Experiment(.composerNext) private var composerNext
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isSettled = false
 
@@ -39,7 +39,7 @@ struct ComposeTaskStartingPage: View {
                     }.padding(DS.Space.lg)
                 }
                 .frame(
-                    maxWidth: composerNext ? max(columnWidth.maxWidth, DS.ComposerSettings.width) : columnWidth.maxWidth
+                    maxWidth: columnWidth.maxWidth
                 )
                 .padding(.horizontal, DS.Space.xxl)
                 .padding(.top, DS.Space.md)

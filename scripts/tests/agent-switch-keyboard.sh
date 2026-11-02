@@ -36,7 +36,6 @@ subprocess.run(['defaults','write',domain,'pluginChoices','-dict', *[part for ke
     ['claude-code','codex','cursor','opencode','pi','copilot','on-device-titles','sounds']
     for part in [key,'-bool','NO']]],check=True)
 PY
-defaults write "$domain" experiment.NativeComposerNext -bool NO
 trap '"${run[@]}" --quit >/dev/null' EXIT
 "${run[@]}" --no-build -- -sounds.enabled NO -AppleKeyboardUIMode 3 -appearance.mode light \
     -pluginsDirectory "$fixture/plugins" -defaultAgent keyboard-source \

@@ -59,7 +59,6 @@ struct AskedQuestions {
 struct AskedQuestionsView: View {
     let questions: AskedQuestions
     /// Fine print puts the question in the composer's place rather than in a card above it.
-    @Experiment(.composerNext) private var composerNext
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.xs) {
@@ -106,7 +105,7 @@ struct AskedQuestionsView: View {
             Text("Skipped")
                 .foregroundStyle(.dsTextTertiary)
         case .waiting:
-            Text(composerNext ? "Answer in the composer" : "Answer in the card above the composer")
+            Text("Answer in the card above the composer")
                 .foregroundStyle(.dsTextTertiary)
         case .unanswered:
             Text("Not answered")

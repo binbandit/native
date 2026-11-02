@@ -374,7 +374,7 @@ struct SessionToolsScreen: View {
                 .environment(\.gitChangesCompact, true)
                 .environment(\.gitChangesNeutralMarkers, true)
                 .environment(\.gitChangesClose, GitChangesDismissal {})
-            ComposerStatePreviewFixtures.finePrint(phase: .idle, draft: "Why fixedSize here?")
+            ComposerStatePreviewFixtures.field(phase: .idle, draft: "Why fixedSize here?")
         }
         .frame(width: DS.ComposerSettings.width, height: DS.TaskWell.panelWidth)
     }
