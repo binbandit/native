@@ -800,7 +800,6 @@ operate the picker; Escape cancels without changing assignments.
 
 These Help menu actions have no default shortcut and can be rebound in Settings > Keyboard Shortcuts.
 
-
 | Keys | Action | Command |
 | --- | --- | --- |
 | | Command Diagnostics (opens Settings > Privacy) | `help.commandDiagnostics` |

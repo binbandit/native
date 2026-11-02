@@ -32,6 +32,8 @@ struct ComposerField<Attachments: View>: View {
 
     private var completions: [ComposerFieldCompletion] {
         guard !dismissed, isFocused, let query = inputState?.query else { return [] }
+        let display = document.displayText
+        if let range = Range(selection, in: display), PromptCode.isInBlock(range.upperBound, in: display) { return [] }
         switch query.kind {
         case .file: return files.map { .file($0) }
         case .command:

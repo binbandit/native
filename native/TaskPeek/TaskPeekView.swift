@@ -80,7 +80,7 @@ struct TaskPeekView: View {
         if let openTask { openTask(request.task) } else { model.openPeekedTask(request.task) }
     }
 
-    /// The shared approval and question (Fine print) already own their insets, including the field's
+    /// The shared approval and question already own their insets, including the field's
     /// full-width rule.
     private var showsAnnotatedAsk: Bool {
         guard model.taskIsAvailable(request.task), model.taskIsReachable(request.task),
@@ -238,8 +238,7 @@ extension FocusedValues {
 #Preview("Peek - Routine approval") { TaskPeekPreviewFixtures.view(.routine) }
 #Preview("Peek - Destructive approval") { TaskPeekPreviewFixtures.view(.destructive) }
 #Preview("Peek - Question") { TaskPeekPreviewFixtures.view(.question) }
-#Preview("Peek - Question, Fine print") { TaskPeekPreviewFixtures.view(.question) }
-#Preview("Peek - Question, Fine print, narrow") {
+#Preview("Peek - Question, narrow") {
     TaskPeekPreviewFixtures.view(.question, width: 360)
 }
 #Preview("Peek - Confirmation question") { TaskPeekPreviewFixtures.view(.confirmation) }

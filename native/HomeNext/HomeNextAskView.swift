@@ -51,7 +51,7 @@ struct HomeNextAskView: View {
         .environment(\.permissionShortcutsEnabled, model.taskPeek.request == nil)
     }
 
-    /// With Fine print, the question carries its own field and Open Task link, as the approval does.
+    /// The question carries its own field and Open Task link, as the approval does.
     private var asksInPlace: Bool {
         task.request?.question != nil
     }

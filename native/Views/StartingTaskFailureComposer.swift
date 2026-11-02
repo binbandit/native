@@ -1,7 +1,7 @@
 import NativeSetup
 import SwiftUI
 
-/// A starting task's failure in the composer's place (Fine print): the failure, and under it the
+/// A starting task's failure above its message: the failure, and under it the
 /// task's message, still editable, which goes out once the task starts.
 struct StartingTaskFailureComposer: View {
     @Bindable var task: StartingTask

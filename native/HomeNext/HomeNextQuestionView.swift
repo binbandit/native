@@ -1,8 +1,7 @@
 import ACP
 import SwiftUI
 
-/// Home hosts the composer's question unchanged, including digit keys and free text: the annotated
-/// question with Fine print, the docked card without it.
+/// Home hosts the shared annotated question, including digit keys and free text.
 struct HomeNextQuestionView: View {
     let session: SessionModel
     let question: SessionModel.PendingQuestion

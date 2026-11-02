@@ -57,6 +57,9 @@ extension ComposerView {
                 fieldGoalEditorOpen = true
                 automation.goal(for: session)?.isEditorRequested = false
             }
+            if session.diffCommentsExpanded, !session.diffComments.isEmpty {
+                DiffCommentsComposerSection(session: session)
+            }
             if session.diffCommentStatus != nil || session.unresolvedCommentPacket != nil {
                 DiffCommentsDeliveryStatus(session: session, retry: { submit(.queue) })
             }

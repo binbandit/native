@@ -34,7 +34,7 @@ private struct ComposerFieldInputRegression {
 
         editor.undoManager?.undo()
         fixture.pump()
-        check(fixture.session.composerMessage == "A", "native Undo restores the previous draft")
+        check(fixture.session.composerMessage.isEmpty, "native Undo removes the coalesced typing group")
         editor.undoManager?.redo()
         fixture.pump()
         check(fixture.session.composerMessage == "AB", "native Redo restores the draft")
@@ -99,6 +99,14 @@ private struct ComposerFieldInputRegression {
         check(editor.input?.onEvent(.init(key: .tab)) == true, "Tab inside fenced code indents")
         fixture.pump()
         check(fixture.session.composerMessage.hasSuffix("\n        "), "code indentation reaches the model")
+
+        fixture.reset(editor)
+        editor.insertText("```swift\n@fi", replacementRange: editor.selectedRange())
+        fixture.pump()
+        check(editor.input?.onKey(.down) == false, "file-like code does not open file suggestions")
+        check(editor.input?.onEvent(.init(key: .return)) == true, "Return after file-like code inserts a newline")
+        fixture.pump()
+        check(fixture.session.composerMessage == "```swift\n@fi\n", "code keeps literal mention text")
 
         fixture.reset(editor)
         fixture.session.queue.append("First queued message")

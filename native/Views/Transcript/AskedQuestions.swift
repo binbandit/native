@@ -58,8 +58,6 @@ struct AskedQuestions {
 /// its answer.
 struct AskedQuestionsView: View {
     let questions: AskedQuestions
-    /// Fine print puts the question in the composer's place rather than in a card above it.
-
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.xs) {
             HStack(spacing: DS.Space.sm) {
