@@ -39,4 +39,8 @@ extension NativeHostClient {
     public func withdrawHistory(of session: HostSessionID) async throws -> TaskHistorySummary {
         try await call(HostProtocol.Method.withdrawHistory, SessionParams(sessionID: session))
     }
+
+    public func recordHandoff(_ params: HandoffHistoryParams) async throws -> TaskHistorySummary {
+        try await call(HostProtocol.Method.handoffHistory, params)
+    }
 }

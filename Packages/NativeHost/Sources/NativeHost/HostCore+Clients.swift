@@ -295,6 +295,8 @@ extension HostCore {
             try reply(try missingHistory(try message.params(as: SessionParams.self)))
         case Method.withdrawHistory:
             try reply(try withdrawHistory(try message.params(as: SessionParams.self)))
+        case Method.handoffHistory:
+            try reply(try recordHandoff(try message.params(as: HandoffHistoryParams.self)))
         case Method.listNotifications:
             try reply(try listNotifications(try message.params(as: ListNotificationsParams.self)))
         case Method.acknowledgeNotifications:

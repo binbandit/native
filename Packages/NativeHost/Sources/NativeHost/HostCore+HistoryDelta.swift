@@ -48,6 +48,28 @@ extension HostCore {
         return try historySummary(params)
     }
 
+    /// The client's handoff went with the session's message: what its receipt carried of the items
+    /// the handoff considered counts as seen once the agent answers (or now, if it already has).
+    func recordHandoff(_ params: HandoffHistoryParams) throws -> TaskHistorySummary {
+        let session = try session(params.sessionID)
+        guard let history = try history(of: session) else { throw HostError.noHistory }
+        try store.transaction {
+            guard TaskHistoryDelta.namesHistory(params.receipt),
+                let handoff = try store.historyTransfers(of: history.id).last(where: {
+                    $0.target == history.participant && $0.strategy == .client && $0.state != .superseded
+                })
+            else { return }
+            let considered = try store.historyItems(
+                of: history.id, after: handoff.from, through: handoff.through, limit: .max
+            ).filter { $0.source != history.participant }
+            try store.setTransferCoverage(
+                handoff.id, conveyed: TaskHistoryDelta.covered(by: params.receipt, items: considered),
+                receipt: params.receipt)
+            if handoff.state == .delivered { try store.updateWatermark(of: history.participant, in: history.id) }
+        }
+        return try historySummary(SessionParams(sessionID: session.id))
+    }
+
     /// `prompt` with the session's prepared delta ahead of it, chosen now so it covers everything
     /// up to this message. Nil when there's no delta to send.
     func renderDelta(
@@ -87,7 +109,7 @@ extension HostCore {
             sent,
             HistoryDeltaDelivery(
                 transfer: transfer.id, through: head,
-                conveyed: TaskHistoryDelta.covered(by: context.receipt, considered: missing.map(\.seq)),
+                conveyed: TaskHistoryDelta.covered(by: context.receipt, items: missing),
                 receipt: context.receipt)
         )
     }

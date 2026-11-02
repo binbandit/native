@@ -287,6 +287,13 @@ extension HostStore {
         }
     }
 
+    /// What a client's handoff carried, from its receipt.
+    func setTransferCoverage(_ id: UUID, conveyed: [ClosedRange<Int>], receipt: ContextTransfer.Receipt) throws {
+        try database.run(
+            "UPDATE history_transfers SET covered = ?, receipt = ? WHERE id = ?", try JSONColumn.encode(conveyed),
+            try JSONColumn.encode(receipt), .text(id.uuidString))
+    }
+
     /// The change of agent that prepared the target's context was undone, so what hasn't gone won't.
     func supersedePreparedTransfers(in history: TaskHistoryID, to target: Int) throws {
         try database.run(

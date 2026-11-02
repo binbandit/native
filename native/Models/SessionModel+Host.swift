@@ -306,6 +306,14 @@ extension SessionModel {
         let delivery = try await host.prompt(params)
         if delivery != .unknown {
             services.modelContinuations.acknowledge(transferID, for: key, as: .acceptedByHost)
+            // A handoff chosen from the task's history tells the host what it carried, so a later
+            // return to this conversation isn't sent it again.
+            if let transfer = services.modelContinuations.transfer(for: key), transfer.receipt.id == transferID,
+                TaskHistoryDelta.namesHistory(transfer.receipt)
+            {
+                _ = try? await host.client.recordHandoff(
+                    HandoffHistoryParams(sessionID: host.id, receipt: transfer.receipt))
+            }
         }
         if delivery == .unknown, PromptQuote.split(text).quotes.contains(where: { $0.comment != nil }) {
             throw DiffCommentsUnresolvedDelivery()

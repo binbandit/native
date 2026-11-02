@@ -21,6 +21,7 @@ public enum LinkMethodPolicy {
             Method.listNotifications, Method.acknowledgeNotifications, Method.actOnNotification,
             Method.checkAgentSignIn, Method.cancelAgentSignIn, Method.setSessionTitle, Method.historySummary,
             Method.readHistory, Method.joinHistory, Method.missingHistory, Method.withdrawHistory,
+            Method.handoffHistory,
         ]
     }()
 
