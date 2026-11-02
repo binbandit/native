@@ -48,6 +48,7 @@ final class GitSettings {
         /// Used while `branchPrefixMode` is `.custom`.
         var customBranchPrefix: String?
         var deletesBranchOnArchive: Bool?
+        var warmWorktree: WorktreeWarmSettings?
     }
 
     static let defaultEnvFilePatterns = [".env*"]
@@ -146,6 +147,23 @@ final class GitSettings {
 
     func deletesBranchOnArchive(forProjectAt root: URL) -> Bool {
         overrides(forProjectAt: root).deletesBranchOnArchive ?? deletesBranchOnArchive
+    }
+
+    func warmWorktree(forProjectAt root: URL) -> WorktreeWarmSettings {
+        overrides(forProjectAt: root).warmWorktree ?? WorktreeWarmSettings()
+    }
+
+    func setWarmWorktree(_ value: WorktreeWarmSettings, forProjectAt root: URL, undoManager: UndoManager? = nil) {
+        let previous = warmWorktree(forProjectAt: root)
+        var overrides = overrides(forProjectAt: root)
+        overrides.warmWorktree = value
+        setOverrides(overrides, forProjectAt: root)
+        undoManager?.registerUndo(withTarget: self) { settings in
+            MainActor.assumeIsolated {
+                settings.setWarmWorktree(previous, forProjectAt: root, undoManager: undoManager)
+            }
+        }
+        undoManager?.setActionName("Change Worktree Setup")
     }
 
     private static func branchPrefix(mode: BranchPrefixMode, custom: String, gitHubLogin: String?) -> String {

@@ -139,4 +139,15 @@ struct ProjectScriptsSection: View {
     }
     .environment(TaskScriptWorktreePreviewFixtures.settings())
 }
+
+#Preview("Project scripts - Setup configured") {
+    let settings = TaskScriptWorktreePreviewFixtures.settings()
+    let _ = settings.setProjectScript("bun install", for: .setup, at: TaskScriptWorktreePreviewFixtures.project)
+    DSPreviewPair {
+        ProjectScriptsSection(projectRoot: TaskScriptWorktreePreviewFixtures.project)
+            .settingsPreviewPage()
+    }
+    .environment(settings)
+}
+
 #endif
