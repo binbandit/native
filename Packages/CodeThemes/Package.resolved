@@ -1,5 +1,5 @@
 {
-  "originHash" : "72ed1437bb30a08a87987688e9b65dac20c2be7fa582a8faaa4973731f4598a9",
+  "originHash" : "d4dfbb752ee3f532970d1fdd7ec64947d4474b95935617c0bcf3801ed04b0fa0",
   "pins" : [
     {
       "identity" : "swift-tree-sitter",
@@ -150,8 +150,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tree-sitter-grammars/tree-sitter-yaml",
       "state" : {
-        "revision" : "9632edc32eb86966a482fcb3c9a7f4bb78ae0ddb",
-        "version" : "0.7.1"
+        "revision" : "b733d3f5f5005890f324333dd57e1f0badec5c87",
+        "version" : "0.7.0"
       }
     }
   ],
