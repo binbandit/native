@@ -25,9 +25,9 @@ final class AgentModelContinuations {
         var returnedFrom: EarlierConversations.Return?
         /// A message went since the change, which closes its Undo.
         var isUndoClosed: Bool?
-        /// How many turns a returned-to conversation had when the task returned to it, so a message
-        /// sent from another client since also closes Undo.
-        var returnTurns: Int?
+        /// The task history's newest item when the task returned to the conversation: any item of
+        /// the conversation's own after it, from this client or another, closes Undo.
+        var returnHead: Int?
     }
 
     private var pending: [String: String]
