@@ -64,6 +64,37 @@ final class EarlierConversations {
         save()
     }
 
+    /// Where a conversation sat in the chain before a change of agent returned to it.
+    struct Return: Equatable {
+        /// The conversation that continued it, which now continues what it continued.
+        let follower: SessionKey?
+        /// What it continued.
+        let previous: SessionKey?
+    }
+
+    /// A change of agent returns to `key`, a conversation already in the chain behind `current`: it
+    /// moves to the front, after `current`, and the chain stays one line, so every other
+    /// conversation stays set aside.
+    func returning(to key: SessionKey, after current: SessionKey) -> Return {
+        let moved = Return(follower: conversation(after: key), previous: earlier[key])
+        if let follower = moved.follower { earlier[follower] = moved.previous }
+        earlier[key] = current
+        kept.insert(key)
+        save()
+        return moved
+    }
+
+    /// Undoes `returning(to:after:)`.
+    func undoReturn(to key: SessionKey, after current: SessionKey, _ moved: Return) {
+        guard earlier[key] == current else { return }
+        earlier[key] = moved.previous
+        if let follower = moved.follower {
+            earlier[follower] = key
+            kept.insert(follower)
+        }
+        save()
+    }
+
     func undoSelection(_ later: SessionKey, restoring earlierKey: SessionKey) {
         guard earlier[later] == earlierKey else { return }
         earlier.removeValue(forKey: later)

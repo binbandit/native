@@ -37,6 +37,10 @@ final class ComposerAgentChange {
     private var priorChoice: ComposerAgentChange?
     private weak var app: AppModel?
     private var candidate: SessionModel?
+    /// The change returned to a conversation the task already had, rather than starting one, and
+    /// where that conversation sat in the chain before.
+    private(set) var isReturn = false
+    var chainReturn: EarlierConversations.Return?
     @ObservationIgnored private var work: Task<Void, Never>?
 
     init(source: SessionModel, choice: ComposerAgentModel, app: AppModel) {
@@ -52,7 +56,8 @@ final class ComposerAgentChange {
 
     var isPending: Bool { stage == .waiting || stage == .preparing }
     var undoSelection: ComposerAgentChange? { canUndo ? self : priorChoice?.undoSelection }
-    var canUndo: Bool { stage == .applied && !undoIsClosed && current?.hasSubmittedPrompt == false }
+    /// Until the next message: a returned-to conversation has messages of its own already.
+    var canUndo: Bool { stage == .applied && !undoIsClosed && (isReturn || current?.hasSubmittedPrompt == false) }
     var hasPermissionChoice: Bool {
         current.map { !ComposerSettings($0.configOptions).autonomyLevels.isEmpty } ?? false
     }
@@ -175,11 +180,21 @@ final class ComposerAgentChange {
                 defer { loader.cancel() }
                 let revision = source.state.items
                 let config = source.configOptions
-                let prepared = try await app.prepareModelRuntime(choice, for: source)
-                candidate = prepared
+                // A conversation the task already had on this agent is reopened; its host sends it
+                // what it missed with its next message, so no handoff is prepared for it.
+                let returning = await app.returningConversation(for: choice, from: source)
+                isReturn = returning != nil
+                let prepared: SessionModel
+                if let returning {
+                    prepared = returning
+                } else {
+                    prepared = try await app.prepareModelRuntime(choice, for: source)
+                    candidate = prepared
+                }
                 try Task.checkCancellation()
                 try await configure(prepared, from: source)
-                let context = await app.contextTransfer(from: source, to: prepared)
+                var context: ContextTransfer?
+                if !isReturn { context = await app.contextTransfer(from: source, to: prepared) }
                 try Task.checkCancellation()
                 guard revision == source.state.items, config == source.configOptions else {
                     throw Failure("The task changed while the model was starting. Try Again to use its latest context.")
@@ -353,11 +368,19 @@ final class ComposerAgentChange {
     }
 
     private func validate(_ target: SessionModel, source: SessionModel, app: AppModel) throws {
+        // A returned-to conversation is set aside behind the source until the change commits.
+        let isBlocked =
+            switch target.sendBlock {
+            case nil: false
+            case .earlierConversation?: !isReturn
+            default: true
+            }
         guard app.plugins.policyCenter.policy.agents.allows(choice.agent.rawValue),
             target.agent.id == choice.agent, target.cwd == source.cwd,
             app.agentChangePlace(of: target) == app.agentChangePlace(of: source),
-            app.sessions.session(target.key) === target, !target.hasStarted,
-            target.phase == .idle, !target.isRestoringHistory, target.sendBlockedReason == nil
+            // A returned-to conversation has messages of its own; a new one must still be unsent.
+            app.sessions.session(target.key) === target, isReturn || !target.hasStarted,
+            target.phase == .idle, !target.isRestoringHistory, !isBlocked
         else { throw Failure("The chosen agent is no longer ready on this task's host. Try Again.") }
         if case .model(let value) = choice.kind, let value,
             ComposerSettings(target.configOptions).model?.value != value

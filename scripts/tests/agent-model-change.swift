@@ -59,6 +59,7 @@ private struct AgentModelChangeRegression {
             try duplicateModels()
             try await readOnlyDefaultMigration()
             try await directModePreambleBudget()
+            try conversationReturns()
             try await run()
             try await agentDefaultModel()
             try await inAppRecovery()
@@ -565,6 +566,34 @@ private struct AgentModelChangeRegression {
             ComposerSettings(target.configOptions).model?.value == "large",
             "The agent's own default replaced the model a new session of it starts on")
         try require(change.receipt == "Using Droid · large", "The receipt named the choice: \(change.receipt)")
+    }
+
+    /// Returning to an earlier conversation moves it to the front of the task's one line of
+    /// conversations, and Undo puts every link back.
+    static func conversationReturns() throws {
+        let suite = "agent-model-returns-\(UUID())"
+        guard let defaults = UserDefaults(suiteName: suite) else { throw ChangeFailure("No defaults") }
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let chain = EarlierConversations(defaults: defaults)
+        func key(_ agent: String, _ id: String) -> SessionKey {
+            SessionKey(agent: .init(rawValue: agent), id: SessionID(id))
+        }
+        let (first, second, third) = (key("claude-code", "c0"), key("claude-code", "c1"), key("codex", "x1"))
+        chain.record(second, after: first)
+        chain.record(third, after: second)
+        // Back from Codex to the later Claude Code conversation: it leads, Codex follows, and the
+        // first conversation stays behind Codex.
+        let moved = chain.returning(to: second, after: third)
+        try require(
+            chain.conversation(before: second) == third && chain.conversation(before: third) == first
+                && chain.isSetAside(third) && chain.isSetAside(first) && !chain.isSetAside(second),
+            "A return broke the line of conversations")
+        chain.undoReturn(to: second, after: third, moved)
+        try require(
+            chain.conversation(before: third) == second && chain.conversation(before: second) == first
+                && !chain.isSetAside(third),
+            "Undoing a return didn't restore the line")
+        print("PASS: a return moves the conversation to the front, and Undo restores the line")
     }
 
     static func permissionFallbacks() async throws {
