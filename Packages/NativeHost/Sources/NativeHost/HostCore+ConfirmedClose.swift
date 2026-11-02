@@ -32,8 +32,13 @@ extension HostCore {
         }
         for target in closing {
             // needsLoad can mean a best-effort unload whose close failed, so it still needs an ack.
-            _ = try await target.peer.request(
-                "session/close", RawSessionIDRequest(sessionId: target.agentSessionID), as: JSONValue.self)
+            do {
+                _ = try await target.peer.request(
+                    "session/close", RawSessionIDRequest(sessionId: target.agentSessionID), as: JSONValue.self)
+            } catch let error as RPCError where error.code == -32002 {
+                // ACP defines an unknown or already-closed session as successful close. A prior
+                // family cleanup may have closed this member before another member refused.
+            }
             guard tasks.receiptFamily(involving: id) == family,
                 closing.allSatisfy({ target in
                     let session = target.session

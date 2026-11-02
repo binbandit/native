@@ -67,6 +67,7 @@ actor FakeAgent {
     var peer: JSONRPCPeer?
     var running: Set<SessionID> = []
     var cancelled: Set<SessionID> = []
+    var closed: Set<SessionID> = []
     var modes: [SessionID: String] = [:]
     var models: [SessionID: String] = [:]
     var efforts: [SessionID: String] = [:]
@@ -149,6 +150,7 @@ actor FakeAgent {
             note("loads.log", servers.joined(separator: ","))
             nativeTools[session] = Self.nativeTools(in: message)
             loaded.insert(session)
+            closed.remove(session)
             for (configID, value) in Self.reloadDefaults {
                 switch configID {
                 case "model": models[session] = models[session] ?? value
@@ -198,6 +200,12 @@ actor FakeAgent {
                 throw RPCError(code: -32603, message: "Fixture refused to close the session")
             }
             let session = try message.params(as: SessionParams.self).sessionId
+            if ProcessInfo.processInfo.environment["FAKE_AGENT_REJECT_RECLOSE"] == "1",
+                !closed.insert(session).inserted
+            {
+                received("already-closed", session.rawValue)
+                throw RPCError(code: -32002, message: "Session already closed")
+            }
             received("close", session.rawValue)
             // Freed, as a real agent does: a resume reports the defaults again.
             (modes[session], models[session], efforts[session]) = (nil, nil, nil)

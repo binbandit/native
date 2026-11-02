@@ -194,6 +194,46 @@ struct HostDelegationReceiptTests {
         await recorder.stop()
     }
 
+    @Test func cleanupRetryAcceptsAnAlreadyClosedChildAfterParentRefusal() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        harness.agentEnvironment["FAKE_AGENT_REJECT_CLOSE"] = "1"
+        try harness.start()
+        let recorder = try await harness.connect()
+        let childStore = harness.root.appending(path: "closed-child")
+        var environment = harness.agentSpec.env
+        environment.removeValue(forKey: "FAKE_AGENT_REJECT_CLOSE")
+        environment["FAKE_AGENT_STORE"] = childStore.path
+        environment["FAKE_AGENT_REJECT_RECLOSE"] = "1"
+        let childAgent = AgentSpec(
+            id: "closed-child", name: "Child", command: harness.agentSpec.command, env: environment)
+        try await recorder.client.syncAgents([harness.agentSpec, childAgent])
+        let parent = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: harness.root.path))
+        let receipt = try await recorder.client.callTool(
+            CallToolParams(
+                sessionID: parent.id, tool: "start_task",
+                arguments: .object([
+                    "agent": .string(childAgent.id), "prompt": .string("hello"),
+                    "creation_key": .string("partial-cleanup"), "notify_on_completion": .bool(false),
+                ])))
+        try #require(!receipt.isError, "\(receipt.text)")
+        let task = try #require(try await recorder.client.tasks().first)
+        let childID = try #require(task.sessionID)
+        _ = try await recorder.client.callTool(
+            CallToolParams(
+                sessionID: parent.id, tool: "wait_for_task", arguments: .object(["task_id": .string(task.id)])))
+        await #expect(throws: (any Error).self) { try await recorder.client.closeSessionConfirmed(parent.id) }
+        let child = try #require(try await recorder.client.sessions().first { $0.id == childID })
+        let agentSessionID = try #require(child.agentSessionID)
+        try Data().write(to: harness.agentStore.appending(path: "allow-close"))
+        try await recorder.client.closeSessionConfirmed(parent.id)
+        let received = try String(contentsOf: childStore.appending(path: "received.log"), encoding: .utf8)
+        #expect(received.contains("close\t\(agentSessionID.rawValue)"))
+        #expect(received.contains("already-closed\t\(agentSessionID.rawValue)"))
+        #expect(harness.received.contains("close\t\(try #require(parent.agentSessionID).rawValue)"))
+        await recorder.stop()
+    }
+
     @Test func interruptedUnadmittedCreationRefusesToCreateAnotherChild() async throws {
         let harness = try HostHarness()
         defer { harness.cleanup() }
