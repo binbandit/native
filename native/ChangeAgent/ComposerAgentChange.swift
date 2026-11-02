@@ -241,8 +241,11 @@ final class ComposerAgentChange {
         switch choice.kind {
         case .load: throw Failure("Load the agent's models before choosing one.")
         case .model(nil):
-            // No model named: the one a new session of this agent starts on, as a new task's would.
-            await AgentSessionDefaults.apply(to: target, project: app?.catalog.lookup(source.key)?.project)
+            // No model named: a returned-to conversation keeps its own, and a new one starts on the
+            // model a new session of this agent starts on, as a new task's would.
+            if !isReturn {
+                await AgentSessionDefaults.apply(to: target, project: app?.catalog.lookup(source.key)?.project)
+            }
         case .model(let value?):
             guard let model = ComposerSettings(target.configOptions).model,
                 model.choices.contains(where: { $0.value == value })
