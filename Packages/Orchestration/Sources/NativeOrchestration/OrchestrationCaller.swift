@@ -10,11 +10,14 @@ public struct OrchestrationCaller: Hashable, Sendable {
     /// The session's folder, for what depends on the project (such as which MCP servers its scripts
     /// can reach).
     public var cwd: URL
+    /// Invalidates an admission suspended across Stop. Runtimes without host admission use zero.
+    public var delegationEpoch: Int
 
-    public init(clientID: UUID, agent: String, cwd: URL) {
+    public init(clientID: UUID, agent: String, cwd: URL, delegationEpoch: Int = 0) {
         self.clientID = clientID
         self.agent = agent
         self.cwd = cwd
+        self.delegationEpoch = delegationEpoch
     }
 }
 

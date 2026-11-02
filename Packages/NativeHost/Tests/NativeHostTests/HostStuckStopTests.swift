@@ -29,7 +29,9 @@ struct HostStuckStopTests {
         _ = try await recorder.client.prompt(queue)
         try await recorder.client.cancel(stopped.id)
         try await recorder.wait("Stop to finish within its grace period", timeout: .seconds(5)) {
-            await $0.turnsEnded(stopped.id) == ["cancelled"]
+            let ended = await $0.turnsEnded(stopped.id) == ["cancelled"]
+            let settled = await $0.summaries[stopped.id]?.isStopping == false
+            return ended && settled
         }
         #expect(
             await recorder.notices(stopped.id).contains("Stopped. Fake Agent didn't respond, so Native stopped it."))

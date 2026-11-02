@@ -69,7 +69,10 @@ extension HostCore {
         }
     }
 
-    func participatesInCoordination(_ session: HostSession) -> Bool {
+    func participatesInCoordination(_ session: HostSession, retainingSettledReceipts: Bool = true) -> Bool {
+        if tasks.receipts.values.contains(where: { $0.parentID == session.id || $0.childID == session.id }) {
+            if retainingSettledReceipts || !tasks.receiptWorkHasSettled(involving: session.id) { return true }
+        }
         guard let identity = HostTaskIdentity(session) else { return false }
         return coordinators.contains {
             $0.task == identity || $0.hostSessionID == session.id || $0.assignments.contains(identity)

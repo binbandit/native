@@ -1,0 +1,334 @@
+// Receipt ownership and stop/completion race handling adapted under the MIT License.
+// Copyright (c) 2026 T3 Tools Inc.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+// These tools require the host's Network and CryptoKit MCP transport.
+#if canImport(Network) && canImport(CryptoKit)
+import ACP
+import Foundation
+import NativeHostClient
+import NativeHostProtocol
+import Testing
+
+@Suite(.serialized, .timeLimit(.minutes(2)))
+struct HostDelegationReceiptTests {
+    private func start(
+        _ client: NativeHostClient, parent: HostSessionID, key: String, prompt: String = "hello",
+        notify: Bool = false, model: String? = nil
+    ) async throws -> ToolResult {
+        var args: [String: JSONValue] = [
+            "agent": .string("fake"), "prompt": .string(prompt), "creation_key": .string(key),
+            "notify_on_completion": .bool(notify),
+        ]
+        args["model"] = model.map(JSONValue.string)
+        return try await client.callTool(
+            CallToolParams(sessionID: parent, tool: "start_task", arguments: .object(args)))
+    }
+
+    @Test func retriesShareOneChildAndTheOriginalCreationReceiptAcrossRestart() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let first = try await harness.connect()
+        let parent = try await first.client.newSession(NewSessionParams(agentID: "fake", cwd: harness.root.path))
+        async let one = start(first.client, parent: parent.id, key: "one", prompt: "slow 4")
+        async let two = start(first.client, parent: parent.id, key: "one", prompt: "slow 4")
+        let (a, b) = try await (one, two)
+        #expect(!a.isError, "\(a.text)")
+        #expect(a == b)
+        let task = try #require(try await first.client.tasks().first)
+        let child = try #require(task.sessionID)
+        try await first.client.attach(child)
+        try await first.wait("original child result") { await $0.turnsEnded(child).last == "end_turn" }
+        #expect(try await first.client.tasks().count == 1)
+        let changed = try await start(first.client, parent: parent.id, key: "one", prompt: "changed")
+        #expect(changed.isError)
+        #expect(changed.text.contains("different request"))
+        harness.kill()
+        await first.stop()
+        try harness.start()
+        let second = try await harness.connect()
+        let replay = try await start(second.client, parent: parent.id, key: "one", prompt: "slow 4")
+        #expect(replay == a)
+        #expect(try await second.client.tasks().map(\.id) == [task.id])
+        #expect(harness.received.filter { $0.hasPrefix("prompt\t") }.count == 1)
+        await second.stop()
+    }
+
+    @Test(arguments: [false, true])
+    func closeAndReopenPreservesReceiptOwnership(closeInAgent: Bool) async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let parent = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: harness.root.path))
+        let receipt = try await start(recorder.client, parent: parent.id, key: "reopen")
+        #expect(!receipt.isError)
+        let task = try #require(try await recorder.client.tasks().first)
+        let childID = try #require(task.sessionID)
+        let original = try await recorder.client.callTool(
+            CallToolParams(
+                sessionID: parent.id, tool: "wait_for_task",
+                arguments: .object(["task_id": .string(task.id)])))
+        let child = try #require(try await recorder.client.sessions().first { $0.id == childID })
+        for summary in [parent, child] {
+            let agentSessionID = try #require(summary.agentSessionID)
+            try await recorder.client.closeSession(summary.id, closeInAgent: closeInAgent)
+            let reopened = try await recorder.client.openSession(
+                OpenSessionParams(agentID: "fake", agentSessionID: agentSessionID, cwd: harness.root.path))
+            #expect(reopened.id == summary.id)
+        }
+        #expect(try await start(recorder.client, parent: parent.id, key: "reopen") == receipt)
+        let current = try await recorder.client.callTool(
+            CallToolParams(
+                sessionID: parent.id, tool: "get_task",
+                arguments: .object(["task_id": .string(task.id)])))
+        #expect(current.structuredContent?["original_result"] == original.structuredContent?["original_result"])
+        #expect(try await recorder.client.tasks().count == 1)
+        #expect(harness.received.filter { $0.hasPrefix("prompt\t") }.count == 1)
+        await recorder.stop()
+    }
+
+    @Test func confirmedCleanupPreservesSettledReceiptsAcrossRestart() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        let folder = harness.root.appending(path: "private-task", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try Data("work".utf8).write(to: folder.appending(path: "draft.txt"))
+        try harness.start()
+        let first = try await harness.connect()
+        let parent = try await first.client.newSession(NewSessionParams(agentID: "fake", cwd: folder.path))
+        let receipt = try await start(first.client, parent: parent.id, key: "cleanup", prompt: "slow 4")
+        let task = try #require(try await first.client.tasks().first)
+        let childID = try #require(task.sessionID)
+        await #expect(throws: (any Error).self) { try await first.client.closeSessionConfirmed(parent.id) }
+        let original = try await first.client.callTool(
+            CallToolParams(
+                sessionID: parent.id, tool: "wait_for_task", arguments: .object(["task_id": .string(task.id)])))
+        let child = try #require(try await first.client.sessions().first { $0.id == childID })
+        try await first.client.closeSessionConfirmed(parent.id)
+        for summary in [parent, child] {
+            #expect(try await first.client.sessions().contains { $0.id == summary.id })
+            let agentSessionID = try #require(summary.agentSessionID)
+            #expect(harness.received.contains("close\t\(agentSessionID.rawValue)"))
+        }
+        try FileManager.default.removeItem(at: folder)
+        harness.kill()
+        await first.stop()
+        try harness.start()
+        let second = try await harness.connect()
+        #expect(try await start(second.client, parent: parent.id, key: "cleanup", prompt: "slow 4") == receipt)
+        let result = try await second.client.callTool(
+            CallToolParams(sessionID: parent.id, tool: "get_task", arguments: .object(["task_id": .string(task.id)])))
+        #expect(result.structuredContent?["original_result"] == original.structuredContent?["original_result"])
+        #expect(try await second.client.tasks().count == 1)
+        #expect(harness.received.filter { $0.hasPrefix("prompt\t") }.count == 1)
+        await second.stop()
+    }
+
+    @Test(arguments: ["FAKE_AGENT_NO_CLOSE", "FAKE_AGENT_REJECT_CLOSE"])
+    func parentCleanupRequiresChildCloseAcknowledgement(_ setting: String) async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let childStore = harness.root.appending(path: "refusing-child")
+        var environment = harness.agentSpec.env
+        environment["FAKE_AGENT_STORE"] = childStore.path
+        environment[setting] = "1"
+        let childAgent = AgentSpec(
+            id: "refusing-child", name: "Refusing Child", command: harness.agentSpec.command, env: environment)
+        try await recorder.client.syncAgents([harness.agentSpec, childAgent])
+        let parent = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: harness.root.path))
+        let result = try await recorder.client.callTool(
+            CallToolParams(
+                sessionID: parent.id, tool: "start_task",
+                arguments: .object([
+                    "agent": .string(childAgent.id), "prompt": .string("hello"),
+                    "creation_key": .string("refusing-cleanup"), "notify_on_completion": .bool(false),
+                ])))
+        try #require(!result.isError, "\(result.text)")
+        let task = try #require(try await recorder.client.tasks().first)
+        let childID = try #require(task.sessionID)
+        _ = try await recorder.client.callTool(
+            CallToolParams(
+                sessionID: parent.id, tool: "wait_for_task", arguments: .object(["task_id": .string(task.id)])))
+        let file = harness.root.appending(path: "private-work.txt")
+        try Data("Keep my work".utf8).write(to: file)
+        var refused = false
+        do {
+            try await recorder.client.closeSessionConfirmed(parent.id)
+            try FileManager.default.removeItem(at: file)
+        } catch {
+            refused = true
+        }
+        #expect(refused)
+        #expect(FileManager.default.fileExists(atPath: file.path))
+        #expect(try await recorder.client.sessions().contains { $0.id == parent.id })
+        #expect(try await recorder.client.sessions().contains { $0.id == childID })
+        if setting == "FAKE_AGENT_REJECT_CLOSE" {
+            try Data().write(to: childStore.appending(path: "allow-close"))
+            try await recorder.client.closeSessionConfirmed(parent.id)
+            let child = try #require(try await recorder.client.sessions().first { $0.id == childID })
+            let agentSessionID = try #require(child.agentSessionID)
+            let received = try String(contentsOf: childStore.appending(path: "received.log"), encoding: .utf8)
+            #expect(received.contains("close\t\(agentSessionID.rawValue)"))
+        }
+        await recorder.stop()
+    }
+
+    @Test func cleanupRetryAcceptsAnAlreadyClosedChildAfterParentRefusal() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        harness.agentEnvironment["FAKE_AGENT_REJECT_CLOSE"] = "1"
+        try harness.start()
+        let recorder = try await harness.connect()
+        let childStore = harness.root.appending(path: "closed-child")
+        var environment = harness.agentSpec.env
+        environment.removeValue(forKey: "FAKE_AGENT_REJECT_CLOSE")
+        environment["FAKE_AGENT_STORE"] = childStore.path
+        environment["FAKE_AGENT_REJECT_RECLOSE"] = "1"
+        let childAgent = AgentSpec(
+            id: "closed-child", name: "Child", command: harness.agentSpec.command, env: environment)
+        try await recorder.client.syncAgents([harness.agentSpec, childAgent])
+        let parent = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: harness.root.path))
+        let receipt = try await recorder.client.callTool(
+            CallToolParams(
+                sessionID: parent.id, tool: "start_task",
+                arguments: .object([
+                    "agent": .string(childAgent.id), "prompt": .string("hello"),
+                    "creation_key": .string("partial-cleanup"), "notify_on_completion": .bool(false),
+                ])))
+        try #require(!receipt.isError, "\(receipt.text)")
+        let task = try #require(try await recorder.client.tasks().first)
+        let childID = try #require(task.sessionID)
+        _ = try await recorder.client.callTool(
+            CallToolParams(
+                sessionID: parent.id, tool: "wait_for_task", arguments: .object(["task_id": .string(task.id)])))
+        await #expect(throws: (any Error).self) { try await recorder.client.closeSessionConfirmed(parent.id) }
+        let child = try #require(try await recorder.client.sessions().first { $0.id == childID })
+        let agentSessionID = try #require(child.agentSessionID)
+        try Data().write(to: harness.agentStore.appending(path: "allow-close"))
+        try await recorder.client.closeSessionConfirmed(parent.id)
+        let received = try String(contentsOf: childStore.appending(path: "received.log"), encoding: .utf8)
+        #expect(received.contains("close\t\(agentSessionID.rawValue)"))
+        #expect(received.contains("already-closed\t\(agentSessionID.rawValue)"))
+        #expect(harness.received.contains("close\t\(try #require(parent.agentSessionID).rawValue)"))
+        await recorder.stop()
+    }
+
+    @Test func interruptedUnadmittedCreationRefusesToCreateAnotherChild() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        let gate = harness.root.appending(path: "release-config")
+        harness.agentEnvironment["FAKE_AGENT_CONFIG_GATE"] = gate.path
+        try harness.start()
+        let first = try await harness.connect()
+        let parent = try await first.client.newSession(NewSessionParams(agentID: "fake", cwd: harness.root.path))
+        let flight = Task { try await start(first.client, parent: parent.id, key: "interrupted", model: "beta") }
+        try await first.wait("child before admission") { _ in harness.received.contains("config-pending\tmodel=beta") }
+        let news = try String(contentsOf: harness.agentStore.appending(path: "news.log"), encoding: .utf8)
+        harness.kill()
+        await first.stop()
+        _ = try? await flight.value
+        try harness.start()
+        let second = try await harness.connect()
+        let replay = try await start(second.client, parent: parent.id, key: "interrupted", model: "beta")
+        #expect(replay.isError)
+        #expect(replay.text.contains("will not create a second child"))
+        #expect(try String(contentsOf: harness.agentStore.appending(path: "news.log"), encoding: .utf8) == news)
+        #expect(!harness.received.contains { $0.hasPrefix("prompt\t") })
+        await second.stop()
+    }
+
+    @Test func originalResultSurvivesFollowUps() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let parent = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: harness.root.path))
+        let started = try await start(recorder.client, parent: parent.id, key: "result")
+        #expect(!started.isError, "\(started.text)")
+        let task = try #require(try await recorder.client.tasks().first)
+        let child = try #require(task.sessionID)
+        let original = try await recorder.client.callTool(
+            CallToolParams(
+                sessionID: parent.id, tool: "wait_for_task",
+                arguments: .object(["task_id": .string(task.id)])))
+        #expect(original.structuredContent?["original_result"]?["reply"]?.stringValue == "echo: hello")
+        try await recorder.client.attach(child)
+        _ = try await recorder.client.prompt(PromptParams(sessionID: child, text: "later"))
+        try await recorder.wait("follow-up") { await $0.turnsEnded(child).count >= 2 }
+        let current = try await recorder.client.callTool(
+            CallToolParams(sessionID: parent.id, tool: "get_task", arguments: .object(["task_id": .string(task.id)])))
+        #expect(current.structuredContent?["reply"]?.stringValue == "echo: later")
+        #expect(current.structuredContent?["original_result"] == original.structuredContent?["original_result"])
+        await recorder.stop()
+    }
+
+    @Test func queuedFollowUpCannotReplaceOriginalResult() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let parent = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: harness.root.path))
+        _ = try await start(recorder.client, parent: parent.id, key: "queued", prompt: "slow 3")
+        let task = try #require(try await recorder.client.tasks().first)
+        let child = try #require(task.sessionID)
+        try await recorder.client.attach(child)
+        _ = try await recorder.client.prompt(PromptParams(sessionID: child, text: "later", behavior: .queue))
+        try await recorder.wait("both turns") { await $0.turnsEnded(child).count >= 2 }
+        let result = try await recorder.client.callTool(
+            CallToolParams(sessionID: parent.id, tool: "get_task", arguments: .object(["task_id": .string(task.id)])))
+        #expect(result.structuredContent?["reply"]?.stringValue == "echo: later")
+        #expect(result.structuredContent?["original_result"]?["reply"]?.stringValue?.contains("tick 3") == true)
+        await recorder.stop()
+    }
+
+    @Test func stopDuringAdmissionNeverPromptsTheChild() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        let gate = harness.root.appending(path: "release-config")
+        harness.agentEnvironment["FAKE_AGENT_CONFIG_GATE"] = gate.path
+        try harness.start()
+        let recorder = try await harness.connect()
+        let parent = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: harness.root.path))
+        let flight = Task { try await start(recorder.client, parent: parent.id, key: "stopped", model: "beta") }
+        try await recorder.wait("child config gate") { _ in harness.received.contains("config-pending\tmodel=beta") }
+        try await recorder.client.cancel(parent.id)
+        try Data().write(to: gate)
+        let result = try await flight.value
+        #expect(result.isError)
+        #expect(result.text.contains("stopped"))
+        #expect(!harness.received.contains { $0.hasPrefix("prompt\t") })
+        #expect(try await recorder.client.tasks().isEmpty)
+        let replay = try await start(recorder.client, parent: parent.id, key: "stopped", model: "beta")
+        #expect(replay.isError)
+        #expect(try await recorder.client.tasks().isEmpty)
+        let late = try await start(recorder.client, parent: parent.id, key: "late")
+        #expect(late.isError, "A late request must not lift Stop's queue pause")
+        #expect(try await recorder.client.tasks().isEmpty)
+        _ = try await recorder.client.prompt(PromptParams(sessionID: parent.id, text: "resume"))
+        let resumed = try await start(recorder.client, parent: parent.id, key: "late")
+        #expect(!resumed.isError, "An explicit user prompt can resume delegation: \(resumed.text)")
+        await recorder.stop()
+    }
+}
+#endif

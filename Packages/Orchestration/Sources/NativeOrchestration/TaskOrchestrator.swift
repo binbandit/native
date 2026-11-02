@@ -86,19 +86,26 @@ public struct TaskOrchestrator: Sendable {
 
     public func startTask(
         agent id: String, prompt: String, title: String?, options: TaskLaunchOptions = .init(),
-        for caller: OrchestrationCaller
+        creationKey: String? = nil, notifyOnCompletion: Bool? = nil, for caller: OrchestrationCaller
     ) async throws -> MCPToolResult {
         try await requireReady()
         guard await runtime.coordinatorScope(of: caller.clientID) == nil else {
             throw MCPToolError(
                 "Coordinators can only read and message their assigned tasks. Ask the user to edit assignments.")
         }
+        if let creationKey {
+            guard !creationKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                creationKey.utf8.count <= 128,
+                !creationKey.unicodeScalars.contains(where: { $0.value < 32 || $0.value == 127 })
+            else { throw MCPToolError("creation_key must be 1 to 128 bytes without control characters.") }
+        }
         let agents = await runtime.taskAgents()
-        guard let agent = agents.first(where: { $0.id == id }) else {
+        guard
+            let agent = agents.first(where: { $0.id == id }) ?? (creationKey == nil ? nil : TaskAgent(id: id, name: id))
+        else {
             throw MCPToolError(
                 "There's no agent \"\(id)\". Available agents: \(agents.map(\.id).joined(separator: ", ")).")
         }
-        if let reason = agent.unavailableReason { throw MCPToolError(reason) }
         let prompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prompt.isEmpty else { throw MCPToolError("The prompt is empty; say what the task should do.") }
         let parent = try await requireSession(of: caller)
@@ -108,14 +115,16 @@ public struct TaskOrchestrator: Sendable {
         let request = TaskRequest(
             id: OrchestrationTask.newID(avoiding: Set(await runtime.tasks().map(\.id))), agent: agent, parent: parent,
             parentAgentName: parentAgentName, title: title, text: prompt,
-            prompt: TaskPromptFrame.task(prompt, fromParent: parentAgentName), options: options)
-        let task: OrchestrationTask
+            prompt: TaskPromptFrame.task(prompt, fromParent: parentAgentName), options: options,
+            creationKey: creationKey, notifyOnCompletion: notifyOnCompletion, delegationEpoch: caller.delegationEpoch)
+        let receipt: TaskStartReceipt
         do {
-            task = try await runtime.startTask(request)
+            receipt = try await runtime.startTaskReceipt(request)
         } catch {
             throw MCPToolError("Couldn't start the task on \(agent.name): \(error.localizedDescription)")
         }
-        var result = report(Peer(task, relation: .child), await runtime.snapshot(of: task.session))
+        let task = receipt.task
+        var result = report(Peer(task, relation: .child), receipt.snapshot)
         result.text =
             "Started \(task.label). It runs in the background; call wait_for_task with task_id \"\(task.id)\" for its reply."
         return result
@@ -183,7 +192,7 @@ public struct TaskOrchestrator: Sendable {
             let detail = snapshot?.detail.map { String($0.prefix(1200)) }
             snapshot?.detail = detail
         }
-        return report(peer, snapshot, waited: true)
+        return try await resultReport(peer, snapshot, caller: caller, waited: true)
     }
 
     public func getTask(_ id: String, for caller: OrchestrationCaller) async throws -> MCPToolResult {
@@ -196,7 +205,7 @@ public struct TaskOrchestrator: Sendable {
             let detail = snapshot?.detail.map { String($0.prefix(1200)) }
             snapshot?.detail = detail
         }
-        return report(peer, snapshot)
+        return try await resultReport(peer, snapshot, caller: caller)
     }
 
     public func sendMessage(
@@ -274,45 +283,6 @@ public struct TaskOrchestrator: Sendable {
             return .task(id: place.own?.id ?? "", label: place.own?.label ?? "")
         }
         return .sibling(id: place.own?.id ?? "", label: place.own?.label ?? "")
-    }
-
-    // MARK: - Reports
-
-    private func report(_ peer: Peer, _ snapshot: TaskSnapshot?, waited: Bool = false) -> MCPToolResult {
-        var structured: [String: JSON] = [
-            "task_id": .string(peer.id), "agent": .string(peer.session.agent),
-            "relation": .string(peer.relation.rawValue),
-        ]
-        structured["title"] = peer.title.map(JSON.string)
-        let name = peer.relation == .parent ? "Your parent task (\(peer.agentName))" : peer.label
-        guard let snapshot else {
-            structured["status"] = "failed"
-            structured["detail"] = "The task is no longer open in Native."
-            return MCPToolResult(
-                text: "\(name) is no longer open in Native.", structuredContent: .object(structured))
-        }
-        structured["status"] = .string(snapshot.status.rawValue)
-        structured["reply"] = snapshot.reply.map(JSON.string)
-        structured["detail"] = snapshot.detail.map(JSON.string)
-
-        let keepWaiting = waited ? " Call wait_for_task again to keep waiting." : ""
-        let state =
-            switch snapshot.status {
-            case .running: "is still running.\(keepWaiting)"
-            case .needsApproval:
-                "is waiting for the user to approve \(snapshot.detail ?? "a tool call") in Native. It continues once they answer.\(keepWaiting)"
-            case .idle: "finished its turn" + (snapshot.detail.map { " (\($0))" } ?? "") + "."
-            case .failed: "failed: \(snapshot.detail ?? "its agent stopped running")."
-            case .cancelled: "was cancelled."
-            }
-        var text = "\(name) \(state)"
-        switch (snapshot.status, snapshot.reply) {
-        case (.running, let reply?), (.needsApproval, let reply?): text += "\n\nReply so far:\n\(reply)"
-        case (_, let reply?): text += "\n\nReply:\n\(reply)"
-        case (.idle, nil): text += " It didn't reply."
-        case (_, nil): break
-        }
-        return MCPToolResult(text: text, structuredContent: .object(structured))
     }
 
     // MARK: - Lookups

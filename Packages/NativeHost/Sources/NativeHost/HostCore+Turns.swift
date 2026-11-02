@@ -91,7 +91,8 @@ extension HostCore {
     /// Commits the turn, then runs it in the background: the session is prompting when this returns.
     /// Any turn starting lifts a pause on the queue.
     func startTurn(
-        in session: HostSession, prompt: OutgoingPrompt, kind: UnfinishedTurn.Kind = .prompt, attempts: Int = 0
+        in session: HostSession, prompt: OutgoingPrompt, kind: UnfinishedTurn.Kind = .prompt, attempts: Int = 0,
+        committing: (() throws -> Void)? = nil
     ) throws {
         guard session.steeringInFlight == nil else { throw HostError.busy("The task is busy.") }
         let recordable = recordableHistory(of: session)
@@ -110,6 +111,7 @@ extension HostCore {
             try store.updateSession(session.record)
             if let delivery = delta?.1 { try store.sendDelta(delivery, with: prompt.id) }
             if let history { recordPrompt(prompt, of: session, in: history) }
+            try committing?()
         }
         session.steeringGate.reset()
         session.turn = turn

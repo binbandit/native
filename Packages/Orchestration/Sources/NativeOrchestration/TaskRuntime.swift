@@ -6,6 +6,7 @@ import Foundation
 public protocol TaskRuntime: Sendable {
     /// Whether tasks can run yet. Until then the tools say so and to try again shortly.
     var isReady: Bool { get async }
+    var supportsDurableTasks: Bool { get async }
 
     /// Agents that can run a task right now.
     func taskAgents() async -> [TaskAgent]
@@ -31,6 +32,9 @@ public protocol TaskRuntime: Sendable {
     /// idle state before it, or a wait could end before the task begins. The new session gets
     /// Native's tools like any other, which is how tasks can start and message tasks too.
     func startTask(_ request: TaskRequest) async throws -> OrchestrationTask
+    func startTaskReceipt(_ request: TaskRequest) async throws -> TaskStartReceipt
+    func originalResult(of session: TaskSessionRef) async -> TaskSnapshot?
+    func acknowledgeResult(of session: TaskSessionRef, by clientID: UUID) async throws
 
     /// Makes sure a task that isn't open (after a restart, or closed meanwhile) is open again and
     /// shown in its parent's transcript. Does nothing for an open task.
@@ -59,6 +63,17 @@ public protocol TaskRuntime: Sendable {
 }
 
 public extension TaskRuntime {
+    var supportsDurableTasks: Bool { false }
+    func startTaskReceipt(_ request: TaskRequest) async throws -> TaskStartReceipt {
+        guard request.creationKey == nil, request.notifyOnCompletion != true else {
+            throw TaskLaunchValidation.Refusal(
+                "Retry-safe creation and completion delivery require Native's host tools.")
+        }
+        let task = try await startTask(request)
+        return TaskStartReceipt(task: task, snapshot: await snapshot(of: task.session))
+    }
+    func originalResult(of session: TaskSessionRef) async -> TaskSnapshot? { nil }
+    func acknowledgeResult(of session: TaskSessionRef, by clientID: UUID) async throws {}
     func openCoordinatedTask(_ session: TaskSessionRef) async throws {}
     func coordinatorScope(of clientID: UUID) async -> CoordinatorScope? { nil }
     func recentTranscript(of session: TaskSessionRef) async -> String? { nil }

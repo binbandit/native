@@ -35,7 +35,8 @@ extension HostTasks {
         }
         return OrchestrationCaller(
             clientID: clientID, agent: session.record.agentID,
-            cwd: URL(filePath: session.record.cwd, directoryHint: .isDirectory))
+            cwd: URL(filePath: session.record.cwd, directoryHint: .isDirectory),
+            delegationEpoch: stopEpochs[session.id, default: 0])
     }
 
     func session(of clientID: UUID) -> TaskSessionRef? {
@@ -47,6 +48,12 @@ extension HostTasks {
     }
 
     func startTask(_ request: TaskRequest) async throws -> OrchestrationTask {
+        try await startTaskReceipt(request).task
+    }
+
+    func createTask(
+        _ request: TaskRequest, key: String, receipt: HostDelegationReceipt
+    ) async throws -> OrchestrationTask {
         guard let parent = session(holding: request.parent), let parentAgentSessionID = parent.record.agentSessionID
         else { throw HostTaskError.parentClosed }
         try checkParent(parent, request: request)
@@ -54,7 +61,7 @@ extension HostTasks {
         let template = launchTemplate(agent: request.agent.id, cwd: cwd, parent: parent)
         let summary = try await core.newSession(
             NewSessionParams(
-                sessionID: HostSessionID(), agentID: request.agent.id, cwd: cwd, parentID: parent.id,
+                sessionID: receipt.childID, agentID: request.agent.id, cwd: cwd, parentID: parent.id,
                 origin: .task, mcpServers: template.servers, meta: template.meta))
         guard let session = core.sessions[summary.id], let agentSessionID = session.record.agentSessionID else {
             throw HostTaskError.parentClosed
@@ -69,7 +76,20 @@ extension HostTasks {
             id: request.id, session: TaskSessionRef(agent: request.agent.id, id: agentSessionID.rawValue),
             agentName: request.agent.name, title: request.title, parent: request.parent,
             parentAgentName: request.parentAgentName, cwd: cwd, createdAt: .now)
-        try save(task)
+        guard var admitted = receipts[key], admitted.delivery != .suppressed else {
+            try? await core.closeSession(session.id, closeInAgent: true)
+            throw TaskLaunchValidation.Refusal("The parent stopped before the child was admitted.")
+        }
+        admitted.task = task
+        var updated = receipts
+        updated[key] = admitted
+        let encoded = String(decoding: try JSONEncoder().encode(updated), as: UTF8.self)
+        try core.store.transaction {
+            try core.store.saveTask(task)
+            try core.store.setMeta("task_creation_receipts_v1", encoded)
+        }
+        receipts = updated
+        rememberTask(task)
         session.record.title = request.title
         try? core.store.updateSession(session.record)
         // Recorded the way agents record their own subagents' tasks: in the task's transcript, from
@@ -85,14 +105,7 @@ extension HostTasks {
                     meta: TaskTranscript.CardMeta(
                         taskID: task.id, clientID: session.id.rawValue, agent: task.session.agent))),
             to: parent)
-        _ = try await core.prompt(
-            PromptParams(
-                sessionID: session.id, requestID: UUID(), text: request.prompt, behavior: .queue, echo: false,
-                origin: .task),
-            checking: { [self] in
-                try checkParent(parent, request: request)
-                try verifyPrepared(session, request: request, parent: parent)
-            })
+        try sendFirstPrompt(request, to: session, parent: parent, key: key)
         return task
     }
 

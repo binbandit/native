@@ -50,6 +50,7 @@ extension TaskOrchestrator {
                 + "\nSettings are last observed, may be incomplete, and are validated on the new session before its first prompt. Unknown authentication is not proof of sign-in. Checkout accepts an existing absolute directory; worktree creation is not supported.",
             structuredContent: .object([
                 "agents": .array(entries), "omitted_agents": .number(Double(all.count - entries.count)),
+                "durable_creation_and_completion": .bool(await runtime.supportsDurableTasks),
                 "default_checkout": .string(caller.cwd.path(percentEncoded: false)),
             ]))
     }

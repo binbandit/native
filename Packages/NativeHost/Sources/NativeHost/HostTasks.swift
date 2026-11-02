@@ -43,6 +43,13 @@ final class HostTasks: TaskRuntime {
     /// Calls and listings passed to the app, waiting for its answer.
     var appToolCalls: [UUID: CheckedContinuation<AppToolResult?, Never>] = [:]
 
+    var receipts: [String: HostDelegationReceipt] = [:]
+    var receiptsReadable = true
+    var creationFlights: [String: Task<TaskStartReceipt, Error>] = [:]
+    var completionWorker: Task<Void, Never>?
+    var stoppedTurnIDs: Set<UUID> = []
+    var stopEpochs: [HostSessionID: Int] = [:]
+
     struct Waiter {
         let continuation: CheckedContinuation<Void, Never>
         let timer: Task<Void, Never>
@@ -51,6 +58,16 @@ final class HostTasks: TaskRuntime {
     init(core: HostCore) {
         self.core = core
         records = (try? core.store.tasks()) ?? []
+        do {
+            if let json = try core.store.meta("task_creation_receipts_v1") {
+                receipts = try JSONDecoder().decode([String: HostDelegationReceipt].self, from: Data(json.utf8))
+            }
+            if let json = try core.store.meta("task_stopped_turns_v1") {
+                stoppedTurnIDs = try JSONDecoder().decode(Set<UUID>.self, from: Data(json.utf8))
+            }
+        } catch {
+            receiptsReadable = false
+        }
         servesTools = Self.canServe && (try? core.store.meta(MetaKey.tasksServeTools)) != "0"
         disabledSkills =
             (try? core.store.meta(MetaKey.tasksDisabledSkills)).flatMap { $0 }.flatMap {
@@ -199,6 +216,10 @@ final class HostTasks: TaskRuntime {
 
     func save(_ task: OrchestrationTask) throws {
         try core.store.saveTask(task)
+        rememberTask(task)
+    }
+
+    func rememberTask(_ task: OrchestrationTask) {
         if let index = records.firstIndex(where: { $0.id == task.id }) {
             records[index] = task
         } else {
@@ -215,6 +236,8 @@ final class HostTasks: TaskRuntime {
     /// A session's summary changed: wake whoever waits on it, and keep its card, if it's a task,
     /// in step.
     func sessionChanged(_ session: HostSession) {
+        captureAvailableResults()
+        scheduleCompletions()
         if let waiting = waiters[session.id], !waiting.isEmpty, snapshot(session, reading: false).status != .running {
             waiters[session.id] = nil
             for waiter in waiting.values {
@@ -330,28 +353,6 @@ final class HostTasks: TaskRuntime {
 
     func ref(of session: HostSession) -> TaskSessionRef? {
         session.record.agentSessionID.map { TaskSessionRef(agent: session.record.agentID, id: $0.rawValue) }
-    }
-
-    /// How the session reads as a task. The transcript is folded only when the state needs it.
-    func snapshot(_ session: HostSession, reading: Bool = true) -> TaskSnapshot {
-        let phase: TaskSnapshot.Phase =
-            switch session.phase {
-            case .loading, .recovering: .loading
-            case .prompting: .running
-            case .disconnected: .disconnected
-            case .idle, .unknown: session.turn != nil || session.retryAt != nil ? .running : .idle
-            }
-        let stopReason = session.record.lastStopReason.map(SessionMirror.stopReason)
-        let needsApproval = !session.pendingPermissions.isEmpty || !session.pendingQuestions.isEmpty
-        guard reading else {
-            // The card only shows the reason a turn failed; anything else reads without the transcript.
-            return TaskSnapshot(
-                phase: phase, needsApproval: needsApproval, lastStopReason: stopReason, agentName: session.agentName,
-                state: SessionState())
-        }
-        return TaskSnapshot(
-            phase: phase, needsApproval: needsApproval, lastStopReason: stopReason, agentName: session.agentName,
-            state: session.mirror.state)
     }
 
     /// What a session Native's tools start gets from plugins, which only clients know: the MCP servers

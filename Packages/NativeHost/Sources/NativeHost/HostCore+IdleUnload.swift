@@ -119,7 +119,7 @@ extension HostCore {
     /// Closes the session in its agent (with `peer`, unless the agent is about to end), keeping it
     /// here as it is. From now on it needs a load, which resumes it quietly; a request sent after
     /// the close reaches the agent after it.
-    private func unload(_ session: HostSession, closingWith peer: JSONRPCPeer?) {
+    func unload(_ session: HostSession, closingWith peer: JSONRPCPeer?) {
         session.needsLoad = true
         session.reloadsQuietly = true
         // They live in the parent's agent session, which takes them with it.
