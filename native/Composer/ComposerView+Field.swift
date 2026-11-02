@@ -6,26 +6,17 @@ import UniformTypeIdentifiers
 extension ComposerView {
     var fieldSurface: some View {
         VStack(alignment: .leading, spacing: DS.Space.sm) {
-            // Part C will replace these sections. Keep their existing actions and presentation here.
-            if let question = session.pendingQuestion {
-                AgentQuestionDock(session: session, question: question).id(question.id)
-            }
-            if !session.queuedPrompts.isEmpty {
-                QueuedPromptsSection(
-                    prompts: session.queuedPrompts, editing: session.editingQueuedPrompt,
-                    sendNow: session.sendNowRoute, agentName: session.agentName,
-                    onSendNow: { sendNow($0) }, onMove: { session.moveQueued($0, $1) },
-                    onDrop: { session.moveQueued($0, before: $1) }, onEdit: edit, onRemove: remove)
-            }
+            fieldRequests
             if let change = session.modelChange { agentChangeReceipt(change) }
             fieldFeedback
+            fieldQueue
             ComposerField(
                 text: Binding(get: { draftText }, set: { draftText = $0 }),
                 isFocused: Binding(get: { isFocused }, set: { isFocused = $0 }),
                 openMenu: $fieldMenu, editorFocus: $isFocused, state: fieldRowState, actions: fieldActions,
                 placeholder: placeholder,
                 files: fieldFileQuery.flatMap { mentionSource?.matches(for: $0) } ?? [],
-                commands: nativeCommands + session.availableCommands.map(ComposerSlashCommand.init),
+                commands: fieldCommands,
                 isDropTargeted: isDropTargeted || drops?.isTargeted == true,
                 onQuery: { fieldFileQuery = page?.allowsFileMentions == false ? nil : $0 },
                 onCommand: { agentCommandDraft = $0.isNative ? nil : draftText },
@@ -111,7 +102,7 @@ extension ComposerView {
 
     private var fieldActions: ComposerRowActions {
         ComposerRowModelAdapter(app: app, session: page == nil ? session : nil, undoManager: undoManager).actions(
-            attach: { isPickingFiles = true }, context: { isContextUseOpen = true }, send: { submit(.queue) })
+            attach: { isPickingFiles = true }, context: { isContextUseOpen = true }, send: submitField)
     }
 
     @ViewBuilder
