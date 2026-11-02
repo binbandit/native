@@ -52,7 +52,11 @@ extension HostTasks {
             receipts[key] = receipt
         }
         let sessions = ids.compactMap { core.sessions[$0] }
-        stoppedTurnIDs.formUnion(sessions.compactMap { $0.turn?.requestID })
+        // Ordinary stopped turns still recover delivery from the agent's history. Only owned
+        // delegation work needs the durable cancellation override.
+        if !keys.isEmpty || ids.count > 1 || records.contains(where: { session(holding: $0.session)?.id == root.id }) {
+            stoppedTurnIDs.formUnion(sessions.compactMap { $0.turn?.requestID })
+        }
         // The pause is durable for a stopped delegation tree, including an idle root. A later user
         // message can resume work, but suppressed completion receipts stay suppressed.
         if !keys.isEmpty || ids.count > 1 {
