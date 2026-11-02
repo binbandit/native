@@ -269,16 +269,25 @@ struct HostFilesTests {
         }
         // The host counts a watch once its watcher is running.
         try await pollUntil("the watch to start") { await FilesHost.watchCount(core) == 1 }
-        try Data("new".utf8).write(to: project.appending(path: "new.txt"))
-        try await pollUntil("the new file") { heard.values.flatMap(\.paths).contains(plainPath(project) + "/new.txt") }
+        // Keep producing changes while the new FSEvents stream registers its temporary root.
+        try await pollUntil("the new file") {
+            try Data(UUID().uuidString.utf8).write(to: project.appending(path: "new.txt"))
+            return heard.values.flatMap(\.paths).contains(plainPath(project) + "/new.txt")
+        }
 
         // A dropped connection loses the host's watch; the client watches again and says to rescan,
         // once the new watch is running.
-        transport.cut()
-        try await pollUntil("an overflow after reconnecting") { heard.values.contains(where: \.isOverflow) }
-        try Data("after".utf8).write(to: project.appending(path: "after.txt"))
+        transport.goOffline()
+        try await pollUntil("the disconnected watch to stop") { await FilesHost.watchCount(core) == 0 }
+        let changesBeforeReconnect = heard.values.count
+        transport.goOnline()
+        try await pollUntil("the replacement watch to start") { await FilesHost.watchCount(core) == 1 }
+        try await pollUntil("an overflow after reconnecting") {
+            heard.values.dropFirst(changesBeforeReconnect).contains(where: \.isOverflow)
+        }
         try await pollUntil("a change after reconnecting") {
-            heard.values.flatMap(\.paths).contains(plainPath(project) + "/after.txt")
+            try Data(UUID().uuidString.utf8).write(to: project.appending(path: "after.txt"))
+            return heard.values.flatMap(\.paths).contains(plainPath(project) + "/after.txt")
         }
         #expect(await FilesHost.watchCount(core) == 1)
 

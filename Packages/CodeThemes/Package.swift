@@ -12,7 +12,7 @@ let package = Package(
     ],
     // Written out in full, not built from a list, so Dependabot can read and bump each pin.
     dependencies: [
-        .package(url: "https://github.com/tree-sitter/swift-tree-sitter", exact: "0.10.0"),
+        .package(url: "https://github.com/tree-sitter/swift-tree-sitter", exact: "0.25.0"),
         // SwiftTreeSitter accepts any 0.25.x runtime; pinning it keeps every build on the same one.
         .package(url: "https://github.com/tree-sitter/tree-sitter", exact: "0.25.10"),
         // Grammars, each pinned to an upstream release (docs/decisions.md, "Tree-sitter for
@@ -31,7 +31,7 @@ let package = Package(
         .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-toml", exact: "0.7.0"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-html", exact: "0.23.2"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-css", exact: "0.23.2"),
-        .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-markdown", exact: "0.5.3"),
+        .package(url: "https://github.com/tree-sitter-grammars/tree-sitter-markdown", exact: "0.5.4"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-c", exact: "0.24.2"),
         .package(url: "https://github.com/tree-sitter/tree-sitter-java", exact: "0.23.5"),
     ],
