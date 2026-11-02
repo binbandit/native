@@ -42,6 +42,20 @@ extension TaskHistorySummary {
         }
     }
 
+    /// The host transfer a context marker in this session's transcript stands for.
+    public func transfer(forMarker markerID: String) -> TaskHistoryTransfer? {
+        transfers.first { $0.target == current && $0.sourceHistory == id && $0.markerID == markerID }
+    }
+
+    /// Where what `transfer` shows starts: after anything this session's earlier context showed, so
+    /// an item a transcript has shown once isn't shown again further down.
+    public func shownAfter(_ transfer: TaskHistoryTransfer) -> Int {
+        let earlier = transfers.prefix { $0.id != transfer.id }.filter {
+            $0.target == current && $0.sourceHistory == id && $0.state != .superseded
+        }
+        return max(transfer.from, earlier.map(\.through).max() ?? 0)
+    }
+
     /// What a transcript shows for `transfer`, from the items it considered: those another participant
     /// produced that a transcript shows, one run per participant in order.
     public func runs(of items: [TaskHistoryItem], at transfer: TaskHistoryTransfer) -> [TaskHistoryRun] {

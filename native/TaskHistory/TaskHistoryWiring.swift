@@ -1,3 +1,4 @@
+import ACP
 import Experiments
 import SwiftUI
 
@@ -24,5 +25,14 @@ enum TaskHistoryWiring {
             earlier.agent != session.agent.id
         else { return nil }
         return TranscriptPrelude(content: AnyView(TaskHistoryPrelude(session: session)))
+    }
+
+    /// What a task's transcript shows with its context markers: for a host transfer's marker, what
+    /// the other agents did that it considered.
+    static func markerContext(for session: SessionModel) -> TranscriptMarkerContext {
+        TranscriptMarkerContext { marker in
+            TaskHistoryTransfer.isMarkerID(marker.id)
+                ? AnyView(TaskHistoryMarkerContent(session: session, marker: marker)) : nil
+        }
     }
 }

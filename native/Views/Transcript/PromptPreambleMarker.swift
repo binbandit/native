@@ -6,7 +6,21 @@ import SwiftUI
 struct PromptPreambleMarker: View {
     let marker: PromptPreamble.Marker
 
+    @Environment(\.transcriptMarkerContext) private var context
+
     var body: some View {
+        // What a feature shows with the marker goes above its line, spacing itself.
+        if let content = context?.content(marker) {
+            VStack(spacing: 0) {
+                content
+                line
+            }
+        } else {
+            line
+        }
+    }
+
+    private var line: some View {
         HStack(spacing: DS.Space.md) {
             SeparatorLine()
             Group {

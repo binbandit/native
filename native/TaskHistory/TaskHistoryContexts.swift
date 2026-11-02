@@ -29,23 +29,39 @@ final class TaskHistoryContexts {
     /// An agent by its id, for the runs' headings; nil for an agent no longer available.
     @ObservationIgnored var agent: @MainActor (String) -> AgentDefinition? = { _ in nil }
 
-    private var contexts: [HostSessionID: Context] = [:]
+    /// By host session, and the marker for a context marker's (nil for the transcript's top).
+    private var contexts: [Key: Context] = [:]
+
+    private struct Key: Hashable {
+        let session: HostSessionID
+        let marker: String?
+    }
 
     private static let logger = Logger(subsystem: "dev.binbandit.native", category: "TaskHistory")
 
-    func context(for session: SessionModel) -> Context? {
-        session.host.flatMap { contexts[$0.id] }
+    /// What `session`'s transcript shows at its top (no marker) or with one of its context markers.
+    func context(for session: SessionModel, marker: String? = nil) -> Context? {
+        session.host.flatMap { contexts[Key(session: $0.id, marker: marker)] }
     }
 
-    /// Loads what the agents before `session` did, once it's known: the items its handoff considered
-    /// don't change. A failure isn't remembered, so the transcript tries again when it's next opened.
-    func load(_ session: SessionModel) async {
-        guard isEnabled(), let host = session.host, contexts[host.id] == nil else { return }
-        contexts[host.id] = .loading
+    /// Loads what the agents before `session` did, for its top or for one of its context markers,
+    /// once it's known: what a transfer considered doesn't change. A failure isn't remembered, so
+    /// the transcript tries again when it's next opened.
+    func load(_ session: SessionModel, marker: String? = nil) async {
+        guard isEnabled(), let host = session.host else { return }
+        let key = Key(session: host.id, marker: marker)
+        guard contexts[key] == nil else { return }
+        contexts[key] = .loading
         do {
             // Waits out a host that's restarting or reconnecting, once.
-            let found = try await host.request { try await $0.handoffRuns(of: host.id, limit: Self.shownLimit) }
-            contexts[host.id] =
+            let found = try await host.request { client in
+                if let marker {
+                    try await client.markerRuns(of: host.id, markerID: marker, limit: Self.shownLimit)
+                } else {
+                    try await client.handoffRuns(of: host.id, limit: Self.shownLimit)
+                }
+            }
+            contexts[key] =
                 if let found, !found.runs.isEmpty {
                     .shown(TaskHistoryContext(runs: found.runs, omitsEarlier: found.omitsEarlier, agent: agent))
                 } else {
@@ -55,7 +71,7 @@ final class TaskHistoryContexts {
             if !Task.isCancelled {
                 Self.logger.error("Couldn't read a task's history: \(error.localizedDescription, privacy: .public)")
             }
-            contexts[host.id] = nil
+            contexts[key] = nil
         }
     }
 

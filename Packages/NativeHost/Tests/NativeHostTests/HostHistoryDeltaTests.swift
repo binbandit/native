@@ -263,4 +263,25 @@ struct HostHistoryDeltaTests {
         #expect(returned.transfers.map(\.state) == [.superseded, .prepared])
         await recorder.stop()
     }
+
+    @Test("A returning conversation's marker shows what the other agent did while it was away")
+    func markerRuns() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let (first, second) = try await returning(recorder)
+        _ = try await join(recorder, first, after: second)
+        _ = try await recorder.client.prompt(PromptParams(sessionID: first.id, text: "three"))
+        try await recorder.wait("the return") { await $0.turnsEnded(first.id).count == 2 }
+        let delta = try #require(
+            try await recorder.client.historySummary(of: first.id).transfers.first { $0.strategy == .delta })
+        let shown = try #require(
+            try await recorder.client.markerRuns(of: first.id, markerID: delta.markerID, limit: 40))
+        #expect(shown.runs.map(\.participant.ordinal) == [2])
+        #expect(
+            shown.runs.first?.items.map(\.body) == [.user(.init(text: "two", origin: "user")), .agent("echo: two")])
+        #expect(try await recorder.client.markerRuns(of: first.id, markerID: "debug-mode", limit: 40) == nil)
+        await recorder.stop()
+    }
 }

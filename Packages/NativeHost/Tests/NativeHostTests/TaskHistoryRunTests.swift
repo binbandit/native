@@ -82,4 +82,17 @@ struct TaskHistoryRunTests {
         #expect(whole.runs == runs)
         #expect(!whole.omitsEarlier)
     }
+
+    @Test("A marker shows only what earlier context in the same transcript didn't")
+    func shownAfter() {
+        let handoff = handoff(to: 3, through: 4)
+        let delta = TaskHistoryTransfer(
+            sourceHistory: history, target: 3, from: 0, through: 8, conveyed: [], strategy: .delta, state: .delivered)
+        let claude = summary(current: 3, transfers: [handoff, delta])
+        #expect(claude.transfer(forMarker: delta.markerID) == delta)
+        #expect(claude.transfer(forMarker: handoff.markerID) == handoff)
+        #expect(claude.shownAfter(delta) == 4)
+        #expect(claude.shownAfter(handoff) == 0)
+        #expect(summary(current: 2, transfers: [handoff, delta]).transfer(forMarker: delta.markerID) == nil)
+    }
 }

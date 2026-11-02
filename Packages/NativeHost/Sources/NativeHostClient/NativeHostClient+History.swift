@@ -29,11 +29,31 @@ extension NativeHostClient {
     ) async throws -> (runs: [TaskHistoryRun], omitsEarlier: Bool)? {
         let summary = try await historySummary(of: session)
         guard let handoff = summary.handoff else { return nil }
+        return try await runs(of: session, in: summary, at: handoff, after: handoff.from, limit: limit)
+    }
+
+    /// What a context marker in a session's transcript shows: what the other agents did that its
+    /// transfer considered, after what earlier context already showed. Nil when the marker stands
+    /// for no transfer of this session.
+    public func markerRuns(
+        of session: HostSessionID, markerID: String, limit: Int
+    ) async throws -> (runs: [TaskHistoryRun], omitsEarlier: Bool)? {
+        let summary = try await historySummary(of: session)
+        guard let transfer = summary.transfer(forMarker: markerID) else { return nil }
+        return try await runs(of: session, in: summary, at: transfer, after: summary.shownAfter(transfer), limit: limit)
+    }
+
+    private func runs(
+        of session: HostSessionID, in summary: TaskHistorySummary, at transfer: TaskHistoryTransfer, after start: Int,
+        limit: Int
+    ) async throws -> (runs: [TaskHistoryRun], omitsEarlier: Bool) {
         // Enough of the newest items to fill the limit once reasoning and endings are left out.
-        let after = max(handoff.from, handoff.through - limit * 4)
-        let items = try await readHistory(ReadHistoryParams(sessionID: session, after: after, through: handoff.through))
-        let latest = TaskHistoryRun.latest(summary.runs(of: items, at: handoff), limit: limit)
-        return (latest.runs, latest.omitsEarlier || after > handoff.from)
+        let after = max(start, transfer.through - limit * 4)
+        let items = try await readHistory(
+            ReadHistoryParams(sessionID: session, after: after, through: transfer.through))
+        let latest = TaskHistoryRun.latest(
+            summary.runs(of: items.filter { $0.seq > start }, at: transfer), limit: limit)
+        return (latest.runs, latest.omitsEarlier || after > start)
     }
 
     public func withdrawHistory(of session: HostSessionID) async throws -> TaskHistorySummary {
