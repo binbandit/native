@@ -41,6 +41,8 @@ final class ComposerAgentChange {
     /// where that conversation sat in the chain before.
     private(set) var isReturn = false
     var chainReturn: EarlierConversations.Return?
+    /// The returned-to conversation's turns when the task came back to it.
+    private var returnTurns: Int?
     @ObservationIgnored private var work: Task<Void, Never>?
 
     init(source: SessionModel, choice: ComposerAgentModel, app: AppModel) {
@@ -57,7 +59,12 @@ final class ComposerAgentChange {
     var isPending: Bool { stage == .waiting || stage == .preparing }
     var undoSelection: ComposerAgentChange? { canUndo ? self : priorChoice?.undoSelection }
     /// Until the next message: a returned-to conversation has messages of its own already.
-    var canUndo: Bool { stage == .applied && !undoIsClosed && (isReturn || current?.hasSubmittedPrompt == false) }
+    /// Until the next message, from this client or another. A returned-to conversation has turns of
+    /// its own already, so it counts the ones since the return.
+    var canUndo: Bool {
+        guard stage == .applied, !undoIsClosed, let current else { return false }
+        return isReturn ? current.state.turns.count <= returnTurns ?? 0 : !current.hasSubmittedPrompt
+    }
     var hasPermissionChoice: Bool {
         current.map { !ComposerSettings($0.configOptions).autonomyLevels.isEmpty } ?? false
     }
@@ -79,6 +86,7 @@ final class ComposerAgentChange {
         permissionNotice = record.permissionNotice
         isReceiptDismissed = record.isDismissed
         chainReturn = record.returnedFrom
+        returnTurns = record.returnTurns
         isReturn = record.returnedFrom != nil
         // A return prepares no handoff to consume, so it keeps whether a message has closed its Undo.
         undoIsClosed =
@@ -102,7 +110,8 @@ final class ComposerAgentChange {
                             case .select(let value, _) = option.kind
                         else { return nil }
                         return (option.id, value)
-                    }), returnedFrom: isReturn ? chainReturn : nil, isUndoClosed: undoIsClosed ? true : nil),
+                    }), returnedFrom: isReturn ? chainReturn : nil, isUndoClosed: undoIsClosed ? true : nil,
+                returnTurns: returnTurns),
             for: current.key)
     }
 
@@ -218,6 +227,7 @@ final class ComposerAgentChange {
                 try validate(prepared, source: source, app: app)
                 priorChoice?.closeUndo()
                 priorChoice = nil
+                if isReturn { returnTurns = prepared.state.turns.count }
                 app.commitAgentModel(self, source: source, target: prepared, context: context)
                 previous = source
                 current = prepared
