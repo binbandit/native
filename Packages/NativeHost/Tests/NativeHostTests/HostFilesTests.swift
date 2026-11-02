@@ -274,8 +274,14 @@ struct HostFilesTests {
 
         // A dropped connection loses the host's watch; the client watches again and says to rescan,
         // once the new watch is running.
-        transport.cut()
-        try await pollUntil("an overflow after reconnecting") { heard.values.contains(where: \.isOverflow) }
+        transport.goOffline()
+        try await pollUntil("the disconnected watch to stop") { await FilesHost.watchCount(core) == 0 }
+        let changesBeforeReconnect = heard.values.count
+        transport.goOnline()
+        try await pollUntil("the replacement watch to start") { await FilesHost.watchCount(core) == 1 }
+        try await pollUntil("an overflow after reconnecting") {
+            heard.values.dropFirst(changesBeforeReconnect).contains(where: \.isOverflow)
+        }
         try Data("after".utf8).write(to: project.appending(path: "after.txt"))
         try await pollUntil("a change after reconnecting") {
             heard.values.flatMap(\.paths).contains(plainPath(project) + "/after.txt")
