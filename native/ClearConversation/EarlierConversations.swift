@@ -65,7 +65,7 @@ final class EarlierConversations {
     }
 
     /// Where a conversation sat in the chain before a change of agent returned to it.
-    struct Return: Equatable {
+    struct Return: Equatable, Codable {
         /// The conversation that continued it, which now continues what it continued.
         let follower: SessionKey?
         /// What it continued.

@@ -26,9 +26,8 @@ extension AppModel {
                 // what it missed. Either starts a new conversation instead.
                 guard !sessions.services.modelContinuations.hasPending(earlier) else { return nil }
                 if sessions.session(earlier) == nil { await loadSession(earlier) }
-                guard let session = sessions.session(earlier), session.hasStarted,
-                    session.host?.client === host.client, await Self.finishesLoading(session),
-                    await Self.shareHistory(session, source)
+                guard let session = sessions.session(earlier), session.host?.client === host.client,
+                    await Self.finishesLoading(session), session.hasStarted, await Self.shareHistory(session, source)
                 else { return nil }
                 return session
             }

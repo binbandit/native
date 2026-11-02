@@ -20,8 +20,11 @@ final class AgentModelContinuations {
         var isDismissed = false
         var permissionNotice: String?
         var confirmedChoices: [String: String]?
-        /// The change returned to a conversation the task already had.
-        var isReturn: Bool?
+        /// The change returned to a conversation the task already had: where that conversation sat
+        /// in the chain before, so Undo can put it back after a relaunch.
+        var returnedFrom: EarlierConversations.Return?
+        /// A message went since the change, which closes its Undo.
+        var isUndoClosed: Bool?
     }
 
     private var pending: [String: String]

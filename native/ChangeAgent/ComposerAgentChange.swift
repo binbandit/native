@@ -78,10 +78,12 @@ final class ComposerAgentChange {
         stage = .applied
         permissionNotice = record.permissionNotice
         isReceiptDismissed = record.isDismissed
-        isReturn = record.isReturn == true
-        // A return's place in the chain isn't kept across launches, so its Undo isn't either: the
-        // agent can be changed again instead.
-        undoIsClosed = isReturn || !app.sessions.services.modelContinuations.hasPending(current.key)
+        chainReturn = record.returnedFrom
+        isReturn = record.returnedFrom != nil
+        // A return prepares no handoff to consume, so it keeps whether a message has closed its Undo.
+        undoIsClosed =
+            isReturn
+            ? record.isUndoClosed == true : !app.sessions.services.modelContinuations.hasPending(current.key)
     }
 
     private func persistReceipt() {
@@ -100,7 +102,8 @@ final class ComposerAgentChange {
                             case .select(let value, _) = option.kind
                         else { return nil }
                         return (option.id, value)
-                    }), isReturn: isReturn ? true : nil), for: current.key)
+                    }), returnedFrom: isReturn ? chainReturn : nil, isUndoClosed: undoIsClosed ? true : nil),
+            for: current.key)
     }
 
     var transferNotice: String? {
@@ -438,9 +441,11 @@ final class ComposerAgentChange {
     }
 
     func closeUndo() {
+        guard !undoIsClosed else { return }
         undoIsClosed = true
         previous?.isModelChangeSource = false
         previous = nil
+        persistReceipt()
     }
 
     func retry(undoManager: UndoManager?) {
