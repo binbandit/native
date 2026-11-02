@@ -19,7 +19,11 @@ public enum ToolInputValidation {
                     failures.append("\(path).\(key) is not supported")
                 }
             }
-        case ("string", .string): break
+        case ("string", .string(let text)):
+            if case .number(let maximum) = schema["maxLength"], Double(text.count) > maximum {
+                failures.append("\(path) exceeds maximum length")
+            }
+        case ("boolean", .bool): break
         case ("integer", .number(let number)) where number.rounded() == number:
             if case .number(let minimum) = schema["minimum"], number < minimum {
                 failures.append("\(path) is below minimum")

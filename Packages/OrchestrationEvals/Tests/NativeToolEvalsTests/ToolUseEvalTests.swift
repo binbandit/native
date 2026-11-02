@@ -172,6 +172,21 @@ struct ToolUseEvalTests {
         #expect(await session.call("exec_command", arguments: ["cmd": "echo test"])["isError"] == true)
     }
 
+    @Test func validatesReceiptOptionsUsingTheProductionSchema() throws {
+        let test = try #require(ToolUseCases.all.first)
+        let tool = try #require(EvalSession(test).tools.first { $0.name == "start_task" })
+        let valid: JSON = [
+            "agent": "claude-code", "prompt": "Review", "creation_key": "review", "notify_on_completion": false,
+        ]
+        #expect(ToolInputValidation.failures(valid, schema: tool.inputSchema).isEmpty)
+        for invalid: JSON in [
+            ["agent": "claude-code", "prompt": "Review", "creation_key": .string(String(repeating: "x", count: 129))],
+            ["agent": "claude-code", "prompt": "Review", "notify_on_completion": "false"],
+        ] {
+            #expect(!ToolInputValidation.failures(invalid, schema: tool.inputSchema).isEmpty)
+        }
+    }
+
     @Test func realHandlersEnforceReachabilityAndCancellationOwnership() async throws {
         let test = try #require(ToolUseCases.all.first { $0.id == "message-sibling" })
         let session = EvalSession(test)
@@ -208,11 +223,11 @@ struct ToolUseEvalTests {
             let schemaKeys = Set(schema.objectValue?.keys.map { $0 } ?? [])
             #expect(schemaKeys.isSubset(of: ["type", "properties", "required", "additionalProperties", "description"]))
             for property in (schema["properties"]?.objectValue ?? [:]).values {
-                #expect(["string", "integer"].contains(property["type"]?.stringValue ?? ""))
+                #expect(["string", "integer", "boolean"].contains(property["type"]?.stringValue ?? ""))
                 let keys = Set(property.objectValue?.keys.map { $0 } ?? [])
                 #expect(
                     keys.isSubset(of: [
-                        "type", "description", "minimum", "maximum", "enum",
+                        "type", "description", "minimum", "maximum", "maxLength", "enum",
                     ]))
             }
         }
