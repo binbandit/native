@@ -14,6 +14,10 @@ struct ComposerView: View {
     /// Previews supply an in-memory mode library.
     var taskModes: TaskModes = .shared
     @Experiment(.composerNext) var composerNext
+    @Experiment(.composerV3) var composerV3
+    @State var fieldMenu: ComposerBottomRow.Menu?
+    @State var fieldFileQuery: String?
+    @State var fieldGoalEditorOpen = false
 
     @AppStorage(FollowUpBehavior.storageKey) var followUp = FollowUpBehavior.defaultValue
     @Environment(\.undoManager) var undoManager
@@ -61,9 +65,9 @@ struct ComposerView: View {
     @State var selectedAttachment: PromptAttachment.ID?
 
     var draftText: String {
-        get { composerNext ? session.composerMessage : session.draft }
+        get { composerNext || composerV3 ? session.composerMessage : session.draft }
         nonmutating set {
-            if composerNext { session.composerMessage = newValue } else { session.draft = newValue }
+            if composerNext || composerV3 { session.composerMessage = newValue } else { session.draft = newValue }
         }
     }
 
@@ -133,7 +137,7 @@ struct ComposerView: View {
         let suggestions = asksInPlace ? nil : suggestions
         Group {
             if page != nil {
-                pageSurface(suggestions: suggestions)
+                if composerV3 { fieldSurface } else { pageSurface(suggestions: suggestions) }
             } else if composerNext, let call = session.permissionRequests.first {
                 ApprovalSurface {
                     SessionApprovalView(session: session, call: call)
@@ -144,8 +148,12 @@ struct ComposerView: View {
                 }
             } else {
                 VStack(alignment: .leading, spacing: DS.Space.sm) {
-                    surface(settings, suggestions: suggestions)
-                    if composerNext { settingsNote(settings) }
+                    if composerV3 {
+                        fieldSurface
+                    } else {
+                        surface(settings, suggestions: suggestions)
+                        if composerNext { settingsNote(settings) }
+                    }
                 }
             }
         }
@@ -153,7 +161,9 @@ struct ComposerView: View {
             // Float above the composer instead of growing it, so the transcript doesn't move:
             // a zero-height frame on the top edge, with the list or toast hanging up out of it.
             Group {
-                if let suggestions {
+                if composerV3 {
+                    EmptyView()
+                } else if let suggestions {
                     ComposerSuggestionsPanel(
                         suggestions: suggestions,
                         highlighted: $highlighted,
@@ -221,10 +231,14 @@ struct ComposerView: View {
         .onChange(of: session.isModelPickerRequested, initial: true) { _, isRequested in
             guard isRequested else { return }
             if let page {
-                page.openSettings()
+                if composerV3 { fieldMenu = .agent } else { page.openSettings() }
             } else {
-                settingsOpenedByCommand = true
-                isModelPickerOpen = true
+                if composerV3 {
+                    fieldMenu = .agent
+                } else {
+                    settingsOpenedByCommand = true
+                    isModelPickerOpen = true
+                }
             }
             session.isModelPickerRequested = false
         }

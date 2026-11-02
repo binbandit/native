@@ -11,6 +11,16 @@ struct ComposerRowModelAdapter {
     private var options: [ConfigOption] { session?.configOptions ?? app.composeTask.options }
     private var settings: ComposerSettings { ComposerSettings(options) }
 
+    private var sessionModels: [ComposerAgentModel] {
+        guard let session else { return [] }
+        if app.offersAgentModels { return app.composerAgentModels(for: session) }
+        return (settings.model?.choices ?? [.init(value: "", name: "Default")]).map {
+            ComposerAgentModel(
+                agent: session.agent.id, agentName: session.agentName, choice: $0,
+                kind: .model(settings.model == nil ? nil : $0.value))
+        }
+    }
+
     var state: ComposerRowState {
         let model = settings.model?.currentName ?? "Default"
         let agent = session?.agentName ?? app.composeTask.editor?.agentName ?? "Choose agent"
@@ -44,7 +54,7 @@ struct ComposerRowModelAdapter {
 
     private var agentGroups: [ComposerRowState.Agent] {
         if let session {
-            let catalog = app.composerAgentModels(for: session)
+            let catalog = sessionModels
             var groups: [ComposerRowState.Agent] = []
             for entry in catalog {
                 let selected =
@@ -83,7 +93,7 @@ struct ComposerRowModelAdapter {
 
     private func chooseModel(_ id: String) {
         if let session {
-            guard let row = app.composerAgentModels(for: session).first(where: { $0.id == id }), row.unavailable == nil
+            guard let row = sessionModels.first(where: { $0.id == id }), row.unavailable == nil
             else { return }
             switch row.kind {
             case .load:

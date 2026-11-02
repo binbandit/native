@@ -26,6 +26,7 @@ import Testing
 
     @Test func passesOnABrowserApprovalTheServerWaitsFor() async throws {
         let rig = try ScriptRig()
+        defer { withExtendedLifetime(rig) {} }
         try rig.install(
             "New.app",
             helper: "#!/bin/sh\n# \(LinkPairCommand.marker)\necho '{\"event\":\"invite\",\"link\":\"x\"}'")
@@ -235,6 +236,8 @@ private final class ScriptRig: Sendable {
     }
 
     func run(app: String, grants: LinkGrants) async -> ([LinkPairCommandEvent], LinkSSHPairing.Ending?) {
+        // The stream owns the process, but not the temporary installation it is about to read.
+        defer { withExtendedLifetime(self) {} }
         var events: [LinkPairCommandEvent] = []
         var ending: LinkSSHPairing.Ending?
         for await update in updates(app: app, grants: grants) {

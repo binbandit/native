@@ -581,6 +581,16 @@ existing management pages. Failed probes never imply an agent's sign-in expired.
 Feature presets, agent detail pages, composer provenance persistence and the shared overnight
 receipt belong to later slices.
 
+### Composer field
+
+`NativeComposerV3` is an off-by-default Labs gate for the assembled field in `native/Composer/`.
+It mounts `DSTextInput`, attachment and diff-comment chips, and `ComposerBottomRow` for both the
+new-task page and session composers. The editor grows to ten lines while the bottom row stays
+anchored. File and command completions use the native caret rectangle; paste and drop go through
+the existing attachment reads. Submission, queued messages, questions, approvals, model handoffs
+and Stop use the existing model methods. Queue and ask presentation remain the current versions
+until the next composer slice. With the gate off, the existing composer remains unchanged.
+
 ### Fine print approvals
 
 `NativeComposerNext` is an off-by-default Labs gate for the composer and its approval state. Enable it

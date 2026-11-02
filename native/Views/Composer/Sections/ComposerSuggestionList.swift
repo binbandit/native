@@ -7,10 +7,11 @@ struct ComposerSuggestionList<Item, Row: View>: View {
     let items: [Item]
     @Binding var highlighted: Int
     let onChoose: (Item) -> Void
+    var isFloating = true
     @ViewBuilder let row: (Item, _ isHighlighted: Bool) -> Row
 
     var body: some View {
-        ComposerSurface(isFloating: true) {
+        ComposerSurface(isFloating: isFloating) {
             ScrollViewReader { proxy in
                 CappedHeightScrollView(maxHeight: ComposerMetrics.suggestionListMaxHeight) {
                     VStack(spacing: 0) {
