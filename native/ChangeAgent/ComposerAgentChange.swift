@@ -136,11 +136,16 @@ final class ComposerAgentChange {
         switch stage {
         case .waiting: "Next model: \(choice.choice.displayName) · \(choice.agentName)"
         case .preparing: "Starting \(choice.agentName)…"
-        case .applied: "Using \(choice.agentName) · \(choice.choice.displayName)"
+        case .applied: "Using \(choice.agentName) · \(currentModelName)"
         case .reversed: "Using \(sourceName) · \(sourceModel)"
         case .failed: error ?? "Couldn't change the model. Choose another model."
         case .cancelled: "Model change cancelled."
         }
+    }
+
+    /// The model the task is on now: an agent's default resolves to one, and the user can pick another.
+    private var currentModelName: String {
+        current.flatMap { ComposerSettings($0.configOptions).model?.shortModelName } ?? choice.choice.displayName
     }
 
     func start(undoManager: UndoManager?) {
@@ -217,16 +222,16 @@ final class ComposerAgentChange {
     private func configure(_ target: SessionModel, from source: SessionModel) async throws {
         switch choice.kind {
         case .load: throw Failure("Load the agent's models before choosing one.")
-        case .model(let value):
-            if let value {
-                guard let model = ComposerSettings(target.configOptions).model,
-                    model.choices.contains(where: { $0.value == value })
-                else { throw Failure("\(choice.choice.displayName) is no longer available. Choose another model.") }
-                await target.setConfigOption(model.option, to: value)
-                guard ComposerSettings(target.configOptions).model?.value == value else {
-                    throw Failure(
-                        "Couldn't select \(choice.choice.displayName). \(source.agentName) is still selected.")
-                }
+        case .model(nil):
+            // No model named: the one a new session of this agent starts on, as a new task's would.
+            await AgentSessionDefaults.apply(to: target, project: app?.catalog.lookup(source.key)?.project)
+        case .model(let value?):
+            guard let model = ComposerSettings(target.configOptions).model,
+                model.choices.contains(where: { $0.value == value })
+            else { throw Failure("\(choice.choice.displayName) is no longer available. Choose another model.") }
+            await target.setConfigOption(model.option, to: value)
+            guard ComposerSettings(target.configOptions).model?.value == value else {
+                throw Failure("Couldn't select \(choice.choice.displayName). \(source.agentName) is still selected.")
             }
         }
         let sourceMode = ComposerSettings(source.configOptions).autonomy
