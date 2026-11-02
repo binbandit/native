@@ -78,7 +78,10 @@ final class ComposerAgentChange {
         stage = .applied
         permissionNotice = record.permissionNotice
         isReceiptDismissed = record.isDismissed
-        undoIsClosed = !app.sessions.services.modelContinuations.hasPending(current.key)
+        isReturn = record.isReturn == true
+        // A return's place in the chain isn't kept across launches, so its Undo isn't either: the
+        // agent can be changed again instead.
+        undoIsClosed = isReturn || !app.sessions.services.modelContinuations.hasPending(current.key)
     }
 
     private func persistReceipt() {
@@ -97,7 +100,7 @@ final class ComposerAgentChange {
                             case .select(let value, _) = option.kind
                         else { return nil }
                         return (option.id, value)
-                    })), for: current.key)
+                    }), isReturn: isReturn ? true : nil), for: current.key)
     }
 
     var transferNotice: String? {

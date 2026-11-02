@@ -20,6 +20,8 @@ final class AgentModelContinuations {
         var isDismissed = false
         var permissionNotice: String?
         var confirmedChoices: [String: String]?
+        /// The change returned to a conversation the task already had.
+        var isReturn: Bool?
     }
 
     private var pending: [String: String]

@@ -2,6 +2,7 @@ import ACP
 import Experiments
 import Foundation
 import NativeHostClient
+import NativeHostProtocol
 
 // Switching back to an agent the task already used (docs/decisions/2026-11-01-one-task-history.md,
 // "Switching back with a delta"): the change reopens that agent's own conversation, and the host
@@ -20,15 +21,30 @@ extension AppModel {
         var seen: Set<SessionKey> = [key]
         while let earlier = earlierConversations.conversation(before: key), seen.insert(earlier).inserted {
             if earlier.agent == choice.agent {
+                // A conversation that never took a message still waits for its own handoff; one in
+                // another history (from before the gate, or set aside by `/clear`) can't be told
+                // what it missed. Either starts a new conversation instead.
+                guard !sessions.services.modelContinuations.hasPending(earlier) else { return nil }
                 if sessions.session(earlier) == nil { await loadSession(earlier) }
-                guard let session = sessions.session(earlier), session.host?.client === host.client,
-                    await Self.finishesLoading(session)
+                guard let session = sessions.session(earlier), session.hasStarted,
+                    session.host?.client === host.client, await Self.finishesLoading(session),
+                    await Self.shareHistory(session, source)
                 else { return nil }
                 return session
             }
             key = earlier
         }
         return nil
+    }
+
+    /// Whether two conversations are in one task history on their host, so a return can be told
+    /// exactly what it missed.
+    private static func shareHistory(_ session: SessionModel, _ source: SessionModel) async -> Bool {
+        guard let link = session.host, let sourceLink = source.host,
+            let returning = try? await link.client.historySummary(of: link.id),
+            let current = try? await sourceLink.client.historySummary(of: sourceLink.id)
+        else { return false }
+        return returning.id == current.id
     }
 
     /// Whether a reopened conversation finished replaying its history in time to be returned to.
