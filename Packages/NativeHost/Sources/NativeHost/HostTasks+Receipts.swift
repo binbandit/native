@@ -34,10 +34,8 @@ extension HostTasks {
         receipts = updated
     }
 
-    /// Explicit cleanup may release files, but keeps every receipt endpoint for retry identity.
-    /// Include the whole connected family so a settled original result cannot hide follow-up work.
-    func receiptWorkHasSettled(involving id: HostSessionID) -> Bool {
-        guard receiptsReadable else { return false }
+    /// Every connected endpoint keeps its identity and shares the cleanup acknowledgement barrier.
+    func receiptFamily(involving id: HostSessionID) -> Set<HostSessionID> {
         var family: Set<HostSessionID> = [id]
         var previousCount = 0
         while previousCount != family.count {
@@ -47,6 +45,13 @@ extension HostTasks {
                 family.insert(receipt.childID)
             }
         }
+        return family
+    }
+
+    /// Include the whole connected family so a settled result cannot hide follow-up work.
+    func receiptWorkHasSettled(involving id: HostSessionID) -> Bool {
+        guard receiptsReadable else { return false }
+        let family = receiptFamily(involving: id)
         for (key, receipt) in receipts where family.contains(receipt.parentID) {
             guard creationFlights[key] == nil else { return false }
             guard receipt.failure != nil || (receipt.result != nil && receipt.delivery != .pending) else {

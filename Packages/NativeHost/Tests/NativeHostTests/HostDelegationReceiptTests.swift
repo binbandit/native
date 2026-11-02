@@ -123,9 +123,11 @@ struct HostDelegationReceiptTests {
             CallToolParams(
                 sessionID: parent.id, tool: "wait_for_task", arguments: .object(["task_id": .string(task.id)])))
         let child = try #require(try await first.client.sessions().first { $0.id == childID })
+        try await first.client.closeSessionConfirmed(parent.id)
         for summary in [parent, child] {
-            try await first.client.closeSessionConfirmed(summary.id)
             #expect(try await first.client.sessions().contains { $0.id == summary.id })
+            let agentSessionID = try #require(summary.agentSessionID)
+            #expect(harness.received.contains("close\t\(agentSessionID.rawValue)"))
         }
         try FileManager.default.removeItem(at: folder)
         harness.kill()
@@ -139,6 +141,57 @@ struct HostDelegationReceiptTests {
         #expect(try await second.client.tasks().count == 1)
         #expect(harness.received.filter { $0.hasPrefix("prompt\t") }.count == 1)
         await second.stop()
+    }
+
+    @Test(arguments: ["FAKE_AGENT_NO_CLOSE", "FAKE_AGENT_REJECT_CLOSE"])
+    func parentCleanupRequiresChildCloseAcknowledgement(_ setting: String) async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let childStore = harness.root.appending(path: "refusing-child")
+        var environment = harness.agentSpec.env
+        environment["FAKE_AGENT_STORE"] = childStore.path
+        environment[setting] = "1"
+        let childAgent = AgentSpec(
+            id: "refusing-child", name: "Refusing Child", command: harness.agentSpec.command, env: environment)
+        try await recorder.client.syncAgents([harness.agentSpec, childAgent])
+        let parent = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: harness.root.path))
+        let result = try await recorder.client.callTool(
+            CallToolParams(
+                sessionID: parent.id, tool: "start_task",
+                arguments: .object([
+                    "agent": .string(childAgent.id), "prompt": .string("hello"),
+                    "creation_key": .string("refusing-cleanup"), "notify_on_completion": .bool(false),
+                ])))
+        try #require(!result.isError, "\(result.text)")
+        let task = try #require(try await recorder.client.tasks().first)
+        let childID = try #require(task.sessionID)
+        _ = try await recorder.client.callTool(
+            CallToolParams(
+                sessionID: parent.id, tool: "wait_for_task", arguments: .object(["task_id": .string(task.id)])))
+        let file = harness.root.appending(path: "private-work.txt")
+        try Data("Keep my work".utf8).write(to: file)
+        var refused = false
+        do {
+            try await recorder.client.closeSessionConfirmed(parent.id)
+            try FileManager.default.removeItem(at: file)
+        } catch {
+            refused = true
+        }
+        #expect(refused)
+        #expect(FileManager.default.fileExists(atPath: file.path))
+        #expect(try await recorder.client.sessions().contains { $0.id == parent.id })
+        #expect(try await recorder.client.sessions().contains { $0.id == childID })
+        if setting == "FAKE_AGENT_REJECT_CLOSE" {
+            try Data().write(to: childStore.appending(path: "allow-close"))
+            try await recorder.client.closeSessionConfirmed(parent.id)
+            let child = try #require(try await recorder.client.sessions().first { $0.id == childID })
+            let agentSessionID = try #require(child.agentSessionID)
+            let received = try String(contentsOf: childStore.appending(path: "received.log"), encoding: .utf8)
+            #expect(received.contains("close\t\(agentSessionID.rawValue)"))
+        }
+        await recorder.stop()
     }
 
     @Test func interruptedUnadmittedCreationRefusesToCreateAnotherChild() async throws {

@@ -81,7 +81,8 @@
   Parents receive pending completion after reconnects and host restarts, unless they already read
   it or pressed Stop. Completion waits for descendants; Stop claims and cancels the owned subtree.
   Ordinary close retains receipt-owned session identities. Confirmed cleanup can release private files
-  after the whole receipt family settles and the agent acknowledges close; session IDs and receipts
+  after the whole receipt family settles and each independent session acknowledges close. The host
+  revalidates the family after every acknowledgement; refusal keeps the files. Session IDs and receipts
   remain for creation retries and original-result lookup, including after restart.
 
 ### Native's tools on demand
