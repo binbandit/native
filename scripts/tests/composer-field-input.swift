@@ -127,6 +127,22 @@ private struct ComposerFieldInputRegression {
             fixture.session.editingQueuedPrompt == nil && fixture.session.draft.isEmpty,
             "cancelling the queue edit restores an empty draft")
 
+        if let queued = fixture.session.queuedPrompts.first {
+            ComposerView(session: fixture.session).edit(queued.id)
+            fixture.pump()
+            check(editor.string == queued.text, "row edit opens the selected queued message")
+            editor.insertText(" revised", replacementRange: editor.selectedRange())
+            fixture.pump()
+            editor.input?.onSubmit()
+            fixture.pump()
+            check(
+                fixture.session.queuedPrompts.first?.text == queued.text + " revised"
+                    && fixture.session.editingQueuedPrompt == nil && fixture.session.draft.isEmpty,
+                "Return saves the selected queue row without sending it")
+        } else {
+            check(false, "cancelling a queued edit keeps the queued rows")
+        }
+
         fixture.window.makeFirstResponder(nil)
         fixture.pump()
         check(editor.input?.isFocused?.wrappedValue == false, "resigning the editor clears composer focus")

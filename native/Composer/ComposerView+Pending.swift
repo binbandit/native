@@ -31,7 +31,8 @@ extension ComposerView {
                         ? "Send now: add it to the running turn after tools finish"
                         : "Send now: send it as the next message"
                 },
-                onSendNow: { sendNow($0) }, onRemove: remove)
+                onSendNow: { sendNow($0) }, onRemove: remove, onEdit: edit,
+                onMove: { session.moveQueued($0, $1) }, onDrop: { session.moveQueued($0, before: $1) })
         }
     }
 

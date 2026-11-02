@@ -102,8 +102,7 @@ extension ComposerView {
         }
         if event.key == .upArrow, event.modifiers.isEmpty, draftText.isEmpty {
             if let last = session.queuedPrompts.last {
-                session.editingQueuedPrompt = last.id
-                session.draft = last.text
+                edit(last.id)
                 return true
             }
             if !isWorking, let last = session.state.lastPrompt {

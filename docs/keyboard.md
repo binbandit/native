@@ -92,7 +92,9 @@ advertises ACP steering or explicitly declares `afterTools` delivery in its plug
 It adds the message to the running turn, waiting for running tools when needed. Otherwise messages
 send when the turn ends. When the task is idle, including after Stop, Send now sends the queued
 message as the next prompt and resumes the queue without needing a new draft.
-↑ in an empty composer opens the last queued message in the editor:
+Click a queued message to edit it, or use its context menu (touch and hold on iPad) to edit,
+move it up or down, send now or remove it. Drag a message onto another to move it before that
+message. ↑ in an empty composer opens the last queued message in the editor:
 
 | Keys (queued message open in the editor) | Action |
 | --- | --- |

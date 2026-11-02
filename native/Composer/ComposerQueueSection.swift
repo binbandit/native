@@ -1,3 +1,4 @@
+import ACP
 import SwiftUI
 
 /// Presentation only; queue ordering and delivery belong to the session model.
@@ -12,6 +13,9 @@ struct ComposerQueueSection: View {
     var sendNowHelp: String?
     var onSendNow: (UUID) -> Void
     var onRemove: (UUID) -> Void
+    var onEdit: (UUID) -> Void = { _ in }
+    var onMove: (UUID, PromptQueue.Direction) -> Void = { _, _ in }
+    var onDrop: (UUID, UUID?) -> Void = { _, _ in }
 
     var body: some View {
         CappedHeightScrollView(maxHeight: ComposerMetrics.attachmentsMaxHeight) {
@@ -50,8 +54,41 @@ struct ComposerQueueSection: View {
                     .padding(.vertical, DS.Space.xxs)
                     .frame(minHeight: DS.ComposerRow.controlHeight)
                     .background(.dsSurface, in: .rect(cornerRadius: DS.Radius.control))
+                    .contentShape(.rect)
+                    .onTapGesture { onEdit(message.id) }
+                    .draggable(message.id.uuidString)
+                    .dropDestination(for: String.self) { ids, _ in
+                        guard let id = ids.first.flatMap(UUID.init(uuidString:)),
+                            messages.contains(where: { $0.id == id })
+                        else { return false }
+                        onDrop(id, message.id)
+                        return true
+                    }
+                    .contextMenu {
+                        Button("Edit Message", systemImage: "square.and.pencil") { onEdit(message.id) }
+                        if let sendNowHelp {
+                            Button("Send now", systemImage: "arrow.up") { onSendNow(message.id) }
+                                .help(sendNowHelp)
+                        }
+                        Divider()
+                        Button("Move Up", systemImage: "arrow.up.to.line") { onMove(message.id, .up) }
+                            .disabled(message.id == messages.first?.id)
+                        Button("Move Down", systemImage: "arrow.down.to.line") { onMove(message.id, .down) }
+                            .disabled(message.id == messages.last?.id)
+                        Divider()
+                        Button("Remove from Queue", systemImage: "trash", role: .destructive) { onRemove(message.id) }
+                    }
                     .accessibilityElement(children: .contain)
                     .accessibilityLabel("Queued message")
+                    .accessibilityAction(named: "Edit Message") { onEdit(message.id) }
+                    .accessibilityActions {
+                        if message.id != messages.first?.id {
+                            Button("Move Up") { onMove(message.id, .up) }
+                        }
+                        if message.id != messages.last?.id {
+                            Button("Move Down") { onMove(message.id, .down) }
+                        }
+                    }
                 }
             }
         }

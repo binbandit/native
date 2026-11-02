@@ -98,6 +98,13 @@ extension ComposerView {
         }
     }
 
+    func edit(_ id: SessionModel.QueuedPrompt.ID) {
+        guard let prompt = session.queuedPrompts.first(where: { $0.id == id }) else { return }
+        session.editingQueuedPrompt = id
+        session.draft = prompt.text
+        session.wantsComposerFocus = true
+    }
+
     /// Closes the queued message open in the editor without saving the edits.
     func stopEditingQueued() {
         session.editingQueuedPrompt = nil
