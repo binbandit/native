@@ -41,8 +41,10 @@ final class ComposerAgentChange {
     /// where that conversation sat in the chain before.
     private(set) var isReturn = false
     var chainReturn: EarlierConversations.Return?
-    /// Closes a return's Undo when the returned-to conversation starts a turn, whichever client sent
-    /// it: a turn starting is a fact a replay can't undo, unlike a count of what it shows.
+    /// Closes a return's Undo as soon as the returned-to conversation leaves the state it was
+    /// returned in: a turn starting, which the host stamps on its summary (`lastActivity`) even when
+    /// another client sent it while this one was away, a disconnect, or a reload. None of these is
+    /// undone by a replay, unlike a count of what the transcript shows.
     @ObservationIgnored private var returnWatch: Task<Void, Never>?
     @ObservationIgnored private var work: Task<Void, Never>?
 
@@ -225,8 +227,13 @@ final class ComposerAgentChange {
                 priorChoice?.closeUndo()
                 priorChoice = nil
                 if isReturn {
+                    let activity = prepared.lastActivity
                     returnWatch = Task { [weak self, weak prepared] in
-                        for await phase in Observations({ prepared?.phase }) where phase == .prompting {
+                        for await isSettled in Observations({
+                            prepared.map {
+                                $0.lastActivity == activity && $0.phase == .idle && !$0.isRestoringHistory
+                            } ?? false
+                        }) where !isSettled {
                             self?.closeUndo()
                             return
                         }
