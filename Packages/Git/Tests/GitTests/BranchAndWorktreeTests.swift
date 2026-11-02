@@ -273,18 +273,34 @@ struct BranchAndWorktreeTests {
         }
         defer { collector.cancel() }
 
-        try test.write("watched.txt", "hello\n")
-        #expect(await eventually { received.withLock { $0.contains { $0.paths.contains("watched.txt") } } })
+        try #require(
+            try await eventually(
+                changing: { attempt in try test.write("watched.txt", "hello \(attempt)\n") },
+                observed: { received.withLock { $0.contains { $0.paths.contains("watched.txt") } } }))
 
-        try await repository.stage(["watched.txt"])
-        #expect(await eventually { received.withLock { $0.contains(where: \.gitStateChanged) } })
+        let beforeStaging = received.withLock { $0.count }
+        #expect(
+            try await eventually(
+                changing: { attempt in
+                    try test.write("watched.txt", "staged \(attempt)\n")
+                    try await repository.stage(["watched.txt"])
+                },
+                observed: { received.withLock { $0.dropFirst(beforeStaging).contains(where: \.gitStateChanged) } }))
     }
 
-    /// Polls `condition` for up to five seconds.
-    private func eventually(_ condition: () -> Bool) async -> Bool {
-        for _ in 0..<100 {
+    /// FSEvents coalesces changes and can omit an individual mutation during a burst of
+    /// repository setup on shared runners. Exercise ongoing activity until an event arrives,
+    /// with a deadline so a broken watcher still fails instead of retrying the test itself.
+    private func eventually(
+        changing change: (Int) async throws -> Void, observed condition: () -> Bool
+    ) async throws -> Bool {
+        let deadline = ContinuousClock.now + .seconds(30)
+        var attempt = 0
+        while ContinuousClock.now < deadline {
+            try await change(attempt)
             if condition() { return true }
-            try? await Task.sleep(for: .milliseconds(50))
+            attempt += 1
+            try await Task.sleep(for: .milliseconds(100))
         }
         return condition()
     }
