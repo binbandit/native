@@ -41,9 +41,9 @@ final class ComposerAgentChange {
     /// where that conversation sat in the chain before.
     private(set) var isReturn = false
     var chainReturn: EarlierConversations.Return?
-    /// The returned-to conversation's turns when the task came back to it, so a message from
-    /// another client also closes Undo.
-    private var returnTurns: Int?
+    /// The returned-to conversation's messages when the task came back to it, so one from another
+    /// client also closes Undo. Messages, not turns: a replay can regroup turns, not messages.
+    private var returnMessages: Int?
     @ObservationIgnored private var work: Task<Void, Never>?
 
     init(source: SessionModel, choice: ComposerAgentModel, app: AppModel) {
@@ -64,7 +64,7 @@ final class ComposerAgentChange {
     /// its own already, so it counts the ones since the return.
     var canUndo: Bool {
         guard stage == .applied, !undoIsClosed, let current else { return false }
-        return isReturn ? current.state.turns.count <= returnTurns ?? 0 : !current.hasSubmittedPrompt
+        return isReturn ? Self.messages(in: current) <= returnMessages ?? 0 : !current.hasSubmittedPrompt
     }
     var hasPermissionChoice: Bool {
         current.map { !ComposerSettings($0.configOptions).autonomyLevels.isEmpty } ?? false
@@ -224,7 +224,7 @@ final class ComposerAgentChange {
                 try validate(prepared, source: source, app: app)
                 priorChoice?.closeUndo()
                 priorChoice = nil
-                if isReturn { returnTurns = prepared.state.turns.count }
+                if isReturn { returnMessages = Self.messages(in: prepared) }
                 app.commitAgentModel(self, source: source, target: prepared, context: context)
                 previous = source
                 current = prepared
@@ -445,6 +445,10 @@ final class ComposerAgentChange {
         work?.cancel()
         source?.isChangingAgent = false
         stage = .cancelled
+    }
+
+    private static func messages(in session: SessionModel) -> Int {
+        session.state.items.count { if case .message(let message) = $0 { message.role == .user } else { false } }
     }
 
     func closeUndo() {
