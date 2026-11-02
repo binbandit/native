@@ -982,7 +982,7 @@
 			repositoryURL = "https://github.com/getsentry/sentry-cocoa";
 			requirement = {
 				kind = exactVersion;
-				version = 9.32.0;
+				version = 9.30.2;
 			};
 		};
 		00000000000000005E1EA501 /* XCRemoteSwiftPackageReference "Sparkle" */ = {

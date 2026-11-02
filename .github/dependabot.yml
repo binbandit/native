@@ -19,6 +19,9 @@ updates:
     schedule:
       interval: monthly
     ignore:
+      # This SDK update exceeds the installed app size budget; keep 9.30.2.
+      - dependency-name: github.com/getsentry/sentry-cocoa
+        versions: ["9.32.0"]
       # This tag omits src/parser.c and tree_sitter headers; keep the generated-files release.
       - dependency-name: github.com/alex-pinkus/tree-sitter-swift
         versions: ["0.7.4"]
