@@ -273,19 +273,31 @@ struct BranchAndWorktreeTests {
         }
         defer { collector.cancel() }
 
-        try test.write("watched.txt", "hello\n")
-        #expect(await eventually { received.withLock { $0.contains { $0.paths.contains("watched.txt") } } })
+        // A single write can race a new FSEvents stream. Keep producing changes until delivery
+        // is observed, without accepting earlier repository-setup events as the index change.
+        #expect(
+            try await eventually {
+                try test.write("watched.txt", UUID().uuidString)
+                return received.withLock { $0.contains { $0.paths.contains("watched.txt") } }
+            })
 
+        received.withLock { $0.removeAll() }
         try await repository.stage(["watched.txt"])
-        #expect(await eventually { received.withLock { $0.contains(where: \.gitStateChanged) } })
+        #expect(
+            try await eventually {
+                try FileManager.default.setAttributes(
+                    [.modificationDate: Date.now],
+                    ofItemAtPath: repository.gitDirectory.appending(path: "index").path)
+                return received.withLock { $0.contains(where: \.gitStateChanged) }
+            })
     }
 
     /// Polls `condition` for up to five seconds.
-    private func eventually(_ condition: () -> Bool) async -> Bool {
+    private func eventually(_ condition: () throws -> Bool) async rethrows -> Bool {
         for _ in 0..<100 {
-            if condition() { return true }
+            if try condition() { return true }
             try? await Task.sleep(for: .milliseconds(50))
         }
-        return condition()
+        return try condition()
     }
 }
