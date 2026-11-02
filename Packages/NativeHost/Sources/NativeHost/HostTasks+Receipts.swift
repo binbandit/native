@@ -34,6 +34,31 @@ extension HostTasks {
         receipts = updated
     }
 
+    /// Explicit cleanup may release files, but keeps every receipt endpoint for retry identity.
+    /// Include the whole connected family so a settled original result cannot hide follow-up work.
+    func receiptWorkHasSettled(involving id: HostSessionID) -> Bool {
+        guard receiptsReadable else { return false }
+        var family: Set<HostSessionID> = [id]
+        var previousCount = 0
+        while previousCount != family.count {
+            previousCount = family.count
+            for receipt in receipts.values where family.contains(receipt.parentID) || family.contains(receipt.childID) {
+                family.insert(receipt.parentID)
+                family.insert(receipt.childID)
+            }
+        }
+        for (key, receipt) in receipts where family.contains(receipt.parentID) {
+            guard creationFlights[key] == nil else { return false }
+            guard receipt.failure != nil || (receipt.result != nil && receipt.delivery != .pending) else {
+                return false
+            }
+        }
+        return family.compactMap { core.sessions[$0] }.allSatisfy {
+            !$0.holdsRestart && !$0.isStopping && $0.queue.isEmpty
+                && $0.pendingPermissions.isEmpty && $0.pendingQuestions.isEmpty
+        }
+    }
+
     func startTaskReceipt(_ request: TaskRequest) async throws -> TaskStartReceipt {
         guard receiptsReadable else {
             throw TaskLaunchValidation.Refusal("Native cannot read child task receipts. No new child was started.")

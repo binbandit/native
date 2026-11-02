@@ -106,6 +106,41 @@ struct HostDelegationReceiptTests {
         await recorder.stop()
     }
 
+    @Test func confirmedCleanupPreservesSettledReceiptsAcrossRestart() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        let folder = harness.root.appending(path: "private-task", directoryHint: .isDirectory)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try Data("work".utf8).write(to: folder.appending(path: "draft.txt"))
+        try harness.start()
+        let first = try await harness.connect()
+        let parent = try await first.client.newSession(NewSessionParams(agentID: "fake", cwd: folder.path))
+        let receipt = try await start(first.client, parent: parent.id, key: "cleanup", prompt: "slow 4")
+        let task = try #require(try await first.client.tasks().first)
+        let childID = try #require(task.sessionID)
+        await #expect(throws: (any Error).self) { try await first.client.closeSessionConfirmed(parent.id) }
+        let original = try await first.client.callTool(
+            CallToolParams(
+                sessionID: parent.id, tool: "wait_for_task", arguments: .object(["task_id": .string(task.id)])))
+        let child = try #require(try await first.client.sessions().first { $0.id == childID })
+        for summary in [parent, child] {
+            try await first.client.closeSessionConfirmed(summary.id)
+            #expect(try await first.client.sessions().contains { $0.id == summary.id })
+        }
+        try FileManager.default.removeItem(at: folder)
+        harness.kill()
+        await first.stop()
+        try harness.start()
+        let second = try await harness.connect()
+        #expect(try await start(second.client, parent: parent.id, key: "cleanup", prompt: "slow 4") == receipt)
+        let result = try await second.client.callTool(
+            CallToolParams(sessionID: parent.id, tool: "get_task", arguments: .object(["task_id": .string(task.id)])))
+        #expect(result.structuredContent?["original_result"] == original.structuredContent?["original_result"])
+        #expect(try await second.client.tasks().count == 1)
+        #expect(harness.received.filter { $0.hasPrefix("prompt\t") }.count == 1)
+        await second.stop()
+    }
+
     @Test func interruptedUnadmittedCreationRefusesToCreateAnotherChild() async throws {
         let harness = try HostHarness()
         defer { harness.cleanup() }

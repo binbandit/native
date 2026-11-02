@@ -80,6 +80,9 @@
   ordinary prompt transaction. Original results are immutable, captured before queued follow-ups.
   Parents receive pending completion after reconnects and host restarts, unless they already read
   it or pressed Stop. Completion waits for descendants; Stop claims and cancels the owned subtree.
+  Ordinary close retains receipt-owned session identities. Confirmed cleanup can release private files
+  after the whole receipt family settles and the agent acknowledges close; session IDs and receipts
+  remain for creation retries and original-result lookup, including after restart.
 
 ### Native's tools on demand
 

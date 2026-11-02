@@ -4,10 +4,11 @@ import NativeHostProtocol
 extension HostCore {
     /// Cleanup of owned files needs an acknowledgement, not the ordinary best-effort close.
     /// Process snapshots cannot establish that detached commands exited, so only the agent's
-    /// explicit acknowledgement permits forgetting the record.
+    /// explicit acknowledgement permits releasing files. Durable receipt owners retain their identity.
     func closeSessionConfirmed(_ id: HostSessionID) async throws {
         let session = try session(id)
-        guard !participatesInCoordination(session), !session.holdsRestart, !session.isStopping,
+        guard !participatesInCoordination(session, retainingSettledReceipts: false), !session.holdsRestart,
+            !session.isStopping,
             session.queue.isEmpty
         else {
             throw HostError.busy("Wait for this task and its agents to finish, then retry. Its private files are kept.")
@@ -27,11 +28,16 @@ extension HostCore {
             "session/close", RawSessionIDRequest(sessionId: agentSessionID), as: JSONValue.self)
         // Another client may have resumed or replaced it while the agent answered.
         guard sessions[id] === session, agents[session.record.agentID] === link, link.generation == generation,
+            !participatesInCoordination(session, retainingSettledReceipts: false),
             !session.holdsRestart, !session.isStopping, session.queue.isEmpty
         else {
             throw HostError.busy("The task changed while closing. Retry when it's ready. Its private files are kept.")
         }
         try store.keepClosedSessionConfig(session.record)
-        forget(session)
+        if participatesInCoordination(session) {
+            unload(session, closingWith: nil)
+        } else {
+            forget(session)
+        }
     }
 }
