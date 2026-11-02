@@ -81,17 +81,12 @@ private struct ComposerDropChecks {
             throw Failure("A raw picture did not import as an image")
         }
         print(
-            "PASS: file/text imports, images and folders, image fallback, duplicates, raw pictures, typed document paste, text drop undo/redo"
+            "PASS: file/text imports, images and folders, image fallback, duplicates, raw pictures, typed document paste"
         )
     }
 
     private static func load(_ provider: NSItemProvider) async throws -> ComposerDropItem {
         try await ComposerDropItem.load(provider)
-    }
-
-    private final class Draft {
-        var text: String
-        init(_ text: String) { self.text = text }
     }
 
     private struct Failure: Error, CustomStringConvertible {

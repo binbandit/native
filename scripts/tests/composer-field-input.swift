@@ -32,6 +32,13 @@ private struct ComposerFieldInputRegression {
         fixture.pump()
         check(fixture.session.composerMessage == "AB", "successive native edits reach the session draft")
 
+        editor.undoManager?.undo()
+        fixture.pump()
+        check(fixture.session.composerMessage == "A", "native Undo restores the previous draft")
+        editor.undoManager?.redo()
+        fixture.pump()
+        check(fixture.session.composerMessage == "AB", "native Redo restores the draft")
+
         fixture.focus(editor)
         let beforePaste = fixture.session.composerMessage
         let file = root.appending(path: "fixtures/guide.txt")
