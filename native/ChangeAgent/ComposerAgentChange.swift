@@ -41,9 +41,9 @@ final class ComposerAgentChange {
     /// where that conversation sat in the chain before.
     private(set) var isReturn = false
     var chainReturn: EarlierConversations.Return?
-    /// The returned-to conversation's messages when the task came back to it, so one from another
-    /// client also closes Undo. Messages, not turns: a replay can regroup turns, not messages.
-    private var returnMessages: Int?
+    /// Closes a return's Undo when the returned-to conversation starts a turn, whichever client sent
+    /// it: a turn starting is a fact a replay can't undo, unlike a count of what it shows.
+    @ObservationIgnored private var returnWatch: Task<Void, Never>?
     @ObservationIgnored private var work: Task<Void, Never>?
 
     init(source: SessionModel, choice: ComposerAgentModel, app: AppModel) {
@@ -64,7 +64,7 @@ final class ComposerAgentChange {
     /// its own already, so it counts the ones since the return.
     var canUndo: Bool {
         guard stage == .applied, !undoIsClosed, let current else { return false }
-        return isReturn ? Self.messages(in: current) <= returnMessages ?? 0 : !current.hasSubmittedPrompt
+        return isReturn || !current.hasSubmittedPrompt
     }
     var hasPermissionChoice: Bool {
         current.map { !ComposerSettings($0.configOptions).autonomyLevels.isEmpty } ?? false
@@ -224,7 +224,14 @@ final class ComposerAgentChange {
                 try validate(prepared, source: source, app: app)
                 priorChoice?.closeUndo()
                 priorChoice = nil
-                if isReturn { returnMessages = Self.messages(in: prepared) }
+                if isReturn {
+                    returnWatch = Task { [weak self, weak prepared] in
+                        for await phase in Observations({ prepared?.phase }) where phase == .prompting {
+                            self?.closeUndo()
+                            return
+                        }
+                    }
+                }
                 app.commitAgentModel(self, source: source, target: prepared, context: context)
                 previous = source
                 current = prepared
@@ -447,11 +454,8 @@ final class ComposerAgentChange {
         stage = .cancelled
     }
 
-    private static func messages(in session: SessionModel) -> Int {
-        session.state.items.count { if case .message(let message) = $0 { message.role == .user } else { false } }
-    }
-
     func closeUndo() {
+        returnWatch?.cancel()
         undoIsClosed = true
         previous?.isModelChangeSource = false
         previous = nil
