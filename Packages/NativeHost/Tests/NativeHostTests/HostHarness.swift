@@ -114,16 +114,71 @@ final class HostHarness: @unchecked Sendable {
         return text.split(separator: "\n").map(String.init)
     }
 
-    func connect(transport: (any HostTransport)? = nil) async throws -> Recorder {
+    /// Only a completed initialize handshake permits setup requests. The watchdog leaves time
+    /// for a diagnostic failure within the one-minute budget used by most harness suites.
+    func connect(
+        transport: (any HostTransport)? = nil, timeout: Duration = .seconds(30)
+    ) async throws -> Recorder {
         let client = NativeHostClient(
             transport: transport ?? LocalSocketTransport(location: location),
             clientInfo: PeerInfo(name: "tests", version: "1", build: "1"))
         let recorder = Recorder(client: client)
         await recorder.listen()
         await client.start()
-        _ = try await recorder.wait("connect", timeout: .seconds(10)) { _ in await client.hostInfo != nil }
-        try await client.syncAgents([agentSpec])
-        return recorder
+        do {
+            try await waitForConnection(client, timeout: timeout)
+            try await client.syncAgents([agentSpec])
+            return recorder
+        } catch {
+            // A failed setup must not leave the client's reconnect loop running after the test.
+            await client.stop()
+            throw error
+        }
+    }
+
+    private func waitForConnection(_ client: NativeHostClient, timeout: Duration) async throws {
+        let process = process
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            defer { group.cancelAll() }
+            group.addTask {
+                // The initialize reply, rather than elapsed startup time or a socket file, is ready.
+                for await event in client.events {
+                    guard case .connection(let state) = event else { continue }
+                    switch state {
+                    case .connected: return
+                    case .incompatible:
+                        throw ConnectionFailure(reason: "Host protocol mismatch: \(state)")
+                    default: continue
+                    }
+                }
+                throw CancellationError()
+            }
+            group.addTask {
+                // This watchdog only fails broken setup; it can never declare the client ready.
+                try await Task.sleep(for: timeout)
+                throw ConnectionFailure(
+                    reason:
+                        "Host did not complete initialization within \(timeout). Last client state: \(await client.state)"
+                )
+            }
+            if let process {
+                group.addTask {
+                    while process.isRunning {
+                        try await Task.sleep(for: .milliseconds(50))
+                    }
+                    throw ConnectionFailure(
+                        reason:
+                            "Host exited before connecting (status \(process.terminationStatus), reason \(process.terminationReason))."
+                    )
+                }
+            }
+            try await group.next()
+        }
+    }
+
+    struct ConnectionFailure: Error, CustomStringConvertible {
+        let reason: String
+        var description: String { reason }
     }
 }
 
