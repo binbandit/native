@@ -86,9 +86,10 @@ final class ComposerAgentChange {
         self.current = current
         self.app = app
         stage = .applied
+        // Before the dismissal, whose observer saves the receipt again with what's set so far.
+        isReturn = record.isReturn == true
         permissionNotice = record.permissionNotice
         isReceiptDismissed = record.isDismissed
-        isReturn = record.isReturn == true
         // A return's Undo doesn't outlast a relaunch: only the host could say whether the
         // conversation continued meanwhile, from this client or another.
         undoIsClosed = isReturn || !app.sessions.services.modelContinuations.hasPending(current.key)
