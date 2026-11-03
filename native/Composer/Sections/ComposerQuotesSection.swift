@@ -69,7 +69,7 @@ struct ComposerQuotesSection: View {
                         ]),
                 ], remove: { _ in })
         }
-        .frame(width: 420)
+        .frame(width: DS.ComposerField.quotePreviewWidth)
     }
 }
 #endif

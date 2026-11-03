@@ -64,7 +64,7 @@ struct ComposerAttachmentsSection: View {
                     capabilities: PromptCapabilities(), agentName: "Codex", onRemove: { _ in })
             }
         }
-        .frame(width: 560)
+        .frame(width: DS.ComposerField.attachmentPreviewWidth)
     }
 }
 #endif

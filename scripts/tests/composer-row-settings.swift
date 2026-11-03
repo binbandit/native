@@ -282,6 +282,29 @@ private struct ComposerRowSettingsRegression {
         print("PASS: queued field edits cancel without saving or stopping in idle and running tasks")
     }
 
+    static func locationOnlyBeforeStarting() async throws {
+        let agent = await RowSettingsAgent()
+        defer { agent.close() }
+        let (app, session, _) = try fixture(agent.connection)
+        let project = app.projects.add(URL(filePath: "/fixture", directoryHint: .isDirectory))
+        app.quickEntry.project = project.id
+        app.composeTask.workspace = .project
+        try require(
+            ComposerRowModelAdapter(app: app).state.locations.map(\.id) == ["project", "branch"],
+            "A new task must offer both locations")
+        for phase in [SessionModel.Phase.idle, .prompting, .disconnected] {
+            session.phase = phase
+            try require(
+                ComposerRowModelAdapter(app: app, session: session).state.locations.isEmpty,
+                "An existing task must not offer Where in \(phase)")
+        }
+        app.quickEntry.project = nil
+        try require(
+            ComposerRowModelAdapter(app: app).state.locations.isEmpty,
+            "A new task without a project must not offer Where")
+        print("PASS: Where is limited to new tasks with a project, across existing-task phases")
+    }
+
     static func main() async {
         let domain = ProcessInfo.processInfo.processName
         UserDefaults.standard.removePersistentDomain(forName: domain)
@@ -289,7 +312,7 @@ private struct ComposerRowSettingsRegression {
         var failures = 0
         for check in [
             freshModel, orderedSnapshots, repeatedSelections, currentAgentWithoutTransitions, folderContinuation,
-            cancelQueuedFieldEdit,
+            cancelQueuedFieldEdit, locationOnlyBeforeStarting,
         ] {
             do { try await check() } catch {
                 failures += 1
