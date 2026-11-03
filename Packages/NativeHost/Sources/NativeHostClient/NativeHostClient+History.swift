@@ -33,14 +33,16 @@ extension NativeHostClient {
     }
 
     /// What a context marker in a session's transcript shows: what the other agents did that its
-    /// transfer considered, after what earlier context already showed. Nil when the marker stands
-    /// for no transfer of this session.
+    /// transfer considered, after what the transcript showed above it (its top, and the markers in
+    /// `earlierMarkers`). Nil when the marker stands for no transfer of this session.
     public func markerRuns(
-        of session: HostSessionID, markerID: String, limit: Int
+        of session: HostSessionID, markerID: String, earlierMarkers: Set<String>, limit: Int
     ) async throws -> (runs: [TaskHistoryRun], omitsEarlier: Bool)? {
         let summary = try await historySummary(of: session)
         guard let transfer = summary.transfer(forMarker: markerID) else { return nil }
-        return try await runs(of: session, in: summary, at: transfer, after: summary.shownAfter(transfer), limit: limit)
+        return try await runs(
+            of: session, in: summary, at: transfer,
+            after: summary.shownAfter(transfer, earlierMarkers: earlierMarkers), limit: limit)
     }
 
     private func runs(

@@ -47,15 +47,16 @@ extension TaskHistorySummary {
         transfers.first { $0.target == current && $0.sourceHistory == id && $0.markerID == markerID }
     }
 
-    /// Where what `transfer` shows starts: after anything this session's earlier context showed, so
-    /// an item a transcript has shown once isn't shown again further down.
-    public func shownAfter(_ transfer: TaskHistoryTransfer) -> Int {
-        // Every earlier transfer that went with a message left a marker that shows its items, even one
-        // that was stopped and chosen again; one undone before it went left none.
-        let earlier = transfers.prefix { $0.id != transfer.id }.filter {
-            $0.target == current && $0.sourceHistory == id && ($0.state != .superseded || $0.requestID != nil)
-        }
-        return max(transfer.from, earlier.map(\.through).max() ?? 0)
+    /// Where what `transfer` shows starts: after what the transcript already showed above it, at
+    /// its top (the handoff) and at the context markers before this one (`earlierMarkers`, as the
+    /// transcript has them), so an item a transcript shows once isn't shown again further down.
+    public func shownAfter(_ transfer: TaskHistoryTransfer, earlierMarkers: Set<String>) -> Int {
+        let shown =
+            transfers.filter {
+                $0.id != transfer.id && $0.target == current && $0.sourceHistory == id
+                    && earlierMarkers.contains($0.markerID)
+            } + [handoff].compactMap { $0 }.filter { $0.id != transfer.id }
+        return max(transfer.from, shown.map(\.through).max() ?? 0)
     }
 
     /// What a transcript shows for `transfer`, from the items it considered: those another participant

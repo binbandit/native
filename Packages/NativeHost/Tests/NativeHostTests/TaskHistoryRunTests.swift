@@ -83,26 +83,24 @@ struct TaskHistoryRunTests {
         #expect(!whole.omitsEarlier)
     }
 
-    @Test("A marker shows only what earlier context in the same transcript didn't")
+    @Test("A marker shows only what the transcript didn't show above it")
     func shownAfter() {
         let handoff = handoff(to: 3, through: 4)
         let delta = TaskHistoryTransfer(
             sourceHistory: history, target: 3, from: 0, through: 8, conveyed: [], strategy: .delta, state: .delivered)
         let claude = summary(current: 3, transfers: [handoff, delta])
         #expect(claude.transfer(forMarker: delta.markerID) == delta)
-        #expect(claude.transfer(forMarker: handoff.markerID) == handoff)
-        #expect(claude.shownAfter(delta) == 4)
-        #expect(claude.shownAfter(handoff) == 0)
         #expect(summary(current: 2, transfers: [handoff, delta]).transfer(forMarker: delta.markerID) == nil)
-        // A delta that went with a stopped message keeps its marker, so the retry starts after it;
-        // one undone before it went doesn't.
-        var stopped = TaskHistoryTransfer(
+        // The transcript's top shows the handoff, so the marker starts after it.
+        #expect(claude.shownAfter(delta, earlierMarkers: []) == 4)
+        // A stopped attempt's marker that the transcript still has counts; one it doesn't have (its
+        // message was removed, or the replay lost it) doesn't, whatever the transfer's state.
+        let stopped = TaskHistoryTransfer(
             sourceHistory: history, target: 3, from: 4, through: 6, conveyed: [], strategy: .delta, state: .superseded)
-        stopped.requestID = UUID()
         let retry = TaskHistoryTransfer(
             sourceHistory: history, target: 3, from: 4, through: 8, conveyed: [], strategy: .delta)
-        #expect(summary(current: 3, transfers: [handoff, stopped, retry]).shownAfter(retry) == 6)
-        stopped.requestID = nil
-        #expect(summary(current: 3, transfers: [handoff, stopped, retry]).shownAfter(retry) == 4)
+        let returned = summary(current: 3, transfers: [handoff, stopped, retry])
+        #expect(returned.shownAfter(retry, earlierMarkers: [stopped.markerID]) == 6)
+        #expect(returned.shownAfter(retry, earlierMarkers: []) == 4)
     }
 }

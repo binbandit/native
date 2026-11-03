@@ -277,11 +277,13 @@ struct HostHistoryDeltaTests {
         let delta = try #require(
             try await recorder.client.historySummary(of: first.id).transfers.first { $0.strategy == .delta })
         let shown = try #require(
-            try await recorder.client.markerRuns(of: first.id, markerID: delta.markerID, limit: 40))
+            try await recorder.client.markerRuns(of: first.id, markerID: delta.markerID, earlierMarkers: [], limit: 40))
         #expect(shown.runs.map(\.participant.ordinal) == [2])
         #expect(
             shown.runs.first?.items.map(\.body) == [.user(.init(text: "two", origin: "user")), .agent("echo: two")])
-        #expect(try await recorder.client.markerRuns(of: first.id, markerID: "debug-mode", limit: 40) == nil)
+        #expect(
+            try await recorder.client.markerRuns(of: first.id, markerID: "debug-mode", earlierMarkers: [], limit: 40)
+                == nil)
         await recorder.stop()
     }
 }

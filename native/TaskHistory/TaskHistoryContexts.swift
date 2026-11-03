@@ -56,7 +56,9 @@ final class TaskHistoryContexts {
             // Waits out a host that's restarting or reconnecting, once.
             let found = try await host.request { client in
                 if let marker {
-                    try await client.markerRuns(of: host.id, markerID: marker, limit: Self.shownLimit)
+                    try await client.markerRuns(
+                        of: host.id, markerID: marker, earlierMarkers: Self.markers(before: marker, in: session),
+                        limit: Self.shownLimit)
                 } else {
                     try await client.handoffRuns(of: host.id, limit: Self.shownLimit)
                 }
@@ -73,6 +75,18 @@ final class TaskHistoryContexts {
             }
             contexts[key] = nil
         }
+    }
+
+    /// The host transfers' markers the transcript has above `marker`: what they showed isn't shown
+    /// again at it.
+    private static func markers(before marker: String, in session: SessionModel) -> Set<String> {
+        let ids = session.state.items.compactMap { item -> String? in
+            guard case .message(let message) = item, let id = message.preamble?.id,
+                TaskHistoryTransfer.isMarkerID(id)
+            else { return nil }
+            return id
+        }
+        return Set(ids.prefix { $0 != marker })
     }
 
     /// A change of agent started `session` to continue `earlier`, so it joins the task's history
