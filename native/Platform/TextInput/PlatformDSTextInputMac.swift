@@ -147,7 +147,17 @@ final class PlatformDSTextInputScroll: NSView {
         get { scroll.documentView }
         set { scroll.documentView = newValue }
     }
-    override init(frame: NSRect) { super.init(frame: frame); addSubview(scroll) }
+    private let measurementStorage = NSTextStorage()
+    private let measurementManager = NSLayoutManager()
+    private let measurementContainer = NSTextContainer()
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        addSubview(scroll)
+        measurementContainer.lineFragmentPadding = 0
+        measurementManager.addTextContainer(measurementContainer)
+        measurementStorage.addLayoutManager(measurementManager)
+    }
     required init?(coder: NSCoder) { nil }
     var maximumLines = 10
     private var lastHeight: CGFloat = 0
@@ -158,15 +168,31 @@ final class PlatformDSTextInputScroll: NSView {
     }
     func measure(width: CGFloat) -> CGFloat {
         guard width > 0, let editor = documentView as? PlatformDSTextInputMacView,
-            let manager = editor.layoutManager, let container = editor.textContainer, let style = editor.style
+            let storage = editor.textStorage, let style = editor.style
         else { return lastHeight }
-        container.containerSize = CGSize(
+        // SwiftUI probes widths it may never place. Measuring must not reflow or resize the live editor.
+        if !measurementStorage.isEqual(to: storage) { measurementStorage.setAttributedString(storage) }
+        measurementContainer.containerSize = CGSize(
             width: max(1, width - DS.TextInput.inset * 2), height: .greatestFiniteMagnitude)
+        measurementManager.ensureLayout(for: measurementContainer)
+        let content = max(
+            style.lineHeight, measurementManager.usedRect(for: measurementContainer).maxY,
+            measurementManager.extraLineFragmentRect.maxY)
+        return ceil(min(content, style.lineHeight * CGFloat(maximumLines)) + DS.TextInput.inset * 2)
+    }
+    override func layout() {
+        super.layout()
+        let viewport = bounds.insetBy(dx: DS.TextInput.inset, dy: DS.TextInput.inset)
+        if scroll.frame != viewport { scroll.frame = viewport }
+        guard let editor = documentView as? PlatformDSTextInputMacView,
+            let manager = editor.layoutManager, let container = editor.textContainer, let style = editor.style
+        else { return }
+        container.containerSize = CGSize(width: max(1, viewport.width), height: .greatestFiniteMagnitude)
         manager.ensureLayout(for: container)
         let content = max(style.lineHeight, manager.usedRect(for: container).maxY, manager.extraLineFragmentRect.maxY)
-        let height = ceil(min(content, style.lineHeight * CGFloat(maximumLines)) + DS.TextInput.inset * 2)
-        let editorSize = CGSize(width: max(1, width - DS.TextInput.inset * 2), height: content)
+        let editorSize = CGSize(width: max(1, viewport.width), height: content)
         if editor.frame.size != editorSize { editor.setFrameSize(editorSize) }
+        let height = ceil(min(content, style.lineHeight * CGFloat(maximumLines)) + DS.TextInput.inset * 2)
         if lastHeight != height {
             lastHeight = height
             DispatchQueue.main.async { [weak self, weak editor] in
@@ -175,17 +201,7 @@ final class PlatformDSTextInputScroll: NSView {
                 editor?.input?.onHeightChange(height)
             }
         }
-        return height
-    }
-    override func layout() {
-        super.layout()
-        scroll.frame = bounds.insetBy(dx: DS.TextInput.inset, dy: DS.TextInput.inset)
-        _ = measure(width: bounds.width)
-        if let editor = documentView as? PlatformDSTextInputMacView,
-            let coordinator = editor.delegate as? PlatformDSTextInput.Coordinator
-        {
-            coordinator.publish(editor)
-        }
+        if let coordinator = editor.delegate as? PlatformDSTextInput.Coordinator { coordinator.publish(editor) }
     }
 }
 

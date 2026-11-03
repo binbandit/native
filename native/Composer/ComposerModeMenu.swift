@@ -13,7 +13,6 @@ struct ComposerModeMenu: View {
         .padding(DS.Space.sm)
         .frame(width: DS.ComposerRow.menuWidth)
         .background(.dsOverlay)
-        .accessibilityLabel("Mode")
     }
 }
 

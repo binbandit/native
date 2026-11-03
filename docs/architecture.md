@@ -146,8 +146,9 @@ ranges, plain-text serialization and `@`/`/` queries. A file suggestion becomes 
 text attachment; `document.plainText` expands it to an `@path` reference for the agent.
 
 The native layout manager measures the proposed width, caps the visible height at ten lines and
-scrolls the remainder. Height and caret notifications are deferred and deduplicated; callers must
-not feed reported height back into the editor. Marked text stays in native storage until the input
+scrolls the remainder. On macOS, size proposals use a separate TextKit layout so rejected widths
+cannot reflow or resize the live editor. Height and caret notifications are deferred and deduplicated;
+callers must not feed reported height back into the editor. Marked text stays in native storage until the input
 method commits, and owns keyboard events while composing. Attachment paste/drop callbacks carry
 URLs or image data to the caller; they never insert paths in the draft.
 

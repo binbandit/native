@@ -12,6 +12,7 @@ import TextInput
 @main
 private struct ComposerFieldInputRegression {
     static func main() throws {
+        setbuf(stdout, nil)
         NSApplication.shared.setActivationPolicy(.prohibited)
         let root = URL(filePath: CommandLine.arguments[1], directoryHint: .isDirectory)
         let fixture = try ComposerFieldInputFixture(root: root)
@@ -38,6 +39,43 @@ private struct ComposerFieldInputRegression {
         editor.undoManager?.redo()
         fixture.pump()
         check(fixture.session.composerMessage == "AB", "native Redo restores the draft")
+
+        if let viewport = editor.enclosingScrollView?.superview as? PlatformDSTextInputScroll {
+            let frame = editor.frame
+            let containerSize = editor.textContainer?.containerSize
+            _ = viewport.measure(width: 80)
+            check(
+                editor.frame == frame && editor.textContainer?.containerSize == containerSize,
+                "probing a rejected width does not resize the live editor")
+        }
+        fixture.reset(editor)
+        let longDraft = (1...20).map { "Fixture draft line \($0): testing the scrolling composer." }.joined(
+            separator: "\n")
+        for (index, line) in longDraft.split(separator: "\n").enumerated() {
+            editor.insertText((index == 0 ? "" : "\n") + line, replacementRange: editor.selectedRange())
+            fixture.pump()
+        }
+        fixture.pump()
+        check(fixture.session.composerMessage == longDraft, "twenty-line native draft reaches the model")
+        if let manager = editor.layoutManager, let container = editor.textContainer {
+            manager.ensureLayout(for: container)
+            var previousBottom: CGFloat = 0
+            var lines = 0
+            var overlaps = false
+            manager.enumerateLineFragments(forGlyphRange: NSRange(location: 0, length: manager.numberOfGlyphs)) {
+                rect, _, _, _, _ in
+                if lines > 0 && rect.minY < previousBottom - 0.5 { overlaps = true }
+                previousBottom = rect.maxY
+                lines += 1
+            }
+            check(lines >= 20 && !overlaps, "twenty-line draft has distinct, nonoverlapping line fragments")
+            check(editor.frame.height >= previousBottom, "editor contains every line after growth")
+            check(editor.enclosingScrollView?.contentSize.height ?? 0 < previousBottom, "long draft scrolls at its cap")
+        } else {
+            check(false, "long draft has a layout manager")
+        }
+        fixture.reset(editor)
+        editor.insertText("AB", replacementRange: editor.selectedRange())
 
         fixture.focus(editor)
         let beforePaste = fixture.session.composerMessage
@@ -236,6 +274,7 @@ private final class ComposerFieldInputFixture {
         app = AppModel(
             plugins: PluginRegistry(previewing: [BuiltInPlugins.claudeCode]), defaults: defaults,
             catalogURL: nil, experiments: experiments)
+        _ = app.runtimes.sync()
         guard let agent = app.plugins.agent(.init(rawValue: "claude-code")) else {
             throw CocoaError(.coderValueNotFound)
         }
@@ -256,6 +295,7 @@ private final class ComposerFieldInputFixture {
             backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         window.contentView = host
+        window.orderBack(nil)
         pump()
     }
 
