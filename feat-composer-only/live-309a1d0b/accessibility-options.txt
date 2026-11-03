@@ -1,0 +1,22 @@
+Revision: 309a1d0be94d09106e5d4d03249e408be548bf00
+Scoped driver accessibility excerpts. Full trees retained in the local evidence folder.
+
+62-mode-options-dark-tree.txt
+AXButton "Mode"
+AXButton "Mode"
+AXButton "Mode"
+AXButton "Mode" = "Selected"
+AXButton "Mode" = "Full access"
+
+67-mode-options-light-tree.txt
+AXButton "Mode" = "Full access"
+AXButton "Mode"
+AXButton "Mode"
+AXButton "Mode"
+AXButton "Mode" = "Selected"
+
+68-where-options-light-tree.txt
+AXButton "Mode" = "Full access"
+AXButton "Where" = "On a new branch"
+AXButton "Where"
+AXButton "Where" = "Selected"

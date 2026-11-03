@@ -1,0 +1,38 @@
+Live test rerun of PR #273
+Revision: 309a1d0be94d09106e5d4d03249e408be548bf00
+Result: partial, defects found. No live-test pass.
+
+Environment
+Isolated Debug instance cx-live273 on elara; muted; Haiku 5.5, Low effort. Display kept awake. Accessibility trusted and screen unlocked. Raw accessibility controls appeared within the launch deadline. Debug build passed with zero repository warnings. PR head was rechecked before reporting and still matched. Product source worktree was clean. No product changes made.
+The local feat/composer-only branch was divergent, so checkout could not fast-forward; the tested checkout was detached at the freshly fetched remote PR head. The fixture seed refreshed NativeHost/Package.resolved while building its helper; that generated change was reverted.
+
+Ranked confirmed defect
+1. P2: Mode and Where menu choices lose their accessible names. The visible Mode choices Ask first / Accept edits / Auto / Full access all expose AXButton "Mode"; the visible Where choices In my folder / On a new branch both expose AXButton "Where". Only the selected value differentiates one option. Reproduced in light and dark. Users of accessibility names cannot identify the choices. The menu containers set accessibilityLabel("Mode") / accessibilityLabel("Where") despite ComposerRowMenuOption setting choice.title.
+Evidence: 62-mode-options-dark.png and tree; 67-mode-options-light.png and tree; 57-where-options-dark.png; 68-where-options-light.png and tree.
+
+Additional observations, not confirmed regressions
+- Long bulk typing into unsent Compose Task temporarily stopped responding to scoped AX reads. After input was interrupted, the draft contained 15 full lines and a partial line but displayed overlapping text at the top. Screenshot 64 captures the settled result. Input had initially been focus-checked; typing was interrupted when focus could no longer be confirmed. A shorter 16-line retry rendered correctly and scrolled to Line 16 (66). The exact failing threshold remains unverified.
+- After reopening an answered question's transcript, it said Waiting for your answer despite the later Alpha answer and no pending card. Screenshot 48. This is a transcript/history follow-up, not established as a composer regression.
+
+Verified surface paths and local evidence
+- Real task, project folder: Where > In my folder, Say FOLDER only, response FOLDER; 58 draft and 59 response. Existing NativeComposeTask and NativeProjectFolderTasks switches enabled with numeric defaults for the unsent screen. Disabled Where choices before enabling Project Folder Tasks were expected gating, not a defect.
+- Real task, new branch: Where > On a new branch, separate worktree and real COMPOSEBRANCH response; 60 draft and 61 response. Also 41-42 project shortcut new worktree path.
+- Long draft grows upward in a running task, caps at 210 points; controls retain their frame while content exceeds it; 08-09, 43, 49. AX-set text did not conclusively exercise scroll gestures. Native typing of 16 short lines in Compose Task scrolled to lines 7-16 with the control row at the cap; 65-66.
+- Keyboard file mention: @ menu, Down, Return -> @.gitignore; 10-11.
+- Keyboard folder mention: @fixtures, Return -> @fixtures/; 12.
+- Slash command menu and Return -> /clear inserted; 13-14. Command execution was not requested.
+- Fixture file paste and drop created attachment chips and retained Attachment draft, without inserting a path; 15-16.
+- Shift-Enter inserted a newline; native Undo removed it; 06-07. Enter sent real task requests and queued pending requests; 29, 36-37, 42.
+- Connected Claude row showed Claude Code / Haiku 5.5 / Low; 17. Mid-task row agent switch to Fake Agent Alpha, model switch to Beta, and Undo Change restored Claude Haiku while draft survived; 21-24. Switching between two real Claude models was not independently exercised.
+- Mode Ask first produced a removable chip, removal restored Full access; 25-27.
+- Real Claude pending approval retained draft; queued A, removed A; queued B, approved command with separate draft retained; 28-31.
+- Stop settled with separate draft and queue B intact; supported Send now delivered B and cleared queue while retaining draft; 32-34. Unsupported-agent Send now absence was not independently covered. Supplemental Fake Agent slow-turn queue check: 44.
+- Real AskUserQuestion with Alpha/Beta, selected Alpha and submitted; independent draft retained and final Alpha response observed; 36-38. Screenshot 35 was captured before the card arrived and is not proof of the question state.
+- Diff comment on fixture line reached the composer as a quote chip and expanded via Review in composer, retaining draft; 38-40.
+- No isolated crash or hang report was returned by drive crashes. Temporary unresponsiveness during bulk typing is recorded above.
+
+Limits
+No exact state mocks were supplied. Existing composer specification and PR paired preview report are references; this is a behavior check, not coordinator design approval. No iPad test or before-revision comparison. Active-turn Send now routing on an unsupported agent and real-Claude-to-real-Claude model changes remain partial. The Claude foreground sleep command was blocked by the user's existing mod and retried in the background; configuration was left unchanged.
+
+Evidence handling
+All step screenshots and raw trees are retained in this directory. Selected fixture-only screenshots with the sidebar collapsed are published on pr-assets under feat-composer-only/live-309a1d0b/. Earlier whole-window captures include the local account badge and are retained locally rather than uploaded. Superseded pre-rerun blocked report is prior-6594db8-report.md and is not the current result.
