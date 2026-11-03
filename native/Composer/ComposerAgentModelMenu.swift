@@ -1,3 +1,4 @@
+import ACP
 import SwiftUI
 
 struct ComposerAgentModelMenu: View {
@@ -6,12 +7,14 @@ struct ComposerAgentModelMenu: View {
     var notice: String?
     let chooseModel: (String) -> Void
     let chooseEffort: (String) -> Void
+    let chooseSetting: (String, String) -> Void
     let close: () -> Void
     @State private var query = ""
 
     init(
         agents: [ComposerRowState.Agent], effort: [ComposerRowState.Choice], notice: String? = nil,
         query: String = "", chooseModel: @escaping (String) -> Void, chooseEffort: @escaping (String) -> Void,
+        chooseSetting: @escaping (String, String) -> Void = { _, _ in },
         close: @escaping () -> Void
     ) {
         self.agents = agents
@@ -19,6 +22,7 @@ struct ComposerAgentModelMenu: View {
         self.notice = notice
         self.chooseModel = chooseModel
         self.chooseEffort = chooseEffort
+        self.chooseSetting = chooseSetting
         self.close = close
         _query = State(initialValue: query)
     }
@@ -58,6 +62,12 @@ struct ComposerAgentModelMenu: View {
                                 if model.isSelected, !effort.isEmpty {
                                     effortMenu
                                 }
+                            }
+                        }
+                        if !agent.settings.isEmpty {
+                            Divider().padding(.horizontal, DS.Space.md)
+                            ForEach(agent.settings, id: \.option.id) { setting in
+                                settingMenu(setting)
                             }
                         }
                     }
@@ -111,10 +121,49 @@ struct ComposerAgentModelMenu: View {
         .accessibilityLabel("Model effort")
         .accessibilityValue(effort.first(where: \.isSelected)?.title ?? "Default")
     }
+
+    private func settingMenu(_ setting: SelectSetting) -> some View {
+        Menu {
+            ForEach(setting.choices) { choice in
+                Button {
+                    chooseSetting(setting.option.id, choice.value)
+                } label: {
+                    Label(choice.name, systemImage: choice.value == setting.value ? "checkmark" : "circle")
+                }
+                .help(choice.description ?? choice.name)
+            }
+        } label: {
+            HStack(spacing: DS.Space.md) {
+                Text(setting.option.name)
+                    .font(.dsBody).foregroundStyle(.dsTextPrimary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Text(setting.currentName).font(.dsCaption).lineLimit(1)
+                Image(systemName: "chevron.down").font(.dsMicro)
+            }
+            .padding(.horizontal, DS.Space.md)
+            .padding(.leading, DS.ComposerRow.checkWidth + DS.Space.md)
+            .frame(minHeight: DS.ComposerRow.menuRowHeight)
+            .contentShape(.rect)
+        }
+        .menuStyle(.button).buttonStyle(ComposerRowControlStyle()).menuIndicator(.hidden)
+        .disabled(setting.choices.isEmpty)
+        .accessibilityLabel(setting.option.name)
+        .accessibilityValue(setting.currentName)
+        .help(setting.option.description ?? setting.option.name)
+    }
 }
 
 #if DEBUG
 #Preview("Composer agent menu - All agents and inline effort") {
     DSPreviewPair { ComposerRowPreviewFixtures.agentMenu() }
+}
+
+#Preview("Composer agent menu - With and without extra options") {
+    DSPreviewPair {
+        HStack(alignment: .top, spacing: DS.Space.lg) {
+            ComposerRowPreviewFixtures.agentMenu(extraOptions: true)
+            ComposerRowPreviewFixtures.agentMenu(shortList: true)
+        }
+    }
 }
 #endif

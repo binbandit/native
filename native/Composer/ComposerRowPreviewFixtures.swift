@@ -1,4 +1,5 @@
 #if DEBUG
+import ACP
 import SwiftUI
 
 enum ComposerRowPreviewFixtures {
@@ -66,9 +67,24 @@ enum ComposerRowPreviewFixtures {
             }
     }
 
-    static func agentMenu() -> some View {
-        ComposerAgentModelMenu(
-            agents: state.agents, effort: state.effort, chooseModel: { _ in }, chooseEffort: { _ in }, close: {})
+    static func agentMenu(extraOptions: Bool = false, shortList: Bool = false) -> some View {
+        var agents = Array(state.agents.prefix(1))
+        if extraOptions {
+            let data = Data(
+                """
+                [
+                    {"id":"fast","name":"Fast mode","category":"model_config","type":"select",
+                     "currentValue":"off","options":[{"value":"on","name":"On"},{"value":"off","name":"Off"}]},
+                    {"id":"style","name":"Response style","type":"select","currentValue":"concise",
+                     "options":[{"value":"concise","name":"Concise"},{"value":"detailed","name":"Detailed"}]}
+                ]
+                """.utf8)
+            agents[0].settings = ((try? JSONDecoder().decode([ConfigOption].self, from: data)) ?? [])
+                .compactMap(SelectSetting.init)
+        }
+        return ComposerAgentModelMenu(
+            agents: extraOptions || shortList ? agents : state.agents, effort: state.effort,
+            chooseModel: { _ in }, chooseEffort: { _ in }, close: {})
     }
 }
 

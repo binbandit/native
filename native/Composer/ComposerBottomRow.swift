@@ -21,6 +21,7 @@ struct ComposerBottomRow: View {
                     ComposerAgentModelMenu(
                         agents: state.agents, effort: state.effort, notice: state.selectionNotice,
                         chooseModel: { actions.chooseModel($0) }, chooseEffort: actions.chooseEffort,
+                        chooseSetting: actions.chooseSetting,
                         close: { openMenu = nil })
                 }
             modeControl

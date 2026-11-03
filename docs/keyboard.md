@@ -533,7 +533,7 @@ Where appears only before the first message. The same field is used for new task
 | ⌘⇧E | Open Agent and Model; search appears past eight models and matches agent and model names |
 | ⌃⌥⌘M | Open Mode: Ask first, Accept edits, Auto, Full access |
 | ⌃⌥⌘W | Open Where for a new task: In my folder or On a new branch |
-| Tab / Shift-Tab, then Space | Reach every choice, effort beside the selected model, and the mode chip's Remove button |
+| Tab / Shift-Tab, then Space | Reach every choice, effort beside the selected model, offered extra settings below its models, and the mode chip's Remove button |
 | Escape | Clear model search first, then dismiss the open menu |
 | ⌘U | Attach files (the existing Attach Files action) |
 | ⌘Return | Send the draft while idle |
@@ -543,7 +543,8 @@ Full access is the quiet default. Remove on any other mode restores Full access 
 allowed by the agent and managed policy. Context appears only past half full; its slot
 stays reserved so Attach and Send never move. Agent names truncate before other controls.
 
-Agent-specific settings remain available through the agent's commands. `/goal` opens the goal
+In a connected task, extra ACP settings offered by the current agent appear below its models in
+Agent and Model. Agents without extra settings have no extra section. `/goal` opens the goal
 editor, `/plan` selects Plan mode, and Show MCP Servers opens the existing server panel.
 
 | Keys | Action | Menu | Command |

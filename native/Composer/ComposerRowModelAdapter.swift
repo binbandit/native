@@ -47,6 +47,7 @@ struct ComposerRowModelAdapter {
     ) -> ComposerRowActions {
         ComposerRowActions(
             chooseModel: chooseModel, chooseEffort: { pick(category: "thought_level", value: $0) },
+            chooseSetting: chooseSetting,
             chooseMode: { pick(category: "mode", value: $0) }, chooseLocation: chooseLocation,
             attach: attach, context: context, send: send, stop: { Task { await session?.cancel() } })
     }
@@ -69,6 +70,11 @@ struct ComposerRowModelAdapter {
                     groups[index].models.append(row)
                 } else {
                     groups.append(.init(id: entry.agent.rawValue, name: entry.agentName, models: [row]))
+                }
+            }
+            if let index = groups.firstIndex(where: { $0.id == session.agent.id.rawValue }) {
+                groups[index].settings = (settings.modelSwitches + settings.others).filter {
+                    !["model", "thought_level", "mode"].contains($0.option.category ?? "")
                 }
             }
             return groups
@@ -136,6 +142,18 @@ struct ComposerRowModelAdapter {
         } else {
             app.composeTask.choose(setting, value: value)
         }
+    }
+
+    private func chooseSetting(_ id: String, value: String) {
+        guard let session,
+            agentGroups.first(where: { $0.id == session.agent.id.rawValue })?.settings.contains(where: {
+                $0.option.id == id
+            }) == true,
+            let setting = options.first(where: { $0.id == id }).flatMap(SelectSetting.init),
+            setting.choices.contains(where: { $0.value == value }),
+            !PolicyPermissionModes.forbids(setting.option, value: value)
+        else { return }
+        session.enqueueComposerPick(setting.option, value: value)
     }
 
     private var locationChoices: [ComposerRowState.Choice] {
