@@ -1,59 +1,6 @@
 import ACP
 import SwiftUI
 
-/// Claude Code's AskUserQuestion call, read as its questions and how each was answered: the
-/// transcript keeps "Color: Red", not the tool's raw text. The questions themselves are answered in
-/// the composer's question card.
-struct AskedQuestions {
-    struct Entry: Hashable {
-        /// The question's short header, or the question when it has none.
-        let label: String
-        let answer: Answer
-        /// The user's note to the agent, if they added one.
-        let note: String?
-    }
-
-    enum Answer: Hashable {
-        case chosen(String)
-        case skipped
-        /// Still waiting on the user.
-        case waiting
-        /// The turn ended before an answer.
-        case unanswered
-    }
-
-    let entries: [Entry]
-
-    init?(_ call: ToolCallState) {
-        guard call.name == "AskUserQuestion" else { return nil }
-        let response = call.meta?["claudeCode"]?["toolResponse"]
-        guard case .array(let questions)? = response?["questions"] ?? call.rawInput?["questions"] else {
-            entries = []
-            return
-        }
-        let answers = response?["answers"]
-        entries = questions.compactMap { question in
-            guard let text = question["question"]?.stringValue else { return nil }
-            let header = question["header"]?.stringValue
-            let answer: Answer =
-                if response != nil {
-                    // Answered: an empty map means the user skipped every question.
-                    answers?[text]?.stringValue.map(Answer.chosen) ?? .skipped
-                } else if [.failed, .cancelled, .interrupted, .unreported].contains(call.status) {
-                    .unanswered
-                } else {
-                    .waiting
-                }
-            let note = response?["annotations"]?[text]?["notes"]?.stringValue
-            return Entry(label: header.flatMap { $0.isEmpty ? nil : $0 } ?? text, answer: answer, note: note)
-        }
-    }
-
-    var isWaiting: Bool {
-        entries.contains { $0.answer == .waiting }
-    }
-}
-
 /// An AskUserQuestion call in the transcript: one quiet header, then one line per question with
 /// its answer.
 struct AskedQuestionsView: View {
