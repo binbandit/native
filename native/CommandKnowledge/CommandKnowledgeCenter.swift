@@ -1,6 +1,5 @@
 import ACP
 import ApprovalAnalysis
-import Experiments
 import Foundation
 import NativePolicy
 import Observation
@@ -37,9 +36,8 @@ final class CommandKnowledgeCenter {
         userEnabled = defaults.object(forKey: Self.choiceKey) == nil || defaults.bool(forKey: Self.choiceKey)
     }
 
-    static var isAvailable: Bool { ExperimentStore.shared.value(of: .composerNext) }
     var isAllowed: Bool { PolicyCenter.shared.policy.unknownCommandCountsEnabled }
-    var isEnabled: Bool { Self.isAvailable && isAllowed && userEnabled }
+    var isEnabled: Bool { isAllowed && userEnabled }
 
     func setEnabled(_ enabled: Bool) {
         guard isAllowed else { return }

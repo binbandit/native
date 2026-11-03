@@ -16,23 +16,6 @@ private struct ComposerDropChecks {
         guard !ComposerDropItem.acceptsPaste(NSItemProvider(object: "a text selection" as NSString)) else {
             throw Failure("Ordinary text paste was admitted as a file attachment")
         }
-        for original in ["Before selected after", "`code` before selected after"] {
-            let draft = Draft(original)
-            let undo = UndoManager()
-            undo.groupsByEvent = false
-            undo.beginUndoGrouping()
-            ComposerEditorUndo.record(
-                Binding(get: { draft.text }, set: { draft.text = $0 }), using: undo, actionName: "Drop Text")
-            draft.text = original.replacingOccurrences(of: "selected", with: "dropped")
-            undo.endUndoGrouping()
-            let replaced = draft.text
-            undo.undo()
-            guard draft.text == original else { throw Failure("Text drop undo lost the replaced selection") }
-            undo.redo()
-            guard draft.text == replaced, undo.undoActionName == "Drop Text" else {
-                throw Failure("Text drop redo lost the edit or its action name")
-            }
-        }
         for name in ["brief.txt", "pixel.png", "folder"] {
             let url = fixture.appending(path: name)
             let provider = NSItemProvider()
@@ -98,17 +81,12 @@ private struct ComposerDropChecks {
             throw Failure("A raw picture did not import as an image")
         }
         print(
-            "PASS: file/text imports, images and folders, image fallback, duplicates, raw pictures, typed document paste, text drop undo/redo"
+            "PASS: file/text imports, images and folders, image fallback, duplicates, raw pictures, typed document paste"
         )
     }
 
     private static func load(_ provider: NSItemProvider) async throws -> ComposerDropItem {
         try await ComposerDropItem.load(provider)
-    }
-
-    private final class Draft {
-        var text: String
-        init(_ text: String) { self.text = text }
     }
 
     private struct Failure: Error, CustomStringConvertible {

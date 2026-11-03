@@ -162,22 +162,22 @@ struct AnnotatedApprovalView: View {
             if rejection != nil {
                 Rectangle().fill(DS.Approval.separator(colorScheme)).frame(height: DS.Approval.rule)
                 HStack(alignment: .bottom, spacing: DS.Space.md) {
-                    ComposerEditor(
-                        text: $instruction, selection: $instructionSelection,
+                    DSMessageInput(
+                        text: $instruction,
                         placeholder: "Or tell \(agentName) what to do instead", isFocused: $instructionFocused,
-                        inputLabel: "Tell \(agentName) what to do instead", insets: DS.Approval.editorInsets,
-                        maximumHeight: DS.Approval.instructionMaximumHeight
+                        inputLabel: "Tell \(agentName) what to do instead", maximumLines: 3,
+                        insets: DS.Approval.editorInsets
                     ) { press in
-                        guard !PlatformTextInput.isComposing else { return .ignored }
+                        guard !PlatformTextInput.isComposing else { return false }
                         if press.key == .tab, press.modifiers.isSubset(of: [.shift]) {
                             return ComposerPlatform.moveKeyFocus(forward: !press.modifiers.contains(.shift))
-                                ? .handled : .ignored
+                                ? true : false
                         }
                         guard press.key == .return, press.modifiers.isEmpty else {
-                            return .ignored
+                            return false
                         }
                         sendInstruction(instruction)
-                        return .handled
+                        return true
                     }
                     .disabled(sending || committed || !isAvailable)
                     if openTask == nil || !instruction.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {

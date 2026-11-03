@@ -229,7 +229,6 @@ private struct AgentModelChangeRegression {
         let defaults = PreviewUserDefaults()
         let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
         try require(experiments.value(of: .changeAgent), "Composer agent switching requires opting into Labs")
-        experiments.set(true, for: .composerNext)
         let manifest = PluginManifest(
             id: "fixture", name: "Fixture",
             agents: [
@@ -362,10 +361,9 @@ private struct AgentModelChangeRegression {
         print("PASS: exact model, permission preservation, no working prompt, one task, drafts and Undo")
         print("PASS: suspended attachment reads follow the draft through selection and Undo")
 
-        experiments.set(false, for: .composerNext)
         let command = NativeCommand.changeAgent(model: app)
         let context = CommandContext(session: source)
-        try require(command.isAvailable(context), "Switch Agent is missing with Fine print off")
+        try require(command.isAvailable(context), "Switch Agent is missing")
         command.perform(context)
         try require(source.isAgentPickerRequested && source.isModelPickerRequested, "Command missed the Agent section")
         try require(app.changingAgent == nil, "Legacy composer opened a confirmation sheet")
@@ -386,8 +384,7 @@ private struct AgentModelChangeRegression {
         legacy.undo()
         try require(
             app.selection == source.key && source.attachments.count == 3, "Legacy Undo lost the task or attachments")
-        experiments.set(true, for: .composerNext)
-        print("PASS: Switch Agent command, default model, invisible handoff and Undo with Fine print off")
+        print("PASS: Switch Agent command, default model, invisible handoff and Undo")
 
         experiments.set(false, for: .changeAgent)
         try require(!command.isAvailable(context), "Switch Agent ignored the explicit Labs opt-out")
@@ -644,7 +641,6 @@ private struct AgentModelChangeRegression {
             let defaults = PreviewUserDefaults()
             let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
             experiments.set(true, for: .changeAgent)
-            experiments.set(true, for: .composerNext)
             let manifest = PluginManifest(
                 id: "permissions", name: "Permissions",
                 agents: [
@@ -826,7 +822,6 @@ private struct AgentModelChangeRegression {
             let defaults = PreviewUserDefaults()
             let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
             experiments.set(true, for: .changeAgent)
-            experiments.set(true, for: .composerNext)
             let manifest = PluginManifest(
                 id: "in-app-fixture", name: "In-app fixture",
                 agents: [

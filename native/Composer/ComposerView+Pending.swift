@@ -26,8 +26,13 @@ extension ComposerView {
                         text: PromptQuote.summary($0.text).split(whereSeparator: \.isNewline).joined(separator: " "),
                         attachments: $0.attachments.map(\.name))
                 },
-                sendNowHelp: session.sendNowRoute.map { QueuedSendNow(route: $0, agentName: session.agentName).help },
-                onSendNow: { sendNow($0) }, onRemove: remove)
+                sendNowHelp: session.sendNowRoute.map {
+                    $0 == .steer
+                        ? "Send now: add it to the running turn after tools finish"
+                        : "Send now: send it as the next message"
+                },
+                onSendNow: { sendNow($0) }, onRemove: remove, onEdit: edit,
+                onMove: { session.moveQueued($0, $1) }, onDrop: { session.moveQueued($0, before: $1) })
         }
     }
 

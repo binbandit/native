@@ -115,7 +115,9 @@ if [ "$sandbox" = 0 ]; then
         # sharing the cache never see each other's half-written or vanished downloads.
         partial="$archive.$$.partial"
         mkdir -p "$(dirname "$archive")"
-        curl -fsSL -o "$partial" \
+        # CI runners can briefly lose DNS or connections; retry without accepting unchecked data.
+        curl -fsSL --retry 3 --retry-all-errors --retry-delay 1 --retry-max-time 120 \
+            --connect-timeout 15 --max-time 120 -o "$partial" \
             "https://github.com/denoland/rusty_v8/releases/download/v$V8_VERSION/librusty_v8_ptrcomp_release_aarch64-apple-darwin.a.gz" \
             || { rm -f "$partial"; give_up "couldn't download V8 $V8_VERSION."; }
         has_sha256 "$partial" "$V8_ARCHIVE_SHA256" \

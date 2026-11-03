@@ -10,6 +10,8 @@ struct DSTextInput: View {
     @Binding var document: TextInputDocument
     var placeholder = "What would you like to work on?"
     var maximumLines = 10
+    var fontSize = DS.TextInput.fontSize
+    var lineSpacing = DS.TextInput.lineSpacing
     var accessibilityLabel = "Message"
     /// Optional control of focus and selection, including completion insertion in the middle.
     var isFocused: Binding<Bool>?
@@ -17,6 +19,8 @@ struct DSTextInput: View {
     var onSubmit: () -> Void = {}
     /// Return true to consume the key. Return is offered here before submission.
     var onKey: (DSTextInputKey) -> Bool = { _ in false }
+    /// Modified keys are offered before native editing, for host actions such as steering.
+    var onEvent: (DSTextInputEvent) -> Bool = { _ in false }
     var onAttachments: ([DSTextInputAttachment]) -> Void = { _ in }
     /// Caret rectangle in this component's coordinate space, after scrolling. Anchor above minY.
     var onStateChange: (DSTextInputState) -> Void = { _ in }
@@ -38,6 +42,12 @@ struct DSTextInputState: Equatable {
 
 enum DSTextInputKey: Equatable {
     case submit, up, down, escape, tab
+}
+
+struct DSTextInputEvent {
+    let key: KeyEquivalent
+    var modifiers: EventModifiers = []
+    var isRepeat = false
 }
 
 enum DSTextInputAttachment {

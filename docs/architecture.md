@@ -140,15 +140,15 @@ side of the project boundary; a local rename does not rename another machine's c
 ## Native text input
 
 `DSTextInput` in `native/DesignSystem/TextInput/` is the shared editable text surface for the
-composer rebuild. Part A exposes it in the composer gallery only. The live composer still uses
-`ComposerEditor` until the next parts land. AppKit and UIKit adapters live in
+composer and other message fields. AppKit and UIKit adapters live in
 `native/Platform/TextInput/`. The UI-free `Packages/TextInput` owns document runs, UTF-16 editor
 ranges, plain-text serialization and `@`/`/` queries. A file suggestion becomes a single native
 text attachment; `document.plainText` expands it to an `@path` reference for the agent.
 
 The native layout manager measures the proposed width, caps the visible height at ten lines and
-scrolls the remainder. Height and caret notifications are deferred and deduplicated; callers must
-not feed reported height back into the editor. Marked text stays in native storage until the input
+scrolls the remainder. On macOS, size proposals use a separate TextKit layout so rejected widths
+cannot reflow or resize the live editor. Height and caret notifications are deferred and deduplicated;
+callers must not feed reported height back into the editor. Marked text stays in native storage until the input
 method commits, and owns keyboard events while composing. Attachment paste/drop callbacks carry
 URLs or image data to the caller; they never insert paths in the draft.
 
@@ -351,8 +351,7 @@ The sidebar owns the shared `TaskSignal`; Home uses it for the current ask and U
 oldest within each kind. The ask being read stays put when another arrives. Answering uses the
 exact `SessionModel` and tool-call request displayed, including subagent requests. Home records
 a receipt and advances when the model acknowledges an answer. Questions embed the composer's
-question, with the same digit keys, multiple-question paging and free text: `AnnotatedQuestionView`
-with Fine print, `AgentQuestionSection` without. Plan
+question, with the same digit keys, multiple-question paging and free text: `AnnotatedQuestionView`. Plan
 permissions embed `ComposerPlanSection` in its numbered review presentation (first five steps,
 then Show more in Peek), using only the current turn's checklist. The exact permission proposal always
 stays visible in the shared annotated approval, with the agent's Approve Plan and Revise choices.
@@ -489,8 +488,7 @@ whole card below the toolbar and inside the window. Narrow windows, hidden rows 
 a bounded fallback, with tall content scrolling inside the card. The model routes captured requests
 to their owning session and checks identity again before answering. Questions, plans and commands with unknown
 or irreversible effects open Peek from ⌘Y; a small ACP vocabulary permits routine approvals.
-Peek reuses `AnnotatedApprovalView` and the composer's question (`AnnotatedQuestionView` with Fine
-print, `AgentQuestionSection` without), including command explanations,
+Peek reuses `AnnotatedApprovalView` and `AnnotatedQuestionView`, including command explanations,
 instruction recovery and the hold for irreversible approvals. Recovered failures use their live signal;
 unrecovered failures expose the real notice and the model's recovery action.
 
@@ -591,61 +589,39 @@ receipt belong to later slices.
 
 ### Composer field
 
-`NativeComposerV3` is an off-by-default Labs gate for the assembled field in `native/Composer/`.
-It mounts `DSTextInput`, attachment and diff-comment chips, and `ComposerBottomRow` for both the
-new-task page and session composers. The editor grows to ten lines while the bottom row stays
-anchored. File and command completions use the native caret rectangle; paste and drop go through
-the existing attachment reads. Submission, queued messages, questions, approvals, model handoffs
-and Stop use the existing model methods. Compact queue rows sit directly above the field and
-offer Remove and capability-gated Send now. The session owns ordered delivery and pausing after
-Stop. Shared `SessionApprovalView` and `SessionQuestionView` cards sit above the queue without
-replacing the editor. `/plan` selects the existing task mode; `/goal` and the agent's advertised
-`/compact` use the existing slash-command paths. With the gate off, the existing composer remains
-unchanged. The older Fine print gate must be off for pending asks to reach this field; part D
-owns removing that older routing and the duplicate transcript approval controls.
+`native/Composer/` owns the only task composer, for both new tasks and running tasks. It has no
+Labs gate. `ComposerView` binds the session draft to `ComposerField`; `ComposerRowModelAdapter`
+connects Agent and Model, Mode and Where to existing model actions. `DSTextInput` is the native
+NSTextView/UITextView editor shared by the field and other message inputs. The old
+`native/Views/Composer/` editors, controls and Fine print popover have been deleted.
 
-### Fine print approvals
+Queued messages sit above the field with Remove and capability-gated Send now. Return queues
+while a turn runs; Command-Return steers. The session owns ordered delivery and pausing after Stop.
+Shared `SessionApprovalView` and `SessionQuestionView` cards sit above the queue without replacing
+the editor. Only the oldest request owns shortcuts; the primary transcript leaves response controls
+to these cards. Subagents, Peek and Home use the same question and approval family.
 
-`NativeComposerNext` is an off-by-default Labs gate for the composer and its approval state. Enable it
-with Settings > Labs > Fine print, or set `experiment.NativeComposerNext` as a boolean in the
-isolated app's defaults. The rejected quiet-settings-line experiment has been removed.
+`/plan` selects the existing task mode, `/goal` opens its editor, and `/compact` uses the agent's
+advertised command. Attachments, quoted selections and diff comments stay with the draft and keep
+the existing model submission and undo paths. Native text editing preserves IME, spelling, undo,
+paste and atomic file mentions without smart quote or dash substitution.
 
-`AnnotatedApprovalView` in `native/Approvals` is the shared approval for the composer,
-Peek and Home hosts. `SessionApprovalView` connects it to model actions. Only the oldest request
-owns shortcuts; the primary transcript leaves its response controls to the composer while enabled.
-The ordinary composer and approvals are unchanged with the gate off.
-
-Fine print asks must not contribute an unbounded minimum height to the window. `ApprovalSurface`
-uses the same minimum-width adapter as `RootDetailColumn`, so AppKit's minimum-size probe cannot
-measure wrapping content at zero width. Questions cap and scroll their prompt and choices while
-keeping the pager, actions and free-text answer visible; keyboard navigation reveals its choice.
-Failed-start cards cap their complete body, including diagnostics and recovery actions. Annotated
-approvals already cap their body. Home questions stay in the page's scroll view, and Peek questions
-stay in its height-capped body; neither uses the Fine print question layout.
-`ApprovalScrollView` measures natural content height up to its cap, respects a smaller proposed
-height, and reports zero for a minimum-height probe. A vertically fixed scroll view would still
-raise the window's minimum to its ideal height, even with a cap.
-
-At rest the gated composer is one field and a model-name control. `ComposerSettingsControl`
-opens model, effort, permission consequences and the agent's extra options in one popover;
-its MCP page embeds `MCPSessionPanel`. Picks still go through `SessionModel.pick`, including
-remembering successful choices and rejecting forbidden permission modes. `SettingsSourceLabel`
-is shared with New Tasks: personal choices need no tag, agent defaults name the agent, and
-managed permission rows name the configured organization. The existing policy
-catalog governs permission modes and MCP servers; it does not supply model locks or an offline
-web-search switch. Web search is editable only when the agent offers a config option for it.
+Approval and question bodies cap and scroll while their actions remain reachable. `ApprovalSurface`
+uses the same minimum-width adapter as `RootDetailColumn`, so minimum-size probes cannot measure
+wrapping content at zero width. `ApprovalScrollView` measures natural height up to its cap,
+respects a smaller proposed height, and reports zero for a minimum-height probe.
 
 `Packages/ApprovalAnalysis` matches literal commands against bundled, versioned JSON knowledge,
 with additive plugin and managed-policy contributions. It never executes commands or inspects files
 or the network. Unsupported syntax makes no claims. Conventional cache locations are lexical
 labels, never proof that deletion is safe. `native/CommandKnowledge` provides client-local unknown
-program counts and diagnostics, behind the same off-by-default Fine print gate. Policy can disable
+program counts and diagnostics, alongside the shared approvals. Policy can disable
 counting; Settings can purge it; nothing exports it. See [command knowledge](command-knowledge.md)
 for the schema, coverage, extension precedence, and storage contract. Host-side measurements remain
 a later slice, subject to managed network policy.
 
-Questions and failed starts use the same family. With the gate on, `SessionQuestionView` puts
-the oldest agent question in the composer's place through `AnnotatedQuestionView` (choices on digit
+Questions and failed starts use the same family. `SessionQuestionView` puts
+the oldest agent question above the editable draft through `AnnotatedQuestionView` (choices on digit
 keycaps, the composer's field for an answer in the user's own words), answered through
 `SessionModel.answerQuestion`. A starting task that fails shows `AgentStartFailureView` above its
 kept message. `NativeSetup`'s `AgentStartDiagnostic` reads a compiler-style `path:line:column:`
@@ -685,7 +661,7 @@ The behavior, tool order and remaining slices are described in `docs/session-too
 
 ### Changing a task's agent (Labs)
 
-`change-agent` is on by default as a beta. Both composers name the current agent and model and
+`change-agent` is on by default as a beta. The composer names the current agent and model and
 open a picker with installed agents above the current agent's models, on the task's existing host.
 Opening the list reads live options or Native-owned cached options; selecting another agent
 prepares its default model and then shows that agent's reported models.
@@ -911,22 +887,18 @@ readable, but agent-owned sign-in stays unknown unless reported by the agent. An
 check cannot establish that the agent is signed out. Native-owned MCP secrets continue to support
 connection checks; agents retain responsibility for their own authentication.
 
-### Point and say (Fine print, slice 3)
+### Point and say
 
-With `NativeComposerNext`, the transcript and Changes pane share a quote context supplied by
+The transcript and Changes pane share a quote context supplied by
 `SessionView`. Cmd-L captures only a selection inside a registered Native source view, or the
 explicit line-number range in `DiffView`. The platform adapter never reads another application's
 selection or the pasteboard. Diff quotes retain their old/new side and original line numbers;
 transcript quotes use the selected text block's line numbers. Removing a quote supports Undo.
 
-`PromptQuote` stores snapshots as readable leading quote blocks in the existing draft. The gated
-composer renders those blocks with numbers in its 24pt padding and edits the message separately.
-Send, queue editing, failure recovery and unsent draft persistence therefore carry one text value.
-The switch-off composer exposes that same readable text, so changing the experiment cannot hide
-or discard context. File tokens are a display projection of canonical `@path` references;
-`FileReferenceProjection` maps edits and selections back to those paths. Displayed counts never
-enter the prompt. The existing repository monitor supplies uncommitted counts, with the latest
-reported turn edits as a fallback for committed files; unavailable or binary counts stay absent.
+`PromptQuote` stores snapshots as readable leading quote blocks in the existing draft. The
+composer shows sources as chips inside the field and edits the message separately. Send, queue
+editing, failure recovery and unsent draft persistence carry one text value. Native text input
+stores file mentions atomically and expands them to canonical `@path` references when sending.
 
 ### Opening folders in All in view
 
@@ -961,7 +933,7 @@ location and draft. Paired-host scratch allocation is not supported.
 
 ## Inline comments on Changes
 
-With Fine print enabled, `native/DiffComments` anchors task comments in the Changes diff. The
+`native/DiffComments` anchors task comments in the Changes diff. The
 shared ACP `PromptQuote` format carries an optional `PromptDiffComment`: stable identity, task,
 side, scope, content fingerprint, exact numbered source and body. It remains one text packet in
 the existing composer draft, queue and user transcript. Bare quotes keep their existing format.

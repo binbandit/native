@@ -37,7 +37,9 @@ struct PlatformDSTextInput: UIViewRepresentable {
         guard let editor = container.editor else { return }
         context.coordinator.input = input
         editor.input = input
-        editor.style = PlatformDSTextInputStyle(environment: context.environment)
+        editor.style = PlatformDSTextInputStyle(
+            environment: context.environment, fontSize: input.fontSize, lineSpacing: input.lineSpacing)
+        editor.isEditable = context.environment.isEnabled
         editor.tintColor = editor.style?.accent
         editor.accessibilityLabel = input.accessibilityLabel
         if editor.markedTextRange == nil, let style = editor.style {
@@ -91,6 +93,7 @@ struct PlatformDSTextInput: UIViewRepresentable {
         func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
             guard let editor = textView as? PlatformDSTextInputIOSView else { return true }
             if text == "\n", editor.markedTextRange == nil, !editor.literalNewline {
+                if input.onEvent(.init(key: .return)) { return false }
                 if input.onKey(.submit) != true { input.onSubmit() }
                 return false
             }
@@ -207,6 +210,7 @@ final class PlatformDSTextInputIOSView: UITextView, UIDropInteractionDelegate, U
     }
     override func insertText(_ text: String) {
         if text == "\n", markedTextRange == nil, !literalNewline {
+            if input?.onEvent(.init(key: .return)) == true { return }
             if input?.onKey(.submit) != true { input?.onSubmit() }
             return
         }
@@ -215,6 +219,27 @@ final class PlatformDSTextInputIOSView: UITextView, UIDropInteractionDelegate, U
     override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
         guard markedTextRange == nil, let key = presses.first?.key else {
             super.pressesBegan(presses, with: event); return
+        }
+        let equivalent: KeyEquivalent? =
+            switch key.keyCode {
+            case .keyboardReturnOrEnter, .keypadEnter: .return
+            case .keyboardUpArrow: .upArrow
+            case .keyboardDownArrow: .downArrow
+            case .keyboardLeftArrow: .leftArrow
+            case .keyboardRightArrow: .rightArrow
+            case .keyboardDeleteOrBackspace: .delete
+            case .keyboardDeleteForward: .deleteForward
+            case .keyboardEscape: .escape
+            case .keyboardTab: .tab
+            default: nil
+            }
+        if let equivalent {
+            var modifiers: EventModifiers = []
+            if key.modifierFlags.contains(.command) { modifiers.insert(.command) }
+            if key.modifierFlags.contains(.control) { modifiers.insert(.control) }
+            if key.modifierFlags.contains(.alternate) { modifiers.insert(.option) }
+            if key.modifierFlags.contains(.shift) { modifiers.insert(.shift) }
+            if input?.onEvent(.init(key: equivalent, modifiers: modifiers)) == true { return }
         }
         let action: DSTextInputKey? =
             switch key.keyCode {

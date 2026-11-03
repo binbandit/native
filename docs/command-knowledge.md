@@ -1,6 +1,6 @@
 # Command knowledge
 
-Fine print describes commands using local, reviewed data, without a model, subprocess, filesystem
+Approvals describe commands using local, reviewed data, without a model, subprocess, filesystem
 inspection, DNS lookup, or network request. It preserves the original command and character ranges.
 `Packages/ApprovalAnalysis/Sources/ApprovalAnalysis/Resources/commands.json` ships as a Swift package
 resource on Mac and iPad. Add a tool there and add real command lines to
@@ -143,13 +143,13 @@ shipped command or lower its risk. Locations are additive and cannot change risk
 
 A disabled plugin, or one excluded by `policy.plugins.allowed`, contributes nothing. Reloading the
 plugin, switching it, or changing managed policy invalidates the registry's cached knowledge. All
-load and collision messages appear in Command Diagnostics while Fine print is on. Approvals keep
+load and collision messages appear in Command Diagnostics in approvals. Approvals keep
 working if any contribution is damaged. This follows lean core's existing plugin and policy seams;
 it does not introduce another extension system.
 
 ## Local coverage counts
 
-With Fine print on, Native counts bare, unknown program names when live approval requests reach the
+Native counts bare, unknown program names when live approval requests reach the
 client model, including requests in tasks whose view is not open. Counts are stored only at:
 
 ```text
@@ -163,7 +163,7 @@ subcommand is not an unknown program. Compound shell syntax and paths are omitte
 heuristically extracting a name. This is an observation count, not an audit of all commands an agent
 runs: commands that never ask Native for approval and history replays are not counted.
 
-Counting is on only while Fine print is on, the user permits it, and policy permits it. Set
+Counting is on only when the user permits it and policy permits it. Set
 `policy.approvals.countUnknownPrograms` to false to disable collection, regardless of the user choice.
 True permits the user choice; it does not force collection. Turning collection off does not read or
 write the file for incoming requests. Existing counts remain purgeable. No network capability,
@@ -180,7 +180,7 @@ launching the app again can observe a pending request again.
 Clear deletes the file and invalidates queued observations, but keeps in-memory deduplication so a
 still-open request cannot immediately repopulate it. New requests can count again if enabled.
 
-All new UI and counting remain behind the existing default-off Fine print gate. This build has no
+Command explanations and local counting are available with the shared composer. This build has no
 visual verification on elara. Check the approval diagram and Privacy diagnostics on the main Mac
 in light/dark and at narrow widths before enabling the feature by default.
 

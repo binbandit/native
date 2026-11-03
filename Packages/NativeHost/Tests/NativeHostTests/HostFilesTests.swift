@@ -270,9 +270,10 @@ struct HostFilesTests {
         // The host counts a watch once its watcher is running.
         try await pollUntil("the watch to start") { await FilesHost.watchCount(core) == 1 }
         // Keep producing changes while the new FSEvents stream registers its temporary root.
+        // FSEvents can ask for a rescan instead of naming the changed file.
         try await pollUntil("the new file") {
             try Data(UUID().uuidString.utf8).write(to: project.appending(path: "new.txt"))
-            return heard.values.flatMap(\.paths).contains(plainPath(project) + "/new.txt")
+            return heard.values.contains { $0.isOverflow || $0.paths.contains(plainPath(project) + "/new.txt") }
         }
 
         // A dropped connection loses the host's watch; the client watches again and says to rescan,
@@ -285,9 +286,13 @@ struct HostFilesTests {
         try await pollUntil("an overflow after reconnecting") {
             heard.values.dropFirst(changesBeforeReconnect).contains(where: \.isOverflow)
         }
+        // The reconnect overflow predates this write and cannot vouch for its notification.
+        let changesAfterReconnect = heard.values.count
         try await pollUntil("a change after reconnecting") {
             try Data(UUID().uuidString.utf8).write(to: project.appending(path: "after.txt"))
-            return heard.values.flatMap(\.paths).contains(plainPath(project) + "/after.txt")
+            return heard.values.dropFirst(changesAfterReconnect).contains {
+                $0.isOverflow || $0.paths.contains(plainPath(project) + "/after.txt")
+            }
         }
         #expect(await FilesHost.watchCount(core) == 1)
 

@@ -11,18 +11,15 @@ extension NativeCommand {
         [
             NativeCommand(.commandDiagnostics, title: "Command Diagnostics", category: .general) { _ in
                 settings.open(.privacy)
-            }.available { _ in CommandKnowledgeCenter.isAvailable }
-                .shownInSettings { CommandKnowledgeCenter.isAvailable },
+            },
             NativeCommand(.countUnknownPrograms, title: "Count Unknown Programs Locally", category: .general) { _ in
                 let center = CommandKnowledgeCenter.shared
                 center.setEnabled(!center.userEnabled)
-            }.available { _ in CommandKnowledgeCenter.isAvailable && CommandKnowledgeCenter.shared.isAllowed }
-                .toggles { _ in CommandKnowledgeCenter.shared.isEnabled }
-                .shownInSettings { CommandKnowledgeCenter.isAvailable },
+            }.available { _ in CommandKnowledgeCenter.shared.isAllowed }
+                .toggles { _ in CommandKnowledgeCenter.shared.isEnabled },
             NativeCommand(.clearUnknownPrograms, title: "Clear Unknown Program Counts", category: .general) { _ in
                 Task { await CommandKnowledgeCenter.shared.clear() }
-            }.available { _ in CommandKnowledgeCenter.isAvailable }
-                .shownInSettings { CommandKnowledgeCenter.isAvailable },
+            },
         ]
     }
 }

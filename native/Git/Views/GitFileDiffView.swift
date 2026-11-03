@@ -18,7 +18,6 @@ struct GitFileDiffView: View {
 
     @Environment(\.gitChangesCompact) private var compact
     @Environment(\.diffCommentsSession) private var commentSession
-    @Experiment(.composerNext) private var composerNext
 
     var body: some View {
         VStack(spacing: 0) {
@@ -58,7 +57,7 @@ struct GitFileDiffView: View {
         case .text(let diff):
             // Lines wrap rather than scroll sideways: the column is narrow, and `DiffView` keeps its
             // gutter intact for wrapped lines.
-            if composerNext, let commentSession {
+            if let commentSession {
                 DiffCommentsView(
                     session: commentSession, path: diff.path, oldText: diff.oldText,
                     newText: diff.newText, layout: diff.layout)

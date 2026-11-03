@@ -5,14 +5,13 @@ import SwiftUI
 struct PullRequestAskComposer: View {
     let conversation: PullRequestAskConversation
 
-    @State private var selection: TextSelection?
     @FocusState private var isFocused: Bool
 
     var body: some View {
         @Bindable var conversation = conversation
         ComposerSurface {
-            ComposerEditor(
-                text: $conversation.draft, selection: $selection, placeholder: placeholder, isFocused: $isFocused,
+            DSMessageInput(
+                text: $conversation.draft, placeholder: placeholder, isFocused: $isFocused,
                 onKey: handle)
             ComposerControlsBar {
                 Text(hint)
@@ -49,17 +48,17 @@ struct PullRequestAskComposer: View {
         return nil
     }
 
-    private func handle(_ press: KeyPress) -> KeyPress.Result {
+    private func handle(_ press: DSTextInputEvent) -> Bool {
         switch press.key {
         case .return where press.modifiers.isDisjoint(with: [.shift, .option]):
-            guard conversation.canSend, !conversation.isPageUnavailable else { return .handled }
+            guard conversation.canSend, !conversation.isPageUnavailable else { return true }
             Task { await conversation.send() }
-            return .handled
+            return true
         case .escape where conversation.isAnswering:
             Task { await conversation.stop() }
-            return .handled
+            return true
         default:
-            return .ignored
+            return false
         }
     }
 }

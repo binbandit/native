@@ -1,7 +1,7 @@
 import ACP
 import SwiftUI
 
-/// The task's oldest question in the composer's place (Fine print), answered through the session
+/// The task's oldest question above the composer, answered through the session
 /// as from any client.
 struct SessionQuestionView: View {
     let session: SessionModel

@@ -88,6 +88,21 @@ struct FileWatchingTests {
         try await expectNewFileReported(by: PollingFileWatching(interval: .milliseconds(100)))
     }
 
+    @Test("An overflow asks the consumer to rescan for the new file")
+    func overflow() async throws {
+        let watching = ScriptedFileWatching()
+        let notification = Task {
+            let root = try await watching.root()
+            try await pollUntil("the file before the overflow") {
+                FileManager.default.fileExists(atPath: root + "/new.txt")
+            }
+            watching.send(FileWatchBatch(paths: [], isOverflow: true))
+        }
+        defer { notification.cancel() }
+        try await expectNewFileReported(by: watching)
+        try await notification.value
+    }
+
     #if os(macOS)
     @Test("FSEvents reports a new file")
     func fsEvents() async throws {
@@ -108,9 +123,10 @@ struct FileWatchingTests {
         }
         defer { following.cancel() }
         // A first write can race FSEvents registering this newly created temporary folder.
+        // An overflow is also a valid notification: consumers rescan instead of using its paths.
         try await pollUntil("the new file") {
             try Data(UUID().uuidString.utf8).write(to: URL(filePath: folder + "/new.txt"))
-            return heard.values.flatMap(\.paths).contains(folder + "/new.txt")
+            return heard.values.contains { $0.isOverflow || $0.paths.contains(folder + "/new.txt") }
         }
     }
 

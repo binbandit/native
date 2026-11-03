@@ -6,7 +6,7 @@ import SwiftUI
 
 enum ComposerPendingPreviewFixtures {
     enum State {
-        case working, stopped, question, approval
+        case working, stopped, question, approval, comments
     }
 
     @ViewBuilder
@@ -15,7 +15,6 @@ enum ComposerPendingPreviewFixtures {
         let defaults = PreviewUserDefaults()
         let modes = TaskModes(library: ModeLibrary(defaults: defaults), defaults: defaults)
         let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
-        let _ = experiments.set(true, for: .composerV3)
         let automation = AutomationCenter(
             goalStore: GoalStore(url: URL(filePath: "/native-preview-unused/goals.json")),
             workflows: WorkflowRunner(store: nil), automations: AutomationEngine(store: nil))
@@ -55,6 +54,10 @@ enum ComposerPendingPreviewFixtures {
         case .approval:
             session.previewPermissionRequest(
                 command: "swift test --filter ComposerTests", reason: "Check the changed layout.")
+        case .comments:
+            session.draft = PromptQuote.draft(
+                quotes: DiffCommentsPreviewFixtures.quotes(task: session.clientID), message: session.composerMessage)
+            session.reviewDiffComments()
         }
     }
 }
@@ -74,5 +77,8 @@ enum ComposerPendingPreviewFixtures {
 
 #Preview("Composer pending - Approval keeps the draft visible") {
     DSPreviewPair { ComposerPendingPreviewFixtures.composer(.approval) }
+}
+#Preview("Composer pending - Review draft comments") {
+    DSPreviewPair { ComposerPendingPreviewFixtures.composer(.comments) }
 }
 #endif

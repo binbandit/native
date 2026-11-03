@@ -83,26 +83,34 @@ private struct ComposerRowSettingsRegression {
     }
 
     static func fixture(
-        _ connection: ACPConnection, changeAgent: Bool = true
+        _ connection: ACPConnection, changeAgent: Bool = true, extraOptions: String = "[]", standardOnly: Bool = false
     ) throws -> (
         AppModel, SessionModel, [JSONValue]
     ) {
         let defaults = PreviewUserDefaults()
         let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
         experiments.set(changeAgent, for: .changeAgent)
-        experiments.set(true, for: .composerV3)
         let app = AppModel(
             plugins: PluginRegistry(previewing: [BuiltInPlugins.claudeCode]), defaults: defaults,
             catalogURL: nil, experiments: experiments)
         guard let agent = app.plugins.agent(.init(rawValue: "claude-code")) else {
             throw RowCheckFailure("Missing fixture agent")
         }
-        let options = try GatewayWire.options()
+        let decoder = JSONDecoder()
+        let reported =
+            try decoder.decode([JSONValue].self, from: Data(GatewayWire.configOptions.utf8))
+            + decoder.decode([JSONValue].self, from: Data(extraOptions.utf8))
+        let wire =
+            standardOnly
+            ? reported.filter {
+                [.string("model"), .string("thought_level"), .string("mode")].contains($0["category"])
+            } : reported
+        let options = try decoder.decode([ConfigOption].self, from: JSONEncoder().encode(wire))
         let session = SessionModel(
             agent: agent, id: SessionID("composer-row-\(UUID())"), cwd: URL(filePath: "/fixture"),
             connection: connection, services: app.sessions.services, supportsSteering: false,
             phase: .idle, configOptions: options)
-        return (app, session, try JSONDecoder().decode([JSONValue].self, from: Data(GatewayWire.configOptions.utf8)))
+        return (app, session, wire)
     }
 
     static func modelID(_ app: AppModel, _ session: SessionModel, value: String) throws -> String {
@@ -283,6 +291,82 @@ private struct ComposerRowSettingsRegression {
         print("PASS: queued field edits cancel without saving or stopping in idle and running tasks")
     }
 
+    static func locationOnlyBeforeStarting() async throws {
+        let agent = await RowSettingsAgent()
+        defer { agent.close() }
+        let (app, session, _) = try fixture(agent.connection)
+        let project = app.projects.add(URL(filePath: "/fixture", directoryHint: .isDirectory))
+        app.quickEntry.project = project.id
+        app.composeTask.workspace = .project
+        try require(
+            ComposerRowModelAdapter(app: app).state.locations.map(\.id) == ["project", "branch"],
+            "A new task must offer both locations")
+        for phase in [SessionModel.Phase.idle, .prompting, .disconnected] {
+            session.phase = phase
+            try require(
+                ComposerRowModelAdapter(app: app, session: session).state.locations.isEmpty,
+                "An existing task must not offer Where in \(phase)")
+        }
+        app.quickEntry.project = nil
+        try require(
+            ComposerRowModelAdapter(app: app).state.locations.isEmpty,
+            "A new task without a project must not offer Where")
+        print("PASS: Where is limited to new tasks with a project, across existing-task phases")
+    }
+
+    static func extraAgentSettings() async throws {
+        let agent = await RowSettingsAgent()
+        defer { agent.close() }
+        let (plainApp, plainSession, _) = try fixture(agent.connection, standardOnly: true)
+        try require(
+            ComposerRowModelAdapter(app: plainApp, session: plainSession).state.agents.allSatisfy {
+                $0.settings.isEmpty
+            }, "An agent without extras must not gain a settings section")
+        let extras = """
+            [
+                {"id":"style","name":"Response style","type":"select","currentValue":"concise",
+                 "options":[{"value":"concise","name":"Concise"},{"value":"detailed","name":"Detailed"}]},
+                {"id":"verbosity","name":"Verbosity","category":"model_config","type":"select",
+                 "currentValue":"normal","options":[{"value":"normal","name":"Normal"}]},
+                {"id":"future","name":"Future control","type":"boolean","currentValue":false},
+                {"id":"plan","name":"Plan","category":"collaboration_mode","type":"select",
+                 "currentValue":"default","options":[{"value":"default","name":"Default"},{"value":"plan","name":"Plan"}]}
+            ]
+            """
+        let (app, session, initial) = try fixture(agent.connection, extraOptions: extras)
+        let state = ComposerRowModelAdapter(app: app, session: session).state
+        try require(
+            state.agents.first(where: { $0.id == session.agent.id.rawValue })?.settings.map(\.option.id)
+                == ["fast", "style", "verbosity"],
+            "Extra controls must reuse select settings, without duplicating model, effort, mode or Plan")
+        try require(
+            state.agents.filter { $0.id != session.agent.id.rawValue }.allSatisfy { $0.settings.isEmpty },
+            "Current settings must not appear under other agents")
+        actions(app, session).chooseSetting("fast", "on")
+        try await wait("extra setting request") { agent.received.count == 1 }
+        actions(app, session).chooseSetting("style", "detailed")
+        actions(app, session).chooseSetting("fast", "invalid")
+        actions(app, session).chooseSetting("missing", "on")
+        actions(app, session).chooseSetting("mode", "ask-first")
+        var reply = initial
+        for index in 0..<2 {
+            try await wait("extra setting \(index)") { agent.received.count > index }
+            try apply(agent.received[index], to: &reply)
+            try agent.reply(agent.received[index], options: reply)
+        }
+        try await wait("extra settings confirmation") {
+            let settings = ComposerSettings(session.configOptions)
+            return settings.modelSwitches.first?.value == "on"
+                && settings.others.first(where: { $0.option.id == "style" })?.value == "detailed"
+        }
+        try require(
+            agent.received.map { $0["params"]?["configId"] } == [.string("fast"), .string("style")],
+            "Extra picks must use option IDs and reject invalid or dedicated-control picks")
+        try require(
+            session.isTranscriptEmpty && session.modelChange == nil, "Extra settings started a message or handoff")
+        print("PASS: agent extras appear only when offered and apply by ID through ordered config requests")
+    }
+
     static func main() async {
         let domain = ProcessInfo.processInfo.processName
         UserDefaults.standard.removePersistentDomain(forName: domain)
@@ -290,7 +374,7 @@ private struct ComposerRowSettingsRegression {
         var failures = 0
         for check in [
             freshModel, orderedSnapshots, repeatedSelections, currentAgentWithoutTransitions, folderContinuation,
-            cancelQueuedFieldEdit,
+            cancelQueuedFieldEdit, locationOnlyBeforeStarting, extraAgentSettings,
         ] {
             do { try await check() } catch {
                 failures += 1

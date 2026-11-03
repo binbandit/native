@@ -14,6 +14,7 @@ struct ComposerRowState {
         let id: String
         let name: String
         var models: [Choice]
+        var settings: [SelectSetting] = []
     }
 
     var agentLabel = "Choose agent and model"
@@ -37,6 +38,7 @@ struct ComposerRowState {
 struct ComposerRowActions {
     var chooseModel: (String) -> Void = { _ in }
     var chooseEffort: (String) -> Void = { _ in }
+    var chooseSetting: (String, String) -> Void = { _, _ in }
     var chooseMode: (String) -> Void = { _ in }
     var chooseLocation: (String) -> Void = { _ in }
     var attach: () -> Void = {}

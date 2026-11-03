@@ -23,7 +23,7 @@ extension AgentSessionDefaults.Setting {
 /// The settings new tasks with one agent start with, one picker each.
 struct AgentDefaultsRow: View {
     @Environment(\.settingsPlainly) private var plainly
-    @Experiment(.composerNext) private var composerNext
+
     let agentName: String
     let agentID: AgentDefinition.ID
 
@@ -51,9 +51,9 @@ struct AgentDefaultsRow: View {
                 ) {
                     VStack(alignment: .trailing, spacing: DS.Space.xs) {
                         AgentDefaultPicker(agentName: agentName, agentID: agentID, setting: setting)
-                        if composerNext {
-                            AgentDefaultSource(agentName: agentName, agentID: agentID, setting: setting)
-                        }
+
+                        AgentDefaultSource(agentName: agentName, agentID: agentID, setting: setting)
+
                     }
                 }
             }

@@ -4,7 +4,7 @@ import SwiftUI
 
 struct SessionView: View {
     let session: SessionModel
-    @Experiment(.composerNext) private var composerNext
+
     /// The subagent whose conversation is open in the inspector.
     @State private var openSubagent: SessionID?
     /// Whether the inspector shows the task's git changes (⌘⇧D) instead of a subagent.
@@ -28,7 +28,7 @@ struct SessionView: View {
     private static let subagentInspectorWidth: CGFloat = 420
 
     private var canQuote: Bool {
-        composerNext && session.acceptsPrompts && session.permissionRequests.isEmpty && session.pendingQuestion == nil
+        session.acceptsPrompts && session.permissionRequests.isEmpty && session.pendingQuestion == nil
     }
 
     var body: some View {
@@ -50,7 +50,6 @@ struct SessionView: View {
             }
         }
         .taskWorkspacePresentation(session: session)
-        .modifier(ComposerFileReferenceWiring(session: session))
         .onChange(of: canQuote) { _, enabled in
             if !enabled, let source = session.quoteSelectionSource { session.clearQuoteSelection(source: source) }
         }

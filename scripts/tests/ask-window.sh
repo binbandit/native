@@ -76,7 +76,6 @@ projects = json.dumps([dict(id="D1034236-92B0-4210-9F3C-F3A0A2AE7E42", url="file
 subprocess.run(["defaults", "write", domain, "projects", "-data", projects.encode().hex()], check=True)
 pathlib.Path(project + "/settings.toml").write_text('mode = "fixture"\n')
 PY
-defaults write "$domain" experiment.NativeComposerNext -bool YES
 trap '"${run[@]}" --quit >/dev/null' EXIT
 launch_frame=()
 if [ -n "${ASK_WINDOW_LAUNCH_FRAME:-}" ]; then launch_frame=(-nativeWindowFrame "$ASK_WINDOW_LAUNCH_FRAME"); fi
@@ -125,7 +124,7 @@ if [ "$kind" = failure ]; then
 fi
 "${drive[@]}" set Message "$kind"
 "${drive[@]}" press 'Send Message' --role AXButton
-# The agent label proves Fine print is really on, rather than the legacy question dock.
+# The agent label identifies the shared question card.
 if [ "$kind" = approval ]; then
     ask_label='Fake Agent wants to'
 else

@@ -28,7 +28,7 @@ terminal tab instead. ⌘, brings the main window back with Settings; ⌘Q quits
 
 ## Sending
 
-With Composer field (`NativeComposerV3`) enabled, Return sends and Shift-Return adds a line.
+The composer uses Return to send and Shift-Return to add a line.
 While a turn runs, Return queues the draft using the existing queue. Up/Down select a file or
 command above the caret; Return or Tab accepts it, and Escape closes the list before stopping
 the turn. Attach Files (⌘U), Choose Model (⇧⌘E) and Stop (⌘.) keep their existing commands.
@@ -39,32 +39,27 @@ their existing card shortcuts above the field, leaving the draft visible and edi
 `/goal` opens the existing goal commands, `/plan` selects Plan mode, and `/compact` uses the agent's
 advertised command. The command list also includes the agent's other commands.
 
-The standalone `DSTextInput` component (composer rebuild part A, gallery only) uses Return to
-submit, Shift-Return or Option-Return for a newline, and offers Up, Down, Escape and Tab to its
-completion handler first. Unhandled keys keep native text editing and focus traversal. Marked
-text owns all keys until the input method finishes composition. The live composer is unchanged.
+`DSTextInput` handles native editing, undo, spelling, paste and input methods on Mac and iPad.
+Marked text owns all keys until composition finishes. Text is never automatically replaced with
+smart quotes or dashes.
 
 | Keys | While the agent is idle | While the agent is working | Command |
 | --- | --- | --- | --- |
-| Return | Send | The preferred follow-up behavior (Settings: Steer, the default, or Queue) | |
-| ⌘Return | Send | The other follow-up behavior | |
+| Return | Send | Queue the draft | |
+| ⌘Return | Send | Steer the draft, or send the queued message being edited now when supported | |
 | Shift-Return, Option-Return | New line | New line | |
 | Escape | Close the slash-command list if open | Stop the turn (with the slash-command list closed); again, end the cancel grace period | |
 | ⌘. | | Stop the turn; again, end the cancel grace period | `session.stop` |
 | ↑ in an empty composer | Edit the last queued message, if any; else recall the last prompt | Edit the last queued message | |
 
 **Steer** preserves running tool calls. Agents with non-interrupting steering receive it immediately.
-Otherwise it waits until every current tool finishes, then steers between steps. The composer says
-"Will steer after <tool> finishes"; the waiting message can still be edited or removed. Agents without
+Otherwise it waits until every current tool finishes, then steers between steps. The waiting message remains in the queue and can still be edited or removed. Agents without
 a steering extension are interrupted between steps and receive the message as their next prompt. **Queue** holds the message above the composer
 and sends it when the turn ends; queued messages go out one per turn, in order. A stopped or failed
 turn holds the queue until you send again.
 
-While the agent works, the composer keeps a plain message prompt. The send button's tooltip and
-VoiceOver label describe whether it steers or queues, including the fallback for agents without
-steering. Pending questions, approvals, stopping and unavailable tasks still explain what is
-needed in the placeholder. Code-block and queued-message editing hints remain visible when the
-controls row has room.
+While the agent works, Send becomes Stop. Return still queues the message and ⌘Return steers it.
+Questions and approvals appear above the field, leaving the draft usable.
 
 **Stop** asks the agent to end the turn and answers its open permission requests as rejected. The
 button shows that it is stopping. After three seconds, or immediately on a second press, the host
@@ -78,30 +73,28 @@ crash. Queued messages remain paused unless the user explicitly chose Send Now.
 
 ### Code
 
-Fenced code blocks (a line of three or more backticks or tildes) and inline `` `code` `` show in the
-composer in the code font (a block's fence lines dimmed, an inline span on a quiet fill); the text itself stays
-exactly as typed or pasted, indentation, tabs and trailing spaces included. While the caret is in a
-fenced block, from the moment its opening fence is typed until past its closing fence, Return and
-Tab edit the code and the hint says "↩ New line · ⌘↩ Send":
+Fenced code blocks keep their text and indentation. Inside a fenced block, Return and Tab edit
+code; ⌘Return sends or steers the draft.
 
 | Keys (caret in a fenced block) | Action |
 | --- | --- |
 | Return | New line, indented like the line the caret is on |
-| ⌘Return | What Return does elsewhere: send, the preferred follow-up while the agent works, or save a queued message's edit |
+| ⌘Return | Send, or steer while the agent works |
 | Tab / Shift-Tab | Indent / outdent the caret's line or every selected line, by the block's own indent (a tab, or its spaces) |
 
 `@` inside code is the code's own, so it doesn't open the file list.
 
 ### Queued messages
 
-Each queued message has Edit and Remove on hover; its menu (a right-click, or touch and hold on
-iPad) adds Move Up and Move Down. While a turn runs, Send Now appears only when the current task's agent
-advertises ACP steering or explicitly declares `afterTools` delivery in its plugin manifest. It adds the message
-to the running turn, waiting for running tools when needed. For agents advertising neither, queued
-messages send when the turn ends; mid-turn Send Now, its menu item, accessibility action and shortcut are absent.
-When the task is idle, including after Stop, Send Now is available for every agent and sends the queued
-message as the next prompt, resuming the queue without needing a new draft.
-Drag a message to reorder the queue. Clicking a message, or ↑ in an empty composer, opens it in the editor:
+Queued messages have Remove and, when delivery is available, Send now buttons. Tab reaches the
+buttons and Space activates them. While a turn runs, Send now appears only when the agent
+advertises ACP steering or explicitly declares `afterTools` delivery in its plugin manifest.
+It adds the message to the running turn, waiting for running tools when needed. Otherwise messages
+send when the turn ends. When the task is idle, including after Stop, Send now sends the queued
+message as the next prompt and resumes the queue without needing a new draft.
+Click a queued message to edit it, or use its context menu (touch and hold on iPad) to edit,
+move it up or down, send now or remove it. Drag a message onto another to move it before that
+message. ↑ in an empty composer opens the last queued message in the editor:
 
 | Keys (queued message open in the editor) | Action |
 | --- | --- |
@@ -128,19 +121,13 @@ only while the card has focus; ⌘1 – ⌘9 stay task navigation.
 | Return | Next question, or send the answers after the last |
 | Tab / Shift-Tab | Move between the card, its free-text field and the composer |
 
-With Fine print (`NativeComposerNext`) enabled, the question takes the composer's place, in the
-approval's frame: "Claude Code asks", a `1 of 2` pager, choices on digit keycaps (a choice the agent
-recommends is tagged and starts picked, so Return accepts it), Skip and Send for a single question,
-or Next / Send Answers for several (Return). The composer's field below becomes "Or answer in your
-own words"; Return there answers the shown question with what you typed. The draft waits
-underneath until the questions are answered, and ⌘L focuses the answer field. Peek and Home show
-the same question with the same keys; on Home, Open Task (⌘↩) sits at the field's trailing edge.
-Long prompts and choices scroll inside the card. The pager, Skip / Next and answer field stay
-visible; digit and arrow keys reveal the choice they select or highlight.
+The shared question card keeps its choices and free-text answer above the composer. Digit keys
+pick choices, arrows move the highlight, Space toggles a choice and Return submits. The ordinary
+draft stays visible and editable below it. Home and Peek use the same question card.
 
-### A task that couldn't start (Fine print)
+### A task that couldn't start
 
-With Fine print enabled, a task whose agent couldn't start shows why in the composer's place,
+A task whose agent couldn't start shows why in the composer's place,
 above its message. When the agent's report names a file and line, the card shows that line with
 the part it couldn't read underlined, and, when one value it accepts is close to the one it
 rejected, a fix-it that changes it (keeping the original as `<file>.native-backup`). Undo on the
@@ -252,10 +239,10 @@ Files and images go out with the message as chips above the text: picked with th
 anything else goes as its path. A picture that will reach the agent as a path (the agent takes no
 images, or it's over 50 MB) says so on its chip before anything is sent. A message carries up to 20
 files; a file moved or deleted before sending is marked on its chip and holds the message.
-Dropping one or more files or folders on either composer or the transcript uses the same chips as
+Dropping one or more files or folders on the composer or the transcript uses the same chips as
 Attach Files. The editor leaves the message and its caret untouched; it never inserts a file path.
 The dashed accent outline marks the composer while a file is over either drop area. This also
-applies to Fine print and iPad. Copied files paste as attachments too.
+applies on Mac and iPad. Copied files paste as attachments too.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
@@ -303,9 +290,9 @@ They're chosen not to collide with text editing in the composer.
 | ⌘Y | Allow once (approve the workflow step) |
 | ⌥⌘Y | Allow always (when offered, never for an irreversible action) |
 | ⌘⇧⌫ | Reject |
-| ⌘⇧Y | Ask the agent to use the suggested command (Fine print fix-it, when offered) |
+| ⌘⇧Y | Ask the agent to use the suggested command (when offered) |
 
-With Fine print enabled, irreversible commands require a 0.6-second hold. Hold ⌘Y when the local
+Irreversible commands require a 0.6-second hold. Hold ⌘Y when the local
 Allow once shortcut is available; All in view reserves ⌘Y for the oldest task ask. Releasing
 before the hold fills sends nothing. Pointer and touch use the same hold; VoiceOver and Switch Control
 use Allow followed by Confirm Allow within five seconds. The button acknowledges Allowed for
@@ -372,7 +359,7 @@ Other file types use the platform's Quick Look preview, with its native navigati
 | | Clean up the current project's merged task worktrees, branches and stale worktree records, after a review (also "Clean Up Merged…" in the project's menu in the sidebar) | File | `git.cleanUpMerged` |
 | ⇧⌘O | Open the task's folder in the default app (Open In) | Task | `session.openInDefaultApp` |
 | ⌥⌘P | Open the task's pull request, where clicking one goes (Settings ▸ GitHub); listed while its branch has one | Task | `pullRequest.openForTask` |
-| ⌘L | Quote selected transcript or diff lines and focus the composer (Fine print); otherwise focus the composer | Task | `composer.focus` |
+| ⌘L | Quote selected transcript or diff lines and focus the composer | Task | `composer.focus` |
 | ⌘[ / ⌘] | Back / forward through the tasks you've viewed | Go | `go.back` / `go.forward` |
 | ⌘1 – ⌘9 | Go to the Nth task in the sidebar | Task | `session.select1` – `session.select9` |
 | ⌃Tab / ⌃⇧Tab | Next / previous task | Task | `session.next` / `session.previous` |
@@ -391,8 +378,8 @@ Other file types use the platform's Quick Look preview, with its native navigati
 | ⇧⌘F | Search every task (`docs/search.md`) | Go | `search.show` |
 | ⌥⌘I | Show or hide the subagent inspector | View | `view.toggleSubagentInspector` |
 | ⌘⇧D | Show or hide the changes inspector (the task's uncommitted git changes) | View | `view.toggleChanges` |
-| ⌃⌘M | Show the task's MCP servers (the server chip beside the composer's context ring; with Fine print, the MCP servers page in Task Settings) | View | `view.mcpServers` |
-| | Show what fills the task's context window, even while Fine print's field hides its ring (under 70% full) | View | `view.contextUse` |
+| ⌃⌘M | Show the task's MCP servers (the task's server panel) | View | `view.mcpServers` |
+| | Show what fills the task's context window, even while the composer hides its ring (under half full) | View | `view.contextUse` |
 | ⌃⌘A | Keep Mac awake: cycle Off → While agents work → On (View ▸ Keep Mac Awake) | View | `keepAwake.nextMode` |
 | | Show or hide the status bar along the window's bottom edge (on by default) | View | `statusBar.toggle` |
 
@@ -418,7 +405,7 @@ The current question uses the composer's question keys: 1-9 pick an offered choi
 sends, and typing in the answer field keeps digits as text. Plans use Cmd-Y to approve,
 Shift-Cmd-Delete to request a revised plan.
 Option-Cmd-Down shows the full plan in Peek without leaving Home. Cmd-L focuses the current
-approval's instruction field, or with Fine print the question's answer field. Escape dismisses Peek. A failed task uses Cmd-R to retry and
+approval's instruction field, or the question's answer field. Escape dismisses Peek. A failed task uses Cmd-R to retry and
 Option-Cmd-O to show its error output. Cmd-Return opens the task for every ask kind.
 
 ## Task tools (Labs)
@@ -538,17 +525,15 @@ Undo keeps every task untouched.
 
 ## Task settings
 
-The standalone composer rebuild row (not connected to the app yet) keeps Agent and Model,
-Mode, Where, Attach, Context and Send or Stop in one fixed row. Where appears only before
-the first message. Its controls use the following keys; the existing menu commands will
-target the row when the rebuild is connected.
+The composer keeps Agent and Model, Mode, Where, Attach, Context and Send or Stop in one row.
+Where appears only before the first message. The same field is used for new tasks and follow-ups.
 
-| Keys in the rebuild row | Action |
+| Keys in the composer row | Action |
 | --- | --- |
 | ⌘⇧E | Open Agent and Model; search appears past eight models and matches agent and model names |
 | ⌃⌥⌘M | Open Mode: Ask first, Accept edits, Auto, Full access |
 | ⌃⌥⌘W | Open Where for a new task: In my folder or On a new branch |
-| Tab / Shift-Tab, then Space | Reach every choice, effort beside the selected model, and the mode chip's Remove button |
+| Tab / Shift-Tab, then Space | Reach every choice, effort beside the selected model, offered extra settings below its models, and the mode chip's Remove button |
 | Escape | Clear model search first, then dismiss the open menu |
 | ⌘U | Attach files (the existing Attach Files action) |
 | ⌘Return | Send the draft while idle |
@@ -558,35 +543,9 @@ Full access is the quiet default. Remove on any other mode restores Full access 
 allowed by the agent and managed policy. Context appears only past half full; its slot
 stays reserved so Attach and Send never move. Agent names truncate before other controls.
 
-Extra agent settings, such as Claude Code's Agent selector, always live in the composer's More
-Controls ("…") menu. Each setting lists its choices with the current value checked; use the arrow
-keys and Return to choose from the menu. Model, effort, autonomy and mode keep their dedicated
-controls, moving into More only as the row runs out of room.
-
-With Fine print (`NativeComposerNext`) enabled, the field's trailing controls are, left to right:
-the context ring (only from 70% full), the Task Settings door (the agent and model, led by the mode when it
-isn't Build), the paperclip (Attach Files, ⌘U) and Send or Stop. The door opens one Task Settings
-popover: the model and its effort, when the agent asks, then the task's rows (Mode, Goal, MCP
-servers, Web search when the agent offers it, and the agent's own settings). Choose Model (⌘⇧E)
-opens it with the current model highlighted; a click opens it with nothing highlighted until a key
-is pressed. Show MCP Servers (⌃⌘M) opens the MCP servers page in place, and goal commands open the
-goal page in place, even when Task Settings is closed. A page's first line goes back to Task
-Settings, as Escape does.
-
-| Keys in Task Settings | Action |
-| --- | --- |
-| ↑ / ↓ | Every row, top to bottom, across sections; skips headers and locked rows. The caption under a list describes the highlighted row |
-| ← / → | On Effort, change its level (applies at once). On Mode, Goal, MCP servers or the agent's own settings, → opens its page or its choices in place; ← comes back |
-| Tab / ⇧Tab | Next / previous section: Agent, Model (including Fast mode), Effort, When it asks, the task's rows, and any retry action. A section lands on its current choice. In Compose, Tab follows native focus through agents, Add Agent and every settings control |
-| Letters | Up to 8 models: jump to the row whose name starts with what's typed (as in menus). 9 or more: type into the model filter, which matches only the current agent's model names and values |
-| Return | Choose and close. On a menu row, list its choices in place |
-| Space | Choose and keep the popover open |
-| Escape | Clear the filter; else leave a page; else close |
-| ⌘Z | Undo the last change made in the popover |
-
-When extra agent settings exhaust the height budget, the short model list ends with **N more models**.
-Return or Space on that row opens the full Model page; Escape or the back row returns to Task Settings.
-Lists past eight models keep the filter, with the last slot showing **N more match. Keep typing.**
+In a connected task, extra ACP settings offered by the current agent appear below its models in
+Agent and Model. Agents without extra settings have no extra section. `/goal` opens the goal
+editor, `/plan` selects Plan mode, and Show MCP Servers opens the existing server panel.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
@@ -606,7 +565,7 @@ The composer's model control names both the agent and model ("Claude Code · Hai
 opens with a click or tap. Agent switching is on by default; Change Agent in Settings > Labs
 can turn it off. Its first section is Agent: installed agents in a
 compact row, with the current one checked. The models below belong only to the current agent.
-This works with Fine print on or off. Task ▸ Switch Agent lists the same agents; Choose Agent…
+Task ▸ Switch Agent lists the same agents; Choose Agent…
 (⌃⌥⌘A, `session.changeAgent`) opens the picker on its Agent section. The command palette finds
 "Switch Agent". Return chooses and closes; Space chooses and keeps the picker open.
 Selecting another agent prepares its default model immediately without sending a message.
@@ -619,7 +578,7 @@ The four permission modes are Ask first, Accept edits, Auto and Full access. The
 cycles through allowed modes; unsupported modes use the destination plugin's closest stricter control.
 The picker explains that fallback. New tasks start with Full access unless Settings or policy changes it.
 If permission modes differ, the receipt explains the fallback. Review Permissions opens Task
-Settings with Fine print, or the autonomy choices in the classic composer. Undo restores the
+Mode in the composer. Undo restores the
 previous agent and permission mode.
 
 | Keys | Action | Menu | Command |
@@ -631,7 +590,7 @@ previous agent and permission mode.
 The persistent receipt above the field and the transcript divider offer Undo before the next
 message. After submission, Continue with the earlier agent makes a new choice; it cannot unsend
 a message. Escape dismisses the list without cancelling preparation. No title-bar agent button
-or review sheet is part of this path in either composer.
+or review sheet is part of this path in the composer.
 
 New Task With… (⌥⌘N) opens the agent picker in a sheet: every agent Native runs, each with
 its state (ready, starting, needs sign-in, not installed, stopped) and, when it can't start a
@@ -814,7 +773,7 @@ organization sets the code theme.
 ## Ownership
 
 Commands live with their features and register in `NativeApp` (`docs/commands.md`); the menus place
-them. Composer keys in `native/Views/Composer*`; permission keys in
+them. Composer keys in `native/Composer/` and `native/DesignSystem/TextInput/`; permission keys in
 `native/Views/Transcript/ToolPermissionButtons.swift`; sidebar keys in `SidebarView`; Settings keys in
 `SettingsScreen` and `SettingsSearchField`; search panel keys in `TranscriptSearchPanel`; agent picker keys in
 `native/Views/AgentPicker/AgentPickerPanel.swift`; terminal commands in
@@ -840,10 +799,9 @@ picker in the current project. File > Edit Assigned Tasks edits the selected coo
 commands are also in the command palette. They have no default shortcut. Tab, Space and Return
 operate the picker; Escape cancels without changing assignments.
 
-## Command knowledge (Fine print in Labs)
+## Command knowledge
 
 These Help menu actions have no default shortcut and can be rebound in Settings > Keyboard Shortcuts.
-They appear only while Fine print is enabled.
 
 | Keys | Action | Command |
 | --- | --- | --- |
@@ -856,7 +814,7 @@ Tab navigation. Space opens a focused menu or source stack; Escape dismisses it.
 menus include Why This Value and Reset; the other defaults expose Reset in their context menus. Existing Settings
 page commands open New Tasks, and agent/project links select their scope without changing defaults.
 
-With Fine print enabled, select transcript text and choose Task > Focus Composer (⌘L) to quote
+Select transcript text and choose Task > Focus Composer (⌘L) to quote
 its source lines. Quote in a transcript block's context menu quotes its selection, or the whole
 block if nothing is selected. In a diff, select a line number, then another to extend the range, and choose
 Quote Selected Lines or ⌘L. Two numbers on the same side quote only that file version;
@@ -865,7 +823,7 @@ and touch. Remove Quote is beside each quoted source; ⌘Z restores a removed qu
 snapshots of the selected text, including old/new line identity. File references in the draft and
 @ list show the current known additions and removals; unknown counts stay absent.
 
-## Inline diff comments (Fine print)
+## Inline diff comments
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
@@ -878,6 +836,6 @@ snapshots of the selected text, including old/new line identity. File references
 | Escape in a diff comment | Collapse the editor, keeping its text | | |
 
 Comment and Quote are separate actions. Command-L keeps quoting selected lines without adding a
-comment. Touch users can extend a selection through the line menu. Review Draft Comments expands
-the shared quote section; the normal composer sends the collection as one message. Remove, clear,
+comment. Touch users can extend a selection through the line menu. Review Draft Comments opens
+the collected comments; the normal composer sends the collection as one message. Remove, clear,
 discard and re-anchor support Undo. Comments and unfinished text survive closing Changes.

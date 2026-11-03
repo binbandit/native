@@ -174,5 +174,5 @@ switch keep their existing overlay behavior.
 
 File markers use neutral tertiary letters in both well layouts: amber means "yours", and the
 letter is enough. The diff is the shared `DiffView`, so selecting its lines quotes them into the
-composer through the composer's own point-and-say (`NativeComposerNext`); Changes adds no
+composer through the composer's own point-and-say ; Changes adds no
 selection model of its own.

@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import TextInput
 
 @testable import Native
 
@@ -28,10 +29,12 @@ private struct ComposerCommandChecks {
 
         var failures = 0
         for (command, expected) in zip(all, ["/clear ", "/review ", "$review ", "$plugin:check "]) {
-            let result = SlashCommandQuery.draft("/", inserting: command)
-            if result.text != expected || result.cursor != result.text.endIndex {
+            guard let query = TextInputQuery(document: .init("/"), selection: NSRange(location: 1, length: 0)),
+                let result = ComposerFieldCompletion.command(command).inserting(in: .init("/"), query: query)
+            else { fatalError("Command completion should insert") }
+            if result.document.plainText != expected || result.selection.location != expected.utf16.count {
                 print(
-                    "FAIL: choosing \(command.name) inserts \(result.text.debugDescription); expected \(expected.debugDescription)"
+                    "FAIL: choosing \(command.name) inserts \(result.document.plainText.debugDescription); expected \(expected.debugDescription)"
                 )
                 failures += 1
             }

@@ -1,7 +1,7 @@
 import ACP
 import Foundation
 
-/// Part D can mount the row with this adapter. No agent, folder or permission transition lives here.
+/// Presents choices from the models and routes selections through their public actions.
 struct ComposerRowModelAdapter {
     let app: AppModel
     /// Nil addresses the unsent Compose task, whose editor has no agent connection.
@@ -27,8 +27,7 @@ struct ComposerRowModelAdapter {
         let modes = modeChoices
         let selected = modes.first(where: \.isSelected)
         let full = modes.first { $0.id == TaskPermissionMode.fullAccess.rawValue && $0.unavailable == nil }
-        let isNew = session.map(\.canChangeWorkspace) ?? (app.quickEntry.project != nil)
-        let locations = isNew ? locationChoices : []
+        let locations = locationChoices
         return ComposerRowState(
             agentLabel: "\(agent) · \(model)", agents: agentGroups,
             effort: settings.effort?.choices.map {
@@ -48,6 +47,7 @@ struct ComposerRowModelAdapter {
     ) -> ComposerRowActions {
         ComposerRowActions(
             chooseModel: chooseModel, chooseEffort: { pick(category: "thought_level", value: $0) },
+            chooseSetting: chooseSetting,
             chooseMode: { pick(category: "mode", value: $0) }, chooseLocation: chooseLocation,
             attach: attach, context: context, send: send, stop: { Task { await session?.cancel() } })
     }
@@ -70,6 +70,11 @@ struct ComposerRowModelAdapter {
                     groups[index].models.append(row)
                 } else {
                     groups.append(.init(id: entry.agent.rawValue, name: entry.agentName, models: [row]))
+                }
+            }
+            if let index = groups.firstIndex(where: { $0.id == session.agent.id.rawValue }) {
+                groups[index].settings = (settings.modelSwitches + settings.others).filter {
+                    !["model", "thought_level", "mode"].contains($0.option.category ?? "")
                 }
             }
             return groups
@@ -139,12 +144,23 @@ struct ComposerRowModelAdapter {
         }
     }
 
+    private func chooseSetting(_ id: String, value: String) {
+        guard let session,
+            agentGroups.first(where: { $0.id == session.agent.id.rawValue })?.settings.contains(where: {
+                $0.option.id == id
+            }) == true,
+            let setting = options.first(where: { $0.id == id }).flatMap(SelectSetting.init),
+            setting.choices.contains(where: { $0.value == value }),
+            !PolicyPermissionModes.forbids(setting.option, value: value)
+        else { return }
+        session.enqueueComposerPick(setting.option, value: value)
+    }
+
     private var locationChoices: [ComposerRowState.Choice] {
-        let isProject = session.map { app.usesProjectFolder($0.key) } ?? (app.composeTask.workspace == .project)
-        let blocked =
-            session.flatMap(app.workspaceChangeBlock)
-            ?? (app.offersProjectFolderTasks ? nil : "Enable Project Folder Tasks in Labs to choose a folder.")
-        let canBranch = session != nil || app.composeTask.workspaces.contains { $0.choice == .newWorktree }
+        guard session == nil, app.quickEntry.project != nil else { return [] }
+        let isProject = app.composeTask.workspace == .project
+        let blocked = app.offersProjectFolderTasks ? nil : "Enable Project Folder Tasks in Labs to choose a folder."
+        let canBranch = app.composeTask.workspaces.contains { $0.choice == .newWorktree }
         return [
             .init(
                 id: "project", title: "In my folder", detail: "Use the project folder as it is.",
@@ -160,16 +176,7 @@ struct ComposerRowModelAdapter {
     private func chooseLocation(_ id: String) {
         guard let choice = locationChoices.first(where: { $0.id == id }), choice.unavailable == nil else { return }
         let workspace: TaskWorkspaceChoice = id == "project" ? .project : .newWorktree
-        if let session {
-            Task {
-                do { try await app.changeWorkspace(of: session, to: workspace) } catch {
-                    session.addNotice(
-                        "Couldn't change where this task runs: \(error.localizedDescription)", isError: true)
-                }
-            }
-        } else {
-            app.chooseComposeWorkspace(workspace)
-        }
+        app.chooseComposeWorkspace(workspace)
     }
 
     private func draftModelID(agent: AgentDefinition.ID, value: String) -> String {

@@ -8,55 +8,19 @@ struct StartingTaskView: View {
 
     @Environment(AppModel.self) private var model
     @Experiment(.transcriptWidth) private var columnWidth: TranscriptWidth
-    @Experiment(.composerNext) private var composerNext
 
     var body: some View {
         VStack(spacing: 0) {
+            StartingTaskProgress(task: task)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             Group {
-                if composerNext {
-                    // Fine print: the failure, and what fixes it, take the composer's place.
-                    StartingTaskProgress(task: task)
-                } else if let failure = task.failure, failure.canUseProjectFolder {
-                    ErrorState(
-                        failure.title,
-                        suggestion: failure.message,
-                        primary: ErrorState.Action("Start in Project Folder") {
-                            Task { await model.startInProjectFolder(task) }
-                        },
-                        secondary: ErrorState.Action("Retry") { Task { await model.retry(task) } },
-                        layout: .pane
-                    )
-                } else if let failure = task.failure {
-                    ErrorState(
-                        failure.title,
-                        recovery: failure.needsSignIn
-                            ? nil : "What you've written is kept, and so is anything already set up for the task.",
-                        suggestion: failure.needsSignIn
-                            ? failure.message
-                            : failure.needsRestart
-                                ? "Restart the agent to try this task again." : "Retry, or discard the task.",
-                        details: failure.needsSignIn ? nil : failure.message,
-                        primary: failure.needsSignIn
-                            ? ErrorState.Action("Sign In") { model.signInPrompt = task.agent.id }
-                            : ErrorState.Action(failure.needsRestart ? "Restart and Retry" : "Retry") {
-                                Task { await model.retry(task) }
-                            },
-                        secondary: ErrorState.Action("Discard") { model.discard(task) },
-                        layout: .pane
-                    )
-                } else {
-                    StartingTaskProgress(task: task)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            Group {
-                if composerNext, let failure = task.failure {
+                if let failure = task.failure {
                     StartingTaskFailureComposer(task: task, failure: failure)
                 } else {
                     StartingTaskComposer(task: task)
                 }
             }
-            .frame(maxWidth: composerNext ? max(columnWidth.maxWidth, DS.ComposerSettings.width) : columnWidth.maxWidth)
+            .frame(maxWidth: columnWidth.maxWidth)
             .padding(.horizontal, DS.Space.xxl)
             .padding(.top, DS.Space.md)
             .padding(.bottom, DS.Space.xl)
@@ -82,11 +46,6 @@ struct StartingTaskView: View {
     }
 }
 
-#Preview("Starting task - Fine print fix-it") {
-    DSPreviewPair {
-        StartingTaskPreviewFixture(failed: true, finePrint: true)
-    }
-}
 #endif
 
 /// The steps a starting task goes through, the one it's on animated, with the time it's taken.
@@ -142,7 +101,6 @@ private struct StartingTaskProgress: View {
 private struct StartingTaskComposer: View {
     @Bindable var task: StartingTask
 
-    @State private var selection: TextSelection?
     @FocusState private var isFocused: Bool
 
     var body: some View {
@@ -162,15 +120,15 @@ private struct StartingTaskComposer: View {
                 .padding(.vertical, DS.Space.xs)
             }
             HStack(alignment: .bottom, spacing: 0) {
-                ComposerEditor(
-                    text: $task.draft, selection: $selection,
+                DSMessageInput(
+                    text: $task.draft,
                     placeholder: "What would you like \(task.agent.displayName) to work on?", isFocused: $isFocused
                 ) { press in
                     guard press.key == .return, press.modifiers.isDisjoint(with: [.shift, .option]) else {
-                        return .ignored
+                        return false
                     }
                     send()
-                    return .handled
+                    return true
                 }
                 if !task.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !task.isSendRequested {
                     ComposerSendButton(action: send)

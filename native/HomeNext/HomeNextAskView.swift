@@ -7,7 +7,7 @@ struct HomeNextAskView: View {
     let openTask: () -> Void
 
     @Environment(AppModel.self) private var model
-    @Experiment(.composerNext) private var composerNext
+
     @State private var wantsInstructionFocus = false
     @State private var isAnswering = false
     @State private var approvalAttempt = 0
@@ -51,9 +51,9 @@ struct HomeNextAskView: View {
         .environment(\.permissionShortcutsEnabled, model.taskPeek.request == nil)
     }
 
-    /// With Fine print, the question carries its own field and Open Task link, as the approval does.
+    /// The question carries its own field and Open Task link, as the approval does.
     private var asksInPlace: Bool {
-        composerNext && task.request?.question != nil
+        task.request?.question != nil
     }
 
     /// ⌘L focuses the field for telling the agent what to do instead, or answering in your own words.

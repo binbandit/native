@@ -6,5 +6,7 @@ extension DS {
         static let completionWidth: CGFloat = 360
         static let previewWidth: CGFloat = 720
         static let narrowWidth: CGFloat = 520
+        static let attachmentPreviewWidth: CGFloat = 560
+        static let quotePreviewWidth: CGFloat = 420
     }
 }

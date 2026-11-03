@@ -99,7 +99,7 @@ of that agent through it.
 | `instructionLocations` | no | Instruction metadata for New Tasks: `scope` (`user` or `project`), relative `directory`, optional `environmentKey` replacing that directory, `names`, and `firstExisting`. Native checks file sizes only; it never edits or reads the contents. Missing declarations are shown as unknown, not as no instructions. |
 | `mcpConfig` | no | Where the agent keeps its own MCP configuration (`"claude-code"`, `"codex"` or `"cursor"`), so Native can show the servers it already loads. |
 | `nativeSkill` | no | Native's skill delivery mechanism: `"claude-code"` for adapters forwarding `_meta.claudeCode.options.plugins` and per-session `env`, or `"codex"` for Codex skill discovery and the shell's `CODEX_THREAD_ID`. Declare only a verified adapter mechanism. Missing keeps Native's MCP tools. This is independent of `mcpConfig`, which describes user-configured servers. |
-| `settingsFiles` | no | The settings files the agent reads as it starts (`~/…`, `$VARIABLE/…` from its environment, or a path in the task's folder). With Fine print on, a failed start that names one of them shows the line and may offer a fix-it; Native opens no other file an agent's error names. |
+| `settingsFiles` | no | The settings files the agent reads as it starts (`~/…`, `$VARIABLE/…` from its environment, or a path in the task's folder). A failed start that names one of them shows the line and may offer a fix-it; Native opens no other file an agent's error names. |
 | `icon` | no | The agent's icon: `{"path": "icon.svg"}` (or just `"icon.svg"`), an image in the plugin's folder; `"apps"`, bundle identifiers of apps whose icon to use when installed; `"registry"`, the agent's id in the [ACP registry](https://agentclientprotocol.com/get-started/registry), whose icon Native fetches. A monochrome SVG is drawn in the text color. Without one, Native shows a monogram. |
 | `requires` | no | Commands besides `command` that must be on `PATH` for the agent to count as installed, such as the CLI an adapter drives: `["claude"]`. Native doesn't start an agent that's missing one; it offers it in Add Agent. |
 | `setup` | no | How to get the agent going, shown in Add Agent and never run: `install` (a command to paste in a terminal), `docs` (a URL) and `signIn` (a terminal command that signs in). |
@@ -478,7 +478,7 @@ to reload, and don't edit plugins you didn't write unless they ask.
 ## Command knowledge
 
 A plugin may embed a `commandKnowledge` JSON object to describe internal command-line tools in
-Fine print approvals. The versioned [command knowledge schema](command-knowledge.md) is the same
+Annotated approvals. The versioned [command knowledge schema](command-knowledge.md) is the same
 format as the bundled package resource and managed policy. Invalid entries appear in Command
 Diagnostics without breaking approvals. Contributions disappear when the plugin is disabled or
 blocked by policy, and cannot replace shipped tools. This extension is declarative and local only.

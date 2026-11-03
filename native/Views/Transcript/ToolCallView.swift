@@ -14,7 +14,7 @@ struct ToolCallView: View, Equatable {
     @Environment(TranscriptDisclosures.self) private var disclosures: TranscriptDisclosures?
     /// For rows shown outside a transcript, which has no `TranscriptDisclosures`.
     @State private var isOpenHere = false
-    @Experiment(.composerNext) private var finePrint
+
     @Environment(\.isPrimaryTranscript) private var isPrimaryTranscript
     @Environment(\.toolWorkspaceRoot) private var root
 
@@ -51,7 +51,7 @@ struct ToolCallView: View, Equatable {
         let presentation = ToolPresentation(call, root: root)
         let phase = presentation.phase
         let hasDetails = detailsAvailable(for: presentation)
-        let inComposer = finePrint && isPrimaryTranscript && call.permission != nil
+        let inComposer = isPrimaryTranscript && call.permission != nil
         let showsDetails = !inComposer && hasDetails && (isOpen || phase == .awaitingApproval)
         VStack(alignment: .leading, spacing: DS.Space.xxs) {
             ToolLine(

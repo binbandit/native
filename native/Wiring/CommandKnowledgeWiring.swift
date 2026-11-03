@@ -4,7 +4,7 @@ enum CommandKnowledgeWiring {
     static func connect(_ model: AppModel) {
         let plugins = model.plugins
         model.sessionHooks.approvalsChanged = { session, requests in
-            guard CommandKnowledgeCenter.isAvailable, !session.isRestoringHistory else { return }
+            guard !session.isRestoringHistory else { return }
             CommandKnowledgeCenter.shared.note(requests, session: session.clientID, knowledge: plugins.commandKnowledge)
         }
     }
