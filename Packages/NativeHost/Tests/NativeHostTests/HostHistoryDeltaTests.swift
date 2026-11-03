@@ -219,15 +219,44 @@ struct HostHistoryDeltaTests {
             plan: AgentTransitionPlan.resolve(.freshConversation, target: .init(negotiated: nil)),
             budget: .init(windowTokens: 200_000))
         transfer.receipt.included.removeAll { $0.position == 1 }
-        _ = try await recorder.client.prompt(PromptParams(sessionID: second.id, text: "two"))
+        let carrying = UUID()
+        _ = try await recorder.client.prompt(PromptParams(sessionID: second.id, requestID: carrying, text: "two"))
         _ = try await recorder.client.recordHandoff(
-            HandoffHistoryParams(sessionID: second.id, receipt: transfer.receipt))
+            HandoffHistoryParams(sessionID: second.id, requestID: carrying, receipt: transfer.receipt))
         try await recorder.wait("the second turn") { await $0.turnsEnded(second.id).count == 1 }
         let summary = try await recorder.client.historySummary(of: second.id)
         #expect(summary.transfers.first?.conveyed == [2...3])
         // Item 1 stays missing, so its watermark stops before it.
         #expect(summary.participants.map(\.seen) == [3, 0])
         #expect(try await recorder.client.missingHistory(of: second.id).items.map(\.seq) == [1])
+        await recorder.stop()
+    }
+
+    @Test("A handoff bound to a queued message is delivered only by that message's turn")
+    func boundHandoff() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let first = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: first.id, text: "one"))
+        try await recorder.wait("the first turn") { await $0.turnsEnded(first.id).count == 1 }
+        let second = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
+        let joined = try await join(recorder, second, after: first)
+        let items = try await recorder.client.readHistory(ReadHistoryParams(sessionID: first.id))
+        let transfer = ContextTransfer(
+            draft: TaskHistoryDelta.draft(items, participants: joined.participants),
+            destination: .init(agent: "fake", session: try #require(second.agentSessionID)), model: nil,
+            plan: AgentTransitionPlan.resolve(.freshConversation, target: .init(negotiated: nil)),
+            budget: .init(windowTokens: 200_000))
+        // The handoff's message never runs (as if removed from the queue); another message does.
+        _ = try await recorder.client.recordHandoff(
+            HandoffHistoryParams(sessionID: second.id, requestID: UUID(), receipt: transfer.receipt))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: second.id, text: "unrelated"))
+        try await recorder.wait("the unrelated turn") { await $0.turnsEnded(second.id).count == 1 }
+        let summary = try await recorder.client.historySummary(of: second.id)
+        #expect(summary.transfers.map(\.state) == [.prepared])
+        #expect(summary.participants.map(\.seen) == [3, 0])
         await recorder.stop()
     }
 }

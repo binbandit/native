@@ -75,10 +75,13 @@ extension HostProtocol.Method {
 
 public struct HandoffHistoryParams: Codable, Sendable {
     public var sessionID: HostSessionID
+    /// The message that carries the handoff: only its turn delivers it.
+    public var requestID: UUID
     public var receipt: ContextTransfer.Receipt
 
-    public init(sessionID: HostSessionID, receipt: ContextTransfer.Receipt) {
+    public init(sessionID: HostSessionID, requestID: UUID, receipt: ContextTransfer.Receipt) {
         self.sessionID = sessionID
+        self.requestID = requestID
         self.receipt = receipt
     }
 }

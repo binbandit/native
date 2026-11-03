@@ -312,7 +312,7 @@ extension SessionModel {
                 TaskHistoryDelta.namesHistory(transfer.receipt)
             {
                 _ = try? await host.client.recordHandoff(
-                    HandoffHistoryParams(sessionID: host.id, receipt: transfer.receipt))
+                    HandoffHistoryParams(sessionID: host.id, requestID: params.requestID, receipt: transfer.receipt))
             }
         }
         if delivery == .unknown, PromptQuote.split(text).quotes.contains(where: { $0.comment != nil }) {

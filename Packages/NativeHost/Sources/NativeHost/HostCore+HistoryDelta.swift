@@ -48,15 +48,17 @@ extension HostCore {
         return try historySummary(params)
     }
 
-    /// The client's handoff went with the session's message: what its receipt carried of the items
-    /// the handoff considered counts as seen once the agent answers (or now, if it already has).
+    /// The client's handoff goes with the session's message `requestID`: what its receipt carried of
+    /// the items the handoff considered counts as seen once the agent answers that message (or now,
+    /// if it already has). A message still queued binds the handoff to it, so no other turn delivers it.
     func recordHandoff(_ params: HandoffHistoryParams) throws -> TaskHistorySummary {
         let session = try session(params.sessionID)
         guard let history = try history(of: session) else { throw HostError.noHistory }
         try store.transaction {
             guard TaskHistoryDelta.namesHistory(params.receipt),
                 let handoff = try store.historyTransfers(of: history.id).last(where: {
-                    $0.target == history.participant && $0.strategy == .client && $0.state != .superseded
+                    $0.target == history.participant && $0.strategy == .client
+                        && ($0.requestID == params.requestID || ($0.state == .prepared && $0.requestID == nil))
                 })
             else { return }
             let considered = try store.historyItems(
@@ -64,7 +66,7 @@ extension HostCore {
             ).filter { $0.source != history.participant }
             try store.setTransferCoverage(
                 handoff.id, conveyed: TaskHistoryDelta.covered(by: params.receipt, items: considered),
-                receipt: params.receipt)
+                receipt: params.receipt, requestID: params.requestID)
             if handoff.state == .delivered { try store.updateWatermark(of: history.participant, in: history.id) }
         }
         return try historySummary(SessionParams(sessionID: session.id))
