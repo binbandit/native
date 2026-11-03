@@ -66,6 +66,7 @@ struct SessionView: View {
         )
         .environment(\.transcriptTrailer, pairTrailer)
         .environment(\.transcriptPrelude, usesTaskHistory ? TaskHistoryWiring.prelude(for: session) : nil)
+        .environment(\.transcriptMarkerContext, usesTaskHistory ? TaskHistoryWiring.markerContext(for: session) : nil)
     }
 
     /// The two versions of a brief sent to two agents, at the end of either task's transcript.

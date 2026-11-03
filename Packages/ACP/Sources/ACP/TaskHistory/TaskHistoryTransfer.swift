@@ -55,6 +55,9 @@ public struct TaskHistoryTransfer: Hashable, Sendable, Codable, Identifiable {
     /// what it covered where it went.
     public var markerID: String { "task-history:\(id.uuidString)" }
 
+    /// Whether a transcript marker is one a host transfer goes with, rather than a mode's.
+    public static func isMarkerID(_ id: String) -> Bool { id.hasPrefix("task-history:") }
+
     public init(
         id: UUID = UUID(), sourceHistory: TaskHistoryID, target: Int, from: Int, through: Int,
         conveyed: [ClosedRange<Int>], strategy: Strategy, state: State = .prepared, requestID: UUID? = nil,

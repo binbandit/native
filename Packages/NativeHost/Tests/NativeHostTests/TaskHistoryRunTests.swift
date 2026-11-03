@@ -82,4 +82,25 @@ struct TaskHistoryRunTests {
         #expect(whole.runs == runs)
         #expect(!whole.omitsEarlier)
     }
+
+    @Test("A marker shows only what the transcript didn't show above it")
+    func shownAfter() {
+        let handoff = handoff(to: 3, through: 4)
+        let delta = TaskHistoryTransfer(
+            sourceHistory: history, target: 3, from: 0, through: 8, conveyed: [], strategy: .delta, state: .delivered)
+        let claude = summary(current: 3, transfers: [handoff, delta])
+        #expect(claude.transfer(forMarker: delta.markerID) == delta)
+        #expect(summary(current: 2, transfers: [handoff, delta]).transfer(forMarker: delta.markerID) == nil)
+        // The transcript's top shows the handoff, so the marker starts after it.
+        #expect(claude.shownAfter(delta, earlierMarkers: []) == 4)
+        // A stopped attempt's marker that the transcript still has counts; one it doesn't have (its
+        // message was removed, or the replay lost it) doesn't, whatever the transfer's state.
+        let stopped = TaskHistoryTransfer(
+            sourceHistory: history, target: 3, from: 4, through: 6, conveyed: [], strategy: .delta, state: .superseded)
+        let retry = TaskHistoryTransfer(
+            sourceHistory: history, target: 3, from: 4, through: 8, conveyed: [], strategy: .delta)
+        let returned = summary(current: 3, transfers: [handoff, stopped, retry])
+        #expect(returned.shownAfter(retry, earlierMarkers: [stopped.markerID]) == 6)
+        #expect(returned.shownAfter(retry, earlierMarkers: []) == 4)
+    }
 }
