@@ -257,6 +257,10 @@ struct HostHistoryDeltaTests {
         let summary = try await recorder.client.historySummary(of: second.id)
         #expect(summary.transfers.map(\.state) == [.prepared])
         #expect(summary.participants.map(\.seen) == [3, 0])
+        // A later return to it isn't blocked by the abandoned handoff: a delta replaces it.
+        let returned = try await join(recorder, second, after: first)
+        #expect(returned.transfers.map(\.strategy) == [.client, .delta])
+        #expect(returned.transfers.map(\.state) == [.superseded, .prepared])
         await recorder.stop()
     }
 }

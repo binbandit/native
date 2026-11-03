@@ -23,14 +23,27 @@ extension HostCore {
     )
         throws
     {
-        let transfers = try store.historyTransfers(of: history).filter {
+        var transfers = try store.historyTransfers(of: history).filter {
             $0.target == participant.ordinal && $0.sourceHistory == history
+        }
+        // A handoff bound to a message that's gone (removed from the queue) was abandoned; it gives way
+        // to the delta, which covers everything the conversation is missing, its items included.
+        let queued = Set(session.queue.map(\.prompt.id))
+        let abandoned = transfers.filter {
+            $0.state == .prepared && $0.strategy == .client && $0.requestID.map { !queued.contains($0) } ?? false
         }
         guard
             !transfers.contains(where: {
-                $0.state == .prepared || ($0.state == .sent && $0.requestID == session.turn?.requestID)
+                ($0.state == .prepared && !abandoned.contains($0))
+                    || ($0.state == .sent && $0.requestID == session.turn?.requestID)
             })
         else { return }
+        if !abandoned.isEmpty {
+            try store.supersedePreparedTransfers(in: history, to: participant.ordinal)
+            transfers = try store.historyTransfers(of: history).filter {
+                $0.target == participant.ordinal && $0.sourceHistory == history
+            }
+        }
         let missing = try missingItems(of: participant, in: history, transfers: transfers)
         guard let head = try store.historyHead(history), !missing.isEmpty else { return }
         try store.insertTransfer(
