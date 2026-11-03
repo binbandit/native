@@ -95,3 +95,5 @@ Queued row click-to-edit, drag reordering, accessibility actions and the context
 | Additional changed state | Screenshot | Matching reference |
 | --- | --- | --- |
 | Queued row context menu and edit focus | Pending on build Mac | Previous composer actions; review pending |
+
+| New-task address agent/model menu constrained to the available height | Pending on build Mac | Part A-C agent menu and address-popover bounds; review pending |
