@@ -89,3 +89,9 @@ No exact mock images were supplied for this removal job. The reference is the Pa
 The narrow field retains the existing abbreviated agent label. Design review should assess this at the target widths.
 
 Reproduction uses `scripts/dev/render-previews.py` with the actual preview bodies and app Debug module. `current-fixtures.swift` and `main-field-baseline.swift` preserve the prepared inputs. The former renders auto-focused Quick Entry, new-task and task-peek fixtures one appearance per window to avoid competing focus in the paired wrapper. These fixture wrappers use the real views and inert fixture models.
+
+Queued row click-to-edit, drag reordering, accessibility actions and the context menu were restored at `224b37019`. Their live interaction and menu-state visual check are pending on the build Mac.
+
+| Additional changed state | Screenshot | Matching reference |
+| --- | --- | --- |
+| Queued row context menu and edit focus | Pending on build Mac | Previous composer actions; review pending |
