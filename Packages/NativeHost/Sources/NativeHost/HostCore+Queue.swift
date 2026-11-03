@@ -20,8 +20,11 @@ extension HostCore {
         } else {
             session.queue[index].prompt.text = text
             if let content = session.queue[index].prompt.content {
-                // The words were the content's text blocks; what else it carries stays.
-                session.queue[index].prompt.content = [.text(text)] + content.filter { $0.text == nil }
+                // The words were the content's text blocks; what else it carries stays, including the
+                // context framed ahead of them (a change of agent's handoff, whose receipt the task
+                // history credits when this message runs).
+                let frames = content.filter { $0.text.flatMap(PromptPreamble.init(framed:)) != nil }
+                session.queue[index].prompt.content = frames + [.text(text)] + content.filter { $0.text == nil }
             }
         }
         try store.setQueue(session.queue, for: session.id)
