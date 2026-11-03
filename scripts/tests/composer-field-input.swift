@@ -58,6 +58,36 @@ private struct ComposerFieldInputRegression {
         check(fixture.session.composerMessage == beforePaste, "file paste does not insert a path into the draft")
 
         fixture.reset(editor)
+        editor.insertText("draft", replacementRange: editor.selectedRange())
+        editor.setSelectedRange(NSRange(location: 0, length: 0))
+        fixture.pump()
+        check(editor.input?.onEvent(.init(key: .leftArrow)) == true, "Left at the text start selects the attachment")
+        fixture.pump()
+        editor.insertText("x", replacementRange: editor.selectedRange())
+        fixture.pump()
+        check(editor.input?.onEvent(.init(key: .delete)) == false, "typing returns Backspace to the editor")
+        editor.deleteBackward(nil)
+        fixture.pump()
+        check(fixture.session.composerMessage == "draft", "Backspace removes the typed character")
+        check(fixture.session.attachments.count == 1, "typing then Backspace keeps the attachment")
+
+        editor.setSelectedRange(NSRange(location: 0, length: 0))
+        fixture.pump()
+        check(editor.input?.onEvent(.init(key: .leftArrow)) == true, "Left selects the chip again")
+        fixture.pump()
+        // A native selection change uses the same delegate path as clicking back into the text.
+        editor.setSelectedRange(NSRange(location: 2, length: 0))
+        fixture.pump()
+        check(editor.input?.onEvent(.init(key: .delete)) == false, "moving the caret returns Backspace to the editor")
+        check(fixture.session.attachments.count == 1, "moving the caret keeps the attachment")
+
+        editor.setSelectedRange(NSRange(location: 0, length: 0))
+        fixture.pump()
+        check(editor.input?.onEvent(.init(key: .leftArrow)) == true, "Left still selects a chip after a caret move")
+        fixture.pump()
+        check(editor.input?.onEvent(.init(key: .rightArrow)) == true, "Right still returns from a chip to the text")
+
+        fixture.reset(editor)
         editor.insertText("@", replacementRange: editor.selectedRange())
         fixture.pump()
         check(fixture.window.firstResponder === editor, "file trigger keeps focus")
@@ -109,6 +139,15 @@ private struct ComposerFieldInputRegression {
         check(fixture.session.composerMessage == "```swift\n@fi\n", "code keeps literal mention text")
 
         fixture.reset(editor)
+        editor.insertText("Describe `use @fixtures/gu` here", replacementRange: editor.selectedRange())
+        editor.setSelectedRange(NSRange(location: "Describe `use @fixtures/gu".utf16.count, length: 0))
+        fixture.pump()
+        check(editor.input?.onKey(.down) == false, "inline code does not expose file completions")
+        check(editor.input?.onKey(.tab) == false, "Tab in inline code cannot accept a file mention")
+        check(editor.input?.onKey(.submit) == false, "Return in inline code cannot accept a file mention")
+        check(fixture.session.composerMessage == "Describe `use @fixtures/gu` here", "inline code remains literal text")
+
+        fixture.reset(editor)
         fixture.session.queue.append("First queued message")
         fixture.session.queue.append("Last queued message")
         fixture.pump()
@@ -149,6 +188,34 @@ private struct ComposerFieldInputRegression {
         fixture.session.wantsComposerFocus = true
         fixture.pump()
         check(fixture.window.firstResponder === editor, "model focus request returns to the editor")
+
+        guard let approvalSession = SessionModel.preview(in: fixture.app, agent: "claude-code"),
+            let questionSession = SessionModel.preview(in: fixture.app, agent: "claude-code")
+        else { throw CocoaError(.coderValueNotFound) }
+        approvalSession.composerMessage = "Retain this follow-up"
+        approvalSession.previewPermissionRequest(command: "swift test", reason: "Check the focused tests.")
+        approvalSession.mirrorState()
+        check(ComposerView(session: approvalSession).hasFieldRequest, "approval fixture mounts an ask")
+        approvalSession.wantsComposerFocus = true
+        ComposerView(session: approvalSession).takeFocusIfWanted()
+        check(approvalSession.wantsComposerFocus, "the draft leaves approval focus requests for the instruction editor")
+        check(
+            approvalSession.composerMessage == "Retain this follow-up", "approval focus routing retains the follow-up")
+        let request = try JSONDecoder().decode(
+            CreateElicitationRequest.self,
+            from: Data(
+                """
+                {"sessionId":"composer-field-input","mode":"form","message":"Which layout?",
+                 "requestedSchema":{"type":"object","properties":{"layout":{"type":"string"}}}}
+                """.utf8))
+        questionSession.composerMessage = "Retain this follow-up"
+        questionSession.requestQuestion(request, id: .int(1))
+        check(ComposerView(session: questionSession).hasFieldRequest, "question fixture mounts an ask")
+        questionSession.wantsComposerFocus = true
+        ComposerView(session: questionSession).takeFocusIfWanted()
+        check(questionSession.wantsComposerFocus, "the draft leaves question focus requests for the answer editor")
+        check(
+            questionSession.composerMessage == "Retain this follow-up", "question focus routing retains the follow-up")
 
         guard failures.isEmpty else {
             print("\(failures.count) composer field input regressions failed")

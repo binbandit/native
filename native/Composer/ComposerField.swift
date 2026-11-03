@@ -22,6 +22,7 @@ struct ComposerField<Attachments: View>: View {
     var onAttachments: ([DSTextInputAttachment]) -> Void = { _ in }
     var onEscape: () -> Bool = { false }
     var onEvent: (DSTextInputEvent, NSRange) -> Bool = { _, _ in false }
+    var onTextEditing: () -> Void = {}
     @ViewBuilder var attachments: () -> Attachments
 
     @State private var document = TextInputDocument()
@@ -33,7 +34,7 @@ struct ComposerField<Attachments: View>: View {
     private var completions: [ComposerFieldCompletion] {
         guard !dismissed, isFocused, let query = inputState?.query else { return [] }
         let display = document.displayText
-        if let range = Range(selection, in: display), PromptCode.isInBlock(range.upperBound, in: display) { return [] }
+        if let range = Range(selection, in: display), PromptCode.isInCode(range.upperBound, in: display) { return [] }
         switch query.kind {
         case .file: return files.map { .file($0) }
         case .command:
@@ -86,7 +87,19 @@ struct ComposerField<Attachments: View>: View {
     @ViewBuilder
     private var editor: some View {
         let input = DSTextInput(
-            document: $document, placeholder: placeholder, isFocused: $isFocused, selection: $selection,
+            document: Binding(
+                get: { document },
+                set: {
+                    document = $0
+                    onTextEditing()
+                }),
+            placeholder: placeholder, isFocused: $isFocused,
+            selection: Binding(
+                get: { selection },
+                set: {
+                    selection = $0
+                    onTextEditing()
+                }),
             onSubmit: actions.send, onKey: handleKey, onEvent: handleEvent, onAttachments: onAttachments,
             onStateChange: { inputState = $0 })
         // SwiftUI clears an unregistered FocusState on draft updates. Only the editor owns it, not the row.

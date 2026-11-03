@@ -29,7 +29,8 @@ extension ComposerView {
                     stop()
                     return true
                 },
-                onEvent: handleFieldEvent
+                onEvent: handleFieldEvent,
+                onTextEditing: { selectedAttachment = nil }
             ) {
                 fieldAttachments
             }

@@ -38,6 +38,9 @@ struct ComposerView: View {
     var canEdit: Bool { session.phase != .disconnected }
     var isWorking: Bool { session.phase == .prompting }
     var hasContent: Bool { !session.draft.isEmpty || !session.attachments.isEmpty }
+    var hasFieldRequest: Bool {
+        page == nil && (!session.permissionRequests.isEmpty || session.pendingQuestion != nil)
+    }
 
     var nativeCommands: [ComposerSlashCommand] {
         var commands: [ComposerSlashCommand] = []
@@ -59,7 +62,7 @@ struct ComposerView: View {
             .frame(maxWidth: .infinity)
             .onAppear {
                 app.restoreAgentModelChoice(for: session)
-                if session.isTranscriptEmpty, session.phase != .loading { isFocused = true }
+                if session.isTranscriptEmpty, session.phase != .loading, !hasFieldRequest { isFocused = true }
                 takeFocusIfWanted()
             }
             .onChange(of: session.draft) {
@@ -115,7 +118,8 @@ struct ComposerView: View {
     }
 
     func takeFocusIfWanted() {
-        guard session.wantsComposerFocus else { return }
+        // A mounted ask owns the shared focus request until its answer editor consumes it.
+        guard session.wantsComposerFocus, !hasFieldRequest else { return }
         isFocused = true
         session.wantsComposerFocus = false
     }
