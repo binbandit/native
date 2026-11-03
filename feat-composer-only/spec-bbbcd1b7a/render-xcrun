@@ -1,0 +1,19 @@
+#!/bin/bash
+set -euo pipefail
+if [[ ${1-} != swiftc ]]; then exec /usr/bin/xcrun "$@"; fi
+derived=/tmp/native-dd/cx-fix-273-spec
+products="$derived/Build/Products/Debug"
+flags=(-I "$HOME/Library/Caches/native-build/libghostty/include" -I "$products" -F "$products" -F "$products/PackageFrameworks")
+for map in "$derived"/Build/Intermediates.noindex/GeneratedModuleMaps*/*.modulemap; do
+    [[ ! -e "$map" ]] || flags+=(-Xcc "-fmodule-map-file=$map")
+done
+for source in "$@"; do
+    if [[ "$source" == */native-previews-*/*.swift ]]; then
+        /usr/bin/sed -i '' '1i\
+@testable import Native\
+' "$source"
+    fi
+done
+exec /usr/bin/xcrun "$@" "${flags[@]}" "$products/Native.app/Contents/MacOS/Native.debug.dylib" \
+    -Xlinker -rpath -Xlinker "$products/Native.app/Contents/Frameworks" \
+    -Xlinker -rpath -Xlinker "$products/Native.app/Contents/MacOS"

@@ -1,0 +1,34 @@
+Before: 3904b63fb7fd4add45e98f7b1560932c4d37019b plus the new regression check
+PASS: fresh connected task changes its model without handoff or first message
+PASS: delayed full snapshots preserve effort, mode and model across adapter recreation
+PASS: repeated effort selections survive in-flight and queued replies
+PASS: Composer field preserves model and effort with Change Agent off
+PASS: field accepts folders, quoted paths, embedded @ paths and atomic-token boundaries
+PASS: queued field edits cancel without saving or stopping in idle and running tasks
+FAIL: An existing task must not offer Where in idle
+
+After: bbbcd1b7aacc87852ea13ea6099cf58aae1875f9
+Run 1
+PASS: fresh connected task changes its model without handoff or first message
+PASS: delayed full snapshots preserve effort, mode and model across adapter recreation
+PASS: repeated effort selections survive in-flight and queued replies
+PASS: Composer field preserves model and effort with Change Agent off
+PASS: field accepts folders, quoted paths, embedded @ paths and atomic-token boundaries
+PASS: queued field edits cancel without saving or stopping in idle and running tasks
+PASS: Where is limited to new tasks with a project, across existing-task phases
+Run 2
+PASS: fresh connected task changes its model without handoff or first message
+PASS: delayed full snapshots preserve effort, mode and model across adapter recreation
+PASS: repeated effort selections survive in-flight and queued replies
+PASS: Composer field preserves model and effort with Change Agent off
+PASS: field accepts folders, quoted paths, embedded @ paths and atomic-token boundaries
+PASS: queued field edits cancel without saving or stopping in idle and running tasks
+PASS: Where is limited to new tasks with a project, across existing-task phases
+Run 3
+PASS: fresh connected task changes its model without handoff or first message
+PASS: delayed full snapshots preserve effort, mode and model across adapter recreation
+PASS: repeated effort selections survive in-flight and queued replies
+PASS: Composer field preserves model and effort with Change Agent off
+PASS: field accepts folders, quoted paths, embedded @ paths and atomic-token boundaries
+PASS: queued field edits cancel without saving or stopping in idle and running tasks
+PASS: Where is limited to new tasks with a project, across existing-task phases
