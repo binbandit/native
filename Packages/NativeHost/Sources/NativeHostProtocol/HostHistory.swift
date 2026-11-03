@@ -67,6 +67,23 @@ extension HostProtocol.Method {
     /// Client → host: a change of agent that returned to a session was undone, so the context it
     /// prepared for the session's next message won't go (`SessionParams` → `TaskHistorySummary`).
     public static let withdrawHistory = "_native/history/withdraw"
+    /// Client → host: the client's handoff went with this session's message. Its receipt names the
+    /// history items it carried, which count as seen once the agent answers (`HandoffHistoryParams`
+    /// → `TaskHistorySummary`).
+    public static let handoffHistory = "_native/history/handoff"
+}
+
+public struct HandoffHistoryParams: Codable, Sendable {
+    public var sessionID: HostSessionID
+    /// The message that carries the handoff: only its turn delivers it.
+    public var requestID: UUID
+    public var receipt: ContextTransfer.Receipt
+
+    public init(sessionID: HostSessionID, requestID: UUID, receipt: ContextTransfer.Receipt) {
+        self.sessionID = sessionID
+        self.requestID = requestID
+        self.receipt = receipt
+    }
 }
 
 public struct JoinHistoryParams: Codable, Hashable, Sendable {

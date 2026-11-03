@@ -55,4 +55,25 @@ struct HostQueueUpdateTests {
         await recorder.stop()
     }
 
+    @Test("Editing a queued message keeps the context framed ahead of it")
+    func editKeepsFramedContext() async throws {
+        let harness = try HostHarness()
+        defer { harness.cleanup() }
+        try harness.start()
+        let recorder = try await harness.connect()
+        let session = try await recorder.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: harness.root.path(percentEncoded: false), attach: true))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "slow 5"))
+        let handoff = PromptPreamble(
+            marker: .init(id: "task-continuation", label: "Earlier context"), instructions: "Fixed the tests.")
+        let queued = PromptParams(
+            sessionID: session.id, text: "carry on", content: [handoff.block, .text("carry on")], behavior: .queue)
+        #expect(try await recorder.client.prompt(queued) == .queued)
+        try await recorder.client.updateQueued(
+            QueueItemParams(sessionID: session.id, itemID: queued.requestID, text: "carry on, then commit"))
+        try await recorder.wait("both turns") { await $0.turnsEnded(session.id).count == 2 }
+        let sent = try #require(harness.received.last { $0.hasPrefix("prompt\t") })
+        #expect(sent.contains("Fixed the tests.") && sent.hasSuffix("carry on, then commit"))
+        await recorder.stop()
+    }
 }

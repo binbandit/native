@@ -46,13 +46,13 @@ struct TaskHistoryDeltaTests {
     func covered() throws {
         let roomy = transfer(window: 200_000)
         #expect(roomy.receipt.included.map(\.position) == [4, 7])
-        #expect(TaskHistoryDelta.covered(by: roomy.receipt, considered: [4, 5, 6, 7, 8]) == [4...8])
+        #expect(TaskHistoryDelta.covered(by: roomy.receipt, items: missed) == [4...8])
         let block = try #require(ContextTransferSelector.block(for: roomy))
         #expect(block.text?.contains("now fix the iOS build") == true)
 
         // Room for the message, not the long reply: the reply stays missing.
         let tight = transfer(window: 17_600)
         #expect(tight.receipt.included.map(\.position) == [4])
-        #expect(TaskHistoryDelta.covered(by: tight.receipt, considered: [4, 5, 6, 7, 8]) == [4...6, 8...8])
+        #expect(TaskHistoryDelta.covered(by: tight.receipt, items: missed) == [4...6, 8...8])
     }
 }

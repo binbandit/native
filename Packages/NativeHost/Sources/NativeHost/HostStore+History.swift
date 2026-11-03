@@ -254,12 +254,14 @@ extension HostStore {
     }
 
     /// The target's prepared transfers go with the message `requestID`.
+    /// A transfer bound to another message (a handoff whose message waits in the queue) waits for it.
     func sendHistoryTransfers(in history: TaskHistoryID, to target: Int, with requestID: UUID) throws {
         try database.run(
             """
             UPDATE history_transfers SET state = 'sent', request_id = ?
-            WHERE history_id = ? AND target = ? AND state = 'prepared'
-            """, .text(requestID.uuidString), .text(history.description), .integer(Int64(target)))
+            WHERE history_id = ? AND target = ? AND state = 'prepared' AND (request_id IS NULL OR request_id = ?)
+            """, .text(requestID.uuidString), .text(history.description), .integer(Int64(target)),
+            .text(requestID.uuidString))
     }
 
     /// A delta goes with the message `requestID`, carrying what the handoff chose: the items it covers
@@ -285,6 +287,17 @@ extension HostStore {
                     sourceHistory: delta.sourceHistory, target: delta.target, from: delta.from, through: delta.through,
                     conveyed: [], strategy: .delta), into: history)
         }
+    }
+
+    /// What a client's handoff carried, from its receipt.
+    /// What a client's handoff carried, from its receipt, and the message it goes with.
+    func setTransferCoverage(
+        _ id: UUID, conveyed: [ClosedRange<Int>], receipt: ContextTransfer.Receipt, requestID: UUID
+    ) throws {
+        try database.run(
+            "UPDATE history_transfers SET covered = ?, receipt = ?, request_id = ? WHERE id = ?",
+            try JSONColumn.encode(conveyed), try JSONColumn.encode(receipt), .text(requestID.uuidString),
+            .text(id.uuidString))
     }
 
     /// The change of agent that prepared the target's context was undone, so what hasn't gone won't.

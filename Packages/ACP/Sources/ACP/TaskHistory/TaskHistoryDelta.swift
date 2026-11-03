@@ -48,14 +48,30 @@ public enum TaskHistoryDelta {
         return draft
     }
 
-    /// The items of `considered` a delivered delta covers: those it carried, and those it never
-    /// replays (reasoning, tool state, turn endings). Only what its budget left out stays missing, to
-    /// be offered again next time.
-    public static func covered(by receipt: ContextTransfer.Receipt, considered: [Int]) -> [ClosedRange<Int>] {
-        let leftOut = Set(
-            receipt.omitted.filter { $0.reason == .budget }.compactMap { Int($0.id.dropFirst("history/".count)) })
-        return ranges(considered.filter { !leftOut.contains($0) })
+    /// The items of `considered` a delivered handoff covers: those its receipt carried, and those a
+    /// handoff never replays (reasoning, tool state, turn endings). A message it left out, for its
+    /// budget or because it never saw it, stays missing, to be offered again next time.
+    public static func covered(
+        by receipt: ContextTransfer.Receipt, items considered: [TaskHistoryItem]
+    )
+        -> [ClosedRange<Int>]
+    {
+        let carried = Set(receipt.included.compactMap { Int($0.id.dropFirst(idPrefix.count)) })
+        return ranges(
+            considered.filter { item in
+                switch item.body {
+                case .user, .agent, .plan: carried.contains(item.seq)
+                case .thought, .tool, .turnEnded, .unknown: true
+                }
+            }.map(\.seq))
     }
+
+    /// Whether a receipt names history items, rather than a transcript's own.
+    public static func namesHistory(_ receipt: ContextTransfer.Receipt) -> Bool {
+        receipt.included.contains { $0.id.hasPrefix(idPrefix) }
+    }
+
+    private static let idPrefix = "history/"
 
     /// Ascending values as the fewest ranges.
     static func ranges(_ values: [Int]) -> [ClosedRange<Int>] {

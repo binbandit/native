@@ -23,14 +23,27 @@ extension HostCore {
     )
         throws
     {
-        let transfers = try store.historyTransfers(of: history).filter {
+        var transfers = try store.historyTransfers(of: history).filter {
             $0.target == participant.ordinal && $0.sourceHistory == history
+        }
+        // A handoff bound to a message that's gone (removed from the queue) was abandoned; it gives way
+        // to the delta, which covers everything the conversation is missing, its items included.
+        let queued = Set(session.queue.map(\.prompt.id))
+        let abandoned = transfers.filter {
+            $0.state == .prepared && $0.strategy == .client && $0.requestID.map { !queued.contains($0) } ?? false
         }
         guard
             !transfers.contains(where: {
-                $0.state == .prepared || ($0.state == .sent && $0.requestID == session.turn?.requestID)
+                ($0.state == .prepared && !abandoned.contains($0))
+                    || ($0.state == .sent && $0.requestID == session.turn?.requestID)
             })
         else { return }
+        if !abandoned.isEmpty {
+            try store.supersedePreparedTransfers(in: history, to: participant.ordinal)
+            transfers = try store.historyTransfers(of: history).filter {
+                $0.target == participant.ordinal && $0.sourceHistory == history
+            }
+        }
         let missing = try missingItems(of: participant, in: history, transfers: transfers)
         guard let head = try store.historyHead(history), !missing.isEmpty else { return }
         try store.insertTransfer(
@@ -46,6 +59,30 @@ extension HostCore {
         guard let history = try history(of: session) else { throw HostError.noHistory }
         try store.supersedePreparedTransfers(in: history.id, to: history.participant)
         return try historySummary(params)
+    }
+
+    /// The client's handoff goes with the session's message `requestID`: what its receipt carried of
+    /// the items the handoff considered counts as seen once the agent answers that message (or now,
+    /// if it already has). A message still queued binds the handoff to it, so no other turn delivers it.
+    func recordHandoff(_ params: HandoffHistoryParams) throws -> TaskHistorySummary {
+        let session = try session(params.sessionID)
+        guard let history = try history(of: session) else { throw HostError.noHistory }
+        try store.transaction {
+            guard TaskHistoryDelta.namesHistory(params.receipt),
+                let handoff = try store.historyTransfers(of: history.id).last(where: {
+                    $0.target == history.participant && $0.strategy == .client
+                        && ($0.requestID == params.requestID || ($0.state == .prepared && $0.requestID == nil))
+                })
+            else { return }
+            let considered = try store.historyItems(
+                of: history.id, after: handoff.from, through: handoff.through, limit: .max
+            ).filter { $0.source != history.participant }
+            try store.setTransferCoverage(
+                handoff.id, conveyed: TaskHistoryDelta.covered(by: params.receipt, items: considered),
+                receipt: params.receipt, requestID: params.requestID)
+            if handoff.state == .delivered { try store.updateWatermark(of: history.participant, in: history.id) }
+        }
+        return try historySummary(SessionParams(sessionID: session.id))
     }
 
     /// `prompt` with the session's prepared delta ahead of it, chosen now so it covers everything
@@ -87,7 +124,7 @@ extension HostCore {
             sent,
             HistoryDeltaDelivery(
                 transfer: transfer.id, through: head,
-                conveyed: TaskHistoryDelta.covered(by: context.receipt, considered: missing.map(\.seq)),
+                conveyed: TaskHistoryDelta.covered(by: context.receipt, items: missing),
                 receipt: context.receipt)
         )
     }
