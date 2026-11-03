@@ -50,8 +50,10 @@ extension TaskHistorySummary {
     /// Where what `transfer` shows starts: after anything this session's earlier context showed, so
     /// an item a transcript has shown once isn't shown again further down.
     public func shownAfter(_ transfer: TaskHistoryTransfer) -> Int {
+        // Every earlier transfer that went with a message left a marker that shows its items, even one
+        // that was stopped and chosen again; one undone before it went left none.
         let earlier = transfers.prefix { $0.id != transfer.id }.filter {
-            $0.target == current && $0.sourceHistory == id && $0.state != .superseded
+            $0.target == current && $0.sourceHistory == id && ($0.state != .superseded || $0.requestID != nil)
         }
         return max(transfer.from, earlier.map(\.through).max() ?? 0)
     }

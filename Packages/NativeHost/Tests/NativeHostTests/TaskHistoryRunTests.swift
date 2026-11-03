@@ -94,5 +94,15 @@ struct TaskHistoryRunTests {
         #expect(claude.shownAfter(delta) == 4)
         #expect(claude.shownAfter(handoff) == 0)
         #expect(summary(current: 2, transfers: [handoff, delta]).transfer(forMarker: delta.markerID) == nil)
+        // A delta that went with a stopped message keeps its marker, so the retry starts after it;
+        // one undone before it went doesn't.
+        var stopped = TaskHistoryTransfer(
+            sourceHistory: history, target: 3, from: 4, through: 6, conveyed: [], strategy: .delta, state: .superseded)
+        stopped.requestID = UUID()
+        let retry = TaskHistoryTransfer(
+            sourceHistory: history, target: 3, from: 4, through: 8, conveyed: [], strategy: .delta)
+        #expect(summary(current: 3, transfers: [handoff, stopped, retry]).shownAfter(retry) == 6)
+        stopped.requestID = nil
+        #expect(summary(current: 3, transfers: [handoff, stopped, retry]).shownAfter(retry) == 4)
     }
 }
