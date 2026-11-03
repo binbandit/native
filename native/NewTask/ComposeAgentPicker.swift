@@ -11,7 +11,9 @@ struct ComposeAgentPicker: View {
         ComposerAgentModelMenu(
             agents: adapter.state.agents, effort: adapter.state.effort,
             chooseModel: actions.chooseModel, chooseEffort: actions.chooseEffort,
-            close: { model.quickEntry.picker = nil })
+            close: { model.quickEntry.picker = nil }
+        )
+        .frame(maxHeight: maxHeight)
     }
 }
 
