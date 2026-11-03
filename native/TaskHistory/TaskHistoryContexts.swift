@@ -29,19 +29,29 @@ final class TaskHistoryContexts {
     /// An agent by its id, for the runs' headings; nil for an agent no longer available.
     @ObservationIgnored var agent: @MainActor (String) -> AgentDefinition? = { _ in nil }
 
-    /// By host session, and the marker for a context marker's (nil for the transcript's top).
+    /// By host session, the marker for a context marker's (nil for the transcript's top), and the
+    /// markers above it, which a reload that replays a different transcript can change.
     private var contexts: [Key: Context] = [:]
+    /// The markers above each marker, as its latest load found them.
+    private var earlier: [Place: Set<String>] = [:]
 
-    private struct Key: Hashable {
+    private struct Place: Hashable {
         let session: HostSessionID
         let marker: String?
+    }
+
+    private struct Key: Hashable {
+        let place: Place
+        let earlier: Set<String>
     }
 
     private static let logger = Logger(subsystem: "dev.binbandit.native", category: "TaskHistory")
 
     /// What `session`'s transcript shows at its top (no marker) or with one of its context markers.
     func context(for session: SessionModel, marker: String? = nil) -> Context? {
-        session.host.flatMap { contexts[Key(session: $0.id, marker: marker)] }
+        guard let host = session.host else { return nil }
+        let place = Place(session: host.id, marker: marker)
+        return contexts[Key(place: place, earlier: earlier[place] ?? [])]
     }
 
     /// Loads what the agents before `session` did, for its top or for one of its context markers,
@@ -49,7 +59,10 @@ final class TaskHistoryContexts {
     /// the transcript tries again when it's next opened.
     func load(_ session: SessionModel, marker: String? = nil) async {
         guard isEnabled(), let host = session.host else { return }
-        let key = Key(session: host.id, marker: marker)
+        let place = Place(session: host.id, marker: marker)
+        let above = marker.map { Self.markers(before: $0, in: session) } ?? []
+        earlier[place] = above
+        let key = Key(place: place, earlier: above)
         guard contexts[key] == nil else { return }
         contexts[key] = .loading
         do {
@@ -57,8 +70,7 @@ final class TaskHistoryContexts {
             let found = try await host.request { client in
                 if let marker {
                     try await client.markerRuns(
-                        of: host.id, markerID: marker, earlierMarkers: Self.markers(before: marker, in: session),
-                        limit: Self.shownLimit)
+                        of: host.id, markerID: marker, earlierMarkers: above, limit: Self.shownLimit)
                 } else {
                     try await client.handoffRuns(of: host.id, limit: Self.shownLimit)
                 }
