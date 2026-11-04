@@ -115,3 +115,15 @@ func plainPath(_ url: URL) -> String {
     let path = url.path(percentEncoded: false)
     return path.count > 1 && path.hasSuffix("/") ? String(path.dropLast()) : path
 }
+
+/// FSEvents may name a parent folder or ask for a rescan instead of naming the file.
+func fileChangeIncludes(_ file: String, paths: [String], isOverflow: Bool) -> Bool {
+    guard FileManager.default.fileExists(atPath: file), let resolved = ProjectPaths.resolvedPath(file) else {
+        return false
+    }
+    return isOverflow
+        || paths.contains {
+            guard let path = ProjectPaths.resolvedPath($0) else { return false }
+            return path == resolved || resolved.hasPrefix(path + "/")
+        }
+}
