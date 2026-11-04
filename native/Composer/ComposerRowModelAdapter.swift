@@ -73,9 +73,7 @@ struct ComposerRowModelAdapter {
                 }
             }
             if let index = groups.firstIndex(where: { $0.id == session.agent.id.rawValue }) {
-                groups[index].settings = (settings.modelSwitches + settings.others).filter {
-                    !["model", "thought_level", "mode"].contains($0.option.category ?? "")
-                }
+                groups[index].settings = settings.agentSettings
             }
             return groups
         }
@@ -92,7 +90,7 @@ struct ComposerRowModelAdapter {
                         id: draftModelID(agent: runtime.agent.id, value: $0.value), title: $0.displayName,
                         isSelected: selected && ($0.value == offered.model?.value || offered.model == nil),
                         unavailable: runtime.isAvailable ? nil : runtime.status.guidance ?? runtime.status.label)
-                })
+                }, settings: selected ? offered.agentSettings : [])
         }
     }
 
@@ -145,15 +143,20 @@ struct ComposerRowModelAdapter {
     }
 
     private func chooseSetting(_ id: String, value: String) {
-        guard let session,
-            agentGroups.first(where: { $0.id == session.agent.id.rawValue })?.settings.contains(where: {
+        let agent = session?.agent.id ?? app.composeTask.configuredAgent
+        guard let agent,
+            agentGroups.first(where: { $0.id == agent.rawValue })?.settings.contains(where: {
                 $0.option.id == id
             }) == true,
             let setting = options.first(where: { $0.id == id }).flatMap(SelectSetting.init),
             setting.choices.contains(where: { $0.value == value }),
             !PolicyPermissionModes.forbids(setting.option, value: value)
         else { return }
-        session.enqueueComposerPick(setting.option, value: value)
+        if let session {
+            session.enqueueComposerPick(setting.option, value: value)
+        } else {
+            app.composeTask.choose(setting, value: value)
+        }
     }
 
     private var locationChoices: [ComposerRowState.Choice] {

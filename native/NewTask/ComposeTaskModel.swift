@@ -69,14 +69,18 @@ final class ComposeTaskModel {
 
     var addressedChoices: [String: String] { Self.addressedChoices(in: options) }
 
-    /// The settings a task is started with, by category.
+    /// Dedicated controls use categories; extra settings use IDs because categories can repeat or be absent.
+    static func choiceKey(for option: ConfigOption) -> String {
+        if let category = option.category, ["model", "thought_level", "mode"].contains(category) { return category }
+        return "option:\(option.id)"
+    }
+
+    /// The settings shown in the composer, including the agent's additional settings.
     static func addressedChoices(in options: [ConfigOption]) -> [String: String] {
-        Dictionary(
-            options.compactMap { option in
-                guard let category = option.category, ["model", "thought_level", "mode"].contains(category),
-                    case .select(let value, _) = option.kind
-                else { return nil }
-                return (category, value)
+        let settings = ComposerSettings(options)
+        return Dictionary(
+            ([settings.model, settings.effort, settings.autonomy].compactMap { $0 } + settings.agentSettings).map {
+                (choiceKey(for: $0.option), $0.value)
             }, uniquingKeysWith: { first, _ in first })
     }
 
@@ -98,17 +102,17 @@ final class ComposeTaskModel {
 
     func choose(_ setting: SelectSetting, value: String) {
         guard !isHeld, stage == .writing, setting.choices.contains(where: { $0.value == value }),
-            !PolicyPermissionModes.forbids(setting.option, value: value),
-            let category = setting.option.category
+            !PolicyPermissionModes.forbids(setting.option, value: value)
         else { return }
-        if category == "mode" {
+        let key = Self.choiceKey(for: setting.option)
+        if setting.option.category == "mode" {
             if value == ComposerSettings.planValue {
                 if setting.value != value, permissionBeforePlan == nil { permissionBeforePlan = setting.value }
             } else {
                 permissionBeforePlan = nil
             }
         }
-        choices[category] = value == defaults[category] ? nil : value
+        choices[key] = value == defaults[key] ? nil : value
         if let index = options.firstIndex(where: { $0.id == setting.option.id }) {
             options[index].kind = .select(currentValue: value, options: setting.choices)
         }

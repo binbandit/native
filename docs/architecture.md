@@ -591,7 +591,10 @@ receipt belong to later slices.
 
 `native/Composer/` owns the only task composer, for both new tasks and running tasks. It has no
 Labs gate. `ComposerView` binds the session draft to `ComposerField`; `ComposerRowModelAdapter`
-connects Agent and Model, Mode and Where to existing model actions. `DSTextInput` is the native
+connects Agent and Model, Mode and Where to existing model actions. Before the first message,
+Agent and Model offers the selected agent's cached config options, including extra select settings.
+Draft choices stay local and are checked against the agent's current options before sending.
+`DSTextInput` is the native
 NSTextView/UITextView editor shared by the field and other message inputs. The old
 `native/Views/Composer/` editors, controls and Fine print popover have been deleted.
 
