@@ -233,7 +233,7 @@ private struct ComposerFieldInputRegression {
         approvalSession.composerMessage = "Retain this follow-up"
         approvalSession.previewPermissionRequest(command: "swift test", reason: "Check the focused tests.")
         approvalSession.mirrorState()
-        check(ComposerView(session: approvalSession).hasFieldRequest, "approval fixture mounts an ask")
+        check(ComposerView(session: approvalSession).hasPendingRequest, "approval fixture keeps request focus routing")
         approvalSession.wantsComposerFocus = true
         ComposerView(session: approvalSession).takeFocusIfWanted()
         check(approvalSession.wantsComposerFocus, "the draft leaves approval focus requests for the instruction editor")
@@ -248,12 +248,37 @@ private struct ComposerFieldInputRegression {
                 """.utf8))
         questionSession.composerMessage = "Retain this follow-up"
         questionSession.requestQuestion(request, id: .int(1))
-        check(ComposerView(session: questionSession).hasFieldRequest, "question fixture mounts an ask")
+        check(ComposerView(session: questionSession).hasPendingRequest, "question fixture keeps request focus routing")
         questionSession.wantsComposerFocus = true
         ComposerView(session: questionSession).takeFocusIfWanted()
         check(questionSession.wantsComposerFocus, "the draft leaves question focus requests for the answer editor")
         check(
             questionSession.composerMessage == "Retain this follow-up", "question focus routing retains the follow-up")
+
+        fixture.session.phase = .prompting
+        fixture.session.composerMessage = "Keep this draft"
+        fixture.session.requestQuestion(request, id: .int(1))
+        fixture.pump()
+        check(fixture.editableTextViewCount == 1, "questions no longer add an answer editor inside the composer")
+        check(editor.string == "Keep this draft", "a pending question leaves the draft visible")
+        fixture.focus(editor)
+        editor.setSelectedRange(NSRange(location: editor.string.utf16.count, length: 0))
+        editor.insertText(" while answering", replacementRange: editor.selectedRange())
+        fixture.pump()
+        check(
+            fixture.session.composerMessage == "Keep this draft while answering",
+            "the draft stays editable while a question waits in the transcript")
+
+        fixture.session.previewPermissionRequest(command: "swift test", reason: "Check the focused tests.")
+        fixture.session.mirrorState()
+        fixture.pump()
+        check(fixture.editableTextViewCount == 1, "approvals no longer add an instruction editor inside the composer")
+        fixture.focus(editor)
+        editor.insertText(" and approving", replacementRange: editor.selectedRange())
+        fixture.pump()
+        check(
+            fixture.session.composerMessage == "Keep this draft while answering and approving",
+            "the draft stays editable while approval waits in the transcript")
 
         guard failures.isEmpty else {
             print("\(failures.count) composer field input regressions failed")
@@ -308,6 +333,14 @@ private final class ComposerFieldInputFixture {
             throw CocoaError(.coderValueNotFound)
         }
         return editor
+    }
+
+    var editableTextViewCount: Int {
+        func count(_ view: NSView) -> Int {
+            let own = (view as? NSTextView)?.isEditable == true ? 1 : 0
+            return own + view.subviews.reduce(0) { $0 + count($1) }
+        }
+        return window.contentView.map(count) ?? 0
     }
 
     func focus(_ editor: NSTextView) {

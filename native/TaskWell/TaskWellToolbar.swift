@@ -17,7 +17,7 @@ struct TaskWellToolbar<Destination: View>: View {
     var body: some View {
         Button {
             if content.isWaiting || content.status == .failed {
-                if let child = session.focusTaskAttention() { openSubagent(child) }
+                if let child = tools.focusTaskAttention(in: session) { openSubagent(child) }
             } else if content.showsReview {
                 session.markTaskWellOutcomeReviewed(latestTurn?.id)
                 turnChanges?.review()

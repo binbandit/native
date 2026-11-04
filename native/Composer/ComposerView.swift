@@ -38,7 +38,7 @@ struct ComposerView: View {
     var canEdit: Bool { session.phase != .disconnected }
     var isWorking: Bool { session.phase == .prompting }
     var hasContent: Bool { !session.draft.isEmpty || !session.attachments.isEmpty }
-    var hasFieldRequest: Bool {
+    var hasPendingRequest: Bool {
         page == nil && (!session.permissionRequests.isEmpty || session.pendingQuestion != nil)
     }
 
@@ -62,7 +62,7 @@ struct ComposerView: View {
             .frame(maxWidth: .infinity)
             .onAppear {
                 app.restoreAgentModelChoice(for: session)
-                if session.isTranscriptEmpty, session.phase != .loading, !hasFieldRequest { isFocused = true }
+                if session.isTranscriptEmpty, session.phase != .loading, !hasPendingRequest { isFocused = true }
                 takeFocusIfWanted()
             }
             .onChange(of: session.draft) {
@@ -119,7 +119,7 @@ struct ComposerView: View {
 
     func takeFocusIfWanted() {
         // A mounted ask owns the shared focus request until its answer editor consumes it.
-        guard session.wantsComposerFocus, !hasFieldRequest else { return }
+        guard session.wantsComposerFocus, !hasPendingRequest else { return }
         isFocused = true
         session.wantsComposerFocus = false
     }
@@ -128,15 +128,6 @@ struct ComposerView: View {
         ComposerAgentReceiptSection(change: change) { fieldMenu = .mode }
     }
 }
-
-#if DEBUG
-#Preview("Composer - Approval and editable draft") {
-    DSPreviewPair { ComposerPendingPreviewFixtures.composer(.approval) }
-}
-#Preview("Composer - Question and editable draft") {
-    DSPreviewPair { ComposerPendingPreviewFixtures.composer(.question) }
-}
-#endif
 
 extension FocusedValues {
     @Entry var contextUsePopover: Binding<Bool>?

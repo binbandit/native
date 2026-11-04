@@ -51,8 +51,8 @@ struct ToolCallView: View, Equatable {
         let presentation = ToolPresentation(call, root: root)
         let phase = presentation.phase
         let hasDetails = detailsAvailable(for: presentation)
-        let inComposer = isPrimaryTranscript && call.permission != nil
-        let showsDetails = !inComposer && hasDetails && (isOpen || phase == .awaitingApproval)
+        let hasRequestCard = isPrimaryTranscript && call.permission != nil
+        let showsDetails = !hasRequestCard && hasDetails && (isOpen || phase == .awaitingApproval)
         VStack(alignment: .leading, spacing: DS.Space.xxs) {
             ToolLine(
                 glyph: presentation.glyph,
@@ -80,7 +80,7 @@ struct ToolCallView: View, Equatable {
                     }
                     .transition(RevealTransition())
                 }
-                if let permission = call.permission, !inComposer {
+                if let permission = call.permission, !hasRequestCard {
                     ToolPermissionButtons(
                         options: permission.options, onChoose: onChoose, presentation: permissionPresentation
                     )

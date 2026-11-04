@@ -1,3 +1,4 @@
+import ACP
 import Observation
 import SessionTools
 import SwiftUI
@@ -37,6 +38,12 @@ final class SessionToolsScreenModel {
         wellPage = tool == .dev || tool == .subagents ? tool : nil
         showsWell = wellPage != nil
         wellToolAction(tool)
+    }
+
+    /// A parent request lives in the transcript, which Changes can replace in a narrow window.
+    @discardableResult func focusTaskAttention(in session: SessionModel) -> SessionID? {
+        if session.taskWellAsk?.session === session { close(.changes) }
+        return session.focusTaskAttention()
     }
 
     /// The open tool in each place; a place without one is closed.

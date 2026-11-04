@@ -6,7 +6,6 @@ import UniformTypeIdentifiers
 extension ComposerView {
     var fieldSurface: some View {
         VStack(alignment: .leading, spacing: DS.Space.sm) {
-            fieldRequests
             if let change = session.modelChange { agentChangeReceipt(change) }
             fieldFeedback
             fieldQueue

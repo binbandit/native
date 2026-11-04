@@ -600,9 +600,10 @@ NSTextView/UITextView editor shared by the field and other message inputs. The o
 
 Queued messages sit above the field with Remove and capability-gated Send now. Return queues
 while a turn runs; Command-Return steers. The session owns ordered delivery and pausing after Stop.
-Shared `SessionApprovalView` and `SessionQuestionView` cards sit above the queue without replacing
-the editor. Only the oldest request owns shortcuts; the primary transcript leaves response controls
-to these cards. Subagents, Peek and Home use the same question and approval family.
+Shared `SessionApprovalView` and `SessionQuestionView` cards sit at the end of the primary transcript,
+above the composer, without replacing the editor or hiding its draft. Only the oldest request owns
+shortcuts; tool rows leave response controls to these cards. Subagents, Peek and Home use the same
+question and approval family.
 
 `/plan` selects the existing task mode, `/goal` opens its editor, and `/compact` uses the agent's
 advertised command. Attachments, quoted selections and diff comments stay with the draft and keep
