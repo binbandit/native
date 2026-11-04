@@ -45,8 +45,10 @@ public struct SessionTitleState: Hashable, Sendable {
         self.wasRenamed = wasRenamed || user != nil
         self.user = user
         self.generated = generated
-        self.request = request
-        self.progress = progress
+        // Older stores may retain an automatic refinement after naming the task.
+        // Retire it on restoration so neither host nor client repeats unusable work.
+        self.request = generated == nil ? request : nil
+        self.progress = generated == nil ? progress : nil
         self.retryCount = retryCount
         self.promptID = promptID
     }

@@ -998,7 +998,8 @@ it on); off, the app titles that host's tasks as it did before and tells the hos
   up to 800 characters of the first turn's assistant text for a pending generator or retry.
   Tool output, thoughts, hidden commands and later turns are excluded. Once a generated title
   arrives, its request is cleared and no automatic refinement can replace it, even if an older
-  client sends a pending refinement revision. The app uses the same state machine with host
+  client sends a pending refinement revision. Restoring an existing generated title also retires
+  any obsolete pending request and progress, preserving stored revision fields. The app uses the same state machine with host
   titles off.
 - **Input and privacy.** Naming never opens a pasted link or file. Credential assignments and
   authorization headers are removed locally; URLs are removed and paths reduced to a basename.

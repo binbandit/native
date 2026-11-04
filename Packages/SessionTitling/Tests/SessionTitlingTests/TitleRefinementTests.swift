@@ -61,11 +61,15 @@ struct TitleRefinementTests {
         #expect(state.request == nil && state.progress == nil)
     }
 
-    @Test("A restored pending refinement cannot replace an existing generated title")
-    func restoredRefinement() {
+    @Test(
+        "A restored pending refinement is retired",
+        arguments: [SessionTitleState.Progress.waitingForClient, .generating, .failed])
+    func restoredRefinement(progress: SessionTitleState.Progress) {
         var state = SessionTitleState(
-            generated: "Fix build", request: request, progress: .waitingForClient,
+            generated: "Fix build", request: request, progress: progress,
             refinementCount: 1, firstTurnFinished: true)
+        #expect(state.request == nil && state.progress == nil)
+        #expect(state.refinementCount == 1 && state.firstTurnFinished)
         let refinementIgnored = !state.accept(generated: "Fix SessionModel isolation", revision: 1)
         #expect(refinementIgnored)
         #expect(state.displayTitle(agentTitle: nil) == "Fix build")

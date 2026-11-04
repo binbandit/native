@@ -16,6 +16,45 @@ extension HostTitleTests {
         }
     }
 
+    @Test(
+        "Restored refinements neither advertise client work nor schedule host work",
+        arguments: [SessionTitleState.Progress.waitingForClient, .generating])
+    func restoredRefinementIsRetired(progress: SessionTitleState.Progress) async throws {
+        let rig = try Rig()
+        let first = try rig.host(nil)
+        let client = try await rig.connect(to: first)
+        try await client.configureTitles(ConfigureTitlesParams(provider: .onDevice))
+        let id = try await rig.startTask("fix the build", on: client)
+        await client.stop()
+        for link in first.agents.values { link.endNow() }
+
+        // Seed the shape written before generated titles became final.
+        let request = SessionTitleRequest(projectName: "native", prompt: "fix the build")
+        var legacy = SessionTitleState(refinementCount: 1, firstTurnFinished: true)
+        legacy.generated = "Fix build"
+        legacy.request = request
+        legacy.progress = progress
+        try first.store.setTitles(legacy, for: id)
+
+        let titler = ScriptedTitler(answer: "Fix SessionModel isolation")
+        let restored = try rig.host(titler)
+        let back = try await rig.connect(to: restored)
+        let titles = try #require(try await back.sessions().first { $0.id == id }?.titles)
+        #expect(titles.generated == "Fix build" && titles.request == nil)
+        let state = try #require(restored.sessions[id]?.titleState)
+        #expect(state.request == nil && state.progress == nil)
+        #expect(state.refinementCount == 1 && state.firstTurnFinished)
+        #expect(!restored.titling.generating.contains(id))
+        #expect(titler.requests.isEmpty)
+        // Reconfiguration must not resurrect obsolete work either.
+        try await back.configureTitles(ConfigureTitlesParams(provider: .client))
+        try await back.configureTitles(ConfigureTitlesParams(provider: .onDevice))
+        #expect(!restored.titling.generating.contains(id))
+        #expect(titler.requests.isEmpty)
+        await back.stop()
+        for link in restored.agents.values { link.endNow() }
+    }
+
     @Test("A generated host title stays through later turns and is final on disk")
     func generatedTitleStays() async throws {
         let rig = try Rig()
