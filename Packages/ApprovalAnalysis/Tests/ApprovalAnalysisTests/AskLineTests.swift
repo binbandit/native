@@ -54,6 +54,17 @@ import Testing
         #expect(ask(self.command(command)) == expected)
     }
 
+    @Test(arguments: [
+        "git push origin :old-one :old-two",
+        "git push origin +HEAD:main +HEAD:release",
+        "git push origin :old-topic HEAD:main",
+    ])
+    func destructiveMultiRefPushesDoNotBorrowTheRoutineAction(_ command: String) {
+        let call = self.command(command)
+        #expect(ask(call) == "Run this command?")
+        #expect(ask(call, place: "github.com", branch: "main") == "Run this command?")
+    }
+
     @Test func pushUsesResolvedContextWithoutGuessingTheDestination() {
         let call = command("git push --force origin HEAD")
         #expect(ask(call, place: "github.com", branch: "main") == "Overwrite `main` on github.com?")

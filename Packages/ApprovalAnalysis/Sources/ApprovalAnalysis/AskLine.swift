@@ -139,6 +139,10 @@ public struct AskLine: Equatable, Sendable {
                 match?.rule.destructive == false
             {
                 phrase = option.option.summary
+            } else if match?.rule.destructive == false {
+                // Destructive operands can raise a routine rule without yielding a single
+                // target. Its base action would hide the deletion or overwrite.
+                return "Run this command?"
             } else {
                 phrase = analysis.action
             }
