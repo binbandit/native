@@ -43,7 +43,7 @@ extension AppModel {
         composeTask.editor?.attachments = held.files.map(\.attachment)
         composeTask.choices = held.choices.filter { composeTask.defaults[$0.key] != $0.value }
         for (index, option) in composeTask.options.enumerated() {
-            guard let category = option.category, let value = held.choices[category],
+            guard let value = held.choices[ComposeTaskModel.choiceKey(for: option)],
                 case .select(_, let choices) = option.kind, choices.contains(where: { $0.value == value })
             else { continue }
             composeTask.options[index].kind = .select(currentValue: value, options: choices)
@@ -52,7 +52,7 @@ extension AppModel {
         if let second = held.second {
             var options = composeStartingOptions(for: second, in: projects.project(held.project))
             for (index, option) in options.enumerated() {
-                guard let category = option.category, let value = held.secondChoices?[category],
+                guard let value = held.secondChoices?[ComposeTaskModel.choiceKey(for: option)],
                     case .select(_, let choices) = option.kind, choices.contains(where: { $0.value == value })
                 else { continue }
                 options[index].kind = .select(currentValue: value, options: choices)

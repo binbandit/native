@@ -367,6 +367,79 @@ private struct ComposerRowSettingsRegression {
         print("PASS: agent extras appear only when offered and apply by ID through ordered config requests")
     }
 
+    static func newTaskExtraSettings() async throws {
+        let agent = await RowSettingsAgent()
+        defer { agent.close() }
+        let extras = """
+            [
+                {"id":"style","name":"Response style","type":"select","currentValue":"concise",
+                 "options":[{"value":"concise","name":"Concise"},{"value":"detailed","name":"Detailed"}]},
+                {"id":"verbosity","name":"Verbosity","category":"model_config","type":"select",
+                 "currentValue":"normal","options":[{"value":"normal","name":"Normal"},{"value":"more","name":"More"}]}
+            ]
+            """
+        let (app, session, initial) = try fixture(agent.connection, extraOptions: extras)
+        _ = app.runtimes.sync()
+        let compose = app.composeTask
+        compose.configuredAgent = session.agent.id
+        compose.options = session.configOptions
+        compose.defaults = compose.addressedChoices
+        let adapter = ComposerRowModelAdapter(app: app)
+        let offered = adapter.state.agents.first { $0.id == session.agent.id.rawValue }?.settings ?? []
+        try require(offered.map(\.option.id) == ["fast", "style", "verbosity"], "Unsent task omitted agent extras")
+        try require(
+            adapter.state.agents.filter { $0.id != session.agent.id.rawValue }.allSatisfy { $0.settings.isEmpty },
+            "Unsent task showed extras for an unselected agent")
+        let picks = adapter.actions(attach: {}, context: {}, send: {})
+        picks.chooseSetting("fast", "on")
+        picks.chooseSetting("style", "detailed")
+        picks.chooseSetting("verbosity", "more")
+        let expected = compose.addressedChoices
+        try require(
+            expected["option:fast"] == "on" && expected["option:style"] == "detailed"
+                && expected["option:verbosity"] == "more",
+            "Extra choices must survive by ID, including absent and shared categories")
+        picks.chooseSetting("fast", "invalid")
+        picks.chooseSetting("missing", "on")
+        picks.chooseSetting("mode", "ask-first")
+        try require(compose.addressedChoices == expected, "An invalid or dedicated setting changed the draft")
+        compose.isHeld = true
+        picks.chooseSetting("fast", "off")
+        try require(compose.addressedChoices == expected, "Held draft accepted a setting change")
+        compose.isHeld = false
+        compose.stage = .folding
+        picks.chooseSetting("style", "concise")
+        try require(compose.addressedChoices == expected, "Starting draft accepted a setting change")
+        compose.stage = .writing
+        try require(agent.received.isEmpty, "Unsent choices contacted an agent")
+
+        let task = StartingTask(
+            project: UUID(), agent: session.agent, isAgentPicked: true, workspaceLabel: "Fixture")
+        task.configChoices = expected.filter { $0.key.hasPrefix("option:") }
+        task.isSendRequested = true
+        let applying = Task { await app.applyComposeChoices(of: task, to: session) }
+        var reply = initial
+        for index in 0..<3 {
+            try await wait("new-task extra setting \(index)") { agent.received.count > index }
+            try apply(agent.received[index], to: &reply)
+            try agent.reply(agent.received[index], options: reply)
+        }
+        await applying.value
+        try require(task.isSendRequested, "Confirmed extra choices blocked the first message")
+        try require(
+            agent.received.map { $0["params"]?["configId"] }
+                == [.string("fast"), .string("style"), .string("verbosity")],
+            "New-task extras did not apply by ID before the first message")
+        task.configChoices = ["option:removed": "on"]
+        await app.applyComposeChoices(of: task, to: session)
+        try require(!task.isSendRequested, "Removed extra setting allowed the first message to send")
+        compose.options = compose.options.filter { ["model", "thought_level", "mode"].contains($0.category ?? "") }
+        try require(
+            ComposerRowModelAdapter(app: app).state.agents.allSatisfy { $0.settings.isEmpty },
+            "An unsent task without extras gained a settings section")
+        print("PASS: unsent task offers extras, keeps local picks and applies them by ID before sending")
+    }
+
     static func main() async {
         let domain = ProcessInfo.processInfo.processName
         UserDefaults.standard.removePersistentDomain(forName: domain)
@@ -374,7 +447,7 @@ private struct ComposerRowSettingsRegression {
         var failures = 0
         for check in [
             freshModel, orderedSnapshots, repeatedSelections, currentAgentWithoutTransitions, folderContinuation,
-            cancelQueuedFieldEdit, locationOnlyBeforeStarting, extraAgentSettings,
+            cancelQueuedFieldEdit, locationOnlyBeforeStarting, extraAgentSettings, newTaskExtraSettings,
         ] {
             do { try await check() } catch {
                 failures += 1

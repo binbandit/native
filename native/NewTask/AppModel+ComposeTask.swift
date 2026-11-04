@@ -28,11 +28,11 @@ extension AppModel {
         compose.options = composeStartingOptions(for: agent.id, in: project)
         compose.defaults = Dictionary(
             compose.options.compactMap { option in
-                guard let category = option.category, case .select(let value, _) = option.kind else { return nil }
-                return (category, value)
+                guard case .select(let value, _) = option.kind else { return nil }
+                return (ComposeTaskModel.choiceKey(for: option), value)
             }, uniquingKeysWith: { first, _ in first })
         for setting in compose.options.compactMap(SelectSetting.init) {
-            if let category = setting.option.category, let value = previousChoices[category] {
+            if let value = previousChoices[ComposeTaskModel.choiceKey(for: setting.option)] {
                 compose.choose(setting, value: value)
             }
         }
@@ -264,9 +264,11 @@ extension AppModel {
 
     /// Config is re-read after each choice, since a model can change the effort options it offers.
     func applyComposeChoices(of task: StartingTask, to session: SessionModel) async {
-        for category in ["model", "thought_level", "mode"] {
-            guard let value = task.configChoices[category] else { continue }
-            guard let option = session.configOptions.first(where: { $0.category == category }),
+        let dedicated = ["model", "thought_level", "mode"]
+        let keys = dedicated + task.configChoices.keys.filter { !dedicated.contains($0) }.sorted()
+        for key in keys {
+            guard let value = task.configChoices[key] else { continue }
+            guard let option = session.configOptions.first(where: { ComposeTaskModel.choiceKey(for: $0) == key }),
                 case .select(_, let choices) = option.kind, choices.contains(where: { $0.value == value }),
                 !PolicyPermissionModes.forbids(option, value: value)
             else {
@@ -276,13 +278,16 @@ extension AppModel {
                     isError: true)
                 continue
             }
-            if category == "mode" {
+            if key == "mode" {
                 await session.pick(option, value: value)
             } else {
                 if case .select(let current, _) = option.kind, current == value { continue }
                 await session.setConfigOption(option, to: value)
             }
-            guard case .select(let actual, _)? = session.configOptions.first(where: { $0.category == category })?.kind,
+            guard
+                case .select(let actual, _)? = session.configOptions.first(where: {
+                    ComposeTaskModel.choiceKey(for: $0) == key
+                })?.kind,
                 actual == value
             else {
                 task.isSendRequested = false
@@ -294,9 +299,11 @@ extension AppModel {
         }
         // A later setting can revise earlier choices too. Never auto-send an address that drifted.
         if task.isSendRequested,
-            task.configChoices.contains(where: { category, expected in
+            task.configChoices.contains(where: { key, expected in
                 guard
-                    case .select(let actual, _)? = session.configOptions.first(where: { $0.category == category })?.kind
+                    case .select(let actual, _)? = session.configOptions.first(where: {
+                        ComposeTaskModel.choiceKey(for: $0) == key
+                    })?.kind
                 else { return true }
                 return actual != expected
             })

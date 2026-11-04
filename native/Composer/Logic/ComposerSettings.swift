@@ -22,6 +22,10 @@ struct ComposerSettings: Equatable {
     /// Settings no dedicated control covers, shown as plain menus.
     var others: [SelectSetting] = []
 
+    var agentSettings: [SelectSetting] {
+        (modelSwitches + others).filter { !["model", "thought_level", "mode"].contains($0.option.category ?? "") }
+    }
+
     init(_ options: [ConfigOption]) {
         var collaboration: SelectSetting?
         for option in options {
