@@ -9,8 +9,18 @@ enum ComposerPendingPreviewFixtures {
         case working, stopped, question, approval, comments
     }
 
-    @ViewBuilder
     static func composer(_ state: State) -> some View {
+        surface(state, includesTranscript: false)
+    }
+
+    static func task(_ state: State, width: CGFloat = DS.ComposerField.previewWidth) -> some View {
+        surface(state, includesTranscript: true, width: width)
+    }
+
+    @ViewBuilder
+    private static func surface(
+        _ state: State, includesTranscript: Bool, width: CGFloat = DS.ComposerField.previewWidth
+    ) -> some View {
         let app = AppModel.preview(.empty)
         let defaults = PreviewUserDefaults()
         let modes = TaskModes(library: ModeLibrary(defaults: defaults), defaults: defaults)
@@ -23,10 +33,17 @@ enum ComposerPendingPreviewFixtures {
             configOptions: ComposerPreviewFixtures.configOptions)
         {
             let _ = prepare(session, state: state)
-            ComposerView(session: session, taskModes: modes)
-                .environment(app).environment(automation).environment(CommandRegistry.shared)
-                .environment(\.experimentStore, experiments)
-                .frame(width: DS.ComposerField.previewWidth)
+            VStack(spacing: 0) {
+                if includesTranscript {
+                    TranscriptView(session: session) { _ in }
+                        .environment(\.isPrimaryTranscript, true)
+                        .frame(height: 560)
+                }
+                ComposerView(session: session, taskModes: modes)
+            }
+            .environment(app).environment(automation).environment(CommandRegistry.shared)
+            .environment(\.experimentStore, experiments)
+            .frame(width: width)
         }
     }
 
@@ -59,6 +76,7 @@ enum ComposerPendingPreviewFixtures {
                 quotes: DiffCommentsPreviewFixtures.quotes(task: session.clientID), message: session.composerMessage)
             session.reviewDiffComments()
         }
+        session.mirrorState()
     }
 }
 
@@ -71,13 +89,6 @@ enum ComposerPendingPreviewFixtures {
     }
 }
 
-#Preview("Composer pending - Question keeps the draft visible") {
-    DSPreviewPair { ComposerPendingPreviewFixtures.composer(.question) }
-}
-
-#Preview("Composer pending - Approval keeps the draft visible") {
-    DSPreviewPair { ComposerPendingPreviewFixtures.composer(.approval) }
-}
 #Preview("Composer pending - Review draft comments") {
     DSPreviewPair { ComposerPendingPreviewFixtures.composer(.comments) }
 }

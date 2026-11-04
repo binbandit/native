@@ -59,7 +59,7 @@ and sends it when the turn ends; queued messages go out one per turn, in order. 
 turn holds the queue until you send again.
 
 While the agent works, Send becomes Stop. Return still queues the message and ⌘Return steers it.
-Questions and approvals appear above the field, leaving the draft usable.
+Questions and approvals appear at the end of the transcript, above the field, leaving the draft usable.
 
 **Stop** asks the agent to end the turn and answers its open permission requests as rejected. The
 button shows that it is stopping. After three seconds, or immediately on a second press, the host
@@ -109,9 +109,9 @@ immediately. Your draft stays in the composer as a new message, including any un
 ## Agent questions
 
 When an agent asks structured questions (Claude Code's AskUserQuestion, ACP form elicitation), they
-dock above the composer as a card: the question, a `1/3` pager, options, a free-text row, and Skip /
-Next. The card takes focus when it appears and the composer is empty. Plain digits pick options
-only while the card has focus; ⌘1 – ⌘9 stay task navigation.
+appear at the end of the transcript above the composer as a card: the question, a `1/3` pager,
+options, a free-text row, and Skip / Next. The card takes focus when it appears and the composer is
+empty. Plain digits pick options only while the card has focus; ⌘1 – ⌘9 stay task navigation.
 
 | Keys (card focused) | Action |
 | --- | --- |

@@ -175,6 +175,11 @@ struct TranscriptView: View {
             if isPrimary, let trailer {
                 trailer.content.padding(.top, DS.Space.lg)
             }
+            if isPrimary, !session.isEarlierConversation,
+                !session.permissionRequests.isEmpty || session.pendingQuestion != nil
+            {
+                requests
+            }
         }
         .environment(disclosures)
         .frame(maxWidth: maxColumnWidth(in: containerWidth))
@@ -184,6 +189,30 @@ struct TranscriptView: View {
         // Coming back to this session shows the same place, or the latest (new rows included)
         // when that's where the user left it.
         .sessionTranscriptPlace(for: transcript.session)
+    }
+
+    @ViewBuilder
+    private var requests: some View {
+        VStack(spacing: DS.Space.sm) {
+            if let call = session.permissionRequests.first {
+                requestSurface { SessionApprovalView(session: session, call: call) }
+            }
+            if let question = session.pendingQuestion {
+                requestSurface { SessionQuestionView(session: session, question: question) }
+                    .id(question.id)
+            }
+        }
+        .padding(.top, DS.Space.lg)
+    }
+
+    private func requestSurface<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        content()
+            .background(.dsSurface, in: .rect(cornerRadius: DS.Radius.control))
+            .overlay {
+                RoundedRectangle(cornerRadius: DS.Radius.control)
+                    .strokeBorder(.dsBorder, lineWidth: DS.ComposerRow.borderWidth)
+                    .allowsHitTesting(false)
+            }
     }
 
     /// Invariant: the rows' height must never depend on whether the vertical scroller is showing.
@@ -214,6 +243,15 @@ struct TranscriptView: View {
 }
 
 #if DEBUG
+#Preview("Transcript - Approval and editable draft") {
+    DSPreviewPair { ComposerPendingPreviewFixtures.task(.approval) }
+}
+#Preview("Transcript - Question and editable draft") {
+    DSPreviewPair { ComposerPendingPreviewFixtures.task(.question) }
+}
+#Preview("Transcript - Question and editable draft, narrow") {
+    DSPreviewPair { ComposerPendingPreviewFixtures.task(.question, width: DS.Window.detailMinWidth) }
+}
 #Preview("Transcript - Switch away and return") {
     let app = AppModel.preview(.empty)
     let sessions = SessionTranscriptPreviewFixtures.sessions(in: app)

@@ -4,19 +4,6 @@ import SwiftUI
 
 extension ComposerView {
     @ViewBuilder
-    var fieldRequests: some View {
-        if page == nil {
-            if let call = session.permissionRequests.first {
-                fieldRequestSurface { SessionApprovalView(session: session, call: call) }
-            }
-            if let question = session.pendingQuestion {
-                fieldRequestSurface { SessionQuestionView(session: session, question: question) }
-                    .id(question.id)
-            }
-        }
-    }
-
-    @ViewBuilder
     var fieldQueue: some View {
         if !session.queuedPrompts.isEmpty {
             ComposerQueueSection(
@@ -55,13 +42,4 @@ extension ComposerView {
         submit(.queue)
     }
 
-    private func fieldRequestSurface<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        content()
-            .background(.dsSurface, in: .rect(cornerRadius: DS.Radius.control))
-            .overlay {
-                RoundedRectangle(cornerRadius: DS.Radius.control)
-                    .strokeBorder(.dsBorder, lineWidth: DS.ComposerRow.borderWidth)
-                    .allowsHitTesting(false)
-            }
-    }
 }
