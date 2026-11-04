@@ -107,7 +107,7 @@ struct FileWatchingTests {
     }
 
     #if os(macOS)
-    @Test("FSEvents reports a new file")
+    @Test("FSEvents reports a new file", FSEventsTestAvailability.requiresDelivery)
     func fsEvents() async throws {
         try await expectNewFileReported(by: FSEventsFileWatching(latency: 0.05))
     }

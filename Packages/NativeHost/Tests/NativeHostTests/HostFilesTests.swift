@@ -238,15 +238,31 @@ struct HostFilesTests {
         #endif
     }
 
-    @Test("End to end over the local socket: read, list, stat and watch, across a dropped connection")
+    @Test(
+        "End to end over the local socket: read, list, stat and watch, across a dropped connection",
+        FSEventsTestAvailability.requiresDelivery)
     func overTheSocket() async throws {
+        try await exerciseSocket(watching: Self.platformWatching)
+    }
+
+    @Test("Scripted changes cross the local socket and resume after a dropped connection")
+    func scriptedOverTheSocket() async throws {
+        let watcher = ScriptedFileWatching()
+        try await exerciseSocket(watching: watcher) { path in
+            watcher.send(FileWatchBatch(paths: [path]))
+        }
+    }
+
+    private func exerciseSocket(
+        watching: any FileWatching, notify: @Sendable (String) -> Void = { _ in }
+    ) async throws {
         let harness = try HostHarness()
         let project = harness.root.appending(path: "project", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: project, withIntermediateDirectories: true)
         let configuration = HostCore.Configuration(
             location: harness.location, hostInfo: PeerInfo(name: "test", version: "1", build: "1"), machineName: "test",
             bootTime: nil, environment: { [:] }, pluginsDirectory: harness.plugins, exit: { _ in },
-            fileWatching: Self.platformWatching)
+            fileWatching: watching)
         let core = try await HostMain.start(configuration, verifier: nil)
         let transport = CuttableTransport(location: harness.location)
         let client = NativeHostClient(
@@ -273,6 +289,7 @@ struct HostFilesTests {
         // FSEvents can ask for a rescan instead of naming the changed file.
         try await pollUntil("the new file", timeout: .seconds(30)) {
             try Data(UUID().uuidString.utf8).write(to: project.appending(path: "new.txt"))
+            notify(plainPath(project) + "/new.txt")
             return heard.values.contains {
                 fileChangeIncludes(plainPath(project) + "/new.txt", paths: $0.paths, isOverflow: $0.isOverflow)
             }
@@ -292,6 +309,7 @@ struct HostFilesTests {
         let changesAfterReconnect = heard.values.count
         try await pollUntil("a change after reconnecting", timeout: .seconds(30)) {
             try Data(UUID().uuidString.utf8).write(to: project.appending(path: "after.txt"))
+            notify(plainPath(project) + "/after.txt")
             return heard.values.dropFirst(changesAfterReconnect).contains {
                 fileChangeIncludes(plainPath(project) + "/after.txt", paths: $0.paths, isOverflow: $0.isOverflow)
             }

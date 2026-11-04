@@ -600,6 +600,12 @@ under `RUNNER_TEMP`, so tests run their own checkout's helper. Cargo's shared re
 installation use their existing locks. Package jobs also get a unique short `TMPDIR`, removed even
 on failure, for Swift tests to isolate fixed-name scratch files without exceeding Unix socket path
 limits. The runtime build keeps the original `TMPDIR` so its rustup lock still coordinates runners.
+NativeHost probes event delivery with an independent CoreServices stream before its two FSEvents
+integration tests. If the environment delivers no events, Swift Testing skips those tests with a
+visible reason; polling, scripted-source and coalescing tests still run, including socket reconnects
+with a scripted source. A successful stream start alone does not establish delivery: the persistent
+runners have returned success without callbacks
+under `/tmp`, the macOS user temp directory, `RUNNER_TEMP` or the workspace, all on the same APFS volume.
 Tests' remaining home-directory probes and preference domains use UUIDs. Hosted jobs restore their
 caches, and install nothing beyond
 the image (Git LFS, Rust and Python are on it).
