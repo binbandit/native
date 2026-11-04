@@ -1,3 +1,4 @@
+import ACP
 import Foundation
 import SessionTools
 import SwiftUI
@@ -7,7 +8,7 @@ import SwiftUI
 @main
 @MainActor
 private struct SessionToolCleanupRegression {
-    static func main() {
+    static func main() throws {
         let app = AppModel.preview(.empty)
         guard let session = SessionModel.preview(in: app) else { exit(1) }
         for place in [SessionToolPlace.side, .fact] {
@@ -79,8 +80,47 @@ private struct SessionToolCleanupRegression {
             require(otherClosed == 1, "replacement pane closes once")
             registry.setPluginTools([])
         }
+        try checkRequestNavigation(app)
         checkContinuationSessions(app)
-        print("Tool removal, original context, continuation, reset and close-once checks passed")
+        print("Tool removal, request navigation, original context, continuation, reset and close-once checks passed")
+    }
+
+    private static func checkRequestNavigation(_ app: AppModel) throws {
+        for approval in [false, true] {
+            guard let session = SessionModel.preview(in: app, agent: "claude-code") else { exit(1) }
+            let registry = SessionToolRegistry(defaults: PreviewUserDefaults())
+            let screen = SessionToolsScreenModel(registry: registry, session: session)
+            let changes = SessionToolContribution(
+                spec: SessionToolSpec(id: .changes, places: [.side], defaultPlace: .side),
+                title: "Changes", systemImage: "doc", pane: { _ in AnyView(EmptyView()) })
+            registry.setPluginTools([changes])
+            if approval {
+                session.previewPermissionRequest(command: "swift test", reason: "Run focused tests")
+                session.mirrorState()
+            } else {
+                let request = try JSONDecoder().decode(
+                    CreateElicitationRequest.self,
+                    from: Data(
+                        """
+                        {"sessionId":"request-navigation","mode":"form","message":"Which layout?",
+                         "requestedSchema":{"type":"object","properties":{"layout":{"type":"string"}}}}
+                        """.utf8))
+                session.requestQuestion(request, id: .int(1))
+            }
+            require(session.taskWellAsk?.session === session, "request belongs to the primary transcript")
+            screen.open(.changes)
+            func layout() -> SessionToolPanelLayout {
+                SessionToolPanelLayout(
+                    open: screen.openByPlace, availableWidth: 500,
+                    minimumConversationWidth: DS.SessionTools.conversationBesidePanelMinWidth,
+                    panelWidth: DS.SessionTools.sidePanelIdealWidth, replacingConversationWith: .changes)
+            }
+            require(layout().replacement == .changes, "narrow Changes pane hides the transcript")
+            require(screen.focusTaskAttention(in: session) == nil, "parent request stays in the primary transcript")
+            require(layout().replacement == nil, "Show the request reveals the transcript")
+            require(session.wantsComposerFocus, "the revealed request receives the focus request")
+            app.sessions.remove(session)
+        }
     }
 
     private static func checkContinuationSessions(_ app: AppModel) {
