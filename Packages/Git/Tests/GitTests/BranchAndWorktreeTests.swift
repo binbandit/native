@@ -275,29 +275,45 @@ struct BranchAndWorktreeTests {
 
         // A single write can race a new FSEvents stream. Keep producing changes until delivery
         // is observed, without accepting earlier repository-setup events as the index change.
-        #expect(
-            try await eventually {
-                try test.write("watched.txt", UUID().uuidString)
-                return received.withLock { $0.contains { $0.paths.contains("watched.txt") } }
-            })
+        try await pollUntil("the working tree file", timeout: .seconds(30)) {
+            try test.write("watched.txt", UUID().uuidString)
+            return received.withLock {
+                $0.contains {
+                    fileChangeIncludes(test.folder.appending(path: "watched.txt"), change: $0, in: repository)
+                }
+            }
+        }
 
         received.withLock { $0.removeAll() }
         try await repository.stage(["watched.txt"])
-        #expect(
-            try await eventually {
-                try FileManager.default.setAttributes(
-                    [.modificationDate: Date.now],
-                    ofItemAtPath: repository.gitDirectory.appending(path: "index").path)
-                return received.withLock { $0.contains(where: \.gitStateChanged) }
-            })
+        try await pollUntil("the index change", timeout: .seconds(30)) {
+            try FileManager.default.setAttributes(
+                [.modificationDate: Date.now],
+                ofItemAtPath: repository.gitDirectory.appending(path: "index").path(percentEncoded: false))
+            return received.withLock { $0.contains(where: \.gitStateChanged) }
+        }
     }
 
-    /// Polls `condition` for up to five seconds.
-    private func eventually(_ condition: () throws -> Bool) async rethrows -> Bool {
-        for _ in 0..<100 {
-            if try condition() { return true }
-            try? await Task.sleep(for: .milliseconds(50))
+    /// Mirrors NativeHost's watcher waits without depending on another package's test target.
+    private func pollUntil(
+        _ what: String, timeout: Duration, _ condition: () throws -> Bool
+    ) async throws {
+        let deadline = ContinuousClock.now + timeout
+        while ContinuousClock.now < deadline {
+            if try condition() { return }
+            try await Task.sleep(for: .milliseconds(20))
         }
-        return try condition()
+        Issue.record("Timed out waiting for \(what)")
+        throw CancellationError()
+    }
+
+    /// Git reports relative paths; coalesced folder notifications also cover their descendants.
+    private func fileChangeIncludes(_ file: URL, change: RepositoryChange, in repository: Repository) -> Bool {
+        guard FileManager.default.fileExists(atPath: file.path(percentEncoded: false)) else { return false }
+        let resolved = ChangeClassifier.canonicalPath(file)
+        return change.paths.contains {
+            let path = ChangeClassifier.canonicalPath(repository.root.appending(path: $0))
+            return path == resolved || resolved.hasPrefix(path + "/")
+        }
     }
 }
