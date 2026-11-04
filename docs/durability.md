@@ -993,14 +993,14 @@ it on); off, the app titles that host's tasks as it did before and tells the hos
   name it by.
 - **The user's title wins.** A rename, from any client, and its undo (the previous title, or none)
   go to the host with `_native/session/set_title {source: user}`; every client hears the change. The
-  first generated title stays unless it is weak and the first turn clarifies it. A manual rename
-  permanently blocks that refinement, including after undo, reconnect and host restart.
-- **One refinement.** A generic, verbose or ambiguous initial name can be refined once from the
-  original request and up to 800 characters of the first turn's assistant text. Tool output,
-  thoughts, hidden commands and later turns are excluded. A specific initial title stays. The
-  host persists the consumed first-turn and refinement budgets, and clients echo the requested
-  `revision` on generated writes. A late initial answer, duplicate refinement or old client cannot
-  replace a refined title. The app uses the same state machine with host titles off.
+  first generated title stays, including after undo, reconnect and host restart.
+- **Only the fallback changes.** While no generated title exists, the original request can keep
+  up to 800 characters of the first turn's assistant text for a pending generator or retry.
+  Tool output, thoughts, hidden commands and later turns are excluded. Once a generated title
+  arrives, its request is cleared and no automatic refinement can replace it, even if an older
+  client sends a pending refinement revision. Restoring an existing generated title also retires
+  any obsolete pending request and progress, preserving stored revision fields. The app uses the same state machine with host
+  titles off.
 - **Input and privacy.** Naming never opens a pasted link or file. Credential assignments and
   authorization headers are removed locally; URLs are removed and paths reduced to a basename.
   Both ends of a long message are retained so a request following an error log is still seen.
