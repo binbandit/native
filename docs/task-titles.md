@@ -26,14 +26,15 @@ that command does not use a model.
 The current approach keeps the same provider order and on-device model. It prepares safe, bounded
 input, asks for the main goal rather than a conversation summary, preserves technical spelling,
 and strips low-value words from verbose answers. The first fallback appears without waiting for
-the model. A weak name can be refined once using the original request and the first turn's
-assistant answer. Short follow-ups require that context even if the initial model invented a
-specific-sounding subject. A specific initial title stays. Manual renames block refinement even
-if subsequently cleared. Revision checks reject stale answers and the host stores the budget.
+the model. That temporary fallback is replaced once by the first generated title, which stays
+final even when it is generic or the first turn later clarifies the task. While no generated name
+exists, the request can keep the first turn's assistant answer for a pending attempt or retry.
+Manual renames always win. Revision checks also prevent an older client's pending refinement from
+replacing a generated title.
 
 The existing plugin admission and managed instructions continue to apply: the organization's title
 instructions replace project and global instructions. Turning off the provider prevents further
-generation, including application of an in-flight refinement. There are no new dependencies,
+generation, including application of an in-flight title. There are no new dependencies,
 endpoints or content logs. Naming does not open pasted files or links.
 
 ## Evaluation
@@ -45,14 +46,16 @@ TypeScript, Python, Rust, Go, Kotlin, Ruby, C# and C++. No personal session data
 
 The baseline was captured from commit `0257c27e36c71870e7357ca2de02bec6cb845545` on macOS 27.2
 with Apple Intelligence available. A model refusal is recorded as an empty generated title and
-scored using the old visible fallback. The new capture exercises the production state machine,
-including a possible single refinement. Model captures use greedy sampling, but results can still
-change with OS/model updates. The checked-in replay is deterministic and offline; it tests rules
+scored using the old visible fallback. The newer capture used the previous state machine,
+including a possible single refinement. Replays now keep the captured initial title when a
+refinement was recorded, so those historical answers also check title stability. Model captures
+use greedy sampling, but results can still change with OS/model updates. The checked-in replay is deterministic and offline; it tests rules
 and transitions against those captured provider answers. It is not a claim that every future
 on-device inference produces the same strings.
 
-The recorded score improves from **222/240 to 239/240**. Subject recognition improves from 35 to
-39 tasks; all 40 titles have 2 to 6 words, up from 29.
+The historical capture scored **222/240 before and 239/240 with refinements**. Keeping the initial
+names scores **235/240**: recognition stays at 35 tasks, and all 40 titles have 2 to 6 words, up
+from 29. The replay reports each criterion so the stability tradeoff stays visible.
 
 Each title gets one point per criterion: a fixture subject keyword, 2 to 6 whitespace-separated
 words, sentence case, no filler prefix, no quotes/trailing punctuation, and no credential or path.

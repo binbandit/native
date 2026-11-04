@@ -5,8 +5,8 @@ import Foundation
 /// and, while a title is still wanted, what it's written from. The host runs these transitions and
 /// stores the result (docs/durability.md, "Titles"); clients show `displayTitle(agentTitle:)`.
 ///
-/// The user's title always wins. A weak automatic title may be refined once after the first
-/// turn. Revision checks prevent late answers from replacing that refinement.
+/// The user's title always wins. The first generated title is final; only the temporary
+/// first-message fallback may be replaced when a generated title arrives.
 public struct SessionTitleState: Hashable, Sendable {
     public enum Progress: String, Hashable, Sendable {
         /// The host's own generator is writing it.
@@ -19,7 +19,7 @@ public struct SessionTitleState: Hashable, Sendable {
         case failed
     }
 
-    /// Persisted so reconnects, undo and restarts cannot replenish the refinement budget.
+    /// Kept for compatibility with stored requests and clients from before titles became final.
     public private(set) var refinementCount: Int
     public private(set) var firstTurnFinished: Bool
     public private(set) var wasRenamed: Bool
@@ -115,16 +115,12 @@ public struct SessionTitleState: Hashable, Sendable {
         progress = .failed
     }
 
-    /// Accepts an answer for the current revision, told apart from the project's other tasks.
-    /// Returns true when consumed, including a refinement that keeps the same visible title.
+    /// Accepts the first generated title for the current revision, told apart from other tasks.
+    /// Stored revisions remain valid only while no generated title exists.
     @discardableResult
     public mutating func accept(generated title: String, distinctFrom others: [String] = [], revision: Int = 0) -> Bool
     {
-        guard revision == refinementCount,
-            generated == nil
-                || (revision == 1 && request != nil && (progress == .generating || progress == .waitingForClient)),
-            !(revision == 1 && wasRenamed)
-        else { return false }
+        guard revision == refinementCount, generated == nil, !(revision == 1 && wasRenamed) else { return false }
         let candidate =
             request.map { SessionTitleRules.automatic(title, from: $0) }
             ?? SessionTitleRules.cleaned(title).flatMap {
@@ -132,47 +128,21 @@ public struct SessionTitleState: Hashable, Sendable {
             }
         guard let title = candidate else { return false }
         let prompt = request?.prompt ?? ""
-        if revision == 1, SessionTitleRules.isWeak(title, projectName: request?.projectName ?? "") {
-            request = nil
-            progress = nil
-            return true
-        }
         generated = SessionTitleRules.distinct(title, from: others, prompt: prompt)
+        request = nil
         progress = nil
-        if wasRenamed || revision == 1
-            || !(SessionTitleRules.isWeak(title, projectName: request?.projectName ?? "")
-                || SessionTitleRules.needsOutcome(prompt, projectName: request?.projectName ?? ""))
-        {
-            request = nil
-        } else if firstTurnFinished {
-            if request?.firstTurnOutcome != nil { beginRefinementIfNeeded() } else { request = nil }
-        }
         return true
     }
 
-    /// Called only for the first completed turn. A slow initial generator can finish afterwards;
-    /// accepting its weak result will then start the same single refinement.
+    /// Keeps first-turn context only while the task still has a temporary fallback. A slow
+    /// initial generator or a later retry can use it without changing an existing title.
     public mutating func finishFirstTurn(outcome: String) {
         guard !firstTurnFinished else { return }
         firstTurnFinished = true
-        guard !wasRenamed, request != nil else { return }
+        guard generated == nil, !wasRenamed, request != nil else { return }
         let outcome = SessionTitleInput.prepared(outcome, limit: 800)
-        guard !outcome.isEmpty else {
-            if generated != nil { request = nil; progress = nil }
-            return
-        }
+        guard !outcome.isEmpty else { return }
         request?.firstTurnOutcome = outcome
-        beginRefinementIfNeeded()
-    }
-
-    private mutating func beginRefinementIfNeeded() {
-        guard !wasRenamed, user == nil, refinementCount == 0, request?.firstTurnOutcome != nil,
-            let generated,
-            SessionTitleRules.isWeak(generated, projectName: request?.projectName ?? "")
-                || SessionTitleRules.needsOutcome(request?.prompt ?? "", projectName: request?.projectName ?? "")
-        else { return }
-        refinementCount = 1
-        progress = .generating
     }
 
     /// Sets the user's own title; nil or empty goes back to the automatic one. Returns whether

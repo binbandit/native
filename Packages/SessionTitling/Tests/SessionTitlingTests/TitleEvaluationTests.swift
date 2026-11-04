@@ -49,11 +49,11 @@ struct TitleEvaluationTests {
             state.begin(SessionTitleRequest(projectName: fixture.project, prompt: fixture.message))
             if !fixture.initial.isEmpty { state.accept(generated: fixture.initial) }
             state.finishFirstTurn(outcome: fixture.outcome)
-            if state.refinementCount == 1, !fixture.refined.isEmpty {
-                state.accept(generated: fixture.refined, revision: 1)
-            }
+            // Older captures include refinements. Those answers must now leave the initial name alone.
+            if !fixture.refined.isEmpty { state.accept(generated: fixture.refined, revision: 1) }
             let actual = state.generated ?? state.fallback ?? ""
-            #expect(actual == fixture.after, "Fixture \(fixture.id)")
+            let expected = fixture.refined.isEmpty ? fixture.after : fixture.initial
+            #expect(actual == expected, "Fixture \(fixture.id)")
             let oldScore = Self.score(fixture.before, fixture: fixture)
             let newScore = Self.score(actual, fixture: fixture)
             for index in before.indices {

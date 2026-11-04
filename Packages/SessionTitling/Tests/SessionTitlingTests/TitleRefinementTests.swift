@@ -8,67 +8,67 @@ struct TitleRefinementTests {
     let request = SessionTitleRequest(projectName: "native", prompt: "fix the build")
     let outcome = "Fixed actor isolation in SessionModel"
 
-    @Test("A weak title gets one refinement, and late answers cannot replace it")
-    func onceOnly() {
+    @Test("A generated title stays through the first outcome and later turns", arguments: [false, true])
+    func generatedTitleStays(slowInitial: Bool) {
         var state = SessionTitleState()
         state.begin(request)
-        let accepted1 = state.accept(generated: "Fix build")
-        #expect(accepted1)
+        if slowInitial { state.finishFirstTurn(outcome: outcome) }
+        let initialAccepted = state.accept(generated: "Fix build")
+        #expect(initialAccepted)
         state.finishFirstTurn(outcome: outcome)
-        #expect(state.refinementCount == 1)
-        #expect(state.request?.firstTurnOutcome == outcome)
-        let accepted2 = !state.accept(generated: "Late initial answer")
-        #expect(accepted2)
-        let accepted3 = state.accept(generated: "Fix SessionModel isolation", revision: 1)
-        #expect(accepted3)
-        let accepted4 = !state.accept(generated: "Another title", revision: 1)
-        #expect(accepted4)
-        state.finishFirstTurn(outcome: "Something else")
-        #expect(state.generated == "Fix SessionModel isolation")
-        #expect(state.request == nil)
-    }
-
-    @Test("A first turn that finishes before the title still refines once")
-    func slowInitial() {
-        var state = SessionTitleState()
-        state.begin(request)
-        state.finishFirstTurn(outcome: outcome)
-        #expect(state.refinementCount == 0)
-        let accepted5 = state.accept(generated: "Fix build")
-        #expect(accepted5)
-        #expect(state.refinementCount == 1 && state.progress == .generating)
-    }
-
-    @Test("A specific initial title stays, and a weak refinement never replaces a weak title")
-    func qualityGate() {
-        var state = SessionTitleState()
-        state.begin(SessionTitleRequest(projectName: "native", prompt: "Fix SessionModel isolation"))
-        state.accept(generated: "Fix SessionModel isolation")
-        state.finishFirstTurn(outcome: outcome)
-        #expect(state.refinementCount == 0 && state.request == nil)
-        var weak = SessionTitleState()
-        weak.begin(request)
-        weak.accept(generated: "Fix build")
-        weak.finishFirstTurn(outcome: outcome)
-        let accepted6 = weak.accept(generated: "Fix tests", revision: 1)
-        #expect(accepted6)
-        #expect(weak.generated == "Fix build" && weak.request == nil)
-        let accepted7 = !weak.accept(generated: "Fix SessionModel isolation", revision: 1)
-        #expect(accepted7)
-    }
-
-    @Test("A manual rename and its undo block automatic refinement", arguments: [false, true])
-    func manualRename(beforeOutcome: Bool) {
-        var state = SessionTitleState()
-        state.begin(request)
-        state.accept(generated: "Fix build")
-        if beforeOutcome { state.rename(to: "Mine") }
-        state.finishFirstTurn(outcome: outcome)
-        if !beforeOutcome { state.rename(to: "Mine") }
-        state.rename(to: nil)
-        let accepted8 = !state.accept(generated: "Fix SessionModel isolation", revision: 1)
-        #expect(accepted8)
         #expect(state.generated == "Fix build")
+        #expect(state.request == nil && state.progress == nil && state.refinementCount == 0)
+        let laterTurnIgnored = !state.beginIfNeeded(SessionTitleRequest(projectName: "native", prompt: "Now fix tests"))
+        #expect(laterTurnIgnored)
+        state.finishFirstTurn(outcome: "Fixed tests")
+        let refinementIgnored = !state.accept(generated: "Fix SessionModel isolation", revision: 1)
+        #expect(refinementIgnored)
+        let duplicateIgnored = !state.accept(generated: "Fix tests")
+        #expect(duplicateIgnored)
+        #expect(state.displayTitle(agentTitle: "Changed agent title") == "Fix build")
+    }
+
+    @Test("Only the temporary fallback is replaced, once")
+    func fallbackIsReplacedOnce() {
+        var state = SessionTitleState()
+        state.begin(request)
+        #expect(state.displayTitle(agentTitle: nil) == "Fix the build")
+        state.finishFirstTurn(outcome: outcome)
+        #expect(state.generated == nil && state.fallback == "Fix the build")
+        #expect(state.request?.firstTurnOutcome == outcome)
+        let initialAccepted = state.accept(generated: "Fix SessionModel isolation")
+        #expect(initialAccepted)
+        #expect(state.fallback == nil && state.request == nil && state.progress == nil)
+        let duplicateIgnored = !state.accept(generated: "Another title")
+        #expect(duplicateIgnored)
+        #expect(state.displayTitle(agentTitle: nil) == "Fix SessionModel isolation")
+    }
+
+    @Test("A user rename always wins over a pending title", arguments: [false, true])
+    func manualRename(beforeGeneration: Bool) {
+        var state = SessionTitleState()
+        state.begin(request)
+        if beforeGeneration { state.rename(to: "Mine") }
+        let initialAccepted = state.accept(generated: "Fix build")
+        #expect(initialAccepted)
+        if !beforeGeneration { state.rename(to: "Mine") }
+        state.finishFirstTurn(outcome: outcome)
+        let refinementIgnored = !state.accept(generated: "Fix SessionModel isolation", revision: 1)
+        #expect(refinementIgnored)
+        #expect(state.displayTitle(agentTitle: "Agent title") == "Mine")
+        state.rename(to: nil)
+        #expect(state.displayTitle(agentTitle: nil) == "Fix build")
+        #expect(state.request == nil && state.progress == nil)
+    }
+
+    @Test("A restored pending refinement cannot replace an existing generated title")
+    func restoredRefinement() {
+        var state = SessionTitleState(
+            generated: "Fix build", request: request, progress: .waitingForClient,
+            refinementCount: 1, firstTurnFinished: true)
+        let refinementIgnored = !state.accept(generated: "Fix SessionModel isolation", revision: 1)
+        #expect(refinementIgnored)
+        #expect(state.displayTitle(agentTitle: nil) == "Fix build")
     }
 
     @Test("A pre-refinement store's manual title also blocks refinement after undo")
@@ -77,6 +77,9 @@ struct TitleRefinementTests {
         state.rename(to: nil)
         state.finishFirstTurn(outcome: outcome)
         #expect(state.wasRenamed && state.refinementCount == 0)
+        let refinementIgnored = !state.accept(generated: "Fix SessionModel isolation", revision: 1)
+        #expect(refinementIgnored)
+        #expect(state.generated == "Fix build")
     }
 
     @Test(
